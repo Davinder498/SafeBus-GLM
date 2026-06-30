@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+.next/
+.expo/
+coverage/
+.turbo/
+supabase/.branches
+supabase/.temp
+*.tsbuildinfo
+pnpm-lock.yaml
