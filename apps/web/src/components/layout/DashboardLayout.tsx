@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
+import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/contexts/useAuth';
 
 interface DashboardLayoutProps {
   title: string;
@@ -10,6 +12,14 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ title, portal, navItems, children }: DashboardLayoutProps) {
+  const { signOut, profile } = useAuth();
+  const navigate = useNavigate();
+
+  async function handleLogout() {
+    await signOut();
+    navigate('/login', { replace: true });
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="border-b border-gray-200 bg-white">
@@ -19,13 +29,11 @@ export function DashboardLayout({ title, portal, navItems, children }: Dashboard
               SafeBus Alberta
             </Link>
             <p className="text-xl font-bold text-navy-900">{title}</p>
+            {profile?.full_name && <p className="text-sm text-gray-600">{profile.full_name}</p>}
           </div>
-          <Link
-            to="/login"
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700"
-          >
-            Switch demo
-          </Link>
+          <Button type="button" variant="secondary" size="sm" onClick={handleLogout}>
+            Logout
+          </Button>
         </div>
       </header>
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[240px_1fr] lg:px-8">
