@@ -2,6 +2,8 @@
 
 This is a clean pre-production migration baseline for Milestone 2A/2B authentication and profile access only. It intentionally does not include transportation business tables or student records.
 
+For an end-to-end local login and admin-page smoke test, see `docs/local-auth-smoke-test.md`.
+
 ## Frontend Environment Variables
 
 The web app needs these Vite variables:
