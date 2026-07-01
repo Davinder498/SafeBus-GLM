@@ -1,4 +1,4 @@
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PlaceholderCard } from '@/components/ui/PlaceholderCard';
@@ -11,22 +11,6 @@ import {
   type GpsStatus,
   type TripStatus,
 } from '@/data/mockData';
-
-const navItems = [
-  'Overview',
-  'Live Map',
-  'Trips',
-  'Routes',
-  'Stops',
-  'Students',
-  'Guardians',
-  'Drivers',
-  'Buses',
-  'Imports',
-  'Alerts',
-  'Reports',
-  'Settings',
-];
 
 const tripTone: Record<TripStatus, 'success' | 'warning' | 'neutral' | 'info'> = {
   active: 'success',
@@ -43,7 +27,7 @@ const gpsTone: Record<GpsStatus, 'success' | 'warning' | 'danger'> = {
 
 export function AdminDashboardPage() {
   return (
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={navItems}>
+    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Overview"

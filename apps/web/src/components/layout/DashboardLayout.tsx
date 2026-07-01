@@ -7,9 +7,32 @@ import { useAuth } from '@/contexts/useAuth';
 interface DashboardLayoutProps {
   title: string;
   portal: 'admin' | 'driver' | 'parent';
-  navItems: string[];
+  navItems: Array<DashboardNavItem | string>;
   children: ReactNode;
 }
+
+export interface DashboardNavItem {
+  label: string;
+  to?: string;
+}
+
+export const adminNavItems: DashboardNavItem[] = [
+  { label: 'Overview', to: '/admin' },
+  { label: 'Live Map', to: '/admin/live-map' },
+  { label: 'Trips', to: '/admin/trips' },
+  { label: 'Routes', to: '/admin/routes' },
+  { label: 'Stops', to: '/admin/stops' },
+  { label: 'Students', to: '/admin/students' },
+  { label: 'Guardians', to: '/admin/guardians' },
+  { label: 'Drivers', to: '/admin/drivers' },
+  { label: 'Buses', to: '/admin/buses' },
+  { label: 'Imports', to: '/admin/imports' },
+  { label: 'Alerts', to: '/admin/alerts' },
+  { label: 'Reports', to: '/admin/reports' },
+  { label: 'Schools', to: '/admin/schools' },
+  { label: 'Users', to: '/admin/users' },
+  { label: 'Settings', to: '/admin/settings' },
+];
 
 export function DashboardLayout({ title, portal, navItems, children }: DashboardLayoutProps) {
   const { signOut, profile } = useAuth();
@@ -40,24 +63,28 @@ export function DashboardLayout({ title, portal, navItems, children }: Dashboard
         <aside className="lg:sticky lg:top-6 lg:self-start">
           <nav className="flex gap-2 overflow-x-auto rounded-lg border border-gray-200 bg-white p-2 shadow-sm lg:flex-col">
             {navItems.map((item, index) => {
+              const label = typeof item === 'string' ? item : item.label;
               const to =
-                index === 0
-                  ? `/${portal}`
-                  : `/${portal}#${item.toLowerCase().replaceAll(' ', '-')}`;
+                typeof item === 'string'
+                  ? index === 0
+                    ? `/${portal}`
+                    : `/${portal}#${item.toLowerCase().replaceAll(' ', '-')}`
+                  : (item.to ?? `/${portal}`);
               return (
                 <NavLink
-                  key={item}
+                  key={label}
                   to={to}
+                  end={to === `/${portal}`}
                   className={({ isActive }) =>
                     clsx(
                       'whitespace-nowrap rounded-md px-3 py-2 text-sm font-semibold',
-                      isActive || index === 0
+                      isActive
                         ? 'bg-navy-50 text-navy-800'
                         : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
                     )
                   }
                 >
-                  {item}
+                  {label}
                 </NavLink>
               );
             })}
