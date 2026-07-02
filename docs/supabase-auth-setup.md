@@ -2,7 +2,7 @@
 
 This is a clean pre-production migration baseline for Milestone 2A/2B authentication and profile access only. It intentionally does not include transportation business tables or student records.
 
-For an end-to-end local login and admin-page smoke test, see `docs/local-auth-smoke-test.md`.
+For an end-to-end hosted-project login and admin-page smoke test, see `docs/local-auth-smoke-test.md`.
 
 ## Frontend Environment Variables
 
@@ -17,20 +17,9 @@ Do not put a Supabase service role key in the frontend app or in `apps/web/.env.
 
 ## Apply Migrations
 
-When the Supabase CLI is installed, run migrations from the repo root:
+Apply the SQL files in `supabase/migrations/` to the hosted Supabase project. Use the Supabase dashboard SQL editor or another trusted database migration workflow connected to the hosted project.
 
-```powershell
-supabase db push
-```
-
-For local development, start Supabase first if needed:
-
-```powershell
-supabase start
-supabase db reset
-```
-
-`db reset` recreates the local database and reapplies all migrations. Use it only for local/demo data. This migration set is pre-production and assumes no real database depends on the earlier prototype migrations.
+This migration set is pre-production and assumes no real database depends on the earlier prototype migrations. Review the SQL before applying it to a shared or production-like project.
 
 ## Create Test Auth Users
 

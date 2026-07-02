@@ -1,32 +1,22 @@
-# SafeBus Alberta Local Auth Smoke Test
+# SafeBus Alberta Hosted Auth Smoke Test
 
-Use this guide to verify the local Supabase-backed admin organization/profile foundation. This is a local-only smoke test for Milestone 3A.
+Use this guide to verify the hosted Supabase-backed admin organization/profile foundation. This smoke test is for Milestone 3A.
 
-Do not use production credentials. Do not put a Supabase secret/service role key in frontend `.env` files. Use only the local publishable/anon key in the web app.
+Do not put a Supabase secret/service role key in frontend `.env` files. Use only the hosted project's publishable/anon key in the web app.
 
-## 1. Start Supabase Locally
+## 1. Prepare The Hosted Project
 
-From the repo root:
+Open your Supabase project dashboard and apply the SQL files from `supabase/migrations/` in order if they have not already been applied.
 
-```powershell
-pnpm exec supabase start
-```
-
-If this is a fresh local database, reset and apply migrations:
-
-```powershell
-pnpm exec supabase db reset
-```
-
-The CLI output includes local service URLs and keys. You need the API URL and anon key for the frontend.
+Use a development or staging Supabase project while this milestone is still pre-production.
 
 ## 2. Configure the Web App Env
 
 Create `apps/web/.env`:
 
 ```env
-VITE_SUPABASE_URL=http://127.0.0.1:54321
-VITE_SUPABASE_ANON_KEY=<local-anon-key-from-supabase-start>
+VITE_SUPABASE_URL=<hosted-project-url>
+VITE_SUPABASE_ANON_KEY=<hosted-project-anon-key>
 ```
 
 Use the anon/publishable key only. Never use the service role key in `apps/web/.env`.
@@ -41,21 +31,15 @@ pnpm --filter @safebus/web dev
 
 Open the Vite URL shown in the terminal, usually `http://localhost:5173`.
 
-## 4. Create Local Auth Users
+## 4. Create Hosted Auth Users
 
-Open Supabase Studio from the local CLI output, usually:
-
-```text
-http://127.0.0.1:54323
-```
-
-Go to Authentication and create three local test users:
+In the Supabase dashboard, go to Authentication and create three test users:
 
 - `tenant-admin@example.test`
 - `driver@example.test`
 - `guardian@example.test`
 
-Set local test passwords you can use from the login page. After each user is created, copy the user's UUID from `auth.users.id`.
+Set test passwords you can use from the login page. After each user is created, copy the user's UUID from `auth.users.id`.
 
 ## 5. Insert Demo Tenant And School
 
@@ -214,35 +198,24 @@ Check:
 - The signed-in profile has `status = 'active'`.
 - The profile has the expected `tenant_id`.
 - School-scoped profiles have the expected `school_id`.
-- The local rows were inserted into the same Supabase instance used by the frontend.
+- The rows were inserted into the same hosted Supabase project used by the frontend.
 
-### Supabase Not Running
+### Hosted Supabase Requests Fail
 
 Symptom: network errors or failed auth requests.
 
-Run:
+Check that `VITE_SUPABASE_URL` points to the hosted project URL from Supabase dashboard settings and that the project is not paused.
 
-```powershell
-pnpm exec supabase status
-```
+### Wrong Hosted Key Used
 
-Start it again if needed:
+Symptom: auth requests fail even though the hosted project is available.
 
-```powershell
-pnpm exec supabase start
-```
-
-### Wrong Local Key Used
-
-Symptom: auth requests fail even though Supabase is running.
-
-Use the local anon/publishable key from `pnpm exec supabase start`. Do not use the service role key. Do not use production credentials for local development.
+Use the hosted project's anon/publishable key. Do not use the service role key.
 
 ## Security And Privacy Notes
 
 - Do not expose the Supabase service role key to the frontend.
 - Use only the publishable/anon key in `apps/web/.env`.
-- Do not use production credentials in local development.
 - Do not use real student data.
 - Do not use Alberta Student Number in QR, mock data, profile records, or test records.
 - SafeBus Alberta tracks the bus, not the child.

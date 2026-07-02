@@ -3,9 +3,11 @@ import { LandingPage } from '@/pages/LandingPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { AdminDashboardPage } from '@/pages/AdminDashboardPage';
+import { AdminGuardiansPage } from '@/pages/AdminGuardiansPage';
 import { AdminPlaceholderPage } from '@/pages/AdminPlaceholderPage';
 import { AdminSchoolsPage } from '@/pages/AdminSchoolsPage';
 import { AdminSettingsPage } from '@/pages/AdminSettingsPage';
+import { AdminStudentsPage } from '@/pages/AdminStudentsPage';
 import { AdminUsersPage } from '@/pages/AdminUsersPage';
 import { DriverDashboardPage } from '@/pages/DriverDashboardPage';
 import { ParentDashboardPage } from '@/pages/ParentDashboardPage';
@@ -57,13 +59,27 @@ export const appRoutes: RouteObject[] = [
       </ProtectedRoute>
     ),
   },
+  {
+    path: '/admin/students',
+    element: (
+      <ProtectedRoute allowedRoles={[...adminRoles]}>
+        <AdminStudentsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/guardians',
+    element: (
+      <ProtectedRoute allowedRoles={[...adminRoles]}>
+        <AdminGuardiansPage />
+      </ProtectedRoute>
+    ),
+  },
   ...[
     ['live-map', 'Live Map'],
     ['trips', 'Trips'],
     ['routes', 'Routes'],
     ['stops', 'Stops'],
-    ['students', 'Students'],
-    ['guardians', 'Guardians'],
     ['drivers', 'Drivers'],
     ['buses', 'Buses'],
     ['imports', 'Imports'],

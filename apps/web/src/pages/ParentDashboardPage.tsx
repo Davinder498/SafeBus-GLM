@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
+import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PlaceholderCard } from '@/components/ui/PlaceholderCard';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -11,26 +13,92 @@ import {
   mockStudent,
   mockTimeline,
 } from '@/data/mockData';
+import { getMyLinkedStudents } from '@/services/studentGuardianService';
+import type { Student } from '@/types/studentGuardian';
+
+function getStudentDisplayName(student: Student) {
+  return student.preferred_name
+    ? `${student.first_name} ${student.last_name} (${student.preferred_name})`
+    : `${student.first_name} ${student.last_name}`;
+}
 
 export function ParentDashboardPage() {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(true);
+  const [studentsError, setStudentsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadLinkedStudents() {
+      setLoadingStudents(true);
+      setStudentsError(null);
+
+      try {
+        const nextStudents = await getMyLinkedStudents();
+        if (active) setStudents(nextStudents);
+      } catch (studentError) {
+        if (active) {
+          setStudentsError(
+            studentError instanceof Error
+              ? studentError.message
+              : 'Unable to load linked students.',
+          );
+        }
+      } finally {
+        if (active) setLoadingStudents(false);
+      }
+    }
+
+    void loadLinkedStudents();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const primaryStudent = students[0];
+  const linkedStudentLabel = primaryStudent
+    ? getStudentDisplayName(primaryStudent)
+    : `${mockStudent.firstName} ${mockStudent.lastInitial}`;
+
   return (
     <DashboardLayout title="Parent Dashboard" portal="parent" navItems={['Bus Status']}>
       <div className="mx-auto max-w-3xl space-y-5">
         <PageHeader
           eyebrow="Assigned bus"
           title={`Bus ${mockParentBus.busNumber}`}
-          description="Only the assigned demo student and bus are shown."
+          description="Student visibility is limited by guardian RLS. Bus and trip details remain demo placeholders."
         />
+        {loadingStudents && (
+          <DataState
+            title="Loading linked students"
+            message="Fetching student records linked to your guardian profile."
+          />
+        )}
+        {studentsError && (
+          <DataState title="Unable to load linked students" message={studentsError} />
+        )}
+        {!loadingStudents && !studentsError && students.length === 0 && (
+          <DataState
+            title="No linked students visible"
+            message="No student records are linked to this guardian account yet."
+          />
+        )}
         <Card className="p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-gray-500">Student</p>
-              <h2 className="mt-1 text-3xl font-bold text-navy-900">
-                {mockStudent.firstName} {mockStudent.lastInitial}
-              </h2>
+              <h2 className="mt-1 text-3xl font-bold text-navy-900">{linkedStudentLabel}</h2>
               <p className="mt-2 text-gray-700">
-                {mockStudent.grade} | {mockStudent.school}
+                {primaryStudent?.grade ?? mockStudent.grade} | {mockStudent.school}
               </p>
+              {students.length > 1 && (
+                <p className="mt-2 text-sm text-gray-600">
+                  {students.length - 1} more linked student
+                  {students.length - 1 === 1 ? '' : 's'} visible to this account.
+                </p>
+              )}
               <p className="mt-2 text-gray-700">{mockParentRoute.name}</p>
             </div>
             <StatusPill tone="success">{mockParentTrip.status}</StatusPill>

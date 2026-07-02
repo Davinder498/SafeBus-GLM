@@ -39,11 +39,18 @@ safebus-alberta/
 ### Prerequisites
 - Node.js 20+
 - pnpm 11+ (`npm install -g pnpm`)
-- Supabase CLI (for local backend)
+- Hosted Supabase project URL and anon key
 
 ### Install
 ```bash
 pnpm install
+```
+
+Create `apps/web/.env` with your hosted Supabase project values:
+
+```env
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
 ```
 
 ### Run web app (Phase 1 — mock data)
