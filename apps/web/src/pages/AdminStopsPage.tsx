@@ -1,11 +1,31 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  AdminWriteError,
+  AdminWriteMessage,
+  InlineFormShell,
+  RouteStopForm,
+} from '@/components/admin/TransportationAdminForms';
 import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { getVisibleRoutes, getVisibleRouteStops } from '@/services/transportationStructureService';
-import type { Route, RouteStop, RouteStopStatus } from '@/types/transportation';
+import { adminRoles } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/useAuth';
+import {
+  createRouteStop,
+  getVisibleRoutes,
+  getVisibleRouteStops,
+  updateRouteStop,
+} from '@/services/transportationStructureService';
+import type {
+  CreateRouteStopInput,
+  Route,
+  RouteStop,
+  RouteStopStatus,
+  UpdateRouteStopInput,
+} from '@/types/transportation';
 
 const routeStopStatusTone: Record<RouteStopStatus, 'success' | 'danger' | 'neutral'> = {
   active: 'success',
@@ -27,44 +47,40 @@ function formatTime(value: string | null) {
 }
 
 export function AdminStopsPage() {
+  const { profile } = useAuth();
   const [stops, setStops] = useState<RouteStop[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingStop, setEditingStop] = useState<RouteStop | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
+
+  const loadStops = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const [nextStops, nextRoutes] = await Promise.all([
+        getVisibleRouteStops(),
+        getVisibleRoutes(),
+      ]);
+      setStops(nextStops);
+      setRoutes(nextRoutes);
+    } catch (stopsError) {
+      setError(stopsError instanceof Error ? stopsError.message : 'Unable to load stops.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let active = true;
-
-    async function loadStops() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const [nextStops, nextRoutes] = await Promise.all([
-          getVisibleRouteStops(),
-          getVisibleRoutes(),
-        ]);
-
-        if (active) {
-          setStops(nextStops);
-          setRoutes(nextRoutes);
-        }
-      } catch (stopsError) {
-        if (active) {
-          setError(stopsError instanceof Error ? stopsError.message : 'Unable to load stops.');
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
     void loadStops();
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  }, [loadStops]);
 
   const routeLabels = useMemo(() => {
     return new Map(routes.map((route) => [route.id, `${route.route_code} - ${route.route_name}`]));
@@ -89,20 +105,83 @@ export function AdminStopsPage() {
     );
   }, [query, routeLabels, stops]);
 
+  async function handleCreateStop(input: CreateRouteStopInput | UpdateRouteStopInput) {
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await createRouteStop(input as CreateRouteStopInput);
+      setShowCreateForm(false);
+      setSuccessMessage('Route stop created.');
+      await loadStops();
+    } catch (createError) {
+      setWriteError(
+        createError instanceof Error ? createError.message : 'Unable to create route stop.',
+      );
+    }
+  }
+
+  async function handleUpdateStop(input: CreateRouteStopInput | UpdateRouteStopInput) {
+    if (!editingStop) return;
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await updateRouteStop(editingStop.id, input as UpdateRouteStopInput);
+      setEditingStop(null);
+      setSuccessMessage('Route stop updated.');
+      await loadStops();
+    } catch (updateError) {
+      setWriteError(
+        updateError instanceof Error ? updateError.message : 'Unable to update route stop.',
+      );
+    }
+  }
+
   return (
     <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Stops"
           title="Visible route stops"
-          description="Read-only stop records returned by Supabase under the current admin user's RLS permissions."
+          description="Stop records returned by Supabase under the current admin user's RLS permissions."
         />
 
-        <Card className="border-navy-100 bg-navy-50 p-5">
-          <p className="text-sm font-semibold text-navy-900">
-            Stop creation and route sequencing workflows will be added in a later milestone.
-          </p>
-        </Card>
+        {canWrite && (
+          <div className="flex">
+            <Button type="button" onClick={() => {
+              setEditingStop(null);
+              setShowCreateForm(true);
+              setWriteError(null);
+              setSuccessMessage(null);
+            }}>
+              Add stop
+            </Button>
+          </div>
+        )}
+
+        <AdminWriteMessage message={successMessage} />
+        <AdminWriteError message={writeError} />
+
+        {canWrite && showCreateForm && (
+          <InlineFormShell title="Add stop">
+            <RouteStopForm
+              stop={null}
+              routes={routes}
+              onSubmit={handleCreateStop}
+              onCancel={() => setShowCreateForm(false)}
+            />
+          </InlineFormShell>
+        )}
+
+        {canWrite && editingStop && (
+          <InlineFormShell title={`Edit ${editingStop.stop_name}`}>
+            <RouteStopForm
+              stop={editingStop}
+              routes={routes}
+              onSubmit={handleUpdateStop}
+              onCancel={() => setEditingStop(null)}
+            />
+          </InlineFormShell>
+        )}
 
         <div>
           <label className="block text-sm font-semibold text-gray-700" htmlFor="stop-search">
@@ -146,7 +225,19 @@ export function AdminStopsPage() {
                     </p>
                     <h2 className="text-xl font-bold text-navy-900">{stop.stop_name}</h2>
                   </div>
-                  <StatusPill tone={routeStopStatusTone[stop.status]}>{stop.status}</StatusPill>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <StatusPill tone={routeStopStatusTone[stop.status]}>{stop.status}</StatusPill>
+                    {canWrite && (
+                      <Button type="button" size="sm" variant="secondary" onClick={() => {
+                        setShowCreateForm(false);
+                        setEditingStop(stop);
+                        setWriteError(null);
+                        setSuccessMessage(null);
+                      }}>
+                        Edit
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div className="mt-5 grid gap-3 text-sm md:grid-cols-2">
                   <p className="text-gray-600">

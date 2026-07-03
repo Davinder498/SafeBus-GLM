@@ -67,3 +67,63 @@ export interface StudentRouteAssignment {
   created_at: string;
   updated_at: string;
 }
+
+export type CreateBusInput = {
+  tenant_id: string;
+  school_id: string | null;
+  bus_number: string;
+  license_plate: string | null;
+  capacity: number | null;
+  status: BusStatus;
+};
+
+export type UpdateBusInput = Partial<Omit<CreateBusInput, 'tenant_id'>>;
+
+export type CreateDriverInput = {
+  tenant_id: string;
+  profile_id: string;
+  employee_number: string | null;
+  phone: string | null;
+  status: DriverStatus;
+};
+
+export type UpdateDriverInput = Partial<Omit<CreateDriverInput, 'tenant_id'>>;
+
+export type CreateRouteInput = {
+  tenant_id: string;
+  school_id: string;
+  route_name: string;
+  route_code: string;
+  route_type: RouteType;
+  status: RouteStatus;
+};
+
+export type UpdateRouteInput = Partial<Omit<CreateRouteInput, 'tenant_id'>>;
+
+export type CreateRouteStopInput = {
+  tenant_id: string;
+  route_id: string;
+  stop_name: string;
+  stop_order: number;
+  planned_arrival_time: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  status: RouteStopStatus;
+};
+
+export type UpdateRouteStopInput = Partial<Omit<CreateRouteStopInput, 'tenant_id'>>;
+
+export type CreateStudentRouteAssignmentInput = {
+  tenant_id: string;
+  student_id: string;
+  route_id: string;
+  pickup_stop_id: string | null;
+  dropoff_stop_id: string | null;
+  effective_from: string;
+  effective_to: string | null;
+  status: StudentRouteAssignmentStatus;
+};
+
+export type UpdateStudentRouteAssignmentInput = Partial<
+  Omit<CreateStudentRouteAssignmentInput, 'tenant_id'>
+>;

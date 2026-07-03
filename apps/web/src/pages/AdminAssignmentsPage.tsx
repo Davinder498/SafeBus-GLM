@@ -1,21 +1,34 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  AdminWriteError,
+  AdminWriteMessage,
+  InlineFormShell,
+  StudentRouteAssignmentForm,
+} from '@/components/admin/TransportationAdminForms';
 import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { adminRoles } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/useAuth';
 import { getVisibleStudents } from '@/services/studentGuardianService';
 import {
+  createStudentRouteAssignment,
   getVisibleRoutes,
   getVisibleRouteStops,
   getVisibleStudentRouteAssignments,
+  updateStudentRouteAssignment,
 } from '@/services/transportationStructureService';
 import type { Student } from '@/types/studentGuardian';
 import type {
+  CreateStudentRouteAssignmentInput,
   Route,
   RouteStop,
   StudentRouteAssignment,
   StudentRouteAssignmentStatus,
+  UpdateStudentRouteAssignmentInput,
 } from '@/types/transportation';
 
 const assignmentStatusTone: Record<StudentRouteAssignmentStatus, 'success' | 'danger' | 'neutral'> =
@@ -41,6 +54,7 @@ function getStudentName(student: Student) {
 }
 
 export function AdminAssignmentsPage() {
+  const { profile } = useAuth();
   const [assignments, setAssignments] = useState<StudentRouteAssignment[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -48,47 +62,42 @@ export function AdminAssignmentsPage() {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingAssignment, setEditingAssignment] = useState<StudentRouteAssignment | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
+
+  const loadAssignments = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const [nextAssignments, nextStudents, nextRoutes, nextStops] = await Promise.all([
+        getVisibleStudentRouteAssignments(),
+        getVisibleStudents(),
+        getVisibleRoutes(),
+        getVisibleRouteStops(),
+      ]);
+      setAssignments(nextAssignments);
+      setStudents(nextStudents);
+      setRoutes(nextRoutes);
+      setStops(nextStops);
+    } catch (assignmentsError) {
+      setError(
+        assignmentsError instanceof Error
+          ? assignmentsError.message
+          : 'Unable to load assignments.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let active = true;
-
-    async function loadAssignments() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const [nextAssignments, nextStudents, nextRoutes, nextStops] = await Promise.all([
-          getVisibleStudentRouteAssignments(),
-          getVisibleStudents(),
-          getVisibleRoutes(),
-          getVisibleRouteStops(),
-        ]);
-
-        if (active) {
-          setAssignments(nextAssignments);
-          setStudents(nextStudents);
-          setRoutes(nextRoutes);
-          setStops(nextStops);
-        }
-      } catch (assignmentsError) {
-        if (active) {
-          setError(
-            assignmentsError instanceof Error
-              ? assignmentsError.message
-              : 'Unable to load assignments.',
-          );
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
     void loadAssignments();
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  }, [loadAssignments]);
 
   const studentNames = useMemo(() => {
     return new Map(students.map((student) => [student.id, getStudentName(student)]));
@@ -123,20 +132,98 @@ export function AdminAssignmentsPage() {
     );
   }, [assignments, query, routeLabels, stopNames, studentNames]);
 
+  async function handleCreateAssignment(
+    input: CreateStudentRouteAssignmentInput | UpdateStudentRouteAssignmentInput,
+  ) {
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await createStudentRouteAssignment(input as CreateStudentRouteAssignmentInput);
+      setShowCreateForm(false);
+      setSuccessMessage('Student route assignment created.');
+      await loadAssignments();
+    } catch (createError) {
+      setWriteError(
+        createError instanceof Error
+          ? createError.message
+          : 'Unable to create student route assignment.',
+      );
+    }
+  }
+
+  async function handleUpdateAssignment(
+    input: CreateStudentRouteAssignmentInput | UpdateStudentRouteAssignmentInput,
+  ) {
+    if (!editingAssignment) return;
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await updateStudentRouteAssignment(
+        editingAssignment.id,
+        input as UpdateStudentRouteAssignmentInput,
+      );
+      setEditingAssignment(null);
+      setSuccessMessage('Student route assignment updated.');
+      await loadAssignments();
+    } catch (updateError) {
+      setWriteError(
+        updateError instanceof Error
+          ? updateError.message
+          : 'Unable to update student route assignment.',
+      );
+    }
+  }
+
   return (
     <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Assignments"
           title="Visible student route assignments"
-          description="Read-only student route assignments returned by Supabase under the current admin user's RLS permissions."
+          description="Student route assignments returned by Supabase under the current admin user's RLS permissions."
         />
 
-        <Card className="border-navy-100 bg-navy-50 p-5">
-          <p className="text-sm font-semibold text-navy-900">
-            Student route assignment imports and edits will be added in a later milestone.
-          </p>
-        </Card>
+        {canWrite && (
+          <div className="flex">
+            <Button type="button" onClick={() => {
+              setEditingAssignment(null);
+              setShowCreateForm(true);
+              setWriteError(null);
+              setSuccessMessage(null);
+            }}>
+              Add assignment
+            </Button>
+          </div>
+        )}
+
+        <AdminWriteMessage message={successMessage} />
+        <AdminWriteError message={writeError} />
+
+        {canWrite && showCreateForm && (
+          <InlineFormShell title="Add student route assignment">
+            <StudentRouteAssignmentForm
+              assignment={null}
+              students={students}
+              routes={routes}
+              stops={stops}
+              onSubmit={handleCreateAssignment}
+              onCancel={() => setShowCreateForm(false)}
+            />
+          </InlineFormShell>
+        )}
+
+        {canWrite && editingAssignment && (
+          <InlineFormShell title="Edit student route assignment">
+            <StudentRouteAssignmentForm
+              assignment={editingAssignment}
+              students={students}
+              routes={routes}
+              stops={stops}
+              onSubmit={handleUpdateAssignment}
+              onCancel={() => setEditingAssignment(null)}
+            />
+          </InlineFormShell>
+        )}
 
         <div>
           <label className="block text-sm font-semibold text-gray-700" htmlFor="assignment-search">
@@ -185,9 +272,21 @@ export function AdminAssignmentsPage() {
                       {routeLabels.get(assignment.route_id) ?? assignment.route_id}
                     </p>
                   </div>
-                  <StatusPill tone={assignmentStatusTone[assignment.status]}>
-                    {assignment.status}
-                  </StatusPill>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <StatusPill tone={assignmentStatusTone[assignment.status]}>
+                      {assignment.status}
+                    </StatusPill>
+                    {canWrite && (
+                      <Button type="button" size="sm" variant="secondary" onClick={() => {
+                        setShowCreateForm(false);
+                        setEditingAssignment(assignment);
+                        setWriteError(null);
+                        setSuccessMessage(null);
+                      }}>
+                        Edit
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div className="mt-5 grid gap-3 text-sm md:grid-cols-2">
                   <p className="text-gray-600">

@@ -1,13 +1,31 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  AdminWriteError,
+  AdminWriteMessage,
+  DriverForm,
+  InlineFormShell,
+} from '@/components/admin/TransportationAdminForms';
 import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { adminRoles } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/useAuth';
 import { getVisibleProfiles } from '@/services/adminOrganizationService';
-import { getVisibleDrivers } from '@/services/transportationStructureService';
+import {
+  createDriver,
+  getVisibleDrivers,
+  updateDriver,
+} from '@/services/transportationStructureService';
 import type { OrganizationProfile } from '@/types/organization';
-import type { Driver, DriverStatus } from '@/types/transportation';
+import type {
+  CreateDriverInput,
+  Driver,
+  DriverStatus,
+  UpdateDriverInput,
+} from '@/types/transportation';
 
 const driverStatusTone: Record<DriverStatus, 'success' | 'warning' | 'danger' | 'neutral'> = {
   active: 'success',
@@ -25,46 +43,40 @@ function formatDate(value: string) {
 }
 
 export function AdminDriversPage() {
+  const { profile } = useAuth();
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [profiles, setProfiles] = useState<OrganizationProfile[]>([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
+
+  const loadDrivers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const [nextDrivers, nextProfiles] = await Promise.all([
+        getVisibleDrivers(),
+        getVisibleProfiles(),
+      ]);
+      setDrivers(nextDrivers);
+      setProfiles(nextProfiles);
+    } catch (driversError) {
+      setError(driversError instanceof Error ? driversError.message : 'Unable to load drivers.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let active = true;
-
-    async function loadDrivers() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const [nextDrivers, nextProfiles] = await Promise.all([
-          getVisibleDrivers(),
-          getVisibleProfiles(),
-        ]);
-
-        if (active) {
-          setDrivers(nextDrivers);
-          setProfiles(nextProfiles);
-        }
-      } catch (driversError) {
-        if (active) {
-          setError(
-            driversError instanceof Error ? driversError.message : 'Unable to load drivers.',
-          );
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
     void loadDrivers();
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  }, [loadDrivers]);
 
   const profileLabels = useMemo(() => {
     return new Map(
@@ -98,20 +110,83 @@ export function AdminDriversPage() {
     );
   }, [drivers, profileLabels, query]);
 
+  async function handleCreateDriver(input: CreateDriverInput | UpdateDriverInput) {
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await createDriver(input as CreateDriverInput);
+      setShowCreateForm(false);
+      setSuccessMessage('Driver record created.');
+      await loadDrivers();
+    } catch (createError) {
+      setWriteError(
+        createError instanceof Error ? createError.message : 'Unable to create driver record.',
+      );
+    }
+  }
+
+  async function handleUpdateDriver(input: CreateDriverInput | UpdateDriverInput) {
+    if (!editingDriver) return;
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await updateDriver(editingDriver.id, input as UpdateDriverInput);
+      setEditingDriver(null);
+      setSuccessMessage('Driver record updated.');
+      await loadDrivers();
+    } catch (updateError) {
+      setWriteError(
+        updateError instanceof Error ? updateError.message : 'Unable to update driver record.',
+      );
+    }
+  }
+
   return (
     <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Drivers"
           title="Visible driver records"
-          description="Read-only driver records returned by Supabase under the current admin user's RLS permissions."
+          description="Driver records returned by Supabase under the current admin user's RLS permissions."
         />
 
-        <Card className="border-navy-100 bg-navy-50 p-5">
-          <p className="text-sm font-semibold text-navy-900">
-            Driver creation and assignment workflows will be added in a later milestone.
-          </p>
-        </Card>
+        {canWrite && (
+          <div className="flex">
+            <Button type="button" onClick={() => {
+              setEditingDriver(null);
+              setShowCreateForm(true);
+              setWriteError(null);
+              setSuccessMessage(null);
+            }}>
+              Add driver
+            </Button>
+          </div>
+        )}
+
+        <AdminWriteMessage message={successMessage} />
+        <AdminWriteError message={writeError} />
+
+        {canWrite && showCreateForm && (
+          <InlineFormShell title="Add driver record">
+            <DriverForm
+              driver={null}
+              profiles={profiles}
+              onSubmit={handleCreateDriver}
+              onCancel={() => setShowCreateForm(false)}
+            />
+          </InlineFormShell>
+        )}
+
+        {canWrite && editingDriver && (
+          <InlineFormShell title="Edit driver record">
+            <DriverForm
+              driver={editingDriver}
+              profiles={profiles}
+              onSubmit={handleUpdateDriver}
+              onCancel={() => setEditingDriver(null)}
+            />
+          </InlineFormShell>
+        )}
 
         <div>
           <label className="block text-sm font-semibold text-gray-700" htmlFor="driver-search">
@@ -160,7 +235,21 @@ export function AdminDriversPage() {
                         {profile?.email ?? 'Profile details not visible'}
                       </p>
                     </div>
-                    <StatusPill tone={driverStatusTone[driver.status]}>{driver.status}</StatusPill>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <StatusPill tone={driverStatusTone[driver.status]}>
+                        {driver.status}
+                      </StatusPill>
+                      {canWrite && (
+                        <Button type="button" size="sm" variant="secondary" onClick={() => {
+                          setShowCreateForm(false);
+                          setEditingDriver(driver);
+                          setWriteError(null);
+                          setSuccessMessage(null);
+                        }}>
+                          Edit
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <div className="mt-5 grid gap-3 text-sm md:grid-cols-2">
                     <p className="text-gray-600">

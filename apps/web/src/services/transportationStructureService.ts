@@ -1,5 +1,21 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
-import type { Bus, Driver, Route, RouteStop, StudentRouteAssignment } from '@/types/transportation';
+import type {
+  Bus,
+  CreateBusInput,
+  CreateDriverInput,
+  CreateRouteInput,
+  CreateRouteStopInput,
+  CreateStudentRouteAssignmentInput,
+  Driver,
+  Route,
+  RouteStop,
+  StudentRouteAssignment,
+  UpdateBusInput,
+  UpdateDriverInput,
+  UpdateRouteInput,
+  UpdateRouteStopInput,
+  UpdateStudentRouteAssignmentInput,
+} from '@/types/transportation';
 
 function requireSupabase() {
   if (!supabase) {
@@ -22,6 +38,31 @@ export async function getVisibleBuses(): Promise<Bus[]> {
   return (data ?? []) as Bus[];
 }
 
+export async function createBus(input: CreateBusInput): Promise<Bus> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('buses')
+    .insert(input)
+    .select('id, tenant_id, school_id, bus_number, license_plate, capacity, status, created_at, updated_at')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as Bus;
+}
+
+export async function updateBus(id: string, input: UpdateBusInput): Promise<Bus> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('buses')
+    .update(input)
+    .eq('id', id)
+    .select('id, tenant_id, school_id, bus_number, license_plate, capacity, status, created_at, updated_at')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as Bus;
+}
+
 export async function getVisibleDrivers(): Promise<Driver[]> {
   const client = requireSupabase();
   const { data, error } = await client
@@ -31,6 +72,31 @@ export async function getVisibleDrivers(): Promise<Driver[]> {
 
   if (error) throw new Error(error.message);
   return (data ?? []) as Driver[];
+}
+
+export async function createDriver(input: CreateDriverInput): Promise<Driver> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('drivers')
+    .insert(input)
+    .select('id, tenant_id, profile_id, employee_number, phone, status, created_at, updated_at')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as Driver;
+}
+
+export async function updateDriver(id: string, input: UpdateDriverInput): Promise<Driver> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('drivers')
+    .update(input)
+    .eq('id', id)
+    .select('id, tenant_id, profile_id, employee_number, phone, status, created_at, updated_at')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as Driver;
 }
 
 export async function getVisibleRoutes(): Promise<Route[]> {
@@ -46,6 +112,31 @@ export async function getVisibleRoutes(): Promise<Route[]> {
   return (data ?? []) as Route[];
 }
 
+export async function createRoute(input: CreateRouteInput): Promise<Route> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('routes')
+    .insert(input)
+    .select('id, tenant_id, school_id, route_name, route_code, route_type, status, created_at, updated_at')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as Route;
+}
+
+export async function updateRoute(id: string, input: UpdateRouteInput): Promise<Route> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('routes')
+    .update(input)
+    .eq('id', id)
+    .select('id, tenant_id, school_id, route_name, route_code, route_type, status, created_at, updated_at')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as Route;
+}
+
 export async function getVisibleRouteStops(): Promise<RouteStop[]> {
   const client = requireSupabase();
   const { data, error } = await client
@@ -59,6 +150,34 @@ export async function getVisibleRouteStops(): Promise<RouteStop[]> {
   return (data ?? []) as RouteStop[];
 }
 
+export async function createRouteStop(input: CreateRouteStopInput): Promise<RouteStop> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('route_stops')
+    .insert(input)
+    .select('id, tenant_id, route_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as RouteStop;
+}
+
+export async function updateRouteStop(
+  id: string,
+  input: UpdateRouteStopInput,
+): Promise<RouteStop> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('route_stops')
+    .update(input)
+    .eq('id', id)
+    .select('id, tenant_id, route_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as RouteStop;
+}
+
 export async function getVisibleStudentRouteAssignments(): Promise<StudentRouteAssignment[]> {
   const client = requireSupabase();
   const { data, error } = await client
@@ -70,4 +189,34 @@ export async function getVisibleStudentRouteAssignments(): Promise<StudentRouteA
 
   if (error) throw new Error(error.message);
   return (data ?? []) as StudentRouteAssignment[];
+}
+
+export async function createStudentRouteAssignment(
+  input: CreateStudentRouteAssignmentInput,
+): Promise<StudentRouteAssignment> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('student_route_assignments')
+    .insert(input)
+    .select('id, tenant_id, student_id, route_id, pickup_stop_id, dropoff_stop_id, effective_from, effective_to, status, created_at, updated_at')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as StudentRouteAssignment;
+}
+
+export async function updateStudentRouteAssignment(
+  id: string,
+  input: UpdateStudentRouteAssignmentInput,
+): Promise<StudentRouteAssignment> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('student_route_assignments')
+    .update(input)
+    .eq('id', id)
+    .select('id, tenant_id, student_id, route_id, pickup_stop_id, dropoff_stop_id, effective_from, effective_to, status, created_at, updated_at')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as StudentRouteAssignment;
 }

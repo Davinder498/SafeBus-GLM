@@ -1,13 +1,32 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  AdminWriteError,
+  AdminWriteMessage,
+  InlineFormShell,
+  RouteForm,
+} from '@/components/admin/TransportationAdminForms';
 import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { adminRoles } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/useAuth';
 import { getVisibleSchools } from '@/services/adminOrganizationService';
-import { getVisibleRoutes } from '@/services/transportationStructureService';
+import {
+  createRoute,
+  getVisibleRoutes,
+  updateRoute,
+} from '@/services/transportationStructureService';
 import type { School } from '@/types/organization';
-import type { Route, RouteStatus, RouteType } from '@/types/transportation';
+import type {
+  CreateRouteInput,
+  Route,
+  RouteStatus,
+  RouteType,
+  UpdateRouteInput,
+} from '@/types/transportation';
 
 const routeStatusTone: Record<RouteStatus, 'success' | 'danger' | 'neutral'> = {
   active: 'success',
@@ -31,44 +50,40 @@ function formatDate(value: string) {
 }
 
 export function AdminRoutesPage() {
+  const { profile } = useAuth();
   const [routes, setRoutes] = useState<Route[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingRoute, setEditingRoute] = useState<Route | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
+
+  const loadRoutes = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const [nextRoutes, nextSchools] = await Promise.all([
+        getVisibleRoutes(),
+        getVisibleSchools(),
+      ]);
+      setRoutes(nextRoutes);
+      setSchools(nextSchools);
+    } catch (routesError) {
+      setError(routesError instanceof Error ? routesError.message : 'Unable to load routes.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let active = true;
-
-    async function loadRoutes() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const [nextRoutes, nextSchools] = await Promise.all([
-          getVisibleRoutes(),
-          getVisibleSchools(),
-        ]);
-
-        if (active) {
-          setRoutes(nextRoutes);
-          setSchools(nextSchools);
-        }
-      } catch (routesError) {
-        if (active) {
-          setError(routesError instanceof Error ? routesError.message : 'Unable to load routes.');
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
     void loadRoutes();
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  }, [loadRoutes]);
 
   const schoolNames = useMemo(() => {
     return new Map(schools.map((school) => [school.id, school.name]));
@@ -93,20 +108,79 @@ export function AdminRoutesPage() {
     );
   }, [query, routes, schoolNames]);
 
+  async function handleCreateRoute(input: CreateRouteInput | UpdateRouteInput) {
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await createRoute(input as CreateRouteInput);
+      setShowCreateForm(false);
+      setSuccessMessage('Route created.');
+      await loadRoutes();
+    } catch (createError) {
+      setWriteError(createError instanceof Error ? createError.message : 'Unable to create route.');
+    }
+  }
+
+  async function handleUpdateRoute(input: CreateRouteInput | UpdateRouteInput) {
+    if (!editingRoute) return;
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await updateRoute(editingRoute.id, input as UpdateRouteInput);
+      setEditingRoute(null);
+      setSuccessMessage('Route updated.');
+      await loadRoutes();
+    } catch (updateError) {
+      setWriteError(updateError instanceof Error ? updateError.message : 'Unable to update route.');
+    }
+  }
+
   return (
     <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Routes"
           title="Visible routes"
-          description="Read-only route records returned by Supabase under the current admin user's RLS permissions."
+          description="Route records returned by Supabase under the current admin user's RLS permissions."
         />
 
-        <Card className="border-navy-100 bg-navy-50 p-5">
-          <p className="text-sm font-semibold text-navy-900">
-            Route creation and scheduling workflows will be added in a later milestone.
-          </p>
-        </Card>
+        {canWrite && (
+          <div className="flex">
+            <Button type="button" onClick={() => {
+              setEditingRoute(null);
+              setShowCreateForm(true);
+              setWriteError(null);
+              setSuccessMessage(null);
+            }}>
+              Add route
+            </Button>
+          </div>
+        )}
+
+        <AdminWriteMessage message={successMessage} />
+        <AdminWriteError message={writeError} />
+
+        {canWrite && showCreateForm && (
+          <InlineFormShell title="Add route">
+            <RouteForm
+              route={null}
+              schools={schools}
+              onSubmit={handleCreateRoute}
+              onCancel={() => setShowCreateForm(false)}
+            />
+          </InlineFormShell>
+        )}
+
+        {canWrite && editingRoute && (
+          <InlineFormShell title={`Edit ${editingRoute.route_code}`}>
+            <RouteForm
+              route={editingRoute}
+              schools={schools}
+              onSubmit={handleUpdateRoute}
+              onCancel={() => setEditingRoute(null)}
+            />
+          </InlineFormShell>
+        )}
 
         <div>
           <label className="block text-sm font-semibold text-gray-700" htmlFor="route-search">
@@ -151,7 +225,19 @@ export function AdminRoutesPage() {
                       {schoolNames.get(route.school_id) ?? route.school_id}
                     </p>
                   </div>
-                  <StatusPill tone={routeStatusTone[route.status]}>{route.status}</StatusPill>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <StatusPill tone={routeStatusTone[route.status]}>{route.status}</StatusPill>
+                    {canWrite && (
+                      <Button type="button" size="sm" variant="secondary" onClick={() => {
+                        setShowCreateForm(false);
+                        setEditingRoute(route);
+                        setWriteError(null);
+                        setSuccessMessage(null);
+                      }}>
+                        Edit
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div className="mt-5 grid gap-3 text-sm md:grid-cols-2">
                   <p className="text-gray-600">

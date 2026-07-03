@@ -1,13 +1,22 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  AdminWriteError,
+  AdminWriteMessage,
+  BusForm,
+  InlineFormShell,
+} from '@/components/admin/TransportationAdminForms';
 import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { adminRoles } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/useAuth';
 import { getVisibleSchools } from '@/services/adminOrganizationService';
-import { getVisibleBuses } from '@/services/transportationStructureService';
+import { createBus, getVisibleBuses, updateBus } from '@/services/transportationStructureService';
 import type { School } from '@/types/organization';
-import type { Bus, BusStatus } from '@/types/transportation';
+import type { Bus, BusStatus, CreateBusInput, UpdateBusInput } from '@/types/transportation';
 
 const busStatusTone: Record<BusStatus, 'success' | 'warning' | 'danger' | 'neutral'> = {
   active: 'success',
@@ -25,44 +34,37 @@ function formatDate(value: string) {
 }
 
 export function AdminBusesPage() {
+  const { profile } = useAuth();
   const [buses, setBuses] = useState<Bus[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingBus, setEditingBus] = useState<Bus | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
+
+  const loadBuses = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const [nextBuses, nextSchools] = await Promise.all([getVisibleBuses(), getVisibleSchools()]);
+      setBuses(nextBuses);
+      setSchools(nextSchools);
+    } catch (busesError) {
+      setError(busesError instanceof Error ? busesError.message : 'Unable to load buses.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let active = true;
-
-    async function loadBuses() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const [nextBuses, nextSchools] = await Promise.all([
-          getVisibleBuses(),
-          getVisibleSchools(),
-        ]);
-
-        if (active) {
-          setBuses(nextBuses);
-          setSchools(nextSchools);
-        }
-      } catch (busesError) {
-        if (active) {
-          setError(busesError instanceof Error ? busesError.message : 'Unable to load buses.');
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
     void loadBuses();
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  }, [loadBuses]);
 
   const schoolNames = useMemo(() => {
     return new Map(schools.map((school) => [school.id, school.name]));
@@ -87,20 +89,81 @@ export function AdminBusesPage() {
     );
   }, [buses, query, schoolNames]);
 
+  async function handleCreateBus(input: CreateBusInput | UpdateBusInput) {
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await createBus(input as CreateBusInput);
+      setShowCreateForm(false);
+      setSuccessMessage('Bus created.');
+      await loadBuses();
+    } catch (createError) {
+      setWriteError(createError instanceof Error ? createError.message : 'Unable to create bus.');
+    }
+  }
+
+  async function handleUpdateBus(input: CreateBusInput | UpdateBusInput) {
+    if (!editingBus) return;
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await updateBus(editingBus.id, input as UpdateBusInput);
+      setEditingBus(null);
+      setSuccessMessage('Bus updated.');
+      await loadBuses();
+    } catch (updateError) {
+      setWriteError(updateError instanceof Error ? updateError.message : 'Unable to update bus.');
+    }
+  }
+
   return (
     <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Buses"
           title="Visible buses"
-          description="Read-only bus records returned by Supabase under the current admin user's RLS permissions."
+          description="Bus records returned by Supabase under the current admin user's RLS permissions."
         />
 
-        <Card className="border-navy-100 bg-navy-50 p-5">
-          <p className="text-sm font-semibold text-navy-900">
-            Bus creation and assignment workflows will be added in a later milestone.
-          </p>
-        </Card>
+        {canWrite && (
+          <div className="flex">
+            <Button type="button" onClick={() => {
+              setEditingBus(null);
+              setShowCreateForm(true);
+              setWriteError(null);
+              setSuccessMessage(null);
+            }}>
+              Add bus
+            </Button>
+          </div>
+        )}
+
+        <AdminWriteMessage message={successMessage} />
+        <AdminWriteError message={writeError} />
+
+        {canWrite && showCreateForm && (
+          <InlineFormShell title="Add bus">
+            <BusForm
+              bus={null}
+              schools={schools}
+              defaultTenantId={profile?.tenant_id ?? null}
+              onSubmit={handleCreateBus}
+              onCancel={() => setShowCreateForm(false)}
+            />
+          </InlineFormShell>
+        )}
+
+        {canWrite && editingBus && (
+          <InlineFormShell title={`Edit bus ${editingBus.bus_number}`}>
+            <BusForm
+              bus={editingBus}
+              schools={schools}
+              defaultTenantId={profile?.tenant_id ?? null}
+              onSubmit={handleUpdateBus}
+              onCancel={() => setEditingBus(null)}
+            />
+          </InlineFormShell>
+        )}
 
         <div>
           <label className="block text-sm font-semibold text-gray-700" htmlFor="bus-search">
@@ -146,7 +209,19 @@ export function AdminBusesPage() {
                         : 'No school assigned'}
                     </p>
                   </div>
-                  <StatusPill tone={busStatusTone[bus.status]}>{bus.status}</StatusPill>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <StatusPill tone={busStatusTone[bus.status]}>{bus.status}</StatusPill>
+                    {canWrite && (
+                      <Button type="button" size="sm" variant="secondary" onClick={() => {
+                        setShowCreateForm(false);
+                        setEditingBus(bus);
+                        setWriteError(null);
+                        setSuccessMessage(null);
+                      }}>
+                        Edit
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div className="mt-5 grid gap-3 text-sm md:grid-cols-2">
                   <p className="text-gray-600">
