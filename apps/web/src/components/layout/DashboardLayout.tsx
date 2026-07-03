@@ -22,6 +22,7 @@ export const adminNavItems: DashboardNavItem[] = [
   { label: 'Trips', to: '/admin/trips' },
   { label: 'Routes', to: '/admin/routes' },
   { label: 'Stops', to: '/admin/stops' },
+  { label: 'Assignments', to: '/admin/assignments' },
   { label: 'Students', to: '/admin/students' },
   { label: 'Guardians', to: '/admin/guardians' },
   { label: 'Drivers', to: '/admin/drivers' },

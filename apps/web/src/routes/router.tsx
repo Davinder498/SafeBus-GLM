@@ -1,12 +1,17 @@
 import type { RouteObject } from 'react-router-dom';
+import { AdminAssignmentsPage } from '@/pages/AdminAssignmentsPage';
+import { AdminBusesPage } from '@/pages/AdminBusesPage';
 import { LandingPage } from '@/pages/LandingPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
+import { AdminDriversPage } from '@/pages/AdminDriversPage';
 import { AdminDashboardPage } from '@/pages/AdminDashboardPage';
 import { AdminGuardiansPage } from '@/pages/AdminGuardiansPage';
 import { AdminPlaceholderPage } from '@/pages/AdminPlaceholderPage';
+import { AdminRoutesPage } from '@/pages/AdminRoutesPage';
 import { AdminSchoolsPage } from '@/pages/AdminSchoolsPage';
 import { AdminSettingsPage } from '@/pages/AdminSettingsPage';
+import { AdminStopsPage } from '@/pages/AdminStopsPage';
 import { AdminStudentsPage } from '@/pages/AdminStudentsPage';
 import { AdminUsersPage } from '@/pages/AdminUsersPage';
 import { DriverDashboardPage } from '@/pages/DriverDashboardPage';
@@ -75,13 +80,49 @@ export const appRoutes: RouteObject[] = [
       </ProtectedRoute>
     ),
   },
+  {
+    path: '/admin/buses',
+    element: (
+      <ProtectedRoute allowedRoles={[...adminRoles]}>
+        <AdminBusesPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/drivers',
+    element: (
+      <ProtectedRoute allowedRoles={[...adminRoles]}>
+        <AdminDriversPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/routes',
+    element: (
+      <ProtectedRoute allowedRoles={[...adminRoles]}>
+        <AdminRoutesPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/stops',
+    element: (
+      <ProtectedRoute allowedRoles={[...adminRoles]}>
+        <AdminStopsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/assignments',
+    element: (
+      <ProtectedRoute allowedRoles={[...adminRoles]}>
+        <AdminAssignmentsPage />
+      </ProtectedRoute>
+    ),
+  },
   ...[
     ['live-map', 'Live Map'],
     ['trips', 'Trips'],
-    ['routes', 'Routes'],
-    ['stops', 'Stops'],
-    ['drivers', 'Drivers'],
-    ['buses', 'Buses'],
     ['imports', 'Imports'],
     ['alerts', 'Alerts'],
     ['reports', 'Reports'],
