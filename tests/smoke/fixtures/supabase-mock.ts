@@ -1,4 +1,4 @@
-import { test as base, type Page, type Route } from '@playwright/test';
+import { type Page, type Route } from '@playwright/test';
 
 /**
  * Safe, mocked Supabase layer for Playwright smoke tests.
@@ -327,5 +327,3 @@ export async function installSupabaseMock(
 
   return { setActiveTrip };
 }
-
-export { test } from '@playwright/test';

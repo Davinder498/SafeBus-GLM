@@ -43,14 +43,23 @@
   - Unauthenticated: protected-route behavior, landing page rendering, mobile viewport layout.
   - Authenticated (via a mocked Supabase layer in `tests/smoke/fixtures/supabase-mock.ts` — no production credentials, no test backdoors, all Supabase traffic intercepted by `page.route`): driver dashboard rendering, bus/route controls, morning/evening selector, start trip, active trip display, end trip, refresh persistence, mobile layout.
 
-**Validation results (after review fixes):**
+**Validation results (after final cleanup):**
 
-- `pnpm install` — pass
-- `pnpm lint` — pass
-- `pnpm typecheck` — pass (4 packages)
-- `pnpm build` — pass (`@safebus/web`, 116 modules)
-- `pnpm test` — pass (vitest, no unit test files yet)
-- `pnpm test:smoke` — pass (22 tests: 11 desktop-chromium + 11 mobile-chromium; 6 authenticated + 5 unauthenticated per project)
+| Command | Result |
+|---|---|
+| `pnpm install` | ✅ pass (already up to date) |
+| `pnpm lint` | ✅ pass (`@safebus/web` eslint clean) |
+| `pnpm typecheck` | ✅ pass (4/4 packages: types, api, ui, web) |
+| `pnpm build` | ✅ pass (`@safebus/web`, 116 modules, `dist/` produced) |
+| `pnpm test` | ✅ pass (vitest, `--passWithNoTests`, no unit test files yet) |
+| `pnpm test:smoke` | ✅ pass (22 tests: 11 desktop-chromium + 11 mobile-chromium; 6 authenticated + 5 unauthenticated per project, 24.3s) |
+
+**Branch:** `milestone-4a-driver-trip-operations` (confirmed locally and on `origin`). No `work` branch exists in this repository.
+
+**Final cleanup applied:**
+
+- Removed the unused `test as base` import and the unused `export { test }` re-export from `tests/smoke/fixtures/supabase-mock.ts`. Test files import `test`/`expect` directly from `@playwright/test` and only `installSupabaseMock` from the fixture.
+- Clarified the `end_driver_trip()` migration comment: the function is `security definer` and therefore **bypasses table-level RLS** on `driver_trips` for both its qualifying `SELECT ... FOR UPDATE` and its `UPDATE`. The function's own explicit checks (caller role, tenant, ownership, active status) are the **primary** enforcement, not a defense-in-depth backstop. The previous wording that implied table RLS still applied inside the function was corrected.
 
 **Known limitations:**
 

@@ -274,11 +274,21 @@ comment on function public.end_driver_trip(uuid) is
   'status=''completed'' and ended_at=now(). Does not accept or mutate any '
   'other column. Enforces caller role, tenant, ownership, and active status.';
 
--- Execute grant on the end-trip RPC for authenticated users. RLS on the table
--- still applies to the RPC's SELECT (the function is security definer for the
--- UPDATE, but the initial qualifying SELECT reads the row through RLS). Only a
--- driver whose own RLS SELECT policy matches the trip will be able to load it
--- for ending; the function's internal checks are a defense-in-depth backstop.
+-- Execute grant on the end-trip RPC for authenticated users.
+--
+-- SECURITY NOTE on security definer + RLS:
+--   This function is SECURITY DEFINER, so it executes with the privileges of
+--   its owner and BYPASSES the table-level RLS policies on public.driver_trips
+--   for both the qualifying SELECT and the UPDATE it performs. The table's RLS
+--   SELECT policies do NOT gate access inside this function. The REAL security
+--   guarantee is therefore the function's own explicit checks:
+--     1. current_user_role() = 'driver'
+--     2. tenant_id = current_tenant_id()
+--     3. driver_id = current_driver_id()
+--     4. status = 'active'
+--   These checks are the primary enforcement, not a defense-in-depth backstop.
+--   The table RLS policies remain in force for all direct (non-RPC) client
+--   SELECTs and for the INSERT path; they are simply not relied upon here.
 grant execute on function public.end_driver_trip(uuid) to authenticated;
 
 -- ---------------------------------------------------------------------------
