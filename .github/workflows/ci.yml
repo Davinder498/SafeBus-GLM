@@ -14,13 +14,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # pnpm version is sourced from package.json "packageManager" (pnpm@11.9.0).
+      # Do not set "version" here — pnpm/action-setup@v4 errors if both are set.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
 
       - name: Install dependencies
