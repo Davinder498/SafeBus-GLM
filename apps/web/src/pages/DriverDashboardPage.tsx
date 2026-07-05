@@ -62,6 +62,25 @@ export function DriverDashboardPage() {
     }
   }, []);
 
+  /**
+   * Refresh the dashboard data (context + active trip) WITHOUT clearing the
+   * action success/error messages. Used after start/end so the user still sees
+   * "Trip started." / "Trip ended." while the active-trip card updates.
+   * Only flips to the loading state if we don't already have a ready state.
+   */
+  const refreshDashboard = useCallback(async () => {
+    try {
+      const [context, activeTrip] = await Promise.all([
+        fetchDriverTripContext(),
+        fetchActiveDriverTrip(),
+      ]);
+      setState({ kind: 'ready', context, activeTrip });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not refresh your driver dashboard.';
+      setState({ kind: 'error', message });
+    }
+  }, []);
+
   useEffect(() => {
     void loadDashboard();
   }, [loadDashboard]);
@@ -97,10 +116,12 @@ export function DriverDashboardPage() {
         routeId: selectedRouteId,
         tripType,
       });
-      setSuccessMessage('Trip started. Have a safe drive.');
       setSelectedBusId('');
       setSelectedRouteId('');
-      await loadDashboard();
+      setSuccessMessage('Trip started. Have a safe drive.');
+      // Silent refresh: updates the active-trip card WITHOUT clearing the
+      // success message we just set.
+      await refreshDashboard();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Could not start the trip.');
     } finally {
@@ -116,7 +137,9 @@ export function DriverDashboardPage() {
     try {
       await endDriverTrip(activeTrip.id);
       setSuccessMessage('Trip ended. Nice work.');
-      await loadDashboard();
+      // Silent refresh so the success message stays visible while the
+      // dashboard flips back to the start-trip card.
+      await refreshDashboard();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Could not end the trip.');
     } finally {
@@ -132,7 +155,7 @@ export function DriverDashboardPage() {
         <PageHeader
           eyebrow="Today"
           title="Driver Dashboard"
-          description="View your assigned bus and route, then start and end your trip for today."
+          description="Start and end your trip for today. Choose a bus and route available in your organization."
         />
 
         {state.kind === 'loading' && <DataState title="Loading your dashboard" message="Checking your driver profile and active trip..." />}
@@ -217,7 +240,7 @@ function ActiveTripCard({ trip, busNumber, routeName, onEnd, actionInProgress }:
           <div>
             <p className="text-sm font-semibold text-gray-500">Active trip</p>
             <h2 className="mt-1 text-2xl font-bold text-navy-900">
-              {routeName ?? 'Assigned route'}
+              {routeName ?? 'Active route'}
             </h2>
             <p className="mt-2 text-base text-gray-700">
               Bus {busNumber ?? trip.bus_id} &middot; {tripTypeLabel(trip.trip_type)} trip
@@ -285,17 +308,17 @@ function StartTripCard({
       <Card className="p-5">
         <h2 className="text-lg font-bold text-navy-900">Start a trip</h2>
         <p className="mt-1 text-sm text-gray-600">
-          Select your bus, route, and trip type, then start the trip.
+          Choose a bus and route available in your organization, select a trip type, then start the trip.
         </p>
 
         {!hasBuses && (
           <p className="mt-4 rounded-md bg-gray-50 p-3 text-sm text-gray-600">
-            No active buses are available in your tenant. Ask an administrator to add a bus.
+            No buses are available in your organization right now. Ask an administrator to add a bus.
           </p>
         )}
         {!hasRoutes && (
           <p className="mt-2 rounded-md bg-gray-50 p-3 text-sm text-gray-600">
-            No active routes are available in your tenant. Ask an administrator to add a route.
+            No routes are available in your organization right now. Ask an administrator to add a route.
           </p>
         )}
 

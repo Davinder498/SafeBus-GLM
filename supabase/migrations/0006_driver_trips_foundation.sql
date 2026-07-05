@@ -11,14 +11,26 @@
 --   - one active trip per bus (partial unique index)
 --   - tenant-scoped
 --   - driver can only create trips for themselves
---   - driver can only end their own active trips
+--   - driver can only end their own active trips, and ONLY via the
+--     end_driver_trip() RPC (see below). There is NO UPDATE policy and NO
+--     UPDATE grant for drivers, so a driver cannot mutate any column of a
+--     driver_trips row through the normal Supabase REST update path. The RPC
+--     sets only status and ended_at; all other columns are immutable from the
+--     driver's perspective.
 --
 -- Also adds:
 --   - public.current_driver_id() helper (mirrors current_guardian_id())
 --   - public.driver_trip_entities_in_tenant() validation helper
---   - driver read policies on public.buses and public.routes so a driver can see
---     the active buses/routes in their tenant to select for a trip. These are
---     additive policies; existing admin policies are unchanged.
+--   - public.end_driver_trip() RPC — the single narrow path a driver uses to
+--     end a trip. Enforces: caller is a driver, the trip belongs to the caller
+--     (driver_id = current_driver_id()), the trip is in the caller's tenant
+--     (tenant_id = current_tenant_id()), and the trip is currently active.
+--     Sets ONLY status='completed' and ended_at=now(). Never accepts or mutates
+--     tenant_id, driver_id, bus_id, route_id, trip_type, service_date,
+--     started_at, or created_at.
+--   - driver read policies on public.buses and public.routes so a driver can
+--     see the active buses/routes in their tenant to select for a trip. These
+--     are additive policies; existing admin policies are unchanged.
 
 -- ---------------------------------------------------------------------------
 -- Helper: current driver row id for the authenticated user.
@@ -185,25 +197,89 @@ create policy "driver_trips insert own driver"
     and public.driver_trip_entities_in_tenant(tenant_id, bus_id, route_id)
   );
 
--- UPDATE policy: a driver may only end (complete/cancel) their own currently
--- active trip. USING restricts which rows can be touched (own + active).
--- WITH CHECK restricts the resulting row: still owned by the driver, still in
--- their tenant, and status moved to a terminal value. A driver cannot mutate
--- tenant_id, driver_id, bus_id, route_id, or reactivate a trip.
-create policy "driver_trips update own driver"
-  on public.driver_trips for update to authenticated
-  using (
-    public.current_user_role() = 'driver'
-    and tenant_id = public.current_tenant_id()
-    and driver_id = public.current_driver_id()
-    and status = 'active'
-  )
-  with check (
-    public.current_user_role() = 'driver'
-    and tenant_id = public.current_tenant_id()
-    and driver_id = public.current_driver_id()
-    and status in ('completed', 'cancelled')
-  );
+-- ---------------------------------------------------------------------------
+-- Ending a trip: end_driver_trip() RPC (NO UPDATE policy, NO UPDATE grant).
+--
+-- There is deliberately NO UPDATE policy on public.driver_trips and NO UPDATE
+-- grant to any role. This means no client (including a driver) can issue a
+-- normal Supabase REST PATCH/UPDATE against driver_trips. The ONLY way a driver
+-- can end a trip is by calling the end_driver_trip(p_trip_id) RPC.
+--
+-- The RPC enforces, server-side:
+--   1. caller is a driver (current_user_role() = 'driver')
+--   2. the trip is in the caller's tenant (tenant_id = current_tenant_id())
+--   3. the trip belongs to the caller (driver_id = current_driver_id())
+--   4. the trip is currently active (status = 'active')
+-- It then sets ONLY status = 'completed' and ended_at = now(). It never reads,
+-- accepts, or mutates tenant_id, driver_id, bus_id, route_id, trip_type,
+-- service_date, started_at, created_at, or updated_at from the client. Because
+-- the RPC takes only p_trip_id, there is no parameter surface through which a
+-- client could attempt to alter other columns. The updated_at trigger fires
+-- normally. bus_id and route_id are therefore guaranteed to remain the
+-- in-tenant values validated at insert time; they cannot become cross-tenant
+-- inconsistent.
+-- ---------------------------------------------------------------------------
+create or replace function public.end_driver_trip(p_trip_id uuid)
+returns public.driver_trips
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_row public.driver_trips;
+begin
+  -- Caller must be a driver.
+  if public.current_user_role() <> 'driver' then
+    raise exception 'Only a driver can end a trip.' using errcode = '42501';
+  end if;
+
+  -- Lock the target row for the duration of this transaction so the active
+  -- status check is race-safe against a concurrent end/cancel.
+  select * into v_row
+  from public.driver_trips
+  where id = p_trip_id
+  for update;
+
+  if not found then
+    raise exception 'Trip not found.' using errcode = 'P0002';
+  end if;
+
+  -- Tenant isolation: the trip must be in the caller's tenant.
+  if v_row.tenant_id is distinct from public.current_tenant_id() then
+    raise exception 'Trip not found.' using errcode = 'P0002';
+  end if;
+
+  -- Driver self-ownership: the trip must belong to the caller.
+  if v_row.driver_id is distinct from public.current_driver_id() then
+    raise exception 'Trip not found.' using errcode = 'P0002';
+  end if;
+
+  -- Only an active trip can be ended.
+  if v_row.status <> 'active' then
+    raise exception 'This trip is not active.' using errcode = '55006';
+  end if;
+
+  -- Mutate ONLY status and ended_at. All other columns are left untouched.
+  update public.driver_trips
+  set status = 'completed', ended_at = now()
+  where id = p_trip_id
+  returning * into v_row;
+
+  return v_row;
+end;
+$$;
+
+comment on function public.end_driver_trip(uuid) is
+  'Narrow secure path for a driver to end their own active trip. Sets only '
+  'status=''completed'' and ended_at=now(). Does not accept or mutate any '
+  'other column. Enforces caller role, tenant, ownership, and active status.';
+
+-- Execute grant on the end-trip RPC for authenticated users. RLS on the table
+-- still applies to the RPC's SELECT (the function is security definer for the
+-- UPDATE, but the initial qualifying SELECT reads the row through RLS). Only a
+-- driver whose own RLS SELECT policy matches the trip will be able to load it
+-- for ending; the function's internal checks are a defense-in-depth backstop.
+grant execute on function public.end_driver_trip(uuid) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Additive driver read policies on buses and routes.
@@ -231,5 +307,14 @@ create policy "routes select driver tenant active"
 -- ---------------------------------------------------------------------------
 -- Grants
 -- ---------------------------------------------------------------------------
+-- SELECT: drivers read their own trips (RLS), admins read tenant trips (RLS).
+-- INSERT: drivers start trips (RLS WITH CHECK enforces self + tenant + active
+--   bus/route in tenant).
+-- UPDATE: intentionally NOT granted. Drivers end trips exclusively via the
+--   end_driver_trip() RPC above, which is the only path that mutates a trip
+--   and which sets only status + ended_at. This prevents a driver from
+--   mutating tenant_id, driver_id, bus_id, route_id, trip_type, service_date,
+--   started_at, or created_at through the REST update path.
 grant select on table public.driver_trips to authenticated;
-grant insert, update on table public.driver_trips to authenticated;
+grant insert on table public.driver_trips to authenticated;
+-- end_driver_trip() RPC grant is issued above, immediately after the function.

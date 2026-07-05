@@ -33,27 +33,30 @@
 **What was delivered:**
 
 - Database: `public.driver_trips` table with tenant/driver/bus/route foreign keys, `trip_type` (morning/evening), `status` (active/completed/cancelled), `service_date`, `started_at`, `ended_at`. Partial unique indexes enforce at most one active trip per driver and per bus. Check constraints keep `ended_at` consistent with `status`.
-- New helpers: `current_driver_id()`, `driver_trip_entities_in_tenant()`.
-- RLS: tenant isolation; drivers read/create/end only their own trips; admins read tenant trips. Driver read policies added (additively) on `buses` and `routes` so a driver can select a bus and route.
-- Service layer: `driverTripService.ts` — `fetchDriverTripContext`, `fetchActiveDriverTrip`, `startDriverTrip`, `endDriverTrip`. `tenant_id`/`driver_id` are derived server-side, never trusted from the client.
-- UI: `DriverDashboardPage` rewritten from mock data to live Supabase data. Shows driver profile, bus/route selectors, trip-type radio group, start/end actions, active-trip card, loading/empty/error states, accessible labels.
+- New helpers: `current_driver_id()`, `driver_trip_entities_in_tenant()`, and the `end_driver_trip(uuid)` RPC.
+- Ending a trip is locked down: there is **no UPDATE policy** and **no UPDATE grant** on `driver_trips`. The only path that mutates a trip is the `end_driver_trip(p_trip_id)` security-definer RPC, which sets ONLY `status='completed'` and `ended_at=now()`. A driver cannot mutate `tenant_id`, `driver_id`, `bus_id`, `route_id`, `trip_type`, `service_date`, `started_at`, or `created_at`. The RPC enforces caller role, tenant, ownership, and active status server-side.
+- RLS: tenant isolation; drivers read/create only their own trips; admins read tenant trips. Driver read policies added (additively) on `buses` and `routes` so a driver can select a bus and route.
+- Service layer: `driverTripService.ts` — `fetchDriverTripContext`, `fetchActiveDriverTrip`, `startDriverTrip`, `endDriverTrip` (calls the RPC). `tenant_id`/`driver_id` are derived server-side, never trusted from the client.
+- UI: `DriverDashboardPage` uses live Supabase data. Labels accurately say "available in your organization" (not "assigned") because no driver-bus/route assignment table exists yet. Shows driver profile, bus/route selectors, trip-type radio group, start/end actions, active-trip card, loading/empty/error states, accessible labels. Success messages persist across the silent data refresh that follows start/end.
 - Route protection: `/driver` remains behind `ProtectedRoute allowedRoles={['driver']}` (unchanged).
-- Playwright smoke tests under `tests/smoke/` covering protected-route behaviour for unauthenticated users, landing page rendering, and mobile viewport layout. No production credentials, no backdoors.
+- Playwright smoke tests under `tests/smoke/`:
+  - Unauthenticated: protected-route behavior, landing page rendering, mobile viewport layout.
+  - Authenticated (via a mocked Supabase layer in `tests/smoke/fixtures/supabase-mock.ts` — no production credentials, no test backdoors, all Supabase traffic intercepted by `page.route`): driver dashboard rendering, bus/route controls, morning/evening selector, start trip, active trip display, end trip, refresh persistence, mobile layout.
 
-**Validation results:**
+**Validation results (after review fixes):**
 
 - `pnpm install` — pass
 - `pnpm lint` — pass
-- `pnpm typecheck` — pass
-- `pnpm build` — pass
-- `pnpm test` — pass (no unit tests yet)
-- `pnpm test:smoke` — pass (5 tests across desktop + mobile projects)
+- `pnpm typecheck` — pass (4 packages)
+- `pnpm build` — pass (`@safebus/web`, 116 modules)
+- `pnpm test` — pass (vitest, no unit test files yet)
+- `pnpm test:smoke` — pass (22 tests: 11 desktop-chromium + 11 mobile-chromium; 6 authenticated + 5 unauthenticated per project)
 
-**Known limitations (see completion report for full detail):**
+**Known limitations:**
 
-- No driver↔bus/route assignment table exists yet; the driver selects a bus and route from their tenant's active set. Formal driver assignments are a future milestone.
-- Authenticated driver dashboard interactions (start/end trip, trip-type selector, active-trip display) are not covered by automated smoke tests because no authenticated test harness exists. Recommended for a future milestone that adds a mock-Supabase test layer.
-- `cancelled` status is supported by the schema and RLS but no UI action cancels a trip in this milestone (only start and end/completed).
+- No driver↔bus/route assignment table exists yet; the driver selects a bus and route from their organization's active set. The UI is labeled "available in your organization" to reflect this. A formal driver-assignment model is a candidate for a future milestone.
+- `cancelled` status is supported by the schema and the RPC could be extended to allow it, but no UI action cancels a trip in this milestone (only start and end/completed).
+- The authenticated Playwright tests use a mocked Supabase layer (deterministic in-memory responses). They do not exercise real Postgres RLS; the RLS/RPC guarantees are verified by the manual smoke-test checklist against hosted Supabase DEV.
 
 ## Next Recommended Milestone
 

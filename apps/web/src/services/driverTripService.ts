@@ -137,25 +137,33 @@ export async function startDriverTrip(input: StartTripInput): Promise<DriverTrip
 }
 
 /**
- * End the current driver's active trip: set status to completed and ended_at.
- * RLS only allows updating the driver's own active trip; the WITH CHECK ensures
- * the new status is a terminal value.
+ * End the current driver's active trip.
+ *
+ * This calls the end_driver_trip() Postgres RPC (security definer). The RPC is
+ * the ONLY path that can mutate a driver_trips row: there is no UPDATE policy
+ * and no UPDATE grant on the table. The RPC enforces, server-side, that the
+ * caller is a driver, the trip belongs to the caller, the trip is in the
+ * caller's tenant, and the trip is active. It sets ONLY status='completed' and
+ * ended_at=now(); it never accepts or mutates tenant_id, driver_id, bus_id,
+ * route_id, trip_type, service_date, started_at, or created_at.
+ *
+ * The client passes only the trip id — there is no parameter surface through
+ * which other columns could be altered.
  */
 export async function endDriverTrip(tripId: string): Promise<DriverTrip> {
   const client = requireSupabase();
 
-  const { data, error } = await client
-    .from('driver_trips')
-    .update({ status: 'completed', ended_at: new Date().toISOString() })
-    .eq('id', tripId)
-    .eq('status', 'active')
-    .select(tripColumns)
-    .single();
+  const { data, error } = await client.rpc('end_driver_trip', { p_trip_id: tripId });
 
   if (error) {
-    throw new Error(
-      'Could not end the trip. It may already be completed, or it belongs to another driver.',
-    );
+    const message = error.message ?? 'Could not end the trip.';
+    if (message.includes('not active')) {
+      throw new Error('This trip is no longer active. Refresh your dashboard.');
+    }
+    if (message.includes('not found') || message.includes('Only a driver')) {
+      throw new Error('Could not end the trip. It may belong to another driver.');
+    }
+    throw new Error(message);
   }
 
   return data as DriverTrip;
