@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { updateDriverTripLocation } from '@/services/driverLocationService';
+import { isFatalLocationUpdateError, updateDriverTripLocation } from '@/services/driverLocationService';
 
 /**
  * Driver location sharing hook for Milestone 4B.
@@ -82,14 +82,16 @@ export function useDriverLocationSharing(activeTripId: string | null): UseDriver
       });
       setState({ kind: 'sharing', lastUpdateAt: new Date().toISOString() });
     } catch (err) {
-      // Surface a friendly error but keep the watcher running so a transient
-      // RPC failure doesn't kill location sharing. A fatal trip-end error will
-      // be surfaced and the caller (dashboard) will flip activeTripId to null,
-      // which the effect below handles by stopping.
       const message = err instanceof Error ? err.message : 'Location update failed.';
+      if (isFatalLocationUpdateError(err)) {
+        // The trip is gone (ended, not found, or owned by another driver).
+        // Stop the geolocation watcher immediately so it does not keep firing
+        // against a dead trip, and surface a clear error state.
+        clearWatcher();
+      }
       setState({ kind: 'error', message });
     }
-  }, []);
+  }, [clearWatcher]);
 
   const start = useCallback(() => {
     if (!supported) {

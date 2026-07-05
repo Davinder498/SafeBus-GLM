@@ -6,6 +6,24 @@ import type {
   UpdateLocationResult,
 } from '@/types/driverLocation';
 
+/**
+ * Error thrown when the update_driver_trip_location RPC rejects the update for
+ * a reason that means sharing must stop permanently: the trip is no longer
+ * active, the trip was not found, or the caller is not the owning driver. The
+ * hook uses isFatalLocationUpdateError() to detect these and clear the
+ * geolocation watcher so it does not keep firing against a dead trip.
+ */
+export class FatalLocationUpdateError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'FatalLocationUpdateError';
+  }
+}
+
+export function isFatalLocationUpdateError(err: unknown): err is FatalLocationUpdateError {
+  return err instanceof FatalLocationUpdateError;
+}
+
 function requireSupabase() {
   if (!supabase) {
     throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
@@ -20,15 +38,19 @@ const currentLocationColumns =
  * Validate the numeric geo inputs client-side before calling the RPC. The RPC
  * re-validates everything server-side; this is just to avoid obviously-bad
  * requests and give the driver a friendly error.
+ *
+ * Uses Number.isFinite to reject NaN, Infinity, and -Infinity for every
+ * numeric field (browsers can occasionally emit non-finite values from
+ * geolocation APIs).
  */
 function validateGeoInput(input: UpdateLocationInput): void {
   if (!input.driverTripId) {
     throw new Error('Missing trip id.');
   }
-  if (typeof input.latitude !== 'number' || Number.isNaN(input.latitude)) {
+  if (typeof input.latitude !== 'number' || !Number.isFinite(input.latitude)) {
     throw new Error('Invalid latitude.');
   }
-  if (typeof input.longitude !== 'number' || Number.isNaN(input.longitude)) {
+  if (typeof input.longitude !== 'number' || !Number.isFinite(input.longitude)) {
     throw new Error('Invalid longitude.');
   }
   if (input.latitude < -90 || input.latitude > 90) {
@@ -37,13 +59,13 @@ function validateGeoInput(input: UpdateLocationInput): void {
   if (input.longitude < -180 || input.longitude > 180) {
     throw new Error('Longitude must be between -180 and 180.');
   }
-  if (input.accuracyM != null && (typeof input.accuracyM !== 'number' || input.accuracyM < 0)) {
+  if (input.accuracyM != null && (typeof input.accuracyM !== 'number' || !Number.isFinite(input.accuracyM) || input.accuracyM < 0)) {
     throw new Error('Accuracy must be a non-negative number.');
   }
-  if (input.headingDeg != null && (typeof input.headingDeg !== 'number' || input.headingDeg < 0 || input.headingDeg > 360)) {
+  if (input.headingDeg != null && (typeof input.headingDeg !== 'number' || !Number.isFinite(input.headingDeg) || input.headingDeg < 0 || input.headingDeg > 360)) {
     throw new Error('Heading must be between 0 and 360.');
   }
-  if (input.speedMps != null && (typeof input.speedMps !== 'number' || input.speedMps < 0)) {
+  if (input.speedMps != null && (typeof input.speedMps !== 'number' || !Number.isFinite(input.speedMps) || input.speedMps < 0)) {
     throw new Error('Speed must be a non-negative number.');
   }
 }
@@ -76,10 +98,10 @@ export async function updateDriverTripLocation(
   if (error) {
     const message = error.message ?? 'Could not update location.';
     if (message.includes('not active')) {
-      throw new Error('This trip is no longer active. Location sharing stopped.');
+      throw new FatalLocationUpdateError('This trip is no longer active. Location sharing stopped.');
     }
     if (message.includes('not found') || message.includes('Only a driver')) {
-      throw new Error('Could not update location. This trip may belong to another driver.');
+      throw new FatalLocationUpdateError('Could not update location. This trip may belong to another driver.');
     }
     throw new Error(message);
   }

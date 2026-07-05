@@ -46,6 +46,26 @@ test.describe('Driver location sharing', () => {
     const page = await context.newPage();
 
     await installSupabaseMock(page, { withActiveTrip: true });
+
+    // Capture update_driver_trip_location RPC request bodies so we can assert
+    // the client sends only trip id + geo inputs and NEVER tenant/driver/bus/
+    // route ids.
+    const locationRpcBodies: Array<Record<string, unknown>> = [];
+    page.on('request', (request) => {
+      const url = request.url();
+      if (
+        url.includes('/rest/v1/rpc/update_driver_trip_location') &&
+        request.method() === 'POST'
+      ) {
+        try {
+          const body = JSON.parse(request.postData() ?? '{}');
+          locationRpcBodies.push(body);
+        } catch {
+          // ignore non-JSON bodies
+        }
+      }
+    });
+
     await page.goto('/driver');
 
     // Active trip is present, so the start button should be enabled.
@@ -66,6 +86,33 @@ test.describe('Driver location sharing', () => {
 
     // After stopping, the start button returns.
     await expect(page.getByTestId('driver-location-start-button')).toBeVisible();
+
+    // --- Assert the RPC payload shape (non-blocking fix C) ---
+    // At least one update_driver_trip_location RPC was sent.
+    expect(locationRpcBodies.length).toBeGreaterThan(0);
+
+    const payload = locationRpcBodies[0]!;
+    // The client MUST send the trip id and geo inputs.
+    expect(payload.p_driver_trip_id).toBeTruthy();
+    expect(typeof payload.p_latitude).toBe('number');
+    expect(typeof payload.p_longitude).toBe('number');
+    // source defaults to 'browser'.
+    expect(payload.p_source).toBe('browser');
+    // Optional geo fields may be present and must be null or finite numbers.
+    for (const key of ['p_accuracy_m', 'p_heading_deg', 'p_speed_mps'] as const) {
+      const v = payload[key];
+      expect(v === null || typeof v === 'number').toBe(true);
+    }
+    // The client MUST NOT send tenant_id, driver_id, bus_id, or route_id —
+    // the RPC derives these server-side from the validated active trip row.
+    expect(payload).not.toHaveProperty('p_tenant_id');
+    expect(payload).not.toHaveProperty('p_driver_id');
+    expect(payload).not.toHaveProperty('p_bus_id');
+    expect(payload).not.toHaveProperty('p_route_id');
+    expect(payload).not.toHaveProperty('tenant_id');
+    expect(payload).not.toHaveProperty('driver_id');
+    expect(payload).not.toHaveProperty('bus_id');
+    expect(payload).not.toHaveProperty('route_id');
 
     await context.close();
   });
