@@ -88,6 +88,26 @@ function completedTripRow() {
   };
 }
 
+/** Latest-location row returned by the update_driver_trip_location RPC and by
+ * GETs on driver_trip_current_locations. */
+function currentLocationRow() {
+  return {
+    driver_trip_id: MOCK.tripId,
+    tenant_id: MOCK.tenantId,
+    driver_id: MOCK.driverId,
+    bus_id: MOCK.busId,
+    route_id: MOCK.routeId,
+    latitude: 51.0447,
+    longitude: -114.0719,
+    accuracy_m: 15,
+    heading_deg: 90,
+    speed_mps: 8.5,
+    source: 'browser',
+    recorded_at: '2025-01-01T12:05:00.000Z',
+    updated_at: '2025-01-01T12:05:00.000Z',
+  };
+}
+
 /** Decode the PostgREST table from a `/rest/v1/<table>?<query>` URL. */
 function tableFromPath(pathname: string): string {
   const parts = pathname.split('/').filter(Boolean);
@@ -239,6 +259,11 @@ export async function installSupabaseMock(
           await fulfillRows(currentActiveTrip ? [currentActiveTrip] : []);
           return;
         }
+        if (table === 'driver_trip_current_locations') {
+          // Only return a current-location row when there is an active trip.
+          await fulfillRows(currentActiveTrip ? [currentLocationRow()] : []);
+          return;
+        }
         await fulfillRows([]);
         return;
       }
@@ -253,6 +278,15 @@ export async function installSupabaseMock(
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify(completed),
+          });
+          return;
+        }
+        if (table === 'rpc/update_driver_trip_location') {
+          // Acknowledge the location update with the current-location row.
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(currentLocationRow()),
           });
           return;
         }
