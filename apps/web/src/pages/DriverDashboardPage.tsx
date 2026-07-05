@@ -6,6 +6,8 @@ import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { useAuth } from '@/contexts/useAuth';
+import { useDriverLocationSharing } from '@/hooks/useDriverLocationSharing';
+import type { LocationSharingState } from '@/hooks/useDriverLocationSharing';
 import {
   endDriverTrip,
   fetchActiveDriverTrip,
@@ -149,6 +151,11 @@ export function DriverDashboardPage() {
 
   const driverName = profile?.full_name ?? 'Driver';
 
+  // Location sharing is wired to the active trip id (null when no active trip).
+  // The hook auto-stops when activeTripId becomes null (trip ended / refresh).
+  const activeTripId = state.kind === 'ready' && state.activeTrip ? state.activeTrip.id : null;
+  const locationSharing = useDriverLocationSharing(activeTripId);
+
   return (
     <DashboardLayout title="Driver Dashboard" portal="driver" navItems={['Today']}>
       <div className="mx-auto max-w-3xl space-y-5">
@@ -192,6 +199,14 @@ export function DriverDashboardPage() {
                 <p className="text-sm font-semibold text-success-700">{successMessage}</p>
               </Card>
             )}
+
+            <LocationSharingPanel
+              hasActiveTrip={Boolean(state.activeTrip)}
+              supported={locationSharing.supported}
+              state={locationSharing.state}
+              onStart={locationSharing.start}
+              onStop={locationSharing.stop}
+            />
 
             {state.activeTrip ? (
               <ActiveTripCard
@@ -420,5 +435,113 @@ function StartTripCard({
         {actionInProgress ? 'Starting trip...' : 'Start Trip'}
       </Button>
     </div>
+  );
+}
+
+interface LocationSharingPanelProps {
+  hasActiveTrip: boolean;
+  supported: boolean;
+  state: LocationSharingState;
+  onStart: () => void;
+  onStop: () => void;
+}
+
+function LocationSharingPanel({
+  hasActiveTrip,
+  supported,
+  state,
+  onStart,
+  onStop,
+}: LocationSharingPanelProps) {
+  const sharing = state.kind === 'sharing';
+  const lastUpdate = state.kind === 'sharing' ? state.lastUpdateAt : null;
+  const errorMessage = state.kind === 'error' ? state.message : null;
+
+  // No active trip: location sharing is unavailable.
+  if (!hasActiveTrip) {
+    return (
+      <Card data-testid="driver-location-panel" className="p-5">
+        <h2 className="text-lg font-bold text-navy-900">Location sharing</h2>
+        <p
+          data-testid="driver-location-status"
+          className="mt-2 text-sm text-gray-600"
+        >
+          Start a trip before sharing location.
+        </p>
+        <Button
+          type="button"
+          size="md"
+          className="mt-4"
+          data-testid="driver-location-start-button"
+          disabled
+        >
+          Start location sharing
+        </Button>
+      </Card>
+    );
+  }
+
+  // Browser does not support geolocation.
+  if (!supported) {
+    return (
+      <Card data-testid="driver-location-panel" className="p-5">
+        <h2 className="text-lg font-bold text-navy-900">Location sharing</h2>
+        <p
+          data-testid="driver-location-error"
+          className="mt-2 text-sm text-danger-700"
+        >
+          Location sharing is not supported in this browser.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card data-testid="driver-location-panel" className="p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-navy-900">Location sharing</h2>
+          <p data-testid="driver-location-status" className="mt-1 text-sm text-gray-600">
+            {sharing
+              ? lastUpdate
+                ? `Location sharing active. Last update ${formatTimestamp(lastUpdate)}.`
+                : 'Location sharing active. Waiting for the first update...'
+              : 'Share your live bus location during this trip.'}
+          </p>
+          {errorMessage && (
+            <p
+              data-testid="driver-location-error"
+              role="alert"
+              className="mt-2 text-sm text-danger-700"
+            >
+              {errorMessage}
+            </p>
+          )}
+        </div>
+        {sharing && <StatusPill tone="success">sharing</StatusPill>}
+      </div>
+      <div className="mt-4 flex gap-3">
+        {!sharing ? (
+          <Button
+            type="button"
+            size="md"
+            data-testid="driver-location-start-button"
+            onClick={onStart}
+          >
+            Start location sharing
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            size="md"
+            variant="secondary"
+            data-testid="driver-location-stop-button"
+            onClick={onStop}
+          >
+            Stop location sharing
+          </Button>
+        )}
+      </div>
+    </Card>
   );
 }
