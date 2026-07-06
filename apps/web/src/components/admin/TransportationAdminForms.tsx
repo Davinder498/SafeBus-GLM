@@ -118,7 +118,7 @@ export function BusForm({
     const parsedCapacity = parseNullableNumber(capacity);
 
     if (!tenantId) {
-      setFormError('Choose a school or use an account with a tenant before saving this bus.');
+      setFormError('Use an account with a tenant before saving this bus.');
       return;
     }
 
@@ -175,7 +175,7 @@ export function BusForm({
           <input className={fieldClassName} inputMode="numeric" value={capacity} onChange={(event) => setCapacity(event.target.value)} />
         </label>
         <label className={labelClassName}>
-          School
+          School (optional)
           <select className={fieldClassName} value={schoolId} onChange={(event) => setSchoolId(event.target.value)}>
             {optionalOption}
             {schools.map((school) => (
@@ -311,15 +311,17 @@ export function DriverForm({
 export function RouteForm({
   route,
   schools,
+  defaultTenantId,
   onSubmit,
   onCancel,
 }: {
   route: Route | null;
   schools: School[];
+  defaultTenantId: string | null;
   onSubmit: (input: CreateRouteInput | UpdateRouteInput) => Promise<void>;
   onCancel: () => void;
 }) {
-  const [schoolId, setSchoolId] = useState(route?.school_id ?? schools[0]?.id ?? '');
+  const [schoolId, setSchoolId] = useState(route?.school_id ?? '');
   const [routeName, setRouteName] = useState(route?.route_name ?? '');
   const [routeCode, setRouteCode] = useState(route?.route_code ?? '');
   const [routeType, setRouteType] = useState<RouteType>(route?.route_type ?? 'morning');
@@ -327,18 +329,16 @@ export function RouteForm({
   const [formError, setFormError] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
 
-  useEffect(() => {
-    if (!schoolId && schools[0]) setSchoolId(schools[0].id);
-  }, [schoolId, schools]);
-
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setFormError(null);
 
-    const tenantId = route?.tenant_id ?? getSchoolTenantId(schools, schoolId);
+    // School is optional. Derive the tenant from the existing route, the
+    // selected school (if any), or the admin's default tenant id.
+    const tenantId = route?.tenant_id ?? getSchoolTenantId(schools, schoolId || null) ?? defaultTenantId;
 
-    if (!schoolId || !tenantId) {
-      setFormError('Choose a school before saving this route.');
+    if (!tenantId) {
+      setFormError('Use an account with a tenant before saving this route.');
       return;
     }
 
@@ -351,7 +351,7 @@ export function RouteForm({
     try {
       const input = {
         tenant_id: tenantId,
-        school_id: schoolId,
+        school_id: schoolId || null,
         route_name: routeName.trim(),
         route_code: routeCode.trim(),
         route_type: routeType,
@@ -395,9 +395,9 @@ export function RouteForm({
           </select>
         </label>
         <label className={labelClassName}>
-          School
+          School (optional)
           <select className={fieldClassName} value={schoolId} onChange={(event) => setSchoolId(event.target.value)}>
-            <option value="">Choose school</option>
+            <option value="">No school selected</option>
             {schools.map((school) => (
               <option key={school.id} value={school.id}>
                 {school.name}

@@ -31,7 +31,7 @@ export interface Driver {
 export interface Route {
   id: string;
   tenant_id: string;
-  school_id: string;
+  school_id: string | null;
   route_name: string;
   route_code: string;
   route_type: RouteType;
@@ -91,7 +91,7 @@ export type UpdateDriverInput = Partial<Omit<CreateDriverInput, 'tenant_id'>>;
 
 export type CreateRouteInput = {
   tenant_id: string;
-  school_id: string;
+  school_id: string | null;
   route_name: string;
   route_code: string;
   route_type: RouteType;
