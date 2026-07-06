@@ -19,17 +19,6 @@ export interface DriverTrip {
   updated_at: string;
 }
 
-/**
- * Transportation context the driver needs to start a trip:
- * their own driver record plus the active buses and routes visible to them in
- * their tenant (scoped by RLS).
- */
-export interface DriverTripContext {
-  driver: DriverRecord | null;
-  buses: BusSummary[];
-  routes: RouteSummary[];
-}
-
 export interface DriverRecord {
   id: string;
   tenant_id: string;
@@ -53,13 +42,4 @@ export interface RouteSummary {
   route_code: string;
   route_type: string;
   status: string;
-}
-
-/** Input the client provides when starting a trip. tenant_id and driver_id are
- * derived server-side from the authenticated driver record, never trusted from
- * the client. */
-export interface StartTripInput {
-  busId: string;
-  routeId: string;
-  tripType: TripType;
 }
