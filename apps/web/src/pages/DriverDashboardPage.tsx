@@ -8,18 +8,19 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { useAuth } from '@/contexts/useAuth';
 import { useDriverLocationSharing } from '@/hooks/useDriverLocationSharing';
 import type { LocationSharingState } from '@/hooks/useDriverLocationSharing';
+import { fetchDriverAssignments } from '@/services/driverAssignmentService';
 import {
   endDriverTrip,
   fetchActiveDriverTrip,
-  fetchDriverTripContext,
-  startDriverTrip,
+  startTripFromAssignment,
 } from '@/services/driverTripService';
-import type { DriverTrip, DriverTripContext, TripType } from '@/types/trips';
+import type { DriverAssignmentSummary } from '@/types/driverAssignments';
+import type { DriverTrip, TripType } from '@/types/trips';
 
 type LoadState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; context: DriverTripContext; activeTrip: DriverTrip | null };
+  | { kind: 'ready'; assignments: DriverAssignmentSummary[]; activeTrip: DriverTrip | null };
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
@@ -38,11 +39,6 @@ export function DriverDashboardPage() {
   const { profile } = useAuth();
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
 
-  // Form state for starting a trip.
-  const [selectedBusId, setSelectedBusId] = useState<string>('');
-  const [selectedRouteId, setSelectedRouteId] = useState<string>('');
-  const [tripType, setTripType] = useState<TripType>('morning');
-
   // Action feedback.
   const [actionInProgress, setActionInProgress] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -53,11 +49,11 @@ export function DriverDashboardPage() {
     setActionError(null);
     setSuccessMessage(null);
     try {
-      const [context, activeTrip] = await Promise.all([
-        fetchDriverTripContext(),
+      const [assignments, activeTrip] = await Promise.all([
+        fetchDriverAssignments(),
         fetchActiveDriverTrip(),
       ]);
-      setState({ kind: 'ready', context, activeTrip });
+      setState({ kind: 'ready', assignments, activeTrip });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not load your driver dashboard.';
       setState({ kind: 'error', message });
@@ -65,18 +61,17 @@ export function DriverDashboardPage() {
   }, []);
 
   /**
-   * Refresh the dashboard data (context + active trip) WITHOUT clearing the
-   * action success/error messages. Used after start/end so the user still sees
-   * "Trip started." / "Trip ended." while the active-trip card updates.
-   * Only flips to the loading state if we don't already have a ready state.
+   * Refresh the dashboard data WITHOUT clearing the action success/error
+   * messages. Used after start/end so the user still sees the feedback while
+   * the active-trip card updates.
    */
   const refreshDashboard = useCallback(async () => {
     try {
-      const [context, activeTrip] = await Promise.all([
-        fetchDriverTripContext(),
+      const [assignments, activeTrip] = await Promise.all([
+        fetchDriverAssignments(),
         fetchActiveDriverTrip(),
       ]);
-      setState({ kind: 'ready', context, activeTrip });
+      setState({ kind: 'ready', assignments, activeTrip });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not refresh your driver dashboard.';
       setState({ kind: 'error', message });
@@ -87,42 +82,23 @@ export function DriverDashboardPage() {
     void loadDashboard();
   }, [loadDashboard]);
 
-  const context = state.kind === 'ready' ? state.context : null;
   const activeTrip = state.kind === 'ready' ? state.activeTrip : null;
 
-  // Resolve bus/route summaries for the active trip from the loaded context.
-  const activeBus = useMemo(() => {
-    if (!context || !activeTrip) return null;
-    return context.buses.find((bus) => bus.id === activeTrip.bus_id) ?? null;
-  }, [context, activeTrip]);
+  // Resolve bus/route labels for the active trip from the loaded assignments.
+  const activeAssignment = useMemo(() => {
+    if (state.kind !== 'ready' || !state.activeTrip) return null;
+    return state.assignments.find(
+      (a) => a.busId === state.activeTrip!.bus_id && a.routeId === state.activeTrip!.route_id,
+    ) ?? null;
+  }, [state]);
 
-  const activeRoute = useMemo(() => {
-    if (!context || !activeTrip) return null;
-    return context.routes.find((route) => route.id === activeTrip.route_id) ?? null;
-  }, [context, activeTrip]);
-
-  const canStartTrip = useMemo(() => {
-    if (!context || !context.driver || activeTrip) return false;
-    if (context.buses.length === 0 || context.routes.length === 0) return false;
-    return selectedBusId !== '' && selectedRouteId !== '';
-  }, [context, activeTrip, selectedBusId, selectedRouteId]);
-
-  async function handleStartTrip() {
-    if (!canStartTrip) return;
+  async function handleStartTripFromAssignment(assignmentId: string) {
     setActionInProgress(true);
     setActionError(null);
     setSuccessMessage(null);
     try {
-      await startDriverTrip({
-        busId: selectedBusId,
-        routeId: selectedRouteId,
-        tripType,
-      });
-      setSelectedBusId('');
-      setSelectedRouteId('');
+      await startTripFromAssignment(assignmentId);
       setSuccessMessage('Trip started. Have a safe drive.');
-      // Silent refresh: updates the active-trip card WITHOUT clearing the
-      // success message we just set.
       await refreshDashboard();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Could not start the trip.');
@@ -139,8 +115,6 @@ export function DriverDashboardPage() {
     try {
       await endDriverTrip(activeTrip.id);
       setSuccessMessage('Trip ended. Nice work.');
-      // Silent refresh so the success message stays visible while the
-      // dashboard flips back to the start-trip card.
       await refreshDashboard();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Could not end the trip.');
@@ -152,7 +126,6 @@ export function DriverDashboardPage() {
   const driverName = profile?.full_name ?? 'Driver';
 
   // Location sharing is wired to the active trip id (null when no active trip).
-  // The hook auto-stops when activeTripId becomes null (trip ended / refresh).
   const activeTripId = state.kind === 'ready' && state.activeTrip ? state.activeTrip.id : null;
   const locationSharing = useDriverLocationSharing(activeTripId);
 
@@ -162,10 +135,10 @@ export function DriverDashboardPage() {
         <PageHeader
           eyebrow="Today"
           title="Driver Dashboard"
-          description="Start and end your trip for today. Choose a bus and route available in your organization."
+          description="Start and end your trip from your assigned work."
         />
 
-        {state.kind === 'loading' && <DataState title="Loading your dashboard" message="Checking your driver profile and active trip..." />}
+        {state.kind === 'loading' && <DataState title="Loading your dashboard" message="Checking your assignments and active trip..." />}
 
         {state.kind === 'error' && (
           <div className="space-y-4">
@@ -176,14 +149,7 @@ export function DriverDashboardPage() {
           </div>
         )}
 
-        {state.kind === 'ready' && !state.context.driver && (
-          <DataState
-            title="Your driver profile is not set up"
-            message="Ask an administrator to create your driver record before you can start a trip."
-          />
-        )}
-
-        {state.kind === 'ready' && state.context.driver && (
+        {state.kind === 'ready' && (
           <div className="space-y-5">
             {actionError && (
               <Card
@@ -211,24 +177,21 @@ export function DriverDashboardPage() {
             {state.activeTrip ? (
               <ActiveTripCard
                 trip={state.activeTrip}
-                busNumber={activeBus?.bus_number ?? null}
-                routeName={activeRoute?.route_name ?? null}
+                busNumber={activeAssignment?.busLabel ?? null}
+                routeName={activeAssignment?.routeName ?? null}
                 onEnd={handleEndTrip}
                 actionInProgress={actionInProgress}
               />
+            ) : state.assignments.length === 0 ? (
+              <DataState
+                title="No active trip assignments."
+                message="Please contact your transportation admin."
+              />
             ) : (
-              <StartTripCard
+              <AssignmentListCard
                 driverName={driverName}
-                buses={state.context.buses}
-                routes={state.context.routes}
-                selectedBusId={selectedBusId}
-                selectedRouteId={selectedRouteId}
-                tripType={tripType}
-                onSelectBus={setSelectedBusId}
-                onSelectRoute={setSelectedRouteId}
-                onChangeTripType={setTripType}
-                onStart={handleStartTrip}
-                canStart={canStartTrip}
+                assignments={state.assignments}
+                onStart={handleStartTripFromAssignment}
                 actionInProgress={actionInProgress}
               />
             )}
@@ -281,38 +244,19 @@ function ActiveTripCard({ trip, busNumber, routeName, onEnd, actionInProgress }:
   );
 }
 
-interface StartTripCardProps {
+interface AssignmentListCardProps {
   driverName: string;
-  buses: DriverTripContext['buses'];
-  routes: DriverTripContext['routes'];
-  selectedBusId: string;
-  selectedRouteId: string;
-  tripType: TripType;
-  onSelectBus: (id: string) => void;
-  onSelectRoute: (id: string) => void;
-  onChangeTripType: (type: TripType) => void;
-  onStart: () => void;
-  canStart: boolean;
+  assignments: DriverAssignmentSummary[];
+  onStart: (assignmentId: string) => void;
   actionInProgress: boolean;
 }
 
-function StartTripCard({
+function AssignmentListCard({
   driverName,
-  buses,
-  routes,
-  selectedBusId,
-  selectedRouteId,
-  tripType,
-  onSelectBus,
-  onSelectRoute,
-  onChangeTripType,
+  assignments,
   onStart,
-  canStart,
   actionInProgress,
-}: StartTripCardProps) {
-  const hasBuses = buses.length > 0;
-  const hasRoutes = routes.length > 0;
-
+}: AssignmentListCardProps) {
   return (
     <div className="space-y-4">
       <Card className="p-5">
@@ -321,119 +265,35 @@ function StartTripCard({
       </Card>
 
       <Card className="p-5">
-        <h2 className="text-lg font-bold text-navy-900">Start a trip</h2>
+        <h2 className="text-lg font-bold text-navy-900">Your assignments</h2>
         <p className="mt-1 text-sm text-gray-600">
-          Choose a bus and route available in your organization, select a trip type, then start the trip.
+          Start a trip from one of your assigned routes below.
         </p>
-
-        {!hasBuses && (
-          <p className="mt-4 rounded-md bg-gray-50 p-3 text-sm text-gray-600">
-            No buses are available in your organization right now. Ask an administrator to add a bus.
-          </p>
-        )}
-        {!hasRoutes && (
-          <p className="mt-2 rounded-md bg-gray-50 p-3 text-sm text-gray-600">
-            No routes are available in your organization right now. Ask an administrator to add a route.
-          </p>
-        )}
-
-        {hasBuses && (
-          <div className="mt-4">
-            <label
-              htmlFor="trip-bus-select"
-              className="block text-sm font-semibold text-gray-700"
-            >
-              Bus
-            </label>
-            <select
-              id="trip-bus-select"
-              value={selectedBusId}
-              onChange={(event) => onSelectBus(event.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-base text-navy-900 focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-500"
-            >
-              <option value="" disabled>
-                Select a bus
-              </option>
-              {buses.map((bus) => (
-                <option key={bus.id} value={bus.id}>
-                  Bus {bus.bus_number}
-                  {bus.license_plate ? ` (${bus.license_plate})` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {hasRoutes && (
-          <div className="mt-4">
-            <label
-              htmlFor="trip-route-select"
-              className="block text-sm font-semibold text-gray-700"
-            >
-              Route
-            </label>
-            <select
-              id="trip-route-select"
-              value={selectedRouteId}
-              onChange={(event) => onSelectRoute(event.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-base text-navy-900 focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-500"
-            >
-              <option value="" disabled>
-                Select a route
-              </option>
-              {routes.map((route) => (
-                <option key={route.id} value={route.id}>
-                  {route.route_name} ({route.route_code})
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <fieldset className="mt-4" aria-labelledby="trip-type-legend">
-          <legend id="trip-type-legend" className="text-sm font-semibold text-gray-700">
-            Trip type
-          </legend>
-          <div
-            role="radiogroup"
-            aria-labelledby="trip-type-legend"
-            className="mt-2 flex gap-3"
-          >
-            <label className="flex flex-1 cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 py-2.5 text-sm font-semibold text-navy-900 has-[:checked]:border-navy-500 has-[:checked]:bg-navy-50">
-              <input
-                type="radio"
-                name="trip-type"
-                value="morning"
-                checked={tripType === 'morning'}
-                onChange={() => onChangeTripType('morning')}
-                className="h-4 w-4 text-navy-700"
-              />
-              Morning
-            </label>
-            <label className="flex flex-1 cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 py-2.5 text-sm font-semibold text-navy-900 has-[:checked]:border-navy-500 has-[:checked]:bg-navy-50">
-              <input
-                type="radio"
-                name="trip-type"
-                value="evening"
-                checked={tripType === 'evening'}
-                onChange={() => onChangeTripType('evening')}
-                className="h-4 w-4 text-navy-700"
-              />
-              Evening
-            </label>
-          </div>
-        </fieldset>
       </Card>
 
-      <Button
-        type="button"
-        size="lg"
-        fullWidth
-        onClick={onStart}
-        disabled={!canStart || actionInProgress}
-      >
-        {actionInProgress ? 'Starting trip...' : 'Start Trip'}
-      </Button>
+      {assignments.map((assignment) => (
+        <Card key={assignment.id} className="p-5" data-testid="driver-assignment-card">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-navy-900">
+                {assignment.routeName ?? 'Assigned route'}
+              </h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Bus {assignment.busLabel ?? assignment.busId} &middot; {tripTypeLabel(assignment.tripType)} trip
+              </p>
+            </div>
+            <Button
+              type="button"
+              size="md"
+              onClick={() => onStart(assignment.id)}
+              disabled={actionInProgress}
+              data-testid="driver-assignment-start-button"
+            >
+              {actionInProgress ? 'Starting...' : 'Start Trip'}
+            </Button>
+          </div>
+        </Card>
+      ))}
     </div>
   );
 }

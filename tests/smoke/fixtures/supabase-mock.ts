@@ -23,6 +23,7 @@ export const MOCK = {
   busId: '44444444-4444-4444-4444-444444444444',
   routeId: '55555555-5555-5555-5555-555555555555',
   tripId: '66666666-6666-6666-6666-666666666666',
+  assignmentId: '77777777-7777-7777-7777-777777777777',
   authToken: 'mock-access-token-for-smoke-test-only',
 } as const;
 
@@ -108,6 +109,23 @@ function currentLocationRow() {
   };
 }
 
+/** Mock driver route assignment row (4F). */
+function assignmentRow() {
+  return {
+    id: MOCK.assignmentId,
+    tenant_id: MOCK.tenantId,
+    driver_id: MOCK.driverId,
+    bus_id: MOCK.busId,
+    route_id: MOCK.routeId,
+    trip_type: 'morning',
+    status: 'active',
+    effective_from: null,
+    effective_to: null,
+    created_at: '2025-01-01T00:00:00.000Z',
+    updated_at: '2025-01-01T00:00:00.000Z',
+  };
+}
+
 /** Decode the PostgREST table from a `/rest/v1/<table>?<query>` URL. */
 function tableFromPath(pathname: string): string {
   const parts = pathname.split('/').filter(Boolean);
@@ -120,10 +138,12 @@ function tableFromPath(pathname: string): string {
 
 export interface MockControl {
   setActiveTrip: (trip: ReturnType<typeof activeTripRow> | null) => void;
+  setAssignments: (assignments: ReturnType<typeof assignmentRow>[] | null) => void;
 }
 
 export interface MockSupabaseOptions {
   withActiveTrip?: boolean;
+  withAssignments?: boolean;
 }
 
 /**
@@ -138,9 +158,15 @@ export async function installSupabaseMock(
   let currentActiveTrip: ReturnType<typeof activeTripRow> | null = opts.withActiveTrip
     ? activeTripRow()
     : null;
+  let currentAssignments: ReturnType<typeof assignmentRow>[] | null = opts.withAssignments
+    ? [assignmentRow()]
+    : null;
 
   const setActiveTrip = (trip: ReturnType<typeof activeTripRow> | null) => {
     currentActiveTrip = trip;
+  };
+  const setAssignments = (assignments: ReturnType<typeof assignmentRow>[] | null) => {
+    currentAssignments = assignments;
   };
 
   await page.route('**/*', async (route: Route) => {
@@ -264,6 +290,11 @@ export async function installSupabaseMock(
           await fulfillRows(currentActiveTrip ? [currentLocationRow()] : []);
           return;
         }
+        if (table === 'driver_route_assignments') {
+          // Return the current assignments (or empty if null).
+          await fulfillRows(currentAssignments ?? []);
+          return;
+        }
         await fulfillRows([]);
         return;
       }
@@ -278,6 +309,17 @@ export async function installSupabaseMock(
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify(completed),
+          });
+          return;
+        }
+        if (table === 'rpc/start_driver_trip_from_assignment') {
+          // Start a trip from an assignment — return a new active trip.
+          const newTrip = activeTripRow();
+          currentActiveTrip = newTrip;
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(newTrip),
           });
           return;
         }
@@ -359,5 +401,5 @@ export async function installSupabaseMock(
     }
   });
 
-  return { setActiveTrip };
+  return { setActiveTrip, setAssignments };
 }

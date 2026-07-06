@@ -21,6 +21,7 @@ const ADMIN = {
   busId: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
   routeId: '11111111-2222-3333-4444-555555555555',
   tripId: '22222222-3333-4444-5555-666666666666',
+  assignmentId: '33333333-4444-5555-6666-777777777777',
 } as const;
 
 const adminProfile = {
@@ -186,12 +187,49 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
           await fulfillRows(activeTrip ? [activeTrip] : []);
           return;
         }
+        if (path.includes('/driver_route_assignments')) {
+          // Return a mock assignment referencing the no-school bus + route.
+          await fulfillRows([{
+            id: ADMIN.assignmentId,
+            tenant_id: ADMIN.tenantId,
+            driver_id: ADMIN.driverId,
+            bus_id: ADMIN.busId,
+            route_id: ADMIN.routeId,
+            trip_type: 'morning',
+            status: 'active',
+            effective_from: null,
+            effective_to: null,
+            created_at: '2025-01-01T00:00:00.000Z',
+            updated_at: '2025-01-01T00:00:00.000Z',
+          }]);
+          return;
+        }
         await fulfillRows([]);
         return;
       }
 
       // POST (insert a route, bus, or driver_trip)
       if (method === 'POST') {
+        if (path.includes('/rpc/start_driver_trip_from_assignment')) {
+          // Start a trip from an assignment — return a new active trip.
+          const newTrip = {
+            id: ADMIN.tripId,
+            tenant_id: ADMIN.tenantId,
+            driver_id: ADMIN.driverId,
+            bus_id: ADMIN.busId,
+            route_id: ADMIN.routeId,
+            trip_type: 'morning',
+            status: 'active',
+            service_date: '2025-01-01',
+            started_at: '2025-01-01T12:00:00.000Z',
+            ended_at: null,
+            created_at: '2025-01-01T12:00:00.000Z',
+            updated_at: '2025-01-01T12:00:00.000Z',
+          };
+          activeTrip = newTrip;
+          await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(newTrip) });
+          return;
+        }
         if (path.includes('/routes')) {
           await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(routeNoSchool) });
           return;
@@ -354,12 +392,11 @@ test.describe('Milestone 4E — driver trip start with no-school bus + route', (
     // The driver dashboard renders.
     await expect(page.getByRole('heading', { name: 'Driver Dashboard', level: 1 })).toBeVisible({ timeout: 10000 });
 
-    // Select the bus and route (both have no school).
-    await page.getByLabel('Bus').selectOption({ index: 1 });
-    await page.getByLabel('Route').selectOption({ index: 1 });
+    // The assignment card appears (the no-school bus + route are assigned).
+    await expect(page.getByTestId('driver-assignment-card')).toBeVisible({ timeout: 10000 });
 
-    // Start the trip — no school field blocks the action.
-    await page.getByRole('button', { name: 'Start Trip' }).click();
+    // Start the trip from the assignment — no school field blocks the action.
+    await page.getByTestId('driver-assignment-start-button').click();
 
     // The active trip card appears with the route name.
     await expect(page.getByRole('heading', { name: 'Riverside AM' })).toBeVisible({ timeout: 10000 });
