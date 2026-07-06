@@ -6,6 +6,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { AdminDriversPage } from '@/pages/AdminDriversPage';
 import { AdminDashboardPage } from '@/pages/AdminDashboardPage';
+import { AdminDriverAssignmentsPage } from '@/pages/AdminDriverAssignmentsPage';
 import { AdminGuardiansPage } from '@/pages/AdminGuardiansPage';
 import { AdminLiveTripsPage } from '@/pages/AdminLiveTripsPage';
 import { AdminPlaceholderPage } from '@/pages/AdminPlaceholderPage';
@@ -126,6 +127,14 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={[...adminRoles]}>
         <AdminLiveTripsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/driver-assignments',
+    element: (
+      <ProtectedRoute allowedRoles={[...adminRoles]}>
+        <AdminDriverAssignmentsPage />
       </ProtectedRoute>
     ),
   },

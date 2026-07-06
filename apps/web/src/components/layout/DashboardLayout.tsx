@@ -19,10 +19,12 @@ export interface DashboardNavItem {
 export const adminNavItems: DashboardNavItem[] = [
   { label: 'Overview', to: '/admin' },
   { label: 'Live Map', to: '/admin/live-map' },
+  { label: 'Live Trips', to: '/admin/live-trips' },
   { label: 'Trips', to: '/admin/trips' },
   { label: 'Routes', to: '/admin/routes' },
   { label: 'Stops', to: '/admin/stops' },
   { label: 'Assignments', to: '/admin/assignments' },
+  { label: 'Driver Assignments', to: '/admin/driver-assignments' },
   { label: 'Students', to: '/admin/students' },
   { label: 'Guardians', to: '/admin/guardians' },
   { label: 'Drivers', to: '/admin/drivers' },

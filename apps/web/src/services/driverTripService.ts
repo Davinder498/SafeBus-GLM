@@ -170,3 +170,44 @@ export async function endDriverTrip(tripId: string): Promise<DriverTrip> {
 }
 
 export type { TripType };
+
+/**
+ * Start a trip from a driver route assignment via the secure
+ * start_driver_trip_from_assignment() RPC. The RPC is SECURITY DEFINER and
+ * enforces: caller is a driver, the assignment belongs to the caller's tenant,
+ * the assignment belongs to the caller, and the assignment is active. It
+ * derives tenant/driver/bus/route/trip_type from the assignment row — the
+ * client passes only the assignment id. Preserves the one-active-trip-per-
+ * driver and one-active-trip-per-bus invariants.
+ *
+ * Raw backend errors are logged in DEV only; a generic safe error is thrown.
+ */
+export async function startTripFromAssignment(assignmentId: string): Promise<DriverTrip> {
+  const client = requireSupabase();
+
+  const { data, error } = await client.rpc('start_driver_trip_from_assignment', {
+    p_assignment_id: assignmentId,
+  });
+
+  if (error) {
+    if (import.meta.env.DEV) {
+      console.error('Failed to start trip from assignment', error);
+    }
+    const message = error.message ?? 'Could not start the trip.';
+    if (message.includes('already have an active trip')) {
+      throw new Error('You already have an active trip. End it before starting a new one.');
+    }
+    if (message.includes('bus already has an active trip')) {
+      throw new Error('This bus already has an active trip. End the existing trip or choose a different assignment.');
+    }
+    if (message.includes('not active')) {
+      throw new Error('This assignment is no longer active. Refresh your dashboard.');
+    }
+    if (message.includes('not found') || message.includes('Only a driver')) {
+      throw new Error('We could not start this trip. Please try again or contact your transportation admin.');
+    }
+    throw new Error('We could not start this trip. Please try again or contact your transportation admin.');
+  }
+
+  return data as DriverTrip;
+}

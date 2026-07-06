@@ -4,6 +4,11 @@ import { Card } from '@/components/ui/Card';
 import type { OrganizationProfile, School } from '@/types/organization';
 import type { Student } from '@/types/studentGuardian';
 import type {
+  AssignmentStatus,
+  CreateAssignmentInput,
+} from '@/types/driverAssignments';
+import type { TripType } from '@/types/trips';
+import type {
   Bus,
   BusStatus,
   CreateBusInput,
@@ -719,6 +724,118 @@ export function StudentRouteAssignmentForm({
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
             <option value="archived">Archived</option>
+          </select>
+        </label>
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Button type="submit" disabled={submitState === 'saving'}>{submitState === 'saving' ? 'Saving' : 'Save assignment'}</Button>
+        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+      </div>
+    </form>
+  );
+}
+
+export function DriverAssignmentForm({
+  drivers,
+  buses,
+  routes,
+  profileLabels,
+  defaultTenantId,
+  onSubmit,
+  onCancel,
+}: {
+  drivers: Driver[];
+  buses: Bus[];
+  routes: Route[];
+  profileLabels: Map<string, string>;
+  defaultTenantId: string | null;
+  onSubmit: (input: CreateAssignmentInput) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [driverId, setDriverId] = useState('');
+  const [busId, setBusId] = useState('');
+  const [routeId, setRouteId] = useState('');
+  const [tripType, setTripType] = useState<TripType>('morning');
+  const [status, setStatus] = useState<AssignmentStatus>('active');
+  const [formError, setFormError] = useState<string | null>(null);
+  const [submitState, setSubmitState] = useState<SubmitState>('idle');
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    setFormError(null);
+
+    if (!defaultTenantId) {
+      setFormError('Use an account with a tenant before saving this assignment.');
+      return;
+    }
+    if (!driverId || !busId || !routeId) {
+      setFormError('Driver, bus, and route are required.');
+      return;
+    }
+
+    setSubmitState('saving');
+    try {
+      await onSubmit({
+        driverId,
+        busId,
+        routeId,
+        tripType,
+        status,
+      });
+    } finally {
+      setSubmitState('idle');
+    }
+  }
+
+  return (
+    <form className="grid gap-4" onSubmit={handleSubmit}>
+      {formError && <p className="text-sm font-semibold text-danger-700">{formError}</p>}
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className={labelClassName}>
+          Driver
+          <select className={fieldClassName} value={driverId} onChange={(event) => setDriverId(event.target.value)}>
+            <option value="">Select a driver</option>
+            {drivers.map((driver) => (
+              <option key={driver.id} value={driver.id}>
+                {profileLabels.get(driver.profile_id) ?? driver.employee_number ?? driver.profile_id}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={labelClassName}>
+          Bus
+          <select className={fieldClassName} value={busId} onChange={(event) => setBusId(event.target.value)}>
+            <option value="">Select a bus</option>
+            {buses.map((bus) => (
+              <option key={bus.id} value={bus.id}>
+                Bus {bus.bus_number}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={labelClassName}>
+          Route
+          <select className={fieldClassName} value={routeId} onChange={(event) => setRouteId(event.target.value)}>
+            <option value="">Select a route</option>
+            {routes.map((route) => (
+              <option key={route.id} value={route.id}>
+                {route.route_name} ({route.route_code})
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={labelClassName}>
+          Trip type
+          <select className={fieldClassName} value={tripType} onChange={(event) => setTripType(event.target.value as TripType)}>
+            <option value="morning">Morning</option>
+            <option value="evening">Evening</option>
+          </select>
+        </label>
+        <label className={labelClassName}>
+          Status
+          <select className={fieldClassName} value={status} onChange={(event) => setStatus(event.target.value as AssignmentStatus)}>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
           </select>
         </label>
       </div>
