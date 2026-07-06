@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
@@ -70,6 +71,22 @@ export function ParentDashboardPage() {
           title={`Bus ${mockParentBus.busNumber}`}
           description="Student visibility is limited by guardian RLS. Bus and trip details remain demo placeholders."
         />
+        <Card className="p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-navy-900">My Students & Routes</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                View your linked students and their assigned route information.
+              </p>
+            </div>
+            <Link
+              to="/guardian/routes"
+              className="inline-flex rounded-lg bg-navy-700 px-5 py-3 font-bold text-white hover:bg-navy-800"
+            >
+              View my students
+            </Link>
+          </div>
+        </Card>
         {loadingStudents && (
           <DataState
             title="Loading linked students"
