@@ -57,13 +57,24 @@ function mapRow(row: AdminLiveTripRpcRow): AdminLiveTrip {
  * authentication, admin role, and tenant isolation server-side. Returns only
  * active trips. Active trips without a location still appear (latestLatitude/
  * latestLongitude/latestLocationAt are null). No service-role key is used.
+ *
+ * Error handling: the raw Supabase/PostgREST error is logged only in
+ * development (import.meta.env.DEV) and never reaches the UI. A generic
+ * Error is thrown so callers cannot accidentally display backend details
+ * (function names, schema hints, policy failure text, etc.) to users.
  */
 export async function fetchAdminLiveTrips(): Promise<AdminLiveTrip[]> {
   const client = requireSupabase();
 
   const { data, error } = await client.rpc('get_admin_live_trip_monitoring');
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    // Log the raw backend error only in development. Never surface it to the UI.
+    if (import.meta.env.DEV) {
+      console.error('Failed to load admin live trips', error);
+    }
+    throw new Error('Unable to load admin live trips');
+  }
 
   const rows = (data ?? []) as AdminLiveTripRpcRow[];
   return rows.map(mapRow);

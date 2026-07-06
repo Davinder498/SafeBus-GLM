@@ -65,9 +65,10 @@ function tripRow(opts: {
   routeName?: string | null;
   busLabel?: string | null;
   driverName?: string | null;
+  tripId?: string;
 }): AdminLiveTripRpcRow {
   return {
-    trip_id: ADMIN.tripId,
+    trip_id: opts.tripId ?? ADMIN.tripId,
     tenant_id: ADMIN.tenantId,
     driver_id: ADMIN.driverId,
     driver_name: opts.driverName ?? 'Test Driver',
@@ -96,11 +97,13 @@ function tripRow(opts: {
 async function installAdminMock(page: Page, initialTrips: AdminLiveTripRpcRow[] = []) {
   let tripsForRpc: AdminLiveTripRpcRow[] = initialTrips;
   let failNext = false;
+  let failNextMessage = 'mock rpc failure';
   const setTrips = (rows: AdminLiveTripRpcRow[]) => {
     tripsForRpc = rows;
   };
-  const failNextCall = () => {
+  const failNextCall = (message = 'mock rpc failure') => {
     failNext = true;
+    failNextMessage = message;
   };
 
   await page.route('**/*', async (route: Route) => {
@@ -182,7 +185,8 @@ async function installAdminMock(page: Page, initialTrips: AdminLiveTripRpcRow[] 
           await route.fulfill({
             status: 500,
             contentType: 'application/json',
-            body: JSON.stringify({ message: 'mock rpc failure' }),
+            // Mimic a raw backend/PostgREST error with sensitive detail.
+            body: JSON.stringify({ message: failNextMessage }),
           });
           return;
         }
@@ -384,11 +388,12 @@ test.describe('Admin live trip monitoring — operational refresh (4D)', () => {
     const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
 
+    // Each trip gets a unique trip_id to avoid React key collisions.
     await installAdminMock(page, [
-      tripRow({ latestLocationAt: tenSecondsAgo, latestLatitude: 51.0, latestLongitude: -114.0, routeName: 'Fresh Route' }),
-      tripRow({ latestLocationAt: twoMinutesAgo, latestLatitude: 51.1, latestLongitude: -114.1, routeName: 'Stale Route' }),
-      tripRow({ latestLocationAt: tenMinutesAgo, latestLatitude: 51.2, latestLongitude: -114.2, routeName: 'Offline Route' }),
-      tripRow({ latestLocationAt: null, routeName: 'No Location Route' }),
+      tripRow({ tripId: '11111111-0000-0000-0000-000000000001', latestLocationAt: tenSecondsAgo, latestLatitude: 51.0, latestLongitude: -114.0, routeName: 'Fresh Route' }),
+      tripRow({ tripId: '11111111-0000-0000-0000-000000000002', latestLocationAt: twoMinutesAgo, latestLatitude: 51.1, latestLongitude: -114.1, routeName: 'Stale Route' }),
+      tripRow({ tripId: '11111111-0000-0000-0000-000000000003', latestLocationAt: tenMinutesAgo, latestLatitude: 51.2, latestLongitude: -114.2, routeName: 'Offline Route' }),
+      tripRow({ tripId: '11111111-0000-0000-0000-000000000004', latestLocationAt: null, routeName: 'No Location Route' }),
     ]);
     await page.goto('/admin/live-trips');
 
@@ -400,5 +405,50 @@ test.describe('Admin live trip monitoring — operational refresh (4D)', () => {
     await expect(page.getByText('Location stale')).toBeVisible();
     await expect(page.getByText('Location offline')).toBeVisible();
     await expect(page.getByText('No location yet')).toBeVisible();
+  });
+
+  test('initial load failure: raw backend error is not visible; generic error is visible', async ({ page }) => {
+    // Mock the very first RPC call to fail with a raw backend-like message
+    // that must NEVER appear in the UI.
+    const rawBackendMessage = 'permission denied for function get_admin_live_trip_monitoring';
+    const controls = await installAdminMock(page, []);
+    controls.failNextCall(rawBackendMessage);
+    await page.goto('/admin/live-trips');
+
+    // The generic initial error state is shown.
+    await expect(page.getByTestId('admin-live-trips-error')).toBeVisible();
+    await expect(page.getByText('We could not load active trips.')).toBeVisible();
+
+    // The raw backend detail must NOT be visible anywhere on the page.
+    await expect(page.getByText(rawBackendMessage)).toHaveCount(0);
+  });
+
+  test('refresh failure: raw backend error is not visible; generic refresh error is visible and existing trip remains', async ({ page }) => {
+    const rawBackendMessage = 'violates row-level security policy on driver_trips';
+    const controls = await installAdminMock(page, [
+      tripRow({ latestLocationAt: null, routeName: 'Survivor Route' }),
+    ]);
+    await page.goto('/admin/live-trips');
+
+    // Initial load succeeded: trip is visible.
+    await expect(page.getByTestId('admin-live-trip-card')).toBeVisible();
+    await expect(page.getByText('Survivor Route')).toBeVisible();
+
+    // Make the next RPC call fail with a raw backend-like message, then refresh.
+    controls.failNextCall(rawBackendMessage);
+    await page.getByTestId('admin-live-trips-refresh-button').click();
+
+    // The generic refresh error is shown.
+    await expect(page.getByTestId('admin-live-trips-refresh-error')).toBeVisible();
+    await expect(
+      page.getByText('Refresh failed. The last successful list is still shown.'),
+    ).toBeVisible();
+
+    // The raw backend detail must NOT be visible anywhere on the page.
+    await expect(page.getByText(rawBackendMessage)).toHaveCount(0);
+
+    // The existing trip is STILL visible (list was not wiped).
+    await expect(page.getByTestId('admin-live-trip-card')).toBeVisible();
+    await expect(page.getByText('Survivor Route')).toBeVisible();
   });
 });

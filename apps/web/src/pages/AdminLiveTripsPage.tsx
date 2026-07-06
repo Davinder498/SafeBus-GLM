@@ -91,15 +91,16 @@ export function AdminLiveTripsPage() {
       if (!opts.background) {
         setInitialLoading(false);
       }
-    } catch (err) {
+    } catch {
       if (!isMountedRef.current) return;
-      const message =
-        err instanceof Error ? err.message : 'Refresh failed. The last successful list is still shown.';
+      // Never display raw backend/Supabase error details in the UI. Use
+      // generic user-safe copy. The raw error is logged in DEV inside the
+      // service layer; here we only store safe strings in UI state.
       if (opts.background) {
         // Non-destructive: keep existing trips + lastRefreshedAt; surface error.
-        setRefreshError(message);
+        setRefreshError('Refresh failed. The last successful list is still shown.');
       } else {
-        setInitialError(message);
+        setInitialError('We could not load active trips. Please try again.');
         setInitialLoading(false);
       }
     } finally {
@@ -205,7 +206,7 @@ export function AdminLiveTripsPage() {
                 data-testid="admin-live-trips-refresh-error"
                 className="mt-3 rounded-md bg-warning-50 px-3 py-2 text-sm font-semibold text-warning-700"
               >
-                Refresh failed: {refreshError}. The last successful list is still shown.
+                {refreshError}
               </p>
             )}
           </Card>
@@ -220,7 +221,10 @@ export function AdminLiveTripsPage() {
 
         {showInitialError && (
           <div className="space-y-4" data-testid="admin-live-trips-error">
-            <DataState title="We could not load active trips." message={initialError ?? ''} />
+            <DataState
+              title="We could not load active trips."
+              message="Please try again."
+            />
             <Button type="button" variant="secondary" onClick={() => void load({ background: false })}>
               Try again
             </Button>
