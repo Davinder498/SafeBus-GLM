@@ -451,4 +451,36 @@ test.describe('Admin live trip monitoring — operational refresh (4D)', () => {
     await expect(page.getByTestId('admin-live-trip-card')).toBeVisible();
     await expect(page.getByText('Survivor Route')).toBeVisible();
   });
+
+  test('no-school active trip renders cleanly on /admin/live-trips (4E regression)', async ({ page }) => {
+    // The get_admin_live_trip_monitoring RPC does not return school_id, so a
+    // trip whose bus/route have school_id = null renders the same as any other
+    // trip. This test protects the 4E/4D interaction: a school-less active trip
+    // must appear with no null/undefined display issue.
+    const tenSecondsAgo = new Date(Date.now() - 10 * 1000).toISOString();
+    await installAdminMock(page, [
+      tripRow({
+        latestLocationAt: tenSecondsAgo,
+        latestLatitude: 51.0447,
+        latestLongitude: -114.0719,
+        routeName: 'No School Route',
+        busLabel: '77',
+        driverName: 'Driver Without School',
+      }),
+    ]);
+    await page.goto('/admin/live-trips');
+
+    // The trip card renders with the route name and bus label.
+    await expect(page.getByTestId('admin-live-trip-card')).toBeVisible();
+    await expect(page.getByText('No School Route')).toBeVisible();
+    await expect(page.getByText(/Bus 77/)).toBeVisible();
+    await expect(page.getByText('Driver: Driver Without School')).toBeVisible();
+
+    // No ugly null/undefined text appears anywhere on the page.
+    await expect(page.getByText('null', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('undefined', { exact: true })).toHaveCount(0);
+
+    // Fresh location label renders (the trip has a fresh location).
+    await expect(page.getByText('Live location fresh')).toBeVisible();
+  });
 });
