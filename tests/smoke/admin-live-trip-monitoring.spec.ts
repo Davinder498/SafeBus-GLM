@@ -65,9 +65,10 @@ function tripRow(opts: {
   routeName?: string | null;
   busLabel?: string | null;
   driverName?: string | null;
+  tripId?: string;
 }): AdminLiveTripRpcRow {
   return {
-    trip_id: ADMIN.tripId,
+    trip_id: opts.tripId ?? ADMIN.tripId,
     tenant_id: ADMIN.tenantId,
     driver_id: ADMIN.driverId,
     driver_name: opts.driverName ?? 'Test Driver',
@@ -86,13 +87,23 @@ function tripRow(opts: {
 }
 
 /**
- * Install a Supabase mock for the admin live-trips page. Returns a setter to
+ * Install a Supabase mock for the admin live-trips page. Returns controls to
  * change the RPC response between tests. Must be called BEFORE page.goto.
+ *
+ * - setTrips(rows): change the trips returned by the next RPC call.
+ * - failNextCall(): make the NEXT get_admin_live_trip_monitoring RPC call fail
+ *   with a 500, then resume normal responses afterwards.
  */
 async function installAdminMock(page: Page, initialTrips: AdminLiveTripRpcRow[] = []) {
   let tripsForRpc: AdminLiveTripRpcRow[] = initialTrips;
+  let failNext = false;
+  let failNextMessage = 'mock rpc failure';
   const setTrips = (rows: AdminLiveTripRpcRow[]) => {
     tripsForRpc = rows;
+  };
+  const failNextCall = (message = 'mock rpc failure') => {
+    failNext = true;
+    failNextMessage = message;
   };
 
   await page.route('**/*', async (route: Route) => {
@@ -169,6 +180,16 @@ async function installAdminMock(page: Page, initialTrips: AdminLiveTripRpcRow[] 
 
       // RPC: get_admin_live_trip_monitoring (POST)
       if (method === 'POST' && path.includes('/rpc/get_admin_live_trip_monitoring')) {
+        if (failNext) {
+          failNext = false;
+          await route.fulfill({
+            status: 500,
+            contentType: 'application/json',
+            // Mimic a raw backend/PostgREST error with sensitive detail.
+            body: JSON.stringify({ message: failNextMessage }),
+          });
+          return;
+        }
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -216,7 +237,7 @@ async function installAdminMock(page: Page, initialTrips: AdminLiveTripRpcRow[] 
     }
   });
 
-  return { setTrips };
+  return { setTrips, failNextCall };
 }
 
 test.describe('Admin live trip monitoring', () => {
@@ -265,11 +286,12 @@ test.describe('Admin live trip monitoring', () => {
   });
 
   test('stale-location status renders when the latest location is older than 60 seconds', async ({ page }) => {
-    // A timestamp 5 minutes ago — well beyond the 60s fresh threshold.
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    // A timestamp 2 minutes ago — beyond the 60s fresh threshold but within the
+    // 5-minute offline threshold, so it classifies as 'stale'.
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
     await installAdminMock(page, [
       tripRow({
-        latestLocationAt: fiveMinutesAgo,
+        latestLocationAt: twoMinutesAgo,
         latestLatitude: 51.0447,
         latestLongitude: -114.0719,
       }),
@@ -279,6 +301,23 @@ test.describe('Admin live trip monitoring', () => {
     await expect(page.getByTestId('admin-live-trip-card')).toBeVisible();
     await expect(page.getByText('Location stale')).toBeVisible();
     // The lat/lng text should be present (not the "waiting" fallback).
+    await expect(page.getByTestId('admin-live-trip-location')).toContainText('51.04');
+  });
+
+  test('offline-location status renders when the latest location is very stale', async ({ page }) => {
+    // A timestamp 10 minutes ago — beyond the 5-minute offline threshold.
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    await installAdminMock(page, [
+      tripRow({
+        latestLocationAt: tenMinutesAgo,
+        latestLatitude: 51.0447,
+        latestLongitude: -114.0719,
+      }),
+    ]);
+    await page.goto('/admin/live-trips');
+
+    await expect(page.getByTestId('admin-live-trip-card')).toBeVisible();
+    await expect(page.getByText('Location offline')).toBeVisible();
     await expect(page.getByTestId('admin-live-trip-location')).toContainText('51.04');
   });
 
@@ -297,5 +336,119 @@ test.describe('Admin live trip monitoring', () => {
     await expect(page.getByTestId('admin-live-trip-card')).toBeVisible();
     await expect(page.getByText('Live location fresh')).toBeVisible();
     await expect(page.getByTestId('admin-live-trip-location')).toContainText('51.04');
+  });
+});
+
+test.describe('Admin live trip monitoring — operational refresh (4D)', () => {
+  test('manual refresh button renders and can be clicked; last refreshed timestamp appears after load', async ({ page }) => {
+    await installAdminMock(page, [
+      tripRow({ latestLocationAt: null, routeName: 'Refreshable Route' }),
+    ]);
+    await page.goto('/admin/live-trips');
+
+    // Refresh button is visible and enabled (not currently refreshing).
+    const refreshButton = page.getByTestId('admin-live-trips-refresh-button');
+    await expect(refreshButton).toBeVisible();
+    await expect(refreshButton).toBeEnabled();
+
+    // Last refreshed timestamp is present after the initial successful load.
+    await expect(page.getByTestId('admin-live-trips-last-refreshed')).toContainText('Last refreshed');
+
+    // Click refresh; it should still be visible/enabled afterwards and the
+    // trip card should remain visible (non-destructive).
+    await refreshButton.click();
+    await expect(page.getByTestId('admin-live-trip-card')).toBeVisible();
+    await expect(refreshButton).toBeEnabled();
+  });
+
+  test('refresh error after initial load shows a non-destructive error and keeps the existing trip visible', async ({ page }) => {
+    const controls = await installAdminMock(page, [
+      tripRow({ latestLocationAt: null, routeName: 'Survivor Route' }),
+    ]);
+    await page.goto('/admin/live-trips');
+
+    // Initial load succeeded: trip is visible.
+    await expect(page.getByTestId('admin-live-trip-card')).toBeVisible();
+    await expect(page.getByText('Survivor Route')).toBeVisible();
+
+    // Make the next RPC call fail, then click refresh.
+    controls.failNextCall();
+    await page.getByTestId('admin-live-trips-refresh-button').click();
+
+    // Non-destructive refresh error appears.
+    await expect(page.getByTestId('admin-live-trips-refresh-error')).toBeVisible();
+
+    // The existing trip is STILL visible (list was not wiped).
+    await expect(page.getByTestId('admin-live-trip-card')).toBeVisible();
+    await expect(page.getByText('Survivor Route')).toBeVisible();
+  });
+
+  test('all four freshness labels render across fresh, stale, offline, and no-location trips', async ({ page }) => {
+    const tenSecondsAgo = new Date(Date.now() - 10 * 1000).toISOString();
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+
+    // Each trip gets a unique trip_id to avoid React key collisions.
+    await installAdminMock(page, [
+      tripRow({ tripId: '11111111-0000-0000-0000-000000000001', latestLocationAt: tenSecondsAgo, latestLatitude: 51.0, latestLongitude: -114.0, routeName: 'Fresh Route' }),
+      tripRow({ tripId: '11111111-0000-0000-0000-000000000002', latestLocationAt: twoMinutesAgo, latestLatitude: 51.1, latestLongitude: -114.1, routeName: 'Stale Route' }),
+      tripRow({ tripId: '11111111-0000-0000-0000-000000000003', latestLocationAt: tenMinutesAgo, latestLatitude: 51.2, latestLongitude: -114.2, routeName: 'Offline Route' }),
+      tripRow({ tripId: '11111111-0000-0000-0000-000000000004', latestLocationAt: null, routeName: 'No Location Route' }),
+    ]);
+    await page.goto('/admin/live-trips');
+
+    // Wait for the cards to render.
+    await expect(page.getByTestId('admin-live-trip-card')).toHaveCount(4);
+
+    // Each label is visible somewhere on the page.
+    await expect(page.getByText('Live location fresh')).toBeVisible();
+    await expect(page.getByText('Location stale')).toBeVisible();
+    await expect(page.getByText('Location offline')).toBeVisible();
+    await expect(page.getByText('No location yet')).toBeVisible();
+  });
+
+  test('initial load failure: raw backend error is not visible; generic error is visible', async ({ page }) => {
+    // Mock the very first RPC call to fail with a raw backend-like message
+    // that must NEVER appear in the UI.
+    const rawBackendMessage = 'permission denied for function get_admin_live_trip_monitoring';
+    const controls = await installAdminMock(page, []);
+    controls.failNextCall(rawBackendMessage);
+    await page.goto('/admin/live-trips');
+
+    // The generic initial error state is shown.
+    await expect(page.getByTestId('admin-live-trips-error')).toBeVisible();
+    await expect(page.getByText('We could not load active trips.')).toBeVisible();
+
+    // The raw backend detail must NOT be visible anywhere on the page.
+    await expect(page.getByText(rawBackendMessage)).toHaveCount(0);
+  });
+
+  test('refresh failure: raw backend error is not visible; generic refresh error is visible and existing trip remains', async ({ page }) => {
+    const rawBackendMessage = 'violates row-level security policy on driver_trips';
+    const controls = await installAdminMock(page, [
+      tripRow({ latestLocationAt: null, routeName: 'Survivor Route' }),
+    ]);
+    await page.goto('/admin/live-trips');
+
+    // Initial load succeeded: trip is visible.
+    await expect(page.getByTestId('admin-live-trip-card')).toBeVisible();
+    await expect(page.getByText('Survivor Route')).toBeVisible();
+
+    // Make the next RPC call fail with a raw backend-like message, then refresh.
+    controls.failNextCall(rawBackendMessage);
+    await page.getByTestId('admin-live-trips-refresh-button').click();
+
+    // The generic refresh error is shown.
+    await expect(page.getByTestId('admin-live-trips-refresh-error')).toBeVisible();
+    await expect(
+      page.getByText('Refresh failed. The last successful list is still shown.'),
+    ).toBeVisible();
+
+    // The raw backend detail must NOT be visible anywhere on the page.
+    await expect(page.getByText(rawBackendMessage)).toHaveCount(0);
+
+    // The existing trip is STILL visible (list was not wiped).
+    await expect(page.getByTestId('admin-live-trip-card')).toBeVisible();
+    await expect(page.getByText('Survivor Route')).toBeVisible();
   });
 });
