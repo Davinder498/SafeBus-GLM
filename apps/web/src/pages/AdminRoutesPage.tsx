@@ -99,7 +99,7 @@ export function AdminRoutesPage() {
         route.route_code,
         routeTypeLabels[route.route_type],
         route.status,
-        schoolNames.get(route.school_id) ?? route.school_id,
+        route.school_id ? (schoolNames.get(route.school_id) ?? route.school_id) : 'No school selected',
       ]
         .filter(Boolean)
         .join(' ')
@@ -165,6 +165,7 @@ export function AdminRoutesPage() {
             <RouteForm
               route={null}
               schools={schools}
+              defaultTenantId={profile?.tenant_id ?? null}
               onSubmit={handleCreateRoute}
               onCancel={() => setShowCreateForm(false)}
             />
@@ -176,6 +177,7 @@ export function AdminRoutesPage() {
             <RouteForm
               route={editingRoute}
               schools={schools}
+              defaultTenantId={profile?.tenant_id ?? null}
               onSubmit={handleUpdateRoute}
               onCancel={() => setEditingRoute(null)}
             />
@@ -222,7 +224,7 @@ export function AdminRoutesPage() {
                     <p className="text-sm font-semibold text-gray-500">{route.route_code}</p>
                     <h2 className="text-xl font-bold text-navy-900">{route.route_name}</h2>
                     <p className="mt-1 text-sm text-gray-600">
-                      {schoolNames.get(route.school_id) ?? route.school_id}
+                      {route.school_id ? (schoolNames.get(route.school_id) ?? 'No school selected') : 'No school selected'}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
@@ -247,8 +249,10 @@ export function AdminRoutesPage() {
                     </span>
                   </p>
                   <p className="text-gray-600">
-                    School id:{' '}
-                    <span className="font-semibold text-navy-900">{route.school_id}</span>
+                    School:{' '}
+                    <span className="font-semibold text-navy-900">
+                      {route.school_id ? (schoolNames.get(route.school_id) ?? route.school_id) : 'No school selected'}
+                    </span>
                   </p>
                   <p className="text-gray-600">
                     Created:{' '}
