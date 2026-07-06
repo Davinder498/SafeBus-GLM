@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -34,6 +35,22 @@ export function AdminDashboardPage() {
           title="Transportation operations"
           description="Mock operational summary for active school bus trips, alerts, GPS status, and confirmation events."
         />
+        <Card className="p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-navy-900">Live Trip Monitoring</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                View active driver trips and latest location status for your organization.
+              </p>
+            </div>
+            <Link
+              to="/admin/live-trips"
+              className="inline-flex rounded-lg bg-navy-700 px-5 py-3 font-bold text-white hover:bg-navy-800"
+            >
+              Open live monitoring
+            </Link>
+          </div>
+        </Card>
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <StatCard
             label="Active trips"
