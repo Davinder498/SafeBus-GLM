@@ -6,7 +6,7 @@ export type StudentGuardianRelationship = 'mother' | 'father' | 'guardian' | 'ca
 export interface Student {
   id: string;
   tenant_id: string;
-  school_id: string;
+  school_id: string | null;
   first_name: string;
   last_name: string;
   preferred_name: string | null;
