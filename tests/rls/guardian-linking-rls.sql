@@ -5,50 +5,75 @@
 --
 -- HOW TO RUN:
 --   1. First run the SEED block from student-roster-rls.sql to set up test data.
---   2. Then run each test block below.
+--   2. Run each test block below individually in Supabase SQL Editor.
+--      Each test is wrapped in BEGIN; ... ROLLBACK; so changes are undone.
 --   3. Run the CLEANUP block from student-roster-rls.sql when done.
 --
 -- These tests are MANUAL — they require a live Supabase database with all
 -- SafeBus migrations (0001-0019) applied.
+--
+-- IMPORTANT: Each test block uses BEGIN; ... ROLLBACK; so that SET LOCAL and
+-- set_config(..., true) take effect for the duration of the transaction.
+-- Do NOT split a test block across separate SQL Editor runs — the whole block
+-- from BEGIN to ROLLBACK must be executed as one statement.
+
+-- Test user UUIDs (from student-roster-rls.sql seed):
+--   c3000000-...-000000000001 = tenant_admin (Tenant A)
+--   c3000000-...-000000000002 = transportation_admin (Tenant A)
+--   c3000000-...-000000000003 = school_admin (Tenant A)
+--   c3000000-...-000000000004 = guardian (Tenant A)
+--   c3000000-...-000000000005 = driver (Tenant A)
 
 -- ===========================================================================
 -- TEST 1: Tenant admin CAN link student and guardian in own tenant
 -- ===========================================================================
+begin;
 set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000001';
+select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+
+-- Sanity check
+do $$
+begin
+  if auth.uid() is null then raise exception 'AUTH SANITY FAILED: auth.uid() is null'; end if;
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then raise exception 'AUTH SANITY FAILED: wrong auth.uid(): %', auth.uid(); end if;
+  if current_setting('role', true) <> 'authenticated' then raise exception 'AUTH SANITY FAILED: role is %', current_setting('role', true); end if;
+end $$;
 
 do $$
 begin
   perform public.admin_link_student_guardian(
-    'e5000000-0000-0000-0000-000000000001',  -- student_A1 in Tenant A
-    'd4000000-0000-0000-0000-000000000001'   -- guardian_A in Tenant A
+    'e5000000-0000-0000-0000-000000000001',
+    'd4000000-0000-0000-0000-000000000001'
   );
   raise notice 'TEST 1 PASSED: tenant_admin can link same-tenant student+guardian';
 exception
-  when others then
-    raise exception 'TEST 1 FAILED: %', sqlerrm;
+  when others then raise exception 'TEST 1 FAILED: %', sqlerrm;
 end
 $$;
-
--- Cleanup: deactivate the link we just created
-set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000001';
-delete from public.student_guardians where student_id = 'e5000000-0000-0000-0000-000000000001' and guardian_id = 'd4000000-0000-0000-0000-000000000001' and status = 'active' and id != 'f6000000-0000-0000-0000-000000000001';
+rollback;
 
 -- ===========================================================================
 -- TEST 2: Tenant admin CANNOT link own-tenant guardian to other-tenant student
 -- ===========================================================================
+begin;
 set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000001';
+select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+
+do $$
+begin
+  if auth.uid() is null then raise exception 'AUTH SANITY FAILED: auth.uid() is null'; end if;
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then raise exception 'AUTH SANITY FAILED: wrong auth.uid(): %', auth.uid(); end if;
+end $$;
 
 do $$
 begin
   perform public.admin_link_student_guardian(
-    'e5000000-0000-0000-0000-000000000002',  -- student_B1 in Tenant B
-    'd4000000-0000-0000-0000-000000000001'   -- guardian_A in Tenant A
+    'e5000000-0000-0000-0000-000000000002',
+    'd4000000-0000-0000-0000-000000000001'
   );
   raise exception 'TEST 2 FAILED: tenant_admin should NOT link other-tenant student';
 exception
@@ -60,19 +85,27 @@ exception
     end if;
 end
 $$;
+rollback;
 
 -- ===========================================================================
 -- TEST 3: Tenant admin CANNOT link other-tenant guardian to own-tenant student
 -- ===========================================================================
+begin;
 set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000001';
+select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+
+do $$
+begin
+  if auth.uid() is null then raise exception 'AUTH SANITY FAILED: auth.uid() is null'; end if;
+end $$;
 
 do $$
 begin
   perform public.admin_link_student_guardian(
-    'e5000000-0000-0000-0000-000000000001',  -- student_A1 in Tenant A
-    'd4000000-0000-0000-0000-000000000002'   -- a guardian ID that doesn't exist in Tenant A
+    'e5000000-0000-0000-0000-000000000001',
+    'd4000000-0000-0000-0000-000000000002'
   );
   raise exception 'TEST 3 FAILED: tenant_admin should NOT link other-tenant guardian';
 exception
@@ -84,13 +117,22 @@ exception
     end if;
 end
 $$;
+rollback;
 
 -- ===========================================================================
 -- TEST 4: Guardian CANNOT call admin_link_student_guardian
 -- ===========================================================================
+begin;
 set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000004';
+select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000004', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000004', 'role', 'authenticated')::text, true);
+
+do $$
+begin
+  if auth.uid() is null then raise exception 'AUTH SANITY FAILED: auth.uid() is null'; end if;
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000004'::uuid then raise exception 'AUTH SANITY FAILED: wrong auth.uid(): %', auth.uid(); end if;
+end $$;
 
 do $$
 begin
@@ -108,13 +150,22 @@ exception
     end if;
 end
 $$;
+rollback;
 
 -- ===========================================================================
 -- TEST 5: Driver CANNOT call admin_link_student_guardian
 -- ===========================================================================
+begin;
 set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000005';
+select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000005', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000005', 'role', 'authenticated')::text, true);
+
+do $$
+begin
+  if auth.uid() is null then raise exception 'AUTH SANITY FAILED: auth.uid() is null'; end if;
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000005'::uuid then raise exception 'AUTH SANITY FAILED: wrong auth.uid(): %', auth.uid(); end if;
+end $$;
 
 do $$
 begin
@@ -132,13 +183,21 @@ exception
     end if;
 end
 $$;
+rollback;
 
 -- ===========================================================================
 -- TEST 6: Direct INSERT to student_guardians is blocked (RPC-only writes)
 -- ===========================================================================
+begin;
 set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000001';
+select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+
+do $$
+begin
+  if auth.uid() is null then raise exception 'AUTH SANITY FAILED: auth.uid() is null'; end if;
+end $$;
 
 do $$
 begin
@@ -147,20 +206,28 @@ begin
   raise exception 'TEST 6 FAILED: direct INSERT should be blocked';
 exception
   when others then
-    if sqlerrm like '%permission denied%' or sqlerrm like '%row-level security%' then
+    if sqlerrm like '%permission denied%' or sqlerrm like '%row-level security%' or sqlerrm like '%new row violates%' then
       raise notice 'TEST 6 PASSED: direct INSERT blocked by RLS';
     else
       raise exception 'TEST 6 FAILED with unexpected error: %', sqlerrm;
     end if;
 end
 $$;
+rollback;
 
 -- ===========================================================================
 -- TEST 7: Direct UPDATE to student_guardians is blocked (RPC-only writes)
 -- ===========================================================================
+begin;
 set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000001';
+select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+
+do $$
+begin
+  if auth.uid() is null then raise exception 'AUTH SANITY FAILED: auth.uid() is null'; end if;
+end $$;
 
 do $$
 declare
@@ -175,17 +242,24 @@ begin
   end if;
 end
 $$;
+rollback;
 
 -- ===========================================================================
 -- TEST 8: Duplicate active links are prevented
 -- ===========================================================================
--- First, ensure the active link exists via RPC
+-- The seed has an active link f6000000... for student_A1 + guardian_A.
+-- Try to link the same pair again — should get "already linked" error.
+begin;
 set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000001';
+select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
 
--- The seed already has an active link f6000000... for student_A1 + guardian_A.
--- Try to link the same pair again.
+do $$
+begin
+  if auth.uid() is null then raise exception 'AUTH SANITY FAILED: auth.uid() is null'; end if;
+end $$;
+
 do $$
 begin
   perform public.admin_link_student_guardian(
@@ -202,20 +276,26 @@ exception
     end if;
 end
 $$;
+rollback;
 
 -- ===========================================================================
 -- TEST 9: Inactive same-tenant link CAN be reactivated
 -- ===========================================================================
 -- Deactivate the existing link first, then try to re-link.
+begin;
 set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000001';
+select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
 
 do $$
 begin
-  -- Deactivate via RPC
+  if auth.uid() is null then raise exception 'AUTH SANITY FAILED: auth.uid() is null'; end if;
+end $$;
+
+do $$
+begin
   perform public.admin_deactivate_student_guardian('f6000000-0000-0000-0000-000000000001');
-  -- Now re-link (should reactivate)
   perform public.admin_link_student_guardian(
     'e5000000-0000-0000-0000-000000000001',
     'd4000000-0000-0000-0000-000000000001'
@@ -226,13 +306,22 @@ exception
     raise exception 'TEST 9 FAILED: %', sqlerrm;
 end
 $$;
+rollback;
 
 -- ===========================================================================
 -- TEST 10: Guardian visibility RPC still scoped (unchanged)
 -- ===========================================================================
+begin;
 set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000004';
+select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000004', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000004', 'role', 'authenticated')::text, true);
+
+do $$
+begin
+  if auth.uid() is null then raise exception 'AUTH SANITY FAILED: auth.uid() is null'; end if;
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000004'::uuid then raise exception 'AUTH SANITY FAILED: wrong auth.uid(): %', auth.uid(); end if;
+end $$;
 
 do $$
 declare
@@ -246,41 +335,46 @@ begin
   end if;
 end
 $$;
+rollback;
 
 -- ===========================================================================
 -- TEST 11: Cross-tenant inactive link CANNOT be reactivated
 -- ===========================================================================
--- Setup: use postgres role to create an inactive link row in Tenant B for
--- student_B1 + guardian_A (a mismatched-tenant row). Then switch to
--- tenant_admin_A and try to reactivate it via the RPC. The RPC's tenant
--- filter on the existing-link lookup should NOT find this row (it belongs to
--- Tenant B), so it would attempt an INSERT which would hit the unique
--- constraint — but student_B1 is not in Tenant A, so the student validation
--- should reject it first.
+-- Setup: create a mismatched-tenant inactive link row using postgres role.
+-- Then switch to tenant_admin_A and try to link student_B1 + guardian_A.
+-- The RPC should reject because student_B1 is not in Tenant A.
+begin;
+-- Setup as postgres (privileged)
 set local role to 'postgres';
-set local request.jwt.claims.role to '';
-set local request.jwt.claims.sub to '';
+select set_config('request.jwt.claim.sub', '', true);
+select set_config('request.jwt.claim.role', '', true);
+select set_config('request.jwt.claims', '{}'::text, true);
 
--- Clean up any prior test row
 delete from public.student_guardians
 where student_id = 'e5000000-0000-0000-0000-000000000002'
   and guardian_id = 'd4000000-0000-0000-0000-000000000001';
 
--- Create the mismatched-tenant inactive link
 insert into public.student_guardians (tenant_id, student_id, guardian_id, relationship, status)
 values ('a1000000-0000-0000-0000-000000000002', 'e5000000-0000-0000-0000-000000000002', 'd4000000-0000-0000-0000-000000000001', 'guardian', 'inactive')
 on conflict do nothing;
 
--- Now switch to tenant_admin_A and try to link guardian_A to student_B1
+-- Now switch to tenant_admin_A
 set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000001';
+select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+
+do $$
+begin
+  if auth.uid() is null then raise exception 'AUTH SANITY FAILED: auth.uid() is null'; end if;
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then raise exception 'AUTH SANITY FAILED: wrong auth.uid(): %', auth.uid(); end if;
+end $$;
 
 do $$
 begin
   perform public.admin_link_student_guardian(
-    'e5000000-0000-0000-0000-000000000002',  -- student_B1 (Tenant B)
-    'd4000000-0000-0000-0000-000000000001'   -- guardian_A (Tenant A)
+    'e5000000-0000-0000-0000-000000000002',
+    'd4000000-0000-0000-0000-000000000001'
   );
   raise exception 'TEST 11 FAILED: should not reactivate cross-tenant link';
 exception
@@ -292,21 +386,22 @@ exception
     end if;
 end
 $$;
-
--- Cleanup the mismatched test row
-set local role to 'postgres';
-set local request.jwt.claims.role to '';
-set local request.jwt.claims.sub to '';
-delete from public.student_guardians
-where student_id = 'e5000000-0000-0000-0000-000000000002'
-  and guardian_id = 'd4000000-0000-0000-0000-000000000001';
+rollback;
 
 -- ===========================================================================
 -- TEST 12: Guardian CANNOT call admin_deactivate_student_guardian
 -- ===========================================================================
+begin;
 set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000004';
+select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000004', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000004', 'role', 'authenticated')::text, true);
+
+do $$
+begin
+  if auth.uid() is null then raise exception 'AUTH SANITY FAILED: auth.uid() is null'; end if;
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000004'::uuid then raise exception 'AUTH SANITY FAILED: wrong auth.uid(): %', auth.uid(); end if;
+end $$;
 
 do $$
 begin
@@ -321,13 +416,22 @@ exception
     end if;
 end
 $$;
+rollback;
 
 -- ===========================================================================
 -- TEST 13: Driver CANNOT call admin_deactivate_student_guardian
 -- ===========================================================================
+begin;
 set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000005';
+select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000005', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000005', 'role', 'authenticated')::text, true);
+
+do $$
+begin
+  if auth.uid() is null then raise exception 'AUTH SANITY FAILED: auth.uid() is null'; end if;
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000005'::uuid then raise exception 'AUTH SANITY FAILED: wrong auth.uid(): %', auth.uid(); end if;
+end $$;
 
 do $$
 begin
@@ -342,3 +446,4 @@ exception
     end if;
 end
 $$;
+rollback;
