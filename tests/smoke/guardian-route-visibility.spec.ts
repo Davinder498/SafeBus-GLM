@@ -208,10 +208,15 @@ async function installAdminLinkMock(page: Page) {
         await fulfillRows([]);
         return;
       }
-      if (method === 'POST' && path.includes('/student_guardians')) {
+      if (method === 'POST' && path.includes('/rpc/admin_link_student_guardian')) {
         const newLink = { id: 'link-1', tenant_id: GUARDIAN.tenantId, student_id: GUARDIAN.studentId, guardian_id: GUARDIAN.guardianId, relationship: 'guardian', can_receive_notifications: true, status: 'active', created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z' };
         links = [newLink];
-        await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(newLink) });
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(newLink) });
+        return;
+      }
+      if (method === 'POST' && path.includes('/rpc/admin_deactivate_student_guardian')) {
+        links = [];
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'link-1', status: 'inactive' }) });
         return;
       }
       await route.fallback();

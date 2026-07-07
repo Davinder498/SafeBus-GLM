@@ -52,19 +52,20 @@ export async function getMyLinkedStudents(): Promise<Student[]> {
 }
 
 /**
- * Create or reactivate a student-guardian link.
+ * Create or reactivate a student-guardian link via the secure
+ * admin_link_student_guardian() RPC.
  *
- * The table has a hard unique constraint on (student_id, guardian_id), so if a
- * link (active OR inactive) already exists for the same pair, a direct INSERT
- * will fail. This function:
- *   1. Checks if an existing link exists for the same student + guardian.
- *   2. If an ACTIVE link exists: throws a friendly "already linked" error.
- *   3. If an INACTIVE link exists: reactivates it (updates status to 'active'
- *      and refreshes the relationship). Preserves history — no hard delete.
- *   4. If no link exists: inserts a new active link.
+ * The RPC is SECURITY DEFINER and validates:
+ *   - caller is an authenticated transportation write admin
+ *   - student is active and in the caller's tenant
+ *   - guardian is active and in the caller's tenant
+ *   - if an active link exists, raises a friendly duplicate error
+ *   - if an inactive link exists, reactivates it
+ *   - if no link exists, inserts a new one
  *
- * The tenant_id is derived from the admin's profile, never trusted from the
- * form input. Raw backend errors are logged in DEV only.
+ * The client passes only student_id, guardian_id, and relationship — no
+ * tenant_id. Raw backend errors are logged in DEV only; the RPC's friendly
+ * error messages are passed through.
  */
 export async function createStudentGuardianLink(input: {
   studentId: string;
@@ -74,88 +75,52 @@ export async function createStudentGuardianLink(input: {
 }): Promise<StudentGuardian> {
   const client = requireSupabase();
 
+  // defaultTenantId is no longer sent to the server — the RPC derives it from
+  // the authenticated user. We keep the parameter for API compatibility but
+  // only use it for a client-side guard.
   if (!input.defaultTenantId) {
     throw new Error('Use an account with a tenant before saving this link.');
   }
 
-  const linkColumns = 'id, tenant_id, student_id, guardian_id, relationship, can_receive_notifications, status, created_at, updated_at';
+  const { data, error } = await client.rpc('admin_link_student_guardian', {
+    p_student_id: input.studentId,
+    p_guardian_id: input.guardianId,
+    p_relationship: input.relationship,
+    p_can_receive_notifications: true,
+  });
 
-  // 1. Check if an existing link (any status) exists for this student + guardian.
-  const { data: existing, error: lookupError } = await client
-    .from('student_guardians')
-    .select(linkColumns)
-    .eq('student_id', input.studentId)
-    .eq('guardian_id', input.guardianId)
-    .maybeSingle();
-
-  if (lookupError) {
+  if (error) {
     if (import.meta.env.DEV) {
-      console.error('Failed to look up existing student guardian link', lookupError);
+      console.error('Failed to link student guardian', error);
     }
-    throw new Error('We could not save the student guardian link. Please try again.');
-  }
-
-  // 2. If an active link already exists, reject with a friendly message.
-  if (existing && (existing as StudentGuardian).status === 'active') {
-    throw new Error('This student is already linked to this guardian.');
-  }
-
-  // 3. If an inactive link exists, reactivate it.
-  if (existing) {
-    const { data: reactivated, error: reactivateError } = await client
-      .from('student_guardians')
-      .update({
-        status: 'active',
-        relationship: input.relationship,
-        can_receive_notifications: true,
-      })
-      .eq('id', (existing as StudentGuardian).id)
-      .select(linkColumns)
-      .single();
-
-    if (reactivateError) {
-      if (import.meta.env.DEV) {
-        console.error('Failed to reactivate student guardian link', reactivateError);
-      }
+    const message = error.message ?? 'We could not save the student guardian link. Please try again.';
+    // Pass through the RPC's friendly error messages.
+    if (message.includes('already linked')) {
+      throw new Error('This student is already linked to this guardian.');
+    }
+    if (message.includes('Student not found') || message.includes('Guardian not found')) {
       throw new Error('We could not save the student guardian link. Please try again.');
     }
-
-    return reactivated as StudentGuardian;
-  }
-
-  // 4. No existing link — insert a new one.
-  const { data: inserted, error: insertError } = await client
-    .from('student_guardians')
-    .insert({
-      tenant_id: input.defaultTenantId,
-      student_id: input.studentId,
-      guardian_id: input.guardianId,
-      relationship: input.relationship,
-      can_receive_notifications: true,
-      status: 'active',
-    })
-    .select(linkColumns)
-    .single();
-
-  if (insertError) {
-    if (import.meta.env.DEV) {
-      console.error('Failed to create student guardian link', insertError);
+    if (message.includes('Only an admin')) {
+      throw new Error('We could not save the student guardian link. Please try again.');
     }
     throw new Error('We could not save the student guardian link. Please try again.');
   }
 
-  return inserted as StudentGuardian;
+  return data as StudentGuardian;
 }
 
 /**
- * Deactivate a student-guardian link (set status to 'inactive').
+ * Deactivate a student-guardian link via the secure
+ * admin_deactivate_student_guardian() RPC. The RPC validates that the link
+ * belongs to the caller's tenant and that the caller is an admin.
  */
 export async function deactivateStudentGuardianLink(linkId: string): Promise<void> {
   const client = requireSupabase();
-  const { error } = await client
-    .from('student_guardians')
-    .update({ status: 'inactive' })
-    .eq('id', linkId);
+
+  const { error } = await client.rpc('admin_deactivate_student_guardian', {
+    p_link_id: linkId,
+  });
 
   if (error) {
     if (import.meta.env.DEV) {
