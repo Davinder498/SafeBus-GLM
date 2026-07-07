@@ -1,436 +1,828 @@
 -- SafeBus Alberta - RLS Regression Tests: Student Roster
 --
--- Milestone 5A.2: Database/RLS regression test foundation for student roster
--- insert/update policies.
+-- Milestone 5A.2: manual database/RLS regression tests for student roster
+-- INSERT/UPDATE policies.
 --
 -- HOW TO RUN:
---   1. Open the hosted Supabase DEV project.
---   2. Go to SQL Editor.
---   3. Paste the SEED section first and run it to set up test data.
---   4. Then paste each TEST section and run it. Each test uses a local DO
---      block that raises an exception if the assertion fails.
+--   1. Open the hosted Supabase DEV project SQL Editor.
+--   2. Run this whole file, or run the sections in order.
+--   3. Do not run against production.
 --
--- These tests are MANUAL — they require a live Supabase database with the
--- SafeBus migrations (0001-0017) applied. They cannot be run in CI without
--- a local Supabase instance. See tests/rls/README.md for details.
+-- The seed and cleanup blocks run in the privileged SQL Editor context.
+-- Every simulated authenticated/anonymous user assertion runs inside its own
+-- explicit transaction with transaction-local role/JWT settings and rollback.
 --
--- IMPORTANT: These tests create and clean up their own test data. They do not
--- modify existing production data. The SEED block uses ON CONFLICT DO NOTHING
--- and a dedicated test tenant prefix to avoid collisions.
---
--- TEST DATA MODEL:
---   - Two tenants: Test Tenant A, Test Tenant B
---   - One school per tenant: Test School A, Test School B
---   - Users: tenant_admin_A, transportation_admin_A, school_admin_A,
---            guardian_A, driver_A (all in Tenant A)
---   - Students: student_A1 (Tenant A), student_B1 (Tenant B)
---   - The tests use `set role authenticated` + `set local request.jwt.claims`
---     to simulate different authenticated users.
---   - NOTE: In Supabase SQL Editor, you may need to run as the `postgres`
---     role (service role) to set custom JWT claims. If `set local
---     request.jwt.claims` is not available, use `set role` with pre-created
---     auth.users entries instead.
+-- JWT compatibility note:
+--   The tests set both request.jwt.claim.sub/request.jwt.claim.role and the
+--   legacy JSON request.jwt.claims GUC. Hosted Supabase projects may differ by
+--   PostgREST/Auth helper version. Each test asserts auth.uid() so a broken
+--   simulation fails before the RLS assertion.
 
 -- ===========================================================================
--- SEED: Create test tenants, schools, profiles, students
+-- PRIVILEGED CLEANUP BEFORE SEED
 -- ===========================================================================
--- Run this block once before running the individual test blocks.
 
--- Clean up any previous test data (safe — only touches test-prefixed rows).
-delete from public.student_guardians where tenant_id in (
-  select id from public.tenants where name like 'RLS_TEST_%'
+delete from public.student_guardians where id in (
+  'f6000000-0000-0000-0000-000000000001',
+  'f6000000-0000-0000-0000-000000000002',
+  'f6000000-0000-0000-0000-000000000003'
 );
-delete from public.students where tenant_id in (
-  select id from public.tenants where name like 'RLS_TEST_%'
-);
-delete from public.guardians where tenant_id in (
-  select id from public.tenants where name like 'RLS_TEST_%'
-);
-delete from public.drivers where tenant_id in (
-  select id from public.tenants where name like 'RLS_TEST_%'
-);
-delete from public.profiles where email like 'rls_test_%';
-delete from public.schools where name like 'RLS_TEST_%';
-delete from public.tenants where name like 'RLS_TEST_%';
 
--- Create test tenants
+delete from public.students where id in (
+  'e5000000-0000-0000-0000-000000000001',
+  'e5000000-0000-0000-0000-000000000002',
+  'e5000000-0000-0000-0000-000000000003',
+  'e5000000-0000-0000-0000-000000000004',
+  'e5000000-0000-0000-0000-000000000005',
+  'e5000000-0000-0000-0000-000000000006',
+  'e5000000-0000-0000-0000-000000000007'
+);
+
+delete from public.guardians where id in (
+  'd4000000-0000-0000-0000-000000000001',
+  'd4000000-0000-0000-0000-000000000003'
+);
+
+delete from public.drivers where id = 'd4000000-0000-0000-0000-000000000002';
+
+delete from public.profiles where id in (
+  'c3000000-0000-0000-0000-000000000001',
+  'c3000000-0000-0000-0000-000000000002',
+  'c3000000-0000-0000-0000-000000000003',
+  'c3000000-0000-0000-0000-000000000004',
+  'c3000000-0000-0000-0000-000000000005',
+  'c3000000-0000-0000-0000-000000000006'
+);
+
+delete from auth.users where id in (
+  'c3000000-0000-0000-0000-000000000001',
+  'c3000000-0000-0000-0000-000000000002',
+  'c3000000-0000-0000-0000-000000000003',
+  'c3000000-0000-0000-0000-000000000004',
+  'c3000000-0000-0000-0000-000000000005',
+  'c3000000-0000-0000-0000-000000000006'
+);
+
+delete from public.schools where id in (
+  'b2000000-0000-0000-0000-000000000001',
+  'b2000000-0000-0000-0000-000000000002',
+  'b2000000-0000-0000-0000-000000000003'
+);
+
+delete from public.tenants where id in (
+  'a1000000-0000-0000-0000-000000000001',
+  'a1000000-0000-0000-0000-000000000002'
+);
+
+-- ===========================================================================
+-- PRIVILEGED SEED
+-- ===========================================================================
+
 insert into public.tenants (id, name, type, status)
 values
   ('a1000000-0000-0000-0000-000000000001', 'RLS_TEST_Tenant_A', 'school', 'active'),
-  ('a1000000-0000-0000-0000-000000000002', 'RLS_TEST_Tenant_B', 'school', 'active')
-on conflict (id) do nothing;
+  ('a1000000-0000-0000-0000-000000000002', 'RLS_TEST_Tenant_B', 'school', 'active');
 
--- Create test schools
 insert into public.schools (id, tenant_id, name, province, status)
 values
-  ('b2000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'RLS_TEST_School_A', 'AB', 'active'),
-  ('b2000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000002', 'RLS_TEST_School_B', 'AB', 'active')
-on conflict (id) do nothing;
+  ('b2000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'RLS_TEST_School_A1', 'AB', 'active'),
+  ('b2000000-0000-0000-0000-000000000003', 'a1000000-0000-0000-0000-000000000001', 'RLS_TEST_School_A2', 'AB', 'active'),
+  ('b2000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000002', 'RLS_TEST_School_B1', 'AB', 'active');
 
--- Create test auth users (if not already present)
--- NOTE: In Supabase, auth.users must be created via the Auth API or admin panel.
--- For SQL Editor testing, you can insert directly into auth.users if you have
--- service-role access:
-insert into auth.users (id, email, encrypted_password, email_confirmed_at, role, aud, instance_id, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+insert into auth.users (
+  id,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  role,
+  aud,
+  instance_id,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  created_at,
+  updated_at
+)
 values
   ('c3000000-0000-0000-0000-000000000001', 'rls_test_tenant_admin@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now()),
   ('c3000000-0000-0000-0000-000000000002', 'rls_test_transportation_admin@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now()),
   ('c3000000-0000-0000-0000-000000000003', 'rls_test_school_admin@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now()),
-  ('c3000000-0000-0000-0000-000000000004', 'rls_test_guardian@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now()),
-  ('c3000000-0000-0000-0000-000000000005', 'rls_test_driver@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now())
-on conflict (id) do nothing;
+  ('c3000000-0000-0000-0000-000000000004', 'rls_test_guardian_a@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now()),
+  ('c3000000-0000-0000-0000-000000000005', 'rls_test_driver@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now()),
+  ('c3000000-0000-0000-0000-000000000006', 'rls_test_guardian_b@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now());
 
--- Create test profiles
 insert into public.profiles (id, tenant_id, school_id, full_name, email, role, status)
 values
   ('c3000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000001', 'RLS Test Tenant Admin', 'rls_test_tenant_admin@test.local', 'tenant_admin', 'active'),
   ('c3000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000001', 'RLS Test Transportation Admin', 'rls_test_transportation_admin@test.local', 'transportation_admin', 'active'),
   ('c3000000-0000-0000-0000-000000000003', 'a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000001', 'RLS Test School Admin', 'rls_test_school_admin@test.local', 'school_admin', 'active'),
-  ('c3000000-0000-0000-0000-000000000004', 'a1000000-0000-0000-0000-000000000001', null, 'RLS Test Guardian', 'rls_test_guardian@test.local', 'guardian', 'active'),
-  ('c3000000-0000-0000-0000-000000000005', 'a1000000-0000-0000-0000-000000000001', null, 'RLS Test Driver', 'rls_test_driver@test.local', 'driver', 'active')
-on conflict (id) do nothing;
+  ('c3000000-0000-0000-0000-000000000004', 'a1000000-0000-0000-0000-000000000001', null, 'RLS Test Guardian A', 'rls_test_guardian_a@test.local', 'guardian', 'active'),
+  ('c3000000-0000-0000-0000-000000000005', 'a1000000-0000-0000-0000-000000000001', null, 'RLS Test Driver', 'rls_test_driver@test.local', 'driver', 'active'),
+  ('c3000000-0000-0000-0000-000000000006', 'a1000000-0000-0000-0000-000000000001', null, 'RLS Test Guardian B', 'rls_test_guardian_b@test.local', 'guardian', 'active');
 
--- Create test guardian record
 insert into public.guardians (id, tenant_id, profile_id, full_name, email, status)
-values ('d4000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'c3000000-0000-0000-0000-000000000004', 'RLS Test Guardian', 'rls_test_guardian@test.local', 'active')
-on conflict (id) do nothing;
-
--- Create test driver record
-insert into public.drivers (id, tenant_id, profile_id, status)
-values ('d4000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000001', 'c3000000-0000-0000-0000-000000000005', 'active')
-on conflict (id) do nothing;
-
--- Create test students
-insert into public.students (id, tenant_id, school_id, first_name, last_name, status)
 values
-  ('e5000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000001', 'RLS_Test', 'Student_A1', 'active'),
-  ('e5000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000002', 'b2000000-0000-0000-0000-000000000002', 'RLS_Test', 'Student_B1', 'active')
-on conflict (id) do nothing;
+  ('d4000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'c3000000-0000-0000-0000-000000000004', 'RLS Test Guardian A', 'rls_test_guardian_a@test.local', 'active'),
+  ('d4000000-0000-0000-0000-000000000003', 'a1000000-0000-0000-0000-000000000001', 'c3000000-0000-0000-0000-000000000006', 'RLS Test Guardian B', 'rls_test_guardian_b@test.local', 'active');
 
--- Create active guardian-student link
+insert into public.drivers (id, tenant_id, profile_id, status)
+values ('d4000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000001', 'c3000000-0000-0000-0000-000000000005', 'active');
+
+insert into public.students (id, tenant_id, school_id, first_name, last_name, grade, status)
+values
+  ('e5000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000001', 'RLS_Test', 'Active_Linked_A', '5', 'active'),
+  ('e5000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000001', 'RLS_Test', 'Inactive_Link_A', '5', 'active'),
+  ('e5000000-0000-0000-0000-000000000003', 'a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000001', 'RLS_Test', 'Unlinked_A', '5', 'active'),
+  ('e5000000-0000-0000-0000-000000000004', 'a1000000-0000-0000-0000-000000000002', 'b2000000-0000-0000-0000-000000000002', 'RLS_Test', 'Cross_Tenant_B', '5', 'active'),
+  ('e5000000-0000-0000-0000-000000000005', 'a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000001', 'RLS_Test', 'Guardian_B_Linked', '5', 'active'),
+  ('e5000000-0000-0000-0000-000000000006', 'a1000000-0000-0000-0000-000000000001', null, 'RLS_Test', 'Null_School_A', '5', 'active'),
+  ('e5000000-0000-0000-0000-000000000007', 'a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000003', 'RLS_Test', 'Other_School_A', '5', 'active');
+
 insert into public.student_guardians (id, tenant_id, student_id, guardian_id, relationship, status)
-values ('f6000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'e5000000-0000-0000-0000-000000000001', 'd4000000-0000-0000-0000-000000000001', 'guardian', 'active')
-on conflict (id) do nothing;
-
--- Create inactive guardian-student link (for guardian visibility negative test)
-insert into public.student_guardians (id, tenant_id, student_id, guardian_id, relationship, status)
-values ('f6000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000001', 'e5000000-0000-0000-0000-000000000002', 'd4000000-0000-0000-0000-000000000001', 'guardian', 'inactive')
-on conflict (id) do nothing;
-
--- ===========================================================================
--- HELPER: Simulate an authenticated user by setting the JWT claims
--- ===========================================================================
--- In Supabase SQL Editor (running as postgres/service role), you can simulate
--- an authenticated user by setting the local JWT claims. The RLS policies use
--- auth.uid() which reads the "sub" claim from request.jwt.claims.
---
--- Usage before each test block:
---   set local request.jwt.claims.role to 'authenticated';
---   set local request.jwt.claims.sub to '<profile_id>';
---   set local role to 'authenticated';
---
--- Then run the INSERT/UPDATE/SELECT statement. If RLS blocks it, you'll get
--- an error (new row violates row-level security / permission denied).
+values
+  ('f6000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'e5000000-0000-0000-0000-000000000001', 'd4000000-0000-0000-0000-000000000001', 'guardian', 'active'),
+  ('f6000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000001', 'e5000000-0000-0000-0000-000000000002', 'd4000000-0000-0000-0000-000000000001', 'guardian', 'inactive'),
+  ('f6000000-0000-0000-0000-000000000003', 'a1000000-0000-0000-0000-000000000001', 'e5000000-0000-0000-0000-000000000005', 'd4000000-0000-0000-0000-000000000003', 'guardian', 'active');
 
 -- ===========================================================================
 -- TEST 1: Tenant admin CAN create student with school_id IS NULL
 -- ===========================================================================
-set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000001';
-
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000001';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000001","role":"authenticated"}';
 do $$
 begin
-  -- Should succeed: tenant_admin creating NULL-school student in own tenant
-  insert into public.students (tenant_id, school_id, first_name, last_name, status)
-  values ('a1000000-0000-0000-0000-000000000001', null, 'TestNull', 'SchoolStudent', 'active');
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+    raise exception 'TEST 1 FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'tenant_admin' then
+    raise exception 'TEST 1 FAILED: expected tenant_admin, got %', public.current_user_role();
+  end if;
+
+  insert into public.students (id, tenant_id, school_id, first_name, last_name, status)
+  values ('e5100000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', null, 'RLS_Insert', 'TenantAdminNullSchool', 'active');
   raise notice 'TEST 1 PASSED: tenant_admin can create NULL-school student';
-exception
-  when others then
-    raise exception 'TEST 1 FAILED: tenant_admin should be able to create NULL-school student. Error: %', sqlerrm;
 end
 $$;
-
--- Cleanup
-delete from public.students where first_name = 'TestNull' and last_name = 'SchoolStudent';
+rollback;
 
 -- ===========================================================================
 -- TEST 2: Tenant admin CAN create student with same-tenant school_id
 -- ===========================================================================
-set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000001';
-
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000001';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000001","role":"authenticated"}';
 do $$
 begin
-  insert into public.students (tenant_id, school_id, first_name, last_name, status)
-  values ('a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000001', 'TestSame', 'SchoolStudent', 'active');
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+    raise exception 'TEST 2 FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'tenant_admin' then
+    raise exception 'TEST 2 FAILED: expected tenant_admin, got %', public.current_user_role();
+  end if;
+
+  insert into public.students (id, tenant_id, school_id, first_name, last_name, status)
+  values ('e5100000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000001', 'RLS_Insert', 'TenantAdminSameSchool', 'active');
   raise notice 'TEST 2 PASSED: tenant_admin can create same-tenant school student';
-exception
-  when others then
-    raise exception 'TEST 2 FAILED: tenant_admin should be able to create same-tenant school student. Error: %', sqlerrm;
 end
 $$;
-
--- Cleanup
-delete from public.students where first_name = 'TestSame' and last_name = 'SchoolStudent';
+rollback;
 
 -- ===========================================================================
--- TEST 3: Tenant admin CANNOT create student with cross-tenant school_id
+-- TEST 3: Tenant admin CANNOT create student with another tenant's school_id
 -- ===========================================================================
-set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000001';
-
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000001';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000001","role":"authenticated"}';
 do $$
 begin
-  insert into public.students (tenant_id, school_id, first_name, last_name, status)
-  values ('a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000002', 'TestCross', 'TenantSchool', 'active');
-  raise exception 'TEST 3 FAILED: tenant_admin should NOT be able to create student with cross-tenant school_id';
-exception
-  when others then
-    if sqlerrm like '%row-level security%' or sqlerrm like '%new row violates%' then
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+    raise exception 'TEST 3 FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'tenant_admin' then
+    raise exception 'TEST 3 FAILED: expected tenant_admin, got %', public.current_user_role();
+  end if;
+
+  begin
+    insert into public.students (id, tenant_id, school_id, first_name, last_name, status)
+    values ('e5100000-0000-0000-0000-000000000003', 'a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000002', 'RLS_Insert', 'TenantAdminCrossSchool', 'active');
+    raise exception 'TEST 3 FAILED: cross-tenant school insert was allowed';
+  exception
+    when insufficient_privilege then
       raise notice 'TEST 3 PASSED: tenant_admin blocked from cross-tenant school_id';
-    else
-      raise exception 'TEST 3 FAILED with unexpected error: %', sqlerrm;
-    end if;
+  end;
 end
 $$;
+rollback;
 
 -- ===========================================================================
 -- TEST 4: Tenant admin CAN update same-tenant student basic fields
 -- ===========================================================================
-set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000001';
-
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000001';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000001","role":"authenticated"}';
 do $$
+declare
+  v_count int;
 begin
-  update public.students set first_name = 'UpdatedName' where id = 'e5000000-0000-0000-0000-000000000001';
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+    raise exception 'TEST 4 FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'tenant_admin' then
+    raise exception 'TEST 4 FAILED: expected tenant_admin, got %', public.current_user_role();
+  end if;
+
+  update public.students
+  set preferred_name = 'RosterEdit'
+  where id = 'e5000000-0000-0000-0000-000000000001';
+  get diagnostics v_count = row_count;
+  if v_count <> 1 then
+    raise exception 'TEST 4 FAILED: expected 1 updated row, got %', v_count;
+  end if;
   raise notice 'TEST 4 PASSED: tenant_admin can update same-tenant student';
-exception
-  when others then
-    raise exception 'TEST 4 FAILED: tenant_admin should be able to update same-tenant student. Error: %', sqlerrm;
 end
 $$;
-
--- Restore
-update public.students set first_name = 'RLS_Test' where id = 'e5000000-0000-0000-0000-000000000001';
+rollback;
 
 -- ===========================================================================
--- TEST 5: Tenant admin CANNOT update student to cross-tenant school_id
+-- TEST 5: Tenant admin CAN update NULL-school student to same-tenant school
 -- ===========================================================================
-set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000001';
-
-do $$
-begin
-  update public.students set school_id = 'b2000000-0000-0000-0000-000000000002' where id = 'e5000000-0000-0000-0000-000000000001';
-  raise exception 'TEST 5 FAILED: tenant_admin should NOT be able to update student to cross-tenant school_id';
-exception
-  when others then
-    if sqlerrm like '%row-level security%' or sqlerrm like '%new row violates%' then
-      raise notice 'TEST 5 PASSED: tenant_admin blocked from updating to cross-tenant school_id';
-    else
-      raise exception 'TEST 5 FAILED with unexpected error: %', sqlerrm;
-    end if;
-end
-$$;
-
--- ===========================================================================
--- TEST 6: Tenant admin CANNOT update another tenant's student
--- ===========================================================================
-set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000001';
-
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000001';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000001","role":"authenticated"}';
 do $$
 declare
   v_count int;
 begin
-  update public.students set first_name = 'HackedName' where id = 'e5000000-0000-0000-0000-000000000002';
-  get diagnostics v_count = row_count;
-  if v_count > 0 then
-    raise exception 'TEST 6 FAILED: tenant_admin should NOT be able to update another tenant''s student';
-  else
-    raise notice 'TEST 6 PASSED: tenant_admin blocked from updating other tenant''s student (0 rows affected)';
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+    raise exception 'TEST 5 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
+  if public.current_user_role() <> 'tenant_admin' then
+    raise exception 'TEST 5 FAILED: expected tenant_admin, got %', public.current_user_role();
+  end if;
+
+  update public.students
+  set school_id = 'b2000000-0000-0000-0000-000000000001'
+  where id = 'e5000000-0000-0000-0000-000000000006';
+  get diagnostics v_count = row_count;
+  if v_count <> 1 then
+    raise exception 'TEST 5 FAILED: expected 1 updated row, got %', v_count;
+  end if;
+  raise notice 'TEST 5 PASSED: tenant_admin can move NULL-school student to same-tenant school';
 end
 $$;
+rollback;
 
 -- ===========================================================================
--- TEST 7: School admin CANNOT create student with school_id IS NULL
+-- TEST 6: Tenant admin CAN update status active/inactive
 -- ===========================================================================
-set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000003';
-
-do $$
-begin
-  insert into public.students (tenant_id, school_id, first_name, last_name, status)
-  values ('a1000000-0000-0000-0000-000000000001', null, 'TestSchool', 'AdminNull', 'active');
-  raise exception 'TEST 7 FAILED: school_admin should NOT be able to create NULL-school student';
-exception
-  when others then
-    if sqlerrm like '%row-level security%' or sqlerrm like '%new row violates%' then
-      raise notice 'TEST 7 PASSED: school_admin blocked from creating NULL-school student';
-    else
-      raise exception 'TEST 7 FAILED with unexpected error: %', sqlerrm;
-    end if;
-end
-$$;
-
--- ===========================================================================
--- TEST 8: School admin CAN create student with own school_id
--- ===========================================================================
-set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000003';
-
-do $$
-begin
-  insert into public.students (tenant_id, school_id, first_name, last_name, status)
-  values ('a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000001', 'TestSchool', 'AdminOwn', 'active');
-  raise notice 'TEST 8 PASSED: school_admin can create student with own school_id';
-exception
-  when others then
-    raise exception 'TEST 8 FAILED: school_admin should be able to create student with own school_id. Error: %', sqlerrm;
-end
-$$;
-
--- Cleanup
-delete from public.students where first_name = 'TestSchool' and last_name = 'AdminOwn';
-
--- ===========================================================================
--- TEST 9: School admin CANNOT create student with another school's school_id
--- ===========================================================================
-set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000003';
-
-do $$
-begin
-  insert into public.students (tenant_id, school_id, first_name, last_name, status)
-  values ('a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000002', 'TestSchool', 'AdminOther', 'active');
-  raise exception 'TEST 9 FAILED: school_admin should NOT be able to create student with another school''s school_id';
-exception
-  when others then
-    if sqlerrm like '%row-level security%' or sqlerrm like '%new row violates%' then
-      raise notice 'TEST 9 PASSED: school_admin blocked from creating student with other school_id';
-    else
-      raise exception 'TEST 9 FAILED with unexpected error: %', sqlerrm;
-    end if;
-end
-$$;
-
--- ===========================================================================
--- TEST 10: Guardian CANNOT insert students
--- ===========================================================================
-set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000004';
-
-do $$
-begin
-  insert into public.students (tenant_id, school_id, first_name, last_name, status)
-  values ('a1000000-0000-0000-0000-000000000001', null, 'TestGuardian', 'Insert', 'active');
-  raise exception 'TEST 10 FAILED: guardian should NOT be able to insert students';
-exception
-  when others then
-    if sqlerrm like '%row-level security%' or sqlerrm like '%new row violates%' then
-      raise notice 'TEST 10 PASSED: guardian blocked from inserting students';
-    else
-      raise exception 'TEST 10 FAILED with unexpected error: %', sqlerrm;
-    end if;
-end
-$$;
-
--- ===========================================================================
--- TEST 11: Guardian CANNOT update students
--- ===========================================================================
-set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000004';
-
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000001';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000001","role":"authenticated"}';
 do $$
 declare
   v_count int;
 begin
-  update public.students set first_name = 'HackedByGuardian' where id = 'e5000000-0000-0000-0000-000000000001';
-  get diagnostics v_count = row_count;
-  if v_count > 0 then
-    raise exception 'TEST 11 FAILED: guardian should NOT be able to update students';
-  else
-    raise notice 'TEST 11 PASSED: guardian blocked from updating students (0 rows affected)';
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+    raise exception 'TEST 6 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
+  if public.current_user_role() <> 'tenant_admin' then
+    raise exception 'TEST 6 FAILED: expected tenant_admin, got %', public.current_user_role();
+  end if;
+
+  update public.students
+  set status = 'inactive'
+  where id = 'e5000000-0000-0000-0000-000000000001';
+  get diagnostics v_count = row_count;
+  if v_count <> 1 then
+    raise exception 'TEST 6 FAILED: expected 1 updated row, got %', v_count;
+  end if;
+  raise notice 'TEST 6 PASSED: tenant_admin can update student status';
 end
 $$;
+rollback;
 
 -- ===========================================================================
--- TEST 12: Driver CANNOT insert students
+-- TEST 7: Tenant admin CANNOT update student to another tenant's school_id
 -- ===========================================================================
-set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000005';
-
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000001';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000001","role":"authenticated"}';
 do $$
 begin
-  insert into public.students (tenant_id, school_id, first_name, last_name, status)
-  values ('a1000000-0000-0000-0000-000000000001', null, 'TestDriver', 'Insert', 'active');
-  raise exception 'TEST 12 FAILED: driver should NOT be able to insert students';
-exception
-  when others then
-    if sqlerrm like '%row-level security%' or sqlerrm like '%new row violates%' then
-      raise notice 'TEST 12 PASSED: driver blocked from inserting students';
-    else
-      raise exception 'TEST 12 FAILED with unexpected error: %', sqlerrm;
-    end if;
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+    raise exception 'TEST 7 FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'tenant_admin' then
+    raise exception 'TEST 7 FAILED: expected tenant_admin, got %', public.current_user_role();
+  end if;
+
+  begin
+    update public.students
+    set school_id = 'b2000000-0000-0000-0000-000000000002'
+    where id = 'e5000000-0000-0000-0000-000000000001';
+    raise exception 'TEST 7 FAILED: cross-tenant school update was allowed';
+  exception
+    when insufficient_privilege then
+      raise notice 'TEST 7 PASSED: tenant_admin blocked from cross-tenant school_id update';
+  end;
 end
 $$;
+rollback;
 
 -- ===========================================================================
--- TEST 13: Driver CANNOT update students
+-- TEST 8: Tenant admin CANNOT update student's tenant_id to another tenant
 -- ===========================================================================
-set local role to 'authenticated';
-set local request.jwt.claims.role to 'authenticated';
-set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000005';
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000001';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000001","role":"authenticated"}';
+do $$
+begin
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+    raise exception 'TEST 8 FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'tenant_admin' then
+    raise exception 'TEST 8 FAILED: expected tenant_admin, got %', public.current_user_role();
+  end if;
 
+  begin
+    update public.students
+    set tenant_id = 'a1000000-0000-0000-0000-000000000002',
+        school_id = 'b2000000-0000-0000-0000-000000000002'
+    where id = 'e5000000-0000-0000-0000-000000000001';
+    raise exception 'TEST 8 FAILED: tenant_id reassignment was allowed';
+  exception
+    when insufficient_privilege then
+      raise notice 'TEST 8 PASSED: tenant_admin blocked from tenant_id reassignment';
+  end;
+end
+$$;
+rollback;
+
+-- ===========================================================================
+-- TEST 9: Tenant admin CANNOT update another tenant's student
+-- ===========================================================================
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000001';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000001","role":"authenticated"}';
 do $$
 declare
   v_count int;
 begin
-  update public.students set first_name = 'HackedByDriver' where id = 'e5000000-0000-0000-0000-000000000001';
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+    raise exception 'TEST 9 FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'tenant_admin' then
+    raise exception 'TEST 9 FAILED: expected tenant_admin, got %', public.current_user_role();
+  end if;
+
+  update public.students
+  set first_name = 'RLS_Hacked'
+  where id = 'e5000000-0000-0000-0000-000000000004';
   get diagnostics v_count = row_count;
-  if v_count > 0 then
-    raise exception 'TEST 13 FAILED: driver should NOT be able to update students';
-  else
-    raise notice 'TEST 13 PASSED: driver blocked from updating students (0 rows affected)';
+  if v_count <> 0 then
+    raise exception 'TEST 9 FAILED: expected 0 updated rows, got %', v_count;
+  end if;
+  raise notice 'TEST 9 PASSED: tenant_admin cannot update another tenant student';
+end
+$$;
+rollback;
+
+-- ===========================================================================
+-- TEST 10: Transportation admin CAN create/update own-tenant NULL-school student
+-- ===========================================================================
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000002';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000002","role":"authenticated"}';
+do $$
+declare
+  v_count int;
+begin
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000002'::uuid then
+    raise exception 'TEST 10 FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'transportation_admin' then
+    raise exception 'TEST 10 FAILED: expected transportation_admin, got %', public.current_user_role();
+  end if;
+
+  insert into public.students (id, tenant_id, school_id, first_name, last_name, status)
+  values ('e5100000-0000-0000-0000-000000000010', 'a1000000-0000-0000-0000-000000000001', null, 'RLS_Insert', 'TransportationAdminNullSchool', 'active');
+
+  update public.students
+  set preferred_name = 'TransportEdit'
+  where id = 'e5100000-0000-0000-0000-000000000010';
+  get diagnostics v_count = row_count;
+  if v_count <> 1 then
+    raise exception 'TEST 10 FAILED: expected 1 updated row, got %', v_count;
+  end if;
+  raise notice 'TEST 10 PASSED: transportation_admin can create/update own-tenant NULL-school student';
+end
+$$;
+rollback;
+
+-- ===========================================================================
+-- TEST 11: Transportation admin CANNOT write another tenant's student/school
+-- ===========================================================================
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000002';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000002","role":"authenticated"}';
+do $$
+declare
+  v_count int;
+begin
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000002'::uuid then
+    raise exception 'TEST 11 FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'transportation_admin' then
+    raise exception 'TEST 11 FAILED: expected transportation_admin, got %', public.current_user_role();
+  end if;
+
+  begin
+    insert into public.students (id, tenant_id, school_id, first_name, last_name, status)
+    values ('e5100000-0000-0000-0000-000000000011', 'a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000002', 'RLS_Insert', 'TransportationAdminCrossSchool', 'active');
+    raise exception 'TEST 11 FAILED: transportation_admin cross-tenant school insert was allowed';
+  exception
+    when insufficient_privilege then
+      raise notice 'TEST 11 PASSED: transportation_admin blocked from cross-tenant school insert';
+  end;
+
+  update public.students
+  set first_name = 'RLS_Hacked'
+  where id = 'e5000000-0000-0000-0000-000000000004';
+  get diagnostics v_count = row_count;
+  if v_count <> 0 then
+    raise exception 'TEST 11 FAILED: expected 0 cross-tenant updated rows, got %', v_count;
   end if;
 end
 $$;
+rollback;
 
 -- ===========================================================================
--- CLEANUP: Remove all test data
+-- TEST 12: School admin CAN create/update own-school student
 -- ===========================================================================
--- Run this after all tests are complete.
-set local role to 'postgres';
-set local request.jwt.claims.role to '';
-set local request.jwt.claims.sub to '';
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000003';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000003","role":"authenticated"}';
+do $$
+declare
+  v_count int;
+begin
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000003'::uuid then
+    raise exception 'TEST 12 FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'school_admin' then
+    raise exception 'TEST 12 FAILED: expected school_admin, got %', public.current_user_role();
+  end if;
 
-delete from public.student_guardians where tenant_id in (
-  select id from public.tenants where name like 'RLS_TEST_%'
+  insert into public.students (id, tenant_id, school_id, first_name, last_name, status)
+  values ('e5100000-0000-0000-0000-000000000012', 'a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000001', 'RLS_Insert', 'SchoolAdminOwnSchool', 'active');
+
+  update public.students
+  set preferred_name = 'SchoolEdit'
+  where id = 'e5100000-0000-0000-0000-000000000012';
+  get diagnostics v_count = row_count;
+  if v_count <> 1 then
+    raise exception 'TEST 12 FAILED: expected 1 updated row, got %', v_count;
+  end if;
+  raise notice 'TEST 12 PASSED: school_admin can create/update own-school student';
+end
+$$;
+rollback;
+
+-- ===========================================================================
+-- TEST 13: School admin CANNOT create with NULL school_id
+-- ===========================================================================
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000003';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000003","role":"authenticated"}';
+do $$
+begin
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000003'::uuid then
+    raise exception 'TEST 13 FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'school_admin' then
+    raise exception 'TEST 13 FAILED: expected school_admin, got %', public.current_user_role();
+  end if;
+
+  begin
+    insert into public.students (id, tenant_id, school_id, first_name, last_name, status)
+    values ('e5100000-0000-0000-0000-000000000013', 'a1000000-0000-0000-0000-000000000001', null, 'RLS_Insert', 'SchoolAdminNullSchool', 'active');
+    raise exception 'TEST 13 FAILED: school_admin NULL-school insert was allowed';
+  exception
+    when insufficient_privilege then
+      raise notice 'TEST 13 PASSED: school_admin blocked from NULL-school insert';
+  end;
+end
+$$;
+rollback;
+
+-- ===========================================================================
+-- TEST 14: School admin CANNOT update own-school student to NULL school_id
+-- ===========================================================================
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000003';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000003","role":"authenticated"}';
+do $$
+begin
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000003'::uuid then
+    raise exception 'TEST 14 FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'school_admin' then
+    raise exception 'TEST 14 FAILED: expected school_admin, got %', public.current_user_role();
+  end if;
+
+  begin
+    update public.students
+    set school_id = null
+    where id = 'e5000000-0000-0000-0000-000000000001';
+    raise exception 'TEST 14 FAILED: school_admin own-school to NULL update was allowed';
+  exception
+    when insufficient_privilege then
+      raise notice 'TEST 14 PASSED: school_admin blocked from updating to NULL school_id';
+  end;
+end
+$$;
+rollback;
+
+-- ===========================================================================
+-- TEST 15: School admin CANNOT create/update with another school_id
+-- ===========================================================================
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000003';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000003","role":"authenticated"}';
+do $$
+declare
+  v_count int;
+begin
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000003'::uuid then
+    raise exception 'TEST 15 FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'school_admin' then
+    raise exception 'TEST 15 FAILED: expected school_admin, got %', public.current_user_role();
+  end if;
+
+  begin
+    insert into public.students (id, tenant_id, school_id, first_name, last_name, status)
+    values ('e5100000-0000-0000-0000-000000000015', 'a1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000003', 'RLS_Insert', 'SchoolAdminOtherSchool', 'active');
+    raise exception 'TEST 15 FAILED: school_admin other-school insert was allowed';
+  exception
+    when insufficient_privilege then
+      raise notice 'TEST 15 PASSED: school_admin blocked from other-school insert';
+  end;
+
+  update public.students
+  set preferred_name = 'OtherSchoolEdit'
+  where id = 'e5000000-0000-0000-0000-000000000007';
+  get diagnostics v_count = row_count;
+  if v_count <> 0 then
+    raise exception 'TEST 15 FAILED: expected 0 other-school updated rows, got %', v_count;
+  end if;
+end
+$$;
+rollback;
+
+-- ===========================================================================
+-- TEST 16: School admin CANNOT update tenant-wide NULL-school students
+-- ===========================================================================
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000003';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000003","role":"authenticated"}';
+do $$
+declare
+  v_count int;
+begin
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000003'::uuid then
+    raise exception 'TEST 16 FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'school_admin' then
+    raise exception 'TEST 16 FAILED: expected school_admin, got %', public.current_user_role();
+  end if;
+
+  update public.students
+  set preferred_name = 'NullSchoolEdit'
+  where id = 'e5000000-0000-0000-0000-000000000006';
+  get diagnostics v_count = row_count;
+  if v_count <> 0 then
+    raise exception 'TEST 16 FAILED: expected 0 NULL-school updated rows, got %', v_count;
+  end if;
+  raise notice 'TEST 16 PASSED: school_admin cannot update NULL-school students';
+end
+$$;
+rollback;
+
+-- ===========================================================================
+-- TEST 17: Guardian CANNOT insert/update students
+-- ===========================================================================
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000004';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000004","role":"authenticated"}';
+do $$
+declare
+  v_count int;
+begin
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000004'::uuid then
+    raise exception 'TEST 17 FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'guardian' then
+    raise exception 'TEST 17 FAILED: expected guardian, got %', public.current_user_role();
+  end if;
+
+  begin
+    insert into public.students (id, tenant_id, school_id, first_name, last_name, status)
+    values ('e5100000-0000-0000-0000-000000000017', 'a1000000-0000-0000-0000-000000000001', null, 'RLS_Insert', 'GuardianInsert', 'active');
+    raise exception 'TEST 17 FAILED: guardian insert was allowed';
+  exception
+    when insufficient_privilege then
+      raise notice 'TEST 17 PASSED: guardian blocked from insert';
+  end;
+
+  update public.students
+  set first_name = 'RLS_Hacked'
+  where id = 'e5000000-0000-0000-0000-000000000001';
+  get diagnostics v_count = row_count;
+  if v_count <> 0 then
+    raise exception 'TEST 17 FAILED: expected 0 guardian updated rows, got %', v_count;
+  end if;
+end
+$$;
+rollback;
+
+-- ===========================================================================
+-- TEST 18: Driver CANNOT insert/update students
+-- ===========================================================================
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = 'c3000000-0000-0000-0000-000000000005';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000005","role":"authenticated"}';
+do $$
+declare
+  v_count int;
+begin
+  if auth.uid() <> 'c3000000-0000-0000-0000-000000000005'::uuid then
+    raise exception 'TEST 18 FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'driver' then
+    raise exception 'TEST 18 FAILED: expected driver, got %', public.current_user_role();
+  end if;
+
+  begin
+    insert into public.students (id, tenant_id, school_id, first_name, last_name, status)
+    values ('e5100000-0000-0000-0000-000000000018', 'a1000000-0000-0000-0000-000000000001', null, 'RLS_Insert', 'DriverInsert', 'active');
+    raise exception 'TEST 18 FAILED: driver insert was allowed';
+  exception
+    when insufficient_privilege then
+      raise notice 'TEST 18 PASSED: driver blocked from insert';
+  end;
+
+  update public.students
+  set first_name = 'RLS_Hacked'
+  where id = 'e5000000-0000-0000-0000-000000000001';
+  get diagnostics v_count = row_count;
+  if v_count <> 0 then
+    raise exception 'TEST 18 FAILED: expected 0 driver updated rows, got %', v_count;
+  end if;
+end
+$$;
+rollback;
+
+-- ===========================================================================
+-- TEST 19: Anonymous CANNOT insert/update/read protected roster
+-- ===========================================================================
+begin;
+set local role anon;
+do $$
+begin
+  if auth.uid() is not null then
+    raise exception 'TEST 19 FAILED: expected anonymous auth.uid() NULL, got %', auth.uid();
+  end if;
+
+  begin
+    insert into public.students (id, tenant_id, school_id, first_name, last_name, status)
+    values ('e5100000-0000-0000-0000-000000000019', 'a1000000-0000-0000-0000-000000000001', null, 'RLS_Insert', 'AnonInsert', 'active');
+    raise exception 'TEST 19 FAILED: anonymous insert was allowed';
+  exception
+    when insufficient_privilege then
+      raise notice 'TEST 19 PASSED: anonymous blocked from insert';
+  end;
+
+  begin
+    update public.students
+    set first_name = 'RLS_Hacked'
+    where id = 'e5000000-0000-0000-0000-000000000001';
+    raise exception 'TEST 19 FAILED: anonymous update was allowed';
+  exception
+    when insufficient_privilege then
+      raise notice 'TEST 19 PASSED: anonymous blocked from update';
+  end;
+
+  begin
+    perform 1 from public.students limit 1;
+    raise exception 'TEST 19 FAILED: anonymous protected roster read was allowed';
+  exception
+    when insufficient_privilege then
+      raise notice 'TEST 19 PASSED: anonymous blocked from protected roster read';
+  end;
+end
+$$;
+rollback;
+
+-- ===========================================================================
+-- PRIVILEGED CLEANUP AFTER TESTS
+-- ===========================================================================
+
+delete from public.student_guardians where id in (
+  'f6000000-0000-0000-0000-000000000001',
+  'f6000000-0000-0000-0000-000000000002',
+  'f6000000-0000-0000-0000-000000000003'
 );
-delete from public.students where tenant_id in (
-  select id from public.tenants where name like 'RLS_TEST_%'
+
+delete from public.students where id in (
+  'e5000000-0000-0000-0000-000000000001',
+  'e5000000-0000-0000-0000-000000000002',
+  'e5000000-0000-0000-0000-000000000003',
+  'e5000000-0000-0000-0000-000000000004',
+  'e5000000-0000-0000-0000-000000000005',
+  'e5000000-0000-0000-0000-000000000006',
+  'e5000000-0000-0000-0000-000000000007',
+  'e5100000-0000-0000-0000-000000000001',
+  'e5100000-0000-0000-0000-000000000002',
+  'e5100000-0000-0000-0000-000000000003',
+  'e5100000-0000-0000-0000-000000000010',
+  'e5100000-0000-0000-0000-000000000011',
+  'e5100000-0000-0000-0000-000000000012',
+  'e5100000-0000-0000-0000-000000000013',
+  'e5100000-0000-0000-0000-000000000015',
+  'e5100000-0000-0000-0000-000000000017',
+  'e5100000-0000-0000-0000-000000000018',
+  'e5100000-0000-0000-0000-000000000019'
 );
-delete from public.guardians where tenant_id in (
-  select id from public.tenants where name like 'RLS_TEST_%'
+
+delete from public.guardians where id in (
+  'd4000000-0000-0000-0000-000000000001',
+  'd4000000-0000-0000-0000-000000000003'
 );
-delete from public.drivers where tenant_id in (
-  select id from public.tenants where name like 'RLS_TEST_%'
+
+delete from public.drivers where id = 'd4000000-0000-0000-0000-000000000002';
+
+delete from public.profiles where id in (
+  'c3000000-0000-0000-0000-000000000001',
+  'c3000000-0000-0000-0000-000000000002',
+  'c3000000-0000-0000-0000-000000000003',
+  'c3000000-0000-0000-0000-000000000004',
+  'c3000000-0000-0000-0000-000000000005',
+  'c3000000-0000-0000-0000-000000000006'
 );
-delete from public.profiles where email like 'rls_test_%';
-delete from auth.users where email like 'rls_test_%';
-delete from public.schools where name like 'RLS_TEST_%';
-delete from public.tenants where name like 'RLS_TEST_%';
+
+delete from auth.users where id in (
+  'c3000000-0000-0000-0000-000000000001',
+  'c3000000-0000-0000-0000-000000000002',
+  'c3000000-0000-0000-0000-000000000003',
+  'c3000000-0000-0000-0000-000000000004',
+  'c3000000-0000-0000-0000-000000000005',
+  'c3000000-0000-0000-0000-000000000006'
+);
+
+delete from public.schools where id in (
+  'b2000000-0000-0000-0000-000000000001',
+  'b2000000-0000-0000-0000-000000000002',
+  'b2000000-0000-0000-0000-000000000003'
+);
+
+delete from public.tenants where id in (
+  'a1000000-0000-0000-0000-000000000001',
+  'a1000000-0000-0000-0000-000000000002'
+);
