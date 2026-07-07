@@ -13,6 +13,9 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
   roster INSERT/UPDATE RLS, and includes safe cleanup before and after tests.
 - `guardian-visibility-rls.sql`: uses the student-roster seed data to test
   `get_guardian_student_route_visibility()` and guardian SELECT policies.
+- `guardian-linking-rls.sql`: tests the `admin_link_student_guardian()` and
+  `admin_deactivate_student_guardian()` RPCs — cross-tenant blocking, duplicate
+  prevention, reactivation, direct-write blocking, and guardian/driver denial.
 
 ## `pnpm test:rls`
 
