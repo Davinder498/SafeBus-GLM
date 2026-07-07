@@ -49,6 +49,7 @@ export function AdminStudentsPage() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [pendingStatusStudentId, setPendingStatusStudentId] = useState<string | null>(null);
 
   const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
 
@@ -155,6 +156,8 @@ export function AdminStudentsPage() {
   }
 
   async function handleDeactivate(studentId: string) {
+    if (pendingStatusStudentId) return;
+    setPendingStatusStudentId(studentId);
     setWriteError(null);
     setSuccessMessage(null);
     try {
@@ -163,10 +166,14 @@ export function AdminStudentsPage() {
       await load();
     } catch (deactivateError) {
       setWriteError(deactivateError instanceof Error ? deactivateError.message : 'Unable to deactivate student.');
+    } finally {
+      setPendingStatusStudentId(null);
     }
   }
 
   async function handleReactivate(studentId: string) {
+    if (pendingStatusStudentId) return;
+    setPendingStatusStudentId(studentId);
     setWriteError(null);
     setSuccessMessage(null);
     try {
@@ -175,6 +182,8 @@ export function AdminStudentsPage() {
       await load();
     } catch (reactivateError) {
       setWriteError(reactivateError instanceof Error ? reactivateError.message : 'Unable to reactivate student.');
+    } finally {
+      setPendingStatusStudentId(null);
     }
   }
 
@@ -184,7 +193,7 @@ export function AdminStudentsPage() {
         <PageHeader
           eyebrow="Students"
           title="Students"
-          description="Manage your school's student roster. Add, edit, and deactivate students."
+          description="Manage student records for your transportation account. Add, edit, and deactivate students."
         />
 
         {canWrite && (
@@ -215,7 +224,7 @@ export function AdminStudentsPage() {
           <StudentForm
             title="Add student"
             schools={schools}
-            onSubmit={(input) => void handleCreate(input)}
+            onSubmit={(input) => handleCreate(input)}
             onCancel={() => setShowCreateForm(false)}
           />
         )}
@@ -225,7 +234,7 @@ export function AdminStudentsPage() {
             title={`Edit ${editingStudent.first_name} ${editingStudent.last_name}`}
             schools={schools}
             initial={editingStudent}
-            onSubmit={(input) => void handleUpdate(editingStudent.id, input)}
+            onSubmit={(input) => handleUpdate(editingStudent.id, input)}
             onCancel={() => setEditingStudent(null)}
           />
         )}
@@ -295,8 +304,9 @@ export function AdminStudentsPage() {
                             size="sm"
                             variant="ghost"
                             onClick={() => void handleDeactivate(student.id)}
+                            disabled={pendingStatusStudentId === student.id}
                           >
-                            Deactivate
+                            {pendingStatusStudentId === student.id ? 'Deactivating…' : 'Deactivate'}
                           </Button>
                         ) : (
                           <Button
@@ -304,8 +314,9 @@ export function AdminStudentsPage() {
                             size="sm"
                             variant="ghost"
                             onClick={() => void handleReactivate(student.id)}
+                            disabled={pendingStatusStudentId === student.id}
                           >
-                            Reactivate
+                            {pendingStatusStudentId === student.id ? 'Reactivating…' : 'Reactivate'}
                           </Button>
                         )}
                       </>
@@ -350,7 +361,7 @@ interface StudentFormProps {
     grade: string;
     schoolStudentNumber: string;
     schoolId: string;
-  }) => void;
+  }) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -364,7 +375,7 @@ function StudentForm({ title, schools, initial, onSubmit, onCancel }: StudentFor
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setFormError(null);
 
@@ -374,15 +385,18 @@ function StudentForm({ title, schools, initial, onSubmit, onCancel }: StudentFor
     }
 
     setSaving(true);
-    onSubmit({
-      firstName,
-      lastName,
-      preferredName,
-      grade,
-      schoolStudentNumber,
-      schoolId,
-    });
-    setSaving(false);
+    try {
+      await onSubmit({
+        firstName,
+        lastName,
+        preferredName,
+        grade,
+        schoolStudentNumber,
+        schoolId,
+      });
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
