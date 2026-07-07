@@ -1,104 +1,153 @@
 # SafeBus RLS Regression Tests
 
-## What These Tests Cover
+These SQL scripts are manual security regression tests for the most critical
+SafeBus database boundaries: tenant isolation, roster writes, guardian-scoped
+visibility, and role behavior that UI smoke tests cannot prove.
 
-These SQL test scripts verify the most security-critical RLS policies and RPCs
-in SafeBus, focusing on tenant isolation and role boundaries that UI-level
-Playwright smoke tests cannot exercise (because Playwright tests mock Supabase
-HTTP responses and never touch the real database).
+Do not run these scripts against production. They are intended only for hosted
+Supabase DEV or a disposable database with SafeBus migrations applied.
 
-### Student Roster RLS (`student-roster-rls.sql`)
+## Files
 
-Tests the `can_write_student_roster()` helper and the student INSERT/UPDATE
-RLS policies (from migrations 0016 + 0017):
+- `student-roster-rls.sql`: seeds shared fixed-ID test data, tests student
+  roster INSERT/UPDATE RLS, and includes safe cleanup before and after tests.
+- `guardian-visibility-rls.sql`: uses the student-roster seed data to test
+  `get_guardian_student_route_visibility()` and guardian SELECT policies.
 
-| # | Test | Role | Expected |
-|---|------|------|----------|
-| 1 | Create student with NULL school_id | tenant_admin | ✅ Pass |
-| 2 | Create student with same-tenant school_id | tenant_admin | ✅ Pass |
-| 3 | Create student with cross-tenant school_id | tenant_admin | ❌ Blocked |
-| 4 | Update same-tenant student basic fields | tenant_admin | ✅ Pass |
-| 5 | Update student to cross-tenant school_id | tenant_admin | ❌ Blocked |
-| 6 | Update another tenant's student | tenant_admin | ❌ Blocked (0 rows) |
-| 7 | Create student with NULL school_id | school_admin | ❌ Blocked |
-| 8 | Create student with own school_id | school_admin | ✅ Pass |
-| 9 | Create student with another school's school_id | school_admin | ❌ Blocked |
-| 10 | Insert student | guardian | ❌ Blocked |
-| 11 | Update student | guardian | ❌ Blocked (0 rows) |
-| 12 | Insert student | driver | ❌ Blocked |
-| 13 | Update student | driver | ❌ Blocked (0 rows) |
+## `pnpm test:rls`
 
-### Guardian Visibility RLS (`guardian-visibility-rls.sql`)
+`pnpm test:rls` is a structural check only. It verifies that the RLS SQL files
+and this README exist, then prints a manual-test notice.
 
-Tests the `get_guardian_student_route_visibility()` RPC and guardian-scoped
-student_guardians SELECT policies:
+It does not connect to Supabase, does not execute SQL, and must not be reported
+as proof that the RLS assertions passed.
 
-| # | Test | Role | Expected |
-|---|------|------|----------|
-| 1 | See actively linked students via RPC | guardian | ✅ Returns linked student |
-| 2 | Does NOT see inactive-link students | guardian | ✅ Excluded |
-| 3 | Does NOT see cross-tenant students | guardian | ✅ Excluded |
-| 4 | Cannot use guardian RPC | driver | ✅ Returns 0 rows |
-| 5 | Cannot use guardian RPC as broad query | tenant_admin | ✅ Returns 0 rows |
-| 6 | Can read own student_guardians links | guardian | ✅ Returns own links |
-| 7 | Cannot read other guardian's links | guardian | ✅ Returns 0 other links |
+## Required Database Context
 
-## How to Run These Tests
+Run these scripts from a privileged SQL Editor/session in hosted Supabase DEV
+or a disposable database. The setup inserts fixed test rows into:
 
-These tests are **MANUAL** — they require a live Supabase database with all
-SafeBus migrations (0001–0017) applied. They cannot run in CI without a local
-Supabase instance.
+- `auth.users`
+- `public.tenants`
+- `public.schools`
+- `public.profiles`
+- `public.guardians`
+- `public.drivers`
+- `public.students`
+- `public.student_guardians`
 
-### Prerequisites
+The SQL Editor user must be allowed to insert/delete these test rows, including
+direct inserts into `auth.users`.
 
-- Hosted Supabase DEV project (or local Supabase via `supabase start`)
-- All SafeBus migrations applied (0001 through 0017)
-- SQL Editor access (or `psql` connection)
+## Transaction-Scoped User Simulation
 
-### Steps
+Every simulated role test follows this pattern:
 
-1. Open the Supabase DEV project's SQL Editor.
-2. Open `tests/rls/student-roster-rls.sql`.
-3. Run the **SEED** block (the first large section that creates test tenants,
-   schools, profiles, students, etc.).
-4. Run each **TEST** block individually. Each test uses a `DO $$ ... $$` block
-   that raises a `NOTICE` on success or an `EXCEPTION` on failure.
-5. After all student roster tests pass, run the **guardian visibility** tests
-   from `tests/rls/guardian-visibility-rls.sql` (the seed data from step 3
-   is still needed — do not clean up yet).
-6. Run the **CLEANUP** block from `student-roster-rls.sql` to remove all
-   test data.
+```sql
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = '<user-id>';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"<user-id>","role":"authenticated"}';
 
-### Interpreting Results
+do $$
+begin
+  if auth.uid() <> '<user-id>'::uuid then
+    raise exception 'auth.uid() simulation failed';
+  end if;
 
-- `NOTICE: TEST N PASSED: ...` → the test passed.
-- `ERROR: TEST N FAILED: ...` → the test failed. The RLS policy is not working
-  as expected and needs investigation.
+  if public.current_user_role() <> '<expected_role>' then
+    raise exception 'role simulation failed';
+  end if;
 
-## Why RLS Tests Are Needed
+  -- RLS assertion here.
+end
+$$;
 
-Playwright smoke tests verify **UI behavior** with mocked Supabase responses.
-They confirm that the React form submits correctly and displays the right
-error messages, but they **do not verify that the real database RLS policies
-block unauthorized access**. A mock will always return whatever the test
-author configured — it cannot catch:
+rollback;
+```
 
-- A policy that accidentally allows cross-tenant writes.
-- A helper function that returns `true` for the wrong role.
-- A missing `WITH CHECK` clause that allows updating to an invalid state.
-- An RPC that returns data for a role that should be blocked.
+`SET LOCAL` is transaction-scoped. Do not split role/JWT setup and assertions
+into separate SQL Editor runs unless the explicit transaction remains open.
 
-RLS regression tests exercise the **actual SQL policies** against real data
-and real role contexts, catching security holes that UI tests cannot see.
+Both JWT GUC formats are set intentionally:
 
-## Automated vs Manual
+- `request.jwt.claim.sub` / `request.jwt.claim.role`
+- JSON `request.jwt.claims`
 
-| Test Type | Automated? | Notes |
-|-----------|-----------|-------|
-| Student roster RLS | ❌ Manual | Requires live Supabase DEV |
-| Guardian visibility RLS | ❌ Manual | Requires live Supabase DEV |
-| Playwright UI smoke | ✅ Automated (`pnpm test:smoke`) | Mocked Supabase, no DB needed |
+Hosted Supabase/PostgREST helper behavior can differ by version. The mandatory
+`auth.uid()` sanity assertion confirms which path works in the target database.
 
-To automate these RLS tests in CI, a local Supabase instance (via
-`supabase start`) or a disposable Postgres container with the migrations
-applied would be needed. This is a future infrastructure improvement.
+## How To Run
+
+1. Confirm you are connected to hosted Supabase DEV or a disposable database,
+   never production.
+2. Confirm migrations `0001` through `0017` are applied.
+3. Open `tests/rls/student-roster-rls.sql`.
+4. Run the whole file, or run sections in order:
+   - privileged cleanup-before-seed
+   - privileged seed
+   - individual test transactions
+   - privileged cleanup-after-tests
+5. To run guardian visibility tests separately, run the cleanup-before-seed and
+   seed sections from `student-roster-rls.sql`, then run
+   `guardian-visibility-rls.sql`, then run the cleanup-after-tests section from
+   `student-roster-rls.sql`.
+
+The project workflow currently forbids Docker-based local startup, `supabase
+start`, and `supabase db reset`, so those are not part of this test workflow.
+
+## Recovery And Cleanup
+
+The cleanup blocks delete only fixed test IDs created by these scripts. If a
+run fails midway, reconnect as the privileged SQL Editor user and run the
+cleanup-after-tests section from `student-roster-rls.sql`.
+
+Do not manually delete broad tenant, school, student, guardian, profile, or auth
+tables. The cleanup is intentionally fixed-ID only.
+
+## Student Roster Coverage
+
+The roster script verifies:
+
+- Tenant admin can create NULL-school and same-tenant-school students.
+- Tenant admin can update own-tenant student fields, status, and NULL-school to
+  same-tenant school.
+- Tenant admin cannot use cross-tenant school IDs, move a student to another
+  tenant, or update another tenant's student.
+- Transportation admin can create/update own-tenant students, including
+  NULL-school students.
+- Transportation admin cannot write another tenant's student or use another
+  tenant's school.
+- School admin can create/update only own-school students.
+- School admin cannot create NULL-school students, update to NULL school,
+  create/update another school's students, or update NULL-school students.
+- Guardian, driver, and anonymous contexts cannot write student roster data.
+- Anonymous cannot read the protected roster.
+
+## Guardian Visibility Coverage
+
+The guardian script seeds and verifies:
+
+- Guardian A.
+- Guardian B.
+- Guardian A active linked student.
+- Guardian A inactive linked student.
+- Unlinked same-tenant student.
+- Cross-tenant student.
+- Guardian B active linked student.
+
+Assertions check exact returned student IDs, not just row counts. Guardian A
+must receive exactly Guardian A's active linked student from the RPC and must
+not receive inactive-link, unlinked, cross-tenant, or Guardian B rows. Guardian
+B must receive exactly Guardian B's active linked student. Driver and tenant
+admin contexts must receive no guardian RPC rows. Guardian A's
+`student_guardians` SELECT policy must expose exactly Guardian A's own active
+and inactive links, and hide Guardian B's link.
+
+## Why Playwright Smoke Tests Are Not Enough
+
+Playwright smoke tests verify UI behavior with mocked Supabase responses. They
+do not execute real Postgres RLS policies, helper functions, or SECURITY
+DEFINER RPC logic. These manual SQL tests exercise the actual database
+authorization paths that mocks cannot validate.
