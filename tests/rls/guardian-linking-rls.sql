@@ -246,3 +246,99 @@ begin
   end if;
 end
 $$;
+
+-- ===========================================================================
+-- TEST 11: Cross-tenant inactive link CANNOT be reactivated
+-- ===========================================================================
+-- Setup: use postgres role to create an inactive link row in Tenant B for
+-- student_B1 + guardian_A (a mismatched-tenant row). Then switch to
+-- tenant_admin_A and try to reactivate it via the RPC. The RPC's tenant
+-- filter on the existing-link lookup should NOT find this row (it belongs to
+-- Tenant B), so it would attempt an INSERT which would hit the unique
+-- constraint — but student_B1 is not in Tenant A, so the student validation
+-- should reject it first.
+set local role to 'postgres';
+set local request.jwt.claims.role to '';
+set local request.jwt.claims.sub to '';
+
+-- Clean up any prior test row
+delete from public.student_guardians
+where student_id = 'e5000000-0000-0000-0000-000000000002'
+  and guardian_id = 'd4000000-0000-0000-0000-000000000001';
+
+-- Create the mismatched-tenant inactive link
+insert into public.student_guardians (tenant_id, student_id, guardian_id, relationship, status)
+values ('a1000000-0000-0000-0000-000000000002', 'e5000000-0000-0000-0000-000000000002', 'd4000000-0000-0000-0000-000000000001', 'guardian', 'inactive')
+on conflict do nothing;
+
+-- Now switch to tenant_admin_A and try to link guardian_A to student_B1
+set local role to 'authenticated';
+set local request.jwt.claims.role to 'authenticated';
+set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000001';
+
+do $$
+begin
+  perform public.admin_link_student_guardian(
+    'e5000000-0000-0000-0000-000000000002',  -- student_B1 (Tenant B)
+    'd4000000-0000-0000-0000-000000000001'   -- guardian_A (Tenant A)
+  );
+  raise exception 'TEST 11 FAILED: should not reactivate cross-tenant link';
+exception
+  when others then
+    if sqlerrm like '%Student not found%' then
+      raise notice 'TEST 11 PASSED: cross-tenant link reactivation blocked (student not in tenant)';
+    else
+      raise exception 'TEST 11 FAILED with unexpected error: %', sqlerrm;
+    end if;
+end
+$$;
+
+-- Cleanup the mismatched test row
+set local role to 'postgres';
+set local request.jwt.claims.role to '';
+set local request.jwt.claims.sub to '';
+delete from public.student_guardians
+where student_id = 'e5000000-0000-0000-0000-000000000002'
+  and guardian_id = 'd4000000-0000-0000-0000-000000000001';
+
+-- ===========================================================================
+-- TEST 12: Guardian CANNOT call admin_deactivate_student_guardian
+-- ===========================================================================
+set local role to 'authenticated';
+set local request.jwt.claims.role to 'authenticated';
+set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000004';
+
+do $$
+begin
+  perform public.admin_deactivate_student_guardian('f6000000-0000-0000-0000-000000000001');
+  raise exception 'TEST 12 FAILED: guardian should NOT call admin_deactivate RPC';
+exception
+  when others then
+    if sqlerrm like '%Only an admin%' then
+      raise notice 'TEST 12 PASSED: guardian blocked from admin_deactivate RPC';
+    else
+      raise exception 'TEST 12 FAILED with unexpected error: %', sqlerrm;
+    end if;
+end
+$$;
+
+-- ===========================================================================
+-- TEST 13: Driver CANNOT call admin_deactivate_student_guardian
+-- ===========================================================================
+set local role to 'authenticated';
+set local request.jwt.claims.role to 'authenticated';
+set local request.jwt.claims.sub to 'c3000000-0000-0000-0000-000000000005';
+
+do $$
+begin
+  perform public.admin_deactivate_student_guardian('f6000000-0000-0000-0000-000000000001');
+  raise exception 'TEST 13 FAILED: driver should NOT call admin_deactivate RPC';
+exception
+  when others then
+    if sqlerrm like '%Only an admin%' then
+      raise notice 'TEST 13 PASSED: driver blocked from admin_deactivate RPC';
+    else
+      raise exception 'TEST 13 FAILED with unexpected error: %', sqlerrm;
+    end if;
+end
+$$;

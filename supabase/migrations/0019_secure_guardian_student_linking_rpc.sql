@@ -40,7 +40,7 @@ create or replace function public.admin_link_student_guardian(
 returns public.student_guardians
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
 declare
   v_tenant_id uuid := public.current_tenant_id();
@@ -82,11 +82,13 @@ begin
     raise exception 'Guardian not found in your tenant.' using errcode = 'P0002';
   end if;
 
-  -- 6. Check for an existing link (any status) for this student + guardian.
+  -- 6. Check for an existing link (any status) for this student + guardian
+  --    IN THE CALLER'S TENANT. This prevents reactivating a cross-tenant link.
   select * into v_existing
   from public.student_guardians
   where student_id = p_student_id
     and guardian_id = p_guardian_id
+    and tenant_id = v_tenant_id
   for update;
 
   -- 7. If an active link already exists, raise a friendly duplicate error.
@@ -147,7 +149,7 @@ create or replace function public.admin_deactivate_student_guardian(p_link_id uu
 returns public.student_guardians
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
 declare
   v_link public.student_guardians;
