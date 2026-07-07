@@ -277,27 +277,39 @@ test.describe('Milestone 5A — Guardian student route visibility', () => {
   });
 });
 
-test.describe('Milestone 5A — Admin guardian-student link management', () => {
+test.describe('Milestone 5A/5B — Admin guardian-student link management', () => {
   test('admin can create guardian-student link', async ({ page }) => {
     await installAdminLinkMock(page);
     await page.goto('/admin/guardians');
 
     // Wait for page to load.
-    await expect(page.getByRole('heading', { name: 'Visible guardian records', level: 1 })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Guardians', level: 1 })).toBeVisible({ timeout: 10000 });
 
-    // Open the link form.
-    await page.getByRole('button', { name: 'Link student to guardian' }).click();
+    // Click "Add link" on the guardian card.
+    await page.getByRole('button', { name: 'Add link' }).click();
 
-    // Select student and guardian using the select elements directly.
-    const selects = page.getByRole('combobox');
-    await selects.nth(0).selectOption({ index: 1 }); // Student
-    await selects.nth(1).selectOption({ index: 1 }); // Guardian
+    // Select a student from the inline form.
+    const studentSelect = page.getByLabel('Student');
+    await studentSelect.selectOption({ index: 1 });
 
     // Save.
     await page.getByRole('button', { name: 'Save link' }).click();
 
     // Success message appears.
-    await expect(page.getByText('Student guardian link created.')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Student linked to guardian.')).toBeVisible({ timeout: 10000 });
+  });
+
+  test('admin can view linked students by expanding a guardian card', async ({ page }) => {
+    await installAdminLinkMock(page);
+    await page.goto('/admin/guardians');
+
+    await expect(page.getByRole('heading', { name: 'Guardians', level: 1 })).toBeVisible({ timeout: 10000 });
+
+    // Click "View links" to expand.
+    await page.getByRole('button', { name: /View links/ }).click();
+
+    // The "Linked students" section should be visible.
+    await expect(page.getByText('Linked students')).toBeVisible();
   });
 });
 

@@ -52,9 +52,19 @@ export async function getMyLinkedStudents(): Promise<Student[]> {
 }
 
 /**
- * Create a student-guardian link. The tenant_id is derived from the student
- * (passed via defaultTenantId), never trusted from the form input. Raw backend
- * errors are logged in DEV only; a generic safe error is thrown.
+ * Create or reactivate a student-guardian link.
+ *
+ * The table has a hard unique constraint on (student_id, guardian_id), so if a
+ * link (active OR inactive) already exists for the same pair, a direct INSERT
+ * will fail. This function:
+ *   1. Checks if an existing link exists for the same student + guardian.
+ *   2. If an ACTIVE link exists: throws a friendly "already linked" error.
+ *   3. If an INACTIVE link exists: reactivates it (updates status to 'active'
+ *      and refreshes the relationship). Preserves history — no hard delete.
+ *   4. If no link exists: inserts a new active link.
+ *
+ * The tenant_id is derived from the admin's profile, never trusted from the
+ * form input. Raw backend errors are logged in DEV only.
  */
 export async function createStudentGuardianLink(input: {
   studentId: string;
@@ -68,7 +78,53 @@ export async function createStudentGuardianLink(input: {
     throw new Error('Use an account with a tenant before saving this link.');
   }
 
-  const { data, error } = await client
+  const linkColumns = 'id, tenant_id, student_id, guardian_id, relationship, can_receive_notifications, status, created_at, updated_at';
+
+  // 1. Check if an existing link (any status) exists for this student + guardian.
+  const { data: existing, error: lookupError } = await client
+    .from('student_guardians')
+    .select(linkColumns)
+    .eq('student_id', input.studentId)
+    .eq('guardian_id', input.guardianId)
+    .maybeSingle();
+
+  if (lookupError) {
+    if (import.meta.env.DEV) {
+      console.error('Failed to look up existing student guardian link', lookupError);
+    }
+    throw new Error('We could not save the student guardian link. Please try again.');
+  }
+
+  // 2. If an active link already exists, reject with a friendly message.
+  if (existing && (existing as StudentGuardian).status === 'active') {
+    throw new Error('This student is already linked to this guardian.');
+  }
+
+  // 3. If an inactive link exists, reactivate it.
+  if (existing) {
+    const { data: reactivated, error: reactivateError } = await client
+      .from('student_guardians')
+      .update({
+        status: 'active',
+        relationship: input.relationship,
+        can_receive_notifications: true,
+      })
+      .eq('id', (existing as StudentGuardian).id)
+      .select(linkColumns)
+      .single();
+
+    if (reactivateError) {
+      if (import.meta.env.DEV) {
+        console.error('Failed to reactivate student guardian link', reactivateError);
+      }
+      throw new Error('We could not save the student guardian link. Please try again.');
+    }
+
+    return reactivated as StudentGuardian;
+  }
+
+  // 4. No existing link — insert a new one.
+  const { data: inserted, error: insertError } = await client
     .from('student_guardians')
     .insert({
       tenant_id: input.defaultTenantId,
@@ -78,17 +134,17 @@ export async function createStudentGuardianLink(input: {
       can_receive_notifications: true,
       status: 'active',
     })
-    .select('id, tenant_id, student_id, guardian_id, relationship, can_receive_notifications, status, created_at, updated_at')
+    .select(linkColumns)
     .single();
 
-  if (error) {
+  if (insertError) {
     if (import.meta.env.DEV) {
-      console.error('Failed to create student guardian link', error);
+      console.error('Failed to create student guardian link', insertError);
     }
     throw new Error('We could not save the student guardian link. Please try again.');
   }
 
-  return data as StudentGuardian;
+  return inserted as StudentGuardian;
 }
 
 /**

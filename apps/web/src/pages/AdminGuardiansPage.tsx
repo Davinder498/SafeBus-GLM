@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -33,6 +33,12 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function studentDisplayName(student: Student): string {
+  return student.preferred_name
+    ? `${student.first_name} ${student.last_name} (${student.preferred_name})`
+    : `${student.first_name} ${student.last_name}`;
+}
+
 export function AdminGuardiansPage() {
   const { profile } = useAuth();
   const [guardians, setGuardians] = useState<Guardian[]>([]);
@@ -42,18 +48,17 @@ export function AdminGuardiansPage() {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showLinkForm, setShowLinkForm] = useState(false);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  // Form state for linking.
+  const [expandedGuardianId, setExpandedGuardianId] = useState<string | null>(null);
+  const [linkingGuardianId, setLinkingGuardianId] = useState<string | null>(null);
   const [linkStudentId, setLinkStudentId] = useState('');
-  const [linkGuardianId, setLinkGuardianId] = useState('');
   const [linkRelationship, setLinkRelationship] = useState('guardian');
+  const [pendingLinkAction, setPendingLinkAction] = useState<string | null>(null);
 
   const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
 
-  async function reload() {
+  const reload = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -72,67 +77,45 @@ export function AdminGuardiansPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     void reload();
-  }, []);
-
-  async function handleCreateLink() {
-    setWriteError(null);
-    setSuccessMessage(null);
-    if (!linkStudentId || !linkGuardianId) {
-      setWriteError('Student and guardian are required.');
-      return;
-    }
-    try {
-      await createStudentGuardianLink({
-        studentId: linkStudentId,
-        guardianId: linkGuardianId,
-        relationship: linkRelationship,
-        defaultTenantId: profile?.tenant_id ?? null,
-      });
-      setShowLinkForm(false);
-      setLinkStudentId('');
-      setLinkGuardianId('');
-      setLinkRelationship('guardian');
-      setSuccessMessage('Student guardian link created.');
-      await reload();
-    } catch (createError) {
-      setWriteError(createError instanceof Error ? createError.message : 'Unable to create link.');
-    }
-  }
-
-  async function handleDeactivateLink(linkId: string) {
-    setWriteError(null);
-    setSuccessMessage(null);
-    try {
-      await deactivateStudentGuardianLink(linkId);
-      setSuccessMessage('Link deactivated.');
-      await reload();
-    } catch (deactivateError) {
-      setWriteError(deactivateError instanceof Error ? deactivateError.message : 'Unable to deactivate link.');
-    }
-  }
+  }, [reload]);
 
   const profileLabels = useMemo(() => {
-    return new Map(
-      profiles.map((profile) => [profile.id, `${profile.full_name} (${profile.email})`]),
-    );
+    return new Map(profiles.map((p) => [p.id, `${p.full_name} (${p.email})`]));
   }, [profiles]);
 
-  const linkedStudentCounts = useMemo(() => {
-    return links.reduce((counts, link) => {
-      if (link.status !== 'active') return counts;
-      counts.set(link.guardian_id, (counts.get(link.guardian_id) ?? 0) + 1);
-      return counts;
-    }, new Map<string, number>());
+  const studentMap = useMemo(() => {
+    return new Map(students.map((s) => [s.id, s]));
+  }, [students]);
+
+  /** Links grouped by guardian_id for quick lookup. */
+  const linksByGuardian = useMemo(() => {
+    const map = new Map<string, StudentGuardian[]>();
+    for (const link of links) {
+      const arr = map.get(link.guardian_id) ?? [];
+      arr.push(link);
+      map.set(link.guardian_id, arr);
+    }
+    return map;
   }, [links]);
+
+  /** Active student IDs already linked to a given guardian (for eligible-student filtering). */
+  const linkedStudentIdsForGuardian = useCallback(
+    (guardianId: string): Set<string> => {
+      const guardianLinks = linksByGuardian.get(guardianId) ?? [];
+      return new Set(
+        guardianLinks.filter((l) => l.status === 'active').map((l) => l.student_id),
+      );
+    },
+    [linksByGuardian],
+  );
 
   const filteredGuardians = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) return guardians;
-
     return guardians.filter((guardian) => {
       return [
         guardian.full_name,
@@ -148,136 +131,73 @@ export function AdminGuardiansPage() {
     });
   }, [guardians, profileLabels, query]);
 
+  async function handleCreateLink(guardianId: string) {
+    if (pendingLinkAction) return;
+    if (!linkStudentId) {
+      setWriteError('Select a student to link.');
+      return;
+    }
+    setPendingLinkAction(guardianId);
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await createStudentGuardianLink({
+        studentId: linkStudentId,
+        guardianId,
+        relationship: linkRelationship,
+        defaultTenantId: profile?.tenant_id ?? null,
+      });
+      setLinkingGuardianId(null);
+      setLinkStudentId('');
+      setLinkRelationship('guardian');
+      setSuccessMessage('Student linked to guardian.');
+      await reload();
+    } catch (createError) {
+      const msg = createError instanceof Error ? createError.message : 'Unable to create link.';
+      // Check for duplicate constraint
+      if (msg.includes('already exists') || msg.includes('duplicate') || msg.includes('unique')) {
+        setWriteError('This student is already linked to this guardian.');
+      } else {
+        setWriteError(msg);
+      }
+    } finally {
+      setPendingLinkAction(null);
+    }
+  }
+
+  async function handleDeactivateLink(linkId: string, guardianName: string) {
+    if (pendingLinkAction) return;
+    setPendingLinkAction(linkId);
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await deactivateStudentGuardianLink(linkId);
+      setSuccessMessage(`Link deactivated for ${guardianName}.`);
+      await reload();
+    } catch (deactivateError) {
+      setWriteError(deactivateError instanceof Error ? deactivateError.message : 'Unable to deactivate link.');
+    } finally {
+      setPendingLinkAction(null);
+    }
+  }
+
   return (
     <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Guardians"
-          title="Visible guardian records"
-          description="Read-only guardian records returned by Supabase under the current admin user's RLS permissions."
+          title="Guardians"
+          description="Manage guardian records and student links for your transportation account."
         />
 
-        {canWrite && (
-          <div className="flex">
-            <Button type="button" onClick={() => {
-              setShowLinkForm(!showLinkForm);
-              setWriteError(null);
-              setSuccessMessage(null);
-            }}>
-              {showLinkForm ? 'Cancel' : 'Link student to guardian'}
-            </Button>
-          </div>
-        )}
-
         {writeError && (
-          <Card className="border-danger-200 bg-danger-50 p-4">
+          <Card className="border-danger-200 bg-danger-50 p-4" role="alert">
             <p className="text-sm font-semibold text-danger-700">{writeError}</p>
           </Card>
         )}
         {successMessage && (
-          <Card className="border-success-200 bg-success-50 p-4">
+          <Card className="border-success-200 bg-success-50 p-4" role="status">
             <p className="text-sm font-semibold text-success-700">{successMessage}</p>
-          </Card>
-        )}
-
-        {canWrite && showLinkForm && (
-          <Card className="p-5">
-            <h2 className="text-lg font-bold text-navy-900">Link student to guardian</h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-3">
-              <label className="block text-sm font-semibold text-gray-700" htmlFor="link-student-select">
-                Student
-                <select
-                  id="link-student-select"
-                  className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
-                  value={linkStudentId}
-                  onChange={(event) => setLinkStudentId(event.target.value)}
-                >
-                  <option value="">Select a student</option>
-                  {students.map((student) => (
-                    <option key={student.id} value={student.id}>
-                      {student.first_name} {student.last_name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block text-sm font-semibold text-gray-700" htmlFor="link-guardian-select">
-                Guardian
-                <select
-                  id="link-guardian-select"
-                  className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
-                  value={linkGuardianId}
-                  onChange={(event) => setLinkGuardianId(event.target.value)}
-                >
-                  <option value="">Select a guardian</option>
-                  {guardians.map((guardian) => (
-                    <option key={guardian.id} value={guardian.id}>
-                      {guardian.full_name} ({guardian.email})
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block text-sm font-semibold text-gray-700" htmlFor="link-relationship-select">
-                Relationship
-                <select
-                  id="link-relationship-select"
-                  className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
-                  value={linkRelationship}
-                  onChange={(event) => setLinkRelationship(event.target.value)}
-                >
-                  <option value="guardian">Guardian</option>
-                  <option value="mother">Mother</option>
-                  <option value="father">Father</option>
-                  <option value="caregiver">Caregiver</option>
-                  <option value="other">Other</option>
-                </select>
-              </label>
-            </div>
-            <div className="mt-4">
-              <Button type="button" onClick={() => void handleCreateLink()}>
-                Save link
-              </Button>
-            </div>
-          </Card>
-        )}
-
-        {links.length > 0 && (
-          <Card className="overflow-hidden">
-            <div className="border-b border-gray-200 p-5">
-              <h2 className="text-xl font-bold text-navy-900">Student-guardian links</h2>
-            </div>
-            <div className="divide-y divide-gray-200">
-              {links.map((link) => {
-                const student = students.find((s) => s.id === link.student_id);
-                const guardian = guardians.find((g) => g.id === link.guardian_id);
-                return (
-                  <div key={link.id} className="flex items-center justify-between gap-4 p-5">
-                    <div>
-                      <p className="font-bold text-navy-900">
-                        {student ? `${student.first_name} ${student.last_name}` : link.student_id}
-                      </p>
-                      <p className="mt-1 text-sm text-gray-600">
-                        Guardian: {guardian?.full_name ?? link.guardian_id} &middot; {link.relationship}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <StatusPill tone={link.status === 'active' ? 'success' : 'neutral'}>
-                        {link.status}
-                      </StatusPill>
-                      {canWrite && link.status === 'active' && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => void handleDeactivateLink(link.id)}
-                        >
-                          Deactivate
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           </Card>
         )}
 
@@ -296,16 +216,13 @@ export function AdminGuardiansPage() {
         </div>
 
         {loading && (
-          <DataState
-            title="Loading guardians"
-            message="Fetching guardian records visible to you."
-          />
+          <DataState title="Loading guardians" message="Fetching guardian records visible to you." />
         )}
         {error && <DataState title="Unable to load guardians" message={error} />}
         {!loading && !error && guardians.length === 0 && (
           <DataState
             title="No guardians visible"
-            message="No guardian records are available for this account under the current RLS policies."
+            message="No guardian records are available for this account."
           />
         )}
         {!loading && !error && guardians.length > 0 && filteredGuardians.length === 0 && (
@@ -317,45 +234,184 @@ export function AdminGuardiansPage() {
 
         {!loading && !error && filteredGuardians.length > 0 && (
           <section className="grid gap-4">
-            {filteredGuardians.map((guardian) => (
-              <Card key={guardian.id} className="p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold text-navy-900">{guardian.full_name}</h2>
-                    <p className="mt-1 text-sm text-gray-600">{guardian.email}</p>
+            {filteredGuardians.map((guardian) => {
+              const guardianLinks = linksByGuardian.get(guardian.id) ?? [];
+              const activeLinks = guardianLinks.filter((l) => l.status === 'active');
+              const inactiveLinks = guardianLinks.filter((l) => l.status !== 'active');
+              const alreadyLinkedIds = linkedStudentIdsForGuardian(guardian.id);
+              const eligibleStudents = students.filter((s) => !alreadyLinkedIds.has(s.id) && s.status === 'active');
+              const isExpanded = expandedGuardianId === guardian.id;
+              const isLinking = linkingGuardianId === guardian.id;
+
+              return (
+                <Card key={guardian.id} className="p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <h2 className="text-xl font-bold text-navy-900">{guardian.full_name}</h2>
+                      <p className="mt-1 text-sm text-gray-600">{guardian.email}</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <StatusPill tone={guardianStatusTone[guardian.status]}>
+                        {guardian.status}
+                      </StatusPill>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setExpandedGuardianId(isExpanded ? null : guardian.id)}
+                      >
+                        {isExpanded ? 'Hide links' : `View links (${activeLinks.length})`}
+                      </Button>
+                      {canWrite && guardian.status === 'active' && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => {
+                            setLinkingGuardianId(isLinking ? null : guardian.id);
+                            setLinkStudentId('');
+                            setLinkRelationship('guardian');
+                            setWriteError(null);
+                            setSuccessMessage(null);
+                          }}
+                        >
+                          {isLinking ? 'Cancel' : 'Add link'}
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <StatusPill tone={guardianStatusTone[guardian.status]}>
-                    {guardian.status}
-                  </StatusPill>
-                </div>
-                <div className="mt-5 grid gap-3 text-sm md:grid-cols-2">
-                  <p className="text-gray-600">
-                    Phone:{' '}
-                    <span className="font-semibold text-navy-900">
-                      {guardian.phone ?? 'Not assigned'}
-                    </span>
-                  </p>
-                  <p className="text-gray-600">
-                    Linked students:{' '}
-                    <span className="font-semibold text-navy-900">
-                      {linkedStudentCounts.get(guardian.id) ?? 0}
-                    </span>
-                  </p>
-                  <p className="text-gray-600">
-                    Profile:{' '}
-                    <span className="font-semibold text-navy-900">
-                      {profileLabels.get(guardian.profile_id) ?? guardian.profile_id}
-                    </span>
-                  </p>
-                  <p className="text-gray-600">
-                    Created:{' '}
-                    <span className="font-semibold text-navy-900">
-                      {formatDate(guardian.created_at)}
-                    </span>
-                  </p>
-                </div>
-              </Card>
-            ))}
+
+                  <div className="mt-5 grid gap-3 text-sm md:grid-cols-2">
+                    <p className="text-gray-600">
+                      Phone: <span className="font-semibold text-navy-900">{guardian.phone ?? 'Not assigned'}</span>
+                    </p>
+                    <p className="text-gray-600">
+                      Active links: <span className="font-semibold text-navy-900">{activeLinks.length}</span>
+                    </p>
+                    <p className="text-gray-600">
+                      Profile: <span className="font-semibold text-navy-900">{profileLabels.get(guardian.profile_id) ?? 'Not found'}</span>
+                    </p>
+                    <p className="text-gray-600">
+                      Created: <span className="font-semibold text-navy-900">{formatDate(guardian.created_at)}</span>
+                    </p>
+                  </div>
+
+                  {/* Add link form (inline) */}
+                  {canWrite && isLinking && guardian.status === 'active' && (
+                    <div className="mt-4 border-t border-gray-200 pt-4">
+                      <h3 className="text-sm font-bold text-navy-900">Link a student to {guardian.full_name}</h3>
+                      {eligibleStudents.length === 0 ? (
+                        <p className="mt-2 text-sm text-gray-600">
+                          All active students are already linked to this guardian.
+                        </p>
+                      ) : (
+                        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                          <label className="block text-sm font-semibold text-gray-700" htmlFor={`link-student-${guardian.id}`}>
+                            Student
+                            <select
+                              id={`link-student-${guardian.id}`}
+                              className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
+                              value={linkStudentId}
+                              onChange={(event) => setLinkStudentId(event.target.value)}
+                            >
+                              <option value="">Select a student</option>
+                              {eligibleStudents.map((student) => (
+                                <option key={student.id} value={student.id}>
+                                  {studentDisplayName(student)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="block text-sm font-semibold text-gray-700" htmlFor={`link-rel-${guardian.id}`}>
+                            Relationship
+                            <select
+                              id={`link-rel-${guardian.id}`}
+                              className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
+                              value={linkRelationship}
+                              onChange={(event) => setLinkRelationship(event.target.value)}
+                            >
+                              <option value="guardian">Guardian</option>
+                              <option value="mother">Mother</option>
+                              <option value="father">Father</option>
+                              <option value="caregiver">Caregiver</option>
+                              <option value="other">Other</option>
+                            </select>
+                          </label>
+                        </div>
+                      )}
+                      {eligibleStudents.length > 0 && (
+                        <div className="mt-3">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => void handleCreateLink(guardian.id)}
+                            disabled={pendingLinkAction === guardian.id || !linkStudentId}
+                          >
+                            {pendingLinkAction === guardian.id ? 'Saving…' : 'Save link'}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Linked students (expandable) */}
+                  {isExpanded && (
+                    <div className="mt-4 border-t border-gray-200 pt-4">
+                      <h3 className="text-sm font-bold text-navy-900">Linked students</h3>
+                      {activeLinks.length === 0 && inactiveLinks.length === 0 && (
+                        <p className="mt-2 text-sm text-gray-600">No students linked to this guardian.</p>
+                      )}
+                      <div className="mt-2 divide-y divide-gray-100">
+                        {activeLinks.map((link) => {
+                          const student = studentMap.get(link.student_id);
+                          return (
+                            <div key={link.id} className="flex items-center justify-between gap-4 py-3">
+                              <div>
+                                <p className="font-semibold text-navy-900">
+                                  {student ? studentDisplayName(student) : 'Unknown student'}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Relationship: {link.relationship}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <StatusPill tone="success">active</StatusPill>
+                                {canWrite && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    disabled={pendingLinkAction === link.id}
+                                    onClick={() => void handleDeactivateLink(link.id, guardian.full_name)}
+                                  >
+                                    {pendingLinkAction === link.id ? 'Deactivating…' : 'Deactivate link'}
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {inactiveLinks.length > 0 && (
+                          <div className="py-2">
+                            <p className="text-xs font-semibold text-gray-500">Inactive links ({inactiveLinks.length})</p>
+                            {inactiveLinks.map((link) => {
+                              const student = studentMap.get(link.student_id);
+                              return (
+                                <div key={link.id} className="flex items-center justify-between gap-4 py-2">
+                                  <p className="text-sm text-gray-500">
+                                    {student ? studentDisplayName(student) : 'Unknown student'}
+                                  </p>
+                                  <StatusPill tone="neutral">{link.status}</StatusPill>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
           </section>
         )}
       </div>
