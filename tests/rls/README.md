@@ -33,6 +33,53 @@ and this README exist, then prints a manual-test notice.
 It does not connect to Supabase, does not execute SQL, and must not be reported
 as proof that the RLS assertions passed.
 
+## `pnpm test:rls:dev`
+
+`pnpm test:rls:dev` executes the RLS SQL scripts against a configured hosted
+Supabase DEV database or a disposable migrated database. It is the automated
+replacement for copy/paste SQL Editor runs.
+
+This command is intentionally guarded. It refuses to run unless both
+environment variables are set:
+
+```bash
+SAFEBUS_RLS_TEST_DATABASE_URL=postgresql://...
+SAFEBUS_RLS_TEST_CONFIRM=DEV_ONLY
+```
+
+Never point `SAFEBUS_RLS_TEST_DATABASE_URL` at production. Never use frontend
+Supabase anon keys or service-role API keys here. Use a Postgres connection URL
+for hosted Supabase DEV or a disposable migrated database only.
+
+Hosted Supabase connections use SSL by default. For a local disposable database
+only, set `SAFEBUS_RLS_TEST_SSL=disable`.
+
+Run all RLS scripts in deterministic order:
+
+```bash
+pnpm test:rls:dev
+```
+
+Run one SQL file:
+
+```bash
+pnpm test:rls:dev -- tests/rls/guardian-live-trip-visibility-rls.sql
+```
+
+The runner stops on the first failing SQL file, prints per-file pass/fail
+output, closes the database connection, and exits non-zero on failure. A pass
+means the SQL scripts completed successfully against the configured database.
+
+The default execution order is:
+
+1. `tests/rls/student-roster-rls.sql`
+2. `tests/rls/guardian-visibility-rls.sql`
+3. `tests/rls/guardian-linking-rls.sql`
+4. `tests/rls/guardian-live-trip-visibility-rls.sql`
+
+The scripts create fixed-ID test data and clean up after themselves where
+designed. If a run fails midway, use the cleanup guidance below.
+
 ## Required Database Context
 
 Run these scripts from a privileged SQL Editor/session in hosted Supabase DEV
@@ -56,7 +103,7 @@ test rows into:
 - `public.student_route_assignments`
 - `public.driver_trips`
 - `public.driver_trip_current_locations`
-- `public.driver_trip_location_updates` (history rows inside a test transaction)
+- `public.driver_trip_location_updates` (privileged history seed rows)
 
 The SQL Editor user must be allowed to insert/delete these test rows, including
 direct inserts into `auth.users`.
@@ -104,7 +151,8 @@ Hosted Supabase/PostgREST helper behavior can differ by version. The mandatory
 
 1. Confirm you are connected to hosted Supabase DEV or a disposable database,
    never production.
-2. Confirm migrations `0001` through `0020` are applied.
+2. Confirm migrations `0001` through the latest repository migration are
+   applied.
 3. Open `tests/rls/student-roster-rls.sql`.
 4. Run the whole file, or run sections in order:
    - privileged cleanup-before-seed

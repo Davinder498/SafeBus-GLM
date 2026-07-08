@@ -13,12 +13,14 @@
     "test": "turbo run test",
     "test:smoke": "playwright test",
     "test:rls": "node -e \"const fs=require('fs'); const files=['tests/rls/student-roster-rls.sql','tests/rls/guardian-visibility-rls.sql','tests/rls/guardian-linking-rls.sql','tests/rls/guardian-live-trip-visibility-rls.sql','tests/rls/README.md']; files.forEach(f=>{if(!fs.existsSync(f)) throw new Error('Missing RLS test file: '+f)}); console.log('RLS SQL files exist:', files.length); console.log('NOTE: SQL/RLS assertions are MANUAL and are not executed by this script. See tests/rls/README.md.')\"",
+    "test:rls:dev": "node scripts/run-rls-tests.mjs",
     "clean": "turbo run clean && rimraf node_modules",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
+    "pg": "^8.22.0",
     "prettier": "^3.3.3",
     "rimraf": "^6.0.1",
     "turbo": "^2.3.3",
