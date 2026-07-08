@@ -16,6 +16,14 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
 - `guardian-linking-rls.sql`: tests the `admin_link_student_guardian()` and
   `admin_deactivate_student_guardian()` RPCs — cross-tenant blocking, duplicate
   prevention, reactivation, direct-write blocking, and guardian/driver denial.
+- `guardian-live-trip-visibility-rls.sql`: SELF-CONTAINED tests for
+  `get_guardian_live_trip_visibility()` (Milestone 6A) — seeds its own
+  buses/routes/stops/trips/locations with disjoint fixed IDs, then verifies
+  guardian-scoped live bus status: active-link-only visibility, no inactive
+  links, no other-guardian students, no cross-tenant students/trips, completed
+  trips not shown as active, no historical location trail, driver/admin/anon
+  denial, and that the existing guardian route visibility + linking RLS still
+  hold.
 
 ## `pnpm test:rls`
 
@@ -38,6 +46,17 @@ or a disposable database. The setup inserts fixed test rows into:
 - `public.drivers`
 - `public.students`
 - `public.student_guardians`
+
+The `guardian-live-trip-visibility-rls.sql` script additionally inserts fixed
+test rows into:
+
+- `public.buses`
+- `public.routes`
+- `public.route_stops`
+- `public.student_route_assignments`
+- `public.driver_trips`
+- `public.driver_trip_current_locations`
+- `public.driver_trip_location_updates` (history rows inside a test transaction)
 
 The SQL Editor user must be allowed to insert/delete these test rows, including
 direct inserts into `auth.users`.
@@ -85,7 +104,7 @@ Hosted Supabase/PostgREST helper behavior can differ by version. The mandatory
 
 1. Confirm you are connected to hosted Supabase DEV or a disposable database,
    never production.
-2. Confirm migrations `0001` through `0017` are applied.
+2. Confirm migrations `0001` through `0020` are applied.
 3. Open `tests/rls/student-roster-rls.sql`.
 4. Run the whole file, or run sections in order:
    - privileged cleanup-before-seed
@@ -96,6 +115,9 @@ Hosted Supabase/PostgREST helper behavior can differ by version. The mandatory
    seed sections from `student-roster-rls.sql`, then run
    `guardian-visibility-rls.sql`, then run the cleanup-after-tests section from
    `student-roster-rls.sql`.
+6. To run guardian live trip visibility tests, run
+   `guardian-live-trip-visibility-rls.sql` — it is self-contained (own seed +
+   own cleanup) and does NOT depend on the student-roster seed.
 
 The project workflow currently forbids Docker-based local startup, `supabase
 start`, and `supabase db reset`, so those are not part of this test workflow.
@@ -147,6 +169,27 @@ B must receive exactly Guardian B's active linked student. Driver and tenant
 admin contexts must receive no guardian RPC rows. Guardian A's
 `student_guardians` SELECT policy must expose exactly Guardian A's own active
 and inactive links, and hide Guardian B's link.
+
+## Guardian Live Trip Visibility Coverage (Milestone 6A)
+
+The `guardian-live-trip-visibility-rls.sql` script is self-contained and
+verifies `get_guardian_live_trip_visibility()`:
+
+- Guardian A sees live trip visibility ONLY for actively linked Student A, with
+  `has_active_trip = true` and a current location.
+- Guardian A cannot see a student held only via an INACTIVE link.
+- Guardian A cannot see a student linked to another guardian (Guardian B).
+- Guardian A cannot see students from another tenant.
+- Guardian A cannot see trips/routes from another tenant.
+- Guardian B sees Student B but a COMPLETED trip on that route is NOT shown as
+  active (`has_active_trip = false`, null location).
+- Guardian A cannot see a historical location trail — even after history rows
+  are inserted, the RPC returns exactly one location row per active trip.
+- Driver cannot call the guardian RPC (zero rows).
+- Tenant admin cannot call the guardian RPC (zero rows, default deny).
+- Anonymous access is denied (execute revoked, zero rows).
+- The existing `get_guardian_student_route_visibility()` RPC still works.
+- Guardian-linking `student_guardians` SELECT isolation still holds.
 
 ## Why Playwright Smoke Tests Are Not Enough
 

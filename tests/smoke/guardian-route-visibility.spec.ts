@@ -63,6 +63,20 @@ interface GuardianStudentRouteRpcRow {
   assignment_status: string | null;
 }
 
+interface GuardianLiveTripRpcRow {
+  student_id: string;
+  student_name: string;
+  route_id: string;
+  route_name: string;
+  pickup_stop_name: string | null;
+  dropoff_stop_name: string | null;
+  trip_status: string | null;
+  has_active_trip: boolean;
+  last_location_latitude: number | null;
+  last_location_longitude: number | null;
+  last_location_recorded_at: string | null;
+}
+
 function linkedStudentRoute(): GuardianStudentRouteRpcRow {
   return {
     student_id: GUARDIAN.studentId,
@@ -145,6 +159,26 @@ async function installGuardianMock(
         } else {
           await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(routesForRpc) });
         }
+        return;
+      }
+      if (method === 'POST' && path.includes('/rpc/get_guardian_live_trip_visibility')) {
+        // Milestone 6A: live bus status. Default mock returns no active trip
+        // ("No active trip right now"). This keeps the existing route-visibility
+        // assertions stable while exercising the new safe read path.
+        const liveRows: GuardianLiveTripRpcRow[] = (routesForRpc).map((r) => ({
+          student_id: r.student_id,
+          student_name: `${r.student_first_name} ${r.student_last_name}`,
+          route_id: r.route_id ?? '00000000-0000-0000-0000-000000000000',
+          route_name: r.route_name ?? '',
+          pickup_stop_name: r.pickup_stop_name,
+          dropoff_stop_name: r.dropoff_stop_name,
+          trip_status: null,
+          has_active_trip: false,
+          last_location_latitude: null,
+          last_location_longitude: null,
+          last_location_recorded_at: null,
+        }));
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(liveRows) });
         return;
       }
       if (method === 'GET') {
