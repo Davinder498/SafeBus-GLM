@@ -6,17 +6,39 @@ import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { fetchGuardianStudentRoutes } from '@/services/guardianRouteVisibilityService';
+import { fetchGuardianLiveTrips } from '@/services/guardianLiveTripService';
 import { studentDisplayName, type GuardianStudentRoute } from '@/types/guardianRouteVisibility';
+import type { GuardianLiveTrip } from '@/types/guardianLiveTrip';
 
 type LoadState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; routes: GuardianStudentRoute[] };
+  | { kind: 'ready'; routes: GuardianStudentRoute[]; liveTrips: Map<string, GuardianLiveTrip> };
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+/**
+ * Text-only live bus status line for a linked student's route (Milestone 6A).
+ * Deliberately excludes map, ETA, route line, bus id, driver id, and trip id.
+ */
+function LiveBusStatusLine({ trip }: { trip: GuardianLiveTrip | undefined }) {
+  if (!trip || !trip.hasActiveTrip || !trip.lastLocationRecordedAt) {
+    return (
+      <p className="mt-3 text-sm text-gray-600" data-testid="guardian-live-bus-status">
+        Live bus status: <span className="font-semibold text-gray-500">No active trip right now</span>
+      </p>
+    );
+  }
+  return (
+    <p className="mt-3 text-sm text-gray-600" data-testid="guardian-live-bus-status">
+      Live bus status: <span className="font-semibold text-green-700">On trip</span>
+      <span className="text-gray-500"> · Bus location last updated at {formatTimestamp(trip.lastLocationRecordedAt)}</span>
+    </p>
+  );
 }
 
 export function GuardianRoutesPage() {
@@ -28,7 +50,18 @@ export function GuardianRoutesPage() {
     setRefreshing(true);
     try {
       const routes = await fetchGuardianStudentRoutes();
-      setState({ kind: 'ready', routes });
+      // Live trip visibility is fetched in parallel and degrades gracefully:
+      // a live-status failure must NOT break the existing route visibility list.
+      let liveTrips = new Map<string, GuardianLiveTrip>();
+      try {
+        const live = await fetchGuardianLiveTrips();
+        liveTrips = new Map(live.map((t) => [t.studentId, t]));
+      } catch (liveErr) {
+        if (import.meta.env.DEV) {
+          console.error('Live trip visibility failed; route visibility still shown', liveErr);
+        }
+      }
+      setState({ kind: 'ready', routes, liveTrips });
       setLastRefreshedAt(new Date().toISOString());
     } catch (err) {
       const message = err instanceof Error ? err.message : 'We could not load your student route information. Please try again.';
@@ -135,6 +168,7 @@ export function GuardianRoutesPage() {
                     )}
                   </div>
                 )}
+                {route.routeId && <LiveBusStatusLine trip={state.liveTrips.get(route.studentId)} />}
               </Card>
             ))}
           </section>
