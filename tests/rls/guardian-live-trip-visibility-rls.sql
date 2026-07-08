@@ -250,6 +250,30 @@ insert into public.driver_trip_current_locations (driver_trip_id, tenant_id, dri
 values
   ('1a200000-0000-0000-0000-000000000001', '06000000-0000-0000-0000-000000000001', '09000000-0000-0000-0000-000000000003', '0c000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000001', 51.0447, -114.0719, now() - interval '2 minutes');
 
+-- Historical location rows for Trip 1. These are privileged seed rows only;
+-- authenticated users intentionally do not have direct INSERT on this table.
+insert into public.driver_trip_location_updates
+  (tenant_id, driver_trip_id, driver_id, bus_id, route_id, latitude, longitude, recorded_at)
+values
+  ('06000000-0000-0000-0000-000000000001', '1a200000-0000-0000-0000-000000000001', '09000000-0000-0000-0000-000000000003', '0c000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000001', 51.0400, -114.0700, now() - interval '10 minutes'),
+  ('06000000-0000-0000-0000-000000000001', '1a200000-0000-0000-0000-000000000001', '09000000-0000-0000-0000-000000000003', '0c000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000001', 51.0410, -114.0705, now() - interval '7 minutes'),
+  ('06000000-0000-0000-0000-000000000001', '1a200000-0000-0000-0000-000000000001', '09000000-0000-0000-0000-000000000003', '0c000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000001', 51.0420, -114.0710, now() - interval '5 minutes');
+
+do $$
+declare
+  v_count int;
+begin
+  select count(*) into v_count
+  from public.driver_trip_location_updates
+  where driver_trip_id = '1a200000-0000-0000-0000-000000000001'
+    and tenant_id = '06000000-0000-0000-0000-000000000001';
+
+  if v_count <> 3 then
+    raise exception 'SEED FAILED: expected 3 historical Trip 1 location rows, got %', v_count;
+  end if;
+end
+$$;
+
 -- ===========================================================================
 -- TEST 1: Guardian A sees live trip visibility only for actively linked Student A,
 --         and that row has has_active_trip=true with the current location.
@@ -550,16 +574,9 @@ begin
     raise exception 'TEST 8 FAILED: expected guardian, got %', public.current_user_role();
   end if;
 
-  -- Insert several historical location-update rows directly (privileged) for
-  -- the active trip, then confirm the RPC still returns exactly one location
-  -- row for Student A (the current location), not the history.
-  insert into public.driver_trip_location_updates
-    (tenant_id, driver_trip_id, driver_id, bus_id, route_id, latitude, longitude, recorded_at)
-  values
-    ('06000000-0000-0000-0000-000000000001', '1a200000-0000-0000-0000-000000000001', '09000000-0000-0000-0000-000000000003', '0c000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000001', 51.0400, -114.0700, now() - interval '10 minutes'),
-    ('06000000-0000-0000-0000-000000000001', '1a200000-0000-0000-0000-000000000001', '09000000-0000-0000-0000-000000000003', '0c000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000001', 51.0410, -114.0705, now() - interval '7 minutes'),
-    ('06000000-0000-0000-0000-000000000001', '1a200000-0000-0000-0000-000000000001', '09000000-0000-0000-0000-000000000003', '0c000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000001', 51.0420, -114.0710, now() - interval '5 minutes');
-
+  -- Historical driver_trip_location_updates rows were seeded in the privileged
+  -- setup section. The guardian RPC must still return only the current-location
+  -- row shape for Student A, not one row per historical update.
   select count(*) into v_count
   from public.get_guardian_live_trip_visibility()
   where student_id = '0a000000-0000-0000-0000-000000000001';
