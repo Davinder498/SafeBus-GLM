@@ -50,7 +50,9 @@ delete from public.route_stops where id in (
   '0e000000-0000-0000-0000-000000000001',
   '0e000000-0000-0000-0000-000000000002',
   '0e000000-0000-0000-0000-000000000003',
-  '0e000000-0000-0000-0000-000000000004'
+  '0e000000-0000-0000-0000-000000000004',
+  '0e000000-0000-0000-0000-000000000005',
+  '0e000000-0000-0000-0000-000000000006'
 );
 
 delete from public.routes where id in (
@@ -172,7 +174,11 @@ values
   ('0e000000-0000-0000-0000-000000000001', '06000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000001', 'M6A Stop Pick A1', 1, 'active'),
   ('0e000000-0000-0000-0000-000000000002', '06000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000001', 'M6A Stop Drop A1', 2, 'active'),
   ('0e000000-0000-0000-0000-000000000003', '06000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000002', 'M6A Stop Pick A2', 1, 'active'),
-  ('0e000000-0000-0000-0000-000000000004', '06000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000002', 'M6A Stop Drop A2', 2, 'active');
+  ('0e000000-0000-0000-0000-000000000004', '06000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000002', 'M6A Stop Drop A2', 2, 'active'),
+  -- Tenant B stops used by hardening tests to prove malformed cross-tenant
+  -- stop references are not exposed through the SECURITY DEFINER RPC.
+  ('0e000000-0000-0000-0000-000000000005', '06000000-0000-0000-0000-000000000002', '0d000000-0000-0000-0000-000000000003', 'M6A Stop Pick B1 SHOULD NOT LEAK', 1, 'active'),
+  ('0e000000-0000-0000-0000-000000000006', '06000000-0000-0000-0000-000000000002', '0d000000-0000-0000-0000-000000000003', 'M6A Stop Drop B1 SHOULD NOT LEAK', 2, 'active');
 
 insert into public.students (id, tenant_id, school_id, first_name, last_name, status)
 values
@@ -209,7 +215,7 @@ values
 -- Trip 2: COMPLETED trip on Route A2 (Tenant A). Must NOT surface as active.
 insert into public.driver_trips (id, tenant_id, driver_id, bus_id, route_id, trip_type, status, service_date, started_at, ended_at)
 values
-  ('1a200000-0000-0000-0000-000000000002', '06000000-0000-0000-0000-000000000001', '09000000-0000-0000-0000-000000000003', '0c000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000002', 'afternoon', 'completed', current_date, now() - interval '2 hours', now() - interval '1 hour');
+  ('1a200000-0000-0000-0000-000000000002', '06000000-0000-0000-0000-000000000001', '09000000-0000-0000-0000-000000000003', '0c000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000002', 'evening', 'completed', current_date, now() - interval '2 hours', now() - interval '1 hour');
 
 -- Trip 3: ACTIVE trip on Route B1 (Tenant B) — cross-tenant, must NOT surface for Tenant A guardian.
 insert into public.driver_trips (id, tenant_id, driver_id, bus_id, route_id, trip_type, status, service_date, started_at)
@@ -534,6 +540,233 @@ end
 $$;
 rollback;
 
+
+-- ===========================================================================
+-- TEST 8A: Cross-tenant stop references are not exposed. This intentionally
+--          mutates Student A's assignment inside a transaction to point at
+--          Tenant B stops. The hardened RPC must keep the route row visible but
+--          suppress cross-tenant stop names.
+-- ===========================================================================
+begin;
+update public.student_route_assignments
+set pickup_stop_id = '0e000000-0000-0000-0000-000000000005',
+    dropoff_stop_id = '0e000000-0000-0000-0000-000000000006'
+where id = '0f100000-0000-0000-0000-000000000001';
+set local role authenticated;
+set local request.jwt.claim.sub = '08000000-0000-0000-0000-000000000002';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"08000000-0000-0000-0000-000000000002","role":"authenticated"}';
+do $$
+declare
+  v_rows record;
+begin
+  if auth.uid() <> '08000000-0000-0000-0000-000000000002'::uuid then
+    raise exception 'TEST 8A FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'guardian' then
+    raise exception 'TEST 8A FAILED: expected guardian, got %', public.current_user_role();
+  end if;
+
+  select student_id, pickup_stop_name, dropoff_stop_name
+  into v_rows
+  from public.get_guardian_live_trip_visibility()
+  where student_id = '0a000000-0000-0000-0000-000000000001'
+  limit 1;
+
+  if not found then
+    raise exception 'TEST 8A FAILED: Guardian A route row disappeared';
+  end if;
+  if v_rows.pickup_stop_name is not null or v_rows.dropoff_stop_name is not null then
+    raise exception 'TEST 8A FAILED: cross-tenant stop names leaked: %, %', v_rows.pickup_stop_name, v_rows.dropoff_stop_name;
+  end if;
+
+  raise notice 'TEST 8A PASSED: cross-tenant stop references are not exposed';
+end
+$$;
+rollback;
+
+-- ===========================================================================
+-- TEST 8B: Same-tenant but wrong-route stop references are not exposed.
+--          Student A remains assigned to Route A1 while pickup/dropoff point to
+--          Route A2 stops. The hardened RPC must suppress those stop names.
+-- ===========================================================================
+begin;
+update public.student_route_assignments
+set pickup_stop_id = '0e000000-0000-0000-0000-000000000003',
+    dropoff_stop_id = '0e000000-0000-0000-0000-000000000004'
+where id = '0f100000-0000-0000-0000-000000000001';
+set local role authenticated;
+set local request.jwt.claim.sub = '08000000-0000-0000-0000-000000000002';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"08000000-0000-0000-0000-000000000002","role":"authenticated"}';
+do $$
+declare
+  v_rows record;
+begin
+  if auth.uid() <> '08000000-0000-0000-0000-000000000002'::uuid then
+    raise exception 'TEST 8B FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'guardian' then
+    raise exception 'TEST 8B FAILED: expected guardian, got %', public.current_user_role();
+  end if;
+
+  select student_id, pickup_stop_name, dropoff_stop_name
+  into v_rows
+  from public.get_guardian_live_trip_visibility()
+  where student_id = '0a000000-0000-0000-0000-000000000001'
+  limit 1;
+
+  if not found then
+    raise exception 'TEST 8B FAILED: Guardian A route row disappeared';
+  end if;
+  if v_rows.pickup_stop_name is not null or v_rows.dropoff_stop_name is not null then
+    raise exception 'TEST 8B FAILED: wrong-route stop names leaked: %, %', v_rows.pickup_stop_name, v_rows.dropoff_stop_name;
+  end if;
+
+  raise notice 'TEST 8B PASSED: wrong-route stop references are not exposed';
+end
+$$;
+rollback;
+
+-- ===========================================================================
+-- TEST 8C: Cross-tenant bus on an active trip does not expose that trip/location.
+--          The schema permits driver_trips.bus_id to reference any public.buses
+--          row by UUID, so this test creates malformed data by moving Trip 3 out
+--          of the way and pointing Trip 1 at Tenant B's bus. The hardened RPC's
+--          same-tenant bus join must make Student A appear with no active trip.
+-- ===========================================================================
+begin;
+update public.driver_trips
+set status = 'completed', ended_at = now()
+where id = '1a200000-0000-0000-0000-000000000003';
+update public.driver_trips
+set bus_id = '0c000000-0000-0000-0000-000000000002'
+where id = '1a200000-0000-0000-0000-000000000001';
+set local role authenticated;
+set local request.jwt.claim.sub = '08000000-0000-0000-0000-000000000002';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"08000000-0000-0000-0000-000000000002","role":"authenticated"}';
+do $$
+declare
+  v_rows record;
+begin
+  if auth.uid() <> '08000000-0000-0000-0000-000000000002'::uuid then
+    raise exception 'TEST 8C FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'guardian' then
+    raise exception 'TEST 8C FAILED: expected guardian, got %', public.current_user_role();
+  end if;
+
+  select student_id, has_active_trip, last_location_latitude, last_location_longitude
+  into v_rows
+  from public.get_guardian_live_trip_visibility()
+  where student_id = '0a000000-0000-0000-0000-000000000001'
+  limit 1;
+
+  if not found then
+    raise exception 'TEST 8C FAILED: Guardian A route row disappeared';
+  end if;
+  if v_rows.has_active_trip is not false then
+    raise exception 'TEST 8C FAILED: malformed cross-tenant-bus trip was treated as active';
+  end if;
+  if v_rows.last_location_latitude is not null or v_rows.last_location_longitude is not null then
+    raise exception 'TEST 8C FAILED: location exposed for cross-tenant-bus trip';
+  end if;
+
+  raise notice 'TEST 8C PASSED: cross-tenant bus on active trip is not exposed';
+end
+$$;
+rollback;
+
+-- ===========================================================================
+-- TEST 8D: Mismatched current-location route/bus is not exposed. The table has
+--          one current-location row per trip, so this test mutates the existing
+--          current row to a mismatched same-tenant route and then to a mismatched
+--          cross-tenant bus. In both cases, active trip status may remain true,
+--          but the mismatched latitude/longitude must be suppressed.
+-- ===========================================================================
+begin;
+update public.driver_trip_current_locations
+set route_id = '0d000000-0000-0000-0000-000000000002',
+    latitude = 52.0001,
+    longitude = -115.0001
+where driver_trip_id = '1a200000-0000-0000-0000-000000000001';
+set local role authenticated;
+set local request.jwt.claim.sub = '08000000-0000-0000-0000-000000000002';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"08000000-0000-0000-0000-000000000002","role":"authenticated"}';
+do $$
+declare
+  v_rows record;
+begin
+  if auth.uid() <> '08000000-0000-0000-0000-000000000002'::uuid then
+    raise exception 'TEST 8D FAILED: auth.uid() simulation failed: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'guardian' then
+    raise exception 'TEST 8D FAILED: expected guardian, got %', public.current_user_role();
+  end if;
+
+  select has_active_trip, last_location_latitude, last_location_longitude
+  into v_rows
+  from public.get_guardian_live_trip_visibility()
+  where student_id = '0a000000-0000-0000-0000-000000000001'
+  limit 1;
+
+  if not found then
+    raise exception 'TEST 8D FAILED: Guardian A route row disappeared during route mismatch check';
+  end if;
+  if v_rows.has_active_trip is not true then
+    raise exception 'TEST 8D FAILED: active trip should remain visible while mismatched location is suppressed';
+  end if;
+  if v_rows.last_location_latitude is not null or v_rows.last_location_longitude is not null then
+    raise exception 'TEST 8D FAILED: mismatched route location leaked: %, %', v_rows.last_location_latitude, v_rows.last_location_longitude;
+  end if;
+end
+$$;
+rollback;
+
+begin;
+update public.driver_trip_current_locations
+set bus_id = '0c000000-0000-0000-0000-000000000002',
+    latitude = 53.0001,
+    longitude = -116.0001
+where driver_trip_id = '1a200000-0000-0000-0000-000000000001';
+set local role authenticated;
+set local request.jwt.claim.sub = '08000000-0000-0000-0000-000000000002';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"08000000-0000-0000-0000-000000000002","role":"authenticated"}';
+do $$
+declare
+  v_rows record;
+begin
+  if auth.uid() <> '08000000-0000-0000-0000-000000000002'::uuid then
+    raise exception 'TEST 8D FAILED: auth.uid() simulation failed during bus mismatch check: %', auth.uid();
+  end if;
+  if public.current_user_role() <> 'guardian' then
+    raise exception 'TEST 8D FAILED: expected guardian during bus mismatch check, got %', public.current_user_role();
+  end if;
+
+  select has_active_trip, last_location_latitude, last_location_longitude
+  into v_rows
+  from public.get_guardian_live_trip_visibility()
+  where student_id = '0a000000-0000-0000-0000-000000000001'
+  limit 1;
+
+  if not found then
+    raise exception 'TEST 8D FAILED: Guardian A route row disappeared during bus mismatch check';
+  end if;
+  if v_rows.has_active_trip is not true then
+    raise exception 'TEST 8D FAILED: active trip should remain visible while bus-mismatched location is suppressed';
+  end if;
+  if v_rows.last_location_latitude is not null or v_rows.last_location_longitude is not null then
+    raise exception 'TEST 8D FAILED: mismatched bus location leaked: %, %', v_rows.last_location_latitude, v_rows.last_location_longitude;
+  end if;
+
+  raise notice 'TEST 8D PASSED: mismatched current-location route/bus is not exposed';
+end
+$$;
+rollback;
+
 -- ===========================================================================
 -- TEST 9: Driver CANNOT call the guardian live visibility RPC.
 -- ===========================================================================
@@ -726,7 +959,9 @@ delete from public.route_stops where id in (
   '0e000000-0000-0000-0000-000000000001',
   '0e000000-0000-0000-0000-000000000002',
   '0e000000-0000-0000-0000-000000000003',
-  '0e000000-0000-0000-0000-000000000004'
+  '0e000000-0000-0000-0000-000000000004',
+  '0e000000-0000-0000-0000-000000000005',
+  '0e000000-0000-0000-0000-000000000006'
 );
 
 delete from public.routes where id in (

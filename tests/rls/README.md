@@ -185,6 +185,14 @@ verifies `get_guardian_live_trip_visibility()`:
   active (`has_active_trip = false`, null location).
 - Guardian A cannot see a historical location trail — even after history rows
   are inserted, the RPC returns exactly one location row per active trip.
+- Malformed cross-tenant stop references are not exposed through pickup/dropoff
+  stop names.
+- Malformed same-tenant but wrong-route stop references are not exposed through
+  pickup/dropoff stop names.
+- An active trip malformed to point at a cross-tenant bus is not treated as a
+  valid active guardian-visible live trip.
+- Current-location rows whose route or bus does not match the selected active
+  trip are not exposed.
 - Driver cannot call the guardian RPC (zero rows).
 - Tenant admin cannot call the guardian RPC (zero rows, default deny).
 - Anonymous access is denied (execute revoked, zero rows).
