@@ -80,6 +80,7 @@ function validateEnvironment() {
 async function resolveSqlFiles(args) {
   const requestedFiles = args.length > 0 ? args : DEFAULT_RLS_FILES;
   const cwd = process.cwd();
+  const rlsRoot = await fs.realpath(path.resolve(cwd, 'tests/rls'));
 
   const resolved = [];
   for (const file of requestedFiles) {
@@ -97,6 +98,16 @@ async function resolveSqlFiles(args) {
       const stat = await fs.stat(absolutePath);
       if (!stat.isFile()) {
         throw new Error(`RLS test path is not a file: ${file}`);
+      }
+
+      const realPath = await fs.realpath(absolutePath);
+      const relativeRlsPath = path.relative(rlsRoot, realPath);
+      if (
+        relativeRlsPath === ''
+        || relativeRlsPath.startsWith('..')
+        || path.isAbsolute(relativeRlsPath)
+      ) {
+        throw new Error(`RLS test file must be inside tests/rls: ${file}`);
       }
     } catch (error) {
       if (error?.code === 'ENOENT') {

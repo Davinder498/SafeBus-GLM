@@ -66,6 +66,10 @@ Run one SQL file:
 pnpm test:rls:dev -- tests/rls/guardian-live-trip-visibility-rls.sql
 ```
 
+Single-file and multi-file arguments are limited to `.sql` files under
+`tests/rls`. The runner intentionally refuses migrations, legacy SQL, and other
+repository SQL files.
+
 The runner stops on the first failing SQL file, prints per-file pass/fail
 output, closes the database connection, and exits non-zero on failure. A pass
 means the SQL scripts completed successfully against the configured database.
@@ -77,8 +81,9 @@ The default execution order is:
 3. `tests/rls/guardian-linking-rls.sql`
 4. `tests/rls/guardian-live-trip-visibility-rls.sql`
 
-The scripts create fixed-ID test data and clean up after themselves where
-designed. If a run fails midway, use the cleanup guidance below.
+The database must be safe for fixed-ID seeded test data. The scripts create
+test data and clean up after themselves where designed. If a run fails midway,
+use the cleanup guidance below.
 
 ## Required Database Context
 
