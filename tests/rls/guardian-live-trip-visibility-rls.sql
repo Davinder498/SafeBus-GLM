@@ -43,7 +43,8 @@ delete from public.driver_trips where id in (
 delete from public.student_route_assignments where id in (
   '0f100000-0000-0000-0000-000000000001',
   '0f100000-0000-0000-0000-000000000002',
-  '0f100000-0000-0000-0000-000000000003'
+  '0f100000-0000-0000-0000-000000000003',
+  '0f100000-0000-0000-0000-000000000004'
 );
 
 delete from public.route_stops where id in (
@@ -196,6 +197,24 @@ values
   ('0b000000-0000-0000-0000-000000000002', '06000000-0000-0000-0000-000000000001', '0a000000-0000-0000-0000-000000000003', '09000000-0000-0000-0000-000000000001', 'guardian', 'inactive'),
   ('0b000000-0000-0000-0000-000000000003', '06000000-0000-0000-0000-000000000001', '0a000000-0000-0000-0000-000000000002', '09000000-0000-0000-0000-000000000002', 'guardian', 'active');
 
+do $$
+declare
+  v_count int;
+begin
+  select count(*) into v_count
+  from public.student_guardians
+  where id = '0b000000-0000-0000-0000-000000000002'
+    and guardian_id = '09000000-0000-0000-0000-000000000001'
+    and student_id = '0a000000-0000-0000-0000-000000000003'
+    and tenant_id = '06000000-0000-0000-0000-000000000001'
+    and status = 'inactive';
+
+  if v_count <> 1 then
+    raise exception 'SEED FAILED: expected 1 inactive Guardian A -> Student C link row, got %', v_count;
+  end if;
+end
+$$;
+
 -- Route assignments.
 insert into public.student_route_assignments (id, tenant_id, student_id, route_id, pickup_stop_id, dropoff_stop_id, status)
 values
@@ -203,6 +222,10 @@ values
   ('0f100000-0000-0000-0000-000000000001', '06000000-0000-0000-0000-000000000001', '0a000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000001', '0e000000-0000-0000-0000-000000000001', '0e000000-0000-0000-0000-000000000002', 'active'),
   -- Student B (Guardian B) -> Route A2 (NO active trip — has_active_trip=false).
   ('0f100000-0000-0000-0000-000000000002', '06000000-0000-0000-0000-000000000001', '0a000000-0000-0000-0000-000000000002', '0d000000-0000-0000-0000-000000000002', '0e000000-0000-0000-0000-000000000003', '0e000000-0000-0000-0000-000000000004', 'active'),
+  -- Student C (Guardian A inactive link) -> Route A2. If the inactive link
+  -- were incorrectly treated as visible, this active assignment would make the
+  -- student eligible to appear in the live-trip RPC result.
+  ('0f100000-0000-0000-0000-000000000004', '06000000-0000-0000-0000-000000000001', '0a000000-0000-0000-0000-000000000003', '0d000000-0000-0000-0000-000000000002', '0e000000-0000-0000-0000-000000000003', '0e000000-0000-0000-0000-000000000004', 'active'),
   -- Student D (cross-tenant) -> Route B1 in Tenant B.
   ('0f100000-0000-0000-0000-000000000003', '06000000-0000-0000-0000-000000000002', '0a000000-0000-0000-0000-000000000004', '0d000000-0000-0000-0000-000000000003', null, null, 'active');
 
@@ -355,8 +378,10 @@ declare
 begin
   select count(*) into v_count
   from public.student_guardians
-  where student_id = '0a000000-0000-0000-0000-000000000003'
+  where id = '0b000000-0000-0000-0000-000000000002'
+    and student_id = '0a000000-0000-0000-0000-000000000003'
     and guardian_id = '09000000-0000-0000-0000-000000000001'
+    and tenant_id = '06000000-0000-0000-0000-000000000001'
     and status = 'inactive';
 
   if v_count <> 1 then
@@ -525,16 +550,10 @@ begin
     raise exception 'TEST 8 FAILED: expected guardian, got %', public.current_user_role();
   end if;
 
-  -- Insert several historical location-update rows directly (privileged) for
-  -- the active trip, then confirm the RPC still returns exactly one location
-  -- row for Student A (the current location), not the history.
-  insert into public.driver_trip_location_updates
-    (tenant_id, driver_trip_id, driver_id, bus_id, route_id, latitude, longitude, recorded_at)
-  values
-    ('06000000-0000-0000-0000-000000000001', '1a200000-0000-0000-0000-000000000001', '09000000-0000-0000-0000-000000000003', '0c000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000001', 51.0400, -114.0700, now() - interval '10 minutes'),
-    ('06000000-0000-0000-0000-000000000001', '1a200000-0000-0000-0000-000000000001', '09000000-0000-0000-0000-000000000003', '0c000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000001', 51.0410, -114.0705, now() - interval '7 minutes'),
-    ('06000000-0000-0000-0000-000000000001', '1a200000-0000-0000-0000-000000000001', '09000000-0000-0000-0000-000000000003', '0c000000-0000-0000-0000-000000000001', '0d000000-0000-0000-0000-000000000001', 51.0420, -114.0710, now() - interval '5 minutes');
-
+  -- The RPC returns one row per active route assignment and reads only
+  -- driver_trip_current_locations. Do not insert driver_trip_location_updates
+  -- here: authenticated users intentionally do not have direct INSERT on that
+  -- history table.
   select count(*) into v_count
   from public.get_guardian_live_trip_visibility()
   where student_id = '0a000000-0000-0000-0000-000000000001';
@@ -963,7 +982,8 @@ delete from public.driver_trips where id in (
 delete from public.student_route_assignments where id in (
   '0f100000-0000-0000-0000-000000000001',
   '0f100000-0000-0000-0000-000000000002',
-  '0f100000-0000-0000-0000-000000000003'
+  '0f100000-0000-0000-0000-000000000003',
+  '0f100000-0000-0000-0000-000000000004'
 );
 
 delete from public.route_stops where id in (
