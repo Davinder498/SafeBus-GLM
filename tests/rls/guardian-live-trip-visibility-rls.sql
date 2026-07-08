@@ -945,9 +945,9 @@ rollback;
 -- ===========================================================================
 -- TEST 13: Guardian-linking RLS tests remain valid — Guardian A can read
 --          only own visible student_guardians link rows and never Guardian B's link.
---          Some hosted policies intentionally hide inactive links from guardians,
---          so inactive-link existence is verified in TEST 4's privileged sanity
---          check instead of being required in the guardian-visible result set.
+--          The base SELECT policy returns Guardian A's own active and inactive
+--          links; TEST 4 separately proves inactive links do not surface through
+--          the live-trip RPC.
 -- ===========================================================================
 begin;
 set local role authenticated;
@@ -965,14 +965,14 @@ begin
     raise exception 'TEST 13 FAILED: expected guardian, got %', public.current_user_role();
   end if;
 
-  -- Guardian A should see exactly the visible own active link and NOT
-  -- Guardian B's link. Inactive-link exclusion is acceptable and separately
-  -- verified not to surface through the live-trip RPC.
+  -- Guardian A should see exactly their own active and inactive links and NOT
+  -- Guardian B's link.
   select coalesce(array_agg(id order by id), array[]::uuid[]) into v_link_ids
   from public.student_guardians;
 
   if v_link_ids <> array[
-    '0b000000-0000-0000-0000-000000000001'::uuid
+    '0b000000-0000-0000-0000-000000000001'::uuid,
+    '0b000000-0000-0000-0000-000000000002'::uuid
   ] then
     raise exception 'TEST 13 FAILED: unexpected Guardian A link rows: %', v_link_ids;
   end if;
