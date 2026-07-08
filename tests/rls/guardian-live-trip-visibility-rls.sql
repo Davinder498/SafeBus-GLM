@@ -595,7 +595,13 @@ $$;
 rollback;
 
 -- ===========================================================================
--- TEST 11: Unauthenticated (anon) access is denied — no rows and no execute.
+-- TEST 11: Unauthenticated (anon) access is denied.
+--
+-- Execute is revoked from anon, so the RPC call must raise
+-- insufficient_privilege (permission denied for function). If a Supabase build
+-- instead allows the call to reach the function body, the SECURITY DEFINER
+-- function's own `auth.uid() is not null` guard returns zero rows. Both
+-- outcomes are acceptable; any non-zero row count fails the test.
 -- ===========================================================================
 begin;
 set local role anon;
@@ -609,18 +615,13 @@ begin
 
   begin
     select count(*) into v_count from public.get_guardian_live_trip_visibility();
-    raise exception 'TEST 11 FAILED: anon was able to execute the RPC';
+    if v_count <> 0 then
+      raise exception 'TEST 11 FAILED: anon got % rows from guardian RPC', v_count;
+    end if;
+    raise notice 'TEST 11 PASSED: anon got 0 rows from guardian RPC (execute not blocked but body guard held)';
   exception
-    when insufficient_privilege or insufficient_privilege then
-      raise notice 'TEST 11 PASSED: anon blocked from executing guardian RPC';
-    when others then
-      -- Some Supabase versions return 0 rows instead of a privilege error for
-      -- SECURITY DEFINER functions reached by anon. Accept zero-rows as pass.
-      select count(*) into v_count from public.get_guardian_live_trip_visibility();
-      if v_count <> 0 then
-        raise exception 'TEST 11 FAILED: anon got % rows from guardian RPC', v_count;
-      end if;
-      raise notice 'TEST 11 PASSED: anon gets no rows from guardian RPC';
+    when insufficient_privilege then
+      raise notice 'TEST 11 PASSED: anon blocked from executing guardian RPC (permission denied)';
   end;
 end
 $$;
