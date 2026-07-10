@@ -25,25 +25,27 @@
 
 ## Completed Milestones
 
-| Milestone | Evidence in repo | Status |
-|---|---|---|
-| 2A/2B - Auth & Profile Foundation | `0001_auth_profile_foundation.sql`, `0002_foundation_read_grants.sql` | Completed |
-| 3B - Students & Guardians Foundation | `0003_students_guardians_foundation.sql` | Completed |
-| 3C - Transportation Structure Foundation | `0004_transportation_structure_foundation.sql` | Completed |
-| 3D - Transportation Admin Write Foundation | `0005_transportation_admin_write_foundation.sql` | Completed |
-| 4A - Driver Trip Operations Foundation | `0006_driver_trips_foundation.sql`, driver trip service/UI smoke coverage | Completed |
-| 4B/4C - Admin Live Trip Monitoring Foundation + Hardening | `0007_driver_location_update_foundation.sql` through `0014_enforce_assignment_only_trip_start.sql` | Completed |
-| 5A - Guardian Student & Route Visibility Foundation | `0015_guardian_student_route_visibility_foundation.sql`, guardian route page/service/smoke coverage | Completed |
-| 5A.1 - Tenant Admin Student Roster Foundation | `0016_student_roster_admin_write_foundation.sql`, `0017_fix_student_roster_school_scope.sql`, `0018_fix_students_rls_update_recursion.sql` | Completed |
-| 5A.2 - Supabase RLS Regression Test Foundation | `tests/rls/student-roster-rls.sql`, `tests/rls/guardian-visibility-rls.sql`, `tests/rls/README.md` | Completed |
-| 5B - Tenant Admin Guardian Management & Linking UX Hardening | `0019_secure_guardian_student_linking_rpc.sql`, `tests/rls/guardian-linking-rls.sql` | Completed |
-| 6A - Guardian Live Trip Visibility Security Foundation | `0020_guardian_live_trip_visibility_foundation.sql`, `0021_harden_guardian_live_trip_visibility_rpc.sql`, `tests/rls/guardian-live-trip-visibility-rls.sql` | Completed, reviewed, and fixed |
-| QA-1 - Automated Supabase RLS Test Runner | `scripts/run-rls-tests.mjs`, `pnpm test:rls:dev`, path-safety fix in latest `main` | Completed and review blocker fixed |
+| Milestone                                                    | Evidence in repo                                                                                                                                            | Status                             |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 2A/2B - Auth & Profile Foundation                            | `0001_auth_profile_foundation.sql`, `0002_foundation_read_grants.sql`                                                                                       | Completed                          |
+| 3B - Students & Guardians Foundation                         | `0003_students_guardians_foundation.sql`                                                                                                                    | Completed                          |
+| 3C - Transportation Structure Foundation                     | `0004_transportation_structure_foundation.sql`                                                                                                              | Completed                          |
+| 3D - Transportation Admin Write Foundation                   | `0005_transportation_admin_write_foundation.sql`                                                                                                            | Completed                          |
+| 4A - Driver Trip Operations Foundation                       | `0006_driver_trips_foundation.sql`, driver trip service/UI smoke coverage                                                                                   | Completed                          |
+| 4B/4C - Admin Live Trip Monitoring Foundation + Hardening    | `0007_driver_location_update_foundation.sql` through `0014_enforce_assignment_only_trip_start.sql`                                                          | Completed                          |
+| 5A - Guardian Student & Route Visibility Foundation          | `0015_guardian_student_route_visibility_foundation.sql`, guardian route page/service/smoke coverage                                                         | Completed                          |
+| 5A.1 - Tenant Admin Student Roster Foundation                | `0016_student_roster_admin_write_foundation.sql`, `0017_fix_student_roster_school_scope.sql`, `0018_fix_students_rls_update_recursion.sql`                  | Completed                          |
+| 5A.2 - Supabase RLS Regression Test Foundation               | `tests/rls/student-roster-rls.sql`, `tests/rls/guardian-visibility-rls.sql`, `tests/rls/README.md`                                                          | Completed                          |
+| 5B - Tenant Admin Guardian Management & Linking UX Hardening | `0019_secure_guardian_student_linking_rpc.sql`, `tests/rls/guardian-linking-rls.sql`                                                                        | Completed                          |
+| 6A - Guardian Live Trip Visibility Security Foundation       | `0020_guardian_live_trip_visibility_foundation.sql`, `0021_harden_guardian_live_trip_visibility_rpc.sql`, `tests/rls/guardian-live-trip-visibility-rls.sql` | Completed, reviewed, and fixed     |
+| QA-1 - Automated Supabase RLS Test Runner                    | `scripts/run-rls-tests.mjs`, `pnpm test:rls:dev`, path-safety fix in latest `main`                                                                          | Completed and review blocker fixed |
+| 7A/7B QA - Driver Event Manual Fixture                       | `docs/qa/driver-event-flow-manual-test.md`, `scripts/seed-driver-event-qa-fixture.mjs`, `pnpm qa:seed:driver-events`                                        | DEV-only QA helper                 |
 
 ## Current Milestone
 
-No product milestone is active in this repository state. The latest completed
-work is QA-1 project hygiene/tooling around automated RLS SQL execution.
+No product milestone is active in this repository state. The latest active work
+is DEV-only QA support for manually verifying the driver manifest and
+pickup/drop-off event flow.
 
 Do not start the next product milestone until it is explicitly selected.
 
@@ -73,6 +75,21 @@ under `tests/rls`. The runner must not be used for migrations, legacy SQL, or
 arbitrary repository SQL.
 
 Never run manual or automated RLS SQL against production.
+
+## Driver Event QA Fixture
+
+Milestone 7C adds a DEV-only manual QA helper for the driver active-trip
+manifest and pickup/drop-off event flow:
+
+- Playbook: `docs/qa/driver-event-flow-manual-test.md`
+- Seed script: `pnpm qa:seed:driver-events`
+- Required guards:
+  - `SAFEBUS_QA_SEED_DATABASE_URL=postgresql://...`
+  - `SAFEBUS_QA_SEED_CONFIRM=DEV_ONLY`
+
+Run the seed only against hosted Supabase DEV or a disposable migrated database,
+never production. The fixture uses fake `@example.test` data and does not create
+a production dummy-data UI.
 
 ## Scope-Control Notes
 
