@@ -37,6 +37,32 @@ const guardianProfile = {
   updated_at: '2025-01-01T00:00:00.000Z',
 };
 
+const adminProfile = {
+  id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+  tenant_id: GUARDIAN.tenantId,
+  school_id: null,
+  full_name: 'Test Admin',
+  email: 'admin@smoke-test.local',
+  role: 'tenant_admin',
+  status: 'active',
+  created_at: '2025-01-01T00:00:00.000Z',
+  updated_at: '2025-01-01T00:00:00.000Z',
+};
+
+const driverProfile = {
+  id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
+  tenant_id: GUARDIAN.tenantId,
+  school_id: null,
+  full_name: 'Test Driver',
+  email: 'driver@smoke-test.local',
+  role: 'driver',
+  status: 'active',
+  created_at: '2025-01-01T00:00:00.000Z',
+  updated_at: '2025-01-01T00:00:00.000Z',
+};
+
+type MockProfile = typeof guardianProfile | typeof adminProfile | typeof driverProfile;
+
 interface GuardianLiveTripRpcRow {
   student_id: string;
   student_name: string;
@@ -90,8 +116,14 @@ function noActiveTripRow(): GuardianLiveTripRpcRow {
  */
 async function installGuardianLiveMock(
   page: Page,
-  opts: { rows?: GuardianLiveTripRpcRow[]; failRpc?: boolean; rawError?: string } = {},
+  opts: {
+    rows?: GuardianLiveTripRpcRow[];
+    failRpc?: boolean;
+    rawError?: string;
+    profile?: MockProfile;
+  } = {},
 ) {
+  const profile = opts.profile ?? guardianProfile;
   let rowsForRpc: GuardianLiveTripRpcRow[] = opts.rows ?? [];
   let failRpc = opts.failRpc ?? false;
   const rawError =
@@ -106,6 +138,8 @@ async function installGuardianLiveMock(
 
   await page.route('**/*', async (route: Route) => {
     const url = new URL(route.request().url());
+    // Test-only guard: intercept any Supabase project host so local DEV .env
+    // values never make smoke tests touch a real Supabase API.
     if (!url.hostname.endsWith('.supabase.co')) {
       await route.fallback();
       return;
@@ -119,13 +153,13 @@ async function installGuardianLiveMock(
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            id: guardianProfile.id,
+            id: profile.id,
             aud: 'authenticated',
             role: 'authenticated',
-            email: guardianProfile.email,
+            email: profile.email,
             app_metadata: {},
             user_metadata: {},
-            created_at: guardianProfile.created_at,
+            created_at: profile.created_at,
           }),
         });
         return;
@@ -139,7 +173,7 @@ async function installGuardianLiveMock(
             refresh_token: 'x',
             token_type: 'bearer',
             expires_in: 3600,
-            user: { id: guardianProfile.id, email: guardianProfile.email, aud: 'authenticated', role: 'authenticated' },
+            user: { id: profile.id, email: profile.email, aud: 'authenticated', role: 'authenticated' },
           }),
         });
         return;
@@ -164,7 +198,7 @@ async function installGuardianLiveMock(
       };
 
       if (method === 'GET' && path.includes('/profiles')) {
-        await fulfillRows([guardianProfile]);
+        await fulfillRows([profile]);
         return;
       }
       if (method === 'POST' && path.includes('/rpc/get_guardian_live_trip_visibility')) {
@@ -193,7 +227,7 @@ async function installGuardianLiveMock(
     await route.fallback();
   });
 
-  await page.addInitScript(() => {
+  await page.addInitScript((profileForSession: MockProfile) => {
     const s = {
       access_token: 'x',
       refresh_token: 'x',
@@ -201,13 +235,13 @@ async function installGuardianLiveMock(
       expires_in: 3600,
       expires_at: Math.floor(Date.now() / 1000) + 3600,
       user: {
-        id: '11111111-1111-1111-1111-111111111111',
-        email: 'guardian@smoke-test.local',
+        id: profileForSession.id,
+        email: profileForSession.email,
         aud: 'authenticated',
         role: 'authenticated',
         app_metadata: {},
         user_metadata: {},
-        created_at: '2025-01-01T00:00:00.000Z',
+        created_at: profileForSession.created_at,
       },
     };
     for (const k of ['supabase.auth.token', 'sb-placeholder-auth-token',
@@ -218,7 +252,7 @@ async function installGuardianLiveMock(
         /* ignore */
       }
     }
-  });
+  }, profile);
 
   return { setRows, setFailRpc };
 }
@@ -288,7 +322,7 @@ test.describe('Milestone 6B - Guardian live trip status UI', () => {
     await page.goto('/guardian/live');
 
     await expect(page.getByTestId('guardian-live-error')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('We could not load live bus status.')).toBeVisible();
+    await expect(page.getByText('We could not load live trip status right now.')).toBeVisible();
     // Raw backend error text does NOT appear.
     await expect(page.getByText(rawError)).toHaveCount(0);
   });
@@ -314,5 +348,33 @@ test.describe('Milestone 6B - Role protection', () => {
     await expect(page.getByRole('heading', { name: 'Sign in required' })).toBeVisible({
       timeout: 15000,
     });
+  });
+
+  test('admin user is blocked from guardian live trip page', async ({ page }) => {
+    await installGuardianLiveMock(page, { profile: adminProfile });
+    await page.goto('/guardian/live');
+
+    await expect(page.getByRole('heading', { name: 'Wrong portal' })).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByRole('link', { name: 'Open your dashboard' })).toHaveAttribute(
+      'href',
+      '/admin',
+    );
+    await expect(page.getByRole('heading', { name: 'Live Bus Status', level: 1 })).toHaveCount(0);
+  });
+
+  test('driver user is blocked from guardian live trip page', async ({ page }) => {
+    await installGuardianLiveMock(page, { profile: driverProfile });
+    await page.goto('/guardian/live');
+
+    await expect(page.getByRole('heading', { name: 'Wrong portal' })).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByRole('link', { name: 'Open your dashboard' })).toHaveAttribute(
+      'href',
+      '/driver',
+    );
+    await expect(page.getByRole('heading', { name: 'Live Bus Status', level: 1 })).toHaveCount(0);
   });
 });

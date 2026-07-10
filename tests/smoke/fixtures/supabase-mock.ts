@@ -172,8 +172,9 @@ export async function installSupabaseMock(
   await page.route('**/*', async (route: Route) => {
     const url = new URL(route.request().url());
 
-    // Only intercept requests to the placeholder Supabase host. Everything
-    // else (app assets, HMR) is allowed through normally.
+    // Test-only guard: intercept any Supabase project host so local DEV .env
+    // values never make smoke tests touch a real Supabase API. Everything else
+    // (app assets, HMR) is allowed through normally.
     if (!url.hostname.endsWith('.supabase.co')) {
       await route.fallback();
       return;

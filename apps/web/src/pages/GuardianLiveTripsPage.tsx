@@ -10,7 +10,7 @@ import type { GuardianLiveTrip } from '@/types/guardianLiveTrip';
 
 type LoadState =
   | { kind: 'loading' }
-  | { kind: 'error'; message: string }
+  | { kind: 'error' }
   | { kind: 'ready'; trips: GuardianLiveTrip[] };
 
 // A status update older than this is flagged as potentially delayed. This is a
@@ -60,12 +60,8 @@ export function GuardianLiveTripsPage() {
       const trips = await fetchGuardianLiveTrips();
       setState({ kind: 'ready', trips });
       setLastRefreshedAt(new Date().toISOString());
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'We could not load live bus status. Please try again.';
-      setState({ kind: 'error', message });
+    } catch {
+      setState({ kind: 'error' });
     } finally {
       setRefreshing(false);
     }
@@ -123,7 +119,7 @@ export function GuardianLiveTripsPage() {
         {state.kind === 'error' && (
           <div className="space-y-4" data-testid="guardian-live-error">
             <DataState
-              title="We could not load live bus status."
+              title="We could not load live trip status right now."
               message="Please try again."
             />
             <Button type="button" variant="secondary" onClick={() => void load()}>
