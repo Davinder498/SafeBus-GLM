@@ -10,4 +10,7 @@ export interface DriverManifestRow {
   pickupStopName: string | null;
   dropoffStopName: string | null;
   assignmentStatus: string | null;
+  pickupEventTime: string | null;
+  dropoffEventTime: string | null;
+  studentTripStatus: 'not_picked_up' | 'picked_up' | 'dropped_off' | null;
 }

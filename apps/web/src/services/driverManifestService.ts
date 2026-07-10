@@ -18,6 +18,9 @@ interface DriverManifestRpcRow {
   pickup_stop_name: string | null;
   dropoff_stop_name: string | null;
   assignment_status: string | null;
+  pickup_event_time: string | null;
+  dropoff_event_time: string | null;
+  student_trip_status: 'not_picked_up' | 'picked_up' | 'dropped_off' | null;
 }
 
 function mapRow(row: DriverManifestRpcRow): DriverManifestRow {
@@ -31,6 +34,9 @@ function mapRow(row: DriverManifestRpcRow): DriverManifestRow {
     pickupStopName: row.pickup_stop_name,
     dropoffStopName: row.dropoff_stop_name,
     assignmentStatus: row.assignment_status,
+    pickupEventTime: row.pickup_event_time,
+    dropoffEventTime: row.dropoff_event_time,
+    studentTripStatus: row.student_trip_status,
   };
 }
 
@@ -51,4 +57,30 @@ export async function fetchDriverActiveTripStudentManifest(): Promise<DriverMani
   }
 
   return ((data ?? []) as DriverManifestRpcRow[]).map(mapRow);
+}
+
+async function markStudentTripEvent(
+  rpcName:
+    | 'mark_student_picked_up_for_active_trip'
+    | 'mark_student_dropped_off_for_active_trip',
+  studentId: string,
+): Promise<void> {
+  const client = requireSupabase();
+
+  const { error } = await client.rpc(rpcName, { p_student_id: studentId });
+
+  if (error) {
+    if (import.meta.env.DEV) {
+      console.error('Failed to update driver student trip event', error);
+    }
+    throw new Error('Could not update student status. Please try again.');
+  }
+}
+
+export async function markStudentPickedUpForActiveTrip(studentId: string): Promise<void> {
+  await markStudentTripEvent('mark_student_picked_up_for_active_trip', studentId);
+}
+
+export async function markStudentDroppedOffForActiveTrip(studentId: string): Promise<void> {
+  await markStudentTripEvent('mark_student_dropped_off_for_active_trip', studentId);
 }

@@ -47,11 +47,16 @@ interface DriverManifestRpcRow {
   pickup_stop_name: string | null;
   dropoff_stop_name: string | null;
   assignment_status: string | null;
+  pickup_event_time: string | null;
+  dropoff_event_time: string | null;
+  student_trip_status: 'not_picked_up' | 'picked_up' | 'dropped_off' | null;
   latitude?: number;
   longitude?: number;
   speed_mps?: number;
   eta?: string;
   guardian_email?: string;
+  home_address?: string;
+  medical_notes?: string;
 }
 
 function manifestRow(): DriverManifestRpcRow {
@@ -65,11 +70,16 @@ function manifestRow(): DriverManifestRpcRow {
     pickup_stop_name: 'Elm & 4th',
     dropoff_stop_name: 'Maple Creek School',
     assignment_status: 'active',
+    pickup_event_time: null,
+    dropoff_event_time: null,
+    student_trip_status: 'not_picked_up',
     latitude: 51.0447,
     longitude: -114.0719,
     speed_mps: 8.5,
     eta: '8:15 AM',
     guardian_email: 'guardian@example.test',
+    home_address: '123 Private Home Road',
+    medical_notes: 'Sensitive medical note',
   };
 }
 
@@ -84,7 +94,15 @@ function activeTripNoStudentsRow(): DriverManifestRpcRow {
     pickup_stop_name: null,
     dropoff_stop_name: null,
     assignment_status: null,
+    pickup_event_time: null,
+    dropoff_event_time: null,
+    student_trip_status: null,
   };
+}
+
+interface DriverManifestMockControl {
+  eventRpcCalls: string[];
+  directEventTableWrites: string[];
 }
 
 async function installDriverManifestMock(
@@ -93,13 +111,19 @@ async function installDriverManifestMock(
     profile?: MockProfile;
     rows?: DriverManifestRpcRow[];
     failRpc?: boolean;
+    failActionRpc?: boolean;
     rawError?: string;
+    rawActionError?: string;
   } = {},
-) {
+): Promise<DriverManifestMockControl> {
   const profile = opts.profile ?? driverProfile;
-  const rows = opts.rows ?? [];
+  let rows = opts.rows ?? [];
   const rawError =
     opts.rawError ?? 'permission denied for function get_driver_active_trip_student_manifest';
+  const rawActionError =
+    opts.rawActionError ?? 'duplicate key value violates unique constraint';
+  const eventRpcCalls: string[] = [];
+  const directEventTableWrites: string[] = [];
 
   await page.route('**/*', async (route: Route) => {
     const url = new URL(route.request().url());
@@ -162,6 +186,65 @@ async function installDriverManifestMock(
         return;
       }
 
+      if (method === 'POST' && path.includes('/rpc/mark_student_picked_up_for_active_trip')) {
+        eventRpcCalls.push('mark_student_picked_up_for_active_trip');
+        if (opts.failActionRpc) {
+          await route.fulfill({
+            status: 409,
+            contentType: 'application/json',
+            body: JSON.stringify({ message: rawActionError }),
+          });
+          return;
+        }
+        rows = rows.map((row) =>
+          row.student_id
+            ? {
+                ...row,
+                pickup_event_time: '2025-01-01T12:10:00.000Z',
+                student_trip_status: 'picked_up',
+              }
+            : row,
+        );
+        await route.fulfill({ status: 200, contentType: 'application/json', body: 'null' });
+        return;
+      }
+
+      if (method === 'POST' && path.includes('/rpc/mark_student_dropped_off_for_active_trip')) {
+        eventRpcCalls.push('mark_student_dropped_off_for_active_trip');
+        if (opts.failActionRpc) {
+          await route.fulfill({
+            status: 409,
+            contentType: 'application/json',
+            body: JSON.stringify({ message: rawActionError }),
+          });
+          return;
+        }
+        rows = rows.map((row) =>
+          row.student_id
+            ? {
+                ...row,
+                dropoff_event_time: '2025-01-01T12:25:00.000Z',
+                student_trip_status: 'dropped_off',
+              }
+            : row,
+        );
+        await route.fulfill({ status: 200, contentType: 'application/json', body: 'null' });
+        return;
+      }
+
+      if (
+        path.includes('/student_trip_events')
+        && ['POST', 'PATCH', 'PUT'].includes(method)
+      ) {
+        directEventTableWrites.push(`${method} ${path}`);
+        await route.fulfill({
+          status: 405,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'direct event table writes are not allowed' }),
+        });
+        return;
+      }
+
       await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
       return;
     }
@@ -199,9 +282,11 @@ async function installDriverManifestMock(
       }
     }
   }, profile);
+
+  return { eventRpcCalls, directEventTableWrites };
 }
 
-test.describe('Milestone 7A - Driver active trip student manifest', () => {
+test.describe('Milestone 7B - Driver student trip event recording', () => {
   test('logged-out user is blocked from driver manifest page', async ({ page }) => {
     await page.goto('/driver/manifest');
 
@@ -250,6 +335,8 @@ test.describe('Milestone 7A - Driver active trip student manifest', () => {
     await expect(page.getByText('North Ridge Morning')).toBeVisible();
     await expect(page.getByText('Elm & 4th')).toBeVisible();
     await expect(page.getByText('Maple Creek School')).toBeVisible();
+    await expect(page.getByText('Not picked up')).toHaveCount(2);
+    await expect(page.getByRole('button', { name: 'Mark picked up' })).toBeVisible();
 
     await expect(page.getByText('51.0447')).toHaveCount(0);
     await expect(page.getByText('-114.0719')).toHaveCount(0);
@@ -258,10 +345,50 @@ test.describe('Milestone 7A - Driver active trip student manifest', () => {
     await expect(page.getByText(DRIVER.tripId)).toHaveCount(0);
     await expect(page.getByText(DRIVER.studentId)).toHaveCount(0);
     await expect(page.getByText('guardian@example.test')).toHaveCount(0);
+    await expect(page.getByText('123 Private Home Road')).toHaveCount(0);
+    await expect(page.getByText('Sensitive medical note')).toHaveCount(0);
     await expect(page.getByText('latitude', { exact: false })).toHaveCount(0);
     await expect(page.getByText('longitude', { exact: false })).toHaveCount(0);
     await expect(page.getByText('speed', { exact: false })).toHaveCount(0);
     await expect(page.getByText('ETA', { exact: false })).toHaveCount(0);
+    await expect(page.getByText('home address', { exact: false })).toHaveCount(0);
+    await expect(page.getByText('medical', { exact: false })).toHaveCount(0);
+  });
+
+  test('driver can mark picked up and dropped off through RPC flow', async ({ page }) => {
+    const control = await installDriverManifestMock(page, { rows: [manifestRow()] });
+    await page.goto('/driver/manifest');
+
+    await page.getByRole('button', { name: 'Mark picked up' }).click();
+    await expect(page.getByText('Student status updated.')).toBeVisible();
+    await expect(page.getByText('Picked up')).toHaveCount(2);
+    await expect(page.getByRole('button', { name: 'Mark dropped off' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Mark dropped off' }).click();
+    await expect(page.getByText('Dropped off')).toHaveCount(2);
+    await expect(page.getByRole('button', { name: 'Mark picked up' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Mark dropped off' })).toHaveCount(0);
+
+    expect(control.eventRpcCalls).toEqual([
+      'mark_student_picked_up_for_active_trip',
+      'mark_student_dropped_off_for_active_trip',
+    ]);
+    expect(control.directEventTableWrites).toEqual([]);
+  });
+
+  test('driver sees safe message when event action fails', async ({ page }) => {
+    const rawActionError = 'duplicate key value violates unique constraint';
+    await installDriverManifestMock(page, {
+      rows: [manifestRow()],
+      failActionRpc: true,
+      rawActionError,
+    });
+    await page.goto('/driver/manifest');
+
+    await page.getByRole('button', { name: 'Mark picked up' }).click();
+
+    await expect(page.getByText('Could not update student status. Please try again.')).toBeVisible();
+    await expect(page.getByText(rawActionError)).toHaveCount(0);
   });
 
   test('driver sees no-active-trip state when RPC returns no rows', async ({ page }) => {

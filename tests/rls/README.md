@@ -30,6 +30,11 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
   driver-only manifest visibility for the authenticated driver's active trip,
   same-tenant other-driver denial, cross-tenant denial, guardian/admin denial,
   and anonymous denial.
+- `driver-student-trip-events-rls.sql`: SELF-CONTAINED tests for Milestone 7B
+  driver-only pickup/drop-off RPCs — verifies own active-trip pickup/drop-off,
+  event ordering, duplicate blocking, same-tenant other-driver denial,
+  cross-tenant denial, guardian/admin/anonymous denial, manifest event status,
+  and direct event table insert blocking.
 
 ## `pnpm test:rls`
 
@@ -87,6 +92,7 @@ The default execution order is:
 3. `tests/rls/guardian-linking-rls.sql`
 4. `tests/rls/guardian-live-trip-visibility-rls.sql`
 5. `tests/rls/driver-active-trip-student-manifest-rls.sql`
+6. `tests/rls/driver-student-trip-events-rls.sql`
 
 The database must be safe for fixed-ID seeded test data. The scripts create
 test data and clean up after themselves where designed. If a run fails midway,
@@ -116,6 +122,16 @@ test rows into:
 - `public.driver_trips`
 - `public.driver_trip_current_locations`
 - `public.driver_trip_location_updates` (privileged history seed rows)
+
+The driver manifest and student trip event scripts additionally insert fixed
+test rows into:
+
+- `public.buses`
+- `public.routes`
+- `public.route_stops`
+- `public.student_route_assignments`
+- `public.driver_trips`
+- `public.student_trip_events` (7B only, through RPC assertions)
 
 The SQL Editor user must be allowed to insert/delete these test rows, including
 direct inserts into `auth.users`.
