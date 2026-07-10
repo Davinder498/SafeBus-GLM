@@ -36,7 +36,7 @@ function LiveBusStatusLine({ trip }: { trip: GuardianLiveTrip | undefined }) {
   return (
     <p className="mt-3 text-sm text-gray-600" data-testid="guardian-live-bus-status">
       Live bus status: <span className="font-semibold text-green-700">On trip</span>
-      <span className="text-gray-500"> · Bus location last updated at {formatTimestamp(trip.lastLocationRecordedAt)}</span>
+      <span className="text-gray-500"> - Bus location last updated at {formatTimestamp(trip.lastLocationRecordedAt)}</span>
     </p>
   );
 }
@@ -94,7 +94,7 @@ export function GuardianRoutesPage() {
               disabled={refreshing}
               data-testid="guardian-routes-refresh-button"
             >
-              {refreshing ? 'Refreshing…' : 'Refresh'}
+              {refreshing ? 'Refreshing...' : 'Refresh'}
             </Button>
             <span className="text-sm text-gray-600" data-testid="guardian-routes-last-refreshed">
               {lastRefreshedAt ? `Last refreshed ${formatTimestamp(lastRefreshedAt)}` : 'Not refreshed yet'}

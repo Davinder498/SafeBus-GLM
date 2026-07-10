@@ -108,7 +108,7 @@ async function installAdminMock(page: Page, initialTrips: AdminLiveTripRpcRow[] 
 
   await page.route('**/*', async (route: Route) => {
     const url = new URL(route.request().url());
-    if (!url.hostname.includes('placeholder.supabase.co')) {
+    if (!url.hostname.endsWith('.supabase.co')) {
       await route.fallback();
       return;
     }
@@ -228,7 +228,8 @@ async function installAdminMock(page: Page, initialTrips: AdminLiveTripRpcRow[] 
         created_at: '2025-01-01T00:00:00.000Z',
       },
     };
-    for (const k of ['supabase.auth.token', 'sb-placeholder-auth-token', 'sb-localhost-auth-token']) {
+    for (const k of ['supabase.auth.token', 'sb-placeholder-auth-token',
+      'sb-bppmqykkbhrmotcybxrh-auth-token', 'sb-localhost-auth-token']) {
       try {
         window.localStorage.setItem(k, JSON.stringify(fakeSession));
       } catch {
