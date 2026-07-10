@@ -16,6 +16,7 @@ const DEFAULT_RLS_FILES = [
   'tests/rls/guardian-visibility-rls.sql',
   'tests/rls/guardian-linking-rls.sql',
   'tests/rls/guardian-live-trip-visibility-rls.sql',
+  'tests/rls/driver-active-trip-student-manifest-rls.sql',
 ];
 
 function fail(message) {

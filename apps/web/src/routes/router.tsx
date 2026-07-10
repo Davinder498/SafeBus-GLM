@@ -17,6 +17,7 @@ import { AdminStopsPage } from '@/pages/AdminStopsPage';
 import { AdminStudentsPage } from '@/pages/AdminStudentsPage';
 import { AdminUsersPage } from '@/pages/AdminUsersPage';
 import { DriverDashboardPage } from '@/pages/DriverDashboardPage';
+import { DriverManifestPage } from '@/pages/DriverManifestPage';
 import { GuardianLiveTripsPage } from '@/pages/GuardianLiveTripsPage';
 import { GuardianRoutesPage } from '@/pages/GuardianRoutesPage';
 import { ParentDashboardPage } from '@/pages/ParentDashboardPage';
@@ -159,6 +160,14 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={['driver']}>
         <DriverDashboardPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/driver/manifest',
+    element: (
+      <ProtectedRoute allowedRoles={['driver']}>
+        <DriverManifestPage />
       </ProtectedRoute>
     ),
   },
