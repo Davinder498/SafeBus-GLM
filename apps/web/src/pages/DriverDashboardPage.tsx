@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -174,6 +175,8 @@ export function DriverDashboardPage() {
               onStop={locationSharing.stop}
             />
 
+            <StudentManifestLinkCard hasActiveTrip={Boolean(state.activeTrip)} />
+
             {state.activeTrip ? (
               <ActiveTripCard
                 trip={state.activeTrip}
@@ -199,6 +202,27 @@ export function DriverDashboardPage() {
         )}
       </div>
     </DashboardLayout>
+  );
+}
+
+function StudentManifestLinkCard({ hasActiveTrip }: { hasActiveTrip: boolean }) {
+  return (
+    <Card className="p-5" data-testid="driver-manifest-link-card">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-navy-900">Student manifest</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            View students assigned to your current active trip.
+          </p>
+        </div>
+        <Link
+          to="/driver/manifest"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-navy-100 px-4 py-2.5 text-base font-semibold text-navy-700 transition-colors hover:bg-navy-200"
+        >
+          {hasActiveTrip ? 'Open manifest' : 'Check manifest'}
+        </Link>
+      </div>
+    </Card>
   );
 }
 

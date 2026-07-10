@@ -24,6 +24,12 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
   trips not shown as active, no historical location trail, driver/admin/anon
   denial, and that the existing guardian route visibility + linking RLS still
   hold.
+- `driver-active-trip-student-manifest-rls.sql`: SELF-CONTAINED tests for
+  `get_driver_active_trip_student_manifest()` (Milestone 7A) — seeds its own
+  buses/routes/stops/trips/students with disjoint fixed IDs, then verifies
+  driver-only manifest visibility for the authenticated driver's active trip,
+  same-tenant other-driver denial, cross-tenant denial, guardian/admin denial,
+  and anonymous denial.
 
 ## `pnpm test:rls`
 
@@ -80,6 +86,7 @@ The default execution order is:
 2. `tests/rls/guardian-visibility-rls.sql`
 3. `tests/rls/guardian-linking-rls.sql`
 4. `tests/rls/guardian-live-trip-visibility-rls.sql`
+5. `tests/rls/driver-active-trip-student-manifest-rls.sql`
 
 The database must be safe for fixed-ID seeded test data. The scripts create
 test data and clean up after themselves where designed. If a run fails midway,
