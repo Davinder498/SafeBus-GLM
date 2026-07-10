@@ -1,91 +1,95 @@
-# SafeBus Alberta — Milestone Status
+# SafeBus Alberta - Milestone Status
 
-> Source of truth for milestone progress. Update after each milestone is merged.
-> "assumed from project handoff, verify in repo" marks items inferred from the
-> repo state rather than a confirmed roadmap entry.
+> Source of truth for repository milestone progress. Update this file whenever
+> a milestone or QA hardening pass lands on `main`.
+
+## Current Checkout State
+
+- Current working branch: `main`.
+- Current workflow for recent QA fixes: implementation is being pushed directly
+  to latest `main`; Codex reviews latest `main`.
+- Hosted Supabase DEV is used for database smoke/RLS execution. Do not run RLS
+  SQL against production.
+- SQL migrations are kept in `supabase/migrations` and are applied manually to
+  hosted Supabase DEV through the SQL Editor.
 
 ## Stack
 
 - React 18 + TypeScript + Vite
 - Tailwind CSS
 - React Router
-- Supabase (Auth + Postgres + RLS)
-- pnpm 11 workspaces + Turborepo
-- Playwright (smoke tests)
-- Hosted Supabase DEV for smoke testing (migrations applied manually via SQL Editor)
+- Supabase Auth + Postgres + RLS
+- pnpm workspaces + Turborepo
+- Playwright smoke tests
+- Netlify deployment target
 
 ## Completed Milestones
 
-| Milestone | Summary | Migration(s) | Status |
-|---|---|---|---|
-| 2A/2B — Auth & Profile Foundation | `tenants`, `schools`, `profiles`, user roles, RLS helper functions | `0001_auth_profile_foundation.sql`, `0002_foundation_read_grants.sql` | ✅ (assumed from project handoff, verify in repo) |
-| 3B — Students & Guardians Foundation | `students`, `guardians`, `student_guardians`, guardian-scoped read RLS | `0003_students_guardians_foundation.sql` | ✅ (assumed from project handoff, verify in repo) |
-| 3C — Transportation Structure Foundation | `buses`, `drivers`, `routes`, `route_stops`, `student_route_assignments`, read RLS | `0004_transportation_structure_foundation.sql` | ✅ (assumed from project handoff, verify in repo) |
-| 3D — Transportation Admin Write Foundation | Admin insert/update policies for transportation tables; write helper functions | `0005_transportation_admin_write_foundation.sql` | ✅ (assumed from project handoff, verify in repo) |
-| 4A — Driver Trip Operations Foundation | `driver_trips` table, trip start/end, driver dashboard UI, Playwright smoke tests | `0006_driver_trips_foundation.sql` | ✅ This milestone |
+| Milestone | Evidence in repo | Status |
+|---|---|---|
+| 2A/2B - Auth & Profile Foundation | `0001_auth_profile_foundation.sql`, `0002_foundation_read_grants.sql` | Completed |
+| 3B - Students & Guardians Foundation | `0003_students_guardians_foundation.sql` | Completed |
+| 3C - Transportation Structure Foundation | `0004_transportation_structure_foundation.sql` | Completed |
+| 3D - Transportation Admin Write Foundation | `0005_transportation_admin_write_foundation.sql` | Completed |
+| 4A - Driver Trip Operations Foundation | `0006_driver_trips_foundation.sql`, driver trip service/UI smoke coverage | Completed |
+| 4B/4C - Admin Live Trip Monitoring Foundation + Hardening | `0007_driver_location_update_foundation.sql` through `0014_enforce_assignment_only_trip_start.sql` | Completed |
+| 5A - Guardian Student & Route Visibility Foundation | `0015_guardian_student_route_visibility_foundation.sql`, guardian route page/service/smoke coverage | Completed |
+| 5A.1 - Tenant Admin Student Roster Foundation | `0016_student_roster_admin_write_foundation.sql`, `0017_fix_student_roster_school_scope.sql`, `0018_fix_students_rls_update_recursion.sql` | Completed |
+| 5A.2 - Supabase RLS Regression Test Foundation | `tests/rls/student-roster-rls.sql`, `tests/rls/guardian-visibility-rls.sql`, `tests/rls/README.md` | Completed |
+| 5B - Tenant Admin Guardian Management & Linking UX Hardening | `0019_secure_guardian_student_linking_rpc.sql`, `tests/rls/guardian-linking-rls.sql` | Completed |
+| 6A - Guardian Live Trip Visibility Security Foundation | `0020_guardian_live_trip_visibility_foundation.sql`, `0021_harden_guardian_live_trip_visibility_rpc.sql`, `tests/rls/guardian-live-trip-visibility-rls.sql` | Completed, reviewed, and fixed |
+| QA-1 - Automated Supabase RLS Test Runner | `scripts/run-rls-tests.mjs`, `pnpm test:rls:dev`, path-safety fix in latest `main` | Completed and review blocker fixed |
 
 ## Current Milestone
 
-### Milestone 4A — Driver Trip Operations Foundation
+No product milestone is active in this repository state. The latest completed
+work is QA-1 project hygiene/tooling around automated RLS SQL execution.
 
-**Goal:** Establish the driver-side trip/session model so a driver can start and end a trip. Live GPS, maps, parent tracking, QR, and notifications are explicitly out of scope and reserved for later milestones.
+Do not start the next product milestone until it is explicitly selected.
 
-**What was delivered:**
+## RLS Test Workflow
 
-- Database: `public.driver_trips` table with tenant/driver/bus/route foreign keys, `trip_type` (morning/evening), `status` (active/completed/cancelled), `service_date`, `started_at`, `ended_at`. Partial unique indexes enforce at most one active trip per driver and per bus. Check constraints keep `ended_at` consistent with `status`.
-- New helpers: `current_driver_id()`, `driver_trip_entities_in_tenant()`, and the `end_driver_trip(uuid)` RPC.
-- Ending a trip is locked down: there is **no UPDATE policy** and **no UPDATE grant** on `driver_trips`. The only path that mutates a trip is the `end_driver_trip(p_trip_id)` security-definer RPC, which sets ONLY `status='completed'` and `ended_at=now()`. A driver cannot mutate `tenant_id`, `driver_id`, `bus_id`, `route_id`, `trip_type`, `service_date`, `started_at`, or `created_at`. The RPC enforces caller role, tenant, ownership, and active status server-side.
-- RLS: tenant isolation; drivers read/create only their own trips; admins read tenant trips. Driver read policies added (additively) on `buses` and `routes` so a driver can select a bus and route.
-- Service layer: `driverTripService.ts` — `fetchDriverTripContext`, `fetchActiveDriverTrip`, `startDriverTrip`, `endDriverTrip` (calls the RPC). `tenant_id`/`driver_id` are derived server-side, never trusted from the client.
-- UI: `DriverDashboardPage` uses live Supabase data. Labels accurately say "available in your organization" (not "assigned") because no driver-bus/route assignment table exists yet. Shows driver profile, bus/route selectors, trip-type radio group, start/end actions, active-trip card, loading/empty/error states, accessible labels. Success messages persist across the silent data refresh that follows start/end.
-- Route protection: `/driver` remains behind `ProtectedRoute allowedRoles={['driver']}` (unchanged).
-- Playwright smoke tests under `tests/smoke/`:
-  - Unauthenticated: protected-route behavior, landing page rendering, mobile viewport layout.
-  - Authenticated (via a mocked Supabase layer in `tests/smoke/fixtures/supabase-mock.ts` — no production credentials, no test backdoors, all Supabase traffic intercepted by `page.route`): driver dashboard rendering, bus/route controls, morning/evening selector, start trip, active trip display, end trip, refresh persistence, mobile layout.
+`pnpm test:rls` is structural only. It checks that the expected SQL files and
+README exist, but it does not connect to Supabase and does not execute SQL.
+Do not report `pnpm test:rls` as proof that SQL assertions passed.
 
-**Validation results (after final cleanup):**
+`pnpm test:rls:dev` executes SQL against a configured hosted Supabase DEV or
+disposable migrated database. It requires:
 
-| Command | Result |
-|---|---|
-| `pnpm install` | ✅ pass (already up to date) |
-| `pnpm lint` | ✅ pass (`@safebus/web` eslint clean) |
-| `pnpm typecheck` | ✅ pass (4/4 packages: types, api, ui, web) |
-| `pnpm build` | ✅ pass (`@safebus/web`, 116 modules, `dist/` produced) |
-| `pnpm test` | ✅ pass (vitest, `--passWithNoTests`, no unit test files yet) |
-| `pnpm test:smoke` | ✅ pass (22 tests: 11 desktop-chromium + 11 mobile-chromium; 6 authenticated + 5 unauthenticated per project, 24.3s) |
+```bash
+SAFEBUS_RLS_TEST_DATABASE_URL=postgresql://...
+SAFEBUS_RLS_TEST_CONFIRM=DEV_ONLY
+```
 
-**Branch:** `milestone-4a-driver-trip-operations` (confirmed locally and on `origin`). No `work` branch exists in this repository.
+The automated runner executes the default RLS files in deterministic order:
 
-**Final cleanup applied:**
+1. `tests/rls/student-roster-rls.sql`
+2. `tests/rls/guardian-visibility-rls.sql`
+3. `tests/rls/guardian-linking-rls.sql`
+4. `tests/rls/guardian-live-trip-visibility-rls.sql`
 
-- Removed the unused `test as base` import and the unused `export { test }` re-export from `tests/smoke/fixtures/supabase-mock.ts`. Test files import `test`/`expect` directly from `@playwright/test` and only `installSupabaseMock` from the fixture.
-- Clarified the `end_driver_trip()` migration comment: the function is `security definer` and therefore **bypasses table-level RLS** on `driver_trips` for both its qualifying `SELECT ... FOR UPDATE` and its `UPDATE`. The function's own explicit checks (caller role, tenant, ownership, active status) are the **primary** enforcement, not a defense-in-depth backstop. The previous wording that implied table RLS still applied inside the function was corrected.
+Single-file and multi-file runner arguments are restricted to `.sql` files
+under `tests/rls`. The runner must not be used for migrations, legacy SQL, or
+arbitrary repository SQL.
 
-**Known limitations:**
+Never run manual or automated RLS SQL against production.
 
-- No driver↔bus/route assignment table exists yet; the driver selects a bus and route from their organization's active set. The UI is labeled "available in your organization" to reflect this. A formal driver-assignment model is a candidate for a future milestone.
-- `cancelled` status is supported by the schema and the RPC could be extended to allow it, but no UI action cancels a trip in this milestone (only start and end/completed).
-- The authenticated Playwright tests use a mocked Supabase layer (deterministic in-memory responses). They do not exercise real Postgres RLS; the RLS/RPC guarantees are verified by the manual smoke-test checklist against hosted Supabase DEV.
+## Scope-Control Notes
 
-## Next Recommended Milestone
-
-> Placeholder — the next milestone is chosen by the project manager from the
-> SafeBus master roadmap, not by the implementer.
-
-Candidates consistent with the roadmap (decision deferred to PM):
-
-- Driver↔bus/route assignment model (so a driver sees a pre-assigned bus/route instead of selecting from the tenant list).
-- Live GPS pings attached to `driver_trips` (Phase 5).
-- Parent live bus visibility during an active trip (Phase 6).
-- QR scan / pickup-dropoff confirmation attached to a trip (Phase 7).
-- Admin trips monitoring page (read-only view of active `driver_trips` per tenant).
+- Track the bus, not the child.
+- No Alberta Student Number, `asn`, or `alberta_student_number` fields are part
+  of the approved data model.
+- QR codes, student badges, pickup/drop-off scan events, notifications, SMS,
+  maps APIs, CSV import, and external SIS integrations remain future scope
+  unless a future milestone explicitly approves them.
+- Future-scope Edge Function/API scaffolds for QR scan, badge generation, and
+  notification dispatch have been removed from current `main`.
 
 ## Privacy Reminder
 
-- No Alberta Student Number (ASN) collected or stored.
-- No student home address collected or stored.
-- No student health data collected or stored.
-- Guardians see only their linked students (enforced in migration 0003).
-- Drivers see only their own trips (enforced in migration 0006).
+- No student home address is collected or stored.
+- No student health data is collected or stored.
+- Guardians can only see their linked students.
+- Drivers should only see their own or assigned transportation data.
 - No service role keys in frontend code.
 - No public RLS policies.

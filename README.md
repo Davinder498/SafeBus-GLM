@@ -2,7 +2,7 @@
 
 > Real-time school bus visibility for Alberta schools and parents.
 
-SafeBus is a school transportation operations platform focused on live bus tracking, driver trip workflow, parent bus visibility, student pickup/drop-off confirmation (QR), admin monitoring, and privacy-first student access control.
+SafeBus is a school transportation operations platform focused on driver trip workflow, live bus visibility, admin monitoring, guardian-scoped route visibility, and privacy-first student access control.
 
 **This is not a Student Information System.** SafeBus works alongside existing systems such as PowerSchool and SchoolEngage.
 
@@ -29,7 +29,7 @@ safebus-alberta/
 │   └── config/           # Shared tsconfig, eslint config
 ├── supabase/
 │   ├── migrations/       # Database schema + RLS policies
-│   ├── functions/        # Edge Functions (ingest-location, process-scan, etc.)
+│   ├── functions/        # Edge Functions for approved milestones
 │   └── seed/             # Demo data
 └── docs/                 # PRD, Architecture, Security, Pilot Plan
 ```
@@ -79,14 +79,14 @@ pnpm typecheck
 | 3. Admin CRUD | ⏳ | Entity management + CSV import |
 | 4. Driver Mobile | ⏳ | Expo app + login + trips |
 | 5. GPS Tracking | ⏳ | Background GPS + 5s pings + stale/lost logic |
-| 6. Parent + Notifications | ⏳ | Parent dashboard + push/email |
-| 7. QR Scan | ⏳ | Badge generation + scanning + manual override |
+| 6. Guardian Live Trip Visibility | ✅ | Guardian-scoped active-trip visibility |
+| 7. QR Scan / Notifications | ⏳ | Future scope; not implemented until explicitly approved |
 | 8. Pilot Readiness | ⏳ | Reports + security review + PIA filed |
 
 ## Key Principles
 
 - **Track the bus, not the child** — parents see only the assigned active bus
-- **Privacy-first** — ASN never in QR, GPS only during active trips, 30-day retention
+- **Privacy-first** — no Alberta Student Number, GPS only during active trips, tenant-scoped access
 - **Tenant isolation** — RLS on every sensitive table
 - **Plain language** — "Bus location temporarily unavailable" not "Realtime subscription stale"
 - **Mobile first** — 320px minimum, 44×44px touch targets, WCAG 2.1 AA

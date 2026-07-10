@@ -8,35 +8,15 @@ Back up the hosted project first if you are unsure whether any data should be ke
 
 ## Canonical Scope
 
-The clean app schema currently contains only:
-
-- `public.tenants`
-- `public.schools`
-- `public.profiles`
-- `public.students`
-- `public.guardians`
-- `public.student_guardians`
+The clean app schema is defined by the active SQL files in
+`supabase/migrations`, applied in filename order through the latest repository
+migration.
 
 Supabase system schemas such as `auth`, `storage`, `realtime`, `extensions`, `graphql`, `vault`, and other internal schemas may remain. Do not manually delete Supabase system schemas.
 
-The following app tables are not part of the current milestone and should not exist in a clean canonical app schema yet:
-
-- `buses`
-- `drivers`
-- `routes`
-- `route_stops`
-- `trips`
-- `live_bus_locations`
-- `trip_location_history`
-- `student_badges`
-- `student_scan_events`
-- `student_route_assignments`
-- `trip_alerts`
-- `notifications`
-- `imports`
-- consent tables
-- GPS tables
-- QR tables
+Do not create or preserve future-scope tables that are not introduced by the
+active migrations, including QR badge, scan event, notification, SMS, CSV
+import, or external SIS integration tables.
 
 ## Recommended Reset Options
 
@@ -44,10 +24,7 @@ The following app tables are not part of the current milestone and should not ex
 
 1. Create a new Supabase project for development.
 2. Update local environment files with the new project URL, anon key, and DB connection string.
-3. Apply only the active migrations in `supabase/migrations`:
-   - `0001_auth_profile_foundation.sql`
-   - `0002_foundation_read_grants.sql`
-   - `0003_students_guardians_foundation.sql`
+3. Apply the active migrations in `supabase/migrations` in filename order.
 4. Create test Supabase Auth users.
 5. Insert matching `public.profiles` rows where `profiles.id = auth.users.id`.
 
@@ -69,11 +46,8 @@ notify pgrst, 'reload schema';
 
 ## Applying Clean Migrations
 
-Apply these files in order:
-
-1. `supabase/migrations/0001_auth_profile_foundation.sql`
-2. `supabase/migrations/0002_foundation_read_grants.sql`
-3. `supabase/migrations/0003_students_guardians_foundation.sql`
+Apply the active files in `supabase/migrations` in filename order, through the
+latest repository migration.
 
 Do not apply files from `supabase/legacy` to a clean database.
 

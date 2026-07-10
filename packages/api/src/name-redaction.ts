@@ -1,9 +1,8 @@
 /**
  * SafeBus Alberta — Name redaction.
  *
- * The UI Plan requires partial/minimized name display for scan confirmations
- * and parent notifications (e.g., "Aman S."). This module provides a single
- * consistent redaction rule used across driver and parent screens.
+ * Provides a single minimized display-name rule for views that should avoid
+ * showing full student names.
  */
 
 /**

@@ -5,16 +5,7 @@
  * All entities are tenant-scoped unless noted otherwise.
  */
 
-import type {
-  BadgeStatus,
-  ConsentType,
-  PickupStatus,
-  PrivacyRegime,
-  RouteDirection,
-  ScanEventType,
-  TermsType,
-  TripStatus,
-} from './status.ts';
+import type { ConsentType, PrivacyRegime, RouteDirection, TermsType, TripStatus } from './status.ts';
 import type { UserRole } from './roles.ts';
 
 // ─── Tenant & Schools ──────────────────────────────────────────────────────
@@ -34,11 +25,6 @@ export interface TenantSettings {
   ping_interval_seconds: number;
   stale_threshold_seconds: number;
   lost_threshold_seconds: number;
-  notification_channels: {
-    in_app: boolean;
-    push: boolean;
-    email: boolean;
-  };
 }
 
 export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
@@ -47,11 +33,6 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   ping_interval_seconds: 5,
   stale_threshold_seconds: 30,
   lost_threshold_seconds: 60,
-  notification_channels: {
-    in_app: true,
-    push: true,
-    email: true,
-  },
 };
 
 export interface School {
@@ -85,8 +66,6 @@ export interface Student {
   first_name: string;
   last_name: string;
   grade: string | null;
-  /** Alberta Student Number — restricted metadata, never public/driver-facing. */
-  asn_restricted: string | null;
   status: 'active' | 'inactive' | 'transferred';
   created_at: string;
 }
@@ -202,34 +181,7 @@ export interface TripLocationHistoryEntry {
   location_source: 'driver_web' | 'driver_mobile' | 'hardware_tracker';
 }
 
-// ─── Badges & Scan Events ───────────────────────────────────────────────────
-
-export interface StudentBadge {
-  id: string;
-  student_id: string;
-  /** SHA-256 hash of the QR token. Plaintext never stored. */
-  token_hash: string;
-  status: BadgeStatus;
-  issued_at: string;
-  revoked_at: string | null;
-  created_at: string;
-}
-
-export interface StudentScanEvent {
-  id: string;
-  trip_id: string;
-  student_id: string;
-  badge_id: string | null;
-  driver_id: string;
-  event_type: ScanEventType;
-  is_manual: boolean;
-  latitude: number | null;
-  longitude: number | null;
-  recorded_at: string;
-  created_at: string;
-}
-
-// ─── Alerts & Notifications ────────────────────────────────────────────────
+// ─── Alerts ────────────────────────────────────────────────────────────────
 
 export interface TripAlert {
   id: string;
@@ -242,8 +194,6 @@ export interface TripAlert {
     | 'bus_breakdown'
     | 'road_blocked'
     | 'route_delayed'
-    | 'manual_scan_override'
-    | 'notification_failed'
     | 'student_issue'
     | 'driver_reported_issue';
   severity: 'urgent' | 'warning' | 'info';
@@ -251,19 +201,6 @@ export interface TripAlert {
   status: 'active' | 'resolved';
   created_at: string;
   resolved_at: string | null;
-}
-
-export interface Notification {
-  id: string;
-  tenant_id: string;
-  profile_id: string;
-  student_id: string | null;
-  title: string;
-  message: string;
-  type: string;
-  status: 'unread' | 'read';
-  created_at: string;
-  read_at: string | null;
 }
 
 // ─── Audit & Imports ───────────────────────────────────────────────────────
@@ -346,14 +283,6 @@ export interface SecurityIncident {
 }
 
 // ─── Helper Types ──────────────────────────────────────────────────────────
-
-/** A student with their pickup status for a specific trip. */
-export interface StudentWithPickupStatus extends Student {
-  pickup_status: PickupStatus;
-  scan_event_id: string | null;
-  scanned_at: string | null;
-  is_manual: boolean;
-}
 
 /** A trip with related entities for display. */
 export interface TripWithRelations extends Trip {

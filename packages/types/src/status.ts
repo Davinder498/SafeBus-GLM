@@ -45,43 +45,6 @@ export function isTripActive(status: TripStatus): boolean {
   return (ACTIVE_TRIP_STATUSES as readonly string[]).includes(status);
 }
 
-// ─── Pickup / Drop-off Status ──────────────────────────────────────────────
-
-export type PickupStatus =
-  | 'not_picked_up'
-  | 'picked_up'
-  | 'boarded'
-  | 'dropped_off'
-  | 'absent'
-  | 'manual_override';
-
-export const PICKUP_STATUS_VALUES: readonly PickupStatus[] = [
-  'not_picked_up',
-  'picked_up',
-  'boarded',
-  'dropped_off',
-  'absent',
-  'manual_override',
-] as const;
-
-export const PICKUP_STATUS_LABELS: Record<PickupStatus, string> = {
-  not_picked_up: 'Not Picked Up',
-  picked_up: 'Picked Up',
-  boarded: 'Boarded',
-  dropped_off: 'Dropped Off',
-  absent: 'Absent',
-  manual_override: 'Manual Override',
-};
-
-/** Scan event types that produce a PickupStatus transition. */
-export type ScanEventType = 'pickup' | 'boarding' | 'dropoff';
-
-export const SCAN_EVENT_TYPE_LABELS: Record<ScanEventType, string> = {
-  pickup: 'Pickup',
-  boarding: 'Boarding',
-  dropoff: 'Drop-off',
-};
-
 // ─── GPS Status ────────────────────────────────────────────────────────────
 
 export type GpsStatus =
@@ -143,8 +106,6 @@ export type AlertType =
   | 'bus_breakdown'
   | 'road_blocked'
   | 'route_delayed'
-  | 'manual_scan_override'
-  | 'notification_failed'
   | 'student_issue'
   | 'driver_reported_issue';
 
@@ -155,8 +116,6 @@ export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
   bus_breakdown: 'Bus Breakdown',
   road_blocked: 'Road Blocked',
   route_delayed: 'Route Delayed',
-  manual_scan_override: 'Manual Scan Override',
-  notification_failed: 'Notification Failed',
   student_issue: 'Student Issue',
   driver_reported_issue: 'Driver Reported Issue',
 };
@@ -170,25 +129,12 @@ export function alertSeverityForType(type: AlertType): AlertSeverity {
       return 'urgent';
     case 'gps_stale':
     case 'route_delayed':
-    case 'manual_scan_override':
-    case 'notification_failed':
       return 'warning';
     case 'student_issue':
     case 'driver_reported_issue':
       return 'info';
   }
 }
-
-// ─── Badge Status ──────────────────────────────────────────────────────────
-
-export type BadgeStatus = 'issued' | 'active' | 'revoked' | 'replaced';
-
-export const BADGE_STATUS_LABELS: Record<BadgeStatus, string> = {
-  issued: 'Issued',
-  active: 'Active',
-  revoked: 'Revoked',
-  replaced: 'Replaced',
-};
 
 // ─── Route Direction ────────────────────────────────────────────────────────
 
@@ -210,17 +156,10 @@ export const PRIVACY_REGIME_LABELS: Record<PrivacyRegime, string> = {
 
 // ─── Consent Types ──────────────────────────────────────────────────────────
 
-export type ConsentType =
-  | 'student_data_collection'
-  | 'pickup_dropoff_tracking'
-  | 'badge_issuance'
-  | 'notifications';
+export type ConsentType = 'student_data_collection';
 
 export const CONSENT_TYPE_LABELS: Record<ConsentType, string> = {
   student_data_collection: 'Student Data Collection',
-  pickup_dropoff_tracking: 'Pickup/Drop-off Tracking',
-  badge_issuance: 'Badge Issuance',
-  notifications: 'Notifications',
 };
 
 // ─── Terms Document Types ──────────────────────────────────────────────────

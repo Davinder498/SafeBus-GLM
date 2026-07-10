@@ -8,7 +8,6 @@
 import type {
   AlertSeverity,
   GpsStatus,
-  PickupStatus,
   TripStatus,
 } from '@safebus/types';
 import { colors } from './colors.ts';
@@ -27,15 +26,6 @@ export const tripStatusColors: Record<TripStatus, StatusColor> = {
   cancelled: { text: colors.gray[600], bg: colors.gray[100], border: colors.gray[200] },
   gps_stale: { text: colors.amber[700], bg: colors.amber[100], border: colors.amber[200] },
   gps_lost: { text: colors.red[600], bg: colors.red[50], border: colors.red[100] },
-};
-
-export const pickupStatusColors: Record<PickupStatus, StatusColor> = {
-  not_picked_up: { text: colors.gray[600], bg: colors.gray[100], border: colors.gray[200] },
-  picked_up: { text: colors.green[700], bg: colors.green[50], border: colors.green[100] },
-  boarded: { text: colors.green[700], bg: colors.green[50], border: colors.green[100] },
-  dropped_off: { text: colors.green[700], bg: colors.green[50], border: colors.green[100] },
-  absent: { text: colors.gray[600], bg: colors.gray[100], border: colors.gray[200] },
-  manual_override: { text: colors.amber[700], bg: colors.amber[100], border: colors.amber[200] },
 };
 
 export const gpsStatusColors: Record<GpsStatus, StatusColor> = {

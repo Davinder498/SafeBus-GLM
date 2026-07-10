@@ -12,8 +12,6 @@
     "./auth": "./src/auth.ts",
     "./trips": "./src/trips.ts",
     "./location": "./src/location.ts",
-    "./scans": "./src/scans.ts",
-    "./notifications": "./src/notifications.ts",
     "./validation": "./src/validation.ts",
     "./errors": "./src/errors.ts",
     "./name-redaction": "./src/name-redaction.ts"

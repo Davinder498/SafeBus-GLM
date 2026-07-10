@@ -5,7 +5,7 @@
  * and full-scale (dedicated ingestion API). Only the endpoint URL changes.
  */
 
-import type { LocationSource, ScanEventType } from './status.ts';
+import type { LocationSource } from './status.ts';
 
 // ─── GPS Location Ping ─────────────────────────────────────────────────────
 
@@ -46,54 +46,6 @@ export type LocationPingRejectionReason =
   | 'accuracy_too_low'
   | 'invalid_location_source'
   | 'rate_limited';
-
-// ─── QR Scan ───────────────────────────────────────────────────────────────
-
-export interface ScanRequest {
-  /** Raw QR token from the badge (plaintext, hashed server-side). */
-  qrToken: string;
-  tripId: string;
-  driverId: string;
-  /** ISO 8601 timestamp from the device. */
-  timestamp: string;
-  latitude?: number | null;
-  longitude?: number | null;
-}
-
-export interface ScanResponse {
-  accepted: boolean;
-  eventType?: ScanEventType;
-  /** Partially-redacted student name, e.g. "Aman S." */
-  studentDisplayName?: string;
-  rejectionReason?: ScanRejectionReason;
-}
-
-export type ScanRejectionReason =
-  | 'not_authenticated'
-  | 'driver_not_assigned_to_trip'
-  | 'trip_not_active'
-  | 'badge_not_found'
-  | 'badge_revoked'
-  | 'student_not_assigned_to_route'
-  | 'already_scanned_for_event'
-  | 'event_type_not_allowed'
-  | 'rate_limited';
-
-// ─── Manual Override ───────────────────────────────────────────────────────
-
-export interface ManualOverrideRequest {
-  tripId: string;
-  driverId: string;
-  studentId: string;
-  eventType: ScanEventType;
-  timestamp: string;
-  latitude?: number | null;
-  longitude?: number | null;
-  /** Free-text reason, shown to admin in review. */
-  reason?: string;
-}
-
-export type ManualOverrideResponse = ScanResponse;
 
 // ─── Driver Issue Report ───────────────────────────────────────────────────
 
@@ -148,41 +100,8 @@ export interface EndTripResponse {
 export interface EndTripSummary {
   studentsPickedUp: number;
   studentsDroppedOff: number;
-  manualOverrides: number;
   unresolvedAlerts: number;
   gpsSyncStatus: 'live' | 'stale' | 'lost' | 'offline';
-}
-
-// ─── Notifications ─────────────────────────────────────────────────────────
-
-export interface NotificationDispatchRequest {
-  profileId: string;
-  studentId: string | null;
-  title: string;
-  message: string;
-  type: string;
-  channels: ('in_app' | 'push' | 'email')[];
-}
-
-export interface NotificationDispatchResponse {
-  accepted: boolean;
-  notificationId?: string;
-  failures?: { channel: string; reason: string }[];
-}
-
-// ─── Badge Generation ──────────────────────────────────────────────────────
-
-export interface GenerateBadgeRequest {
-  studentId: string;
-  /** If true, replaces any existing active badge for this student. */
-  replaceExisting?: boolean;
-}
-
-export interface GenerateBadgeResponse {
-  badgeId: string;
-  /** Plaintext token — returned ONCE to the admin for QR printing. Never stored. */
-  qrToken: string;
-  status: 'issued' | 'active';
 }
 
 // ─── CSV Import ────────────────────────────────────────────────────────────
@@ -254,11 +173,7 @@ export interface AcceptInvitationRequest {
 
 export interface GrantConsentRequest {
   studentId: string;
-  consentType:
-    | 'student_data_collection'
-    | 'pickup_dropoff_tracking'
-    | 'badge_issuance'
-    | 'notifications';
+  consentType: 'student_data_collection';
   termsVersionId: string;
 }
 

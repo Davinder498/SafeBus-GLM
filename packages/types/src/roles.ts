@@ -70,15 +70,9 @@ export type Permission =
   | 'trip:start'
   | 'trip:end'
   | 'location:ingest'
-  | 'scan:perform'
-  | 'scan:manual_override'
-  | 'badge:generate'
-  | 'badge:revoke'
   | 'import:run'
   | 'report:read'
   | 'audit:read'
-  | 'notification:read'
-  | 'notification:send'
   | 'settings:manage'
   | 'dsar:manage';
 
@@ -112,12 +106,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'route:write',
     'trip:read',
     'trip:write',
-    'badge:generate',
-    'badge:revoke',
     'import:run',
     'report:read',
     'audit:read',
-    'notification:read',
     'settings:manage',
     'dsar:manage',
   ],
@@ -130,10 +121,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'driver:read',
     'route:read',
     'trip:read',
-    'badge:generate',
     'import:run',
     'report:read',
-    'notification:read',
   ],
   transportation_admin: [
     'student:read',
@@ -146,21 +135,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'route:write',
     'trip:read',
     'trip:write',
-    'badge:generate',
     'import:run',
     'report:read',
-    'notification:read',
   ],
-  driver: [
-    'trip:read',
-    'trip:start',
-    'trip:end',
-    'location:ingest',
-    'scan:perform',
-    'scan:manual_override',
-    'notification:read',
-  ],
-  guardian: ['student:read', 'trip:read', 'notification:read'],
+  driver: ['trip:read', 'trip:start', 'trip:end', 'location:ingest'],
+  guardian: ['student:read', 'trip:read'],
 };
 
 export function hasPermission(role: UserRole, permission: Permission): boolean {
