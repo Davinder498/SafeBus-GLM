@@ -40,12 +40,12 @@
 | 6A - Guardian Live Trip Visibility Security Foundation       | `0020_guardian_live_trip_visibility_foundation.sql`, `0021_harden_guardian_live_trip_visibility_rpc.sql`, `tests/rls/guardian-live-trip-visibility-rls.sql` | Completed, reviewed, and fixed     |
 | QA-1 - Automated Supabase RLS Test Runner                    | `scripts/run-rls-tests.mjs`, `pnpm test:rls:dev`, path-safety fix in latest `main`                                                                          | Completed and review blocker fixed |
 | 7A/7B QA - Driver Event Manual Fixture                       | `docs/qa/driver-event-flow-manual-test.md`, `scripts/seed-driver-event-qa-fixture.mjs`, `pnpm qa:seed:driver-events`                                        | DEV-only QA helper                 |
+| 8A - Guardian Student Trip Event Visibility Security Foundation | `0024_guardian_student_trip_event_visibility.sql`, `tests/rls/guardian-student-trip-event-visibility-rls.sql`                                             | In progress                        |
 
 ## Current Milestone
 
-No product milestone is active in this repository state. The latest active work
-is DEV-only QA support for manually verifying the driver manifest and
-pickup/drop-off event flow.
+Milestone 8A is active on a feature branch. It adds a backend-only, guardian
+RPC/RLS foundation for safe pickup/drop-off event status visibility.
 
 Do not start the next product milestone until it is explicitly selected.
 
@@ -69,6 +69,9 @@ The automated runner executes the default RLS files in deterministic order:
 2. `tests/rls/guardian-visibility-rls.sql`
 3. `tests/rls/guardian-linking-rls.sql`
 4. `tests/rls/guardian-live-trip-visibility-rls.sql`
+5. `tests/rls/driver-active-trip-student-manifest-rls.sql`
+6. `tests/rls/driver-student-trip-events-rls.sql`
+7. `tests/rls/guardian-student-trip-event-visibility-rls.sql`
 
 Single-file and multi-file runner arguments are restricted to `.sql` files
 under `tests/rls`. The runner must not be used for migrations, legacy SQL, or

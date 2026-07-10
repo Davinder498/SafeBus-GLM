@@ -35,6 +35,12 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
   event ordering, duplicate blocking, same-tenant other-driver denial,
   cross-tenant denial, guardian/admin/anonymous denial, manifest event status,
   and direct event table insert blocking.
+- `guardian-student-trip-event-visibility-rls.sql`: SELF-CONTAINED tests for
+  Milestone 8A `get_guardian_student_trip_event_visibility()` — verifies
+  guardian-only linked-student pickup/drop-off status, no-active-trip status,
+  same-tenant unlinked and other-guardian denial, cross-tenant denial,
+  driver/admin/anonymous denial, safe return fields, and blocked direct event
+  table reads.
 
 ## `pnpm test:rls`
 
@@ -93,6 +99,7 @@ The default execution order is:
 4. `tests/rls/guardian-live-trip-visibility-rls.sql`
 5. `tests/rls/driver-active-trip-student-manifest-rls.sql`
 6. `tests/rls/driver-student-trip-events-rls.sql`
+7. `tests/rls/guardian-student-trip-event-visibility-rls.sql`
 
 The database must be safe for fixed-ID seeded test data. The scripts create
 test data and clean up after themselves where designed. If a run fails midway,
@@ -132,6 +139,10 @@ test rows into:
 - `public.student_route_assignments`
 - `public.driver_trips`
 - `public.student_trip_events` (7B only, through RPC assertions)
+
+The guardian student trip event visibility script additionally inserts fixed
+test rows into `public.student_trip_events` with privileged seed/setup SQL only,
+then verifies guardians read derived event status exclusively through the RPC.
 
 The SQL Editor user must be allowed to insert/delete these test rows, including
 direct inserts into `auth.users`.
@@ -274,6 +285,24 @@ verifies `get_guardian_live_trip_visibility()`:
 - Anonymous access is denied (execute revoked, zero rows).
 - The existing `get_guardian_student_route_visibility()` RPC still works.
 - Guardian-linking `student_guardians` SELECT isolation still holds.
+
+## Guardian Student Trip Event Visibility Coverage (Milestone 8A)
+
+The `guardian-student-trip-event-visibility-rls.sql` script is self-contained
+and verifies `get_guardian_student_trip_event_visibility()`:
+
+- Guardian A sees only actively linked students in the current tenant.
+- Linked students with an active trip show `not_picked_up`, `picked_up`, or
+  `dropped_off` based on current active-trip event rows.
+- Linked students without a visible active trip show `no_active_trip`.
+- Other-guardian, unlinked same-tenant, and cross-tenant students are hidden.
+- Cross-tenant event data is not exposed.
+- Driver, tenant admin, transportation admin, and anonymous contexts receive no
+  guardian event visibility rows.
+- The RPC return shape excludes event IDs, trip IDs, driver IDs, bus IDs,
+  tenant IDs, guardian IDs, contact fields, GPS, speed, ETA, QR, and audit
+  details.
+- Direct browser-style reads from `student_trip_events` remain blocked.
 
 ## Why Playwright Smoke Tests Are Not Enough
 
