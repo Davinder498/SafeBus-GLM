@@ -6,7 +6,11 @@ import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { fetchDriverActiveTripStudentManifest } from '@/services/driverManifestService';
+import {
+  fetchDriverActiveTripStudentManifest,
+  markStudentDroppedOffForActiveTrip,
+  markStudentPickedUpForActiveTrip,
+} from '@/services/driverManifestService';
 import type { DriverManifestRow } from '@/types/driverManifest';
 
 type LoadState =
@@ -26,9 +30,18 @@ function tripDirectionLabel(value: string | null): string | null {
   return value;
 }
 
+function studentTripStatusLabel(value: DriverManifestRow['studentTripStatus']): string {
+  if (value === 'picked_up') return 'Picked up';
+  if (value === 'dropped_off') return 'Dropped off';
+  return 'Not picked up';
+}
+
 export function DriverManifestPage() {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [refreshing, setRefreshing] = useState(false);
+  const [pendingStudentId, setPendingStudentId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setRefreshing(true);
@@ -41,6 +54,30 @@ export function DriverManifestPage() {
       setRefreshing(false);
     }
   }, []);
+
+  const updateStudentStatus = useCallback(
+    async (studentId: string, action: 'pickup' | 'dropoff') => {
+      setPendingStudentId(studentId);
+      setActionError(null);
+      setActionSuccess(null);
+
+      try {
+        if (action === 'pickup') {
+          await markStudentPickedUpForActiveTrip(studentId);
+        } else {
+          await markStudentDroppedOffForActiveTrip(studentId);
+        }
+        const rows = await fetchDriverActiveTripStudentManifest();
+        setState({ kind: 'ready', rows });
+        setActionSuccess('Student status updated.');
+      } catch {
+        setActionError('Could not update student status. Please try again.');
+      } finally {
+        setPendingStudentId(null);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     void load();
@@ -81,6 +118,20 @@ export function DriverManifestPage() {
             </Link>
           </div>
         </Card>
+
+        {(actionError || actionSuccess) && (
+          <div
+            className={`rounded-md border px-4 py-3 text-sm font-semibold ${
+              actionError
+                ? 'border-red-200 bg-red-50 text-red-800'
+                : 'border-green-200 bg-green-50 text-green-800'
+            }`}
+            role="status"
+            data-testid="driver-manifest-action-message"
+          >
+            {actionError ?? actionSuccess}
+          </div>
+        )}
 
         {state.kind === 'loading' && (
           <div data-testid="driver-manifest-loading">
@@ -167,11 +218,54 @@ export function DriverManifestPage() {
                               {student.dropoffStopName ?? 'Not assigned'}
                             </dd>
                           </div>
+                          <div>
+                            <dt className="font-semibold text-gray-500">Student status</dt>
+                            <dd className="mt-1 text-gray-800">
+                              {studentTripStatusLabel(student.studentTripStatus)}
+                            </dd>
+                          </div>
                         </dl>
                       </div>
-                      {student.assignmentStatus && (
-                        <StatusPill tone="neutral">{student.assignmentStatus}</StatusPill>
-                      )}
+                      <div className="flex flex-col items-start gap-3 sm:items-end">
+                        <StatusPill
+                          tone={
+                            student.studentTripStatus === 'dropped_off'
+                              ? 'success'
+                              : student.studentTripStatus === 'picked_up'
+                                ? 'warning'
+                                : 'neutral'
+                          }
+                        >
+                          {studentTripStatusLabel(student.studentTripStatus)}
+                        </StatusPill>
+                        {student.studentId && student.studentTripStatus !== 'dropped_off' && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={
+                              student.studentTripStatus === 'picked_up' ? 'primary' : 'secondary'
+                            }
+                            onClick={() =>
+                              void updateStudentStatus(
+                                student.studentId as string,
+                                student.studentTripStatus === 'picked_up' ? 'dropoff' : 'pickup',
+                              )
+                            }
+                            disabled={pendingStudentId === student.studentId}
+                            data-testid={
+                              student.studentTripStatus === 'picked_up'
+                                ? 'driver-manifest-mark-dropoff'
+                                : 'driver-manifest-mark-pickup'
+                            }
+                          >
+                            {pendingStudentId === student.studentId
+                              ? 'Updating...'
+                              : student.studentTripStatus === 'picked_up'
+                                ? 'Mark dropped off'
+                                : 'Mark picked up'}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </Card>
                 ))}
