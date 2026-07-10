@@ -41,7 +41,7 @@ async function installAdminAssignmentMock(page: Page) {
 
   await page.route('**/*', async (route: Route) => {
     const url = new URL(route.request().url());
-    if (!url.hostname.includes('placeholder.supabase.co')) {
+    if (!url.hostname.endsWith('.supabase.co')) {
       await route.fallback();
       return;
     }
@@ -109,7 +109,8 @@ async function installAdminAssignmentMock(page: Page) {
 
   await page.addInitScript(() => {
     const s = { access_token: 'x', refresh_token: 'x', token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', email: 'admin@smoke-test.local', aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, created_at: '2025-01-01T00:00:00.000Z' } };
-    for (const k of ['supabase.auth.token', 'sb-placeholder-auth-token', 'sb-localhost-auth-token']) { try { window.localStorage.setItem(k, JSON.stringify(s)); } catch { /* ignore */ } }
+    for (const k of ['supabase.auth.token', 'sb-placeholder-auth-token',
+      'sb-bppmqykkbhrmotcybxrh-auth-token', 'sb-localhost-auth-token']) { try { window.localStorage.setItem(k, JSON.stringify(s)); } catch { /* ignore */ } }
   });
 }
 

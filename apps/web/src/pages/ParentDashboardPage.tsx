@@ -87,6 +87,22 @@ export function ParentDashboardPage() {
             </Link>
           </div>
         </Card>
+        <Card className="p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-navy-900">Live Bus Status</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                See safe, up-to-date trip status for your linked students.
+              </p>
+            </div>
+            <Link
+              to="/guardian/live"
+              className="inline-flex rounded-lg bg-navy-700 px-5 py-3 font-bold text-white hover:bg-navy-800"
+            >
+              View live bus status
+            </Link>
+          </div>
+        </Card>
         {loadingStudents && (
           <DataState
             title="Loading linked students"
