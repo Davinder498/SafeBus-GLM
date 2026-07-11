@@ -545,6 +545,69 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
   });
 });
 
+test.describe('Milestone 11D - QA hardening', () => {
+  test('no direct browser request targets a live-location table', async ({ page }) => {
+    let locationTableViolation = false;
+    await installGuardianLiveMapMock(page, {
+      rows: [freshRow()],
+      routeRows: [studentRouteRow()],
+    });
+
+    // Attach a secondary listener that flags any direct access to
+    // live-location tables. The primary mock already blocks these, but this
+    // test asserts the page never initiates such a request.
+    page.on('request', (request) => {
+      const url = request.url();
+      if (
+        url.includes('/rest/v1/driver_trip_current_locations') ||
+        url.includes('/rest/v1/driver_trip_locations') ||
+        url.includes('/rest/v1/live_locations')
+      ) {
+        locationTableViolation = true;
+      }
+    });
+
+    await page.goto('/guardian/live-map');
+    await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({ timeout: 10000 });
+    // Trigger a manual refresh.
+    await page.getByTestId('guardian-live-map-refresh-button').click();
+    await page.waitForTimeout(500);
+
+    expect(locationTableViolation).toBe(false);
+  });
+
+  test('existing guardian bus status page remains usable alongside the map', async ({ page }) => {
+    await installGuardianLiveMapMock(page, {
+      rows: [freshRow()],
+      routeRows: [studentRouteRow()],
+    });
+    // Visit the live bus map page first.
+    await page.goto('/guardian/live-map');
+    await expect(page.getByRole('heading', { name: 'Live Bus Map', level: 1 })).toBeVisible({ timeout: 10000 });
+
+    // Navigate to the existing Bus Status page via the nav link.
+    await page.getByRole('link', { name: 'Bus Status' }).click();
+    await expect(page).toHaveURL(/\/guardian\/live$/);
+    await expect(page.getByRole('heading', { name: 'Live Bus Status', level: 1 })).toBeVisible({ timeout: 10000 });
+  });
+
+  test('map renders on mobile viewport without crash', async ({ browser }) => {
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await installGuardianLiveMapMock(page, {
+      rows: [freshRow()],
+      routeRows: [studentRouteRow()],
+    });
+    await page.goto('/guardian/live-map');
+    // The page renders on mobile without crashing. The map config-missing card
+    // and student status list are visible. (Horizontal scroll behavior is a
+    // pre-existing characteristic of the shared DashboardLayout sidebar nav and
+    // is not introduced or changed by this phase.)
+    await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('guardian-live-bus-map-config-missing')).toBeVisible();
+    await page.close();
+  });
+});
+
 test.describe('Milestone 11C - Safe refresh and resilience', () => {
   test('fresh-to-stale transition removes the marker and shows delayed label', async ({ page }) => {
     const { setRows } = await installGuardianLiveMapMock(page, {

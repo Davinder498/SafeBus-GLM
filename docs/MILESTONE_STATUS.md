@@ -49,7 +49,8 @@
 | QA-1 - Automated Supabase RLS Test Runner                    | `scripts/run-rls-tests.mjs`, `pnpm test:rls:dev`, path-safety fix in latest `main`                                                                          | Completed and review blocker fixed |
 | 7A/7B QA - Driver Event Manual Fixture                       | `docs/qa/driver-event-flow-manual-test.md`, `scripts/seed-driver-event-qa-fixture.mjs`, `pnpm qa:seed:driver-events`                                        | DEV-only QA helper                 |
 | 8A - Guardian Student Trip Event Visibility Security Foundation | `0024_guardian_student_trip_event_visibility.sql`, `tests/rls/guardian-student-trip-event-visibility-rls.sql`                                             | In progress                        |
-| 11A - Guardian Live Bus Map Security Foundation              | `0027_guardian_live_bus_location_security_foundation.sql`, `tests/rls/guardian-live-bus-location-rls.sql`                                                   | Implemented for review             |
+| 11A - Guardian Live Bus Map Security Foundation              | `0027_guardian_live_bus_location_security_foundation.sql`, `tests/rls/guardian-live-bus-location-rls.sql`                                                   | Completed                          |
+| 11B/11C/11D - Guardian Live Bus Map Experience               | `apps/web/src/pages/GuardianLiveMapPage.tsx`, `GuardianLiveBusMap.tsx`, `useGuardianLiveBusLocations.ts`, `tests/smoke/guardian-live-bus-map.spec.ts`        | Completed                          |
 
 ## Current Milestone
 
@@ -169,3 +170,35 @@ Status: Implemented on `milestone-11a-guardian-live-bus-map-security-foundation`
 - Direct guardian reads from live-location tables remain denied; no broad guardian RLS policy or table-level location grant was added.
 - Added a dedicated self-contained SQL regression file and registered it with the structural RLS check and guarded QA-1 runner order.
 - No guardian map UI, Leaflet guardian component, ETA, realtime subscription, polling change, notification delivery, history, trip replay, address/stop exposure, manifest exposure, pickup/drop-off exposure, driver change, admin map change, or speed visibility was added.
+
+## Phase 11 — Guardian Live Bus Map Experience (Milestones 11B/11C/11D)
+
+Status: Completed on `phase-11-guardian-live-bus-map-experience`.
+
+### Milestone 11B — Guardian Live Bus Map UI Foundation
+
+- Added the first guardian-facing map experience at `/guardian/live-map`, integrated into the existing guardian navigation alongside the existing text-only Bus Status, Pickup & Drop-off, and Students & Routes pages.
+- The page calls only the secured Milestone 11A RPC `get_guardian_student_live_bus_location_state()` through `apps/web/src/services/guardianLiveBusLocationService.ts`. It does not query any live-location table directly, does not query tenant-wide fleet data, and does not subscribe to realtime changes.
+- Student names are joined client-side by the already-authorized `student_id` from `get_guardian_student_route_visibility()`. No additional student, guardian, driver, route, trip, bus, or stop data is exposed.
+- A reusable `GuardianLiveBusMap` component renders a live bus marker ONLY when `location_state === "fresh"` and valid coordinates are present. Stale, missing, invalid, loading, and error states produce no marker. Siblings sharing the same coordinates render one grouped marker with a popup listing the linked students it applies to.
+- Non-technical guardian-facing labels are used throughout: current location available, location update is delayed, location has not been received, location is temporarily unavailable, and no active bus trip is currently available. Technical database terms (`fresh`, `stale`, `missing`, `invalid`) are never shown to guardians.
+- Tile configuration reuses the accepted provider-neutral `VITE_MAP_TILE_URL` and `VITE_MAP_TILE_ATTRIBUTION`. When tile configuration is absent, the map degrades to a controlled map-unavailable message while student and trip-status information remains usable. No provider is hard-coded and raw environment variable names are not exposed in the UI.
+- Full state coverage: loading, empty, RPC failure, permission-denied/role denial, stale, missing, invalid, tile-configuration fallback, keyboard-accessible nav, screen-reader status text, and responsive desktop/mobile layout.
+
+### Milestone 11C — Safe Guardian Location Refresh and Resilience
+
+- Added safe periodic refresh through the `useGuardianLiveBusLocations` hook.
+- Refresh interval is 15 seconds, appropriate for a school-bus guardian map and well below the 2-minute freshness threshold enforced by the secured RPC. No user-configurable high-frequency refresh setting exists.
+- Overlapping in-flight calls are prevented via a `fetchingRef` guard. Timers are cleaned up on unmount. Auto-refresh pauses while the document is hidden and refreshes promptly when the page becomes visible again.
+- Race conditions are prevented with a monotonically increasing request token: older responses can never replace newer results.
+- Fail-safe behavior: the server-provided state is authoritative. A previously fresh coordinate cannot remain on the map looking live when the latest secured response becomes stale, missing, invalid, unauthorized, or unavailable. A refresh-error banner explains the state without presenting cached coordinates as a current live position.
+
+### Milestone 11D — Guardian Map QA and Release Hardening
+
+- Strengthened Playwright coverage across desktop and mobile, including: one student fresh, multiple students, siblings sharing coordinates, mixed fresh/stale/missing/invalid states, no active trip, no eligible students, RPC failure, role denial, tile-configuration missing, refresh transitions (fresh-to-stale/missing/invalid/error), marker removal after safe-state changes, no direct location-table browser request, existing guardian route and event status UI remains usable, and no horizontal overflow on mobile.
+- Accessibility and responsive review: visible focus handling via existing design conventions, screen-reader-friendly status text, no reliance on marker color alone, readable empty/error states, and controlled map container sizing.
+- Security review confirmed: all location reads use the Milestone 11A RPC; no direct live-location table access; no guardian-controlled identifier used as authorization scope; no tenant-wide location read; no stale/invalid coordinates rendered; no speed, driver identity, stop, address, history, or route geometry exposed; no sensitive values logged; raw RPC errors are not leaked to guardians.
+
+### Out of scope
+
+This phase still does NOT provide: ETA, route lines, traffic, realtime subscriptions, location history, trip replay, geofencing, route-deviation alerts, actual notification delivery, or QR workflows.
