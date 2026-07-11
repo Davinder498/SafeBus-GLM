@@ -135,6 +135,14 @@ export const appRoutes: RouteObject[] = [
     ),
   },
   {
+    path: '/admin/live-fleet',
+    element: (
+      <ProtectedRoute allowedRoles={[...adminRoles]}>
+        <AdminLiveTripsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/admin/driver-assignments',
     element: (
       <ProtectedRoute allowedRoles={[...adminRoles]}>

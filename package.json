@@ -12,7 +12,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:smoke": "playwright test",
-    "test:rls": "node -e \"const fs=require('fs'); const files=['tests/rls/student-roster-rls.sql','tests/rls/guardian-visibility-rls.sql','tests/rls/guardian-linking-rls.sql','tests/rls/guardian-live-trip-visibility-rls.sql','tests/rls/driver-active-trip-student-manifest-rls.sql','tests/rls/driver-student-trip-events-rls.sql','tests/rls/guardian-student-trip-event-visibility-rls.sql','tests/rls/guardian-notification-outbox-rls.sql','tests/rls/README.md']; files.forEach(f=>{if(!fs.existsSync(f)) throw new Error('Missing RLS test file: '+f)}); console.log('RLS SQL files exist:', files.length); console.log('NOTE: SQL/RLS assertions are MANUAL and are not executed by this script. See tests/rls/README.md.')\"",
+    "test:rls": "node -e \"const fs=require('fs'); const files=['tests/rls/student-roster-rls.sql','tests/rls/guardian-visibility-rls.sql','tests/rls/guardian-linking-rls.sql','tests/rls/guardian-live-trip-visibility-rls.sql','tests/rls/driver-active-trip-student-manifest-rls.sql','tests/rls/driver-student-trip-events-rls.sql','tests/rls/guardian-student-trip-event-visibility-rls.sql','tests/rls/guardian-notification-outbox-rls.sql','tests/rls/admin-live-fleet-map-rls.sql','tests/rls/README.md']; files.forEach(f=>{if(!fs.existsSync(f)) throw new Error('Missing RLS test file: '+f)}); console.log('RLS SQL files exist:', files.length); console.log('NOTE: SQL/RLS assertions are MANUAL and are not executed by this script. See tests/rls/README.md.')\"",
     "test:rls:dev": "node scripts/run-rls-tests.mjs",
     "qa:seed:driver-events": "node scripts/seed-driver-event-qa-fixture.mjs",
     "clean": "turbo run clean && rimraf node_modules",

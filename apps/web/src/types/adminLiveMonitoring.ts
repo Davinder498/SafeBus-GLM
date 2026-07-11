@@ -1,53 +1,40 @@
-// Admin live trip monitoring types for Milestone 4C / 4D.
+// Admin live fleet monitoring types.
 //
-// These fields are returned by the get_admin_live_trip_monitoring() RPC and
-// mapped to camelCase by the service layer. Field names follow the milestone
-// spec's suggested shape, adapted to the project's actual table/column names.
+// These fields are returned by the get_admin_live_fleet_monitoring() RPC and
+// mapped to camelCase by the service layer. They intentionally exclude tenant
+// IDs, raw trip/bus/route/driver IDs, guardian data, student data, and driver
+// contact data.
+
+export type LocationFreshness = 'live' | 'stale' | 'missing';
+
+export type FleetIssueLabel = 'OK' | 'Stale GPS' | 'Missing GPS' | 'Speed unavailable' | 'Needs attention';
 
 export interface AdminLiveTrip {
-  tripId: string;
-  tenantId: string;
-  driverId: string;
-  driverName: string | null;
-  driverEmail: string | null;
-  busId: string;
   busLabel: string | null;
-  routeId: string;
   routeName: string | null;
+  driverName: string | null;
   tripType: string | null;
   status: string;
   startedAt: string;
   latestLatitude: number | null;
   latestLongitude: number | null;
   latestLocationAt: string | null;
+  speedMps: number | null;
+  locationStatus: LocationFreshness;
+  issueLabel: FleetIssueLabel;
 }
 
-/**
- * Freshness classification computed client-side from latestLocationAt.
- * - fresh:   location updated within the last FRESH_THRESHOLD_MS (60s)
- * - stale:   location older than fresh but within OFFLINE_THRESHOLD_MS (5min)
- * - offline: location older than OFFLINE_THRESHOLD_MS (treated as very stale /
- *            effectively offline for monitoring purposes)
- * - none:    no location timestamp exists yet
- */
-export type LocationFreshness = 'fresh' | 'stale' | 'offline' | 'none';
+export const UI_STALE_LOCATION_THRESHOLD_LABEL = '2 minutes';
 
-/** Freshness threshold in milliseconds. <= 60s = fresh. */
-export const FRESH_THRESHOLD_MS = 60_000;
-
-/** Offline threshold in milliseconds. > 5min = offline (very stale). */
-export const OFFLINE_THRESHOLD_MS = 5 * 60_000;
-
-export function classifyFreshness(
-  latestLocationAt: string | null,
-  now: number = Date.now(),
-): LocationFreshness {
-  if (!latestLocationAt) return 'none';
-  const ts = Date.parse(latestLocationAt);
-  if (Number.isNaN(ts)) return 'none';
-  const ageMs = now - ts;
-  if (ageMs <= FRESH_THRESHOLD_MS) return 'fresh';
-  if (ageMs <= OFFLINE_THRESHOLD_MS) return 'stale';
-  return 'offline';
+export function hasValidCoordinates(trip: Pick<AdminLiveTrip, 'latestLatitude' | 'latestLongitude'>): boolean {
+  return (
+    typeof trip.latestLatitude === 'number'
+    && Number.isFinite(trip.latestLatitude)
+    && trip.latestLatitude >= -90
+    && trip.latestLatitude <= 90
+    && typeof trip.latestLongitude === 'number'
+    && Number.isFinite(trip.latestLongitude)
+    && trip.latestLongitude >= -180
+    && trip.latestLongitude <= 180
+  );
 }
-
