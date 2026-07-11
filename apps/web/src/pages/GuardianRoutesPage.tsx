@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { DashboardLayout, type DashboardNavItem } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
@@ -14,6 +14,12 @@ type LoadState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
   | { kind: 'ready'; routes: GuardianStudentRoute[]; liveTrips: Map<string, GuardianLiveTrip> };
+
+const guardianNavItems: DashboardNavItem[] = [
+  { label: 'Bus Status', to: '/guardian/live' },
+  { label: 'Pickup & Drop-off', to: '/guardian/events' },
+  { label: 'My Students & Routes', to: '/guardian/routes' },
+];
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
@@ -76,7 +82,7 @@ export function GuardianRoutesPage() {
   }, [load]);
 
   return (
-    <DashboardLayout title="Parent Dashboard" portal="parent" navItems={['Bus Status', 'My Students & Routes']}>
+    <DashboardLayout title="Parent Dashboard" portal="parent" navItems={guardianNavItems}>
       <div className="mx-auto max-w-3xl space-y-5">
         <PageHeader
           eyebrow="My Students"

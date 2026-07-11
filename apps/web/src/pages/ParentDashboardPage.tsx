@@ -23,6 +23,12 @@ function getStudentDisplayName(student: Student) {
     : `${student.first_name} ${student.last_name}`;
 }
 
+const guardianNavItems = [
+  { label: 'Bus Status', to: '/guardian/live' },
+  { label: 'Pickup & Drop-off', to: '/guardian/events' },
+  { label: 'My Students & Routes', to: '/guardian/routes' },
+];
+
 export function ParentDashboardPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
@@ -64,7 +70,7 @@ export function ParentDashboardPage() {
     : `${mockStudent.firstName} ${mockStudent.lastInitial}`;
 
   return (
-    <DashboardLayout title="Parent Dashboard" portal="parent" navItems={['Bus Status']}>
+    <DashboardLayout title="Parent Dashboard" portal="parent" navItems={guardianNavItems}>
       <div className="mx-auto max-w-3xl space-y-5">
         <PageHeader
           eyebrow="Assigned bus"
@@ -100,6 +106,22 @@ export function ParentDashboardPage() {
               className="inline-flex rounded-lg bg-navy-700 px-5 py-3 font-bold text-white hover:bg-navy-800"
             >
               View live bus status
+            </Link>
+          </div>
+        </Card>
+        <Card className="p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-navy-900">Pickup & Drop-off Status</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                Check the latest pickup and drop-off status for your linked students.
+              </p>
+            </div>
+            <Link
+              to="/guardian/events"
+              className="inline-flex rounded-lg bg-navy-700 px-5 py-3 font-bold text-white hover:bg-navy-800"
+            >
+              View pickup status
             </Link>
           </div>
         </Card>

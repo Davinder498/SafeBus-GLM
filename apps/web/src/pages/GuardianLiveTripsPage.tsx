@@ -19,6 +19,7 @@ const STALE_AFTER_MS = 5 * 60 * 1000; // 5 minutes
 
 const guardianNavItems: DashboardNavItem[] = [
   { label: 'Bus Status', to: '/guardian/live' },
+  { label: 'Pickup & Drop-off', to: '/guardian/events' },
   { label: 'My Students & Routes', to: '/guardian/routes' },
 ];
 

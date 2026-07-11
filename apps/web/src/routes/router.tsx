@@ -20,6 +20,7 @@ import { DriverDashboardPage } from '@/pages/DriverDashboardPage';
 import { DriverManifestPage } from '@/pages/DriverManifestPage';
 import { GuardianLiveTripsPage } from '@/pages/GuardianLiveTripsPage';
 import { GuardianRoutesPage } from '@/pages/GuardianRoutesPage';
+import { GuardianTripEventsPage } from '@/pages/GuardianTripEventsPage';
 import { ParentDashboardPage } from '@/pages/ParentDashboardPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { ProtectedRoute } from './ProtectedRoute';
@@ -192,6 +193,14 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={['guardian']}>
         <GuardianLiveTripsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/guardian/events',
+    element: (
+      <ProtectedRoute allowedRoles={['guardian']}>
+        <GuardianTripEventsPage />
       </ProtectedRoute>
     ),
   },
