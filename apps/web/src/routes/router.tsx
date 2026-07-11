@@ -18,6 +18,7 @@ import { AdminStudentsPage } from '@/pages/AdminStudentsPage';
 import { AdminUsersPage } from '@/pages/AdminUsersPage';
 import { DriverDashboardPage } from '@/pages/DriverDashboardPage';
 import { DriverManifestPage } from '@/pages/DriverManifestPage';
+import { GuardianLiveMapPage } from '@/pages/GuardianLiveMapPage';
 import { GuardianLiveTripsPage } from '@/pages/GuardianLiveTripsPage';
 import { GuardianRoutesPage } from '@/pages/GuardianRoutesPage';
 import { GuardianTripEventsPage } from '@/pages/GuardianTripEventsPage';
@@ -193,6 +194,14 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={['guardian']}>
         <GuardianRoutesPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/guardian/live-map',
+    element: (
+      <ProtectedRoute allowedRoles={['guardian']}>
+        <GuardianLiveMapPage />
       </ProtectedRoute>
     ),
   },
