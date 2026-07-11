@@ -19,6 +19,7 @@ const DEFAULT_RLS_FILES = [
   'tests/rls/driver-active-trip-student-manifest-rls.sql',
   'tests/rls/driver-student-trip-events-rls.sql',
   'tests/rls/guardian-student-trip-event-visibility-rls.sql',
+  'tests/rls/guardian-notification-outbox-rls.sql',
 ];
 
 function fail(message) {

@@ -41,6 +41,12 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
   same-tenant unlinked and other-guardian denial, cross-tenant denial,
   driver/admin/anonymous denial, safe return fields, and blocked direct event
   table reads.
+- `guardian-notification-outbox-rls.sql`: SELF-CONTAINED tests for
+  Milestone 9A guardian pickup/drop-off notification outbox foundation —
+  verifies valid driver events enqueue pending outbox rows only for active
+  linked same-tenant guardians, duplicate/rejected events enqueue nothing,
+  wrong-role/cross-driver/cross-tenant attempts are blocked, direct outbox
+  SELECT/INSERT is blocked, and existing 7B event behavior still works.
 
 ## `pnpm test:rls`
 
@@ -138,7 +144,8 @@ test rows into:
 - `public.route_stops`
 - `public.student_route_assignments`
 - `public.driver_trips`
-- `public.student_trip_events` (7B only, through RPC assertions)
+- `public.student_trip_events` (7B/9A only, through RPC assertions)
+- `public.guardian_notification_outbox` (9A only, privileged test assertions; no browser table access)
 
 The guardian student trip event visibility script additionally inserts fixed
 test rows into `public.student_trip_events` with privileged seed/setup SQL only,

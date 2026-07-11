@@ -1,3 +1,11 @@
+
+## Milestone 9A — Guardian Pickup/Drop-off Notification Outbox Foundation
+
+- Added a backend-only, tenant-scoped guardian notification outbox foundation for future pickup/drop-off notifications.
+- Driver pickup/drop-off RPCs now enqueue pending outbox rows only after valid events and only for active linked same-tenant guardians.
+- No SMS, email, push, realtime delivery, provider integration, worker, guardian notification UI, or admin notification UI exists.
+- Added RLS regression coverage for outbox creation, deduplication, rejected event attempts, tenant/guardian scoping, and blocked direct browser-style outbox access.
+
 # SafeBus Alberta - Milestone Status
 
 > Source of truth for repository milestone progress. Update this file whenever
