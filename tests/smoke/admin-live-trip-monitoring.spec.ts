@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
+import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
 
 /**
  * Milestone 4C — admin live trip monitoring smoke tests.
@@ -198,12 +199,7 @@ async function installAdminMock(page: Page, initialTrips: AdminLiveTripRpcRow[] 
         return;
       }
 
-      // Any other table: return empty array / object.
-      if (method === 'GET') {
-        await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
-        return;
-      }
-      await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+      await blockUnexpectedSupabaseRestAccess(route, method, path);
       return;
     }
 

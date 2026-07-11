@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
+import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
 
 const DRIVER = {
   profileId: '11111111-1111-1111-1111-111111111111',
@@ -245,7 +246,7 @@ async function installDriverManifestMock(
         return;
       }
 
-      await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+      await blockUnexpectedSupabaseRestAccess(route, method, path);
       return;
     }
 
