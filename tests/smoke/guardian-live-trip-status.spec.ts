@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
+import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
 
 /**
  * Milestone 6B - Guardian Live Trip Status UI smoke tests.
@@ -218,10 +219,10 @@ async function installGuardianLiveMock(
         return;
       }
       if (method === 'GET') {
-        await fulfillRows([]);
+        await blockUnexpectedSupabaseRestAccess(route, method, path);
         return;
       }
-      await route.fallback();
+      await blockUnexpectedSupabaseRestAccess(route, method, path);
       return;
     }
     await route.fallback();

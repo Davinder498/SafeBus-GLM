@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
+import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
 
 /**
  * Milestone 8B - Guardian pickup/drop-off status UI smoke tests.
@@ -244,10 +245,10 @@ async function installGuardianEventsMock(
         return;
       }
       if (method === 'GET') {
-        await fulfillRows([]);
+        await blockUnexpectedSupabaseRestAccess(route, method, path);
         return;
       }
-      await route.fallback();
+      await blockUnexpectedSupabaseRestAccess(route, method, path);
       return;
     }
 

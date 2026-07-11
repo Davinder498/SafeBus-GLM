@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
+import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
 
 /**
  * Milestone 5A.1 — Tenant Admin Student Roster smoke tests.
@@ -89,7 +90,7 @@ async function installAdminStudentMock(page: Page, opts: { students?: typeof moc
         if (path.includes('/profiles')) { await fulfillRows([adminProfile]); return; }
         if (path.includes('/students')) { await fulfillRows(students); return; }
         if (path.includes('/schools')) { await fulfillRows([]); return; }
-        await fulfillRows([]);
+        await blockUnexpectedSupabaseRestAccess(route, method, path);
         return;
       }
       if (method === 'POST' && path.includes('/students')) {
@@ -98,7 +99,7 @@ async function installAdminStudentMock(page: Page, opts: { students?: typeof moc
         await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(newStudent) });
         return;
       }
-      await route.fallback();
+      await blockUnexpectedSupabaseRestAccess(route, method, path);
       return;
     }
     await route.fallback();

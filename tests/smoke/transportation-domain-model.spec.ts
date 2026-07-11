@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
+import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
 
 /**
  * Milestone 4E — Transportation Domain Model Alignment smoke tests.
@@ -204,7 +205,7 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
           }]);
           return;
         }
-        await fulfillRows([]);
+        await blockUnexpectedSupabaseRestAccess(route, method, path);
         return;
       }
 
@@ -257,11 +258,11 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
           await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(newTrip) });
           return;
         }
-        await route.fulfill({ status: 201, contentType: 'application/json', body: '{}' });
+        await blockUnexpectedSupabaseRestAccess(route, method, path);
         return;
       }
 
-      await route.fallback();
+      await blockUnexpectedSupabaseRestAccess(route, method, path);
       return;
     }
 

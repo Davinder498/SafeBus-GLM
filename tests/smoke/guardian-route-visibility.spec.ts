@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
+import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
 
 /**
  * Milestone 5A — Guardian Student & Route Visibility smoke tests.
@@ -182,10 +183,10 @@ async function installGuardianMock(
         return;
       }
       if (method === 'GET') {
-        await fulfillRows([]);
+        await blockUnexpectedSupabaseRestAccess(route, method, path);
         return;
       }
-      await route.fallback();
+      await blockUnexpectedSupabaseRestAccess(route, method, path);
       return;
     }
     await route.fallback();
@@ -240,7 +241,7 @@ async function installAdminLinkMock(page: Page) {
         if (path.includes('/guardians')) { await fulfillRows([{ id: GUARDIAN.guardianId, tenant_id: GUARDIAN.tenantId, profile_id: GUARDIAN.profileId, full_name: 'Test Guardian', email: 'guardian@smoke-test.local', phone: null, status: 'active', created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z' }]); return; }
         if (path.includes('/student_guardians')) { await fulfillRows(links); return; }
         if (path.includes('/students')) { await fulfillRows([{ id: GUARDIAN.studentId, tenant_id: GUARDIAN.tenantId, school_id: 'school-1', first_name: 'Avery', last_name: 'Johnson', preferred_name: null, grade: 'Grade 4', school_student_number: null, status: 'active', created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z' }]); return; }
-        await fulfillRows([]);
+        await blockUnexpectedSupabaseRestAccess(route, method, path);
         return;
       }
       if (method === 'POST' && path.includes('/rpc/admin_link_student_guardian')) {
@@ -254,7 +255,7 @@ async function installAdminLinkMock(page: Page) {
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'link-1', status: 'inactive' }) });
         return;
       }
-      await route.fallback();
+      await blockUnexpectedSupabaseRestAccess(route, method, path);
       return;
     }
     await route.fallback();

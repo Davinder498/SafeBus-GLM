@@ -126,6 +126,21 @@ function assignmentRow() {
   };
 }
 
+export const unexpectedSupabaseRestAccessHint =
+  'Unexpected Supabase REST table access in smoke test. Add an explicit mock for legitimate access, or fix a forbidden direct browser table call.';
+
+export async function blockUnexpectedSupabaseRestAccess(route: Route, method: string, path: string) {
+  await route.fulfill({
+    status: 500,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      message: `${unexpectedSupabaseRestAccessHint} Method: ${method}. Path: ${path}.`,
+      method,
+      path,
+    }),
+  });
+}
+
 /** Decode the PostgREST table from a `/rest/v1/<table>?<query>` URL. */
 function tableFromPath(pathname: string): string {
   const parts = pathname.split('/').filter(Boolean);
@@ -296,7 +311,7 @@ export async function installSupabaseMock(
           await fulfillRows(currentAssignments ?? []);
           return;
         }
-        await fulfillRows([]);
+        await blockUnexpectedSupabaseRestAccess(route, method, path);
         return;
       }
 
@@ -344,7 +359,7 @@ export async function installSupabaseMock(
           });
           return;
         }
-        await route.fulfill({ status: 201, contentType: 'application/json', body: '{}' });
+        await blockUnexpectedSupabaseRestAccess(route, method, path);
         return;
       }
 
@@ -359,7 +374,7 @@ export async function installSupabaseMock(
         return;
       }
 
-      await route.fallback();
+      await blockUnexpectedSupabaseRestAccess(route, method, path);
       return;
     }
 

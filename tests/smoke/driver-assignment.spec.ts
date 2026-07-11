@@ -1,5 +1,5 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
-import { installSupabaseMock, MOCK } from './fixtures/supabase-mock';
+import { blockUnexpectedSupabaseRestAccess, installSupabaseMock, MOCK } from './fixtures/supabase-mock';
 
 /**
  * Milestone 4F — Driver Assignment Foundation smoke tests.
@@ -88,7 +88,7 @@ async function installAdminAssignmentMock(page: Page) {
           return;
         }
         if (path.includes('/driver_route_assignments')) { await fulfillRows(assignments); return; }
-        await fulfillRows([]);
+        await blockUnexpectedSupabaseRestAccess(route, method, path);
         return;
       }
       if (method === 'POST' && path.includes('/driver_route_assignments')) {
@@ -101,7 +101,7 @@ async function installAdminAssignmentMock(page: Page) {
         await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(newAssignment) });
         return;
       }
-      await route.fallback();
+      await blockUnexpectedSupabaseRestAccess(route, method, path);
       return;
     }
     await route.fallback();
