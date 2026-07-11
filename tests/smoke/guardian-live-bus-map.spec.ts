@@ -545,6 +545,141 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
   });
 });
 
+test.describe('Milestone 11C - Safe refresh and resilience', () => {
+  test('fresh-to-stale transition removes the marker and shows delayed label', async ({ page }) => {
+    const { setRows } = await installGuardianLiveMapMock(page, {
+      rows: [freshRow()],
+      routeRows: [studentRouteRow()],
+    });
+    await page.goto('/guardian/live-map');
+
+    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({ timeout: 10000 });
+
+    // Transition fresh -> stale via manual refresh.
+    setRows([staleRow()]);
+    await page.getByTestId('guardian-live-map-refresh-button').click();
+
+    await expect(page.getByText('Location update is delayed', { exact: true })).toBeVisible({ timeout: 10000 });
+    // Fresh summary must be gone (no marker).
+    await expect(page.getByTestId('guardian-live-bus-map-fresh-summary')).toHaveCount(0);
+  });
+
+  test('fresh-to-missing transition removes the marker', async ({ page }) => {
+    const { setRows } = await installGuardianLiveMapMock(page, {
+      rows: [freshRow()],
+      routeRows: [studentRouteRow()],
+    });
+    await page.goto('/guardian/live-map');
+
+    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({ timeout: 10000 });
+
+    setRows([missingRow()]);
+    await page.getByTestId('guardian-live-map-refresh-button').click();
+
+    await expect(page.getByText('Location has not been received')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('guardian-live-bus-map-fresh-summary')).toHaveCount(0);
+  });
+
+  test('fresh-to-invalid transition removes the marker', async ({ page }) => {
+    const { setRows } = await installGuardianLiveMapMock(page, {
+      rows: [freshRow()],
+      routeRows: [studentRouteRow()],
+    });
+    await page.goto('/guardian/live-map');
+
+    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({ timeout: 10000 });
+
+    setRows([invalidRow()]);
+    await page.getByTestId('guardian-live-map-refresh-button').click();
+
+    await expect(page.getByText('Location is temporarily unavailable', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('guardian-live-bus-map-fresh-summary')).toHaveCount(0);
+  });
+
+  test('fresh-to-error transition shows refresh-failure banner and no live marker', async ({ page }) => {
+    const { setRows, setFailRpc } = await installGuardianLiveMapMock(page, {
+      rows: [freshRow()],
+      routeRows: [studentRouteRow()],
+    });
+    await page.goto('/guardian/live-map');
+
+    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({ timeout: 10000 });
+
+    // Force the next RPC call to fail.
+    setFailRpc(true);
+    await page.getByTestId('guardian-live-map-refresh-button').click();
+
+    // A refresh-error banner appears, and no fresh marker/summary is shown.
+    await expect(page.getByTestId('guardian-live-map-refresh-error')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('guardian-live-bus-map-fresh-summary')).toHaveCount(0);
+    // The old fresh label must not remain as a live status.
+    await expect(page.getByText('Current location available', { exact: true })).toHaveCount(0);
+
+    // Reset and verify recovery.
+    setFailRpc(false);
+    setRows([freshRow()]);
+    await page.getByTestId('guardian-live-map-refresh-button').click();
+    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({ timeout: 10000 });
+  });
+
+  test('recovery after a later successful response', async ({ page }) => {
+    const { setRows } = await installGuardianLiveMapMock(page, {
+      rows: [missingRow()],
+      routeRows: [studentRouteRow()],
+    });
+    await page.goto('/guardian/live-map');
+
+    await expect(page.getByText('Location has not been received')).toBeVisible({ timeout: 10000 });
+
+    setRows([freshRow()]);
+    await page.getByTestId('guardian-live-map-refresh-button').click();
+
+    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({ timeout: 10000 });
+  });
+
+  test('multiple students updating independently', async ({ page }) => {
+    const { setRows } = await installGuardianLiveMapMock(page, {
+      rows: [
+        freshRow(GUARDIAN.studentId),
+        missingRow(GUARDIAN.studentId2),
+      ],
+      routeRows: [
+        studentRouteRow(GUARDIAN.studentId, 'Avery', 'Johnson'),
+        studentRouteRow(GUARDIAN.studentId2, 'Blair', 'Smith'),
+      ],
+    });
+    await page.goto('/guardian/live-map');
+
+    await expect(page.getByText('Avery Johnson')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Current location available', { exact: true })).toBeVisible();
+    await expect(page.getByText('Location has not been received')).toBeVisible();
+
+    // Swap states: student1 -> missing, student2 -> fresh.
+    setRows([
+      missingRow(GUARDIAN.studentId),
+      freshRow(GUARDIAN.studentId2),
+    ]);
+    await page.getByTestId('guardian-live-map-refresh-button').click();
+
+    // Both labels should still be present but swapped.
+    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Location has not been received')).toBeVisible();
+  });
+
+  test('initial RPC failure shows full error state, not stale cache', async ({ page }) => {
+    await installGuardianLiveMapMock(page, {
+      rows: [],
+      routeRows: [studentRouteRow()],
+      failRpc: true,
+    });
+    await page.goto('/guardian/live-map');
+
+    await expect(page.getByTestId('guardian-live-map-error')).toBeVisible({ timeout: 10000 });
+    // No student cards rendered because no successful data.
+    await expect(page.getByTestId('guardian-live-map-student-card')).toHaveCount(0);
+  });
+});
+
 test.describe('Milestone 11B - Role protection', () => {
   test('logged-out user is blocked from guardian live bus map page', async ({ page }) => {
     await installGuardianLiveMapMock(page, { session: false });

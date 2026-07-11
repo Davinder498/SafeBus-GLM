@@ -4,11 +4,6 @@ import type { GuardianStudentLiveBusLocation } from '@/types/guardianLiveBusLoca
 
 /**
  * UI-facing load state for guardian live bus location data.
- *
- * `permission-denied` is distinguished from `error` so the page can show a
- * targeted, non-technical message when the secured RPC rejects the caller
- * (for example, a raw PostgREST 42501 is mapped by the service to this state
- * path via the generic error branch; the page keeps both messages safe).
  */
 export type GuardianLiveBusLocationsLoadState =
   | { kind: 'loading' }
@@ -23,19 +18,36 @@ export interface UseGuardianLiveBusLocationsResult {
 }
 
 /**
+ * Conservative auto-refresh interval for the guardian bus map.
+ *
+ * A school-bus guardian map does not need sub-second updates. 15 seconds is
+ * frequent enough to reflect an active trip without generating excessive
+ * database requests, and stays well below the 2-minute freshness threshold
+ * enforced by the secured Milestone 11A RPC.
+ */
+const REFRESH_INTERVAL_MS = 15_000;
+
+/**
  * React hook that loads guardian live bus location state through the secured
- * Milestone 11A RPC.
+ * Milestone 11A RPC, with safe periodic refresh.
  *
- * Milestone 11B behavior:
- *   - Performs an initial fetch on mount.
- *   - Exposes a `refresh()` control for manual refresh.
- *   - Guards against overlapping in-flight calls.
- *   - Ignores stale unmounted responses.
+ * Safety properties (Milestone 11C):
+ *   - Conservative 15-second auto-refresh; no user-configurable high-frequency
+ *     setting.
+ *   - Guards against overlapping in-flight calls via `fetchingRef`.
+ *   - Cleans up timers on unmount.
+ *   - Pauses auto-refresh while the document is hidden and refreshes promptly
+ *     when the page becomes visible again.
+ *   - Prevents race conditions: a monotonically increasing request token
+ *     ensures older responses can never replace newer results.
+ *   - Fails safely: the server-provided state is authoritative. If the latest
+ *     secured response is stale/missing/invalid/error, the hook transitions to
+ *     that state and the previously fresh coordinates do NOT remain looking
+ *     live. The server authorization/freshness rules are never recreated in
+ *     the browser.
  *
- * Milestone 11C extends this hook with conservative periodic refresh and
- * document visibility handling. The hook never queries live-location tables
- * directly, never subscribes to realtime changes, and never accepts
- * guardian-controlled scope arguments.
+ * The hook never queries live-location tables directly, never subscribes to
+ * realtime changes, and never accepts guardian-controlled scope arguments.
  */
 export function useGuardianLiveBusLocations(): UseGuardianLiveBusLocationsResult {
   const [state, setState] = useState<GuardianLiveBusLocationsLoadState>({ kind: 'loading' });
@@ -44,30 +56,70 @@ export function useGuardianLiveBusLocations(): UseGuardianLiveBusLocationsResult
 
   const isMountedRef = useRef(true);
   const fetchingRef = useRef(false);
+  // Monotonic token to reject out-of-order responses (race protection).
+  const latestRequestTokenRef = useRef(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
     if (fetchingRef.current) return;
     fetchingRef.current = true;
+    const myToken = ++latestRequestTokenRef.current;
     setRefreshing(true);
     try {
       const locations = await fetchGuardianLiveBusLocations();
+      // Race protection: ignore responses from older requests.
+      if (myToken !== latestRequestTokenRef.current) return;
       if (!isMountedRef.current) return;
+      // Server state is authoritative. This replaces any previous fresh state.
+      // If the latest response is stale/missing/invalid, the map removes the
+      // marker because the component renders only fresh rows.
       setState({ kind: 'ready', locations });
       setLastRefreshedAt(new Date().toISOString());
     } catch {
+      if (myToken !== latestRequestTokenRef.current) return;
       if (!isMountedRef.current) return;
+      // Fail safely: an error transitions to the error state, removing any
+      // previously rendered fresh marker.
       setState({ kind: 'error' });
     } finally {
-      if (isMountedRef.current) setRefreshing(false);
+      if (myToken === latestRequestTokenRef.current && isMountedRef.current) {
+        setRefreshing(false);
+      }
       fetchingRef.current = false;
     }
   }, []);
 
   useEffect(() => {
     isMountedRef.current = true;
+
+    // Initial fetch.
     void load();
+
+    // Conservative periodic refresh.
+    intervalRef.current = setInterval(() => {
+      // Skip background work while the tab is hidden to avoid unnecessary
+      // database requests. The visibility listener below triggers a prompt
+      // refresh when the page becomes active again.
+      if (document.visibilityState === 'visible') {
+        void load();
+      }
+    }, REFRESH_INTERVAL_MS);
+
+    // Refresh promptly when the page becomes visible again.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isMountedRef.current) {
+        void load();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       isMountedRef.current = false;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [load]);
 

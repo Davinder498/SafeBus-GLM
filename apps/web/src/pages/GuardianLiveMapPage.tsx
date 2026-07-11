@@ -79,6 +79,24 @@ type StudentContextState =
  */
 export function GuardianLiveMapPage() {
   const { state: locationState, refreshing, lastRefreshedAt, refresh } = useGuardianLiveBusLocations();
+  // Preserve the last successful locations so the student list and map context
+  // remain usable during a transient refresh failure, while never presenting
+  // old data as a current live position. When locationState becomes
+  // stale/missing/invalid/error, the map component renders no marker because
+  // it only renders fresh rows. A refresh-failure banner explains the state.
+  const lastSuccessfulLocations = useRef<GuardianStudentLiveBusLocation[]>([]);
+  if (locationState.kind === 'ready') {
+    lastSuccessfulLocations.current = locationState.locations;
+  }
+  const showRefreshError = locationState.kind === 'error' && lastSuccessfulLocations.current.length > 0;
+  const effectiveLocations =
+    locationState.kind === 'ready'
+      ? locationState.locations
+      : showRefreshError
+        ? []
+        : [];
+  const isInitialError = locationState.kind === 'error' && lastSuccessfulLocations.current.length === 0;
+
   const [studentContextState, setStudentContextState] = useState<StudentContextState>({ kind: 'loading' });
 
   const isMountedRef = useRef(true);
@@ -146,11 +164,9 @@ export function GuardianLiveMapPage() {
     return rows;
   }, [studentContextState, locationState]);
 
-  const hasLocations = locationState.kind === 'ready' && locationState.locations.length > 0;
-  const showInitialLoading = locationState.kind === 'loading';
-  const showError = locationState.kind === 'error';
-  const showReady = locationState.kind === 'ready';
-  const showEmpty = showReady && locationState.locations.length === 0 && studentRows.length === 0;
+  const showInitialLoading = locationState.kind === 'loading' && lastSuccessfulLocations.current.length === 0;
+  const showReady = locationState.kind === 'ready' || showRefreshError;
+  const showEmpty = showReady && effectiveLocations.length === 0 && studentRows.length === 0 && !showRefreshError;
 
   return (
     <DashboardLayout title="Parent Dashboard" portal="parent" navItems={guardianNavItems}>
@@ -193,7 +209,7 @@ export function GuardianLiveMapPage() {
           </div>
         )}
 
-        {showError && (
+        {isInitialError && (
           <div className="space-y-4" data-testid="guardian-live-map-error">
             <DataState
               title="We could not load the live bus map right now."
@@ -216,8 +232,15 @@ export function GuardianLiveMapPage() {
 
         {showReady && !showEmpty && (
           <>
+            {showRefreshError && (
+              <Card className="p-4" data-testid="guardian-live-map-refresh-error">
+                <p role="alert" className="text-sm font-semibold text-warning-700">
+                  Live location could not be refreshed. The last known status is shown, but no current bus location is displayed.
+                </p>
+              </Card>
+            )}
             <GuardianLiveBusMap
-              locations={hasLocations ? (locationState as { kind: 'ready'; locations: GuardianStudentLiveBusLocation[] }).locations : []}
+              locations={effectiveLocations}
               studentContext={studentContext}
               tileConfig={mapTileConfig}
             />
