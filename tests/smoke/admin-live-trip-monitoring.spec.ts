@@ -175,14 +175,16 @@ test.describe('Admin live fleet monitoring', () => {
 
     await expect(page.getByRole('heading', { name: 'Live Fleet Monitoring', level: 1 })).toBeVisible();
     await expect(page.getByTestId('admin-live-fleet-summary')).toContainText('Active trips / buses');
+    await expect(page.getByTestId('admin-live-fleet-map-config-missing')).toBeVisible();
     await expect(page.getByTestId('admin-live-fleet-map-marker')).toHaveCount(2);
-    await expect(page.getByText('Bus 42')).toBeVisible();
-    await expect(page.getByText('Riverside AM')).toBeVisible();
-    await expect(page.getByText('Avery Driver')).toBeVisible();
-    await expect(page.getByText('45 km/h')).toBeVisible();
-    await expect(page.getByText('Speed unavailable')).toBeVisible();
-    await expect(page.getByText('Stale GPS')).toBeVisible();
-    await expect(page.getByText('Missing GPS')).toBeVisible();
+    const fleetList = page.getByTestId('admin-live-trips-list');
+    await expect(fleetList.getByRole('cell', { name: 'Bus 42' })).toBeVisible();
+    await expect(fleetList.getByRole('cell', { name: 'Riverside AM' })).toBeVisible();
+    await expect(fleetList).toContainText('Avery Driver');
+    await expect(fleetList).toContainText('45 km/h');
+    await expect(fleetList).toContainText('Speed unavailable');
+    await expect(fleetList).toContainText('Stale GPS');
+    await expect(fleetList).toContainText('Missing GPS');
   });
 
   test('empty map state renders when active buses have no valid coordinates', async ({ page }) => {
@@ -190,8 +192,25 @@ test.describe('Admin live fleet monitoring', () => {
     await page.goto('/admin/live-trips');
 
     await expect(page.getByTestId('admin-live-fleet-map-empty')).toBeVisible();
+    await expect(page.getByTestId('admin-live-fleet-map-config-missing')).toBeVisible();
     await expect(page.getByText('No active buses with valid coordinates.')).toBeVisible();
     await expect(page.getByText('No GPS Route')).toBeVisible();
+  });
+
+
+  test('invalid coordinates are excluded from the fallback map summary without hiding table rows', async ({ page }) => {
+    await installMock(page, {
+      trips: [
+        tripRow({ bus_label: '10', route_name: 'Valid Route', latest_latitude: 51.0447, latest_longitude: -114.0719, latest_location_at: new Date().toISOString(), location_status: 'live', issue_label: 'OK' }),
+        tripRow({ bus_label: '99', route_name: 'Invalid Route', latest_latitude: 999, latest_longitude: -114.0719, latest_location_at: new Date().toISOString(), location_status: 'missing', issue_label: 'Missing GPS' }),
+      ],
+    });
+    await page.goto('/admin/live-trips');
+
+    await expect(page.getByTestId('admin-live-fleet-map-marker')).toHaveCount(1);
+    await expect(page.getByTestId('admin-live-fleet-map-fallback')).toContainText('Valid Route');
+    await expect(page.getByTestId('admin-live-fleet-map-fallback')).not.toContainText('Invalid Route');
+    await expect(page.getByTestId('admin-live-trips-list')).toContainText('Invalid Route');
   });
 
   test('manual refresh keeps existing list on generic refresh failure', async ({ page }) => {

@@ -133,3 +133,21 @@ Status: Implemented on `milestone-10a-admin-live-fleet-map-speed` for review.
 
 Not included in this milestone: guardian map, ETA, notifications, QR, realtime subscriptions, driver workflow changes, speed enforcement, or production SQL execution.
 
+
+## Milestone 10B — Admin Live Fleet Map Hardening & Map Provider Foundation
+
+Status: Implemented on `milestone-10b-admin-live-fleet-map-hardening` for review.
+
+- Replaced the Milestone 10A coordinate-only admin fleet map presentation with a provider-neutral Leaflet/react-leaflet foundation that reads public browser map tile configuration from `VITE_MAP_TILE_URL` and `VITE_MAP_TILE_ATTRIBUTION`.
+- These map values are public frontend deployment configuration, not secrets. `VITE_MAP_TILE_URL` must be an XYZ-compatible Leaflet tile URL template such as `https://tiles.example.com/{z}/{x}/{y}.png`; `VITE_MAP_TILE_ATTRIBUTION` must satisfy the selected data and tile provider's attribution requirements.
+- No production map provider is selected by this milestone. Netlify deployments must receive the tile URL and attribution through Netlify environment configuration when an approved provider is chosen.
+- The app intentionally keeps summary cards, refresh controls, and the active fleet table functional when tile configuration is missing, partial, or when tiles fail to load.
+- Public OpenStreetMap standard tile servers are not assumed or documented as a production-scale commercial tile backend. OpenStreetMap data and the public OpenStreetMap tile service are separate concerns.
+- Before pilot production traffic, SafeBus must select a suitable commercial provider, hosted provider, or self-hosted tile solution and review provider terms, attribution, rate limits, availability, privacy, and commercial-use requirements.
+
+Example local or deployment values using a placeholder provider:
+
+```env
+VITE_MAP_TILE_URL=https://tiles.example.com/{z}/{x}/{y}.png
+VITE_MAP_TILE_ATTRIBUTION=Map data and tiles provided under the selected provider terms
+```
