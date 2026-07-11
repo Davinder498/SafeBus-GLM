@@ -1,5 +1,5 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
-import type { AdminLiveTrip } from '@/types/adminLiveMonitoring';
+import type { AdminLiveTrip, FleetIssueLabel, LocationFreshness } from '@/types/adminLiveMonitoring';
 
 function requireSupabase() {
   if (!supabase) {
@@ -8,74 +8,65 @@ function requireSupabase() {
   return supabase;
 }
 
-/**
- * Raw row shape returned by the get_admin_live_trip_monitoring() RPC. Column
- * names mirror the RPC's RETURNS TABLE definition (snake_case).
- */
-interface AdminLiveTripRpcRow {
-  trip_id: string;
-  tenant_id: string;
-  driver_id: string;
-  driver_name: string | null;
-  driver_email: string | null;
-  bus_id: string;
+interface AdminLiveFleetRpcRow {
   bus_label: string | null;
-  route_id: string;
   route_name: string | null;
+  driver_name: string | null;
   trip_type: string | null;
   status: string;
   started_at: string;
   latest_latitude: number | null;
   latest_longitude: number | null;
   latest_location_at: string | null;
+  speed_mps: number | null;
+  location_status: LocationFreshness | null;
+  issue_label: FleetIssueLabel | null;
 }
 
-function mapRow(row: AdminLiveTripRpcRow): AdminLiveTrip {
+function normalizeLocationStatus(value: LocationFreshness | null): LocationFreshness {
+  if (value === 'live' || value === 'stale' || value === 'missing') return value;
+  return 'missing';
+}
+
+function normalizeIssueLabel(value: FleetIssueLabel | null, status: LocationFreshness): FleetIssueLabel {
+  if (value === 'OK' || value === 'Stale GPS' || value === 'Missing GPS' || value === 'Speed unavailable' || value === 'Needs attention') {
+    return value;
+  }
+  if (status === 'missing') return 'Missing GPS';
+  if (status === 'stale') return 'Stale GPS';
+  return 'Needs attention';
+}
+
+function mapRow(row: AdminLiveFleetRpcRow): AdminLiveTrip {
+  const locationStatus = normalizeLocationStatus(row.location_status);
   return {
-    tripId: row.trip_id,
-    tenantId: row.tenant_id,
-    driverId: row.driver_id,
-    driverName: row.driver_name,
-    driverEmail: row.driver_email,
-    busId: row.bus_id,
     busLabel: row.bus_label,
-    routeId: row.route_id,
     routeName: row.route_name,
+    driverName: row.driver_name,
     tripType: row.trip_type,
     status: row.status,
     startedAt: row.started_at,
     latestLatitude: row.latest_latitude,
     latestLongitude: row.latest_longitude,
     latestLocationAt: row.latest_location_at,
+    speedMps: row.speed_mps,
+    locationStatus,
+    issueLabel: normalizeIssueLabel(row.issue_label, locationStatus),
   };
 }
 
-/**
- * Fetch active driver trips with latest location for the caller's organization.
- *
- * Calls the secure get_admin_live_trip_monitoring() RPC, which enforces
- * authentication, admin role, and tenant isolation server-side. Returns only
- * active trips. Active trips without a location still appear (latestLatitude/
- * latestLongitude/latestLocationAt are null). No service-role key is used.
- *
- * Error handling: the raw Supabase/PostgREST error is logged only in
- * development (import.meta.env.DEV) and never reaches the UI. A generic
- * Error is thrown so callers cannot accidentally display backend details
- * (function names, schema hints, policy failure text, etc.) to users.
- */
 export async function fetchAdminLiveTrips(): Promise<AdminLiveTrip[]> {
   const client = requireSupabase();
 
-  const { data, error } = await client.rpc('get_admin_live_trip_monitoring');
+  const { data, error } = await client.rpc('get_admin_live_fleet_monitoring');
 
   if (error) {
-    // Log the raw backend error only in development. Never surface it to the UI.
     if (import.meta.env.DEV) {
-      console.error('Failed to load admin live trips', error);
+      console.error('Failed to load admin live fleet monitoring', error);
     }
-    throw new Error('Unable to load admin live trips');
+    throw new Error('Unable to load admin live fleet monitoring');
   }
 
-  const rows = (data ?? []) as AdminLiveTripRpcRow[];
+  const rows = (data ?? []) as AdminLiveFleetRpcRow[];
   return rows.map(mapRow);
 }

@@ -18,8 +18,7 @@ export interface DashboardNavItem {
 
 export const adminNavItems: DashboardNavItem[] = [
   { label: 'Overview', to: '/admin' },
-  { label: 'Live Map', to: '/admin/live-map' },
-  { label: 'Live Trips', to: '/admin/live-trips' },
+  { label: 'Live Fleet', to: '/admin/live-trips' },
   { label: 'Trips', to: '/admin/trips' },
   { label: 'Routes', to: '/admin/routes' },
   { label: 'Stops', to: '/admin/stops' },

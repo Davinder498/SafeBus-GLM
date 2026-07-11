@@ -121,3 +121,15 @@ a production dummy-data UI.
 - Drivers should only see their own or assigned transportation data.
 - No service role keys in frontend code.
 - No public RLS policies.
+
+## Milestone 10A — Admin Live Fleet Map & Speed Monitoring
+
+Status: Implemented on `milestone-10a-admin-live-fleet-map-speed` for review.
+
+- Enhanced `/admin/live-trips` into an admin-only live fleet monitoring page with summary counts, a lightweight coordinate map panel, manual refresh, and an operational fleet table.
+- Added `get_admin_live_fleet_monitoring()` as a narrow authenticated admin RPC that returns tenant-scoped active fleet display fields, current coordinates, speed when available, and server-derived live/stale/missing GPS status without exposing student, guardian, contact, tenant ID, or raw internal ID fields.
+- Added smoke coverage for unauthenticated/guardian/driver blocking, admin access, map markers, missing/stale GPS, speed display/unavailable state, and sensitive value suppression.
+- Added an RLS structural check for the new admin live fleet RPC grants and return shape.
+
+Not included in this milestone: guardian map, ETA, notifications, QR, realtime subscriptions, driver workflow changes, speed enforcement, or production SQL execution.
+

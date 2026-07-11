@@ -47,6 +47,10 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
   linked same-tenant guardians, duplicate/rejected events enqueue nothing,
   wrong-role/cross-driver/cross-tenant attempts are blocked, direct outbox
   SELECT/INSERT is blocked, and existing 7B event behavior still works.
+- `admin-live-fleet-map-rls.sql`: structural/security checks for Milestone
+  10A `get_admin_live_fleet_monitoring()` — verifies the RPC exists, excludes
+  internal/student/guardian/contact return columns, and has public/anon execute
+  revoked with authenticated execute granted.
 
 ## `pnpm test:rls`
 
@@ -106,6 +110,8 @@ The default execution order is:
 5. `tests/rls/driver-active-trip-student-manifest-rls.sql`
 6. `tests/rls/driver-student-trip-events-rls.sql`
 7. `tests/rls/guardian-student-trip-event-visibility-rls.sql`
+8. `tests/rls/guardian-notification-outbox-rls.sql`
+9. `tests/rls/admin-live-fleet-map-rls.sql`
 
 The database must be safe for fixed-ID seeded test data. The scripts create
 test data and clean up after themselves where designed. If a run fails midway,
