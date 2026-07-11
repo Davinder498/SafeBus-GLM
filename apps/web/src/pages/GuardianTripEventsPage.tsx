@@ -17,6 +17,7 @@ type LoadState =
   | { kind: 'ready'; statuses: GuardianTripEventStatus[] };
 
 const guardianNavItems: DashboardNavItem[] = [
+  { label: 'Live Bus Map', to: '/guardian/live-map' },
   { label: 'Bus Status', to: '/guardian/live' },
   { label: 'Pickup & Drop-off', to: '/guardian/events' },
   { label: 'My Students & Routes', to: '/guardian/routes' },
