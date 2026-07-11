@@ -177,13 +177,14 @@ test.describe('Admin live fleet monitoring', () => {
     await expect(page.getByTestId('admin-live-fleet-summary')).toContainText('Active trips / buses');
     await expect(page.getByTestId('admin-live-fleet-map-config-missing')).toBeVisible();
     await expect(page.getByTestId('admin-live-fleet-map-marker')).toHaveCount(2);
-    await expect(page.getByText('Bus 42')).toBeVisible();
-    await expect(page.getByText('Riverside AM')).toBeVisible();
-    await expect(page.getByText('Avery Driver')).toBeVisible();
-    await expect(page.getByText('45 km/h')).toBeVisible();
-    await expect(page.getByText('Speed unavailable')).toBeVisible();
-    await expect(page.getByText('Stale GPS')).toBeVisible();
-    await expect(page.getByText('Missing GPS')).toBeVisible();
+    const fleetList = page.getByTestId('admin-live-trips-list');
+    await expect(fleetList.getByRole('cell', { name: 'Bus 42' })).toBeVisible();
+    await expect(fleetList.getByRole('cell', { name: 'Riverside AM' })).toBeVisible();
+    await expect(fleetList).toContainText('Avery Driver');
+    await expect(fleetList).toContainText('45 km/h');
+    await expect(fleetList).toContainText('Speed unavailable');
+    await expect(fleetList).toContainText('Stale GPS');
+    await expect(fleetList).toContainText('Missing GPS');
   });
 
   test('empty map state renders when active buses have no valid coordinates', async ({ page }) => {
