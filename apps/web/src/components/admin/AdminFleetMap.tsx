@@ -58,17 +58,17 @@ function FleetTileLayer({ config, onTileError, onTileLoad }: { config: MapTileCo
 }
 
 class FleetMapErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
-  state = { hasError: false };
+  override state = { hasError: false };
 
   static getDerivedStateFromError() {
     return { hasError: true };
   }
 
-  componentDidCatch(_error: Error, _errorInfo: ErrorInfo) {
+  override componentDidCatch(_error: Error, _errorInfo: ErrorInfo) {
     // Intentionally do not log live fleet payloads or coordinates.
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return <FleetMapUnavailable reason="The interactive map could not be rendered. The operational fleet list remains available below." />;
     }
