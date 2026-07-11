@@ -51,6 +51,12 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
   10A `get_admin_live_fleet_monitoring()` — verifies the RPC exists, excludes
   internal/student/guardian/contact return columns, and has public/anon execute
   revoked with authenticated execute granted.
+- `guardian-live-bus-location-rls.sql`: SELF-CONTAINED tests for Milestone 11A
+  `get_guardian_student_live_bus_location_state()` — verifies guardian-only
+  auth denial, active guardian identity, active linked-student/tenant/route/trip
+  enforcement, fresh/stale/missing/invalid location states, one row per student,
+  ambiguous-trip fail-closed behavior, direct live-location table denial, and
+  result-contract privacy.
 
 ## `pnpm test:rls`
 
@@ -112,6 +118,7 @@ The default execution order is:
 7. `tests/rls/guardian-student-trip-event-visibility-rls.sql`
 8. `tests/rls/guardian-notification-outbox-rls.sql`
 9. `tests/rls/admin-live-fleet-map-rls.sql`
+10. `tests/rls/guardian-live-bus-location-rls.sql`
 
 The database must be safe for fixed-ID seeded test data. The scripts create
 test data and clean up after themselves where designed. If a run fails midway,
@@ -156,6 +163,17 @@ test rows into:
 The guardian student trip event visibility script additionally inserts fixed
 test rows into `public.student_trip_events` with privileged seed/setup SQL only,
 then verifies guardians read derived event status exclusively through the RPC.
+
+The guardian live bus location script additionally inserts fixed rows into:
+
+- `public.buses`
+- `public.routes`
+- `public.student_route_assignments`
+- `public.driver_trips`
+- `public.driver_trip_current_locations`
+
+It verifies guardians receive safe student-correlated state only through the
+RPC and cannot directly read live-location rows.
 
 The SQL Editor user must be allowed to insert/delete these test rows, including
 direct inserts into `auth.users`.
@@ -218,6 +236,9 @@ Hosted Supabase/PostgREST helper behavior can differ by version. The mandatory
 6. To run guardian live trip visibility tests, run
    `guardian-live-trip-visibility-rls.sql` — it is self-contained (own seed +
    own cleanup) and does NOT depend on the student-roster seed.
+7. To run guardian live bus location tests, run
+   `guardian-live-bus-location-rls.sql`; it is self-contained (own seed + own
+   cleanup) and does NOT depend on the student-roster seed.
 
 The project workflow currently forbids Docker-based local startup, `supabase
 start`, and `supabase db reset`, so those are not part of this test workflow.
@@ -316,6 +337,32 @@ and verifies `get_guardian_student_trip_event_visibility()`:
   tenant IDs, guardian IDs, contact fields, GPS, speed, ETA, QR, and audit
   details.
 - Direct browser-style reads from `student_trip_events` remain blocked.
+
+## Guardian Live Bus Location Coverage (Milestone 11A)
+
+The `guardian-live-bus-location-rls.sql` script is self-contained and verifies
+`get_guardian_student_live_bus_location_state()`:
+
+- Anonymous, tenant-admin, driver, and guardian-without-active-identity callers
+  are denied.
+- Guardian A sees only active same-tenant linked students with applicable active
+  route assignments and active trips.
+- Same-tenant unrelated students, cross-tenant students, inactive links,
+  inactive students, inactive assignments, and non-active trips are hidden.
+- Siblings sharing one bus/trip return one row each because the contract is
+  student-correlated.
+- Location states are controlled: `fresh`, `stale`, `missing`, and `invalid`.
+- Fresh rows expose valid coordinates and nonnegative server age.
+- Stale rows withhold coordinates.
+- Missing rows expose no coordinates, timestamp, or age.
+- Unsafe future timestamps return `invalid` without negative age.
+- Invalid coordinate and null coordinate cases are schema-blocked by the
+  existing current-location constraints; the RPC still validates reachable rows.
+- Duplicate join paths do not duplicate student rows.
+- Ambiguous multiple active trips return one `invalid` row for the student.
+- Guardians cannot directly select from `driver_trip_current_locations`.
+- The RPC has no input arguments and excludes speed, driver, guardian, trip,
+  bus, route, stop, address, manifest, event, history, and metadata columns.
 
 ## Why Playwright Smoke Tests Are Not Enough
 

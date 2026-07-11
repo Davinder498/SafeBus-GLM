@@ -49,13 +49,14 @@
 | QA-1 - Automated Supabase RLS Test Runner                    | `scripts/run-rls-tests.mjs`, `pnpm test:rls:dev`, path-safety fix in latest `main`                                                                          | Completed and review blocker fixed |
 | 7A/7B QA - Driver Event Manual Fixture                       | `docs/qa/driver-event-flow-manual-test.md`, `scripts/seed-driver-event-qa-fixture.mjs`, `pnpm qa:seed:driver-events`                                        | DEV-only QA helper                 |
 | 8A - Guardian Student Trip Event Visibility Security Foundation | `0024_guardian_student_trip_event_visibility.sql`, `tests/rls/guardian-student-trip-event-visibility-rls.sql`                                             | In progress                        |
+| 11A - Guardian Live Bus Map Security Foundation              | `0027_guardian_live_bus_location_security_foundation.sql`, `tests/rls/guardian-live-bus-location-rls.sql`                                                   | Implemented for review             |
 
 ## Current Milestone
 
-Milestone 8A is active on a feature branch. It adds a backend-only, guardian
-RPC/RLS foundation for safe pickup/drop-off event status visibility.
+Milestone 11A is active on a feature branch. It adds a backend-only guardian
+RPC/RLS foundation for safe live bus location state visibility.
 
-Do not start the next product milestone until it is explicitly selected.
+Do not start Milestone 11B until it is explicitly selected.
 
 ## RLS Test Workflow
 
@@ -80,6 +81,9 @@ The automated runner executes the default RLS files in deterministic order:
 5. `tests/rls/driver-active-trip-student-manifest-rls.sql`
 6. `tests/rls/driver-student-trip-events-rls.sql`
 7. `tests/rls/guardian-student-trip-event-visibility-rls.sql`
+8. `tests/rls/guardian-notification-outbox-rls.sql`
+9. `tests/rls/admin-live-fleet-map-rls.sql`
+10. `tests/rls/guardian-live-bus-location-rls.sql`
 
 Single-file and multi-file runner arguments are restricted to `.sql` files
 under `tests/rls`. The runner must not be used for migrations, legacy SQL, or
@@ -151,3 +155,17 @@ Example local or deployment values using a placeholder provider:
 VITE_MAP_TILE_URL=https://tiles.example.com/{z}/{x}/{y}.png
 VITE_MAP_TILE_ATTRIBUTION=Map data and tiles provided under the selected provider terms
 ```
+
+## Milestone 11A - Guardian Live Bus Map Security Foundation
+
+Status: Implemented on `milestone-11a-guardian-live-bus-map-security-foundation` for review.
+
+- Added `get_guardian_student_live_bus_location_state()` as a narrow guardian RPC. It accepts no arguments and derives caller identity exclusively from `auth.uid()` through the existing profile, tenant, role, and active guardian helpers.
+- The RPC enforces active guardian role, active guardian identity, active student, active guardian-student link, tenant isolation, applicable active route assignment, active trip, same-tenant active bus/driver, and matching current-location trip/tenant/route/bus/driver relationships before returning any location state.
+- The result is one row per eligible linked student and includes only `student_id`, `location_state`, `latitude`, `longitude`, `location_recorded_at`, and `location_age_seconds`.
+- `location_state` is controlled to `fresh`, `stale`, `missing`, or `invalid`. Freshness mirrors the accepted admin fleet threshold of 2 minutes.
+- `fresh` exposes valid coordinates. `stale` withholds coordinates while allowing timestamp/age. `missing` and `invalid` expose no displayable coordinates, and unsafe future timestamps cannot produce negative age.
+- Ambiguous multiple active trips for one student fail closed as a single `invalid` row instead of arbitrarily selecting a bus.
+- Direct guardian reads from live-location tables remain denied; no broad guardian RLS policy or table-level location grant was added.
+- Added a dedicated self-contained SQL regression file and registered it with the structural RLS check and guarded QA-1 runner order.
+- No guardian map UI, Leaflet guardian component, ETA, realtime subscription, polling change, notification delivery, history, trip replay, address/stop exposure, manifest exposure, pickup/drop-off exposure, driver change, admin map change, or speed visibility was added.
