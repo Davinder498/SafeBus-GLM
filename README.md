@@ -54,7 +54,12 @@ Create `apps/web/.env` with your hosted Supabase project values:
 ```env
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
+# Optional public map tile configuration for admin fleet maps. Do not put secrets here.
+VITE_MAP_TILE_URL=https://tiles.example.com/{z}/{x}/{y}.png
+VITE_MAP_TILE_ATTRIBUTION=Map data and tiles provided under the selected provider terms
 ```
+
+`VITE_MAP_TILE_URL` and `VITE_MAP_TILE_ATTRIBUTION` are public browser configuration values for a future approved XYZ-compatible Leaflet tile provider. Both values must be configured for the interactive admin fleet map tile layer; otherwise the app shows a controlled non-tile fallback and keeps the fleet table available. Netlify must receive these values through its environment configuration when a provider is selected. No production provider is selected by default, and public OpenStreetMap standard tile servers should not be treated as an assumed production-scale commercial tile backend; OpenStreetMap data and the public tile service are separate concerns. Review provider terms, attribution, rate limits, availability, privacy, and commercial-use requirements before pilot production traffic.
 
 ### Run web app (Phase 1 — mock data)
 

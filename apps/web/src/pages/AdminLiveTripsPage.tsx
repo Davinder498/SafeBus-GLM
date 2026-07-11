@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { AdminFleetMap, type FleetMapFormatters } from '@/components/admin/AdminFleetMap';
+import { mapTileConfig } from '@/config/mapTiles';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { fetchAdminLiveTrips } from '@/services/adminLiveMonitoringService';
 import {
-  hasValidCoordinates,
   UI_STALE_LOCATION_THRESHOLD_LABEL,
   type AdminLiveTrip,
   type FleetIssueLabel,
@@ -51,68 +52,12 @@ function safeFleetLabel(trip: AdminLiveTrip): string {
   return 'Active bus';
 }
 
-function FleetMap({ trips }: { trips: AdminLiveTrip[] }) {
-  const markerTrips = trips.filter(hasValidCoordinates);
-  const bounds = useMemo(() => {
-    if (markerTrips.length === 0) return null;
-    const latitudes = markerTrips.map((trip) => trip.latestLatitude as number);
-    const longitudes = markerTrips.map((trip) => trip.latestLongitude as number);
-    return {
-      minLat: Math.min(...latitudes),
-      maxLat: Math.max(...latitudes),
-      minLng: Math.min(...longitudes),
-      maxLng: Math.max(...longitudes),
-    };
-  }, [markerTrips]);
-
-  if (!bounds) {
-    return (
-      <Card className="p-5" data-testid="admin-live-fleet-map-empty">
-        <h2 className="text-lg font-bold text-navy-900">Live fleet map</h2>
-        <DataState
-          title="No active buses with valid coordinates."
-          message="Active trips are listed below. Map markers appear after a current GPS update includes valid coordinates."
-        />
-      </Card>
-    );
-  }
-
-  const latSpan = Math.max(bounds.maxLat - bounds.minLat, 0.01);
-  const lngSpan = Math.max(bounds.maxLng - bounds.minLng, 0.01);
-
-  return (
-    <Card className="overflow-hidden" data-testid="admin-live-fleet-map">
-      <div className="border-b border-gray-100 p-5">
-        <h2 className="text-lg font-bold text-navy-900">Live fleet map</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Operational marker positions for active buses with valid current coordinates. Labels show bus or route only.
-        </p>
-      </div>
-      <div className="relative h-80 bg-gradient-to-br from-sky-50 via-white to-emerald-50" aria-label="Admin live fleet coordinate map">
-        <div className="absolute inset-0 opacity-50" aria-hidden="true">
-          <div className="h-full w-full bg-[linear-gradient(to_right,rgba(15,23,42,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(15,23,42,0.08)_1px,transparent_1px)] bg-[size:48px_48px]" />
-        </div>
-        {markerTrips.map((trip, index) => {
-          const lat = trip.latestLatitude as number;
-          const lng = trip.latestLongitude as number;
-          const left = 8 + ((lng - bounds.minLng) / lngSpan) * 84;
-          const top = 8 + ((bounds.maxLat - lat) / latSpan) * 84;
-          return (
-            <div
-              key={`${safeFleetLabel(trip)}-${trip.startedAt}-${index}`}
-              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-navy-700 px-3 py-2 text-xs font-bold text-white shadow-lg"
-              style={{ left: `${left}%`, top: `${top}%` }}
-              data-testid="admin-live-fleet-map-marker"
-              title={`${safeFleetLabel(trip)} · ${trip.routeName ?? 'Active route'}`}
-            >
-              {safeFleetLabel(trip)}
-            </div>
-          );
-        })}
-      </div>
-    </Card>
-  );
-}
+const fleetMapFormatters: FleetMapFormatters = {
+  formatTimestamp,
+  formatSpeed,
+  locationLabel,
+  safeFleetLabel,
+};
 
 export function AdminLiveTripsPage() {
   const [trips, setTrips] = useState<AdminLiveTrip[]>([]);
@@ -235,7 +180,7 @@ export function AdminLiveTripsPage() {
               ))}
             </section>
 
-            <FleetMap trips={trips} />
+            <AdminFleetMap trips={trips} tileConfig={mapTileConfig} formatters={fleetMapFormatters} />
 
             {trips.length === 0 ? (
               <DataState title="No active trips right now." message="Active driver trips in your organization will appear here." />
