@@ -16,6 +16,11 @@ import { AdminSettingsPage } from '@/pages/AdminSettingsPage';
 import { AdminStopsPage } from '@/pages/AdminStopsPage';
 import { AdminStudentsPage } from '@/pages/AdminStudentsPage';
 import { AdminUsersPage } from '@/pages/AdminUsersPage';
+import { AdminSetupPage } from '@/pages/AdminSetupPage';
+import { AdminOperationsPage } from '@/pages/AdminOperationsPage';
+import { AdminPeoplePage } from '@/pages/AdminPeoplePage';
+import { AdminMorePage } from '@/pages/AdminMorePage';
+import { AdminTripsPage } from '@/pages/AdminTripsPage';
 import { DriverDashboardPage } from '@/pages/DriverDashboardPage';
 import { DriverManifestPage } from '@/pages/DriverManifestPage';
 import { GuardianLiveMapPage } from '@/pages/GuardianLiveMapPage';
@@ -46,6 +51,26 @@ export const appRoutes: RouteObject[] = [
         <AdminDashboardPage />
       </ProtectedRoute>
     ),
+  },
+  {
+    path: '/admin/setup',
+    element: <ProtectedRoute allowedRoles={[...adminRoles]}><AdminSetupPage /></ProtectedRoute>,
+  },
+  {
+    path: '/admin/operations',
+    element: <ProtectedRoute allowedRoles={[...adminRoles]}><AdminOperationsPage /></ProtectedRoute>,
+  },
+  {
+    path: '/admin/people',
+    element: <ProtectedRoute allowedRoles={[...adminRoles]}><AdminPeoplePage /></ProtectedRoute>,
+  },
+  {
+    path: '/admin/more',
+    element: <ProtectedRoute allowedRoles={[...adminRoles]}><AdminMorePage /></ProtectedRoute>,
+  },
+  {
+    path: '/admin/trips',
+    element: <ProtectedRoute allowedRoles={[...adminRoles]}><AdminTripsPage /></ProtectedRoute>,
   },
   {
     path: '/admin/settings',
@@ -153,7 +178,6 @@ export const appRoutes: RouteObject[] = [
   },
   ...[
     ['live-map', 'Live Map'],
-    ['trips', 'Trips'],
     ['imports', 'Imports'],
     ['alerts', 'Alerts'],
     ['reports', 'Reports'],
