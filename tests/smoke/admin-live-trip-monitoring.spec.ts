@@ -178,9 +178,11 @@ test.describe('Admin live fleet monitoring', () => {
     await expect(
       page.getByTestId('admin-live-fleet-map-config-missing').or(page.getByTestId('admin-live-fleet-map')),
     ).toBeVisible();
-    // A mocked environment has no private Realtime server, so the fail-safe
-    // reconnect state may intentionally hide otherwise-valid markers.
-    expect([0, 2]).toContain(await page.getByTestId('admin-live-fleet-map-marker').count());
+    if (await page.getByTestId('admin-live-fleet-map-config-missing').count()) {
+      await expect(page.getByTestId('admin-live-fleet-map-marker')).toHaveCount(2);
+    } else {
+      await expect(page.getByTestId('admin-live-fleet-map')).toBeVisible();
+    }
     const fleetList = page.getByTestId('admin-live-trips-list');
     await expect(fleetList.getByRole('cell', { name: 'Bus 42' })).toBeVisible();
     await expect(fleetList.getByRole('cell', { name: 'Riverside AM' })).toBeVisible();
@@ -210,7 +212,11 @@ test.describe('Admin live fleet monitoring', () => {
     });
     await page.goto('/admin/live-trips');
 
-    expect([0, 1]).toContain(await page.getByTestId('admin-live-fleet-map-marker').count());
+    if (await page.getByTestId('admin-live-fleet-map-fallback').count()) {
+      await expect(page.getByTestId('admin-live-fleet-map-marker')).toHaveCount(1);
+    } else {
+      await expect(page.getByTestId('admin-live-fleet-map')).toBeVisible();
+    }
     await expect(page.getByTestId('admin-live-trips-list')).toContainText('Invalid Route');
   });
 

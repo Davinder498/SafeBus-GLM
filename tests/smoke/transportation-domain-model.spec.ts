@@ -313,8 +313,8 @@ test.describe('Milestone 4E — school optional for transportation', () => {
     await expect(page.getByText('School (optional)')).toBeVisible();
 
     // Fill route name + code but leave school at "No school selected".
-    await page.getByLabel('Route name').fill('Riverside AM');
-    await page.getByLabel('Route code').fill('RIV-AM');
+    await page.getByLabel('Route name').fill('Riverside PM');
+    await page.getByLabel('Route code').fill('RIV-PM');
 
     // The school select shows "No school selected" by default (empty value).
     await expect(page.getByLabel('School (optional)')).toHaveValue('');
@@ -326,7 +326,7 @@ test.describe('Milestone 4E — school optional for transportation', () => {
     await expect(page.getByText('Choose a school')).toHaveCount(0);
 
     // A success message appears (the mock insert returns the route).
-    await expect(page.getByText('Route created.')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Route created with stops.')).toBeVisible({ timeout: 10000 });
   });
 
   test('admin bus form can be submitted with no school selected', async ({ page }) => {
