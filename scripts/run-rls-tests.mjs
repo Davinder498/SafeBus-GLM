@@ -23,6 +23,8 @@ const DEFAULT_RLS_FILES = [
   'tests/rls/admin-live-fleet-map-rls.sql',
   'tests/rls/guardian-live-bus-location-rls.sql',
   'tests/rls/student-route-assignment-optional-school-rls.sql',
+  'tests/rls/driver-assignment-platform-admin-write-rls.sql',
+  'tests/rls/secure-trip-tracking-realtime-rls.sql',
 ];
 
 function fail(message) {

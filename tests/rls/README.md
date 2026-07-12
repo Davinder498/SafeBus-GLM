@@ -64,6 +64,9 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
 - `driver-assignment-platform-admin-write-rls.sql`: structural security
   regression for migration 0029, confirming assignment writes use shared
   tenant authorization while driver, bus, and route validation remains.
+- `secure-trip-tracking-realtime-rls.sql`: structural security regression for
+  migration 0030, confirming receive-only exact private topics, coordinate-free
+  invalidations, and lifecycle/authorization trigger coverage.
 
 ## `pnpm test:rls`
 
