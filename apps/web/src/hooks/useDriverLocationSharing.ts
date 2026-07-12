@@ -1,34 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { isFatalLocationUpdateError, updateDriverTripLocation } from '@/services/driverLocationService';
 
-/**
- * Driver location sharing hook for Milestone 4B.
- *
- * Wraps navigator.geolocation.watchPosition, throttles updates, calls the
- * secure update_driver_trip_location RPC on each accepted fix, and cleans up
- * the watcher on stop/unmount or when the active trip becomes null.
- *
- * The hook is intentionally inert while `activeTripId` is null: location
- * sharing is only available during an active trip.
- */
-
 export type LocationSharingState =
   | { kind: 'inactive' }
-  | { kind: 'sharing'; lastUpdateAt: string | null }
+  | { kind: 'waiting' }
+  | { kind: 'sharing'; lastUpdateAt: string; delivery: 'active' | 'delayed' }
+  | { kind: 'offline'; lastUpdateAt: string | null }
+  | { kind: 'denied'; message: string }
   | { kind: 'error'; message: string };
 
 export interface UseDriverLocationSharingResult {
   state: LocationSharingState;
-  /** Whether browser geolocation is supported in this environment. */
   supported: boolean;
-  /** Start watching position and sending updates for the active trip. */
   start: () => void;
-  /** Stop watching position and reset to inactive. */
   stop: () => void;
 }
 
-/** Minimum interval between RPC calls, to avoid flooding the backend. */
-const MIN_UPDATE_INTERVAL_MS = 3000;
+const MIN_UPDATE_INTERVAL_MS = 10_000;
+const INITIAL_RETRY_MS = 5_000;
+const MAX_RETRY_MS = 30_000;
 
 interface GeolocationFix {
   latitude: number;
@@ -40,15 +30,26 @@ interface GeolocationFix {
 
 export function useDriverLocationSharing(activeTripId: string | null): UseDriverLocationSharingResult {
   const supported = typeof navigator !== 'undefined' && 'geolocation' in navigator;
-
   const [state, setState] = useState<LocationSharingState>({ kind: 'inactive' });
-
   const watchIdRef = useRef<number | null>(null);
-  const lastSentAtRef = useRef<number>(0);
-  // Keep the latest activeTripId in a ref so the watcher callback (created once)
-  // always reads the current value without needing to be re-created.
-  const activeTripIdRef = useRef<string | null>(activeTripId);
+  const activeTripIdRef = useRef(activeTripId);
+  const sharingRequestedRef = useRef(false);
+  const latestFixRef = useRef<GeolocationFix | null>(null);
+  const inFlightRef = useRef(false);
+  const lastAttemptAtRef = useRef(0);
+  const lastUpdateAtRef = useRef<string | null>(null);
+  const retryAttemptRef = useRef(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
+  const flushRef = useRef<() => void>(() => undefined);
   activeTripIdRef.current = activeTripId;
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
 
   const clearWatcher = useCallback(() => {
     if (watchIdRef.current !== null && supported) {
@@ -58,20 +59,41 @@ export function useDriverLocationSharing(activeTripId: string | null): UseDriver
   }, [supported]);
 
   const stop = useCallback(() => {
+    sharingRequestedRef.current = false;
+    latestFixRef.current = null;
+    retryAttemptRef.current = 0;
+    clearTimer();
     clearWatcher();
-    setState({ kind: 'inactive' });
-  }, [clearWatcher]);
+    if (mountedRef.current) setState({ kind: 'inactive' });
+  }, [clearTimer, clearWatcher]);
 
-  const sendUpdate = useCallback(async (fix: GeolocationFix) => {
+  const scheduleFlush = useCallback((delayMs: number) => {
+    clearTimer();
+    timerRef.current = setTimeout(() => flushRef.current(), delayMs);
+  }, [clearTimer]);
+
+  const flush = useCallback(async () => {
     const tripId = activeTripIdRef.current;
-    if (!tripId) return;
+    const fix = latestFixRef.current;
+    if (!tripId || !fix || !sharingRequestedRef.current || inFlightRef.current) return;
 
-    const now = Date.now();
-    if (now - lastSentAtRef.current < MIN_UPDATE_INTERVAL_MS) return;
-    lastSentAtRef.current = now;
+    if (!navigator.onLine) {
+      setState({ kind: 'offline', lastUpdateAt: lastUpdateAtRef.current });
+      return;
+    }
+
+    const remaining = MIN_UPDATE_INTERVAL_MS - (Date.now() - lastAttemptAtRef.current);
+    if (remaining > 0) {
+      scheduleFlush(remaining);
+      return;
+    }
+
+    latestFixRef.current = null;
+    inFlightRef.current = true;
+    lastAttemptAtRef.current = Date.now();
 
     try {
-      await updateDriverTripLocation({
+      const result = await updateDriverTripLocation({
         driverTripId: tripId,
         latitude: fix.latitude,
         longitude: fix.longitude,
@@ -80,90 +102,130 @@ export function useDriverLocationSharing(activeTripId: string | null): UseDriver
         speedMps: fix.speed,
         source: 'browser',
       });
-      setState({ kind: 'sharing', lastUpdateAt: new Date().toISOString() });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Location update failed.';
-      if (isFatalLocationUpdateError(err)) {
-        // The trip is gone (ended, not found, or owned by another driver).
-        // Stop the geolocation watcher immediately so it does not keep firing
-        // against a dead trip, and surface a clear error state.
-        clearWatcher();
+      retryAttemptRef.current = 0;
+      lastUpdateAtRef.current = result.recorded_at;
+      if (mountedRef.current && sharingRequestedRef.current) {
+        setState({ kind: 'sharing', lastUpdateAt: result.recorded_at, delivery: 'active' });
       }
-      setState({ kind: 'error', message });
+    } catch (error) {
+      if (isFatalLocationUpdateError(error)) {
+        sharingRequestedRef.current = false;
+        clearWatcher();
+        if (mountedRef.current) {
+          setState({
+            kind: 'error',
+            message: error.message,
+          });
+        }
+        return;
+      }
+
+      // Keep only the newest fix. If no newer fix arrived while this request
+      // was in flight, retry the failed fix with bounded backoff.
+      latestFixRef.current ??= fix;
+      const delay = Math.min(INITIAL_RETRY_MS * 2 ** retryAttemptRef.current, MAX_RETRY_MS);
+      retryAttemptRef.current += 1;
+      if (mountedRef.current) {
+        if (navigator.onLine && lastUpdateAtRef.current) {
+          setState({
+            kind: 'sharing',
+            lastUpdateAt: lastUpdateAtRef.current,
+            delivery: 'delayed',
+          });
+        } else {
+          setState({ kind: 'offline', lastUpdateAt: lastUpdateAtRef.current });
+        }
+      }
+      scheduleFlush(delay);
+    } finally {
+      inFlightRef.current = false;
+      if (latestFixRef.current && retryAttemptRef.current === 0) {
+        scheduleFlush(MIN_UPDATE_INTERVAL_MS);
+      }
     }
-  }, [clearWatcher]);
+  }, [clearWatcher, scheduleFlush]);
+  flushRef.current = () => void flush();
 
   const start = useCallback(() => {
     if (!supported) {
-      setState({
-        kind: 'error',
-        message: 'Location sharing is not supported in this browser.',
-      });
+      setState({ kind: 'error', message: 'Location sharing is not supported in this browser.' });
       return;
     }
-    if (!activeTripIdRef.current) {
-      // No active trip: the dashboard should not offer the start button, but
-      // guard anyway.
-      return;
-    }
+    if (!activeTripIdRef.current) return;
 
-    // Clear any existing watcher before starting a new one.
     clearWatcher();
-
-    setState({ kind: 'sharing', lastUpdateAt: null });
+    clearTimer();
+    sharingRequestedRef.current = true;
+    retryAttemptRef.current = 0;
+    lastAttemptAtRef.current = 0;
+    setState({ kind: 'waiting' });
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
-        const coords = position.coords;
-        void sendUpdate({
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          accuracy: coords.accuracy ?? null,
-          heading: coords.heading ?? null,
-          speed: coords.speed ?? null,
-        });
+        latestFixRef.current = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy ?? null,
+          heading: position.coords.heading ?? null,
+          speed: position.coords.speed ?? null,
+        };
+        flushRef.current();
       },
-      (err) => {
-        // Map geolocation errors to friendly messages. Use numeric codes
-        // (GeolocationPositionError.PERMISSION_DENIED === 1, etc.) rather than
-        // err.PERMISSION_DENIED, because some error-shaped objects may not
-        // carry the static constants.
-        let message: string;
-        switch (err.code) {
-          case 1: // PERMISSION_DENIED
-            message =
-              'Location permission was denied. Enable location access in your browser to share your bus location.';
-            break;
-          case 2: // POSITION_UNAVAILABLE
-            message = 'Location information is unavailable right now.';
-            break;
-          case 3: // TIMEOUT
-            message = 'Location request timed out.';
-            break;
-          default:
-            message = 'Location sharing is not supported in this browser.';
-            break;
-        }
+      (error) => {
         clearWatcher();
-        setState({ kind: 'error', message });
+        sharingRequestedRef.current = false;
+        if (error.code === 1) {
+          setState({
+            kind: 'denied',
+            message: 'Location permission was denied. Enable location access to share the bus location.',
+          });
+        } else if (error.code === 2) {
+          setState({ kind: 'error', message: 'Location information is unavailable right now.' });
+        } else if (error.code === 3) {
+          setState({ kind: 'error', message: 'Location request timed out. Please try again.' });
+        } else {
+          setState({ kind: 'error', message: 'Location sharing could not be started.' });
+        }
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 },
+      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 5_000 },
     );
-  }, [supported, clearWatcher, sendUpdate]);
+  }, [clearTimer, clearWatcher, supported]);
 
-  // If the active trip goes away (ended / refresh), stop sharing automatically.
   useEffect(() => {
-    if (!activeTripId) {
-      stop();
-    }
+    const handleOffline = () => {
+      if (sharingRequestedRef.current) {
+        clearTimer();
+        setState({ kind: 'offline', lastUpdateAt: lastUpdateAtRef.current });
+      }
+    };
+    const handleOnline = () => {
+      if (sharingRequestedRef.current) {
+        retryAttemptRef.current = 0;
+        lastAttemptAtRef.current = 0;
+        flushRef.current();
+      }
+    };
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [clearTimer]);
+
+  useEffect(() => {
+    if (!activeTripId) stop();
   }, [activeTripId, stop]);
 
-  // Cleanup on unmount.
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
+      sharingRequestedRef.current = false;
+      clearTimer();
       clearWatcher();
     };
-  }, [clearWatcher]);
+  }, [clearTimer, clearWatcher]);
 
   return { state, supported, start, stop };
 }

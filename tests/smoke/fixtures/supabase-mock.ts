@@ -159,6 +159,7 @@ export interface MockControl {
 export interface MockSupabaseOptions {
   withActiveTrip?: boolean;
   withAssignments?: boolean;
+  locationUpdateDelayMs?: number;
 }
 
 /**
@@ -341,6 +342,9 @@ export async function installSupabaseMock(
         }
         if (table === 'rpc/update_driver_trip_location') {
           // Acknowledge the location update with the current-location row.
+          if (opts.locationUpdateDelayMs) {
+            await new Promise((resolve) => setTimeout(resolve, opts.locationUpdateDelayMs));
+          }
           await route.fulfill({
             status: 200,
             contentType: 'application/json',
