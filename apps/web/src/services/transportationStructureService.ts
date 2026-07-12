@@ -201,7 +201,10 @@ export async function createStudentRouteAssignment(
     .select('id, tenant_id, student_id, route_id, pickup_stop_id, dropoff_stop_id, effective_from, effective_to, status, created_at, updated_at')
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (import.meta.env.DEV) console.error('Failed to create student route assignment', error);
+    throw new Error('We could not save this assignment. Confirm the student, route, and stops are active and belong to your organization.');
+  }
   return data as StudentRouteAssignment;
 }
 
@@ -217,6 +220,9 @@ export async function updateStudentRouteAssignment(
     .select('id, tenant_id, student_id, route_id, pickup_stop_id, dropoff_stop_id, effective_from, effective_to, status, created_at, updated_at')
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (import.meta.env.DEV) console.error('Failed to update student route assignment', error);
+    throw new Error('We could not update this assignment. Confirm the student, route, and stops are active and belong to your organization.');
+  }
   return data as StudentRouteAssignment;
 }
