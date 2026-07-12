@@ -61,6 +61,9 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
   regression for migration 0028, confirming school-less students/routes use
   tenant-scoped optional-school authorization while tenant, route-stop, and
   active-stop validation remain enforced.
+- `driver-assignment-platform-admin-write-rls.sql`: structural security
+  regression for migration 0029, confirming assignment writes use shared
+  tenant authorization while driver, bus, and route validation remains.
 
 ## `pnpm test:rls`
 
