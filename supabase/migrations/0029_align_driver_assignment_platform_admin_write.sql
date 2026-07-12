@@ -1,4 +1,4 @@
-+-- SafeBus Alberta - align driver assignment writes for platform admins
+-- SafeBus Alberta - align driver assignment writes for platform admins
 --
 -- Migration 0013 allowed platform_super_admin users to read assignments and
 -- classified them as transportation write admins, but its INSERT/UPDATE
@@ -46,6 +46,5 @@ create policy "driver_route_assignments update admin"
       route_id
     )
   );
-
 
 

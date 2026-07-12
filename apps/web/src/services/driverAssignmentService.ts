@@ -77,6 +77,11 @@ export async function createDriverAssignment(
 
   if (error) {
     logDevError('Failed to create driver assignment', error);
+    if (error.code === '42P01') {
+      throw new Error(
+        'Driver assignments are not installed in this environment. Apply the required database migrations before assigning a driver.',
+      );
+    }
     if (
       error.code === '23505' ||
       error.message.includes('driver_route_assignments_active_unique')
