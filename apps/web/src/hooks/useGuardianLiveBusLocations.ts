@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useAuth } from '@/contexts/useAuth';
+import {
+  useTrackingInvalidations,
+  type TrackingConnectionState,
+} from '@/hooks/useTrackingInvalidations';
 import { fetchGuardianLiveBusLocations } from '@/services/guardianLiveBusLocationService';
 import type { GuardianStudentLiveBusLocation } from '@/types/guardianLiveBusLocation';
 
@@ -14,6 +19,7 @@ export interface UseGuardianLiveBusLocationsResult {
   state: GuardianLiveBusLocationsLoadState;
   refreshing: boolean;
   lastRefreshedAt: string | null;
+  connectionState: TrackingConnectionState;
   refresh: () => void;
 }
 
@@ -50,18 +56,24 @@ const REFRESH_INTERVAL_MS = 15_000;
  * realtime changes, and never accepts guardian-controlled scope arguments.
  */
 export function useGuardianLiveBusLocations(): UseGuardianLiveBusLocationsResult {
+  const { user } = useAuth();
   const [state, setState] = useState<GuardianLiveBusLocationsLoadState>({ kind: 'loading' });
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
 
   const isMountedRef = useRef(true);
   const fetchingRef = useRef(false);
+  const pendingLoadRef = useRef(false);
+  const loadRef = useRef<() => void>(() => undefined);
   // Monotonic token to reject out-of-order responses (race protection).
   const latestRequestTokenRef = useRef(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
-    if (fetchingRef.current) return;
+    if (fetchingRef.current) {
+      pendingLoadRef.current = true;
+      return;
+    }
     fetchingRef.current = true;
     const myToken = ++latestRequestTokenRef.current;
     setRefreshing(true);
@@ -86,8 +98,25 @@ export function useGuardianLiveBusLocations(): UseGuardianLiveBusLocationsResult
         setRefreshing(false);
       }
       fetchingRef.current = false;
+      if (pendingLoadRef.current && isMountedRef.current) {
+        pendingLoadRef.current = false;
+        queueMicrotask(() => loadRef.current());
+      }
     }
   }, []);
+  loadRef.current = () => void load();
+
+  const clearUnverifiedLocation = useCallback(() => {
+    latestRequestTokenRef.current += 1;
+    setState({ kind: 'error' });
+    setRefreshing(false);
+  }, []);
+
+  const connectionState = useTrackingInvalidations({
+    topic: user ? `safebus:guardian:${user.id}` : null,
+    onInvalidate: load,
+    onDisconnected: clearUnverifiedLocation,
+  });
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -123,5 +152,5 @@ export function useGuardianLiveBusLocations(): UseGuardianLiveBusLocationsResult
     };
   }, [load]);
 
-  return { state, refreshing, lastRefreshedAt, refresh: load };
+  return { state, refreshing, lastRefreshedAt, connectionState, refresh: load };
 }

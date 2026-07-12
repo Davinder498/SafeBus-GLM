@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { mapTileConfig } from '@/config/mapTiles';
 import { useGuardianLiveBusLocations } from '@/hooks/useGuardianLiveBusLocations';
+import type { TrackingConnectionState } from '@/hooks/useTrackingInvalidations';
 import { fetchGuardianStudentRoutes } from '@/services/guardianRouteVisibilityService';
 import { studentDisplayName, type GuardianStudentRoute } from '@/types/guardianRouteVisibility';
 import type { GuardianStudentLiveBusLocation } from '@/types/guardianLiveBusLocation';
@@ -78,7 +79,13 @@ type StudentContextState =
  * location state with valid coordinates.
  */
 export function GuardianLiveMapPage() {
-  const { state: locationState, refreshing, lastRefreshedAt, refresh } = useGuardianLiveBusLocations();
+  const {
+    state: locationState,
+    refreshing,
+    lastRefreshedAt,
+    connectionState,
+    refresh,
+  } = useGuardianLiveBusLocations();
   // Preserve the last successful locations so the student list and map context
   // remain usable during a transient refresh failure, while never presenting
   // old data as a current live position. When locationState becomes
@@ -197,6 +204,9 @@ export function GuardianLiveMapPage() {
                 ? `Last refreshed ${formatTimestamp(lastRefreshedAt)}`
                 : 'Not refreshed yet'}
             </span>
+            <span className="text-sm text-gray-600" data-testid="guardian-live-connection-status">
+              {connectionLabel(connectionState)}
+            </span>
           </div>
         </Card>
 
@@ -280,4 +290,11 @@ export function GuardianLiveMapPage() {
       </div>
     </DashboardLayout>
   );
+}
+
+function connectionLabel(state: TrackingConnectionState): string {
+  if (state === 'connected') return 'Live updates connected';
+  if (state === 'offline') return 'Offline — updates resume when your connection returns';
+  if (state === 'unavailable') return 'Periodic location checks active';
+  return 'Reconnecting to live updates';
 }
