@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { StatusPill } from '@/components/ui/StatusPill';
 import type { Route, RouteStatus, RouteType } from '@/types/transportation';
@@ -27,8 +28,7 @@ interface AdminRouteStatusTileProps {
   stopCount: number;
   assignments: RouteStatusTileAssignment[];
   hasMappedStops?: boolean;
-  isActive?: boolean;
-  onClick?: () => void;
+  to: string;
 }
 
 export function AdminRouteStatusTile({
@@ -37,28 +37,20 @@ export function AdminRouteStatusTile({
   stopCount,
   assignments,
   hasMappedStops = false,
-  isActive = false,
-  onClick,
+  to,
 }: AdminRouteStatusTileProps) {
   const activeAssignments = assignments.filter((a) => a.busLabel);
   const hasCoordinates = hasMappedStops;
 
-  const isClickable = !!onClick;
-
   return (
-    <Card
-      className={`flex h-full flex-col p-5 transition-shadow ${
-        isClickable ? 'cursor-pointer hover:shadow-md' : ''
-      } ${isActive ? 'ring-2 ring-navy-500' : ''}`}
+    <Link
+      to={to}
+      className="block h-full rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500"
+      data-testid="admin-route-status-tile"
+      aria-label={`View details for ${route.route_name}`}
     >
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={!isClickable}
-        className="flex flex-1 flex-col text-left disabled:cursor-default"
-        data-testid="admin-route-status-tile"
-        aria-label={`View ${route.route_name} on map`}
-      >
+      <Card className="flex h-full flex-col p-5 transition-shadow hover:shadow-md">
+        <div className="flex flex-1 flex-col text-left">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="truncate text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -113,14 +105,11 @@ export function AdminRouteStatusTile({
           )}
         </dl>
 
-        {isClickable && (
           <div className="mt-4 border-t border-gray-100 pt-3">
-            <span className="text-sm font-semibold text-navy-700">
-              {isActive ? 'Showing on map' : 'View on map'} &rarr;
-            </span>
+            <span className="text-sm font-semibold text-navy-700">View route details &rarr;</span>
           </div>
-        )}
-      </button>
-    </Card>
+        </div>
+      </Card>
+    </Link>
   );
 }

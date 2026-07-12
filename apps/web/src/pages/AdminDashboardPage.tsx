@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
 import { AdminRouteStatusTile } from '@/components/admin/AdminRouteStatusTile';
-import { AdminRoutesMap, type RouteMapRoute } from '@/components/admin/AdminRoutesMap';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { mapTileConfig } from '@/config/mapTiles';
 import { fetchAdminLiveTrips } from '@/services/adminLiveMonitoringService';
 import { fetchAdminSetupSnapshot, type AdminSetupSnapshot } from '@/services/adminSetupService';
 import { getVisibleSchools } from '@/services/adminOrganizationService';
@@ -60,8 +58,6 @@ interface OverviewData {
 export function AdminDashboardPage() {
   const [data, setData] = useState<OverviewData | null>(null);
   const [error, setError] = useState(false);
-  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
-  const [showAllRoutes, setShowAllRoutes] = useState(false);
 
   const load = useCallback(async () => {
     // Overview degrades gracefully: the setup snapshot and live trips feed
@@ -185,24 +181,6 @@ export function AdminDashboardPage() {
     return map;
   }, [data]);
 
-  const routeMapEntries = useMemo<RouteMapRoute[]>(() => {
-    if (!data) return [];
-    return data.routes
-      .filter((r) => r.status !== 'archived')
-      .map((route) => ({
-        route,
-        stops: stopsByRoute.get(route.id) ?? [],
-      }));
-  }, [data, stopsByRoute]);
-
-  const visibleMapRoutes = useMemo<RouteMapRoute[]>(() => {
-    if (!showAllRoutes && selectedRouteId) {
-      const selected = routeMapEntries.find((entry) => entry.route.id === selectedRouteId);
-      return selected ? [selected] : [];
-    }
-    return routeMapEntries;
-  }, [routeMapEntries, selectedRouteId, showAllRoutes]);
-
   const setupComplete = useMemo(() => {
     if (!data) return 0;
     return setupKeys.filter((item) => data.setup[item.key] > 0).length;
@@ -259,41 +237,13 @@ export function AdminDashboardPage() {
               </Card>
             </section>
 
-            {/* Routes with status and map */}
+            {/* Clickable route tiles */}
             <section className="space-y-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-navy-900">Routes</h2>
-                  <p className="mt-1 text-sm text-gray-600">
-                    Click a route to view its stops on the map, or view all routes at once.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {selectedRouteId && !showAllRoutes && (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedRouteId(null)}
-                      className="rounded-md px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100"
-                    >
-                      Clear selection
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAllRoutes((prev) => !prev);
-                      setSelectedRouteId(null);
-                    }}
-                    className={`rounded-md px-3 py-2 text-sm font-semibold ${
-                      showAllRoutes
-                        ? 'bg-navy-600 text-white'
-                        : 'bg-navy-50 text-navy-700 hover:bg-navy-100'
-                    }`}
-                    data-testid="admin-overview-toggle-all-routes"
-                  >
-                    {showAllRoutes ? 'Showing all routes' : 'View all routes on map'}
-                  </button>
-                </div>
+              <div>
+                <h2 className="text-xl font-bold text-navy-900">Routes</h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  Active and inactive routes are shown below. Select any tile to open its details and map.
+                </p>
               </div>
 
               {data.routes.length === 0 ? (
@@ -333,23 +283,13 @@ export function AdminDashboardPage() {
                           stopCount={routeStops.length}
                           assignments={tileAssignments}
                           hasMappedStops={hasMappedStops}
-                          isActive={selectedRouteId === route.id && !showAllRoutes}
-                          onClick={() => {
-                            setShowAllRoutes(false);
-                            setSelectedRouteId((prev) =>
-                              prev === route.id ? null : route.id,
-                            );
-                          }}
+                          to={`/admin/routes/${route.id}`}
                         />
                       );
                     })}
                 </div>
               )}
 
-              {/* Map section — shown when a route is selected or "View all" is toggled */}
-              {(selectedRouteId || showAllRoutes) && visibleMapRoutes.length > 0 && (
-                <AdminRoutesMap routes={visibleMapRoutes} tileConfig={mapTileConfig} />
-              )}
             </section>
 
             {/* Setup checklist */}
