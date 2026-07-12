@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   AdminWriteError,
   AdminWriteMessage,
@@ -16,6 +17,7 @@ import { useAuth } from '@/contexts/useAuth';
 import { getVisibleSchools } from '@/services/adminOrganizationService';
 import {
   createRoute,
+  getVisibleRouteStops,
   getVisibleRoutes,
   updateRoute,
 } from '@/services/transportationStructureService';
@@ -23,6 +25,7 @@ import type { School } from '@/types/organization';
 import type {
   CreateRouteInput,
   Route,
+  RouteStop,
   RouteStatus,
   RouteType,
   UpdateRouteInput,
@@ -53,6 +56,7 @@ export function AdminRoutesPage() {
   const { profile } = useAuth();
   const [routes, setRoutes] = useState<Route[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
+  const [stops, setStops] = useState<RouteStop[]>([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,12 +72,14 @@ export function AdminRoutesPage() {
     setError(null);
 
     try {
-      const [nextRoutes, nextSchools] = await Promise.all([
+      const [nextRoutes, nextSchools, nextStops] = await Promise.all([
         getVisibleRoutes(),
         getVisibleSchools(),
+        getVisibleRouteStops(),
       ]);
       setRoutes(nextRoutes);
       setSchools(nextSchools);
+      setStops(nextStops);
     } catch (routesError) {
       setError(routesError instanceof Error ? routesError.message : 'Unable to load routes.');
     } finally {
@@ -140,12 +146,12 @@ export function AdminRoutesPage() {
       <div className="space-y-6">
         <PageHeader
           eyebrow="Routes"
-          title="Visible routes"
-          description="Route records returned by Supabase under the current admin user's RLS permissions."
+          title="Routes and stops"
+          description="Create each route, then add its ordered pickup and drop-off stops as part of the same route setup."
         />
 
         {canWrite && (
-          <div className="flex">
+          <div className="flex flex-wrap gap-3">
             <Button type="button" onClick={() => {
               setEditingRoute(null);
               setShowCreateForm(true);
@@ -154,6 +160,9 @@ export function AdminRoutesPage() {
             }}>
               Add route
             </Button>
+            <Link to="/admin/stops" className="inline-flex items-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-navy-700 hover:bg-gray-50">
+              Manage route stops
+            </Link>
           </div>
         )}
 
@@ -258,6 +267,12 @@ export function AdminRoutesPage() {
                     Created:{' '}
                     <span className="font-semibold text-navy-900">
                       {formatDate(route.created_at)}
+                    </span>
+                  </p>
+                  <p className="text-gray-600">
+                    Stops:{' '}
+                    <span className="font-semibold text-navy-900">
+                      {stops.filter((stop) => stop.route_id === route.id && stop.status === 'active').length}
                     </span>
                   </p>
                   <p className="text-gray-600">

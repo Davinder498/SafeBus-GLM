@@ -210,7 +210,7 @@ Status: Ready for product-owner manual acceptance on `phase-12-simple-admin-setu
 
 - Replaced the fragmented admin sidebar with five task-oriented choices: Overview, Setup, Operations, People, and More. Existing focused CRUD pages remain available through contextual actions.
 - Replaced the mock admin overview with tenant-scoped setup counts, missing-step guidance, and active-trip status.
-- Added a reusable guided Setup page covering buses, drivers, routes, stops, students, guardians, guardian links, student route/stop assignments, and driver/bus assignments.
+- Added a reusable guided Setup page covering buses, drivers, routes with their ordered stops, students, guardians, guardian links, student route/stop assignments, and driver/bus assignments. Stops are part of route setup rather than a separate setup domain.
 - Replaced the Trips placeholder with assignment readiness, active trips, and recently completed trips.
 - Preserved the existing driver-created trip model: admins prepare assignments and monitor; drivers securely start and end their own trips.
 - Hidden unfinished Imports, Alerts, and Reports placeholders from primary navigation. Schools, Users, and Settings are grouped under More.

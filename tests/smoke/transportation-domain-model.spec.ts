@@ -304,7 +304,7 @@ test.describe('Milestone 4E — school optional for transportation', () => {
     await page.goto('/admin/routes');
 
     // Wait for the page to load past ProtectedRoute.
-    await expect(page.getByRole('heading', { name: 'Visible routes', level: 1 })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Routes and stops', level: 1 })).toBeVisible({ timeout: 10000 });
 
     // Open the add-route form.
     await page.getByRole('button', { name: 'Add route' }).click();
