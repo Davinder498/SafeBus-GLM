@@ -57,6 +57,10 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
   enforcement, fresh/stale/missing/invalid location states, one row per student,
   ambiguous-trip fail-closed behavior, direct live-location table denial, and
   result-contract privacy.
+- `student-route-assignment-optional-school-rls.sql`: structural security
+  regression for migration 0028, confirming school-less students/routes use
+  tenant-scoped optional-school authorization while tenant, route-stop, and
+  active-stop validation remain enforced.
 
 ## `pnpm test:rls`
 
@@ -119,6 +123,7 @@ The default execution order is:
 8. `tests/rls/guardian-notification-outbox-rls.sql`
 9. `tests/rls/admin-live-fleet-map-rls.sql`
 10. `tests/rls/guardian-live-bus-location-rls.sql`
+11. `tests/rls/student-route-assignment-optional-school-rls.sql`
 
 The database must be safe for fixed-ID seeded test data. The scripts create
 test data and clean up after themselves where designed. If a run fails midway,

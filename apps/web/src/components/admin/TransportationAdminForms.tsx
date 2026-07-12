@@ -596,8 +596,16 @@ export function StudentRouteAssignmentForm({
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
 
   const routeStops = useMemo(
-    () => stops.filter((stop) => stop.route_id === routeId),
-    [routeId, stops],
+    () => stops.filter((stop) => stop.route_id === routeId && (stop.status === 'active' || stop.id === assignment?.pickup_stop_id || stop.id === assignment?.dropoff_stop_id)),
+    [assignment?.dropoff_stop_id, assignment?.pickup_stop_id, routeId, stops],
+  );
+  const selectableStudents = useMemo(
+    () => students.filter((student) => student.status === 'active' || student.id === assignment?.student_id),
+    [assignment?.student_id, students],
+  );
+  const selectableRoutes = useMemo(
+    () => routes.filter((route) => route.status === 'active' || route.id === assignment?.route_id),
+    [assignment?.route_id, routes],
   );
 
   useEffect(() => {
@@ -670,7 +678,7 @@ export function StudentRouteAssignmentForm({
           Student
           <select className={fieldClassName} value={studentId} onChange={(event) => setStudentId(event.target.value)}>
             <option value="">Choose student</option>
-            {students.map((student) => (
+            {selectableStudents.map((student) => (
               <option key={student.id} value={student.id}>
                 {getStudentName(student)}
               </option>
@@ -681,7 +689,7 @@ export function StudentRouteAssignmentForm({
           Route
           <select className={fieldClassName} value={routeId} onChange={(event) => setRouteId(event.target.value)}>
             <option value="">Choose route</option>
-            {routes.map((route) => (
+            {selectableRoutes.map((route) => (
               <option key={route.id} value={route.id}>
                 {route.route_code} - {route.route_name}
               </option>
