@@ -18,10 +18,12 @@ export interface DashboardNavItem {
 
 export const adminNavItems: DashboardNavItem[] = [
   { label: 'Overview', to: '/admin' },
-  { label: 'Setup', to: '/admin/setup' },
-  { label: 'Operations', to: '/admin/operations' },
-  { label: 'People', to: '/admin/people' },
-  { label: 'More', to: '/admin/more' },
+  { label: 'Students', to: '/admin/students' },
+  { label: 'Guardians', to: '/admin/guardians' },
+  { label: 'Drivers', to: '/admin/drivers' },
+  { label: 'Buses', to: '/admin/buses' },
+  { label: 'Routes', to: '/admin/routes' },
+  { label: 'Live', to: '/admin/live-trips' },
 ];
 
 export function DashboardLayout({ title, portal, navItems, children }: DashboardLayoutProps) {

@@ -108,8 +108,34 @@ export async function getVisibleRoutes(): Promise<Route[]> {
     )
     .order('route_code', { ascending: true });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (import.meta.env.DEV) {
+      console.error('Failed to load routes', error);
+    }
+    throw new Error(
+      error.message || 'Unable to load routes. Please try again.',
+    );
+  }
   return (data ?? []) as Route[];
+}
+
+/**
+ * Translate a Supabase/Postgres error for a route write into a clear,
+ * user-facing message. The most common cause of write failures is the
+ * per-tenant unique constraint on route_code.
+ */
+function describeRouteError(error: { message?: string; code?: string }): Error {
+  const message = error?.message ?? '';
+  const isDuplicateRouteCode =
+    message.includes('routes_tenant_route_code_unique') ||
+    (message.includes('duplicate key value violates unique constraint') &&
+      message.includes('route'));
+  if (isDuplicateRouteCode) {
+    return new Error(
+      'A route with this code already exists in your organization. Use a different route code.',
+    );
+  }
+  return new Error(message || 'Unable to save route.');
 }
 
 export async function createRoute(input: CreateRouteInput): Promise<Route> {
@@ -120,7 +146,10 @@ export async function createRoute(input: CreateRouteInput): Promise<Route> {
     .select('id, tenant_id, school_id, route_name, route_code, route_type, status, created_at, updated_at')
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (import.meta.env.DEV) console.error('Failed to create route', error);
+    throw describeRouteError(error);
+  }
   return data as Route;
 }
 
@@ -133,7 +162,10 @@ export async function updateRoute(id: string, input: UpdateRouteInput): Promise<
     .select('id, tenant_id, school_id, route_name, route_code, route_type, status, created_at, updated_at')
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (import.meta.env.DEV) console.error('Failed to update route', error);
+    throw describeRouteError(error);
+  }
   return data as Route;
 }
 

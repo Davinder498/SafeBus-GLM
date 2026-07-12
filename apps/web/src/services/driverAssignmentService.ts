@@ -77,8 +77,21 @@ export async function createDriverAssignment(
 
   if (error) {
     logDevError('Failed to create driver assignment', error);
-    if (error.message.includes('driver_route_assignments_active_unique')) {
+    if (
+      error.code === '23505' ||
+      error.message.includes('driver_route_assignments_active_unique')
+    ) {
       throw new Error('An active assignment for this driver, bus, route, and trip type already exists.');
+    }
+    if (error.code === '42501') {
+      throw new Error(
+        'Your account is not authorized to assign this driver and bus to the route.',
+      );
+    }
+    if (error.code === '23514') {
+      throw new Error(
+        'The driver, bus, route, and trip type must all be active and valid for this organization.',
+      );
     }
     throw new Error('We could not save the driver assignment. Please try again.');
   }
