@@ -89,6 +89,36 @@ $$;
 
 revoke all on function public.send_guardian_tracking_invalidation(uuid, text) from public, anon, authenticated;
 
+create or replace function public.broadcast_student_guardian_tracking_invalidation(
+  p_tenant_id uuid,
+  p_student_id uuid,
+  p_reason text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public, realtime, pg_temp
+as $$
+declare
+  v_profile_id uuid;
+begin
+  for v_profile_id in
+    select distinct g.profile_id
+    from public.student_guardians sg
+    join public.guardians g
+      on g.id = sg.guardian_id
+     and g.tenant_id = sg.tenant_id
+    where sg.tenant_id = p_tenant_id
+      and sg.student_id = p_student_id
+  loop
+    perform public.send_guardian_tracking_invalidation(v_profile_id, p_reason);
+  end loop;
+end;
+$$;
+
+revoke all on function public.broadcast_student_guardian_tracking_invalidation(uuid, uuid, text)
+  from public, anon, authenticated;
+
 create or replace function public.broadcast_route_tracking_invalidation(
   p_tenant_id uuid,
   p_route_id uuid,
@@ -203,9 +233,19 @@ as $$
 begin
   if tg_op <> 'INSERT' then
     perform public.broadcast_route_tracking_invalidation(old.tenant_id, old.route_id, 'authorization');
+    perform public.broadcast_student_guardian_tracking_invalidation(
+      old.tenant_id,
+      old.student_id,
+      'authorization'
+    );
   end if;
   if tg_op <> 'DELETE' then
     perform public.broadcast_route_tracking_invalidation(new.tenant_id, new.route_id, 'authorization');
+    perform public.broadcast_student_guardian_tracking_invalidation(
+      new.tenant_id,
+      new.student_id,
+      'authorization'
+    );
   end if;
   return null;
 end;
