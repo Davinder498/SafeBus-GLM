@@ -1,4 +1,5 @@
 import type { RouteObject } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { AdminAssignmentsPage } from '@/pages/AdminAssignmentsPage';
 import { AdminBusesPage } from '@/pages/AdminBusesPage';
 import { LandingPage } from '@/pages/LandingPage';
@@ -13,13 +14,8 @@ import { AdminPlaceholderPage } from '@/pages/AdminPlaceholderPage';
 import { AdminRoutesPage } from '@/pages/AdminRoutesPage';
 import { AdminSchoolsPage } from '@/pages/AdminSchoolsPage';
 import { AdminSettingsPage } from '@/pages/AdminSettingsPage';
-import { AdminStopsPage } from '@/pages/AdminStopsPage';
 import { AdminStudentsPage } from '@/pages/AdminStudentsPage';
 import { AdminUsersPage } from '@/pages/AdminUsersPage';
-import { AdminSetupPage } from '@/pages/AdminSetupPage';
-import { AdminOperationsPage } from '@/pages/AdminOperationsPage';
-import { AdminPeoplePage } from '@/pages/AdminPeoplePage';
-import { AdminMorePage } from '@/pages/AdminMorePage';
 import { AdminTripsPage } from '@/pages/AdminTripsPage';
 import { DriverDashboardPage } from '@/pages/DriverDashboardPage';
 import { DriverManifestPage } from '@/pages/DriverManifestPage';
@@ -52,22 +48,12 @@ export const appRoutes: RouteObject[] = [
       </ProtectedRoute>
     ),
   },
-  {
-    path: '/admin/setup',
-    element: <ProtectedRoute allowedRoles={[...adminRoles]}><AdminSetupPage /></ProtectedRoute>,
-  },
-  {
-    path: '/admin/operations',
-    element: <ProtectedRoute allowedRoles={[...adminRoles]}><AdminOperationsPage /></ProtectedRoute>,
-  },
-  {
-    path: '/admin/people',
-    element: <ProtectedRoute allowedRoles={[...adminRoles]}><AdminPeoplePage /></ProtectedRoute>,
-  },
-  {
-    path: '/admin/more',
-    element: <ProtectedRoute allowedRoles={[...adminRoles]}><AdminMorePage /></ProtectedRoute>,
-  },
+  // Redirects for removed hub pages
+  { path: '/admin/setup', element: <Navigate to="/admin" replace /> },
+  { path: '/admin/operations', element: <Navigate to="/admin" replace /> },
+  { path: '/admin/people', element: <Navigate to="/admin" replace /> },
+  { path: '/admin/more', element: <Navigate to="/admin" replace /> },
+  { path: '/admin/stops', element: <Navigate to="/admin/routes" replace /> },
   {
     path: '/admin/trips',
     element: <ProtectedRoute allowedRoles={[...adminRoles]}><AdminTripsPage /></ProtectedRoute>,
@@ -133,14 +119,6 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={[...adminRoles]}>
         <AdminRoutesPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/admin/stops',
-    element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]}>
-        <AdminStopsPage />
       </ProtectedRoute>
     ),
   },
