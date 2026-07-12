@@ -8,6 +8,11 @@ import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { fetchAdminLiveTrips } from '@/services/adminLiveMonitoringService';
+import { useAuth } from '@/contexts/useAuth';
+import {
+  useTrackingInvalidations,
+  type TrackingConnectionState,
+} from '@/hooks/useTrackingInvalidations';
 import {
   UI_STALE_LOCATION_THRESHOLD_LABEL,
   type AdminLiveTrip,
@@ -52,6 +57,13 @@ function safeFleetLabel(trip: AdminLiveTrip): string {
   return 'Active bus';
 }
 
+function connectionLabel(state: TrackingConnectionState): string {
+  if (state === 'connected') return 'Live updates connected';
+  if (state === 'offline') return 'Offline — fleet positions are hidden until verified';
+  if (state === 'unavailable') return 'Periodic fleet checks active';
+  return 'Reconnecting — fleet positions are hidden until verified';
+}
+
 const fleetMapFormatters: FleetMapFormatters = {
   formatTimestamp,
   formatSpeed,
@@ -60,6 +72,7 @@ const fleetMapFormatters: FleetMapFormatters = {
 };
 
 export function AdminLiveTripsPage() {
+  const { profile } = useAuth();
   const [trips, setTrips] = useState<AdminLiveTrip[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [initialError, setInitialError] = useState<string | null>(null);
@@ -67,10 +80,15 @@ export function AdminLiveTripsPage() {
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
   const fetchingRef = useRef(false);
+  const pendingLoadRef = useRef(false);
+  const loadRef = useRef<(opts: { background: boolean }) => void>(() => undefined);
   const isMountedRef = useRef(true);
 
   const load = useCallback(async (opts: { background: boolean }) => {
-    if (fetchingRef.current) return;
+    if (fetchingRef.current) {
+      pendingLoadRef.current = true;
+      return;
+    }
     fetchingRef.current = true;
     if (opts.background) {
       setRefreshing(true);
@@ -97,14 +115,53 @@ export function AdminLiveTripsPage() {
     } finally {
       if (isMountedRef.current) setRefreshing(false);
       fetchingRef.current = false;
+      if (pendingLoadRef.current && isMountedRef.current) {
+        pendingLoadRef.current = false;
+        queueMicrotask(() => loadRef.current({ background: true }));
+      }
     }
   }, []);
+  loadRef.current = (opts) => void load(opts);
+
+  const handleRealtimeInvalidate = useCallback(() => {
+    void load({ background: true });
+  }, [load]);
+
+  const clearUnverifiedFleetCoordinates = useCallback(() => {
+    setTrips((current) =>
+      current.map((trip) => ({
+        ...trip,
+        latestLatitude: null,
+        latestLongitude: null,
+      })),
+    );
+  }, []);
+
+  const connectionState = useTrackingInvalidations({
+    topic: profile?.tenant_id ? `safebus:tenant:${profile.tenant_id}` : null,
+    onInvalidate: handleRealtimeInvalidate,
+    onDisconnected: clearUnverifiedFleetCoordinates,
+  });
 
   useEffect(() => {
     isMountedRef.current = true;
     void load({ background: false });
     return () => {
       isMountedRef.current = false;
+    };
+  }, [load]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void load({ background: true });
+    }, 15_000);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') void load({ background: true });
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [load]);
 
@@ -145,6 +202,7 @@ export function AdminLiveTripsPage() {
                   {lastRefreshedAt ? `Last refreshed ${formatTimestamp(lastRefreshedAt)}` : 'Not refreshed yet'}
                 </span>
                 <span>Stale GPS threshold: {UI_STALE_LOCATION_THRESHOLD_LABEL} (UI status only)</span>
+                <span data-testid="admin-live-connection-status">{connectionLabel(connectionState)}</span>
               </div>
             </div>
             {refreshError && (

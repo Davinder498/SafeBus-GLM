@@ -337,9 +337,31 @@ function LocationSharingPanel({
   onStart,
   onStop,
 }: LocationSharingPanelProps) {
-  const sharing = state.kind === 'sharing';
-  const lastUpdate = state.kind === 'sharing' ? state.lastUpdateAt : null;
-  const errorMessage = state.kind === 'error' ? state.message : null;
+  const tracking = state.kind === 'waiting' || state.kind === 'sharing' || state.kind === 'offline';
+  const errorMessage = state.kind === 'error' || state.kind === 'denied' ? state.message : null;
+
+  let statusMessage = 'Share your live bus location during this trip.';
+  let statusTone: 'success' | 'warning' | 'neutral' = 'neutral';
+  let statusLabel: string | null = null;
+  if (state.kind === 'waiting') {
+    statusMessage = 'Waiting for the first location update...';
+    statusLabel = 'waiting';
+  } else if (state.kind === 'sharing') {
+    statusMessage =
+      state.delivery === 'active'
+        ? `Location sharing active. Last update ${formatTimestamp(state.lastUpdateAt)}.`
+        : `Location updates are delayed. Last successful update ${formatTimestamp(state.lastUpdateAt)}.`;
+    statusTone = state.delivery === 'active' ? 'success' : 'warning';
+    statusLabel = state.delivery === 'active' ? 'active' : 'delayed';
+  } else if (state.kind === 'offline') {
+    statusMessage = state.lastUpdateAt
+      ? `Offline. Last successful update ${formatTimestamp(state.lastUpdateAt)}. Tracking will resume automatically.`
+      : 'Offline. Waiting to send the first location when the connection returns.';
+    statusTone = 'warning';
+    statusLabel = 'offline';
+  } else if (state.kind === 'denied') {
+    statusMessage = 'Location permission denied.';
+  }
 
   // No active trip: location sharing is unavailable.
   if (!hasActiveTrip) {
@@ -386,11 +408,7 @@ function LocationSharingPanel({
         <div>
           <h2 className="text-lg font-bold text-navy-900">Location sharing</h2>
           <p data-testid="driver-location-status" className="mt-1 text-sm text-gray-600">
-            {sharing
-              ? lastUpdate
-                ? `Location sharing active. Last update ${formatTimestamp(lastUpdate)}.`
-                : 'Location sharing active. Waiting for the first update...'
-              : 'Share your live bus location during this trip.'}
+            {statusMessage}
           </p>
           {errorMessage && (
             <p
@@ -402,10 +420,10 @@ function LocationSharingPanel({
             </p>
           )}
         </div>
-        {sharing && <StatusPill tone="success">sharing</StatusPill>}
+        {statusLabel && <StatusPill tone={statusTone}>{statusLabel}</StatusPill>}
       </div>
       <div className="mt-4 flex gap-3">
-        {!sharing ? (
+        {!tracking ? (
           <Button
             type="button"
             size="md"

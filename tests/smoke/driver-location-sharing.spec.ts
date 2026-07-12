@@ -162,4 +162,36 @@ test.describe('Driver location sharing', () => {
 
     await context.close();
   });
+
+  test('temporary network loss reports offline and resumes without overlapping submissions', async ({ browser }) => {
+    const context = await browser.newContext({
+      permissions: ['geolocation'],
+      geolocation: { latitude: 51.0447, longitude: -114.0719 },
+    });
+    const page = await context.newPage();
+    await installSupabaseMock(page, { withActiveTrip: true, locationUpdateDelayMs: 500 });
+
+    let inFlight = 0;
+    let maxInFlight = 0;
+    page.on('request', (request) => {
+      if (request.url().includes('/rpc/update_driver_trip_location')) {
+        inFlight += 1;
+        maxInFlight = Math.max(maxInFlight, inFlight);
+      }
+    });
+    page.on('requestfinished', (request) => {
+      if (request.url().includes('/rpc/update_driver_trip_location')) inFlight -= 1;
+    });
+
+    await page.goto('/driver');
+    await page.getByTestId('driver-location-start-button').click();
+    await expect(page.getByTestId('driver-location-status')).toContainText('Location sharing active');
+
+    await context.setOffline(true);
+    await expect(page.getByTestId('driver-location-status')).toContainText('Offline');
+    await context.setOffline(false);
+
+    expect(maxInFlight).toBe(1);
+    await context.close();
+  });
 });
