@@ -7,14 +7,14 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { fetchAdminLiveTrips } from '@/services/adminLiveMonitoringService';
 import { fetchAdminSetupSnapshot, type AdminSetupSnapshot } from '@/services/adminSetupService';
 
-const keys: Array<keyof AdminSetupSnapshot> = ['buses', 'drivers', 'routes', 'stops', 'students', 'guardians', 'guardianLinks', 'studentAssignments', 'driverAssignments'];
+const keys: Array<keyof AdminSetupSnapshot> = ['buses', 'drivers', 'routes', 'students', 'guardians', 'guardianLinks', 'studentAssignments', 'driverAssignments'];
 export function AdminDashboardPage() {
   const [setup, setSetup] = useState<AdminSetupSnapshot | null>(null);
   const [activeTrips, setActiveTrips] = useState<number | null>(null);
   const [error, setError] = useState(false);
   useEffect(() => { void Promise.all([fetchAdminSetupSnapshot(), fetchAdminLiveTrips()]).then(([nextSetup, trips]) => { setSetup(nextSetup); setActiveTrips(trips.length); }).catch(() => setError(true)); }, []);
-  const complete = useMemo(() => setup ? keys.filter((key) => setup[key] > 0).length : 0, [setup]);
-  const next = setup ? [['Add a bus', setup.buses, '/admin/buses'], ['Connect a driver', setup.drivers, '/admin/drivers'], ['Create a route', setup.routes, '/admin/routes'], ['Add route stops', setup.stops, '/admin/stops'], ['Add students', setup.students, '/admin/students'], ['Add guardians', setup.guardians, '/admin/guardians'], ['Link guardians and students', setup.guardianLinks, '/admin/guardians'], ['Assign student stops', setup.studentAssignments, '/admin/assignments'], ['Assign a driver and bus', setup.driverAssignments, '/admin/driver-assignments']].find(([, count]) => count === 0) : null;
+  const complete = useMemo(() => setup ? keys.filter((key) => key === 'routes' ? setup.routes > 0 && setup.stops > 0 : setup[key] > 0).length : 0, [setup]);
+  const next = setup ? [['Add a bus', setup.buses, '/admin/buses'], ['Connect a driver', setup.drivers, '/admin/drivers'], [setup.routes === 0 ? 'Create a route' : 'Add stops to your route', setup.routes > 0 && setup.stops > 0 ? 1 : 0, '/admin/routes'], ['Add students', setup.students, '/admin/students'], ['Add guardians', setup.guardians, '/admin/guardians'], ['Link guardians and students', setup.guardianLinks, '/admin/guardians'], ['Assign student stops', setup.studentAssignments, '/admin/assignments'], ['Assign a driver and bus', setup.driverAssignments, '/admin/driver-assignments']].find(([, count]) => count === 0) : null;
   return <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}><div className="space-y-6"><PageHeader eyebrow="Overview" title="Transportation overview" description="See what is ready, what is missing, and the next practical action." />
     {error && <DataState title="Overview unavailable" message="Use Setup or Operations to continue working." />}
     {!setup && !error && <DataState title="Loading overview" message="Checking transportation readiness." />}
