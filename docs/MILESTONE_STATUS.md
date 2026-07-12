@@ -51,6 +51,7 @@
 | 8A - Guardian Student Trip Event Visibility Security Foundation | `0024_guardian_student_trip_event_visibility.sql`, `tests/rls/guardian-student-trip-event-visibility-rls.sql`                                             | In progress                        |
 | 11A - Guardian Live Bus Map Security Foundation              | `0027_guardian_live_bus_location_security_foundation.sql`, `tests/rls/guardian-live-bus-location-rls.sql`                                                   | Completed                          |
 | 11B/11C/11D - Guardian Live Bus Map Experience               | `apps/web/src/pages/GuardianLiveMapPage.tsx`, `GuardianLiveBusMap.tsx`, `useGuardianLiveBusLocations.ts`, `tests/smoke/guardian-live-bus-map.spec.ts`        | Completed                          |
+| Phase 12 - Simple Admin Setup and Manual Workflow             | Task-oriented admin navigation, readiness-based Overview/Setup, Operations and Trips pages, manual acceptance guide                                      | Ready for manual acceptance        |
 
 ## Current Milestone
 
@@ -202,3 +203,17 @@ Status: Completed on `phase-11-guardian-live-bus-map-experience`.
 ### Out of scope
 
 This phase still does NOT provide: ETA, route lines, traffic, realtime subscriptions, location history, trip replay, geofencing, route-deviation alerts, actual notification delivery, or QR workflows.
+
+## Phase 12 — Simple Tenant Admin Setup and Complete Manual Workflow
+
+Status: Ready for product-owner manual acceptance on `phase-12-simple-admin-setup-and-manual-workflow`.
+
+- Replaced the fragmented admin sidebar with five task-oriented choices: Overview, Setup, Operations, People, and More. Existing focused CRUD pages remain available through contextual actions.
+- Replaced the mock admin overview with tenant-scoped setup counts, missing-step guidance, and active-trip status.
+- Added a reusable guided Setup page covering buses, drivers, routes, stops, students, guardians, guardian links, student route/stop assignments, and driver/bus assignments.
+- Replaced the Trips placeholder with assignment readiness, active trips, and recently completed trips.
+- Preserved the existing driver-created trip model: admins prepare assignments and monitor; drivers securely start and end their own trips.
+- Hidden unfinished Imports, Alerts, and Reports placeholders from primary navigation. Schools, Users, and Settings are grouped under More.
+- No schema, RLS, RPC, dependency, map, guardian visibility, or driver workflow changes were required.
+- Auth account provisioning remains an external secure administration prerequisite. No service-role or Auth Admin capability was added to the browser.
+- Manual acceptance instructions are in `docs/qa/phase-12-manual-acceptance.md`.
