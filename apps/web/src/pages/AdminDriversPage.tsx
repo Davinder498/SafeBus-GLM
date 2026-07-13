@@ -16,6 +16,7 @@ import { adminRoles } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
 import { getVisibleDriverProfiles } from '@/services/adminOrganizationService';
+import { inviteTenantMember } from '@/services/onboardingService';
 import {
   createDriver,
   updateDriver,
@@ -51,6 +52,8 @@ export function AdminDriversPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [inviteForm, setInviteForm] = useState({ fullName: '', email: '', phone: '', employeeNumber: '' });
+  const [showInviteForm, setShowInviteForm] = useState(false);
 
   const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
 
@@ -86,6 +89,20 @@ export function AdminDriversPage() {
     }
   }
 
+  async function handleInviteDriver() {
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await inviteTenantMember({ role: 'driver', ...inviteForm });
+      setInviteForm({ fullName: '', email: '', phone: '', employeeNumber: '' });
+      setShowInviteForm(false);
+      setSuccessMessage('Driver invitation sent and driver record prepared.');
+      await Promise.all([list.reload(), getVisibleDriverProfiles().then(setProfiles)]);
+    } catch (inviteError) {
+      setWriteError(inviteError instanceof Error ? inviteError.message : 'Unable to invite driver.');
+    }
+  }
+
   async function handleUpdateDriver(input: CreateDriverInput | UpdateDriverInput) {
     if (!editingDriver) return;
     setWriteError(null);
@@ -112,7 +129,7 @@ export function AdminDriversPage() {
         />
 
         {canWrite && (
-          <div className="flex">
+          <div className="flex flex-wrap gap-2">
             <Button type="button" onClick={() => {
               setEditingDriver(null);
               setShowCreateForm(true);
@@ -121,10 +138,23 @@ export function AdminDriversPage() {
             }}>
               Add driver
             </Button>
+            {profile?.role === 'tenant_admin' && <Button type="button" variant="secondary" onClick={() => setShowInviteForm((value) => !value)}>Invite driver</Button>}
           </div>
         )}
 
         <AdminWriteMessage message={successMessage} />
+
+        {canWrite && showInviteForm && (
+          <InlineFormShell title="Invite driver">
+            <div className="grid gap-3 md:grid-cols-2">
+              <input className="rounded-lg border px-4 py-3" placeholder="Full name" value={inviteForm.fullName} onChange={(e) => setInviteForm({ ...inviteForm, fullName: e.target.value })} />
+              <input className="rounded-lg border px-4 py-3" placeholder="Email" value={inviteForm.email} onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })} />
+              <input className="rounded-lg border px-4 py-3" placeholder="Phone (optional)" value={inviteForm.phone} onChange={(e) => setInviteForm({ ...inviteForm, phone: e.target.value })} />
+              <input className="rounded-lg border px-4 py-3" placeholder="Employee number (optional)" value={inviteForm.employeeNumber} onChange={(e) => setInviteForm({ ...inviteForm, employeeNumber: e.target.value })} />
+            </div>
+            <div className="mt-3 flex gap-2"><Button type="button" onClick={() => void handleInviteDriver()}>Send invitation</Button><Button type="button" variant="secondary" onClick={() => setShowInviteForm(false)}>Cancel</Button></div>
+          </InlineFormShell>
+        )}
         <AdminWriteError message={writeError} />
 
         {canWrite && showCreateForm && (
