@@ -313,7 +313,7 @@ test.describe('Milestone 5A — Guardian student route visibility', () => {
     await page.goto('/guardian/routes');
 
     await expect(page.getByTestId('guardian-routes-empty')).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText('No student route assignments are available yet.')).toBeVisible();
+    await expect(page.getByText('No bus assignment is available yet.')).toBeVisible();
     await expect(page.getByText('Please contact your school transportation office.')).toBeVisible();
   });
 

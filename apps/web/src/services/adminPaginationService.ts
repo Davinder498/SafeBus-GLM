@@ -5,6 +5,7 @@ export type AdminListEntity =
   | 'students'
   | 'guardians'
   | 'student_assignments'
+  | 'student_bus_assignments'
   | 'driver_assignments'
   | 'drivers'
   | 'buses'
@@ -29,14 +30,29 @@ export async function fetchAdminPage<T>(
   entity: AdminListEntity,
   query: AdminListQuery,
 ): Promise<PaginatedResult<T>> {
-  const { data, error } = await requireSupabase().rpc('get_admin_paginated_list', {
+  const { data, error } = entity === 'students'
+    ? await requireSupabase().rpc('get_admin_students_page', {
+        p_page: query.page,
+        p_page_size: query.pageSize,
+        p_search: query.search?.trim() ?? '',
+        p_status: query.status || null,
+        p_school_id: query.schoolId || null,
+      })
+    : entity === 'student_bus_assignments'
+    ? await requireSupabase().rpc('get_admin_student_bus_assignments_page', {
+        p_page: query.page,
+        p_page_size: query.pageSize,
+        p_search: query.search?.trim() ?? '',
+        p_status: query.status || null,
+      })
+    : await requireSupabase().rpc('get_admin_paginated_list', {
     p_entity: entity,
     p_page: query.page,
     p_page_size: query.pageSize,
     p_search: query.search?.trim() ?? '',
     p_status: query.status || null,
     p_school_id: query.schoolId || null,
-  });
+      });
   if (error) throw new Error('Unable to load this list.');
   const result = data as unknown as PaginatedResult<T>;
   return { ...result, rows: result?.rows ?? [], totalCount: result?.totalCount ?? 0 };

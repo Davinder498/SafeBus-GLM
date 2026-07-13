@@ -155,6 +155,11 @@ export function AdminRouteDetailPage() {
                         <span className="font-bold text-navy-700">{stop.stop_order}</span>
                         <div>
                           <p className="font-semibold text-navy-900">{stop.stop_name}</p>
+                          {stop.school_id && (
+                            <p className="text-gray-600">
+                              School stop: {data.schools.find((school) => school.id === stop.school_id)?.name ?? 'School unavailable'}
+                            </p>
+                          )}
                           {stop.planned_arrival_time && (
                             <p className="text-gray-600">Planned {stop.planned_arrival_time.slice(0, 5)}</p>
                           )}

@@ -22,6 +22,7 @@ const labelClassName = 'block text-sm font-semibold text-gray-700';
 
 export interface StopDraft {
   id?: string;
+  school_id: string | null;
   stop_name: string;
   stop_order: number;
   planned_arrival_time: string | null;
@@ -92,6 +93,7 @@ export function RouteWithStopsForm({
       .sort((a, b) => a.stop_order - b.stop_order)
       .map((s) => ({
         id: s.id,
+        school_id: s.school_id,
         stop_name: s.stop_name,
         stop_order: s.stop_order,
         planned_arrival_time: s.planned_arrival_time?.slice(0, 5) ?? null,
@@ -119,6 +121,7 @@ export function RouteWithStopsForm({
     setStops((prev) => [
       ...prev,
       {
+        school_id: null,
         stop_name: '',
         stop_order: prev.length + 1,
         planned_arrival_time: null,
@@ -308,7 +311,7 @@ export function RouteWithStopsForm({
             </select>
           </label>
           <label className={labelClassName}>
-            School (optional)
+            Primary school (optional)
             <select
               className={fieldClassName}
               value={schoolId}
@@ -360,7 +363,7 @@ export function RouteWithStopsForm({
             {stops.map((stop, index) => (
               <div
                 key={stop.id ?? `new-${index}`}
-                className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 sm:grid-cols-[60px_1fr_120px_auto]"
+                className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 sm:grid-cols-[60px_1fr_160px_120px_auto]"
               >
                 <label className="text-xs font-semibold text-gray-600">
                   Order
@@ -371,6 +374,19 @@ export function RouteWithStopsForm({
                     value={stop.stop_order}
                     onChange={(e) => handleStopChange(index, 'stop_order', e.target.value)}
                   />
+                </label>
+                <label className="text-xs font-semibold text-gray-600">
+                  School stop (optional)
+                  <select
+                    className="mt-1 w-full rounded-md border border-gray-300 px-2 py-2 text-sm"
+                    value={stop.school_id ?? ''}
+                    onChange={(e) => handleStopChange(index, 'school_id', e.target.value)}
+                  >
+                    <option value="">Regular stop</option>
+                    {schools.filter((school) => school.status === 'active').map((school) => (
+                      <option key={school.id} value={school.id}>{school.name}</option>
+                    ))}
+                  </select>
                 </label>
                 <label className="text-xs font-semibold text-gray-600">
                   Stop name

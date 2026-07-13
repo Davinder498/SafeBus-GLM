@@ -271,6 +271,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
           // Update existing stop
           const stopInput: UpdateRouteStopInput = {
             route_id: savedRouteId,
+            school_id: stopDraft.school_id,
             stop_name: stopDraft.stop_name.trim(),
             stop_order: stopDraft.stop_order,
             planned_arrival_time: stopDraft.planned_arrival_time,
@@ -282,6 +283,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
           const stopInput: CreateRouteStopInput = {
             tenant_id: savedTenantId,
             route_id: savedRouteId,
+            school_id: stopDraft.school_id,
             stop_name: stopDraft.stop_name.trim(),
             stop_order: stopDraft.stop_order,
             planned_arrival_time: stopDraft.planned_arrival_time,
@@ -301,6 +303,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
         if (!keptStopIds.has(existingStop.id)) {
           await updateRouteStop(existingStop.id, {
             route_id: savedRouteId,
+            school_id: existingStop.school_id,
             stop_name: existingStop.stop_name,
             stop_order: existingStop.stop_order,
             planned_arrival_time: existingStop.planned_arrival_time,

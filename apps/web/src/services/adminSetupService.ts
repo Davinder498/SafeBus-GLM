@@ -22,7 +22,7 @@ export async function fetchAdminSetupSnapshot(): Promise<AdminSetupSnapshot> {
   const client = requireSupabase();
   const tables = [
     'buses', 'drivers', 'routes', 'route_stops', 'students', 'guardians',
-    'student_guardians', 'student_route_assignments', 'driver_route_assignments',
+    'student_guardians', 'student_bus_assignments', 'driver_route_assignments',
   ] as const;
   const results = await Promise.all(
     tables.map((table) => client.from(table).select('id', { count: 'exact', head: true }).eq('status', 'active')),

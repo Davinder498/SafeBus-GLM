@@ -38,6 +38,7 @@ const adminDriverRow = {
 
 async function installAdminAssignmentMock(page: Page) {
   let assignments: Record<string, unknown>[] = [];
+  let busServices: Record<string, unknown>[] = [];
 
   await page.route('**/*', async (route: Route) => {
     const url = new URL(route.request().url());
@@ -88,8 +89,14 @@ async function installAdminAssignmentMock(page: Page) {
           return;
         }
         if (path.includes('/driver_route_assignments')) { await fulfillRows(assignments); return; }
+        if (path.includes('/bus_route_assignments')) { await fulfillRows(busServices); return; }
         await blockUnexpectedSupabaseRestAccess(route, method, path);
         return;
+      }
+      if (method === 'POST' && path.includes('/bus_route_assignments')) {
+        const service = { id: '88888888-8888-8888-8888-888888888888', tenant_id: MOCK.tenantId, bus_id: MOCK.busId, route_id: MOCK.routeId, trip_type: 'morning', status: 'active', effective_from: null, effective_to: null, created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z' };
+        busServices = [service];
+        await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(service) }); return;
       }
       if (method === 'POST' && path.includes('/driver_route_assignments')) {
         const newAssignment = {

@@ -4,8 +4,8 @@ import {
   AdminWriteError,
   AdminWriteMessage,
   InlineFormShell,
-  StudentRouteAssignmentForm,
 } from '@/components/admin/TransportationAdminForms';
+import { StudentBusAssignmentForm } from '@/components/admin/StudentBusAssignmentForm';
 import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -15,22 +15,17 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { adminRoles } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
-import {
-  createStudentRouteAssignment,
-  getVisibleRoutes,
-  getVisibleRouteStops,
-  updateStudentRouteAssignment,
-} from '@/services/transportationStructureService';
+import { getVisibleRouteStops } from '@/services/transportationStructureService';
+import { createStudentBusAssignment, fetchAdminBusServices, updateStudentBusAssignment, type BusServiceOption } from '@/services/studentBusAssignmentService';
 import type {
-  CreateStudentRouteAssignmentInput,
-  Route,
+  CreateStudentBusAssignmentInput,
   RouteStop,
-  StudentRouteAssignment,
-  StudentRouteAssignmentStatus,
-  UpdateStudentRouteAssignmentInput,
+  StudentBusAssignment,
+  StudentBusAssignmentStatus,
+  UpdateStudentBusAssignmentInput,
 } from '@/types/transportation';
 
-const assignmentStatusTone: Record<StudentRouteAssignmentStatus, 'success' | 'danger' | 'neutral'> =
+const assignmentStatusTone: Record<StudentBusAssignmentStatus, 'success' | 'danger' | 'neutral'> =
   {
     active: 'success',
     inactive: 'neutral',
@@ -48,10 +43,11 @@ function formatDate(value: string | null) {
 
 export function AdminAssignmentsPage() {
   const { profile } = useAuth();
-  const list = usePaginatedAdminList<StudentRouteAssignment & { student_name: string; route_name: string; route_code: string; pickup_stop_name: string | null; dropoff_stop_name: string | null }>('student_assignments');
-  const [routes, setRoutes] = useState<Route[]>([]);
+  type AssignmentRow = StudentBusAssignment & { student_name: string; bus_number: string; route_name: string; route_code: string; trip_type: string; pickup_stop_name: string | null; dropoff_stop_name: string | null };
+  const list = usePaginatedAdminList<AssignmentRow>('student_bus_assignments');
+  const [services, setServices] = useState<BusServiceOption[]>([]);
   const [stops, setStops] = useState<RouteStop[]>([]);
-  const [editingAssignment, setEditingAssignment] = useState<StudentRouteAssignment | null>(null);
+  const [editingAssignment, setEditingAssignment] = useState<AssignmentRow | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -60,11 +56,11 @@ export function AdminAssignmentsPage() {
 
   const loadAssignments = useCallback(async () => {
     try {
-      const [nextRoutes, nextStops] = await Promise.all([
-        getVisibleRoutes(),
+      const [nextServices, nextStops] = await Promise.all([
+        fetchAdminBusServices(),
         getVisibleRouteStops(),
       ]);
-      setRoutes(nextRoutes);
+      setServices(nextServices);
       setStops(nextStops);
     } catch (assignmentsError) {
       setWriteError(
@@ -84,43 +80,43 @@ export function AdminAssignmentsPage() {
   }, [stops]);
 
   async function handleCreateAssignment(
-    input: CreateStudentRouteAssignmentInput | UpdateStudentRouteAssignmentInput,
+    input: CreateStudentBusAssignmentInput | UpdateStudentBusAssignmentInput,
   ) {
     setWriteError(null);
     setSuccessMessage(null);
     try {
-      await createStudentRouteAssignment(input as CreateStudentRouteAssignmentInput);
+      await createStudentBusAssignment(input as CreateStudentBusAssignmentInput);
       setShowCreateForm(false);
-      setSuccessMessage('Student route assignment created.');
+      setSuccessMessage('Student assigned to the bus service.');
       await list.reload();
     } catch (createError) {
       setWriteError(
         createError instanceof Error
           ? createError.message
-          : 'Unable to create student route assignment.',
+          : 'Unable to create student bus assignment.',
       );
     }
   }
 
   async function handleUpdateAssignment(
-    input: CreateStudentRouteAssignmentInput | UpdateStudentRouteAssignmentInput,
+    input: CreateStudentBusAssignmentInput | UpdateStudentBusAssignmentInput,
   ) {
     if (!editingAssignment) return;
     setWriteError(null);
     setSuccessMessage(null);
     try {
-      await updateStudentRouteAssignment(
+      await updateStudentBusAssignment(
         editingAssignment.id,
-        input as UpdateStudentRouteAssignmentInput,
+        input as UpdateStudentBusAssignmentInput,
       );
       setEditingAssignment(null);
-      setSuccessMessage('Student route assignment updated.');
+      setSuccessMessage('Student bus assignment updated.');
       await list.reload();
     } catch (updateError) {
       setWriteError(
         updateError instanceof Error
           ? updateError.message
-          : 'Unable to update student route assignment.',
+          : 'Unable to update student bus assignment.',
       );
     }
   }
@@ -130,8 +126,8 @@ export function AdminAssignmentsPage() {
       <div className="space-y-6">
         <PageHeader
           eyebrow="Assignments"
-          title="Visible student route assignments"
-          description="Student route assignments returned by Supabase under the current admin user's RLS permissions."
+          title="Student bus assignments"
+          description="Assign students to a bus service, then choose pickup and drop-off stops from that service's route."
         />
 
         {canWrite && (
@@ -151,12 +147,11 @@ export function AdminAssignmentsPage() {
         <AdminWriteError message={writeError} />
 
         {canWrite && showCreateForm && (
-          <InlineFormShell title="Add student route assignment">
-            <StudentRouteAssignmentForm
+          <InlineFormShell title="Assign student to bus">
+            <StudentBusAssignmentForm
               assignment={null}
-              students={[]}
               defaultTenantId={profile?.tenant_id ?? null}
-              routes={routes}
+              services={services}
               stops={stops}
               onSubmit={handleCreateAssignment}
               onCancel={() => setShowCreateForm(false)}
@@ -165,13 +160,12 @@ export function AdminAssignmentsPage() {
         )}
 
         {canWrite && editingAssignment && (
-          <InlineFormShell title="Edit student route assignment">
-            <StudentRouteAssignmentForm
+          <InlineFormShell title="Edit student bus assignment">
+            <StudentBusAssignmentForm
               assignment={editingAssignment}
-              students={[]}
               defaultTenantId={profile?.tenant_id ?? null}
-              studentLabel={(editingAssignment as typeof list.rows[number] & { student_name?: string }).student_name}
-              routes={routes}
+              studentLabel={editingAssignment.student_name}
+              services={services}
               stops={stops}
               onSubmit={handleUpdateAssignment}
               onCancel={() => setEditingAssignment(null)}
@@ -188,7 +182,7 @@ export function AdminAssignmentsPage() {
             type="search"
             value={list.searchInput}
             onChange={(event) => list.setSearchInput(event.target.value)}
-            placeholder="Search by student, route, stop, date, or status"
+            placeholder="Search by student, bus, route, stop, or status"
             className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
           />
         </div>
@@ -203,7 +197,7 @@ export function AdminAssignmentsPage() {
         {!list.loading && !list.error && list.rows.length === 0 && (
           <DataState
             title="No assignments visible"
-            message="No student route assignments are available for this account under the current RLS policies."
+            message="No students are assigned to bus services yet."
           />
         )}
         {!list.loading && !list.error && list.rows.length > 0 && (
@@ -216,7 +210,7 @@ export function AdminAssignmentsPage() {
                       {assignment.student_name ?? assignment.student_id}
                     </h2>
                     <p className="mt-1 text-sm text-gray-600">
-                      {assignment.route_code} - {assignment.route_name}
+                      Bus {assignment.bus_number} / {assignment.route_code} - {assignment.route_name} ({assignment.trip_type})
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-3">

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AdminPagination } from '@/components/admin/AdminPagination';
+import { StudentBusAssignmentForm } from '@/components/admin/StudentBusAssignmentForm';
+import { InlineFormShell } from '@/components/admin/TransportationAdminForms';
 import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -10,6 +12,8 @@ import { adminRoles } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
 import { getVisibleSchools } from '@/services/adminOrganizationService';
+import { getVisibleRouteStops } from '@/services/transportationStructureService';
+import { createStudentBusAssignment, fetchAdminBusServices, updateStudentBusAssignment, type BusServiceOption } from '@/services/studentBusAssignmentService';
 import {
   createStudent,
   setStudentStatus,
@@ -17,8 +21,23 @@ import {
 } from '@/services/adminStudentsService';
 import type { School } from '@/types/organization';
 import type { Student, StudentStatus } from '@/types/studentGuardian';
+import type { CreateStudentBusAssignmentInput, RouteStop, StudentBusAssignment, UpdateStudentBusAssignmentInput } from '@/types/transportation';
 
-type AdminStudentRow = Student & { school_name: string | null };
+type AdminStudentRow = Student & {
+  school_name: string | null;
+  bus_assignment_id: string | null;
+  bus_route_assignment_id: string | null;
+  pickup_stop_id: string | null;
+  dropoff_stop_id: string | null;
+  bus_effective_from: string | null;
+  bus_effective_to: string | null;
+  bus_number: string | null;
+  route_name: string | null;
+  route_code: string | null;
+  trip_type: 'morning' | 'evening' | null;
+  pickup_stop_name: string | null;
+  dropoff_stop_name: string | null;
+};
 
 const studentStatusTone: Record<StudentStatus, 'success' | 'warning' | 'danger' | 'neutral'> = {
   active: 'success',
@@ -36,9 +55,12 @@ function getStudentName(student: Student) {
 export function AdminStudentsPage() {
   const { profile } = useAuth();
   const [schools, setSchools] = useState<School[]>([]);
+  const [busServices, setBusServices] = useState<BusServiceOption[]>([]);
+  const [routeStops, setRouteStops] = useState<RouteStop[]>([]);
   const list = usePaginatedAdminList<AdminStudentRow>('students');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [busStudent, setBusStudent] = useState<AdminStudentRow | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingStatusStudentId, setPendingStatusStudentId] = useState<string | null>(null);
@@ -46,8 +68,34 @@ export function AdminStudentsPage() {
   const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
 
   useEffect(() => {
-    void getVisibleSchools().then(setSchools);
+    void Promise.all([getVisibleSchools(), fetchAdminBusServices(), getVisibleRouteStops()])
+      .then(([nextSchools, services, stops]) => { setSchools(nextSchools); setBusServices(services); setRouteStops(stops); })
+      .catch(() => setWriteError('Some transportation options could not be loaded.'));
   }, []);
+
+  function existingBusAssignment(student: AdminStudentRow): StudentBusAssignment | null {
+    if (!student.bus_assignment_id || !student.bus_route_assignment_id || !student.bus_effective_from) return null;
+    return { id: student.bus_assignment_id, tenant_id: student.tenant_id, student_id: student.id,
+      bus_route_assignment_id: student.bus_route_assignment_id, pickup_stop_id: student.pickup_stop_id,
+      dropoff_stop_id: student.dropoff_stop_id, effective_from: student.bus_effective_from,
+      effective_to: student.bus_effective_to, status: 'active', created_at: student.created_at, updated_at: student.updated_at };
+  }
+
+  async function saveBusAssignment(input: CreateStudentBusAssignmentInput | UpdateStudentBusAssignmentInput) {
+    if (!busStudent) return; setWriteError(null); setSuccessMessage(null);
+    try {
+      const existing = existingBusAssignment(busStudent);
+      if (existing) await updateStudentBusAssignment(existing.id, input as UpdateStudentBusAssignmentInput);
+      else await createStudentBusAssignment(input as CreateStudentBusAssignmentInput);
+      setBusStudent(null); setSuccessMessage('Student bus assignment saved.'); await list.reload();
+    } catch (error) { setWriteError(error instanceof Error ? error.message : 'Unable to save bus assignment.'); }
+  }
+
+  async function removeBusAssignment(student: AdminStudentRow) {
+    if (!student.bus_assignment_id) return; setWriteError(null); setSuccessMessage(null);
+    try { await updateStudentBusAssignment(student.bus_assignment_id, { status: 'inactive' }); setBusStudent(null); setSuccessMessage('Bus assignment removed. The student remains active without bus transportation.'); await list.reload(); }
+    catch (error) { setWriteError(error instanceof Error ? error.message : 'Unable to remove bus assignment.'); }
+  }
 
   async function handleCreate(input: {
     firstName: string;
@@ -190,6 +238,15 @@ export function AdminStudentsPage() {
           />
         )}
 
+        {canWrite && busStudent && (
+          <InlineFormShell title={`${busStudent.bus_assignment_id ? 'Manage' : 'Assign'} bus for ${getStudentName(busStudent)}`}>
+            <StudentBusAssignmentForm assignment={existingBusAssignment(busStudent)} fixedStudentId={busStudent.id}
+              studentLabel={getStudentName(busStudent)} services={busServices} stops={routeStops}
+              defaultTenantId={profile?.tenant_id ?? null} onSubmit={saveBusAssignment} onCancel={() => setBusStudent(null)} />
+            {busStudent.bus_assignment_id && <Button type="button" variant="ghost" onClick={() => void removeBusAssignment(busStudent)}>Remove bus assignment</Button>}
+          </InlineFormShell>
+        )}
+
         <div>
           <label className="block text-sm font-semibold text-gray-700" htmlFor="student-search">
             Search students
@@ -218,7 +275,7 @@ export function AdminStudentsPage() {
           <section className="space-y-3">
             <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
               <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
-                <thead className="bg-gray-50"><tr><th className="px-4 py-3">Student</th><th className="px-4 py-3">School</th><th className="px-4 py-3">Grade</th><th className="px-4 py-3">School number</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Actions</th></tr></thead>
+                <thead className="bg-gray-50"><tr><th className="px-4 py-3">Student</th><th className="px-4 py-3">School</th><th className="px-4 py-3">Grade</th><th className="px-4 py-3">School number</th><th className="px-4 py-3">Bus transportation</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Actions</th></tr></thead>
                 <tbody className="divide-y divide-gray-100">
             {list.rows.map((student) => (
               <tr key={student.id}>
@@ -226,6 +283,7 @@ export function AdminStudentsPage() {
                 <td className="px-4 py-3 text-gray-600">{student.school_name ?? 'No school'}</td>
                 <td className="px-4 py-3">{student.grade ?? 'Not assigned'}</td>
                 <td className="px-4 py-3">{student.school_student_number ?? 'Not assigned'}</td>
+                <td className="px-4 py-3">{student.bus_number ? <div><p className="font-semibold text-navy-900">Bus {student.bus_number}</p><p className="text-xs text-gray-500">{student.route_code} / {student.trip_type}</p><p className="text-xs text-gray-500">{student.pickup_stop_name ?? 'No pickup stop'} → {student.dropoff_stop_name ?? 'No drop-off stop'}</p></div> : <span className="text-gray-500">No bus assigned</span>}</td>
                 <td className="px-4 py-3"><StatusPill tone={studentStatusTone[student.status]}>{student.status}</StatusPill></td>
                 <td className="px-4 py-3"><div className="flex flex-wrap gap-2">
                     {canWrite && (
@@ -243,6 +301,7 @@ export function AdminStudentsPage() {
                         >
                           Edit
                         </Button>
+                        {student.status === 'active' && <Button type="button" size="sm" variant="secondary" onClick={() => { setEditingStudent(null); setShowCreateForm(false); setBusStudent(student); setWriteError(null); setSuccessMessage(null); }}>{student.bus_assignment_id ? 'Manage bus' : 'Assign bus'}</Button>}
                         {student.status === 'active' ? (
                           <Button
                             type="button"

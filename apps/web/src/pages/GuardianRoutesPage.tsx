@@ -110,7 +110,7 @@ export function GuardianRoutesPage() {
         </Card>
 
         {state.kind === 'loading' && (
-          <DataState title="Loading your student route information" message="Fetching your linked students and route assignments." />
+          <DataState title="Loading transportation information" message="Fetching your linked students and bus service details." />
         )}
 
         {state.kind === 'error' && (
@@ -125,7 +125,7 @@ export function GuardianRoutesPage() {
         {state.kind === 'ready' && state.routes.length === 0 && (
           <div data-testid="guardian-routes-empty">
             <DataState
-              title="No student route assignments are available yet."
+              title="No bus assignment is available yet."
               message="Please contact your school transportation office."
             />
           </div>

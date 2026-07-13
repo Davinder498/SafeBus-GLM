@@ -28,7 +28,7 @@ const setupKeys: Array<{ label: string; key: keyof AdminSetupSnapshot; to: strin
   { label: 'Students', key: 'students', to: '/admin/students' },
   { label: 'Guardians', key: 'guardians', to: '/admin/guardians' },
   { label: 'Guardian links', key: 'guardianLinks', to: '/admin/guardians' },
-  { label: 'Student route assignments', key: 'studentAssignments', to: '/admin/assignments' },
+  { label: 'Student bus assignments', key: 'studentAssignments', to: '/admin/assignments' },
   { label: 'Driver and bus assignments', key: 'driverAssignments', to: '/admin/driver-assignments' },
 ];
 
