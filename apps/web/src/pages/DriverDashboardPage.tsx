@@ -167,13 +167,12 @@ export function DriverDashboardPage() {
               </Card>
             )}
 
-            <LocationSharingPanel
-              hasActiveTrip={Boolean(state.activeTrip)}
-              supported={locationSharing.supported}
-              state={locationSharing.state}
-              onStart={locationSharing.start}
-              onStop={locationSharing.stop}
-            />
+            {state.activeTrip && (
+              <LocationSharingPanel
+                supported={locationSharing.supported}
+                state={locationSharing.state}
+              />
+            )}
 
             <StudentManifestLinkCard hasActiveTrip={Boolean(state.activeTrip)} />
 
@@ -323,24 +322,17 @@ function AssignmentListCard({
 }
 
 interface LocationSharingPanelProps {
-  hasActiveTrip: boolean;
   supported: boolean;
   state: LocationSharingState;
-  onStart: () => void;
-  onStop: () => void;
 }
 
 function LocationSharingPanel({
-  hasActiveTrip,
   supported,
   state,
-  onStart,
-  onStop,
 }: LocationSharingPanelProps) {
-  const tracking = state.kind === 'waiting' || state.kind === 'sharing' || state.kind === 'offline';
   const errorMessage = state.kind === 'error' || state.kind === 'denied' ? state.message : null;
 
-  let statusMessage = 'Share your live bus location during this trip.';
+  let statusMessage = 'Starting automatic location sharing...';
   let statusTone: 'success' | 'warning' | 'neutral' = 'neutral';
   let statusLabel: string | null = null;
   if (state.kind === 'waiting') {
@@ -361,30 +353,6 @@ function LocationSharingPanel({
     statusLabel = 'offline';
   } else if (state.kind === 'denied') {
     statusMessage = 'Location permission denied.';
-  }
-
-  // No active trip: location sharing is unavailable.
-  if (!hasActiveTrip) {
-    return (
-      <Card data-testid="driver-location-panel" className="p-5">
-        <h2 className="text-lg font-bold text-navy-900">Location sharing</h2>
-        <p
-          data-testid="driver-location-status"
-          className="mt-2 text-sm text-gray-600"
-        >
-          Start a trip before sharing location.
-        </p>
-        <Button
-          type="button"
-          size="md"
-          className="mt-4"
-          data-testid="driver-location-start-button"
-          disabled
-        >
-          Start location sharing
-        </Button>
-      </Card>
-    );
   }
 
   // Browser does not support geolocation.
@@ -421,28 +389,6 @@ function LocationSharingPanel({
           )}
         </div>
         {statusLabel && <StatusPill tone={statusTone}>{statusLabel}</StatusPill>}
-      </div>
-      <div className="mt-4 flex gap-3">
-        {!tracking ? (
-          <Button
-            type="button"
-            size="md"
-            data-testid="driver-location-start-button"
-            onClick={onStart}
-          >
-            Start location sharing
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            size="md"
-            variant="secondary"
-            data-testid="driver-location-stop-button"
-            onClick={onStop}
-          >
-            Stop location sharing
-          </Button>
-        )}
       </div>
     </Card>
   );

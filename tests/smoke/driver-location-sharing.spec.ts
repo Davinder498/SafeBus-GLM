@@ -9,34 +9,22 @@ import { installSupabaseMock } from './fixtures/supabase-mock';
  * permissions APIs. No real GPS is required.
  *
  * Coverage:
- *   - Test 1: no active trip -> location panel visible, start disabled, helper
- *     text "Start a trip before sharing location."
- *   - Test 2: active trip -> start button enabled -> click -> geolocation mock
- *     fires -> active status + stop button appear.
+ *   - Test 1: no active trip -> no location controls or location panel.
+ *   - Test 2: active trip -> geolocation starts automatically and publishes.
  *   - Test 3: geolocation permission denied -> friendly error shown, no crash.
  */
 
 test.describe('Driver location sharing', () => {
-  test('no active trip: location panel shows unavailable state with disabled start', async ({ page }) => {
+  test('no active trip: location sharing UI is not shown', async ({ page }) => {
     await installSupabaseMock(page);
     await page.goto('/driver');
 
-    // Panel is visible.
-    const panel = page.getByTestId('driver-location-panel');
-    await expect(panel).toBeVisible();
-
-    // Helper text indicates a trip is required.
-    await expect(
-      page.getByTestId('driver-location-status'),
-    ).toContainText('Start a trip before sharing location.');
-
-    // Start button is present but disabled.
-    const startButton = page.getByTestId('driver-location-start-button');
-    await expect(startButton).toBeVisible();
-    await expect(startButton).toBeDisabled();
+    await expect(page.getByTestId('driver-location-panel')).toHaveCount(0);
+    await expect(page.getByTestId('driver-location-start-button')).toHaveCount(0);
+    await expect(page.getByTestId('driver-location-stop-button')).toHaveCount(0);
   });
 
-  test('active trip enables location sharing; start -> active status + stop button', async ({ browser }) => {
+  test('active trip starts location sharing automatically without location controls', async ({ browser }) => {
     // Grant geolocation permission and set a deterministic location before the
     // page loads, so watchPosition fires immediately when sharing starts.
     const context = await browser.newContext({
@@ -68,24 +56,10 @@ test.describe('Driver location sharing', () => {
 
     await page.goto('/driver');
 
-    // Active trip is present, so the start button should be enabled.
-    const startButton = page.getByTestId('driver-location-start-button');
-    await expect(startButton).toBeVisible();
-    await expect(startButton).toBeEnabled();
-
-    // Start sharing.
-    await startButton.click();
-
-    // Active status appears and stop button appears. The status text includes
-    // "active" once the first mocked fix is processed.
+    // The active trip automatically starts the location watcher.
     await expect(page.getByTestId('driver-location-status')).toContainText('Location sharing active', { timeout: 10000 });
-    await expect(page.getByTestId('driver-location-stop-button')).toBeVisible();
-
-    // Stop sharing.
-    await page.getByTestId('driver-location-stop-button').click();
-
-    // After stopping, the start button returns.
-    await expect(page.getByTestId('driver-location-start-button')).toBeVisible();
+    await expect(page.getByTestId('driver-location-start-button')).toHaveCount(0);
+    await expect(page.getByTestId('driver-location-stop-button')).toHaveCount(0);
 
     // --- Assert the RPC payload shape (non-blocking fix C) ---
     // At least one update_driver_trip_location RPC was sent.
@@ -113,6 +87,37 @@ test.describe('Driver location sharing', () => {
     expect(payload).not.toHaveProperty('driver_id');
     expect(payload).not.toHaveProperty('bus_id');
     expect(payload).not.toHaveProperty('route_id');
+
+    await context.close();
+  });
+
+  test('Start Trip automatically begins location sharing', async ({ browser }) => {
+    const context = await browser.newContext({
+      permissions: ['geolocation'],
+      geolocation: { latitude: 51.0447, longitude: -114.0719 },
+    });
+    const page = await context.newPage();
+    await installSupabaseMock(page, { withAssignments: true });
+
+    let locationUpdates = 0;
+    page.on('request', (request) => {
+      if (request.url().includes('/rest/v1/rpc/update_driver_trip_location')) {
+        locationUpdates += 1;
+      }
+    });
+
+    await page.goto('/driver');
+    await expect(page.getByTestId('driver-location-panel')).toHaveCount(0);
+    await page.getByTestId('driver-assignment-start-button').click();
+
+    await expect(page.getByText('Trip started. Have a safe drive.')).toBeVisible();
+    await expect(page.getByTestId('driver-location-status')).toContainText(
+      'Location sharing active',
+      { timeout: 10_000 },
+    );
+    await expect(page.getByTestId('driver-location-start-button')).toHaveCount(0);
+    await expect(page.getByTestId('driver-location-stop-button')).toHaveCount(0);
+    expect(locationUpdates).toBeGreaterThan(0);
 
     await context.close();
   });
@@ -147,11 +152,7 @@ test.describe('Driver location sharing', () => {
     await installSupabaseMock(page, { withActiveTrip: true });
     await page.goto('/driver');
 
-    const startButton = page.getByTestId('driver-location-start-button');
-    await expect(startButton).toBeEnabled();
-    await startButton.click();
-
-    // Friendly permission-denied error is shown.
+    // Automatic sharing reports a friendly permission-denied error.
     await expect(page.getByTestId('driver-location-error')).toContainText(
       'Location permission was denied',
     );
@@ -184,7 +185,6 @@ test.describe('Driver location sharing', () => {
     });
 
     await page.goto('/driver');
-    await page.getByTestId('driver-location-start-button').click();
     await expect(page.getByTestId('driver-location-status')).toContainText('Location sharing active');
 
     await context.setOffline(true);

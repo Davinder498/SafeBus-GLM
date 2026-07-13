@@ -12,8 +12,6 @@ export type LocationSharingState =
 export interface UseDriverLocationSharingResult {
   state: LocationSharingState;
   supported: boolean;
-  start: () => void;
-  stop: () => void;
 }
 
 const MIN_UPDATE_INTERVAL_MS = 10_000;
@@ -214,8 +212,12 @@ export function useDriverLocationSharing(activeTripId: string | null): UseDriver
   }, [clearTimer]);
 
   useEffect(() => {
-    if (!activeTripId) stop();
-  }, [activeTripId, stop]);
+    if (activeTripId) {
+      start();
+    } else {
+      stop();
+    }
+  }, [activeTripId, start, stop]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -227,5 +229,5 @@ export function useDriverLocationSharing(activeTripId: string | null): UseDriver
     };
   }, [clearTimer, clearWatcher]);
 
-  return { state, supported, start, stop };
+  return { state, supported };
 }
