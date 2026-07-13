@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { AdminPagination } from '@/components/admin/AdminPagination';
 import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -7,15 +8,17 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { adminRoles } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
+import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
 import { getVisibleSchools } from '@/services/adminOrganizationService';
 import {
   createStudent,
-  fetchAdminStudents,
   setStudentStatus,
   updateStudent,
 } from '@/services/adminStudentsService';
 import type { School } from '@/types/organization';
 import type { Student, StudentStatus } from '@/types/studentGuardian';
+
+type AdminStudentRow = Student & { school_name: string | null };
 
 const studentStatusTone: Record<StudentStatus, 'success' | 'warning' | 'danger' | 'neutral'> = {
   active: 'success',
@@ -23,14 +26,6 @@ const studentStatusTone: Record<StudentStatus, 'success' | 'warning' | 'danger' 
   transferred: 'warning',
   archived: 'danger',
 };
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat('en-CA', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }).format(new Date(value));
-}
 
 function getStudentName(student: Student) {
   return student.preferred_name
@@ -40,11 +35,8 @@ function getStudentName(student: Student) {
 
 export function AdminStudentsPage() {
   const { profile } = useAuth();
-  const [students, setStudents] = useState<Student[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
-  const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const list = usePaginatedAdminList<AdminStudentRow>('students');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
@@ -53,50 +45,9 @@ export function AdminStudentsPage() {
 
   const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [nextStudents, nextSchools] = await Promise.all([
-        fetchAdminStudents(),
-        getVisibleSchools(),
-      ]);
-      setStudents(nextStudents);
-      setSchools(nextSchools);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load students.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    void load();
-  }, [load]);
-
-  const schoolNames = useMemo(() => {
-    return new Map(schools.map((school) => [school.id, school.name]));
-  }, [schools]);
-
-  const filteredStudents = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return students;
-    return students.filter((student) => {
-      return [
-        student.first_name,
-        student.last_name,
-        student.preferred_name,
-        student.grade,
-        student.school_student_number,
-        student.status,
-        student.school_id ? (schoolNames.get(student.school_id) ?? student.school_id) : 'No school',
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .includes(normalizedQuery);
-    });
-  }, [query, schoolNames, students]);
+    void getVisibleSchools().then(setSchools);
+  }, []);
 
   async function handleCreate(input: {
     firstName: string;
@@ -122,7 +73,7 @@ export function AdminStudentsPage() {
       );
       setShowCreateForm(false);
       setSuccessMessage('Student created.');
-      await load();
+      await list.reload();
     } catch (createError) {
       setWriteError(createError instanceof Error ? createError.message : 'Unable to create student.');
     }
@@ -149,7 +100,7 @@ export function AdminStudentsPage() {
       });
       setEditingStudent(null);
       setSuccessMessage('Student updated.');
-      await load();
+      await list.reload();
     } catch (updateError) {
       setWriteError(updateError instanceof Error ? updateError.message : 'Unable to update student.');
     }
@@ -163,7 +114,7 @@ export function AdminStudentsPage() {
     try {
       await setStudentStatus(studentId, 'inactive');
       setSuccessMessage('Student deactivated.');
-      await load();
+      await list.reload();
     } catch (deactivateError) {
       setWriteError(deactivateError instanceof Error ? deactivateError.message : 'Unable to deactivate student.');
     } finally {
@@ -179,7 +130,7 @@ export function AdminStudentsPage() {
     try {
       await setStudentStatus(studentId, 'active');
       setSuccessMessage('Student reactivated.');
-      await load();
+      await list.reload();
     } catch (reactivateError) {
       setWriteError(reactivateError instanceof Error ? reactivateError.message : 'Unable to reactivate student.');
     } finally {
@@ -246,43 +197,37 @@ export function AdminStudentsPage() {
           <input
             id="student-search"
             type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            value={list.searchInput}
+            onChange={(event) => list.setSearchInput(event.target.value)}
             placeholder="Search by name, grade, status, or school number"
             className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
           />
         </div>
 
-        {loading && (
+        {list.loading && (
           <DataState title="Loading students" message="Fetching student records visible to you." />
         )}
-        {error && <DataState title="Unable to load students" message={error} />}
-        {!loading && !error && students.length === 0 && (
+        {list.error && <DataState title="Unable to load students" message={list.error} />}
+        {!list.loading && !list.error && list.rows.length === 0 && list.totalCount === 0 && (
           <DataState
             title="No students added yet"
             message="Add your first student to start building the roster."
           />
         )}
-        {!loading && !error && students.length > 0 && filteredStudents.length === 0 && (
-          <DataState
-            title="No students match"
-            message="Try a different name, grade, status, or school number search."
-          />
-        )}
-
-        {!loading && !error && filteredStudents.length > 0 && (
-          <section className="grid gap-4">
-            {filteredStudents.map((student) => (
-              <Card key={student.id} className="p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold text-navy-900">{getStudentName(student)}</h2>
-                    <p className="mt-1 text-sm text-gray-600">
-                      {student.school_id ? (schoolNames.get(student.school_id) ?? student.school_id) : 'No school'}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <StatusPill tone={studentStatusTone[student.status]}>{student.status}</StatusPill>
+        {!list.loading && !list.error && list.rows.length > 0 && (
+          <section className="space-y-3">
+            <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+              <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
+                <thead className="bg-gray-50"><tr><th className="px-4 py-3">Student</th><th className="px-4 py-3">School</th><th className="px-4 py-3">Grade</th><th className="px-4 py-3">School number</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Actions</th></tr></thead>
+                <tbody className="divide-y divide-gray-100">
+            {list.rows.map((student) => (
+              <tr key={student.id}>
+                <td className="px-4 py-3 font-semibold text-navy-900">{getStudentName(student)}</td>
+                <td className="px-4 py-3 text-gray-600">{student.school_name ?? 'No school'}</td>
+                <td className="px-4 py-3">{student.grade ?? 'Not assigned'}</td>
+                <td className="px-4 py-3">{student.school_student_number ?? 'Not assigned'}</td>
+                <td className="px-4 py-3"><StatusPill tone={studentStatusTone[student.status]}>{student.status}</StatusPill></td>
+                <td className="px-4 py-3"><div className="flex flex-wrap gap-2">
                     {canWrite && (
                       <>
                         <Button
@@ -321,24 +266,13 @@ export function AdminStudentsPage() {
                         )}
                       </>
                     )}
-                  </div>
-                </div>
-                <div className="mt-5 grid gap-3 text-sm md:grid-cols-2">
-                  <p className="text-gray-600">
-                    Grade: <span className="font-semibold text-navy-900">{student.grade ?? 'Not assigned'}</span>
-                  </p>
-                  <p className="text-gray-600">
-                    School number: <span className="font-semibold text-navy-900">{student.school_student_number ?? 'Not assigned'}</span>
-                  </p>
-                  <p className="text-gray-600">
-                    Created: <span className="font-semibold text-navy-900">{formatDate(student.created_at)}</span>
-                  </p>
-                  <p className="text-gray-600">
-                    Student id: <span className="font-semibold text-navy-900">{student.id}</span>
-                  </p>
-                </div>
-              </Card>
+                  </div></td>
+              </tr>
             ))}
+                </tbody>
+              </table>
+            </div>
+            <AdminPagination page={list.page} pageSize={list.pageSize} totalCount={list.totalCount} onPageChange={list.setPage} onPageSizeChange={list.setPageSize} />
           </section>
         )}
       </div>

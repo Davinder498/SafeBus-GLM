@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AdminPagination } from '@/components/admin/AdminPagination';
 import {
   AdminWriteError,
   AdminWriteMessage,
@@ -13,10 +14,10 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { adminRoles } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
-import { getVisibleProfiles } from '@/services/adminOrganizationService';
+import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
+import { getVisibleDriverProfiles } from '@/services/adminOrganizationService';
 import {
   createDriverAssignment,
-  fetchAdminAssignments,
   updateAssignmentStatus,
 } from '@/services/driverAssignmentService';
 import { getVisibleBuses, getVisibleDrivers, getVisibleRoutes } from '@/services/transportationStructureService';
@@ -34,13 +35,11 @@ function formatDate(value: string) {
 
 export function AdminDriverAssignmentsPage() {
   const { profile } = useAuth();
-  const [assignments, setAssignments] = useState<DriverRouteAssignment[]>([]);
+  const list = usePaginatedAdminList<DriverRouteAssignment & { route_name: string; route_code: string; bus_number: string; driver_name: string }>('driver_assignments');
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [buses, setBuses] = useState<Bus[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [profiles, setProfiles] = useState<OrganizationProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -48,25 +47,19 @@ export function AdminDriverAssignmentsPage() {
   const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
     try {
-      const [assignmentData, driverData, busData, routeData, profileData] = await Promise.all([
-        fetchAdminAssignments(),
+      const [driverData, busData, routeData, profileData] = await Promise.all([
         getVisibleDrivers(),
         getVisibleBuses(),
         getVisibleRoutes(),
-        getVisibleProfiles(),
+        getVisibleDriverProfiles(),
       ]);
-      setAssignments(assignmentData);
       setDrivers(driverData);
       setBuses(busData);
       setRoutes(routeData);
       setProfiles(profileData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load driver assignments.');
-    } finally {
-      setLoading(false);
+      setWriteError(err instanceof Error ? err.message : 'Unable to load assignment options.');
     }
   }, []);
 
@@ -101,7 +94,7 @@ export function AdminDriverAssignmentsPage() {
       await createDriverAssignment(input, profile?.tenant_id ?? null);
       setShowCreateForm(false);
       setSuccessMessage('Assignment created.');
-      await load();
+      await list.reload();
     } catch (createError) {
       setWriteError(createError instanceof Error ? createError.message : 'Unable to create assignment.');
     }
@@ -113,7 +106,7 @@ export function AdminDriverAssignmentsPage() {
     try {
       await updateAssignmentStatus(assignmentId, 'inactive');
       setSuccessMessage('Assignment deactivated.');
-      await load();
+      await list.reload();
     } catch (deactivateError) {
       setWriteError(deactivateError instanceof Error ? deactivateError.message : 'Unable to deactivate assignment.');
     }
@@ -157,32 +150,37 @@ export function AdminDriverAssignmentsPage() {
           </InlineFormShell>
         )}
 
-        {loading && (
+        <div>
+          <label className="block text-sm font-semibold text-gray-700" htmlFor="driver-assignment-search">Search assignments</label>
+          <input id="driver-assignment-search" type="search" value={list.searchInput} onChange={(event) => list.setSearchInput(event.target.value)} className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3" placeholder="Search route, bus, driver, trip type, or status" />
+        </div>
+
+        {list.loading && (
           <DataState title="Loading assignments" message="Fetching driver assignments visible to you." />
         )}
-        {error && <DataState title="Unable to load assignments" message={error} />}
-        {!loading && !error && assignments.length === 0 && (
+        {list.error && <DataState title="Unable to load assignments" message={list.error} />}
+        {!list.loading && !list.error && list.rows.length === 0 && (
           <DataState
             title="No assignments visible"
             message="No driver assignments are available for this account. Create one to get started."
           />
         )}
 
-        {!loading && !error && assignments.length > 0 && (
+        {!list.loading && !list.error && list.rows.length > 0 && (
           <section className="grid gap-4">
-            {assignments.map((assignment) => (
+            {list.rows.map((assignment) => (
               <Card key={assignment.id} className="p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div>
                     <h2 className="text-xl font-bold text-navy-900">
-                      {routeNames.get(assignment.route_id) ?? 'Unknown route'}
+                      {assignment.route_name ?? routeNames.get(assignment.route_id) ?? 'Unknown route'}
                     </h2>
                     <p className="mt-1 text-sm text-gray-600">
-                      Bus {busLabels.get(assignment.bus_id) ?? assignment.bus_id} &middot;{' '}
+                      Bus {assignment.bus_number ?? busLabels.get(assignment.bus_id) ?? assignment.bus_id} &middot;{' '}
                       {assignment.trip_type}
                     </p>
                     <p className="mt-1 text-sm text-gray-600">
-                      Driver: {driverNames.get(assignment.driver_id) ?? assignment.driver_id}
+                      Driver: {assignment.driver_name ?? driverNames.get(assignment.driver_id) ?? assignment.driver_id}
                     </p>
                     {assignment.effective_from && (
                       <p className="mt-1 text-sm text-gray-600">
@@ -208,6 +206,7 @@ export function AdminDriverAssignmentsPage() {
                 </div>
               </Card>
             ))}
+            <AdminPagination page={list.page} pageSize={list.pageSize} totalCount={list.totalCount} onPageChange={list.setPage} onPageSizeChange={list.setPageSize} />
           </section>
         )}
       </div>

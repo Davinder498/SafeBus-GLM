@@ -5,19 +5,8 @@ import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { fetchAdminLiveTrips } from '@/services/adminLiveMonitoringService';
+import { fetchBoundedAdminOverview, type AdminOverviewRoute } from '@/services/adminDashboardOverviewService';
 import { fetchAdminSetupSnapshot, type AdminSetupSnapshot } from '@/services/adminSetupService';
-import { getVisibleSchools } from '@/services/adminOrganizationService';
-import {
-  getVisibleBuses,
-  getVisibleDrivers,
-  getVisibleRouteStops,
-  getVisibleRoutes,
-} from '@/services/transportationStructureService';
-import { fetchAdminAssignments } from '@/services/driverAssignmentService';
-import { getVisibleProfiles } from '@/services/adminOrganizationService';
-import type { School, OrganizationProfile } from '@/types/organization';
-import type { Bus, Driver, Route, RouteStop } from '@/types/transportation';
-import type { DriverRouteAssignment } from '@/types/driverAssignments';
 import type { AdminLiveTrip } from '@/types/adminLiveMonitoring';
 
 const emptySetupSnapshot: AdminSetupSnapshot = {
@@ -46,13 +35,7 @@ const setupKeys: Array<{ label: string; key: keyof AdminSetupSnapshot; to: strin
 interface OverviewData {
   setup: AdminSetupSnapshot;
   trips: AdminLiveTrip[];
-  routes: Route[];
-  stops: RouteStop[];
-  schools: School[];
-  buses: Bus[];
-  drivers: Driver[];
-  assignments: DriverRouteAssignment[];
-  profiles: OrganizationProfile[];
+  routes: AdminOverviewRoute[];
 }
 
 export function AdminDashboardPage() {
@@ -67,47 +50,23 @@ export function AdminDashboardPage() {
     const [
       setupResult,
       tripsResult,
-      routesResult,
-      stopsResult,
-      schoolsResult,
-      busesResult,
-      driversResult,
-      assignmentsResult,
-      profilesResult,
+      overviewResult,
     ] = await Promise.allSettled([
       fetchAdminSetupSnapshot(),
       fetchAdminLiveTrips(),
-      getVisibleRoutes(),
-      getVisibleRouteStops(),
-      getVisibleSchools(),
-      getVisibleBuses(),
-      getVisibleDrivers(),
-      fetchAdminAssignments(),
-      getVisibleProfiles(),
+      fetchBoundedAdminOverview(),
     ]);
 
     if (import.meta.env.DEV) {
       const names = [
         'setup snapshot',
         'live trips',
-        'routes',
-        'route stops',
-        'schools',
-        'buses',
-        'drivers',
-        'driver assignments',
-        'profiles',
+        'bounded route overview',
       ];
       [
         setupResult,
         tripsResult,
-        routesResult,
-        stopsResult,
-        schoolsResult,
-        busesResult,
-        driversResult,
-        assignmentsResult,
-        profilesResult,
+        overviewResult,
       ].forEach((result, index) => {
         if (result.status === 'rejected') {
           console.warn(
@@ -124,62 +83,13 @@ export function AdminDashboardPage() {
           ? setupResult.value
           : emptySetupSnapshot,
       trips: tripsResult.status === 'fulfilled' ? tripsResult.value : [],
-      routes: routesResult.status === 'fulfilled' ? routesResult.value : [],
-      stops: stopsResult.status === 'fulfilled' ? stopsResult.value : [],
-      schools: schoolsResult.status === 'fulfilled' ? schoolsResult.value : [],
-      buses: busesResult.status === 'fulfilled' ? busesResult.value : [],
-      drivers: driversResult.status === 'fulfilled' ? driversResult.value : [],
-      assignments:
-        assignmentsResult.status === 'fulfilled'
-          ? assignmentsResult.value
-          : [],
-      profiles:
-        profilesResult.status === 'fulfilled' ? profilesResult.value : [],
+      routes: overviewResult.status === 'fulfilled' ? overviewResult.value.routes : [],
     });
   }, []);
 
   useEffect(() => {
     void load().catch(() => setError(true));
   }, [load]);
-
-  const schoolNames = useMemo(
-    () => new Map(data?.schools.map((school) => [school.id, school.name]) ?? []),
-    [data?.schools],
-  );
-
-  const busLabels = useMemo(
-    () => new Map(data?.buses.map((b) => [b.id, b.bus_number]) ?? []),
-    [data?.buses],
-  );
-
-  const driverNames = useMemo(
-    () => new Map(data?.profiles.map((p) => [p.id, p.full_name]) ?? []),
-    [data?.profiles],
-  );
-
-  const stopsByRoute = useMemo(() => {
-    const map = new Map<string, RouteStop[]>();
-    if (!data) return map;
-    for (const stop of data.stops) {
-      if (stop.status === 'archived') continue;
-      const list = map.get(stop.route_id) ?? [];
-      list.push(stop);
-      map.set(stop.route_id, list);
-    }
-    return map;
-  }, [data]);
-
-  const assignmentsByRoute = useMemo(() => {
-    const map = new Map<string, DriverRouteAssignment[]>();
-    if (!data) return map;
-    for (const a of data.assignments) {
-      if (a.status !== 'active') continue;
-      const list = map.get(a.route_id) ?? [];
-      list.push(a);
-      map.set(a.route_id, list);
-    }
-    return map;
-  }, [data]);
 
   const setupComplete = useMemo(() => {
     if (!data) return 0;
@@ -252,43 +162,25 @@ export function AdminDashboardPage() {
                   message="Create your first route with stops to see it here."
                 />
               ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3">
                   {data.routes
                     .filter((r) => r.status !== 'archived')
                     .map((route) => {
-                      const routeAssignments = assignmentsByRoute.get(route.id) ?? [];
-                      const tileAssignments = routeAssignments.map((a) => ({
-                        busLabel: busLabels.get(a.bus_id) ?? null,
-                        driverLabel:
-                          driverNames.get(
-                            data.drivers.find((d) => d.id === a.driver_id)?.profile_id ?? '',
-                          ) ?? null,
-                        tripType: a.trip_type,
-                      }));
-
-                      const routeStops = stopsByRoute.get(route.id) ?? [];
-                      const hasMappedStops = routeStops.some(
-                        (s) =>
-                          typeof s.latitude === 'number' &&
-                          typeof s.longitude === 'number',
-                      );
-
                       return (
                         <AdminRouteStatusTile
                           key={route.id}
                           route={route}
-                          schoolName={
-                            route.school_id ? (schoolNames.get(route.school_id) ?? null) : null
-                          }
-                          stopCount={routeStops.length}
-                          assignments={tileAssignments}
-                          hasMappedStops={hasMappedStops}
+                          schoolName={null}
+                          stopCount={route.stop_count}
+                          assignments={[]}
                           to={`/admin/routes/${route.id}`}
                         />
                       );
                     })}
                 </div>
               )}
+
+              <a href="/admin/routes" className="inline-flex text-sm font-semibold text-navy-700 hover:underline">View all routes &rarr;</a>
 
             </section>
 

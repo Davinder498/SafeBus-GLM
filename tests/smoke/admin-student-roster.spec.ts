@@ -46,7 +46,7 @@ const mockStudent = {
   updated_at: '2025-01-01T00:00:00.000Z',
 };
 
-async function installAdminStudentMock(page: Page, opts: { students?: typeof mockStudent[] } = {}) {
+async function installAdminStudentMock(page: Page, opts: { students?: typeof mockStudent[]; totalCount?: number } = {}) {
   let students: Record<string, unknown>[] = opts.students ?? [];
 
   await page.route('**/*', async (route: Route) => {
@@ -99,6 +99,12 @@ async function installAdminStudentMock(page: Page, opts: { students?: typeof moc
         await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(newStudent) });
         return;
       }
+      if (method === 'POST' && path.includes('/rpc/get_admin_paginated_list')) {
+        const body = route.request().postDataJSON() as { p_page_size?: number };
+        const pageSize = body.p_page_size ?? 50;
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ rows: students.map((student) => ({ ...student, school_name: null })), totalCount: opts.totalCount ?? students.length, page: 1, pageSize }) });
+        return;
+      }
       await blockUnexpectedSupabaseRestAccess(route, method, path);
       return;
     }
@@ -140,6 +146,22 @@ test.describe('Milestone 5A.1 — Admin student roster', () => {
 
     // Success message appears.
     await expect(page.getByText('Student created.')).toBeVisible({ timeout: 10000 });
+  });
+
+  test('student roster uses a bounded server page', async ({ page }) => {
+    await installAdminStudentMock(page, { students: [mockStudent] });
+    await page.goto('/admin/students');
+    await expect(page.getByRole('cell', { name: 'Avery Johnson' })).toBeVisible();
+    await expect(page.getByTestId('admin-pagination')).toContainText('Showing 1-1 of 1');
+    await expect(page.getByLabel('Rows')).toHaveValue('50');
+  });
+
+  test('10,000-student tenant renders only the bounded 50-row page', async ({ page }) => {
+    const pageRows = Array.from({ length: 50 }, (_, index) => ({ ...mockStudent, id: `${index}`.padStart(8, '0') + '-cccc-cccc-cccc-cccccccccccc', first_name: `Student${index}` }));
+    await installAdminStudentMock(page, { students: pageRows, totalCount: 10000 });
+    await page.goto('/admin/students');
+    await expect(page.locator('tbody tr')).toHaveCount(50);
+    await expect(page.getByTestId('admin-pagination')).toContainText('Showing 1-50 of 10000');
   });
 
   test('logged-out user is blocked from student roster page', async ({ page }) => {

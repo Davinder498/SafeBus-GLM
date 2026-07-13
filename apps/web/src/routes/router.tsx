@@ -13,6 +13,7 @@ import { AdminLiveTripsPage } from '@/pages/AdminLiveTripsPage';
 import { AdminPlaceholderPage } from '@/pages/AdminPlaceholderPage';
 import { AdminRoutesPage } from '@/pages/AdminRoutesPage';
 import { AdminRouteDetailPage } from '@/pages/AdminRouteDetailPage';
+import { AdminRouteManagePage } from '@/pages/AdminRouteManagePage';
 import { AdminSchoolsPage } from '@/pages/AdminSchoolsPage';
 import { AdminSettingsPage } from '@/pages/AdminSettingsPage';
 import { AdminStudentsPage } from '@/pages/AdminStudentsPage';
@@ -112,6 +113,14 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={[...adminRoles]}>
         <AdminDriversPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/routes/:routeId/manage',
+    element: (
+      <ProtectedRoute allowedRoles={[...adminRoles]}>
+        <AdminRouteManagePage />
       </ProtectedRoute>
     ),
   },

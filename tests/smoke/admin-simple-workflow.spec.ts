@@ -32,6 +32,7 @@ async function mockAdmin(page: Page, role: 'tenant_admin' | 'guardian' = 'tenant
       schools: [],
     };
     const table = path.split('/').pop() ?? '';
+    if (table === 'get_admin_dashboard_overview') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ routes: rows.routes.map((route, index) => ({ ...route, stop_count: index === 0 ? 1 : 0, active_assignment_count: index === 0 ? 1 : 0, priority: index + 1 })) }) });
     if (table in rows) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rows[table]) });
     return blockUnexpectedSupabaseRestAccess(route, method, path);
   });
@@ -51,6 +52,11 @@ test.describe('Simplified tenant admin workflow', () => {
     await expect(page.getByRole('heading', { name: 'Route One', level: 1 })).toBeVisible();
     await expect(page.getByText('Pickup Stop')).toBeVisible();
     await expect(page.getByTestId('admin-routes-map')).toBeVisible();
+    await page.getByRole('link', { name: 'Manage route' }).click();
+    await expect(page).toHaveURL(`/admin/routes/${ids.route}/manage`);
+    await expect(page.getByRole('heading', { name: 'Edit R1', level: 2 })).toBeVisible();
+    await expect(page.getByLabel('Route name')).toHaveValue('Route One');
+    await expect(page.getByLabel('Stop name')).toHaveValue('Pickup Stop');
   });
   test('legacy setup link returns admins to the route overview', async ({ page }) => { await mockAdmin(page); await page.goto('/admin/setup'); await expect(page).toHaveURL('/admin'); await expect(page.getByRole('heading', { name: 'Transportation overview', level: 1 })).toBeVisible(); await expect(page.getByTestId('admin-route-status-tile')).toHaveCount(2); await expect(page.getByRole('link', { name: 'Stops', exact: true })).toHaveCount(0); });
   test('trips page shows driver-created readiness and active trip', async ({ page }) => { await mockAdmin(page); await page.goto('/admin/trips'); await expect(page.getByRole('heading', { name: 'Trips', level: 1 })).toBeVisible(); await expect(page.getByText('Drivers start trips from active assignments')).toBeVisible(); await expect(page.getByText('Ready for driver')).toBeVisible(); await expect(page.getByRole('heading', { name: 'Route One · Bus One' })).toBeVisible(); });
