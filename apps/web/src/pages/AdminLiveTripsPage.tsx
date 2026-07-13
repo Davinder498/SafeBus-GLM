@@ -258,6 +258,7 @@ export function AdminLiveTripsPage() {
                         <th className="px-4 py-3">Latest update</th>
                         <th className="px-4 py-3">Speed</th>
                         <th className="px-4 py-3">Location status</th>
+                        <th className="px-4 py-3">ETA / progress</th>
                         <th className="px-4 py-3">Issue</th>
                       </tr>
                     </thead>
@@ -271,6 +272,10 @@ export function AdminLiveTripsPage() {
                           <td className="px-4 py-3 text-gray-700" data-testid="admin-live-trip-location-time">{trip.latestLocationAt ? formatTimestamp(trip.latestLocationAt) : 'No GPS update yet'}</td>
                           <td className="px-4 py-3 font-semibold text-navy-900" data-testid="admin-live-trip-speed">{formatSpeed(trip.speedMps)}</td>
                           <td className="px-4 py-3"><StatusPill tone={locationTone(trip.locationStatus)}>{locationLabel(trip.locationStatus)}</StatusPill></td>
+                          <td className="px-4 py-3 text-gray-700" data-testid="admin-live-trip-eta">
+                            <span className="font-semibold text-navy-900">{trip.etaStatus === 'available' ? trip.etaLabel : trip.etaLabel ?? 'ETA temporarily unavailable'}</span>
+                            {trip.nextStopName && <span className="block text-xs text-gray-500">Next: {trip.nextStopName}</span>}
+                          </td>
                           <td className="px-4 py-3"><StatusPill tone={issueTone(trip.issueLabel)}>{trip.issueLabel}</StatusPill></td>
                         </tr>
                       ))}

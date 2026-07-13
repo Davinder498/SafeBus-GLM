@@ -21,6 +21,10 @@ interface AdminLiveFleetRpcRow {
   speed_mps: number | null;
   location_status: LocationFreshness | null;
   issue_label: FleetIssueLabel | null;
+  next_stop_name: string | null;
+  eta_status: string | null;
+  eta_label: string | null;
+  eta_updated_at: string | null;
 }
 
 function normalizeLocationStatus(value: LocationFreshness | null): LocationFreshness {
@@ -52,6 +56,10 @@ function mapRow(row: AdminLiveFleetRpcRow): AdminLiveTrip {
     speedMps: row.speed_mps,
     locationStatus,
     issueLabel: normalizeIssueLabel(row.issue_label, locationStatus),
+    nextStopName: row.next_stop_name,
+    etaStatus: row.eta_status,
+    etaLabel: row.eta_label,
+    etaUpdatedAt: row.eta_updated_at,
   };
 }
 
