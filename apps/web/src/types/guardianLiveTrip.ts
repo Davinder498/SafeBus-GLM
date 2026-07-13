@@ -19,4 +19,12 @@ export interface GuardianLiveTrip {
   hasActiveTrip: boolean;
   /** Timestamp the latest location was recorded, or null. */
   lastLocationRecordedAt: string | null;
+  /** Server-derived ETA safety status. */
+  etaStatus: string | null;
+  /** Broad, conservative ETA label safe for guardian display. */
+  etaLabel: string | null;
+  /** Student's pickup/drop-off stop relevant to the active trip direction. */
+  relevantStopName: string | null;
+  /** Timestamp of the location update used for the ETA, or null when unavailable. */
+  etaUpdatedAt: string | null;
 }

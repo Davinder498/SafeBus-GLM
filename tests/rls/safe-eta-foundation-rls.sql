@@ -1,0 +1,16 @@
+-- Phase 14 Safe ETA Foundation RLS regression checklist.
+-- Run manually against hosted Supabase DEV after applying 0034_safe_eta_foundation.sql.
+--
+-- Expected assertions:
+-- 1. guardian role executing get_guardian_live_trip_visibility sees ETA fields only
+--    for actively linked students in the same tenant.
+-- 2. guardian cannot see unrelated students, unrelated routes, fleet rows,
+--    driver identity, speed, trip UUIDs, or raw route stop lists through ETA.
+-- 3. tenant admin executing get_admin_live_fleet_monitoring sees active trips only
+--    in the current tenant with ETA/progress fields and no student/guardian data.
+-- 4. cross-tenant active trips and locations are never returned.
+-- 5. stale, missing, invalid, ended, missing-stop, or passed-stop scenarios return
+--    unavailable ETA statuses rather than a live ETA.
+--
+-- This project keeps RLS SQL tests as manual hosted-DEV scripts; do not run
+-- local Docker Supabase per AGENTS.md.

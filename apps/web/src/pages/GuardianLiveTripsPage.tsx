@@ -83,7 +83,7 @@ export function GuardianLiveTripsPage() {
         <PageHeader
           eyebrow="Bus Status"
           title="Live Bus Status"
-          description="See current trip status for your linked students."
+          description="See current trip status and safe estimated arrival for your linked students."
         />
 
         <Card className="p-4">
@@ -177,6 +177,19 @@ export function GuardianLiveTripsPage() {
                           </span>
                         </p>
                       )}
+                      {trip.relevantStopName && (
+                        <p className="text-gray-600">
+                          Relevant stop:{' '}
+                          <span className="font-semibold text-navy-900">
+                            {trip.relevantStopName}
+                          </span>
+                        </p>
+                      )}
+                      <p className="text-base font-semibold text-navy-900" data-testid="guardian-live-eta">
+                        {trip.etaStatus === 'available' && trip.etaLabel
+                          ? trip.etaLabel
+                          : trip.etaLabel ?? 'ETA temporarily unavailable'}
+                      </p>
                       {trip.lastLocationRecordedAt && (
                         <p className="text-gray-600">
                           Last updated:{' '}

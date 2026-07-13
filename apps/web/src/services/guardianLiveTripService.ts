@@ -17,6 +17,10 @@ interface GuardianLiveTripRpcRow {
   trip_status: string | null;
   has_active_trip: boolean;
   last_location_recorded_at: string | null;
+  relevant_stop_name: string | null;
+  eta_status: string | null;
+  eta_label: string | null;
+  eta_updated_at: string | null;
 }
 
 function mapRow(row: GuardianLiveTripRpcRow): GuardianLiveTrip {
@@ -29,6 +33,10 @@ function mapRow(row: GuardianLiveTripRpcRow): GuardianLiveTrip {
     tripStatus: row.trip_status,
     hasActiveTrip: row.has_active_trip,
     lastLocationRecordedAt: row.last_location_recorded_at,
+    relevantStopName: row.relevant_stop_name,
+    etaStatus: row.eta_status,
+    etaLabel: row.eta_label,
+    etaUpdatedAt: row.eta_updated_at,
   };
 }
 
