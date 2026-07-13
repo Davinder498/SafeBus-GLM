@@ -244,6 +244,16 @@ async function installAdminLinkMock(page: Page) {
         await blockUnexpectedSupabaseRestAccess(route, method, path);
         return;
       }
+      if (method === 'POST' && path.includes('/rpc/get_admin_paginated_list')) {
+        const guardian = { id: GUARDIAN.guardianId, tenant_id: GUARDIAN.tenantId, profile_id: GUARDIAN.profileId, full_name: 'Test Guardian', email: 'guardian@smoke-test.local', phone: null, status: 'active', created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z', active_link_count: links.filter((link) => link.status === 'active').length };
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ rows: [guardian], totalCount: 1, page: 1, pageSize: 50 }) }); return;
+      }
+      if (method === 'POST' && path.includes('/rpc/search_admin_students')) {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ id: GUARDIAN.studentId, label: 'Avery Johnson', school_name: 'Test School' }]) }); return;
+      }
+      if (method === 'POST' && path.includes('/rpc/get_admin_guardian_links')) {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(links.map((link) => ({ id: link.id, student_id: link.student_id, student_name: 'Avery Johnson', relationship: link.relationship, status: link.status }))) }); return;
+      }
       if (method === 'POST' && path.includes('/rpc/admin_link_student_guardian')) {
         const newLink = { id: 'link-1', tenant_id: GUARDIAN.tenantId, student_id: GUARDIAN.studentId, guardian_id: GUARDIAN.guardianId, relationship: 'guardian', can_receive_notifications: true, status: 'active', created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z' };
         links = [newLink];
@@ -330,9 +340,9 @@ test.describe('Milestone 5A/5B — Admin guardian-student link management', () =
     // Click "Add link" on the guardian card.
     await page.getByRole('button', { name: 'Add link' }).click();
 
-    // Select a student from the inline form.
-    const studentSelect = page.getByLabel('Student');
-    await studentSelect.selectOption({ index: 1 });
+    // Search for a student without downloading the full roster.
+    await page.getByRole('searchbox', { name: 'Search students' }).fill('Avery');
+    await page.getByRole('button', { name: /Avery Johnson/ }).click();
 
     // Save.
     await page.getByRole('button', { name: 'Save link' }).click();
@@ -351,7 +361,7 @@ test.describe('Milestone 5A/5B — Admin guardian-student link management', () =
     await page.getByRole('button', { name: /View links/ }).click();
 
     // The "Linked students" section should be visible.
-    await expect(page.getByText('Linked students')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Linked students' })).toBeVisible();
   });
 });
 

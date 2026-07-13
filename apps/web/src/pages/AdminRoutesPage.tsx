@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AdminPagination } from '@/components/admin/AdminPagination';
 import {
   AdminWriteError,
   AdminWriteMessage,
@@ -16,6 +17,7 @@ import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { adminRoles } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
+import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
 import { getVisibleProfiles, getVisibleSchools } from '@/services/adminOrganizationService';
 import {
   createDriverAssignment,
@@ -45,22 +47,27 @@ import type {
   UpdateRouteStopInput,
 } from '@/types/transportation';
 
-export function AdminRoutesPage() {
+interface AdminRoutesPageProps {
+  initialRouteId?: string;
+}
+
+export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
   const { profile } = useAuth();
   const [routes, setRoutes] = useState<Route[]>([]);
+  const list = usePaginatedAdminList<Route & { school_name: string | null; stop_count: number; active_assignment_count: number }>('routes');
   const [schools, setSchools] = useState<School[]>([]);
   const [stops, setStops] = useState<RouteStop[]>([]);
   const [buses, setBuses] = useState<Bus[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [profiles, setProfiles] = useState<OrganizationProfile[]>([]);
   const [assignments, setAssignments] = useState<DriverRouteAssignment[]>([]);
-  const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingRoute, setEditingRoute] = useState<Route | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const openedInitialRoute = useRef(false);
 
   const canWrite =
     !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
@@ -188,30 +195,6 @@ export function AdminRoutesPage() {
     return map;
   }, [assignments]);
 
-  const filteredRoutes = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return routes;
-
-    return routes.filter((route) => {
-      const routeStops = stopsByRoute.get(route.id) ?? [];
-      const routeAssignments = assignmentsByRoute.get(route.id) ?? [];
-      const searchText = [
-        route.route_name,
-        route.route_code,
-        route.status,
-        route.school_id ? (schoolNames.get(route.school_id) ?? '') : '',
-        ...routeStops.map((s) => s.stop_name),
-        ...routeAssignments.map(
-          (a) => busLabels.get(a.bus_id) ?? '',
-        ),
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return searchText.includes(normalizedQuery);
-    });
-  }, [query, routes, schoolNames, stopsByRoute, assignmentsByRoute, busLabels]);
-
   function startCreate() {
     setEditingRoute(null);
     setShowCreateForm(true);
@@ -225,6 +208,17 @@ export function AdminRoutesPage() {
     setWriteError(null);
     setSuccessMessage(null);
   }
+
+  useEffect(() => {
+    if (!initialRouteId || loading || openedInitialRoute.current) return;
+    openedInitialRoute.current = true;
+    const route = routes.find((item) => item.id === initialRouteId);
+    if (route && route.status !== 'archived') {
+      startEdit(route);
+    } else {
+      setWriteError('This route is not available to manage.');
+    }
+  }, [initialRouteId, loading, routes]);
 
   function cancelForm() {
     setShowCreateForm(false);
@@ -344,6 +338,7 @@ export function AdminRoutesPage() {
       );
       cancelForm();
       await loadRoutes();
+      await list.reload();
     } catch (submitError) {
       setWriteError(
         submitError instanceof Error
@@ -420,8 +415,8 @@ export function AdminRoutesPage() {
           <input
             id="route-search"
             type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            value={list.searchInput}
+            onChange={(event) => list.setSearchInput(event.target.value)}
             placeholder="Search by route name, code, status, school, stop, or bus"
             className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
           />
@@ -434,22 +429,15 @@ export function AdminRoutesPage() {
           />
         )}
         {error && <DataState title="Unable to load routes" message={error} />}
-        {!loading && !error && routes.length === 0 && (
+        {!loading && !error && list.rows.length === 0 && list.totalCount === 0 && (
           <DataState
             title="No routes visible"
             message="No route records are available for this account. Click Add route to get started."
           />
         )}
-        {!loading && !error && routes.length > 0 && filteredRoutes.length === 0 && (
-          <DataState
-            title="No routes match"
-            message="Try a different route, code, school, stop, or bus search."
-          />
-        )}
-
-        {!loading && !error && filteredRoutes.length > 0 && (
+        {!loading && !error && list.rows.length > 0 && (
           <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredRoutes.map((route) => {
+            {list.rows.map((route) => {
               const routeStops = stopsByRoute.get(route.id) ?? [];
               const routeAssignments = assignmentsByRoute.get(route.id) ?? [];
               const tileAssignments = routeAssignments.map((a) => ({
@@ -477,6 +465,7 @@ export function AdminRoutesPage() {
                 />
               );
             })}
+            <div className="sm:col-span-2 lg:col-span-3"><AdminPagination page={list.page} pageSize={list.pageSize} totalCount={list.totalCount} onPageChange={list.setPage} onPageSizeChange={list.setPageSize} /></div>
           </section>
         )}
       </div>

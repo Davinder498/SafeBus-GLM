@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { AdminPagination } from '@/components/admin/AdminPagination';
 import {
   AdminWriteError,
   AdminWriteMessage,
@@ -13,8 +14,9 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { adminRoles } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
+import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
 import { getVisibleSchools } from '@/services/adminOrganizationService';
-import { createBus, getVisibleBuses, updateBus } from '@/services/transportationStructureService';
+import { createBus, updateBus } from '@/services/transportationStructureService';
 import type { School } from '@/types/organization';
 import type { Bus, BusStatus, CreateBusInput, UpdateBusInput } from '@/types/transportation';
 
@@ -35,11 +37,8 @@ function formatDate(value: string) {
 
 export function AdminBusesPage() {
   const { profile } = useAuth();
-  const [buses, setBuses] = useState<Bus[]>([]);
+  const list = usePaginatedAdminList<Bus & { school_name: string | null }>('buses');
   const [schools, setSchools] = useState<School[]>([]);
-  const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [editingBus, setEditingBus] = useState<Bus | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [writeError, setWriteError] = useState<string | null>(null);
@@ -47,47 +46,13 @@ export function AdminBusesPage() {
 
   const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
 
-  const loadBuses = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const [nextBuses, nextSchools] = await Promise.all([getVisibleBuses(), getVisibleSchools()]);
-      setBuses(nextBuses);
-      setSchools(nextSchools);
-    } catch (busesError) {
-      setError(busesError instanceof Error ? busesError.message : 'Unable to load buses.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    void loadBuses();
-  }, [loadBuses]);
+    void getVisibleSchools().then(setSchools);
+  }, []);
 
   const schoolNames = useMemo(() => {
     return new Map(schools.map((school) => [school.id, school.name]));
   }, [schools]);
-
-  const filteredBuses = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return buses;
-
-    return buses.filter((bus) =>
-      [
-        bus.bus_number,
-        bus.license_plate,
-        bus.capacity?.toString(),
-        bus.status,
-        bus.school_id ? (schoolNames.get(bus.school_id) ?? bus.school_id) : 'unassigned',
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .includes(normalizedQuery),
-    );
-  }, [buses, query, schoolNames]);
 
   async function handleCreateBus(input: CreateBusInput | UpdateBusInput) {
     setWriteError(null);
@@ -96,7 +61,7 @@ export function AdminBusesPage() {
       await createBus(input as CreateBusInput);
       setShowCreateForm(false);
       setSuccessMessage('Bus created.');
-      await loadBuses();
+      await list.reload();
     } catch (createError) {
       setWriteError(createError instanceof Error ? createError.message : 'Unable to create bus.');
     }
@@ -110,7 +75,7 @@ export function AdminBusesPage() {
       await updateBus(editingBus.id, input as UpdateBusInput);
       setEditingBus(null);
       setSuccessMessage('Bus updated.');
-      await loadBuses();
+      await list.reload();
     } catch (updateError) {
       setWriteError(updateError instanceof Error ? updateError.message : 'Unable to update bus.');
     }
@@ -172,40 +137,33 @@ export function AdminBusesPage() {
           <input
             id="bus-search"
             type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            value={list.searchInput}
+            onChange={(event) => list.setSearchInput(event.target.value)}
             placeholder="Search by bus number, plate, status, capacity, or school"
             className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
           />
         </div>
 
-        {loading && (
+        {list.loading && (
           <DataState title="Loading buses" message="Fetching bus records visible to you." />
         )}
-        {error && <DataState title="Unable to load buses" message={error} />}
-        {!loading && !error && buses.length === 0 && (
+        {list.error && <DataState title="Unable to load buses" message={list.error} />}
+        {!list.loading && !list.error && list.rows.length === 0 && (
           <DataState
             title="No buses visible"
             message="No bus records are available for this account under the current RLS policies."
           />
         )}
-        {!loading && !error && buses.length > 0 && filteredBuses.length === 0 && (
-          <DataState
-            title="No buses match"
-            message="Try a different bus, plate, school, or status search."
-          />
-        )}
-
-        {!loading && !error && filteredBuses.length > 0 && (
+        {!list.loading && !list.error && list.rows.length > 0 && (
           <section className="grid gap-4">
-            {filteredBuses.map((bus) => (
+            {list.rows.map((bus) => (
               <Card key={bus.id} className="p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div>
                     <h2 className="text-xl font-bold text-navy-900">Bus {bus.bus_number}</h2>
                     <p className="mt-1 text-sm text-gray-600">
                       {bus.school_id
-                        ? (schoolNames.get(bus.school_id) ?? bus.school_id)
+                        ? (bus.school_name ?? schoolNames.get(bus.school_id) ?? bus.school_id)
                         : 'No school assigned'}
                     </p>
                   </div>
@@ -248,6 +206,7 @@ export function AdminBusesPage() {
                 </div>
               </Card>
             ))}
+            <AdminPagination page={list.page} pageSize={list.pageSize} totalCount={list.totalCount} onPageChange={list.setPage} onPageSizeChange={list.setPageSize} />
           </section>
         )}
       </div>

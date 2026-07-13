@@ -166,7 +166,7 @@ export function AdminRouteDetailPage() {
               </Card>
             </section>
             <Link
-              to="/admin/routes"
+              to={`/admin/routes/${data.route.id}/manage`}
               className="inline-flex rounded-lg bg-navy-700 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-800"
             >
               Manage route

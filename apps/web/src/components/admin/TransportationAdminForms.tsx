@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import type { OrganizationProfile, School } from '@/types/organization';
 import type { Student } from '@/types/studentGuardian';
+import { StudentSearchPicker } from '@/components/admin/StudentSearchPicker';
 import type {
   AssignmentStatus,
   CreateAssignmentInput,
@@ -573,6 +574,8 @@ export function StudentRouteAssignmentForm({
   students,
   routes,
   stops,
+  defaultTenantId,
+  studentLabel,
   onSubmit,
   onCancel,
 }: {
@@ -580,6 +583,8 @@ export function StudentRouteAssignmentForm({
   students: Student[];
   routes: Route[];
   stops: RouteStop[];
+  defaultTenantId?: string | null;
+  studentLabel?: string;
   onSubmit: (
     input: CreateStudentRouteAssignmentInput | UpdateStudentRouteAssignmentInput,
   ) => Promise<void>;
@@ -622,10 +627,9 @@ export function StudentRouteAssignmentForm({
     event.preventDefault();
     setFormError(null);
 
-    const selectedStudent = students.find((student) => student.id === studentId);
     const selectedRoute = routes.find((route) => route.id === routeId);
 
-    if (!selectedStudent || !selectedRoute) {
+    if (!studentId || !selectedRoute || (!defaultTenantId && !students.find((student) => student.id === studentId))) {
       setFormError('Choose a student and route before saving this assignment.');
       return;
     }
@@ -643,7 +647,7 @@ export function StudentRouteAssignmentForm({
     setSubmitState('saving');
     try {
       const input = {
-        tenant_id: selectedStudent.tenant_id,
+        tenant_id: defaultTenantId ?? students.find((student) => student.id === studentId)!.tenant_id,
         student_id: studentId,
         route_id: routeId,
         pickup_stop_id: pickupStopId || null,
@@ -676,14 +680,12 @@ export function StudentRouteAssignmentForm({
       <div className="grid gap-4 md:grid-cols-2">
         <label className={labelClassName}>
           Student
-          <select className={fieldClassName} value={studentId} onChange={(event) => setStudentId(event.target.value)}>
-            <option value="">Choose student</option>
-            {selectableStudents.map((student) => (
-              <option key={student.id} value={student.id}>
-                {getStudentName(student)}
-              </option>
-            ))}
-          </select>
+          {students.length > 0 ? (
+            <select className={fieldClassName} value={studentId} onChange={(event) => setStudentId(event.target.value)}>
+              <option value="">Choose student</option>
+              {selectableStudents.map((student) => <option key={student.id} value={student.id}>{getStudentName(student)}</option>)}
+            </select>
+          ) : <StudentSearchPicker value={studentId} initialLabel={studentLabel} onChange={setStudentId} />}
         </label>
         <label className={labelClassName}>
           Route

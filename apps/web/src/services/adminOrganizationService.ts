@@ -47,6 +47,18 @@ export async function getVisibleProfiles(): Promise<OrganizationProfile[]> {
   return (data ?? []) as OrganizationProfile[];
 }
 
+export async function getVisibleDriverProfiles(): Promise<OrganizationProfile[]> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('profiles')
+    .select('id, tenant_id, school_id, full_name, email, role, status, created_at, updated_at')
+    .eq('role', 'driver')
+    .order('full_name', { ascending: true })
+    .limit(250);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as OrganizationProfile[];
+}
+
 export async function getCurrentTenant(tenantId: string | null): Promise<Tenant | null> {
   if (!tenantId) return null;
 
