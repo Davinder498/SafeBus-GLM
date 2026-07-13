@@ -174,7 +174,7 @@ export async function getVisibleRouteStops(): Promise<RouteStop[]> {
   const { data, error } = await client
     .from('route_stops')
     .select(
-      'id, tenant_id, route_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at',
+      'id, tenant_id, route_id, school_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at',
     )
     .order('stop_order', { ascending: true });
 
@@ -187,7 +187,7 @@ export async function createRouteStop(input: CreateRouteStopInput): Promise<Rout
   const { data, error } = await client
     .from('route_stops')
     .insert(input)
-    .select('id, tenant_id, route_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at')
+    .select('id, tenant_id, route_id, school_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at')
     .single();
 
   if (error) throw new Error(error.message);
@@ -203,7 +203,7 @@ export async function updateRouteStop(
     .from('route_stops')
     .update(input)
     .eq('id', id)
-    .select('id, tenant_id, route_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at')
+    .select('id, tenant_id, route_id, school_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at')
     .single();
 
   if (error) throw new Error(error.message);

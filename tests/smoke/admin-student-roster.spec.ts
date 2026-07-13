@@ -90,6 +90,7 @@ async function installAdminStudentMock(page: Page, opts: { students?: typeof moc
         if (path.includes('/profiles')) { await fulfillRows([adminProfile]); return; }
         if (path.includes('/students')) { await fulfillRows(students); return; }
         if (path.includes('/schools')) { await fulfillRows([]); return; }
+        if (path.includes('/route_stops')) { await fulfillRows([{ id: 'dddddddd-dddd-dddd-dddd-dddddddddddd', tenant_id: ADMIN.tenantId, route_id: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', school_id: null, stop_name: 'Main Stop', stop_order: 1, planned_arrival_time: '08:00:00', latitude: null, longitude: null, status: 'active', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' }]); return; }
         await blockUnexpectedSupabaseRestAccess(route, method, path);
         return;
       }
@@ -99,11 +100,17 @@ async function installAdminStudentMock(page: Page, opts: { students?: typeof moc
         await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(newStudent) });
         return;
       }
-      if (method === 'POST' && path.includes('/rpc/get_admin_paginated_list')) {
+      if (method === 'POST' && (path.includes('/rpc/get_admin_paginated_list') || path.includes('/rpc/get_admin_students_page'))) {
         const body = route.request().postDataJSON() as { p_page_size?: number };
         const pageSize = body.p_page_size ?? 50;
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ rows: students.map((student) => ({ ...student, school_name: null })), totalCount: opts.totalCount ?? students.length, page: 1, pageSize }) });
         return;
+      }
+      if (method === 'POST' && path.includes('/rpc/get_admin_bus_services')) {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ id: 'ffffffff-ffff-ffff-ffff-ffffffffffff', tenant_id: ADMIN.tenantId, bus_id: '11111111-2222-3333-4444-555555555555', route_id: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', trip_type: 'morning', effective_from: null, effective_to: null, status: 'active', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z', bus_number: '12', route_name: 'Morning Route', route_code: 'MR-1' }]) }); return;
+      }
+      if (method === 'POST' && path.includes('/student_bus_assignments')) {
+        await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ id: '12121212-1212-1212-1212-121212121212', tenant_id: ADMIN.tenantId, student_id: ADMIN.studentId, bus_route_assignment_id: 'ffffffff-ffff-ffff-ffff-ffffffffffff', pickup_stop_id: 'dddddddd-dddd-dddd-dddd-dddddddddddd', dropoff_stop_id: 'dddddddd-dddd-dddd-dddd-dddddddddddd', effective_from: '2025-01-01', effective_to: null, status: 'active' }) }); return;
       }
       await blockUnexpectedSupabaseRestAccess(route, method, path);
       return;
@@ -154,6 +161,19 @@ test.describe('Milestone 5A.1 — Admin student roster', () => {
     await expect(page.getByRole('cell', { name: 'Avery Johnson' })).toBeVisible();
     await expect(page.getByTestId('admin-pagination')).toContainText('Showing 1-1 of 1');
     await expect(page.getByLabel('Rows')).toHaveValue('50');
+    await expect(page.getByText('No bus assigned')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Assign bus' })).toBeVisible();
+  });
+
+  test('admin can optionally assign a student to a bus from the student section', async ({ page }) => {
+    await installAdminStudentMock(page, { students: [mockStudent] });
+    await page.goto('/admin/students');
+    await page.getByRole('button', { name: 'Assign bus' }).click();
+    await page.getByLabel('Bus service').selectOption('ffffffff-ffff-ffff-ffff-ffffffffffff');
+    await page.getByLabel('Pickup stop').selectOption('dddddddd-dddd-dddd-dddd-dddddddddddd');
+    await page.getByLabel('Drop-off stop').selectOption('dddddddd-dddd-dddd-dddd-dddddddddddd');
+    await page.getByRole('button', { name: 'Save assignment' }).click();
+    await expect(page.getByText('Student bus assignment saved.')).toBeVisible();
   });
 
   test('10,000-student tenant renders only the bounded 50-row page', async ({ page }) => {

@@ -7,6 +7,7 @@ import type {
 } from '@/types/driverAssignments';
 import type { DriverRecord, TripType } from '@/types/trips';
 import { fetchCurrentDriver } from './driverTripService';
+import { ensureBusRouteAssignment } from './studentBusAssignmentService';
 
 function requireSupabase() {
   if (!supabase) {
@@ -62,6 +63,15 @@ export async function createDriverAssignment(
     throw new Error('Use an account with a tenant before saving this assignment.');
   }
 
+  const busService = await ensureBusRouteAssignment({
+    tenant_id: defaultTenantId,
+    bus_id: input.busId,
+    route_id: input.routeId,
+    trip_type: input.tripType,
+    status: 'active',
+    effective_from: null,
+    effective_to: null,
+  });
   const { data, error } = await client
     .from('driver_route_assignments')
     .insert({
@@ -71,6 +81,7 @@ export async function createDriverAssignment(
       route_id: input.routeId,
       trip_type: input.tripType,
       status: input.status,
+      bus_route_assignment_id: busService.id,
     })
     .select(assignmentColumns)
     .single();
