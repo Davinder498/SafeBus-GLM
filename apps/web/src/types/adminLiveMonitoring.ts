@@ -22,6 +22,10 @@ export interface AdminLiveTrip {
   speedMps: number | null;
   locationStatus: LocationFreshness;
   issueLabel: FleetIssueLabel;
+  nextStopName: string | null;
+  etaStatus: string | null;
+  etaLabel: string | null;
+  etaUpdatedAt: string | null;
 }
 
 export const UI_STALE_LOCATION_THRESHOLD_LABEL = '2 minutes';
