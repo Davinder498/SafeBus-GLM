@@ -2,6 +2,9 @@
   command = "pnpm build"
   publish = "apps/web/dist"
 
+[functions]
+  directory = "apps/web/netlify/functions"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

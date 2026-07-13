@@ -26,6 +26,7 @@ import { GuardianLiveTripsPage } from '@/pages/GuardianLiveTripsPage';
 import { GuardianRoutesPage } from '@/pages/GuardianRoutesPage';
 import { GuardianTripEventsPage } from '@/pages/GuardianTripEventsPage';
 import { ParentDashboardPage } from '@/pages/ParentDashboardPage';
+import { PlatformTenantsPage } from '@/pages/PlatformTenantsPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { ProtectedRoute } from './ProtectedRoute';
 import { PublicOnlyRoute } from './PublicOnlyRoute';
@@ -56,6 +57,7 @@ export const appRoutes: RouteObject[] = [
   { path: '/admin/people', element: <Navigate to="/admin" replace /> },
   { path: '/admin/more', element: <Navigate to="/admin" replace /> },
   { path: '/admin/stops', element: <Navigate to="/admin/routes" replace /> },
+  { path: '/admin/tenants', element: <ProtectedRoute allowedRoles={['platform_super_admin']}><PlatformTenantsPage /></ProtectedRoute> },
   {
     path: '/admin/trips',
     element: <ProtectedRoute allowedRoles={[...adminRoles]}><AdminTripsPage /></ProtectedRoute>,

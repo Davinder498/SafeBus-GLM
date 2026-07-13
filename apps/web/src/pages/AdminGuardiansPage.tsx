@@ -11,6 +11,7 @@ import { adminRoles } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
 import { fetchAdminGuardianLinks, type GuardianLinkSummary } from '@/services/adminPaginationService';
+import { inviteTenantMember } from '@/services/onboardingService';
 import { createStudentGuardianLink, deactivateStudentGuardianLink } from '@/services/studentGuardianService';
 import type { Guardian, GuardianStatus } from '@/types/studentGuardian';
 
@@ -28,6 +29,8 @@ export function AdminGuardiansPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
+  const [showInviteForm, setShowInviteForm] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ fullName: '', email: '', phone: '', studentId: '', relationship: 'guardian' });
   const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
 
   async function loadLinks(guardianId: string) {
@@ -37,6 +40,15 @@ export function AdminGuardiansPage() {
     if (expandedId === guardianId) { setExpandedId(null); return; }
     setExpandedId(guardianId); setWriteError(null);
     try { await loadLinks(guardianId); } catch (error) { setWriteError(error instanceof Error ? error.message : 'Unable to load links.'); }
+  }
+  async function inviteGuardian() {
+    setBusy('invite'); setWriteError(null); setMessage(null);
+    try {
+      await inviteTenantMember({ role: 'guardian', fullName: inviteForm.fullName, email: inviteForm.email, phone: inviteForm.phone, studentLinks: inviteForm.studentId ? [{ studentId: inviteForm.studentId, relationship: inviteForm.relationship }] : [] });
+      setInviteForm({ fullName: '', email: '', phone: '', studentId: '', relationship: 'guardian' });
+      setShowInviteForm(false); setMessage('Guardian invitation sent and guardian record prepared.'); await list.reload();
+    } catch (error) { setWriteError(error instanceof Error ? error.message : 'Unable to invite guardian.'); }
+    finally { setBusy(null); }
   }
   async function createLink(guardianId: string) {
     if (!studentId || busy) return;
@@ -58,7 +70,8 @@ export function AdminGuardiansPage() {
   return (
     <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
       <div className="space-y-6">
-        <PageHeader eyebrow="Guardians" title="Guardians" description="Search and manage guardian records and linked students." />
+        <PageHeader eyebrow="Guardians" title="Guardians" description="Search and manage guardian records and linked students." action={canWrite && profile?.role === 'tenant_admin' ? <Button type="button" onClick={() => setShowInviteForm((value) => !value)}>Invite guardian</Button> : undefined} />
+        {showInviteForm && <Card className="p-5"><h2 className="text-lg font-bold text-navy-900">Invite guardian</h2><div className="mt-4 grid gap-3 md:grid-cols-2"><input className="rounded-lg border px-4 py-3" placeholder="Full name" value={inviteForm.fullName} onChange={(e) => setInviteForm({ ...inviteForm, fullName: e.target.value })} /><input className="rounded-lg border px-4 py-3" placeholder="Email" value={inviteForm.email} onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })} /><input className="rounded-lg border px-4 py-3" placeholder="Phone (optional)" value={inviteForm.phone} onChange={(e) => setInviteForm({ ...inviteForm, phone: e.target.value })} /><select className="rounded-lg border px-4 py-3" value={inviteForm.relationship} onChange={(e) => setInviteForm({ ...inviteForm, relationship: e.target.value })}><option value="guardian">Guardian</option><option value="mother">Mother</option><option value="father">Father</option><option value="caregiver">Caregiver</option><option value="other">Other</option></select></div><label className="mt-3 block text-sm font-semibold text-gray-700">Linked student before activation<StudentSearchPicker value={inviteForm.studentId} onChange={(id) => setInviteForm({ ...inviteForm, studentId: id })} /></label><div className="mt-3 flex gap-2"><Button type="button" disabled={busy === 'invite'} onClick={() => void inviteGuardian()}>Send invitation</Button><Button type="button" variant="secondary" onClick={() => setShowInviteForm(false)}>Cancel</Button></div></Card>}
         {writeError && <Card className="border-danger-200 bg-danger-50 p-4" role="alert"><p className="text-sm font-semibold text-danger-700">{writeError}</p></Card>}
         {message && <Card className="border-success-200 bg-success-50 p-4" role="status"><p className="text-sm font-semibold text-success-700">{message}</p></Card>}
         <div><label className="block text-sm font-semibold text-gray-700" htmlFor="guardian-search">Search guardians</label><input id="guardian-search" type="search" value={list.searchInput} onChange={(event) => list.setSearchInput(event.target.value)} placeholder="Search by name, email, phone, or status" className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3" /></div>
