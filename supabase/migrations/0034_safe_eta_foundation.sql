@@ -175,7 +175,9 @@ as $$
 $$;
 
 -- Guardian RPC: adds safe ETA fields while preserving guardian authorization.
-create or replace function public.get_guardian_live_trip_visibility()
+drop function if exists public.get_guardian_live_trip_visibility();
+
+create function public.get_guardian_live_trip_visibility()
 returns table (
   student_id uuid,
   student_name text,
@@ -227,12 +229,17 @@ as $$
   order by s.last_name, s.first_name, r.route_name;
 $$;
 
+comment on function public.get_guardian_live_trip_visibility() is
+  'Guardian-scoped live trip visibility with conservative ETA fields for actively linked students only. Returns one row per linked student with an active route assignment, active-trip status, latest current location, and safe ETA labels without exposing bus, driver, trip, speed, tenant, or unlinked student data. SECURITY DEFINER hardening requires same-tenant route stops, active same-tenant bus/driver records, and current-location route/bus/driver values matching the selected active trip. Drivers, admins, Platform Super Admins, and other roles get zero rows.';
+
 revoke all on function public.get_guardian_live_trip_visibility() from public;
 revoke all on function public.get_guardian_live_trip_visibility() from anon;
 grant execute on function public.get_guardian_live_trip_visibility() to authenticated;
 
 -- Admin RPC: adds next stop / ETA status without exposing guardian/student data.
-create or replace function public.get_admin_live_fleet_monitoring()
+drop function if exists public.get_admin_live_fleet_monitoring();
+
+create function public.get_admin_live_fleet_monitoring()
 returns table (
   bus_label text,
   route_name text,
@@ -279,6 +286,9 @@ as $$
   where dt.status = 'active' and auth.uid() is not null and dt.tenant_id = public.current_tenant_id() and public.current_user_role() in ('platform_super_admin','tenant_admin','school_admin','transportation_admin')
   order by case when loc.recorded_at is null then 0 when loc.recorded_at < now() - interval '2 minutes' then 1 else 2 end, dt.started_at desc;
 $$;
+
+comment on function public.get_admin_live_fleet_monitoring() is
+  'Tenant-scoped live fleet monitoring with conservative ETA status for tenant, school, transportation, and Platform Super Admin roles until Phase 12.6 narrows Platform Super Admin operational access. Returns safe operational labels and current-location status only; no students, guardians, contact data, tenant IDs, raw trip/bus/route/driver UUIDs, or history trails. SECURITY DEFINER with internal auth, role, tenant, active-trip, and matching current-location checks.';
 
 revoke all on function public.get_admin_live_fleet_monitoring() from public;
 revoke all on function public.get_admin_live_fleet_monitoring() from anon;
