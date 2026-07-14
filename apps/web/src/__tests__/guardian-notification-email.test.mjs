@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildGuardianEventEmail, classifyProviderError, idempotencyKey, redactLog, retryDelaySeconds } from './guardian-notification-email.mjs';
+import { buildGuardianEventEmail, classifyProviderError, idempotencyKey, redactLog, retryDelaySeconds } from '../../netlify/functions/guardian-notification-email.mjs';
 
 describe('guardian notification email delivery helpers', () => {
   it('builds a pickup template with first-name-only and UTC event timestamp', () => {
