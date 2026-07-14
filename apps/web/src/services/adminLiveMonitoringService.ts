@@ -28,7 +28,7 @@ interface AdminLiveFleetRpcRow {
 }
 
 function normalizeLocationStatus(value: LocationFreshness | null): LocationFreshness {
-  if (value === 'live' || value === 'stale' || value === 'missing') return value;
+  if (value === 'live' || value === 'stale' || value === 'missing' || value === 'invalid') return value;
   return 'missing';
 }
 
@@ -38,6 +38,7 @@ function normalizeIssueLabel(value: FleetIssueLabel | null, status: LocationFres
   }
   if (status === 'missing') return 'Missing GPS';
   if (status === 'stale') return 'Stale GPS';
+  if (status === 'invalid') return 'Needs attention';
   return 'Needs attention';
 }
 

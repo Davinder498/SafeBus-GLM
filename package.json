@@ -18,7 +18,9 @@
     "qa:seed:driver-events": "node scripts/seed-driver-event-qa-fixture.mjs",
     "clean": "turbo run clean && rimraf node_modules",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "qa:seed:safe-eta": "node scripts/seed-safe-eta-qa-fixture.mjs",
+    "qa:safe-eta:scenario": "node scripts/apply-safe-eta-scenario.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
