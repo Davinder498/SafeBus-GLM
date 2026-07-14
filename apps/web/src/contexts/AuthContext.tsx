@@ -46,7 +46,8 @@ export function isProfileRole(role: string | null | undefined): role is ProfileR
   return typeof role === 'string' && roleSet.has(role);
 }
 
-export function getDashboardPath(role: ProfileRole): '/admin' | '/driver' | '/parent' {
+export function getDashboardPath(role: ProfileRole): '/admin' | '/admin/tenants' | '/driver' | '/parent' {
+  if (role === 'platform_super_admin') return '/admin/tenants';
   if (adminRoles.includes(role as (typeof adminRoles)[number])) return '/admin';
   if (role === 'driver') return '/driver';
   return '/parent';

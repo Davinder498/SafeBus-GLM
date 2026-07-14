@@ -14,12 +14,15 @@ interface DashboardLayoutProps {
 export interface DashboardNavItem {
   label: string;
   to?: string;
-  platformOnly?: boolean;
 }
+
+
+export const platformNavItems: DashboardNavItem[] = [
+  { label: 'Tenants', to: '/admin/tenants' },
+];
 
 export const adminNavItems: DashboardNavItem[] = [
   { label: 'Overview', to: '/admin' },
-  { label: 'Tenants', to: '/admin/tenants', platformOnly: true },
   { label: 'Students', to: '/admin/students' },
   { label: 'Guardians', to: '/admin/guardians' },
   { label: 'Drivers', to: '/admin/drivers' },
@@ -56,7 +59,7 @@ export function DashboardLayout({ title, portal, navItems, children }: Dashboard
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[240px_1fr] lg:px-8">
         <aside className="lg:sticky lg:top-6 lg:self-start">
           <nav className="flex gap-2 overflow-x-auto rounded-lg border border-gray-200 bg-white p-2 shadow-sm lg:flex-col">
-            {navItems.filter((item) => typeof item === 'string' || !item.platformOnly || profile?.role === 'platform_super_admin').map((item, index) => {
+            {navItems.map((item, index) => {
               const label = typeof item === 'string' ? item : item.label;
               const to =
                 typeof item === 'string'
