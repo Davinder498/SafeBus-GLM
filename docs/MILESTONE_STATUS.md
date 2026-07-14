@@ -13,7 +13,7 @@
 
 ## Current Checkout State
 
-- Current working branch: `main`.
+- Current working branch: `phase-15a-guardian-email-notification-delivery`.
 - Current workflow for recent QA fixes: implementation is being pushed directly
   to latest `main`; Codex reviews latest `main`.
 - Hosted Supabase DEV is used for database smoke/RLS execution. Do not run RLS
@@ -52,13 +52,11 @@
 | 11A - Guardian Live Bus Map Security Foundation              | `0027_guardian_live_bus_location_security_foundation.sql`, `tests/rls/guardian-live-bus-location-rls.sql`                                                   | Completed                          |
 | 11B/11C/11D - Guardian Live Bus Map Experience               | `apps/web/src/pages/GuardianLiveMapPage.tsx`, `GuardianLiveBusMap.tsx`, `useGuardianLiveBusLocations.ts`, `tests/smoke/guardian-live-bus-map.spec.ts`        | Completed                          |
 | Phase 12 - Simple Admin Setup and Manual Workflow             | Task-oriented admin navigation, readiness-based Overview/Setup, Operations and Trips pages, manual acceptance guide                                      | Ready for manual acceptance        |
+| Phase 15A - Guardian Event Email Notification Delivery Foundation | `0038_guardian_email_notification_delivery_foundation.sql`, `apps/web/netlify/functions/guardian-notification-email.mjs`, `docs/qa/phase-15a-guardian-email-notification-delivery-acceptance.md` | Implemented for review; manual acceptance pending |
 
 ## Current Milestone
 
-Milestone 11A is active on a feature branch. It adds a backend-only guardian
-RPC/RLS foundation for safe live bus location state visibility.
-
-Do not start Milestone 11B until it is explicitly selected.
+Phase 15A is implemented on a feature branch for review. It adds trusted server-side guardian pickup/drop-off email delivery from the existing outbox. Hosted-DEV migration execution, provider sandbox testing, Netlify deploy-preview verification, and product-owner manual acceptance are pending. Do not start Phase 15B or any next phase until Phase 15A is approved.
 
 ## RLS Test Workflow
 
@@ -226,3 +224,19 @@ Status: Implemented on feature branch; automated checks and hosted-DEV validatio
 - Safe ETA foundation remains implemented as conservative server-side helper/RPC logic. Phase 14B does not add road-network routing, traffic, notifications, QR, child-specific GPS, or a production-facing dummy-data UI.
 - Phase 14B adds a DEV-only deterministic Safe ETA fixture, scenario helper, acceptance guide, and function-level hardening for future timestamps, invalid math gating, and Platform Super Admin operational ETA separation.
 - Validation states are tracked separately: code implemented on branch, SQL/RLS scripts available for hosted DEV, deploy preview/manual product-owner acceptance pending.
+
+
+## Phase 15A — Guardian Event Email Notification Delivery Foundation
+
+Status: Implemented on `phase-15a-guardian-email-notification-delivery` for review; not accepted or merged.
+
+- Builds on Milestone 9A's backend-only `guardian_notification_outbox` instead of duplicating event-to-outbox enqueue logic.
+- Adds server-side email delivery through a secured Netlify Function using Supabase service-role access and Resend transactional email API configuration.
+- Adds atomic outbox claiming with `processing`, attempt count, claim leases, provider message references, normalized failure categories, bounded batches, retry scheduling, terminal failure, and cancellation for revoked eligibility.
+- Revalidates active tenant, guardian, profile, student, active guardian-student link, notification flag, matching pickup/drop-off event, and recipient email immediately before sending.
+- Reuses `student_guardians.can_receive_notifications` as the existing event-notification consent flag for this email MVP; no channel-specific preferences center was added.
+- Uses the server-side guardian/profile email source only; recipient email and provider credentials are not exposed to browser code and are not copied into the outbox.
+- Uses minimal first-name-only UTC email content and explicitly states that messages are recorded transportation events, not live child tracking.
+- Safe DEV testing uses `SAFEBUS_DEV_EMAIL_RECIPIENT_OVERRIDE` in non-production Netlify contexts after original eligibility revalidation.
+- Tenant-admin operational visibility remains SQL/trusted QA only for this phase; no notification dashboard or Platform Super Admin tenant notification access was added.
+- Known limitations before acceptance: hosted-DEV SQL execution, Resend sandbox/provider test, Netlify deploy-preview status, and product-owner manual acceptance remain pending.
