@@ -46,7 +46,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/admin',
     element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]}>
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminDashboardPage />
       </ProtectedRoute>
     ),
@@ -60,12 +60,12 @@ export const appRoutes: RouteObject[] = [
   { path: '/admin/tenants', element: <ProtectedRoute allowedRoles={['platform_super_admin']}><PlatformTenantsPage /></ProtectedRoute> },
   {
     path: '/admin/trips',
-    element: <ProtectedRoute allowedRoles={[...adminRoles]}><AdminTripsPage /></ProtectedRoute>,
+    element: <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}><AdminTripsPage /></ProtectedRoute>,
   },
   {
     path: '/admin/settings',
     element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]}>
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminSettingsPage />
       </ProtectedRoute>
     ),
@@ -73,7 +73,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/admin/schools',
     element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]}>
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminSchoolsPage />
       </ProtectedRoute>
     ),
@@ -81,7 +81,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/admin/users',
     element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]}>
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminUsersPage />
       </ProtectedRoute>
     ),
@@ -89,7 +89,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/admin/students',
     element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]}>
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminStudentsPage />
       </ProtectedRoute>
     ),
@@ -97,7 +97,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/admin/guardians',
     element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]}>
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminGuardiansPage />
       </ProtectedRoute>
     ),
@@ -105,7 +105,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/admin/buses',
     element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]}>
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminBusesPage />
       </ProtectedRoute>
     ),
@@ -113,7 +113,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/admin/drivers',
     element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]}>
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminDriversPage />
       </ProtectedRoute>
     ),
@@ -121,7 +121,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/admin/routes/:routeId/manage',
     element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]}>
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminRouteManagePage />
       </ProtectedRoute>
     ),
@@ -129,7 +129,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/admin/routes/:routeId',
     element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]}>
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminRouteDetailPage />
       </ProtectedRoute>
     ),
@@ -137,7 +137,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/admin/routes',
     element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]}>
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminRoutesPage />
       </ProtectedRoute>
     ),
@@ -145,7 +145,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/admin/assignments',
     element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]}>
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminAssignmentsPage />
       </ProtectedRoute>
     ),
@@ -153,7 +153,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/admin/live-trips',
     element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]}>
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminLiveTripsPage />
       </ProtectedRoute>
     ),
@@ -161,7 +161,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/admin/live-fleet',
     element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]}>
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminLiveTripsPage />
       </ProtectedRoute>
     ),
@@ -169,7 +169,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/admin/driver-assignments',
     element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]}>
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminDriverAssignmentsPage />
       </ProtectedRoute>
     ),
@@ -182,7 +182,7 @@ export const appRoutes: RouteObject[] = [
   ].map(([path, title]) => ({
     path: `/admin/${path}`,
     element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]}>
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminPlaceholderPage title={title} />
       </ProtectedRoute>
     ),
