@@ -126,7 +126,6 @@ as $$
     where pr.status = 'calculable'
   ), distance_calc as (
     select
-codex/inspect-and-plan-eta-foundation-implementation-ua9dof
       coalesce((
         select public.safebus_distance_meters(p_latitude, p_longitude, ns.latitude, ns.longitude)
         from next_stop ns
@@ -138,12 +137,6 @@ codex/inspect-and-plan-eta-foundation-implementation-ua9dof
         where s.next_latitude is not null
           and s.next_longitude is not null
       ), 0) as meters
-=======
-      coalesce(public.safebus_distance_meters(p_latitude, p_longitude, ns.latitude, ns.longitude), 0) +
-      coalesce(sum(public.safebus_distance_meters(s.latitude, s.longitude, s.next_latitude, s.next_longitude)) filter (where s.next_latitude is not null), 0) as meters
-    from next_stop ns
-    left join segments s on true
-main
   ), eta as (
     select pr.*, ns.stop_name as next_name, ns.stop_order as next_order,
       ceil(greatest(1, dc.meters / pr.safe_speed_mps / 60.0))::integer as min_minutes
