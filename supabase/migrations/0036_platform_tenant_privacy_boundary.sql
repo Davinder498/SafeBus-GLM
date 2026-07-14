@@ -116,7 +116,14 @@ $$;
 
 -- Operational admin RPCs must reject Platform Super Admins even though they are
 -- authenticated. Platform summaries use get_platform_tenant_onboarding_summary.
+codex/create-privacy-boundary-for-platform-roles-zq5av6
+-- PostgreSQL cannot change OUT-parameter return shapes with CREATE OR REPLACE,
+-- so drop first to support hosted databases that still have an earlier RPC shape.
+drop function if exists public.get_admin_live_fleet_monitoring();
+create function public.get_admin_live_fleet_monitoring()
+
 create or replace function public.get_admin_live_fleet_monitoring()
+ main
 returns table (
   bus_label text,
   route_name text,
@@ -167,7 +174,14 @@ $$;
 
 -- Safe platform summary contract: aggregate counts and lifecycle state only.
 -- First Tenant Admin contact is the only person-level contact returned.
+codex/create-privacy-boundary-for-platform-roles-zq5av6
+-- Drop first because the Phase 12.5 version returned a different OUT-parameter
+-- row type, and CREATE OR REPLACE cannot change that signature.
+drop function if exists public.get_platform_tenant_onboarding_summary();
+create function public.get_platform_tenant_onboarding_summary()
+=======
 create or replace function public.get_platform_tenant_onboarding_summary()
+ main
 returns table (
   tenant_id uuid,
   tenant_name text,
