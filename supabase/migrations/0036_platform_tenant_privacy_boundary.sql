@@ -69,7 +69,7 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
   select coalesce(
     (
@@ -91,7 +91,7 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
   select coalesce(
     public.current_user_role() in ('tenant_admin', 'transportation_admin')
@@ -109,27 +109,18 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
   select public.can_write_optional_school(p_tenant_id, p_school_id);
 $$;
 
 -- Operational admin RPCs must reject Platform Super Admins even though they are
 -- authenticated. Platform summaries use get_platform_tenant_onboarding_summary.
-codex/create-privacy-boundary-for-platform-roles-zoblry
-
-codex/create-privacy-boundary-for-platform-roles-zq5av6
-main
 -- PostgreSQL cannot change OUT-parameter return shapes with CREATE OR REPLACE,
 -- so drop first to support hosted databases that still have an earlier RPC shape.
 drop function if exists public.get_admin_live_fleet_monitoring();
+
 create function public.get_admin_live_fleet_monitoring()
-codex/create-privacy-boundary-for-platform-roles-zoblry
-
-
-create or replace function public.get_admin_live_fleet_monitoring()
- main
-main
 returns table (
   bus_label text,
   route_name text,
@@ -149,6 +140,7 @@ returns table (
   eta_updated_at timestamptz
 )
 language sql
+stable
 security definer
 set search_path = public, pg_temp
 as $$
@@ -178,26 +170,19 @@ as $$
   order by case when loc.recorded_at is null then 0 when loc.recorded_at < now() - interval '2 minutes' then 1 else 2 end, dt.started_at desc;
 $$;
 
-codex/create-privacy-boundary-for-platform-roles-zoblry
 revoke all on function public.get_admin_live_fleet_monitoring() from public, anon;
 grant execute on function public.get_admin_live_fleet_monitoring() to authenticated;
 
--- Safe platform summary contract: aggregate counts and lifecycle state only.
--- First Tenant Admin contact is the only person-level contact returned.
+comment on function public.get_admin_live_fleet_monitoring() is
+  'Tenant-scoped live fleet monitoring for tenant, school, and transportation admins only. Platform Super Admins are intentionally excluded from operational fleet data.';
 
 -- Safe platform summary contract: aggregate counts and lifecycle state only.
 -- First Tenant Admin contact is the only person-level contact returned.
-codex/create-privacy-boundary-for-platform-roles-zq5av6
-main
 -- Drop first because the Phase 12.5 version returned a different OUT-parameter
 -- row type, and CREATE OR REPLACE cannot change that signature.
 drop function if exists public.get_platform_tenant_onboarding_summary();
-create function public.get_platform_tenant_onboarding_summary()
-codex/create-privacy-boundary-for-platform-roles-zoblry
 
-create or replace function public.get_platform_tenant_onboarding_summary()
- main
-main
+create function public.get_platform_tenant_onboarding_summary()
 returns table (
   tenant_id uuid,
   tenant_name text,
@@ -220,7 +205,7 @@ returns table (
 language sql
 stable
 security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
   with tenant_admins as (
     select distinct p.tenant_id,
