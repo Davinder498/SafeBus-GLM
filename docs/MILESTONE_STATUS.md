@@ -217,3 +217,12 @@ Status: Ready for product-owner manual acceptance on `phase-12-simple-admin-setu
 - No schema, RLS, RPC, dependency, map, guardian visibility, or driver workflow changes were required.
 - Auth account provisioning remains an external secure administration prerequisite. No service-role or Auth Admin capability was added to the browser.
 - Manual acceptance instructions are in `docs/qa/phase-12-manual-acceptance.md`.
+
+## Phase 14B - Safe ETA Validation and Reliability Hardening
+
+Status: Implemented on feature branch; automated checks and hosted-DEV validation are required before manual acceptance. Not merged and not product-owner accepted yet.
+
+- Secure real-time tracking remains implemented through server-side driver location RPCs, coordinate-free invalidations, secured refetch RPCs, and polling fallback.
+- Safe ETA foundation remains implemented as conservative server-side helper/RPC logic. Phase 14B does not add road-network routing, traffic, notifications, QR, child-specific GPS, or a production-facing dummy-data UI.
+- Phase 14B adds a DEV-only deterministic Safe ETA fixture, scenario helper, acceptance guide, and function-level hardening for future timestamps, invalid math gating, and Platform Super Admin operational ETA separation.
+- Validation states are tracked separately: code implemented on branch, SQL/RLS scripts available for hosted DEV, deploy preview/manual product-owner acceptance pending.

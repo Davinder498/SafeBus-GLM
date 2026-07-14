@@ -47,8 +47,9 @@ function isStale(recordedAt: string | null, now: number = Date.now()): boolean {
  * Shows safe, text-only live trip status for the guardian's linked students by
  * calling the secure get_guardian_live_trip_visibility() RPC from Milestone 6A.
  *
- * Deliberately does NOT render map, GPS coordinates, speed, ETA, route polyline,
- * bus/driver/trip UUIDs, or any operational/admin-only fields. The page trusts
+ * Deliberately does NOT render map, GPS coordinates, speed, route polyline,
+ * bus/driver/trip UUIDs, or any operational/admin-only fields. ETA text is
+ * the conservative server-produced range label only. The page trusts
  * the RPC for authorization and tenant isolation; it does not broaden access.
  */
 export function GuardianLiveTripsPage() {

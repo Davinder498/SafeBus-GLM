@@ -5,7 +5,7 @@
 // IDs, raw trip/bus/route/driver IDs, guardian data, student data, and driver
 // contact data.
 
-export type LocationFreshness = 'live' | 'stale' | 'missing';
+export type LocationFreshness = 'live' | 'stale' | 'missing' | 'invalid';
 
 export type FleetIssueLabel = 'OK' | 'Stale GPS' | 'Missing GPS' | 'Speed unavailable' | 'Needs attention';
 
