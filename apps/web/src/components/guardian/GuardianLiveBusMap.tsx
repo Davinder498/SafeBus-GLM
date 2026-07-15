@@ -138,12 +138,16 @@ function MapResizer() {
   const map = useMap();
 
   useEffect(() => {
-    // Run once after mount so the map recalculates against the now-settled
-    // container dimensions.
-    map.invalidateSize();
+    // Run once shortly after mount so the map recalculates against the
+    // now-settled container dimensions. A short delay is more reliable than a
+    // synchronous call because the parent layout may still be measuring when
+    // the effect fires (e.g. async data load reveals the map region).
+    const timeoutId = window.setTimeout(() => {
+      map.invalidateSize();
+    }, 0);
 
     // Recalculate on any future container resize (responsive layout changes,
-    // collapsible regions, font loading reflow, etc.).
+    // collapsible regions, font loading reflow, async data arrival, etc.).
     const container = map.getContainer();
     const resizeObserver = new ResizeObserver(() => {
       map.invalidateSize();
@@ -151,6 +155,7 @@ function MapResizer() {
     resizeObserver.observe(container);
 
     return () => {
+      window.clearTimeout(timeoutId);
       resizeObserver.disconnect();
     };
   }, [map]);

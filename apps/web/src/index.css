@@ -24,3 +24,17 @@
     min-width: 44px;
   }
 }
+
+/*
+ * Leaflet 1.9.4 tile rendering fix.
+ *
+ * Leaflet 1.9.4 added `mix-blend-mode: plus-lighter` to map tiles to reduce
+ * visible tile seams. This blend mode causes tiles to render invisibly (blown
+ * out to white) when the map container sits on a light/white background — which
+ * is the case inside our Card component (`bg-white`). This is a known Leaflet
+ * regression (Leaflet#9128). We neutralize it so tiles render with normal
+ * compositing. This applies to all maps (guardian, fleet, routes).
+ */
+.leaflet-container img.leaflet-tile {
+  mix-blend-mode: normal;
+}
