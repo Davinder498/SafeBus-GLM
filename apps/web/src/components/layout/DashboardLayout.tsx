@@ -87,7 +87,7 @@ export function DashboardLayout({ title, portal, navItems, children }: Dashboard
             })}
           </nav>
         </aside>
-        <main>{children}</main>
+        <main className="min-w-0">{children}</main>
       </div>
     </div>
   );

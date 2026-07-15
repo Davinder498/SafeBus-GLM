@@ -20,7 +20,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "qa:seed:safe-eta": "node scripts/seed-safe-eta-qa-fixture.mjs",
-    "qa:safe-eta:scenario": "node scripts/apply-safe-eta-scenario.mjs"
+    "qa:safe-eta:scenario": "node scripts/apply-safe-eta-scenario.mjs",
+    "qa:seed:notifications": "node scripts/seed-notification-qa-fixture.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",

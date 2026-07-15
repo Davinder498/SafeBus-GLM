@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { NotificationDeliverySummaryCard } from '@/components/admin/NotificationDeliverySummaryCard';
 import { fetchAdminAssignments } from '@/services/driverAssignmentService';
 import { fetchAdminTrips } from '@/services/adminSetupService';
 import { getVisibleBuses, getVisibleDrivers, getVisibleRoutes } from '@/services/transportationStructureService';
@@ -34,6 +35,7 @@ export function AdminTripsPage() {
     {!state && !error && <DataState title="Loading trips" message="Checking route readiness and recent activity." />}
     {state && <><Card className="p-5"><h2 className="text-xl font-bold text-navy-900">How trips start</h2><p className="mt-2 text-sm text-gray-600">An admin connects an active driver, bus, and route. The assigned driver then starts and ends the trip from the Driver Dashboard.</p><div className="mt-4 flex flex-wrap gap-4"><Link className="font-semibold text-navy-700 underline" to="/admin/driver-assignments">Manage assignments</Link><Link className="font-semibold text-navy-700 underline" to="/admin/live-trips">Open Live Fleet</Link></div></Card>
       <section><h2 className="text-xl font-bold text-navy-900">Route readiness</h2><div className="mt-3 grid gap-4">{state.assignments.filter((item) => item.status === 'active').length === 0 ? <DataState title="No routes ready to start" message="Assign an active driver and bus to a route before a driver can start a trip." /> : state.assignments.filter((item) => item.status === 'active').map((item) => { const ready = state.drivers.find((d) => d.id === item.driver_id)?.status === 'active' && state.buses.find((b) => b.id === item.bus_id)?.status === 'active' && state.routes.find((r) => r.id === item.route_id)?.status === 'active'; return <Card key={item.id} className="p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold text-navy-900">{names?.route.get(item.route_id) ?? 'Route'}</h3><p className="mt-1 text-sm text-gray-600">{names?.driver.get(item.driver_id) ?? 'Driver'} · {names?.bus.get(item.bus_id) ?? 'Bus'} · {item.trip_type}</p></div><StatusPill tone={ready ? 'success' : 'warning'}>{ready ? 'Ready for driver' : 'Needs attention'}</StatusPill></div>{!ready && <p className="mt-3 text-sm text-warning-700">A linked driver, bus, or route is inactive. Update the record before starting.</p>}</Card>; })}</div></section>
+      <NotificationDeliverySummaryCard />
       <TripSection title="Active trips" trips={active} names={names} empty="No active trips right now." />
       <TripSection title="Recently completed" trips={completed} names={names} empty="No completed trips yet." />
     </>}

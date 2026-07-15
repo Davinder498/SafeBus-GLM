@@ -13,9 +13,8 @@
 
 ## Current Checkout State
 
-- Current working branch: `phase-15a-guardian-email-notification-delivery`.
-- Current workflow for recent QA fixes: implementation is being pushed directly
-  to latest `main`; Codex reviews latest `main`.
+- Current working branch: `phase-15b-notification-delivery-hardening`.
+- Phase 15A was merged through PR #52 and is on `main`.
 - Hosted Supabase DEV is used for database smoke/RLS execution. Do not run RLS
   SQL against production.
 - SQL migrations are kept in `supabase/migrations` and are applied manually to
@@ -52,11 +51,12 @@
 | 11A - Guardian Live Bus Map Security Foundation              | `0027_guardian_live_bus_location_security_foundation.sql`, `tests/rls/guardian-live-bus-location-rls.sql`                                                   | Completed                          |
 | 11B/11C/11D - Guardian Live Bus Map Experience               | `apps/web/src/pages/GuardianLiveMapPage.tsx`, `GuardianLiveBusMap.tsx`, `useGuardianLiveBusLocations.ts`, `tests/smoke/guardian-live-bus-map.spec.ts`        | Completed                          |
 | Phase 12 - Simple Admin Setup and Manual Workflow             | Task-oriented admin navigation, readiness-based Overview/Setup, Operations and Trips pages, manual acceptance guide                                      | Ready for manual acceptance        |
-| Phase 15A - Guardian Event Email Notification Delivery Foundation | `0038_guardian_email_notification_delivery_foundation.sql`, `apps/web/netlify/functions/guardian-notification-email.mjs`, `docs/qa/phase-15a-guardian-email-notification-delivery-acceptance.md` | Implemented for review; manual acceptance pending |
+| Phase 15A - Guardian Event Email Notification Delivery Foundation | `0038_guardian_email_notification_delivery_foundation.sql`, `apps/web/netlify/functions/guardian-notification-email.mjs`, `docs/qa/phase-15a-guardian-email-notification-delivery-acceptance.md` | Merged via PR #52 |
+| Phase 15B - Notification Delivery Validation & Operational Hardening | `0039_notification_delivery_hardening_tenant_timezone_summary.sql`, `apps/web/netlify/functions/guardian-notification-email-scheduled.mjs`, `apps/web/src/components/admin/NotificationDeliverySummaryCard.tsx`, `docs/qa/phase-15b-notification-delivery-hardening-acceptance.md` | Implemented for review; manual acceptance pending |
 
 ## Current Milestone
 
-Phase 15A is implemented on a feature branch for review. It adds trusted server-side guardian pickup/drop-off email delivery from the existing outbox. Hosted-DEV migration execution, provider sandbox testing, Netlify deploy-preview verification, and product-owner manual acceptance are pending. Do not start Phase 15B or any next phase until Phase 15A is approved.
+Phase 15B (Notification Delivery Validation & Operational Hardening) is implemented on `phase-15b-notification-delivery-hardening` for review. It adds the smallest reliable production-compatible scheduler, tenant IANA time-zone email formatting, privacy-safe diagnostics on every dispatcher result path, a minimal tenant-admin notification-delivery summary RPC/UI, expanded RLS and unit/dispatcher/scheduled-function tests, a notification QA fixture, and a manual acceptance guide. Phase 15A was merged through PR #52 and is on `main`. Hosted-DEV migration application of 0038/0039, Resend sandbox testing, Netlify deploy-preview verification, and product-owner manual acceptance are pending. Do not merge Phase 15B until it is approved.
 
 ## RLS Test Workflow
 
@@ -228,7 +228,7 @@ Status: Implemented on feature branch; automated checks and hosted-DEV validatio
 
 ## Phase 15A — Guardian Event Email Notification Delivery Foundation
 
-Status: Implemented on `phase-15a-guardian-email-notification-delivery` for review; not accepted or merged.
+Status: Merged through PR #52 and on `main`.
 
 - Builds on Milestone 9A's backend-only `guardian_notification_outbox` instead of duplicating event-to-outbox enqueue logic.
 - Adds server-side email delivery through a secured Netlify Function using Supabase service-role access and Resend transactional email API configuration.
@@ -240,3 +240,18 @@ Status: Implemented on `phase-15a-guardian-email-notification-delivery` for revi
 - Safe DEV testing uses `SAFEBUS_DEV_EMAIL_RECIPIENT_OVERRIDE` in non-production Netlify contexts after original eligibility revalidation.
 - Tenant-admin operational visibility remains SQL/trusted QA only for this phase; no notification dashboard or Platform Super Admin tenant notification access was added.
 - Known limitations before acceptance: hosted-DEV SQL execution, Resend sandbox/provider test, Netlify deploy-preview status, and product-owner manual acceptance remain pending.
+
+## Phase 15B — Notification Delivery Validation & Operational Hardening
+
+Status: Implemented on `phase-15b-notification-delivery-hardening` for review; not merged and not accepted.
+
+- Phase 15A inspection findings: lifecycle, claims, leases, batch limits, retry delays, maximum attempts, payload resolution, consent, recipient selection, idempotency, and dispatcher auth were confirmed correct. Gaps identified and addressed in this phase: no automated scheduler, raw UTC email timestamps (poor for an Alberta pilot), missing privacy-safe logging on several result paths, and no tenant-admin operational visibility.
+- Added migration `0039_notification_delivery_hardening_tenant_timezone_summary.sql` (forward-only; does not modify `0038`): adds `tenants.timezone` (IANA, default `America/Edmonton`), replaces `resolve_guardian_notification_email_payload` with a compatible superset that returns `tenant_timezone`, and adds `get_tenant_notification_delivery_summary()` tenant-scoped summary RPC.
+- Scheduler: added `apps/web/netlify/functions/guardian-notification-email-scheduled.mjs` with hourly `schedule` in `netlify.toml`. It reuses the shared `runDispatcher` logic, injects the dispatcher secret internally so it never leaves the server, requires no browser user, and remains safe under overlapping execution via `for update skip locked`.
+- Privacy-safe diagnostics: every dispatcher result path now logs through an allowlist-based `safeLog()` helper. Logs contain only outbox correlation ID, attempt, notification type, result, category, and duration. No recipient emails, names, message bodies, API keys, or provider response bodies are logged.
+- Tenant-admin operational visibility: the summary RPC and `NotificationDeliverySummaryCard` on `/admin/trips` show pending/processing/recent-delivered/recent-failed/cancelled counts, oldest pending age, and normalized failure categories for `tenant_admin`/`school_admin`/`transportation_admin` only. No personal information is returned. Platform Super Admin is deliberately denied.
+- Time-zone decision: added `tenants.timezone` (IANA) with a safe Alberta default and tenant-admin configuration path. The dispatcher formats the authoritative server-recorded event timestamp in the tenant's configured IANA zone. Raw UTC is no longer presented to guardians.
+- Idempotency: the dispatcher sends Resend's `Idempotency-Key` header keyed per outbox row. Because Resend does not publish a guaranteed idempotency-key lifetime, SafeBus describes this as "duplicate-resistant" rather than exact-once.
+- Tests: expanded unit/dispatcher/scheduled-function tests, expanded RLS/privilege suite, added Playwright coverage for the summary card (admin access, guardian/driver/Platform Super Admin denial, privacy, mobile layout), added a notification QA fixture, and added a manual acceptance guide.
+- Manual acceptance guide: `docs/qa/phase-15b-notification-delivery-hardening-acceptance.md`.
+- Known limitations before acceptance: hosted-DEV migration application of `0038`/`0039`, Resend sandbox/provider test, Netlify deploy-preview status, and product-owner manual acceptance remain pending. The PR is not merged.
