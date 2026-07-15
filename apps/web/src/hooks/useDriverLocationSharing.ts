@@ -16,8 +16,8 @@ export interface UseDriverLocationSharingResult {
   stop: () => void;
 }
 
-const MIN_UPDATE_INTERVAL_MS = 10_000;
-const INITIAL_RETRY_MS = 5_000;
+const MIN_UPDATE_INTERVAL_MS = 3_000;
+const INITIAL_RETRY_MS = 3_000;
 const MAX_RETRY_MS = 30_000;
 
 interface GeolocationFix {
@@ -88,7 +88,6 @@ export function useDriverLocationSharing(activeTripId: string | null): UseDriver
       return;
     }
 
-    latestFixRef.current = null;
     inFlightRef.current = true;
     lastAttemptAtRef.current = Date.now();
 
@@ -187,7 +186,7 @@ export function useDriverLocationSharing(activeTripId: string | null): UseDriver
           setState({ kind: 'error', message: 'Location sharing could not be started.' });
         }
       },
-      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 5_000 },
+      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 3_000 },
     );
   }, [clearTimer, clearWatcher, supported]);
 

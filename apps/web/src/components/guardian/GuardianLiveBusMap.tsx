@@ -1,5 +1,5 @@
-import { Component, type ErrorInfo, type ReactNode, useCallback, useMemo, useState } from 'react';
-import { CircleMarker, MapContainer, Popup, TileLayer } from 'react-leaflet';
+import { Component, type ErrorInfo, type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet';
 import type { LatLngExpression } from 'leaflet';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
@@ -125,6 +125,39 @@ function GuardianMapUnavailable() {
   );
 }
 
+/**
+ * Keeps the Leaflet map in sync with its container size.
+ *
+ * Leaflet computes its tile layout once at initialization and does not detect
+ * later container size changes (e.g. when this map mounts while the page is
+ * still revealing content after an async data load). Without this, the map
+ * tiles render blank or shifted inside the guardian layout. We call
+ * `invalidateSize()` on mount and observe container resizes.
+ */
+function MapResizer() {
+  const map = useMap();
+
+  useEffect(() => {
+    // Run once after mount so the map recalculates against the now-settled
+    // container dimensions.
+    map.invalidateSize();
+
+    // Recalculate on any future container resize (responsive layout changes,
+    // collapsible regions, font loading reflow, etc.).
+    const container = map.getContainer();
+    const resizeObserver = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [map]);
+
+  return null;
+}
+
 export function GuardianLiveBusMap({
   locations,
   studentContext,
@@ -201,6 +234,7 @@ export function GuardianLiveBusMap({
             className="h-full w-full"
             data-testid="guardian-live-bus-leaflet-map"
           >
+            <MapResizer />
             <TileLayer
               url={tileConfig.tileUrl as string}
               attribution={tileConfig.attribution as string}
