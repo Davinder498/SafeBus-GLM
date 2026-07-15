@@ -5,6 +5,13 @@
 [functions]
   directory = "apps/web/netlify/functions"
 
+# Phase 15B: Conservative hourly scheduled invocation of the secured guardian notification dispatcher.
+# Overlapping executions are safe because the database claim RPC uses `for update skip locked`.
+# Secrets remain server-side; no browser user is required. Manual secure POST invocation
+# to /.netlify/functions/guardian-notification-email remains available for QA.
+[functions."guardian-notification-email-scheduled"]
+  schedule = "@hourly"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
