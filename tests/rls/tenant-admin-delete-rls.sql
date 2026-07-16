@@ -16,6 +16,9 @@
 -- PRIVILEGED CLEANUP BEFORE SEED
 -- ===========================================================================
 
+delete from public.student_bus_assignments where tenant_id = 'a1000000-0000-0000-0000-000000000001';
+delete from public.driver_route_assignments where tenant_id = 'a1000000-0000-0000-0000-000000000001';
+delete from public.bus_route_assignments where tenant_id = 'a1000000-0000-0000-0000-000000000001';
 delete from public.student_guardians where tenant_id = 'a1000000-0000-0000-0000-000000000001';
 delete from public.student_route_assignments where tenant_id = 'a1000000-0000-0000-0000-000000000001';
 delete from public.route_stops where tenant_id = 'a1000000-0000-0000-0000-000000000001';
@@ -92,6 +95,7 @@ values
 insert into public.buses (id, tenant_id, bus_number, status)
 values
   ('e1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'DEL-001', 'active'),
+  ('e1000000-0000-0000-0000-000000000003', 'a1000000-0000-0000-0000-000000000001', 'DEL-ROUTE', 'active'),
   ('e1000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000002', 'DEL-002', 'active');
 
 insert into public.drivers (id, tenant_id, profile_id, status)
@@ -113,6 +117,71 @@ insert into public.guardians (id, tenant_id, profile_id, full_name, email, statu
 values
   ('e5000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'c3000000-0000-0000-0000-000000000003', 'DEL Guardian A', 'rls_delete_guardian@test.local', 'active'),
   ('e5000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000002', 'c3000000-0000-0000-0000-000000000003', 'DEL Guardian B', 'rls_delete_guardian@test.local', 'active');
+
+-- Route A has the complete assignment graph that previously caused a 409.
+insert into public.route_stops (
+  id, tenant_id, route_id, school_id, stop_name, stop_order, status
+)
+values (
+  'e3100000-0000-0000-0000-000000000001',
+  'a1000000-0000-0000-0000-000000000001',
+  'e3000000-0000-0000-0000-000000000001',
+  'b2000000-0000-0000-0000-000000000001',
+  'DEL Stop A',
+  1,
+  'active'
+);
+
+insert into public.student_route_assignments (
+  id, tenant_id, student_id, route_id, pickup_stop_id, status
+)
+values (
+  'e3200000-0000-0000-0000-000000000001',
+  'a1000000-0000-0000-0000-000000000001',
+  'e4000000-0000-0000-0000-000000000001',
+  'e3000000-0000-0000-0000-000000000001',
+  'e3100000-0000-0000-0000-000000000001',
+  'active'
+);
+
+insert into public.bus_route_assignments (
+  id, tenant_id, bus_id, route_id, trip_type, status
+)
+values (
+  'e3300000-0000-0000-0000-000000000001',
+  'a1000000-0000-0000-0000-000000000001',
+  'e1000000-0000-0000-0000-000000000003',
+  'e3000000-0000-0000-0000-000000000001',
+  'morning',
+  'active'
+);
+
+insert into public.student_bus_assignments (
+  id, tenant_id, student_id, bus_route_assignment_id, pickup_stop_id, status
+)
+values (
+  'e3400000-0000-0000-0000-000000000001',
+  'a1000000-0000-0000-0000-000000000001',
+  'e4000000-0000-0000-0000-000000000001',
+  'e3300000-0000-0000-0000-000000000001',
+  'e3100000-0000-0000-0000-000000000001',
+  'active'
+);
+
+insert into public.driver_route_assignments (
+  id, tenant_id, driver_id, bus_id, route_id, bus_route_assignment_id,
+  trip_type, status
+)
+values (
+  'e3500000-0000-0000-0000-000000000001',
+  'a1000000-0000-0000-0000-000000000001',
+  'e2000000-0000-0000-0000-000000000001',
+  'e1000000-0000-0000-0000-000000000003',
+  'e3000000-0000-0000-0000-000000000001',
+  'e3300000-0000-0000-0000-000000000001',
+  'morning',
+  'active'
+);
 
 -- ===========================================================================
 -- TEST 1: Tenant admin CAN delete own-tenant bus
@@ -286,6 +355,7 @@ set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000001","r
 do $$
 declare
   v_count int;
+  v_child_count int;
 begin
   if public.current_user_role() <> 'tenant_admin' then
     raise exception 'TEST 7 FAILED: expected tenant_admin, got %', public.current_user_role();
@@ -296,7 +366,22 @@ begin
   if v_count <> 1 then
     raise exception 'TEST 7 FAILED: expected 1 deleted row, got %', v_count;
   end if;
-  raise notice 'TEST 7 PASSED: tenant_admin can delete own-tenant route';
+
+  select
+    (select count(*) from public.route_stops where id = 'e3100000-0000-0000-0000-000000000001') +
+    (select count(*) from public.student_route_assignments where id in (
+      'e3200000-0000-0000-0000-000000000001',
+      'e3400000-0000-0000-0000-000000000001'
+    )) +
+    (select count(*) from public.bus_route_assignments where id = 'e3300000-0000-0000-0000-000000000001') +
+    (select count(*) from public.student_bus_assignments where id = 'e3400000-0000-0000-0000-000000000001') +
+    (select count(*) from public.driver_route_assignments where id = 'e3500000-0000-0000-0000-000000000001')
+  into v_child_count;
+
+  if v_child_count <> 0 then
+    raise exception 'TEST 7 FAILED: expected assignment cascade, found % child rows', v_child_count;
+  end if;
+  raise notice 'TEST 7 PASSED: tenant_admin can delete own-tenant route and assignment graph';
 end
 $$;
 rollback;
@@ -472,6 +557,9 @@ rollback;
 -- PRIVILEGED CLEANUP AFTER TESTS
 -- ===========================================================================
 
+delete from public.student_bus_assignments where tenant_id = 'a1000000-0000-0000-0000-000000000001';
+delete from public.driver_route_assignments where tenant_id = 'a1000000-0000-0000-0000-000000000001';
+delete from public.bus_route_assignments where tenant_id = 'a1000000-0000-0000-0000-000000000001';
 delete from public.student_guardians where tenant_id = 'a1000000-0000-0000-0000-000000000001';
 delete from public.student_route_assignments where tenant_id = 'a1000000-0000-0000-0000-000000000001';
 delete from public.route_stops where tenant_id = 'a1000000-0000-0000-0000-000000000001';
