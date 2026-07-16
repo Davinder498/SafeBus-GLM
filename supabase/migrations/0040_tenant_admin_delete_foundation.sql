@@ -10,9 +10,9 @@
 --     (insert/update) privileges but cannot delete records.
 --   * All policies check tenant_id = current_tenant_id() so a tenant admin
 --     can never delete cross-tenant rows.
---   * Foreign keys already use ON DELETE CASCADE for child rows
---     (route_stops, student_route_assignments, student_guardians, etc.)
---     so deleting a parent cascades cleanly.
+--   * Existing ON DELETE CASCADE foreign keys remove child rows such as route
+--     stops, student route assignments, and student-guardian links. Migration
+--     0041 aligns the newer route-assignment foreign keys with this behavior.
 
 -- Helper: is the caller a tenant-level delete admin?
 create or replace function public.is_tenant_delete_admin()
