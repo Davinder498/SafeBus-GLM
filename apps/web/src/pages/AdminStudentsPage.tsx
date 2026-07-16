@@ -5,6 +5,7 @@ import { InlineFormShell } from '@/components/admin/TransportationAdminForms';
 import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -16,6 +17,7 @@ import { getVisibleRouteStops } from '@/services/transportationStructureService'
 import { createStudentBusAssignment, fetchAdminBusServices, updateStudentBusAssignment, type BusServiceOption } from '@/services/studentBusAssignmentService';
 import {
   createStudent,
+  deleteStudent,
   setStudentStatus,
   updateStudent,
 } from '@/services/adminStudentsService';
@@ -64,8 +66,12 @@ export function AdminStudentsPage() {
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingStatusStudentId, setPendingStatusStudentId] = useState<string | null>(null);
+  const [deletingStudent, setDeletingStudent] = useState<AdminStudentRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
+  const canDelete =
+    !!profile && (profile.role === 'tenant_admin' || profile.role === 'platform_super_admin');
 
   useEffect(() => {
     void Promise.all([getVisibleSchools(), fetchAdminBusServices(), getVisibleRouteStops()])
@@ -183,6 +189,23 @@ export function AdminStudentsPage() {
       setWriteError(reactivateError instanceof Error ? reactivateError.message : 'Unable to reactivate student.');
     } finally {
       setPendingStatusStudentId(null);
+    }
+  }
+
+  async function handleDeleteStudent() {
+    if (!deletingStudent || deleting) return;
+    setDeleting(true);
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await deleteStudent(deletingStudent.id);
+      setDeletingStudent(null);
+      setSuccessMessage('Student deleted.');
+      await list.reload();
+    } catch (deleteError) {
+      setWriteError(deleteError instanceof Error ? deleteError.message : 'Unable to delete student.');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -323,6 +346,23 @@ export function AdminStudentsPage() {
                             {pendingStatusStudentId === student.id ? 'Reactivating…' : 'Reactivate'}
                           </Button>
                         )}
+                        {canDelete && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="danger"
+                            onClick={() => {
+                              setEditingStudent(null);
+                              setShowCreateForm(false);
+                              setBusStudent(null);
+                              setDeletingStudent(student);
+                              setWriteError(null);
+                              setSuccessMessage(null);
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        )}
                       </>
                     )}
                   </div></td>
@@ -334,6 +374,16 @@ export function AdminStudentsPage() {
             <AdminPagination page={list.page} pageSize={list.pageSize} totalCount={list.totalCount} onPageChange={list.setPage} onPageSizeChange={list.setPageSize} />
           </section>
         )}
+        <ConfirmDialog
+          open={!!deletingStudent}
+          title={`Delete ${deletingStudent ? getStudentName(deletingStudent) : ''}`}
+          description="This permanently deletes the student record along with their guardian links and route assignments. This action cannot be undone."
+          confirmLabel="Delete student"
+          destructive
+          busy={deleting}
+          onConfirm={() => void handleDeleteStudent()}
+          onCancel={() => setDeletingStudent(null)}
+        />
       </div>
     </DashboardLayout>
   );

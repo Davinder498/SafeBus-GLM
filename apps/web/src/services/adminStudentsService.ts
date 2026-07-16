@@ -134,6 +134,21 @@ export async function updateStudent(
 }
 
 /**
+ * Permanently delete a student record. RLS restricts this to tenant admins
+ * in the student's tenant. Related rows (student_guardians,
+ * student_route_assignments) cascade automatically via ON DELETE CASCADE.
+ */
+export async function deleteStudent(studentId: string): Promise<void> {
+  const client = requireSupabase();
+  const { error } = await client.from('students').delete().eq('id', studentId);
+
+  if (error) {
+    logDevError('Failed to delete student', error);
+    throw new Error('We could not delete the student. Please try again.');
+  }
+}
+
+/**
  * Set a student's status (active/inactive). Used for deactivate/reactivate.
  */
 export async function setStudentStatus(

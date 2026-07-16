@@ -13,6 +13,7 @@ import type {
 import { RouteTile } from '@/components/admin/RouteTile';
 import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { adminRoles } from '@/contexts/AuthContext';
@@ -27,6 +28,7 @@ import {
 import {
   createRoute,
   createRouteStop,
+  deleteRoute,
   getVisibleBuses,
   getVisibleDrivers,
   getVisibleRouteStops,
@@ -68,9 +70,13 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const openedInitialRoute = useRef(false);
+  const [deletingRoute, setDeletingRoute] = useState<Route | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const canWrite =
     !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
+  const canDelete =
+    !!profile && (profile.role === 'tenant_admin' || profile.role === 'platform_super_admin');
 
   const loadRoutes = useCallback(async () => {
     setLoading(true);
@@ -223,6 +229,26 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
   function cancelForm() {
     setShowCreateForm(false);
     setEditingRoute(null);
+  }
+
+  async function handleDeleteRoute() {
+    if (!deletingRoute || deleting) return;
+    setDeleting(true);
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await deleteRoute(deletingRoute.id);
+      setDeletingRoute(null);
+      setSuccessMessage('Route deleted.');
+      await loadRoutes();
+      await list.reload();
+    } catch (deleteError) {
+      setWriteError(
+        deleteError instanceof Error ? deleteError.message : 'Unable to delete route.',
+      );
+    } finally {
+      setDeleting(false);
+    }
   }
 
   // Helper: get existing assignments as drafts for the form
@@ -464,13 +490,31 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
                   stopCount={routeStops.length}
                   assignments={tileAssignments}
                   canWrite={canWrite}
+                  canDelete={canDelete}
                   onEdit={() => startEdit(route)}
+                  onDelete={() => {
+                    setEditingRoute(null);
+                    setShowCreateForm(false);
+                    setDeletingRoute(route);
+                    setWriteError(null);
+                    setSuccessMessage(null);
+                  }}
                 />
               );
             })}
             <div className="sm:col-span-2 lg:col-span-3"><AdminPagination page={list.page} pageSize={list.pageSize} totalCount={list.totalCount} onPageChange={list.setPage} onPageSizeChange={list.setPageSize} /></div>
           </section>
         )}
+        <ConfirmDialog
+          open={!!deletingRoute}
+          title={`Delete ${deletingRoute?.route_name ?? ''}`}
+          description="This permanently deletes the route along with its stops, assignments, and student route assignments. This action cannot be undone."
+          confirmLabel="Delete route"
+          destructive
+          busy={deleting}
+          onConfirm={() => void handleDeleteRoute()}
+          onCancel={() => setDeletingRoute(null)}
+        />
       </div>
     </DashboardLayout>
   );
