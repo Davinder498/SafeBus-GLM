@@ -111,6 +111,23 @@ export async function createStudentGuardianLink(input: {
 }
 
 /**
+ * Permanently delete a guardian record. RLS restricts this to tenant admins
+ * in the guardian's tenant. Related student_guardians rows cascade via
+ * ON DELETE CASCADE.
+ */
+export async function deleteGuardian(guardianId: string): Promise<void> {
+  const client = requireSupabase();
+  const { error } = await client.from('guardians').delete().eq('id', guardianId);
+
+  if (error) {
+    if (import.meta.env.DEV) {
+      console.error('Failed to delete guardian', error);
+    }
+    throw new Error('We could not delete the guardian. Please try again.');
+  }
+}
+
+/**
  * Deactivate a student-guardian link via the secure
  * admin_deactivate_student_guardian() RPC. The RPC validates that the link
  * belongs to the caller's tenant and that the caller is an admin.

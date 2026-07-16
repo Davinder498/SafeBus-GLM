@@ -9,6 +9,7 @@ import {
 import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -19,6 +20,7 @@ import { getVisibleDriverProfiles } from '@/services/adminOrganizationService';
 import { inviteTenantMember } from '@/services/onboardingService';
 import {
   createDriver,
+  deleteDriver,
   updateDriver,
 } from '@/services/transportationStructureService';
 import type { OrganizationProfile } from '@/types/organization';
@@ -54,8 +56,12 @@ export function AdminDriversPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [inviteForm, setInviteForm] = useState({ fullName: '', email: '', phone: '', employeeNumber: '' });
   const [showInviteForm, setShowInviteForm] = useState(false);
+  const [deletingDriver, setDeletingDriver] = useState<Driver | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
+  const canDelete =
+    !!profile && (profile.role === 'tenant_admin' || profile.role === 'platform_super_admin');
 
   useEffect(() => {
     void getVisibleDriverProfiles().then(setProfiles);
@@ -116,6 +122,25 @@ export function AdminDriversPage() {
       setWriteError(
         updateError instanceof Error ? updateError.message : 'Unable to update driver record.',
       );
+    }
+  }
+
+  async function handleDeleteDriver() {
+    if (!deletingDriver || deleting) return;
+    setDeleting(true);
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await deleteDriver(deletingDriver.id);
+      setDeletingDriver(null);
+      setSuccessMessage('Driver record deleted.');
+      await list.reload();
+    } catch (deleteError) {
+      setWriteError(
+        deleteError instanceof Error ? deleteError.message : 'Unable to delete driver record.',
+      );
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -233,6 +258,22 @@ export function AdminDriversPage() {
                           Edit
                         </Button>
                       )}
+                      {canDelete && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="danger"
+                          onClick={() => {
+                            setShowCreateForm(false);
+                            setEditingDriver(null);
+                            setDeletingDriver(driver);
+                            setWriteError(null);
+                            setSuccessMessage(null);
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      )}
                     </div>
                   </div>
                   <div className="mt-5 grid gap-3 text-sm md:grid-cols-2">
@@ -264,6 +305,16 @@ export function AdminDriversPage() {
             <AdminPagination page={list.page} pageSize={list.pageSize} totalCount={list.totalCount} onPageChange={list.setPage} onPageSizeChange={list.setPageSize} />
           </section>
         )}
+        <ConfirmDialog
+          open={!!deletingDriver}
+          title={`Delete driver ${deletingDriver?.employee_number ?? ''}`}
+          description="This permanently deletes the driver record. Assignments to routes will also be removed. This action cannot be undone."
+          confirmLabel="Delete driver"
+          destructive
+          busy={deleting}
+          onConfirm={() => void handleDeleteDriver()}
+          onCancel={() => setDeletingDriver(null)}
+        />
       </div>
     </DashboardLayout>
   );

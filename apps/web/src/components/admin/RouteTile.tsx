@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { StatusPill } from '@/components/ui/StatusPill';
 import type { Route, RouteStatus, RouteType } from '@/types/transportation';
@@ -27,7 +28,9 @@ interface RouteTileProps {
   stopCount: number;
   assignments: RouteTileAssignment[];
   canWrite: boolean;
+  canDelete?: boolean;
   onEdit: () => void;
+  onDelete?: () => void;
 }
 
 export function RouteTile({
@@ -36,7 +39,9 @@ export function RouteTile({
   stopCount,
   assignments,
   canWrite,
+  canDelete = false,
   onEdit,
+  onDelete,
 }: RouteTileProps) {
   const activeAssignments = assignments.filter((a) => a.busLabel);
 
@@ -89,7 +94,7 @@ export function RouteTile({
       </dl>
 
       {canWrite && (
-        <div className="mt-4 border-t border-gray-100 pt-4">
+        <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
           <button
             type="button"
             onClick={onEdit}
@@ -97,6 +102,11 @@ export function RouteTile({
           >
             Edit route &rarr;
           </button>
+          {canDelete && onDelete && (
+            <Button type="button" size="sm" variant="danger" onClick={onDelete}>
+              Delete
+            </Button>
+          )}
         </div>
       )}
     </Card>

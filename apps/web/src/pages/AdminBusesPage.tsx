@@ -9,6 +9,7 @@ import {
 import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -16,7 +17,7 @@ import { adminRoles } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
 import { getVisibleSchools } from '@/services/adminOrganizationService';
-import { createBus, updateBus } from '@/services/transportationStructureService';
+import { createBus, deleteBus, updateBus } from '@/services/transportationStructureService';
 import type { School } from '@/types/organization';
 import type { Bus, BusStatus, CreateBusInput, UpdateBusInput } from '@/types/transportation';
 
@@ -43,8 +44,12 @@ export function AdminBusesPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [deletingBus, setDeletingBus] = useState<Bus | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
+  const canDelete =
+    !!profile && (profile.role === 'tenant_admin' || profile.role === 'platform_super_admin');
 
   useEffect(() => {
     void getVisibleSchools().then(setSchools);
@@ -78,6 +83,23 @@ export function AdminBusesPage() {
       await list.reload();
     } catch (updateError) {
       setWriteError(updateError instanceof Error ? updateError.message : 'Unable to update bus.');
+    }
+  }
+
+  async function handleDeleteBus() {
+    if (!deletingBus || deleting) return;
+    setDeleting(true);
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await deleteBus(deletingBus.id);
+      setDeletingBus(null);
+      setSuccessMessage('Bus deleted.');
+      await list.reload();
+    } catch (deleteError) {
+      setWriteError(deleteError instanceof Error ? deleteError.message : 'Unable to delete bus.');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -179,6 +201,22 @@ export function AdminBusesPage() {
                         Edit
                       </Button>
                     )}
+                    {canDelete && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="danger"
+                        onClick={() => {
+                          setEditingBus(null);
+                          setShowCreateForm(false);
+                          setDeletingBus(bus);
+                          setWriteError(null);
+                          setSuccessMessage(null);
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <div className="mt-5 grid gap-3 text-sm md:grid-cols-2">
@@ -209,6 +247,16 @@ export function AdminBusesPage() {
             <AdminPagination page={list.page} pageSize={list.pageSize} totalCount={list.totalCount} onPageChange={list.setPage} onPageSizeChange={list.setPageSize} />
           </section>
         )}
+        <ConfirmDialog
+          open={!!deletingBus}
+          title={`Delete bus ${deletingBus?.bus_number ?? ''}`}
+          description="This permanently deletes the bus record. This action cannot be undone."
+          confirmLabel="Delete bus"
+          destructive
+          busy={deleting}
+          onConfirm={() => void handleDeleteBus()}
+          onCancel={() => setDeletingBus(null)}
+        />
       </div>
     </DashboardLayout>
   );

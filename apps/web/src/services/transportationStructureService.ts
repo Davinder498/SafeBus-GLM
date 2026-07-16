@@ -63,6 +63,16 @@ export async function updateBus(id: string, input: UpdateBusInput): Promise<Bus>
   return data as Bus;
 }
 
+export async function deleteBus(id: string): Promise<void> {
+  const client = requireSupabase();
+  const { error } = await client.from('buses').delete().eq('id', id);
+
+  if (error) {
+    if (import.meta.env.DEV) console.error('Failed to delete bus', error);
+    throw new Error('We could not delete the bus. Please try again.');
+  }
+}
+
 export async function getVisibleDrivers(): Promise<Driver[]> {
   const client = requireSupabase();
   const { data, error } = await client
@@ -97,6 +107,16 @@ export async function updateDriver(id: string, input: UpdateDriverInput): Promis
 
   if (error) throw new Error(error.message);
   return data as Driver;
+}
+
+export async function deleteDriver(id: string): Promise<void> {
+  const client = requireSupabase();
+  const { error } = await client.from('drivers').delete().eq('id', id);
+
+  if (error) {
+    if (import.meta.env.DEV) console.error('Failed to delete driver', error);
+    throw new Error('We could not delete the driver record. Please try again.');
+  }
 }
 
 export async function getVisibleRoutes(): Promise<Route[]> {
@@ -167,6 +187,16 @@ export async function updateRoute(id: string, input: UpdateRouteInput): Promise<
     throw describeRouteError(error);
   }
   return data as Route;
+}
+
+export async function deleteRoute(id: string): Promise<void> {
+  const client = requireSupabase();
+  const { error } = await client.from('routes').delete().eq('id', id);
+
+  if (error) {
+    if (import.meta.env.DEV) console.error('Failed to delete route', error);
+    throw new Error('We could not delete the route. Please try again.');
+  }
 }
 
 export async function getVisibleRouteStops(): Promise<RouteStop[]> {
