@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AdminPagination } from '@/components/admin/AdminPagination';
 import { StudentBusAssignmentForm } from '@/components/admin/StudentBusAssignmentForm';
+import { StudentQrCredentialPanel } from '@/components/admin/StudentQrCredentialPanel';
 import { InlineFormShell } from '@/components/admin/TransportationAdminForms';
 import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
@@ -63,6 +64,7 @@ export function AdminStudentsPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [busStudent, setBusStudent] = useState<AdminStudentRow | null>(null);
+  const [qrStudent, setQrStudent] = useState<AdminStudentRow | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingStatusStudentId, setPendingStatusStudentId] = useState<string | null>(null);
@@ -261,6 +263,10 @@ export function AdminStudentsPage() {
           />
         )}
 
+        {canWrite && qrStudent && (
+          <StudentQrCredentialPanel studentId={qrStudent.id} studentName={getStudentName(qrStudent)} onClose={() => setQrStudent(null)} />
+        )}
+
         {canWrite && busStudent && (
           <InlineFormShell title={`${busStudent.bus_assignment_id ? 'Manage' : 'Assign'} bus for ${getStudentName(busStudent)}`}>
             <StudentBusAssignmentForm assignment={existingBusAssignment(busStudent)} fixedStudentId={busStudent.id}
@@ -325,6 +331,7 @@ export function AdminStudentsPage() {
                           Edit
                         </Button>
                         {student.status === 'active' && <Button type="button" size="sm" variant="secondary" onClick={() => { setEditingStudent(null); setShowCreateForm(false); setBusStudent(student); setWriteError(null); setSuccessMessage(null); }}>{student.bus_assignment_id ? 'Manage bus' : 'Assign bus'}</Button>}
+                        {student.status === 'active' && <Button type="button" size="sm" variant="secondary" onClick={() => { setEditingStudent(null); setShowCreateForm(false); setBusStudent(null); setQrStudent(student); setWriteError(null); setSuccessMessage(null); }} data-testid="admin-manage-student-qr">QR badge</Button>}
                         {student.status === 'active' ? (
                           <Button
                             type="button"
