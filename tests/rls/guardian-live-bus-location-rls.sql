@@ -85,6 +85,7 @@ delete from public.profiles where id in (
   '11a08000-0000-0000-0000-000000000004',
   '11a08000-0000-0000-0000-000000000005',
   '11a08000-0000-0000-0000-000000000006',
+  '11a08000-0000-0000-0000-000000000007',
   '11a08000-0000-0000-0000-000000000011',
   '11a08000-0000-0000-0000-000000000012',
   '11a08000-0000-0000-0000-000000000013'
@@ -97,6 +98,7 @@ delete from auth.users where id in (
   '11a08000-0000-0000-0000-000000000004',
   '11a08000-0000-0000-0000-000000000005',
   '11a08000-0000-0000-0000-000000000006',
+  '11a08000-0000-0000-0000-000000000007',
   '11a08000-0000-0000-0000-000000000011',
   '11a08000-0000-0000-0000-000000000012',
   '11a08000-0000-0000-0000-000000000013'
@@ -137,6 +139,7 @@ values
   ('11a08000-0000-0000-0000-000000000004', 'm11a_guardian_b@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now()),
   ('11a08000-0000-0000-0000-000000000005', 'm11a_guardian_no_identity@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now()),
   ('11a08000-0000-0000-0000-000000000006', 'm11a_guardian_b_tenant@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now()),
+  ('11a08000-0000-0000-0000-000000000007', 'm11a_platform_super_admin@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now()),
   ('11a08000-0000-0000-0000-000000000011', 'm11a_driver_a2@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now()),
   ('11a08000-0000-0000-0000-000000000012', 'm11a_driver_a3@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now()),
   ('11a08000-0000-0000-0000-000000000013', 'm11a_driver_b@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now());
@@ -149,6 +152,7 @@ values
   ('11a08000-0000-0000-0000-000000000004', '11a06000-0000-0000-0000-000000000001', null, 'M11A Guardian B', 'm11a_guardian_b@test.local', 'guardian', 'active'),
   ('11a08000-0000-0000-0000-000000000005', '11a06000-0000-0000-0000-000000000001', null, 'M11A Guardian No Identity', 'm11a_guardian_no_identity@test.local', 'guardian', 'active'),
   ('11a08000-0000-0000-0000-000000000006', '11a06000-0000-0000-0000-000000000002', null, 'M11A Guardian Tenant B', 'm11a_guardian_b_tenant@test.local', 'guardian', 'active'),
+  ('11a08000-0000-0000-0000-000000000007', '11a06000-0000-0000-0000-000000000001', null, 'M11A Platform Super Admin', 'm11a_platform_super_admin@test.local', 'platform_super_admin', 'active'),
   ('11a08000-0000-0000-0000-000000000011', '11a06000-0000-0000-0000-000000000001', null, 'M11A Driver A2', 'm11a_driver_a2@test.local', 'driver', 'active'),
   ('11a08000-0000-0000-0000-000000000012', '11a06000-0000-0000-0000-000000000001', null, 'M11A Driver A3', 'm11a_driver_a3@test.local', 'driver', 'active'),
   ('11a08000-0000-0000-0000-000000000013', '11a06000-0000-0000-0000-000000000002', null, 'M11A Driver B', 'm11a_driver_b@test.local', 'driver', 'active');
@@ -285,6 +289,24 @@ end
 $$;
 rollback;
 
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = '11a08000-0000-0000-0000-000000000007';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"11a08000-0000-0000-0000-000000000007","role":"authenticated"}';
+do $$
+begin
+  begin
+    perform * from public.get_guardian_student_live_bus_location_state();
+    raise exception 'TEST 4B FAILED: platform super admin was not denied guardian RPC visibility';
+  exception
+    when insufficient_privilege then
+      raise notice 'TEST 4B PASSED: platform super admin denied guardian RPC visibility';
+  end;
+end
+$$;
+rollback;
+
 -- ===========================================================================
 -- POSITIVE VISIBILITY, ISOLATION, AND CONTRACT
 -- ===========================================================================
@@ -320,6 +342,7 @@ begin
   if v_row.location_recorded_at is null or v_row.location_age_seconds < 0 then
     raise exception 'TEST 5 FAILED: expected nonnegative server age and timestamp';
   end if;
+  raise notice 'TEST 5 UUID AGGREGATE REGRESSION: one linked student with exactly one active UUID trip executes without min(uuid) error';
 
   select array_agg(parameter_name::text order by parameter_name::text) into v_forbidden
   from information_schema.parameters
@@ -618,6 +641,8 @@ set status = 'completed', ended_at = now()
 where id = '11a20000-0000-0000-0000-000000000002';
 insert into public.driver_trips (id, tenant_id, driver_id, bus_id, route_id, trip_type, status, service_date, started_at)
 values ('11a20000-0000-0000-0000-000000000004', '11a06000-0000-0000-0000-000000000001', '11a09000-0000-0000-0000-000000000012', '11a0c000-0000-0000-0000-000000000002', '11a0d000-0000-0000-0000-000000000001', 'morning', 'active', current_date, now() - interval '1 minute');
+insert into public.driver_trip_current_locations (driver_trip_id, tenant_id, driver_id, bus_id, route_id, latitude, longitude, recorded_at)
+values ('11a20000-0000-0000-0000-000000000004', '11a06000-0000-0000-0000-000000000001', '11a09000-0000-0000-0000-000000000012', '11a0c000-0000-0000-0000-000000000002', '11a0d000-0000-0000-0000-000000000001', 54.0000, -117.0000, now() - interval '15 seconds');
 set local role authenticated;
 set local request.jwt.claim.sub = '11a08000-0000-0000-0000-000000000002';
 set local request.jwt.claim.role = 'authenticated';
@@ -627,8 +652,8 @@ declare v_row record;
 begin
   select * into v_row from public.get_guardian_student_live_bus_location_state()
   where student_id = '11a0a000-0000-0000-0000-000000000001';
-  if v_row.location_state <> 'invalid' or v_row.latitude is not null or v_row.longitude is not null then
-    raise exception 'TEST 27 FAILED: ambiguous active trips did not fail closed';
+  if v_row.location_state <> 'invalid' or v_row.latitude is not null or v_row.longitude is not null or v_row.location_recorded_at is not null then
+    raise exception 'TEST 27 FAILED: ambiguous active trips did not fail closed without selecting a trip';
   end if;
   raise notice 'TEST 27 PASSED: ambiguous multiple active trips return one invalid row';
 end
@@ -688,7 +713,15 @@ begin
   ] then
     raise exception 'TEST 29/30 FAILED: unexpected RPC result contract: %', v_out_columns;
   end if;
-  raise notice 'TEST 29/30 PASSED: no scope-widening args and forbidden columns excluded';
+
+  if pg_get_functiondef('public.get_guardian_student_live_bus_location_state()'::regprocedure) like '%min(atc.driver_trip_id) as only_driver_trip_id%' then
+    raise exception 'TEST 31 FAILED: RPC still uses unsupported min(uuid) aggregation';
+  end if;
+
+  if pg_get_functiondef('public.get_guardian_student_live_bus_location_state()'::regprocedure) not like '%min(atc.driver_trip_id::text)::uuid as only_driver_trip_id%' then
+    raise exception 'TEST 31 FAILED: RPC does not use the expected UUID-safe aggregate';
+  end if;
+  raise notice 'TEST 29/30/31 PASSED: no scope-widening args, forbidden columns excluded, UUID-safe aggregate in place';
 end
 $$;
 
@@ -773,6 +806,7 @@ delete from public.profiles where id in (
   '11a08000-0000-0000-0000-000000000004',
   '11a08000-0000-0000-0000-000000000005',
   '11a08000-0000-0000-0000-000000000006',
+  '11a08000-0000-0000-0000-000000000007',
   '11a08000-0000-0000-0000-000000000011',
   '11a08000-0000-0000-0000-000000000012',
   '11a08000-0000-0000-0000-000000000013'
@@ -785,6 +819,7 @@ delete from auth.users where id in (
   '11a08000-0000-0000-0000-000000000004',
   '11a08000-0000-0000-0000-000000000005',
   '11a08000-0000-0000-0000-000000000006',
+  '11a08000-0000-0000-0000-000000000007',
   '11a08000-0000-0000-0000-000000000011',
   '11a08000-0000-0000-0000-000000000012',
   '11a08000-0000-0000-0000-000000000013'
