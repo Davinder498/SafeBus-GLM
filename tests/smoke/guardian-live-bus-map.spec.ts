@@ -500,6 +500,54 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
     await expect(page.getByText('VITE_MAP_TILE_ATTRIBUTION', { exact: false })).toHaveCount(0);
   });
 
+  test('interactive map renders tile panes when tile config is present', async ({ page }) => {
+    await installGuardianLiveMapMock(page, {
+      rows: [freshRow()],
+      routeRows: [studentRouteRow()],
+    });
+    await page.goto('/guardian/live-map');
+
+    // When tile config IS set (local dev / this test env), the interactive
+    // Leaflet map must mount — not just the config-missing fallback card.
+    await expect(page.getByTestId('guardian-live-bus-map')).toBeVisible({ timeout: 10000 });
+
+    // The Leaflet container must be visible with a non-empty bounding box.
+    // This catches the case where the map container mounts but has zero size
+    // (the classic invalidateSize timing bug).
+    await expect(page.locator('.leaflet-container')).toBeVisible();
+    const containerBox = await page.locator('.leaflet-container').boundingBox();
+    expect(containerBox).not.toBeNull();
+    expect(containerBox!.height).toBeGreaterThan(0);
+    expect(containerBox!.width).toBeGreaterThan(0);
+
+    // Core structural panes must exist in the DOM. (We check DOM presence
+    // rather than visibility because tile visibility depends on external tile
+    // network requests which may not complete in the test environment; the
+    // panes themselves always exist once the map initializes.)
+    await expect(page.locator('.leaflet-map-pane')).toHaveCount(1);
+    await expect(page.locator('.leaflet-tile-pane')).toHaveCount(1);
+    await expect(page.locator('.leaflet-overlay-pane')).toHaveCount(1);
+
+    // A marker (CircleMarker renders as an SVG path inside the overlay pane)
+    // must be present for the fresh location.
+    await expect(page.locator('.leaflet-overlay-pane svg path')).toBeVisible({ timeout: 10000 });
+
+    // Regression guard for the Leaflet 1.9.4 `mix-blend-mode: plus-lighter`
+    // bug, which made map tiles render invisibly on the white Card background.
+    // Our override in index.css forces `mix-blend-mode: normal` on tile images.
+    // If any tile image has loaded, its computed blend mode must NOT be
+    // `plus-lighter` (it should be `normal` from our override, or the UA
+    // default if unset).
+    const tileBlendMode = await page.evaluate(() => {
+      const tile = document.querySelector('.leaflet-container img.leaflet-tile');
+      if (!tile) return null;
+      return window.getComputedStyle(tile).mixBlendMode;
+    });
+    if (tileBlendMode !== null) {
+      expect(tileBlendMode).not.toBe('plus-lighter');
+    }
+  });
+
   test('RPC error is safely handled and raw error is hidden', async ({ page }) => {
     const rawError = 'permission denied for function get_guardian_student_live_bus_location_state';
     await installGuardianLiveMapMock(page, {
