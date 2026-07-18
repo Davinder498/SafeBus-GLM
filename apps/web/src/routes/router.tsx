@@ -6,9 +6,11 @@ import { LandingPage } from '@/pages/LandingPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { AdminDriversPage } from '@/pages/AdminDriversPage';
+import { AdminDriverDetailPage } from '@/pages/AdminDriverDetailPage';
 import { AdminDashboardPage } from '@/pages/AdminDashboardPage';
 import { AdminDriverAssignmentsPage } from '@/pages/AdminDriverAssignmentsPage';
 import { AdminGuardiansPage } from '@/pages/AdminGuardiansPage';
+import { AdminGuardianDetailPage } from '@/pages/AdminGuardianDetailPage';
 import { AdminLiveTripsPage } from '@/pages/AdminLiveTripsPage';
 import { AdminPlaceholderPage } from '@/pages/AdminPlaceholderPage';
 import { AdminRoutesPage } from '@/pages/AdminRoutesPage';
@@ -16,6 +18,7 @@ import { AdminRouteDetailPage } from '@/pages/AdminRouteDetailPage';
 import { AdminRouteManagePage } from '@/pages/AdminRouteManagePage';
 import { AdminSchoolsPage } from '@/pages/AdminSchoolsPage';
 import { AdminSettingsPage } from '@/pages/AdminSettingsPage';
+import { AdminStudentDetailPage } from '@/pages/AdminStudentDetailPage';
 import { AdminStudentsPage } from '@/pages/AdminStudentsPage';
 import { AdminUsersPage } from '@/pages/AdminUsersPage';
 import { AdminTripsPage } from '@/pages/AdminTripsPage';
@@ -87,10 +90,26 @@ export const appRoutes: RouteObject[] = [
     ),
   },
   {
+    path: '/admin/students/:studentId',
+    element: (
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
+        <AdminStudentDetailPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/admin/students',
     element: (
       <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminStudentsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/guardians/:guardianId',
+    element: (
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
+        <AdminGuardianDetailPage />
       </ProtectedRoute>
     ),
   },
@@ -107,6 +126,14 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminBusesPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/drivers/:driverId',
+    element: (
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
+        <AdminDriverDetailPage />
       </ProtectedRoute>
     ),
   },

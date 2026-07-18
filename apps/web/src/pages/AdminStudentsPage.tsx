@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AdminPagination } from '@/components/admin/AdminPagination';
 import { StudentBusAssignmentForm } from '@/components/admin/StudentBusAssignmentForm';
+import { StudentCsvImportPanel } from '@/components/admin/StudentCsvImportPanel';
+import { StudentForm, type StudentFormInput } from '@/components/admin/StudentForm';
+import { StudentOnboardingForm } from '@/components/admin/StudentOnboardingForm';
 import { StudentQrCredentialPanel } from '@/components/admin/StudentQrCredentialPanel';
 import { InlineFormShell } from '@/components/admin/TransportationAdminForms';
-import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
+import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -22,6 +26,10 @@ import {
   setStudentStatus,
   updateStudent,
 } from '@/services/adminStudentsService';
+import {
+  createStudentOnboarding,
+  type CreateStudentOnboardingInput,
+} from '@/services/studentOnboardingService';
 import type { School } from '@/types/organization';
 import type { Student, StudentStatus } from '@/types/studentGuardian';
 import type { CreateStudentBusAssignmentInput, RouteStop, StudentBusAssignment, UpdateStudentBusAssignmentInput } from '@/types/transportation';
@@ -62,6 +70,7 @@ export function AdminStudentsPage() {
   const [routeStops, setRouteStops] = useState<RouteStop[]>([]);
   const list = usePaginatedAdminList<AdminStudentRow>('students');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showCsvImport, setShowCsvImport] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [busStudent, setBusStudent] = useState<AdminStudentRow | null>(null);
   const [qrStudent, setQrStudent] = useState<AdminStudentRow | null>(null);
@@ -105,14 +114,7 @@ export function AdminStudentsPage() {
     catch (error) { setWriteError(error instanceof Error ? error.message : 'Unable to remove bus assignment.'); }
   }
 
-  async function handleCreate(input: {
-    firstName: string;
-    lastName: string;
-    preferredName: string;
-    grade: string;
-    schoolStudentNumber: string;
-    schoolId: string;
-  }) {
+  async function handleCreate(input: StudentFormInput) {
     setWriteError(null);
     setSuccessMessage(null);
     try {
@@ -122,7 +124,6 @@ export function AdminStudentsPage() {
           lastName: input.lastName,
           preferredName: input.preferredName,
           grade: input.grade,
-          schoolStudentNumber: input.schoolStudentNumber,
           schoolId: input.schoolId || null,
         },
         profile?.tenant_id ?? null,
@@ -135,12 +136,42 @@ export function AdminStudentsPage() {
     }
   }
 
+  async function handleOnboardingCreate(input: CreateStudentOnboardingInput) {
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      const result = await createStudentOnboarding(input);
+      setShowCreateForm(false);
+      setSuccessMessage(
+        result.guardianInvitationStatus === 'sent'
+          ? 'Student created and guardian invitation sent.'
+          : result.guardianLinkId
+            ? 'Student created and guardian linked.'
+            : 'Student created.',
+      );
+      await list.reload();
+    } catch (createError) {
+      const next =
+        createError instanceof Error ? createError : new Error('Unable to create student.');
+      setWriteError(next.message);
+      throw next;
+    }
+  }
+
+  async function handleCsvImported(count: number) {
+    setShowCsvImport(false);
+    setWriteError(null);
+    setSuccessMessage(
+      `${count.toLocaleString()} student${count === 1 ? '' : 's'} imported.`,
+    );
+    await list.reload();
+  }
+
   async function handleUpdate(studentId: string, input: {
     firstName: string;
     lastName: string;
     preferredName: string;
     grade: string;
-    schoolStudentNumber: string;
     schoolId: string;
   }) {
     setWriteError(null);
@@ -151,7 +182,6 @@ export function AdminStudentsPage() {
         lastName: input.lastName,
         preferredName: input.preferredName,
         grade: input.grade,
-        schoolStudentNumber: input.schoolStudentNumber,
         schoolId: input.schoolId || null,
       });
       setEditingStudent(null);
@@ -212,7 +242,7 @@ export function AdminStudentsPage() {
   }
 
   return (
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
+    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Students"
@@ -220,16 +250,39 @@ export function AdminStudentsPage() {
           description="Manage student records for your transportation account. Add, edit, and deactivate students."
         />
 
-        {canWrite && (
-          <div className="flex">
-            <Button type="button" onClick={() => {
-              setEditingStudent(null);
-              setShowCreateForm(true);
-              setWriteError(null);
-              setSuccessMessage(null);
-            }}>
+        {canWrite && !showCreateForm && !showCsvImport && (
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="button"
+              onClick={() => {
+                setEditingStudent(null);
+                setBusStudent(null);
+                setQrStudent(null);
+                setShowCreateForm(true);
+                setShowCsvImport(false);
+                setWriteError(null);
+                setSuccessMessage(null);
+              }}
+            >
               Add student
             </Button>
+            {profile?.role === 'tenant_admin' && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setEditingStudent(null);
+                  setBusStudent(null);
+                  setQrStudent(null);
+                  setShowCsvImport(true);
+                  setShowCreateForm(false);
+                  setWriteError(null);
+                  setSuccessMessage(null);
+                }}
+              >
+                Import CSV
+              </Button>
+            )}
           </div>
         )}
 
@@ -244,12 +297,27 @@ export function AdminStudentsPage() {
           </Card>
         )}
 
-        {canWrite && showCreateForm && (
-          <StudentForm
-            title="Add student"
-            schools={schools}
-            onSubmit={(input) => handleCreate(input)}
-            onCancel={() => setShowCreateForm(false)}
+        {canWrite &&
+          showCreateForm &&
+          (profile?.role === 'tenant_admin' ? (
+            <StudentOnboardingForm
+              schools={schools}
+              onSubmit={handleOnboardingCreate}
+              onCancel={() => setShowCreateForm(false)}
+            />
+          ) : (
+            <StudentForm
+              title="Add student"
+              schools={schools}
+              onSubmit={(input) => handleCreate(input)}
+              onCancel={() => setShowCreateForm(false)}
+            />
+          ))}
+
+        {profile?.role === 'tenant_admin' && showCsvImport && (
+          <StudentCsvImportPanel
+            onImported={handleCsvImported}
+            onCancel={() => setShowCsvImport(false)}
           />
         )}
 
@@ -285,7 +353,7 @@ export function AdminStudentsPage() {
             type="search"
             value={list.searchInput}
             onChange={(event) => list.setSearchInput(event.target.value)}
-            placeholder="Search by name, grade, status, or school number"
+            placeholder="Search by name, grade, status, or school"
             className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
           />
         </div>
@@ -304,25 +372,31 @@ export function AdminStudentsPage() {
           <section className="space-y-3">
             <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
               <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
-                <thead className="bg-gray-50"><tr><th className="px-4 py-3">Student</th><th className="px-4 py-3">School</th><th className="px-4 py-3">Grade</th><th className="px-4 py-3">School number</th><th className="px-4 py-3">Bus transportation</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Actions</th></tr></thead>
+                <thead className="bg-gray-50"><tr><th className="px-4 py-3">Student</th><th className="px-4 py-3">School</th><th className="px-4 py-3">Grade</th><th className="px-4 py-3">Bus transportation</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Actions</th></tr></thead>
                 <tbody className="divide-y divide-gray-100">
             {list.rows.map((student) => (
               <tr key={student.id}>
                 <td className="px-4 py-3 font-semibold text-navy-900">{getStudentName(student)}</td>
                 <td className="px-4 py-3 text-gray-600">{student.school_name ?? 'No school'}</td>
                 <td className="px-4 py-3">{student.grade ?? 'Not assigned'}</td>
-                <td className="px-4 py-3">{student.school_student_number ?? 'Not assigned'}</td>
                 <td className="px-4 py-3">{student.bus_number ? <div><p className="font-semibold text-navy-900">Bus {student.bus_number}</p><p className="text-xs text-gray-500">{student.route_code} / {student.trip_type}</p><p className="text-xs text-gray-500">{student.pickup_stop_name ?? 'No pickup stop'} → {student.dropoff_stop_name ?? 'No drop-off stop'}</p></div> : <span className="text-gray-500">No bus assigned</span>}</td>
                 <td className="px-4 py-3"><StatusPill tone={studentStatusTone[student.status]}>{student.status}</StatusPill></td>
                 <td className="px-4 py-3"><div className="flex flex-wrap gap-2">
                     {canWrite && (
                       <>
+                        <Link
+                          to={`/admin/students/${student.id}`}
+                          className="inline-flex items-center rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-navy-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+                        >
+                          View
+                        </Link>
                         <Button
                           type="button"
                           size="sm"
                           variant="secondary"
                           onClick={() => {
                             setShowCreateForm(false);
+                            setShowCsvImport(false);
                             setEditingStudent(student);
                             setWriteError(null);
                             setSuccessMessage(null);
@@ -330,8 +404,8 @@ export function AdminStudentsPage() {
                         >
                           Edit
                         </Button>
-                        {student.status === 'active' && <Button type="button" size="sm" variant="secondary" onClick={() => { setEditingStudent(null); setShowCreateForm(false); setBusStudent(student); setWriteError(null); setSuccessMessage(null); }}>{student.bus_assignment_id ? 'Manage bus' : 'Assign bus'}</Button>}
-                        {student.status === 'active' && <Button type="button" size="sm" variant="secondary" onClick={() => { setEditingStudent(null); setShowCreateForm(false); setBusStudent(null); setQrStudent(student); setWriteError(null); setSuccessMessage(null); }} data-testid="admin-manage-student-qr">QR badge</Button>}
+                        {student.status === 'active' && <Button type="button" size="sm" variant="secondary" onClick={() => { setEditingStudent(null); setShowCreateForm(false); setShowCsvImport(false); setBusStudent(student); setWriteError(null); setSuccessMessage(null); }}>{student.bus_assignment_id ? 'Manage bus' : 'Assign bus'}</Button>}
+                        {student.status === 'active' && <Button type="button" size="sm" variant="secondary" onClick={() => { setEditingStudent(null); setShowCreateForm(false); setShowCsvImport(false); setBusStudent(null); setQrStudent(student); setWriteError(null); setSuccessMessage(null); }} data-testid="admin-manage-student-qr">QR badge</Button>}
                         {student.status === 'active' ? (
                           <Button
                             type="button"
@@ -361,7 +435,9 @@ export function AdminStudentsPage() {
                             onClick={() => {
                               setEditingStudent(null);
                               setShowCreateForm(false);
+                              setShowCsvImport(false);
                               setBusStudent(null);
+                              setQrStudent(null);
                               setDeletingStudent(student);
                               setWriteError(null);
                               setSuccessMessage(null);
@@ -393,144 +469,5 @@ export function AdminStudentsPage() {
         />
       </div>
     </DashboardLayout>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Student form component
-// ---------------------------------------------------------------------------
-
-interface StudentFormProps {
-  title: string;
-  schools: School[];
-  initial?: Student;
-  onSubmit: (input: {
-    firstName: string;
-    lastName: string;
-    preferredName: string;
-    grade: string;
-    schoolStudentNumber: string;
-    schoolId: string;
-  }) => Promise<void>;
-  onCancel: () => void;
-}
-
-function StudentForm({ title, schools, initial, onSubmit, onCancel }: StudentFormProps) {
-  const [firstName, setFirstName] = useState(initial?.first_name ?? '');
-  const [lastName, setLastName] = useState(initial?.last_name ?? '');
-  const [preferredName, setPreferredName] = useState(initial?.preferred_name ?? '');
-  const [grade, setGrade] = useState(initial?.grade ?? '');
-  const [schoolStudentNumber, setSchoolStudentNumber] = useState(initial?.school_student_number ?? '');
-  const [schoolId, setSchoolId] = useState(initial?.school_id ?? '');
-  const [formError, setFormError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    setFormError(null);
-
-    if (!firstName.trim() || !lastName.trim()) {
-      setFormError('First name and last name are required.');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await onSubmit({
-        firstName,
-        lastName,
-        preferredName,
-        grade,
-        schoolStudentNumber,
-        schoolId,
-      });
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <Card className="p-5">
-      <h2 className="text-lg font-bold text-navy-900">{title}</h2>
-      {formError && <p className="mt-2 text-sm font-semibold text-danger-700">{formError}</p>}
-      <form className="mt-4 grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
-        <label className="block text-sm font-semibold text-gray-700" htmlFor="student-first-name">
-          First name
-          <input
-            id="student-first-name"
-            type="text"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
-            required
-          />
-        </label>
-        <label className="block text-sm font-semibold text-gray-700" htmlFor="student-last-name">
-          Last name
-          <input
-            id="student-last-name"
-            type="text"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
-            required
-          />
-        </label>
-        <label className="block text-sm font-semibold text-gray-700" htmlFor="student-preferred-name">
-          Preferred name (optional)
-          <input
-            id="student-preferred-name"
-            type="text"
-            value={preferredName}
-            onChange={(e) => setPreferredName(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
-          />
-        </label>
-        <label className="block text-sm font-semibold text-gray-700" htmlFor="student-grade">
-          Grade (optional)
-          <input
-            id="student-grade"
-            type="text"
-            value={grade}
-            onChange={(e) => setGrade(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
-          />
-        </label>
-        <label className="block text-sm font-semibold text-gray-700" htmlFor="student-number">
-          School number (optional)
-          <input
-            id="student-number"
-            type="text"
-            value={schoolStudentNumber}
-            onChange={(e) => setSchoolStudentNumber(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
-          />
-        </label>
-        <label className="block text-sm font-semibold text-gray-700" htmlFor="student-school">
-          School (optional)
-          <select
-            id="student-school"
-            value={schoolId}
-            onChange={(e) => setSchoolId(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
-          >
-            <option value="">No school</option>
-            {schools.map((school) => (
-              <option key={school.id} value={school.id}>
-                {school.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </form>
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-        <Button type="button" onClick={handleSubmit} disabled={saving}>
-          {saving ? 'Saving' : 'Save student'}
-        </Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
-    </Card>
   );
 }

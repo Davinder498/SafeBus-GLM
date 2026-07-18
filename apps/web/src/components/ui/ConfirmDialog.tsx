@@ -1,5 +1,7 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { AlertTriangle, Info } from 'lucide-react';
 import { Button } from './Button';
+import { cn } from '@/utils/cn';
 
 export interface ConfirmDialogProps {
   open: boolean;
@@ -28,27 +30,53 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  // Close on Escape (accessibility) and lock body scroll while open.
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !busy) onCancel();
+    };
+    window.addEventListener('keydown', handler);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handler);
+      document.body.style.overflow = '';
+    };
+  }, [open, busy, onCancel]);
+
   if (!open) return null;
+
+  const Icon = destructive ? AlertTriangle : Info;
+  const iconWrapperClass = destructive
+    ? 'bg-danger-50 text-danger-600 ring-danger-100'
+    : 'bg-navy-50 text-navy-600 ring-navy-100';
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm animate-fade-in"
     >
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <h2 id="confirm-dialog-title" className="text-lg font-bold text-navy-900">
-          {title}
-        </h2>
-        <div className="mt-2 text-sm text-gray-600">{description}</div>
-        <div className="mt-5 flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={onCancel}
-            disabled={busy}
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-popover animate-scale-in">
+        <div className="flex items-start gap-4">
+          <div
+            className={cn(
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset',
+              iconWrapperClass,
+            )}
           >
+            <Icon className="h-5 w-5" aria-hidden />
+          </div>
+          <div className="min-w-0">
+            <h2 id="confirm-dialog-title" className="text-lg font-bold text-slate-900">
+              {title}
+            </h2>
+            <div className="mt-1 text-sm leading-6 text-slate-500">{description}</div>
+          </div>
+        </div>
+        <div className="mt-6 flex justify-end gap-3">
+          <Button type="button" variant="outline" onClick={onCancel} disabled={busy}>
             {cancelLabel}
           </Button>
           <Button
@@ -56,6 +84,7 @@ export function ConfirmDialog({
             variant={destructive ? 'danger' : 'primary'}
             onClick={onConfirm}
             disabled={busy}
+            loading={busy}
           >
             {busy ? 'Working…' : confirmLabel}
           </Button>

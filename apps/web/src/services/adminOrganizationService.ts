@@ -40,7 +40,7 @@ export async function getVisibleProfiles(): Promise<OrganizationProfile[]> {
   const client = requireSupabase();
   const { data, error } = await client
     .from('profiles')
-    .select('id, tenant_id, school_id, full_name, email, role, status, created_at, updated_at')
+    .select('id, tenant_id, school_id, first_name, last_name, full_name, email, role, status, created_at, updated_at')
     .order('full_name', { ascending: true });
 
   if (error) throw new Error(error.message);
@@ -51,7 +51,7 @@ export async function getVisibleDriverProfiles(): Promise<OrganizationProfile[]>
   const client = requireSupabase();
   const { data, error } = await client
     .from('profiles')
-    .select('id, tenant_id, school_id, full_name, email, role, status, created_at, updated_at')
+    .select('id, tenant_id, school_id, first_name, last_name, full_name, email, role, status, created_at, updated_at')
     .eq('role', 'driver')
     .order('full_name', { ascending: true })
     .limit(250);

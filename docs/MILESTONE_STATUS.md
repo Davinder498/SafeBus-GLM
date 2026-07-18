@@ -57,6 +57,21 @@
 
 Phase 15B (Notification Delivery Validation & Operational Hardening) is implemented on `phase-15b-notification-delivery-hardening` for review. It adds the smallest reliable production-compatible scheduler, tenant IANA time-zone email formatting, privacy-safe diagnostics on every dispatcher result path, a minimal tenant-admin notification-delivery summary RPC/UI, expanded RLS and unit/dispatcher/scheduled-function tests, a notification QA fixture, and a manual acceptance guide. Phase 15A was merged through PR #52 and is on `main`. Hosted-DEV migration application of 0038/0039, Resend sandbox testing, Netlify deploy-preview verification, and product-owner manual acceptance are pending. Do not merge Phase 15B until it is approved.
 
+## Tenant Admin Student CSV Import
+
+Status: Implemented for review; hosted-DEV migration and manual acceptance pending.
+
+- Adds a tenant-admin-only, student-only CSV import workflow to the Students page.
+- Accepts up to 5,000 UTF-8 rows using the strict template fields `first_name`,
+  `last_name`, `preferred_name`, `grade`, and `school_name`.
+- Performs local CSV parsing plus server-authoritative tenant, role, active-school,
+  field, limit, and duplicate-warning validation.
+- Uses one `security invoker` RPC for read-only preview and atomic create-only
+  commit. Invalid files create no student rows.
+- Does not retain uploaded files or import history and does not import guardians,
+  transportation, student identifiers, addresses, or health data.
+- Acceptance guide: `docs/qa/tenant-admin-student-csv-import-acceptance.md`.
+
 ## RLS Test Workflow
 
 `pnpm test:rls` is structural only. It checks that the expected SQL files and
@@ -111,8 +126,10 @@ a production dummy-data UI.
 - No Alberta Student Number, `asn`, or `alberta_student_number` fields are part
   of the approved data model.
 - QR codes, student badges, pickup/drop-off scan events, notifications, SMS,
-  maps APIs, CSV import, and external SIS integrations remain future scope
-  unless a future milestone explicitly approves them.
+  maps APIs, and external SIS integrations remain future scope unless a future
+  milestone explicitly approves them.
+- CSV import is limited to the approved tenant-admin student-only workflow; it
+  does not import guardian, transportation, or external SIS data.
 - Future-scope Edge Function/API scaffolds for QR scan, badge generation, and
   notification dispatch have been removed from current `main`.
 

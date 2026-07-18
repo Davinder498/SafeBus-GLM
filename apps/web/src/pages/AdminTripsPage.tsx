@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
+import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -29,7 +29,7 @@ export function AdminTripsPage() {
   }, [state]);
   const active = state?.trips.filter((trip) => trip.status === 'active') ?? [];
   const completed = state?.trips.filter((trip) => trip.status === 'completed').slice(0, 10) ?? [];
-  return <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}><div className="space-y-6">
+  return <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}><div className="space-y-6">
     <PageHeader eyebrow="Operations" title="Trips" description="Drivers start trips from active assignments. Admins prepare routes and monitor progress here." />
     {error && <DataState title="Trips unavailable" message="Try again, or open Live Fleet to check active operations." />}
     {!state && !error && <DataState title="Loading trips" message="Checking route readiness and recent activity." />}

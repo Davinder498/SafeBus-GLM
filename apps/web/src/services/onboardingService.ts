@@ -19,6 +19,23 @@ export interface OnboardingInvitation { id: string; tenant_id: string; email: st
 export async function fetchPlatformTenantSummaries(): Promise<PlatformTenantSummary[]> { const { data, error } = await client().rpc('get_platform_tenant_onboarding_summary'); if (error) throw new Error('Unable to load tenant onboarding summary.'); return (data ?? []) as PlatformTenantSummary[]; }
 export async function fetchInvitations(): Promise<OnboardingInvitation[]> { const { data, error } = await client().from('tenant_onboarding_invitations').select('id, tenant_id, email, full_name, role, status, invited_profile_id, last_sent_at, cancelled_at, created_at').order('created_at', { ascending: false }); if (error) throw new Error('Unable to load invitations.'); return (data ?? []) as OnboardingInvitation[]; }
 export async function createTenantWithAdmin(input: { tenantName: string; tenantType: string; schoolName: string; city: string; adminName: string; adminEmail: string }) { return callOnboarding<{ tenant: { id: string; name: string } }>({ kind: 'createTenant', ...input }); }
-export async function inviteTenantMember(input: { role: 'driver' | 'guardian'; fullName: string; email: string; phone?: string; employeeNumber?: string; studentLinks?: Array<{ studentId: string; relationship: string }> }) { return callOnboarding<{ status: string }>({ kind: 'inviteMember', ...input }); }
+export interface InviteTenantMemberInput {
+  role: 'driver' | 'guardian';
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  licenseNumber?: string;
+  licenseIssueDate?: string;
+  licenseExpiryDate?: string;
+  licenseClass?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
+  studentLinks?: Array<{ studentId: string; relationship: string }>;
+}
+export async function inviteTenantMember(input: InviteTenantMemberInput) { return callOnboarding<{ status: string; guardianId: string | null }>({ kind: 'inviteMember', ...input }); }
 export async function updateInvitation(invitationId: string, action: 'resend' | 'cancel') { return callOnboarding<{ status: string }>({ kind: 'invitationAction', invitationId, action }); }
 export async function updateTenantLifecycle(tenantId: string, status: 'active' | 'suspended' | 'disabled') { return callOnboarding<{ status: string }>({ kind: 'tenantLifecycle', tenantId, status }); }

@@ -11,7 +11,7 @@ import type {
   StopDraft,
 } from '@/components/admin/RouteWithStopsForm';
 import { RouteTile } from '@/components/admin/RouteTile';
-import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
+import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DataState } from '@/components/ui/DataState';
@@ -379,7 +379,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
   }
 
   return (
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
+    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Routes"

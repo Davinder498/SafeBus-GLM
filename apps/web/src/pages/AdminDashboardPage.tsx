@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
+import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { AdminRouteStatusTile } from '@/components/admin/AdminRouteStatusTile';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
@@ -94,7 +94,7 @@ export function AdminDashboardPage() {
   const missingTrips = data?.trips.filter((t) => t.locationStatus === 'missing').length ?? 0;
 
   return (
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
+    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
       <div className="space-y-6" data-testid="tenant-admin-overview">
         <PageHeader
           eyebrow="Overview"

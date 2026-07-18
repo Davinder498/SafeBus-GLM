@@ -5,15 +5,32 @@
 @layer base {
   html {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-slate-50 text-slate-900 antialiased;
   }
 
   /* WCAG 2.1 AA: visible focus indicator */
   *:focus-visible {
     @apply outline-none ring-2 ring-navy-500 ring-offset-2;
+  }
+
+  /* Modern, smoother scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-slate-300/70;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400/70;
   }
 }
 
@@ -22,6 +39,20 @@
   .touch-target {
     min-height: 44px;
     min-width: 44px;
+  }
+
+  /* Modern gradient mesh background for auth/public surfaces */
+  .bg-mesh {
+    background-color: #eff6ff;
+    background-image:
+      radial-gradient(at 0% 0%, rgb(219 234 254 / 0.6) 0px, transparent 50%),
+      radial-gradient(at 98% 1%, rgb(254 243 199 / 0.5) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgb(219 234 254 / 0.4) 0px, transparent 50%);
+  }
+
+  /* Glassy card overlay used on auth surfaces */
+  .glass {
+    @apply border border-white/60 bg-white/80 backdrop-blur-xl;
   }
 }
 
