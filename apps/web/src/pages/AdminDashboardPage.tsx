@@ -1,12 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+agent/student-onboarding-workflow
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
+
+import { Link } from 'react-router-dom';
+import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
+main
 import { AdminRouteStatusTile } from '@/components/admin/AdminRouteStatusTile';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCard } from '@/components/ui/StatCard';
 import { Radio, AlertTriangle, MapPinOff, ListChecks } from 'lucide-react';
 import { fetchAdminLiveTrips } from '@/services/adminLiveMonitoringService';
-import { fetchBoundedAdminOverview, type AdminOverviewRoute } from '@/services/adminDashboardOverviewService';
+import {
+  fetchBoundedAdminOverview,
+  type AdminOverviewRoute,
+} from '@/services/adminDashboardOverviewService';
 import { fetchAdminSetupSnapshot, type AdminSetupSnapshot } from '@/services/adminSetupService';
 import type { AdminLiveTrip } from '@/types/adminLiveMonitoring';
 
@@ -30,7 +38,11 @@ const setupKeys: Array<{ label: string; key: keyof AdminSetupSnapshot; to: strin
   { label: 'Guardians', key: 'guardians', to: '/admin/guardians' },
   { label: 'Guardian links', key: 'guardianLinks', to: '/admin/guardians' },
   { label: 'Student bus assignments', key: 'studentAssignments', to: '/admin/assignments' },
-  { label: 'Driver and bus assignments', key: 'driverAssignments', to: '/admin/driver-assignments' },
+  {
+    label: 'Driver and bus assignments',
+    key: 'driverAssignments',
+    to: '/admin/driver-assignments',
+  },
 ];
 
 interface OverviewData {
@@ -48,27 +60,15 @@ export function AdminDashboardPage() {
     // the top status cards, while the rest enrich the routes map. If any
     // single query fails (e.g., an RLS hiccup on one supporting table),
     // we still show the rest of the overview instead of blanking the page.
-    const [
-      setupResult,
-      tripsResult,
-      overviewResult,
-    ] = await Promise.allSettled([
+    const [setupResult, tripsResult, overviewResult] = await Promise.allSettled([
       fetchAdminSetupSnapshot(),
       fetchAdminLiveTrips(),
       fetchBoundedAdminOverview(),
     ]);
 
     if (import.meta.env.DEV) {
-      const names = [
-        'setup snapshot',
-        'live trips',
-        'bounded route overview',
-      ];
-      [
-        setupResult,
-        tripsResult,
-        overviewResult,
-      ].forEach((result, index) => {
+      const names = ['setup snapshot', 'live trips', 'bounded route overview'];
+      [setupResult, tripsResult, overviewResult].forEach((result, index) => {
         if (result.status === 'rejected') {
           console.warn(
             `[AdminDashboardPage] Non-fatal failure loading ${names[index]}.`,
@@ -79,10 +79,7 @@ export function AdminDashboardPage() {
     }
 
     setData({
-      setup:
-        setupResult.status === 'fulfilled'
-          ? setupResult.value
-          : emptySetupSnapshot,
+      setup: setupResult.status === 'fulfilled' ? setupResult.value : emptySetupSnapshot,
       trips: tripsResult.status === 'fulfilled' ? tripsResult.value : [],
       routes: overviewResult.status === 'fulfilled' ? overviewResult.value.routes : [],
     });
@@ -102,8 +99,13 @@ export function AdminDashboardPage() {
   const missingTrips = data?.trips.filter((t) => t.locationStatus === 'missing').length ?? 0;
 
   return (
+agent/student-onboarding-workflow
     <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
       <div className="space-y-6">
+
+    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
+      <div className="space-y-6" data-testid="tenant-admin-overview">
+main
         <PageHeader
           eyebrow="Overview"
           title="Transportation overview"
@@ -117,11 +119,15 @@ export function AdminDashboardPage() {
           />
         )}
         {!data && !error && (
-          <DataState title="Loading overview" message="Checking transportation readiness and live operations." />
+          <DataState
+            title="Loading overview"
+            message="Checking transportation readiness and live operations."
+          />
         )}
 
         {data && (
           <>
+agent/student-onboarding-workflow
             {/* Live operations summary */}
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard
@@ -152,14 +158,58 @@ export function AdminDashboardPage() {
                 tone="navy"
                 icon={<ListChecks className="h-5 w-5" />}
               />
+
+            <section className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-navy-950">Operational attention</h2>
+                  <p className="mt-1 text-sm text-gray-600">
+                    Existing live-trip and setup signals shown without adding new backend data.
+                  </p>
+                </div>
+                <Link
+                  to="/admin/live-trips"
+                  className="inline-flex rounded-lg border border-cyan-200 px-3 py-2 text-sm font-semibold text-cyan-800 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+                >
+                  View live trips
+                </Link>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <Card className="p-5">
+                  <p className="text-sm font-semibold text-gray-600">Active trips</p>
+                  <p className="mt-1 text-3xl font-bold text-navy-900">{activeTrips}</p>
+                  <p className="mt-2 text-sm text-gray-600">
+                    Driver-started trips currently operating.
+                  </p>
+                </Card>
+                <Card className="p-5">
+                  <p className="text-sm font-semibold text-gray-600">Stale locations</p>
+                  <p className="mt-1 text-3xl font-bold text-warning-600">{staleTrips}</p>
+                  <p className="mt-2 text-sm text-gray-600">Buses with GPS not updated recently.</p>
+                </Card>
+                <Card className="p-5">
+                  <p className="text-sm font-semibold text-gray-600">Missing locations</p>
+                  <p className="mt-1 text-3xl font-bold text-danger-600">{missingTrips}</p>
+                  <p className="mt-2 text-sm text-gray-600">Active trips without GPS data.</p>
+                </Card>
+                <Card className="p-5">
+                  <p className="text-sm font-semibold text-gray-600">Setup readiness</p>
+                  <p className="mt-1 text-3xl font-bold text-navy-900">
+                    {setupComplete} of {setupKeys.length}
+                  </p>
+                  <p className="mt-2 text-sm text-gray-600">Core setup steps complete.</p>
+                </Card>
+              </div>
+main
             </section>
 
             {/* Clickable route tiles */}
-            <section className="space-y-4">
+            <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
               <div>
                 <h2 className="text-xl font-bold text-navy-900">Routes</h2>
                 <p className="mt-1 text-sm text-gray-600">
-                  Active and inactive routes are shown below. Select any tile to open its details and map.
+                  Active and inactive routes are shown below. Select any tile to open its details
+                  and map.
                 </p>
               </div>
 
@@ -169,7 +219,7 @@ export function AdminDashboardPage() {
                   message="Create your first route with stops to see it here."
                 />
               ) : (
-                <div className="grid gap-3">
+                <div className="mt-4 grid gap-3">
                   {data.routes
                     .filter((r) => r.status !== 'archived')
                     .map((route) => {
@@ -187,22 +237,26 @@ export function AdminDashboardPage() {
                 </div>
               )}
 
-              <a href="/admin/routes" className="inline-flex text-sm font-semibold text-navy-700 hover:underline">View all routes &rarr;</a>
-
+              <Link
+                to="/admin/routes"
+                className="mt-4 inline-flex rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-navy-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+              >
+                View all routes &rarr;
+              </Link>
             </section>
 
             {/* Setup checklist */}
-            <section className="space-y-3">
+            <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
               <h2 className="text-xl font-bold text-navy-900">Setup checklist</h2>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {setupKeys.map((item) => {
                   const count = data.setup[item.key];
                   const complete = count > 0;
                   return (
-                    <a
+                    <Link
                       key={item.key}
-                      href={item.to}
-                      className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 text-sm hover:shadow-sm"
+                      to={item.to}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-slate-50 p-4 text-sm hover:border-cyan-200 hover:bg-cyan-50/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
                     >
                       <span className="font-semibold text-navy-900">{item.label}</span>
                       <span
@@ -214,7 +268,7 @@ export function AdminDashboardPage() {
                       >
                         {complete ? `${count} active` : 'Needs setup'}
                       </span>
-                    </a>
+                    </Link>
                   );
                 })}
               </div>

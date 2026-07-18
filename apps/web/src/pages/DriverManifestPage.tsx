@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { StudentQrScanner } from '@/components/driver/StudentQrScanner';
 import {
   fetchDriverActiveTripStudentManifest,
   markStudentDroppedOffForActiveTrip,
@@ -184,6 +185,8 @@ export function DriverManifestPage() {
                 {activeTrip.tripStatus && <StatusPill tone="success">{activeTrip.tripStatus}</StatusPill>}
               </div>
             </Card>
+
+            <StudentQrScanner onConfirm={updateStudentStatus} busyStudentId={pendingStudentId} />
 
             {students.length === 0 ? (
               <div data-testid="driver-manifest-no-students">

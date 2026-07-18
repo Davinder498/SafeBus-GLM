@@ -10,10 +10,17 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AdminPagination } from '@/components/admin/AdminPagination';
+agent/student-onboarding-workflow
 import { StudentCsvImportPanel } from '@/components/admin/StudentCsvImportPanel';
 import { StudentForm, type StudentFormInput } from '@/components/admin/StudentForm';
 import { StudentOnboardingForm } from '@/components/admin/StudentOnboardingForm';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
+
+import { StudentBusAssignmentForm } from '@/components/admin/StudentBusAssignmentForm';
+import { StudentQrCredentialPanel } from '@/components/admin/StudentQrCredentialPanel';
+import { InlineFormShell } from '@/components/admin/TransportationAdminForms';
+import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
+main
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
@@ -49,7 +56,13 @@ export function AdminStudentsPage() {
   const [schools, setSchools] = useState<School[]>([]);
   const list = usePaginatedAdminList<AdminStudentRow>('students');
   const [showCreateForm, setShowCreateForm] = useState(false);
+agent/student-onboarding-workflow
   const [showCsvImport, setShowCsvImport] = useState(false);
+
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [busStudent, setBusStudent] = useState<AdminStudentRow | null>(null);
+  const [qrStudent, setQrStudent] = useState<AdminStudentRow | null>(null);
+main
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -192,6 +205,22 @@ export function AdminStudentsPage() {
           />
         )}
 
+agent/student-onboarding-workflow
+
+        {canWrite && qrStudent && (
+          <StudentQrCredentialPanel studentId={qrStudent.id} studentName={getStudentName(qrStudent)} onClose={() => setQrStudent(null)} />
+        )}
+
+        {canWrite && busStudent && (
+          <InlineFormShell title={`${busStudent.bus_assignment_id ? 'Manage' : 'Assign'} bus for ${getStudentName(busStudent)}`}>
+            <StudentBusAssignmentForm assignment={existingBusAssignment(busStudent)} fixedStudentId={busStudent.id}
+              studentLabel={getStudentName(busStudent)} services={busServices} stops={routeStops}
+              defaultTenantId={profile?.tenant_id ?? null} onSubmit={saveBusAssignment} onCancel={() => setBusStudent(null)} />
+            {busStudent.bus_assignment_id && <Button type="button" variant="ghost" onClick={() => void removeBusAssignment(busStudent)}>Remove bus assignment</Button>}
+          </InlineFormShell>
+        )}
+
+main
         <div>
           <label className="block text-sm font-semibold text-gray-700" htmlFor="student-search">
             Search students
@@ -219,6 +248,7 @@ export function AdminStudentsPage() {
 
         {!list.loading && !list.error && list.rows.length > 0 && (
           <section className="space-y-3">
+agent/student-onboarding-workflow
             <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
               <table className="min-w-[720px] w-full table-fixed text-left">
                 <thead className="border-b border-slate-200 bg-slate-50/80">
@@ -287,6 +317,55 @@ export function AdminStudentsPage() {
                             to={`/admin/students/${student.id}`}
                             aria-label={`View ${getStudentName(student)}`}
                             className="inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-navy-700 transition-colors hover:bg-navy-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500"
+
+            <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+              <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
+                <thead className="bg-gray-50"><tr><th className="px-4 py-3">Student</th><th className="px-4 py-3">School</th><th className="px-4 py-3">Grade</th><th className="px-4 py-3">School number</th><th className="px-4 py-3">Bus transportation</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Actions</th></tr></thead>
+                <tbody className="divide-y divide-gray-100">
+            {list.rows.map((student) => (
+              <tr key={student.id}>
+                <td className="px-4 py-3 font-semibold text-navy-900">{getStudentName(student)}</td>
+                <td className="px-4 py-3 text-gray-600">{student.school_name ?? 'No school'}</td>
+                <td className="px-4 py-3">{student.grade ?? 'Not assigned'}</td>
+                <td className="px-4 py-3">{student.school_student_number ?? 'Not assigned'}</td>
+                <td className="px-4 py-3">{student.bus_number ? <div><p className="font-semibold text-navy-900">Bus {student.bus_number}</p><p className="text-xs text-gray-500">{student.route_code} / {student.trip_type}</p><p className="text-xs text-gray-500">{student.pickup_stop_name ?? 'No pickup stop'} → {student.dropoff_stop_name ?? 'No drop-off stop'}</p></div> : <span className="text-gray-500">No bus assigned</span>}</td>
+                <td className="px-4 py-3"><StatusPill tone={studentStatusTone[student.status]}>{student.status}</StatusPill></td>
+                <td className="px-4 py-3"><div className="flex flex-wrap gap-2">
+                    {canWrite && (
+                      <>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            setShowCreateForm(false);
+                            setEditingStudent(student);
+                            setWriteError(null);
+                            setSuccessMessage(null);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        {student.status === 'active' && <Button type="button" size="sm" variant="secondary" onClick={() => { setEditingStudent(null); setShowCreateForm(false); setBusStudent(student); setWriteError(null); setSuccessMessage(null); }}>{student.bus_assignment_id ? 'Manage bus' : 'Assign bus'}</Button>}
+                        {student.status === 'active' && <Button type="button" size="sm" variant="secondary" onClick={() => { setEditingStudent(null); setShowCreateForm(false); setBusStudent(null); setQrStudent(student); setWriteError(null); setSuccessMessage(null); }} data-testid="admin-manage-student-qr">QR badge</Button>}
+                        {student.status === 'active' ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => void handleDeactivate(student.id)}
+                            disabled={pendingStatusStudentId === student.id}
+                          >
+                            {pendingStatusStudentId === student.id ? 'Deactivating…' : 'Deactivate'}
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => void handleReactivate(student.id)}
+                            disabled={pendingStatusStudentId === student.id}
+main
                           >
                             <Eye className="h-4 w-4" aria-hidden />
                             View
