@@ -12,7 +12,6 @@ import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { adminRoles } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
 import { getVisibleDriverProfiles } from '@/services/adminOrganizationService';
@@ -20,9 +19,14 @@ import {
   createDriverAssignment,
   updateAssignmentStatus,
 } from '@/services/driverAssignmentService';
-import { getVisibleBuses, getVisibleDrivers, getVisibleRoutes } from '@/services/transportationStructureService';
+import {
+  getVisibleBuses,
+  getVisibleDrivers,
+  getVisibleRoutes,
+  getVisibleRouteTripPatterns,
+} from '@/services/transportationStructureService';
 import type { OrganizationProfile } from '@/types/organization';
-import type { Bus, Driver, Route } from '@/types/transportation';
+import type { Bus, Driver, Route, RouteTripPattern } from '@/types/transportation';
 import type { CreateAssignmentInput, DriverRouteAssignment } from '@/types/driverAssignments';
 
 function formatDate(value: string) {
@@ -39,25 +43,28 @@ export function AdminDriverAssignmentsPage() {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [buses, setBuses] = useState<Bus[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
+  const [tripPatterns, setTripPatterns] = useState<RouteTripPattern[]>([]);
   const [profiles, setProfiles] = useState<OrganizationProfile[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
+  const canWrite = profile?.role === 'tenant_admin';
 
   const load = useCallback(async () => {
     try {
-      const [driverData, busData, routeData, profileData] = await Promise.all([
+      const [driverData, busData, routeData, profileData, patternData] = await Promise.all([
         getVisibleDrivers(),
         getVisibleBuses(),
         getVisibleRoutes(),
         getVisibleDriverProfiles(),
+        getVisibleRouteTripPatterns().catch(() => []),
       ]);
       setDrivers(driverData);
       setBuses(busData);
       setRoutes(routeData);
       setProfiles(profileData);
+      setTripPatterns(patternData);
     } catch (err) {
       setWriteError(err instanceof Error ? err.message : 'Unable to load assignment options.');
     }
@@ -86,6 +93,11 @@ export function AdminDriverAssignmentsPage() {
   const routeNames = useMemo(() => {
     return new Map(routes.map((r) => [r.id, r.route_name]));
   }, [routes]);
+
+  const tripNames = useMemo(
+    () => new Map(tripPatterns.map((pattern) => [pattern.id, pattern.display_name])),
+    [tripPatterns],
+  );
 
   async function handleCreate(input: CreateAssignmentInput) {
     setWriteError(null);
@@ -142,6 +154,7 @@ export function AdminDriverAssignmentsPage() {
               drivers={drivers}
               buses={buses}
               routes={routes}
+              tripPatterns={tripPatterns}
               profileLabels={profileLabels}
               defaultTenantId={profile?.tenant_id ?? null}
               onSubmit={handleCreate}
@@ -152,7 +165,7 @@ export function AdminDriverAssignmentsPage() {
 
         <div>
           <label className="block text-sm font-semibold text-gray-700" htmlFor="driver-assignment-search">Search assignments</label>
-          <input id="driver-assignment-search" type="search" value={list.searchInput} onChange={(event) => list.setSearchInput(event.target.value)} className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3" placeholder="Search route, bus, driver, trip type, or status" />
+          <input id="driver-assignment-search" type="search" value={list.searchInput} onChange={(event) => list.setSearchInput(event.target.value)} className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3" placeholder="Search route, bus, driver, trip, or status" />
         </div>
 
         {list.loading && (
@@ -177,7 +190,9 @@ export function AdminDriverAssignmentsPage() {
                     </h2>
                     <p className="mt-1 text-sm text-gray-600">
                       Bus {assignment.bus_number ?? busLabels.get(assignment.bus_id) ?? assignment.bus_id} &middot;{' '}
-                      {assignment.trip_type}
+                      {assignment.route_trip_pattern_id
+                        ? tripNames.get(assignment.route_trip_pattern_id) ?? assignment.trip_type
+                        : assignment.trip_type}
                     </p>
                     <p className="mt-1 text-sm text-gray-600">
                       Driver: {assignment.driver_name ?? driverNames.get(assignment.driver_id) ?? assignment.driver_id}

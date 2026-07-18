@@ -13,11 +13,21 @@ import {
   getVisibleBuses,
   getVisibleDrivers,
   getVisibleRouteStops,
+  getVisibleRouteTripPatterns,
+  getVisibleRouteTripStopSchedules,
   getVisibleRoutes,
 } from '@/services/transportationStructureService';
 import type { OrganizationProfile, School } from '@/types/organization';
 import type { DriverRouteAssignment } from '@/types/driverAssignments';
-import type { Bus, Driver, Route, RouteStop } from '@/types/transportation';
+import type {
+  Bus,
+  Driver,
+  Route,
+  RouteDirection,
+  RouteStop,
+  RouteTripPattern,
+  RouteTripStopSchedule,
+} from '@/types/transportation';
 
 interface RouteDetailData {
   route: Route;
@@ -27,12 +37,15 @@ interface RouteDetailData {
   drivers: Driver[];
   assignments: DriverRouteAssignment[];
   profiles: OrganizationProfile[];
+  tripPatterns: RouteTripPattern[];
+  schedules: RouteTripStopSchedule[];
 }
 
 export function AdminRouteDetailPage() {
   const { routeId } = useParams<{ routeId: string }>();
   const [data, setData] = useState<RouteDetailData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [direction, setDirection] = useState<RouteDirection>('forward');
 
   useEffect(() => {
     let mounted = true;
@@ -44,8 +57,10 @@ export function AdminRouteDetailPage() {
       getVisibleDrivers(),
       fetchAdminAssignments(),
       getVisibleProfiles(),
+      getVisibleRouteTripPatterns().catch(() => []),
+      getVisibleRouteTripStopSchedules().catch(() => []),
     ])
-      .then(([routes, stops, schools, buses, drivers, assignments, profiles]) => {
+      .then(([routes, stops, schools, buses, drivers, assignments, profiles, patterns, schedules]) => {
         if (!mounted) return;
         const route = routes.find((item) => item.id === routeId);
         if (!route || route.status === 'archived') {
@@ -64,6 +79,8 @@ export function AdminRouteDetailPage() {
             (assignment) => assignment.route_id === route.id && assignment.status === 'active',
           ),
           profiles,
+          tripPatterns: patterns.filter((pattern) => pattern.route_id === route.id),
+          schedules: schedules.filter((schedule) => schedule.route_id === route.id),
         });
       })
       .catch(() => {
@@ -81,6 +98,16 @@ export function AdminRouteDetailPage() {
   const profileNames = useMemo(
     () => new Map(data?.profiles.map((profile) => [profile.id, profile.full_name]) ?? []),
     [data?.profiles],
+  );
+  const selectedPattern = data?.tripPatterns.find((pattern) => pattern.direction === direction);
+  const displayedStops = useMemo(
+    () =>
+      data
+        ? [...data.stops].sort((a, b) =>
+            direction === 'forward' ? a.stop_order - b.stop_order : b.stop_order - a.stop_order,
+          )
+        : [],
+    [data, direction],
   );
 
   return (
@@ -118,6 +145,9 @@ export function AdminRouteDetailPage() {
               <Card className="p-5">
                 <p className="text-sm font-semibold text-gray-600">Stops</p>
                 <p className="mt-1 text-3xl font-bold text-navy-900">{data.stops.length}</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  {data.route.definition_status === 'ready' ? 'Map ready' : 'Setup incomplete'}
+                </p>
               </Card>
             </section>
 
@@ -136,7 +166,10 @@ export function AdminRouteDetailPage() {
                         <li key={assignment.id} className="rounded-lg bg-gray-50 p-3 text-sm">
                           <p className="font-semibold text-navy-900">Bus {busNames.get(assignment.bus_id) ?? 'unavailable'}</p>
                           <p className="text-gray-600">
-                            {profileNames.get(driver?.profile_id ?? '') ?? 'Driver unavailable'} · {assignment.trip_type}
+                            {profileNames.get(driver?.profile_id ?? '') ?? 'Driver unavailable'} ·{' '}
+                            {data.tripPatterns.find(
+                              (pattern) => pattern.id === assignment.route_trip_pattern_id,
+                            )?.display_name ?? assignment.trip_type}
                           </p>
                         </li>
                       );
@@ -145,27 +178,59 @@ export function AdminRouteDetailPage() {
                 )}
               </Card>
               <Card className="p-5">
-                <h2 className="text-lg font-bold text-navy-900">Ordered stops</h2>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-bold text-navy-900">Trip stop order</h2>
+                    <p className="text-sm text-gray-600">{selectedPattern?.display_name ?? direction}</p>
+                  </div>
+                  <div className="flex rounded-lg border border-gray-200 p-1">
+                    {(['forward', 'reverse'] as const).map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={`rounded-md px-3 py-2 text-sm font-semibold ${direction === value ? 'bg-navy-700 text-white' : 'text-gray-700'}`}
+                        onClick={() => setDirection(value)}
+                      >
+                        {data.tripPatterns.find((pattern) => pattern.direction === value)
+                          ?.display_name ?? value}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 {data.stops.length === 0 ? (
                   <p className="mt-3 text-sm text-gray-600">No stops have been added.</p>
                 ) : (
                   <ol className="mt-3 space-y-3">
-                    {data.stops.map((stop) => (
-                      <li key={stop.id} className="flex gap-3 rounded-lg bg-gray-50 p-3 text-sm">
-                        <span className="font-bold text-navy-700">{stop.stop_order}</span>
-                        <div>
-                          <p className="font-semibold text-navy-900">{stop.stop_name}</p>
-                          {stop.school_id && (
-                            <p className="text-gray-600">
-                              School stop: {data.schools.find((school) => school.id === stop.school_id)?.name ?? 'School unavailable'}
+                    {displayedStops.map((stop, index) => {
+                      const planned = data.schedules.find(
+                        (schedule) =>
+                          schedule.route_trip_pattern_id === selectedPattern?.id &&
+                          schedule.route_stop_id === stop.id,
+                      )?.planned_arrival_time;
+                      return (
+                        <li key={stop.id} className="flex gap-3 rounded-lg bg-gray-50 p-3 text-sm">
+                          <span className="font-bold text-navy-700">{index + 1}</span>
+                          <div>
+                            <p className="font-semibold text-navy-900">
+                              {index === 0
+                                ? 'Start: '
+                                : index === displayedStops.length - 1
+                                  ? 'End: '
+                                  : ''}
+                              {stop.stop_name}
                             </p>
-                          )}
-                          {stop.planned_arrival_time && (
-                            <p className="text-gray-600">Planned {stop.planned_arrival_time.slice(0, 5)}</p>
-                          )}
-                        </div>
-                      </li>
-                    ))}
+                            {stop.school_id && (
+                              <p className="text-gray-600">
+                                School stop: {data.schools.find((school) => school.id === stop.school_id)?.name ?? 'School unavailable'}
+                              </p>
+                            )}
+                            {planned && (
+                              <p className="text-gray-600">Planned {planned.slice(0, 5)}</p>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ol>
                 )}
               </Card>

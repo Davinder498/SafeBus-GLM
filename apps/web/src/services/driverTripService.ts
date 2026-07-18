@@ -14,7 +14,7 @@ function requireSupabase() {
 
 const driverColumns = 'id, tenant_id, profile_id, employee_number, phone, status';
 const tripColumns =
-  'id, tenant_id, driver_id, bus_id, route_id, trip_type, status, service_date, started_at, ended_at, created_at, updated_at';
+  'id, tenant_id, driver_id, bus_id, route_id, route_trip_pattern_id, trip_name_snapshot, trip_type, status, service_date, started_at, ended_at, created_at, updated_at';
 
 /**
  * Fetch the current driver's own driver record. Returns null if the signed-in

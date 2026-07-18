@@ -286,12 +286,12 @@ test.describe('Milestone 6B - Guardian live trip status UI', () => {
     await expect(page.getByText('Trip in progress')).toBeVisible();
     await expect(page.getByText('Last updated:', { exact: false })).toBeVisible();
 
-    // No map / GPS / ETA / UUID leakage.
+    // No map / GPS / UUID leakage; ETA is a broad server-safe label only.
     await expect(page.getByText('51.0447')).toHaveCount(0);
     await expect(page.getByText('-114.0719')).toHaveCount(0);
     await expect(page.getByText('latitude', { exact: false })).toHaveCount(0);
     await expect(page.getByText('longitude', { exact: false })).toHaveCount(0);
-    await expect(page.getByText('ETA', { exact: false })).toHaveCount(0);
+    await expect(page.getByText('ETA temporarily unavailable', { exact: true })).toBeVisible();
     await expect(page.getByText('speed', { exact: false })).toHaveCount(0);
     await expect(page.getByText(GUARDIAN.studentId)).toHaveCount(0);
     await expect(page.getByText('66666666-6666-6666-6666-666666666666')).toHaveCount(0);

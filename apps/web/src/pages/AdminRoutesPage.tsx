@@ -6,47 +6,36 @@ import {
   InlineFormShell,
 } from '@/components/admin/TransportationAdminForms';
 import { RouteWithStopsForm } from '@/components/admin/RouteWithStopsForm';
-import type {
-  AssignmentDraft,
-  StopDraft,
-} from '@/components/admin/RouteWithStopsForm';
 import { RouteTile } from '@/components/admin/RouteTile';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { adminRoles } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
 import { getVisibleProfiles, getVisibleSchools } from '@/services/adminOrganizationService';
+import { fetchAdminAssignments } from '@/services/driverAssignmentService';
 import {
-  createDriverAssignment,
-  fetchAdminAssignments,
-  updateAssignmentStatus,
-} from '@/services/driverAssignmentService';
-import {
-  createRoute,
-  createRouteStop,
   deleteRoute,
   getVisibleBuses,
   getVisibleDrivers,
   getVisibleRouteStops,
+  getVisibleRouteTripPatterns,
+  getVisibleRouteTripStopSchedules,
   getVisibleRoutes,
-  updateRoute,
-  updateRouteStop,
+  saveRouteDefinition,
 } from '@/services/transportationStructureService';
 import type { OrganizationProfile, School } from '@/types/organization';
 import type { DriverRouteAssignment } from '@/types/driverAssignments';
 import type {
   Bus,
-  CreateRouteInput,
-  CreateRouteStopInput,
   Driver,
   Route,
   RouteStop,
-  UpdateRouteInput,
-  UpdateRouteStopInput,
+  RouteTripPattern,
+  RouteTripStopSchedule,
+  SaveRouteDefinitionInput,
 } from '@/types/transportation';
 
 interface AdminRoutesPageProps {
@@ -59,6 +48,8 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
   const list = usePaginatedAdminList<Route & { school_name: string | null; stop_count: number; active_assignment_count: number }>('routes');
   const [schools, setSchools] = useState<School[]>([]);
   const [stops, setStops] = useState<RouteStop[]>([]);
+  const [tripPatterns, setTripPatterns] = useState<RouteTripPattern[]>([]);
+  const [tripSchedules, setTripSchedules] = useState<RouteTripStopSchedule[]>([]);
   const [buses, setBuses] = useState<Bus[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [profiles, setProfiles] = useState<OrganizationProfile[]>([]);
@@ -73,10 +64,8 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
   const [deletingRoute, setDeletingRoute] = useState<Route | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const canWrite =
-    !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
-  const canDelete =
-    !!profile && (profile.role === 'tenant_admin' || profile.role === 'platform_super_admin');
+  const canWrite = profile?.role === 'tenant_admin';
+  const canDelete = profile?.role === 'tenant_admin';
 
   const loadRoutes = useCallback(async () => {
     setLoading(true);
@@ -94,6 +83,8 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
       getVisibleDrivers(),
       getVisibleProfiles(),
       fetchAdminAssignments(),
+      getVisibleRouteTripPatterns(),
+      getVisibleRouteTripStopSchedules(),
     ]);
 
     const [
@@ -104,6 +95,8 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
       driversResult,
       profilesResult,
       assignmentsResult,
+      tripPatternsResult,
+      tripSchedulesResult,
     ] = settled;
 
     if (routesResult.status === 'rejected') {
@@ -125,6 +118,8 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
         'drivers',
         'profiles',
         'driver assignments',
+        'route trip patterns',
+        'route trip schedules',
       ];
       settled.slice(1).forEach((result, index) => {
         if (result.status === 'rejected') {
@@ -149,6 +144,12 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
         ? assignmentsResult.value
         : [],
     );
+    setTripPatterns(
+      tripPatternsResult.status === 'fulfilled' ? tripPatternsResult.value : [],
+    );
+    setTripSchedules(
+      tripSchedulesResult.status === 'fulfilled' ? tripSchedulesResult.value : [],
+    );
     setLoading(false);
   }, []);
 
@@ -159,12 +160,6 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
   const schoolNames = useMemo(
     () => new Map(schools.map((school) => [school.id, school.name])),
     [schools],
-  );
-
-  const profileLabels = useMemo(
-    () =>
-      new Map(profiles.map((p) => [p.id, `${p.full_name} (${p.email})`])),
-    [profiles],
   );
 
   const driverNames = useMemo(
@@ -251,119 +246,16 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
     }
   }
 
-  // Helper: get existing assignments as drafts for the form
-  function getAssignmentDrafts(routeId: string): AssignmentDraft[] {
-    return (assignmentsByRoute.get(routeId) ?? []).map((a) => ({
-      id: a.id,
-      driverId: a.driver_id,
-      busId: a.bus_id,
-      tripType: a.trip_type,
-      status: a.status,
-    }));
-  }
-
-  async function handleSubmit(payload: {
-    route: CreateRouteInput | UpdateRouteInput;
-    stops: StopDraft[];
-    assignments: AssignmentDraft[];
-    removedAssignmentIds: string[];
-  }) {
+  async function handleSubmit(payload: SaveRouteDefinitionInput) {
     setWriteError(null);
     setSuccessMessage(null);
 
     try {
-      // 1. Save the route (create or update)
       const isUpdate = !!editingRoute;
-      let savedRouteId: string;
-      let savedTenantId: string;
-
-      if (isUpdate && editingRoute) {
-        const updated = await updateRoute(
-          editingRoute.id,
-          payload.route as UpdateRouteInput,
-        );
-        savedRouteId = updated.id;
-        savedTenantId = updated.tenant_id;
-      } else {
-        const created = await createRoute(payload.route as CreateRouteInput);
-        savedRouteId = created.id;
-        savedTenantId = created.tenant_id;
-      }
-
-      // 2. Save stops - update existing, create new
-      const existingRouteStops = stopsByRoute.get(savedRouteId) ?? [];
-      for (const stopDraft of payload.stops) {
-        if (stopDraft.id) {
-          // Update existing stop
-          const stopInput: UpdateRouteStopInput = {
-            route_id: savedRouteId,
-            school_id: stopDraft.school_id,
-            stop_name: stopDraft.stop_name.trim(),
-            stop_order: stopDraft.stop_order,
-            planned_arrival_time: stopDraft.planned_arrival_time,
-            status: stopDraft.status,
-          };
-          await updateRouteStop(stopDraft.id, stopInput);
-        } else {
-          // Create new stop
-          const stopInput: CreateRouteStopInput = {
-            tenant_id: savedTenantId,
-            route_id: savedRouteId,
-            school_id: stopDraft.school_id,
-            stop_name: stopDraft.stop_name.trim(),
-            stop_order: stopDraft.stop_order,
-            planned_arrival_time: stopDraft.planned_arrival_time,
-            latitude: null,
-            longitude: null,
-            status: stopDraft.status,
-          };
-          await createRouteStop(stopInput);
-        }
-      }
-
-      // 3. Deactivate removed existing stops - archive stops that are no longer in the draft
-      const keptStopIds = new Set(
-        payload.stops.filter((s) => s.id).map((s) => s.id),
-      );
-      for (const existingStop of existingRouteStops) {
-        if (!keptStopIds.has(existingStop.id)) {
-          await updateRouteStop(existingStop.id, {
-            route_id: savedRouteId,
-            school_id: existingStop.school_id,
-            stop_name: existingStop.stop_name,
-            stop_order: existingStop.stop_order,
-            planned_arrival_time: existingStop.planned_arrival_time,
-            latitude: existingStop.latitude,
-            longitude: existingStop.longitude,
-            status: 'archived',
-          });
-        }
-      }
-
-      // 4. Create new assignments
-      const tenantId = savedTenantId;
-      for (const draft of payload.assignments) {
-        if (draft.id.startsWith('new-')) {
-          await createDriverAssignment(
-            {
-              driverId: draft.driverId,
-              busId: draft.busId,
-              routeId: savedRouteId,
-              tripType: draft.tripType,
-              status: draft.status,
-            },
-            tenantId,
-          );
-        }
-      }
-
-      // 5. Deactivate removed assignments
-      for (const removedId of payload.removedAssignmentIds) {
-        await updateAssignmentStatus(removedId, 'inactive');
-      }
+      await saveRouteDefinition(payload);
 
       setSuccessMessage(
-        isUpdate ? 'Route updated.' : 'Route created with stops.',
+        isUpdate ? 'Route definition updated.' : 'Route corridor and trips created.',
       );
       cancelForm();
       await loadRoutes();
@@ -383,8 +275,8 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
       <div className="space-y-6">
         <PageHeader
           eyebrow="Routes"
-          title="Routes and stops"
-          description="Create routes with stops and assign buses all in one place."
+          title="Route corridors and trips"
+          description="Define each physical route once, then name its forward and reverse trips."
         />
 
         {canWrite && !showCreateForm && !editingRoute && (
@@ -403,13 +295,10 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
             <RouteWithStopsForm
               route={null}
               existingStops={[]}
-              existingAssignments={[]}
+              existingTripPatterns={[]}
+              existingSchedules={[]}
               existingRoutes={routes}
               schools={schools}
-              buses={buses}
-              drivers={drivers}
-              profileLabels={profileLabels}
-              defaultTenantId={profile?.tenant_id ?? null}
               onSubmit={handleSubmit}
               onCancel={cancelForm}
             />
@@ -421,13 +310,14 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
             <RouteWithStopsForm
               route={editingRoute}
               existingStops={stopsByRoute.get(editingRoute.id) ?? []}
-              existingAssignments={getAssignmentDrafts(editingRoute.id)}
+              existingTripPatterns={tripPatterns.filter(
+                (pattern) => pattern.route_id === editingRoute.id,
+              )}
+              existingSchedules={tripSchedules.filter(
+                (schedule) => schedule.route_id === editingRoute.id,
+              )}
               existingRoutes={routes}
               schools={schools}
-              buses={buses}
-              drivers={drivers}
-              profileLabels={profileLabels}
-              defaultTenantId={profile?.tenant_id ?? null}
               onSubmit={handleSubmit}
               onCancel={cancelForm}
             />
@@ -475,7 +365,9 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
                   driverNames.get(
                     drivers.find((d) => d.id === a.driver_id)?.profile_id ?? '',
                   ) ?? null,
-                tripType: a.trip_type,
+                tripType:
+                  tripPatterns.find((pattern) => pattern.id === a.route_trip_pattern_id)
+                    ?.display_name ?? a.trip_type,
               }));
 
               return (

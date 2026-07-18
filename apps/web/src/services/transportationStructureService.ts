@@ -8,7 +8,12 @@ import type {
   CreateStudentRouteAssignmentInput,
   Driver,
   Route,
+  RouteOverlay,
   RouteStop,
+  RouteTripPattern,
+  RouteTripStopSchedule,
+  SaveRouteDefinitionInput,
+  SaveRouteDefinitionResult,
   StudentRouteAssignment,
   UpdateBusInput,
   UpdateDriverInput,
@@ -136,7 +141,7 @@ export async function getVisibleRoutes(): Promise<Route[]> {
   const { data, error } = await client
     .from('routes')
     .select(
-      'id, tenant_id, school_id, route_name, route_code, route_type, status, created_at, updated_at',
+      'id, tenant_id, school_id, route_name, route_code, route_type, route_kind, map_color, definition_status, status, created_at, updated_at',
     )
     .order('route_code', { ascending: true });
 
@@ -175,7 +180,7 @@ export async function createRoute(input: CreateRouteInput): Promise<Route> {
   const { data, error } = await client
     .from('routes')
     .insert(input)
-    .select('id, tenant_id, school_id, route_name, route_code, route_type, status, created_at, updated_at')
+    .select('id, tenant_id, school_id, route_name, route_code, route_type, route_kind, map_color, definition_status, status, created_at, updated_at')
     .single();
 
   if (error) {
@@ -191,7 +196,7 @@ export async function updateRoute(id: string, input: UpdateRouteInput): Promise<
     .from('routes')
     .update(input)
     .eq('id', id)
-    .select('id, tenant_id, school_id, route_name, route_code, route_type, status, created_at, updated_at')
+    .select('id, tenant_id, school_id, route_name, route_code, route_type, route_kind, map_color, definition_status, status, created_at, updated_at')
     .single();
 
   if (error) {
@@ -222,6 +227,62 @@ export async function getVisibleRouteStops(): Promise<RouteStop[]> {
 
   if (error) throw new Error(error.message);
   return (data ?? []) as RouteStop[];
+}
+
+export async function getVisibleRouteTripPatterns(): Promise<RouteTripPattern[]> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('route_trip_patterns')
+    .select(
+      'id, tenant_id, route_id, direction, display_name, status, schedule_review_required, created_at, updated_at',
+    )
+    .order('direction', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as RouteTripPattern[];
+}
+
+export async function getVisibleRouteTripStopSchedules(): Promise<RouteTripStopSchedule[]> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('route_trip_stop_schedules')
+    .select(
+      'id, tenant_id, route_id, route_trip_pattern_id, route_stop_id, planned_arrival_time, created_at, updated_at',
+    );
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as RouteTripStopSchedule[];
+}
+
+export async function saveRouteDefinition(
+  input: SaveRouteDefinitionInput,
+): Promise<SaveRouteDefinitionResult> {
+  const client = requireSupabase();
+  const { data, error } = await client.rpc('admin_save_route_definition', {
+    p_route: input.route,
+    p_stops: input.stops,
+    p_trip_patterns: input.tripPatterns,
+  });
+
+  if (error) {
+    if (import.meta.env.DEV) console.error('Failed to save route definition', error);
+    throw describeRouteError(error);
+  }
+  return data as SaveRouteDefinitionResult;
+}
+
+export async function getAdminLiveRouteOverlays(): Promise<RouteOverlay[]> {
+  const client = requireSupabase();
+  const { data, error } = await client.rpc('get_admin_live_route_overlays');
+  if (error) throw new Error(error.message);
+  return (data ?? []) as RouteOverlay[];
+}
+
+export async function getGuardianLiveRouteOverlays(): Promise<RouteOverlay[]> {
+  const client = requireSupabase();
+  const { data, error } = await client.rpc('get_guardian_live_route_overlays');
+  if (error) throw new Error(error.message);
+  return (data ?? []) as RouteOverlay[];
 }
 
 export async function createRouteStop(input: CreateRouteStopInput): Promise<RouteStop> {

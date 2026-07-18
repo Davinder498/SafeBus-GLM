@@ -24,7 +24,17 @@ export function StudentBusAssignmentForm({ assignment, studentLabel, fixedStuden
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const service = services.find((item) => item.id === serviceId);
-  const availableStops = useMemo(() => stops.filter((stop) => stop.route_id === service?.route_id && stop.status === 'active'), [service?.route_id, stops]);
+  const availableStops = useMemo(
+    () =>
+      stops
+        .filter((stop) => stop.route_id === service?.route_id && stop.status === 'active')
+        .sort((a, b) =>
+          service?.direction === 'reverse'
+            ? b.stop_order - a.stop_order
+            : a.stop_order - b.stop_order,
+        ),
+    [service?.direction, service?.route_id, stops],
+  );
 
   async function submit(event: FormEvent) {
     event.preventDefault(); setError(null);
@@ -32,7 +42,13 @@ export function StudentBusAssignmentForm({ assignment, studentLabel, fixedStuden
     if (pickupStopId && !availableStops.some((stop) => stop.id === pickupStopId)) { setError('Pickup stop must belong to the bus service route.'); return; }
     if (dropoffStopId && !availableStops.some((stop) => stop.id === dropoffStopId)) { setError('Drop-off stop must belong to the bus service route.'); return; }
     if (effectiveTo && effectiveTo < effectiveFrom) { setError('Effective-to date must be on or after effective-from date.'); return; }
-    const values = { student_id: studentId, bus_route_assignment_id: service.id, pickup_stop_id: pickupStopId || null, dropoff_stop_id: dropoffStopId || null, effective_from: effectiveFrom, effective_to: effectiveTo || null, status };
+    const pickupIndex = availableStops.findIndex((stop) => stop.id === pickupStopId);
+    const dropoffIndex = availableStops.findIndex((stop) => stop.id === dropoffStopId);
+    if (pickupIndex >= 0 && dropoffIndex >= 0 && pickupIndex > dropoffIndex) {
+      setError('Pickup must come before drop-off in the selected trip direction.');
+      return;
+    }
+    const values = { student_id: studentId, bus_route_assignment_id: service.id, route_trip_pattern_id: service.route_trip_pattern_id, pickup_stop_id: pickupStopId || null, dropoff_stop_id: dropoffStopId || null, effective_from: effectiveFrom, effective_to: effectiveTo || null, status };
     setSaving(true);
     try { await onSubmit(assignment ? values : { tenant_id: defaultTenantId, ...values }); }
     finally { setSaving(false); }
@@ -44,7 +60,7 @@ export function StudentBusAssignmentForm({ assignment, studentLabel, fixedStuden
     {fixedStudentId ? (
       <div className="rounded-lg bg-gray-50 px-4 py-3"><p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Student</p><p className="mt-1 font-semibold text-navy-900">{studentLabel}</p></div>
     ) : <label className="text-sm font-semibold text-gray-700">Student<StudentSearchPicker value={studentId} initialLabel={studentLabel} onChange={setStudentId} /></label>}
-    <label className="text-sm font-semibold text-gray-700">Bus service<select className={field} value={serviceId} onChange={(event) => { setServiceId(event.target.value); setPickupStopId(''); setDropoffStopId(''); }}><option value="">Choose bus and route</option>{services.map((item) => <option key={item.id} value={item.id}>Bus {item.bus_number} - {item.route_code} {item.route_name} ({item.trip_type})</option>)}</select></label>
+    <label className="text-sm font-semibold text-gray-700">Bus service<select className={field} value={serviceId} onChange={(event) => { setServiceId(event.target.value); setPickupStopId(''); setDropoffStopId(''); }}><option value="">Choose bus and route</option>{services.map((item) => <option key={item.id} value={item.id}>Bus {item.bus_number} - {item.route_code} {item.route_name} ({item.trip_name ?? item.trip_type})</option>)}</select></label>
     <div className="grid gap-4 sm:grid-cols-2">
       <label className="text-sm font-semibold text-gray-700">Pickup stop<select className={field} value={pickupStopId} onChange={(event) => setPickupStopId(event.target.value)}><option value="">Not assigned</option>{availableStops.map((stop) => <option key={stop.id} value={stop.id}>{stop.stop_order}. {stop.stop_name}</option>)}</select></label>
       <label className="text-sm font-semibold text-gray-700">Drop-off stop<select className={field} value={dropoffStopId} onChange={(event) => setDropoffStopId(event.target.value)}><option value="">Not assigned</option>{availableStops.map((stop) => <option key={stop.id} value={stop.id}>{stop.stop_order}. {stop.stop_name}</option>)}</select></label>

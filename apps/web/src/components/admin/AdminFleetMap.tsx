@@ -4,8 +4,13 @@ import type { LatLngBoundsExpression, LatLngExpression } from 'leaflet';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
+import {
+  RouteOverlayLayers,
+  RouteOverlayLegend,
+} from '@/components/maps/RouteOverlayLayers';
 import type { MapTileConfig } from '@/config/mapTiles';
 import { hasValidCoordinates, type AdminLiveTrip } from '@/types/adminLiveMonitoring';
+import type { RouteOverlay } from '@/types/transportation';
 
 export interface FleetMapFormatters {
   formatTimestamp(iso: string): string;
@@ -114,11 +119,18 @@ function CoordinateFallback({ trips, formatters, missingConfig }: { trips: Admin
   );
 }
 
-export function AdminFleetMap({ trips, tileConfig, formatters }: { trips: AdminLiveTrip[]; tileConfig: MapTileConfig; formatters: FleetMapFormatters }) {
+export function AdminFleetMap({ trips, overlays = [], tileConfig, formatters }: { trips: AdminLiveTrip[]; overlays?: RouteOverlay[]; tileConfig: MapTileConfig; formatters: FleetMapFormatters }) {
   const [tileFailed, setTileFailed] = useState(false);
   const locations = useMemo(() => toFleetMapLocations(trips, formatters.safeFleetLabel), [trips, formatters.safeFleetLabel]);
-  const bounds = useMemo<LatLngBoundsExpression | null>(() => locations.length === 0 ? null : locations.map((location) => location.position) as LatLngBoundsExpression, [locations]);
-  const center = useMemo<LatLngExpression>(() => locations[0]?.position ?? [51.0447, -114.0719], [locations]);
+  const overlayPositions = useMemo(
+    () => overlays.flatMap((overlay) => overlay.stops.map((stop) => [stop.latitude, stop.longitude] as LatLngExpression)),
+    [overlays],
+  );
+  const bounds = useMemo<LatLngBoundsExpression | null>(() => {
+    const positions = [...overlayPositions, ...locations.map((location) => location.position)];
+    return positions.length === 0 ? null : positions as LatLngBoundsExpression;
+  }, [locations, overlayPositions]);
+  const center = useMemo<LatLngExpression>(() => locations[0]?.position ?? overlayPositions[0] ?? [51.0447, -114.0719], [locations, overlayPositions]);
 
   const handleTileError = useCallback(() => setTileFailed(true), []);
   const handleTileLoad = useCallback(() => setTileFailed(false), []);
@@ -133,13 +145,15 @@ export function AdminFleetMap({ trips, tileConfig, formatters }: { trips: AdminL
         <div className="border-b border-gray-100 p-5">
           <h2 className="text-lg font-bold text-navy-900">Live fleet map</h2>
           <p className="mt-1 text-sm text-gray-600">Operational marker positions for active buses with valid current coordinates. Text labels identify GPS status; the fleet table remains the primary operational view.</p>
+          <RouteOverlayLegend overlays={overlays} />
           {tileFailed && <p role="alert" className="mt-3 rounded-md bg-warning-50 px-3 py-2 text-sm font-semibold text-warning-700" data-testid="admin-live-fleet-map-tile-error">Map tiles could not be loaded. Markers and the fleet list remain available where supported.</p>}
           {locations.length === 0 && <p className="mt-3 text-sm font-semibold text-gray-700" data-testid="admin-live-fleet-map-empty">No active buses with valid coordinates.</p>}
         </div>
         <section className="h-96" aria-label="Admin live fleet interactive map" data-testid="admin-live-fleet-map-region">
           <MapContainer center={center} zoom={locations.length === 1 ? 14 : 11} scrollWheelZoom className="h-full w-full" data-testid="admin-live-fleet-leaflet-map">
             <FleetTileLayer config={tileConfig} onTileError={handleTileError} onTileLoad={handleTileLoad} />
-            <FitFleetControl bounds={bounds} disabled={locations.length === 0} />
+            <FitFleetControl bounds={bounds} disabled={bounds === null} />
+            <RouteOverlayLayers overlays={overlays} />
             {locations.map(({ key, position, trip }) => {
               const style = markerStyle(trip.locationStatus);
               return (

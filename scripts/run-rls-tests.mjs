@@ -26,6 +26,7 @@ const DEFAULT_RLS_FILES = [
   'tests/rls/driver-assignment-platform-admin-write-rls.sql',
   'tests/rls/secure-trip-tracking-realtime-rls.sql',
   'tests/rls/student-csv-import-rls.sql',
+  'tests/rls/route-trip-pattern-rls.sql',
 ];
 
 function fail(message) {

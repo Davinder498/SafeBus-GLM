@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const playwrightPort = Number(process.env.PLAYWRIGHT_PORT ?? 5173);
+const playwrightBaseUrl = `http://localhost:${playwrightPort}`;
+
 /**
  * Playwright config for SafeBus smoke tests.
  *
@@ -19,7 +22,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? [['github'], ['list']] : 'list',
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: playwrightBaseUrl,
     trace: 'on-first-retry',
   },
   projects: [
@@ -37,8 +40,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'pnpm --filter @safebus/web dev',
-    url: 'http://localhost:5173',
+    command: `pnpm --filter @safebus/web exec vite --port ${playwrightPort}`,
+    url: playwrightBaseUrl,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
   },

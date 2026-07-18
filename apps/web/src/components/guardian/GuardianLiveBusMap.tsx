@@ -3,8 +3,13 @@ import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaf
 import type { LatLngExpression } from 'leaflet';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
+import {
+  RouteOverlayLayers,
+  RouteOverlayLegend,
+} from '@/components/maps/RouteOverlayLayers';
 import type { MapTileConfig } from '@/config/mapTiles';
 import type { GuardianStudentLiveBusLocation } from '@/types/guardianLiveBusLocation';
+import type { RouteOverlay } from '@/types/transportation';
 
 /**
  * A student context entry used to correlate safe location state with
@@ -18,6 +23,8 @@ export interface GuardianStudentContextEntry {
 export interface GuardianLiveBusMapProps {
   /** Safe location-state rows from the Milestone 11A RPC. */
   locations: GuardianStudentLiveBusLocation[];
+  /** Static route geometry independently authorized for linked students. */
+  overlays?: RouteOverlay[];
   /** Safe student context (names) from already-authorized guardian visibility. */
   studentContext: GuardianStudentContextEntry[];
   /** Public tile configuration. When unconfigured, the map degrades gracefully. */
@@ -165,6 +172,7 @@ function MapResizer() {
 
 export function GuardianLiveBusMap({
   locations,
+  overlays = [],
   studentContext,
   tileConfig,
   regionLabel = 'Guardian live bus interactive map',
@@ -176,10 +184,12 @@ export function GuardianLiveBusMap({
     [locations, studentContext],
   );
 
-  const center = useMemo<LatLngExpression>(
-    () => (markerEntries[0]?.position ?? [51.0447, -114.0719]) as LatLngExpression,
-    [markerEntries],
-  );
+  const center = useMemo<LatLngExpression>(() => {
+    if (markerEntries[0]) return markerEntries[0].position;
+    const firstStop = overlays[0]?.stops[0];
+    if (firstStop) return [firstStop.latitude, firstStop.longitude];
+    return [51.0447, -114.0719];
+  }, [markerEntries, overlays]);
 
   const handleTileError = useCallback(() => setTileFailed(true), []);
   const handleTileLoad = useCallback(() => setTileFailed(false), []);
@@ -210,9 +220,10 @@ export function GuardianLiveBusMap({
         <div className="border-b border-gray-100 p-5">
           <h2 className="text-lg font-bold text-navy-900">Live bus map</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Shows the current bus location for your linked students when a fresh update is available.
+            Shows the assigned route and current bus location for your linked students.
             Map markers are shown only for current updates; delayed or unavailable location updates do not appear on the map.
           </p>
+          <RouteOverlayLegend overlays={overlays} />
           {tileFailed && (
             <p
               role="alert"
@@ -245,6 +256,7 @@ export function GuardianLiveBusMap({
               attribution={tileConfig.attribution as string}
               eventHandlers={{ tileerror: handleTileError, tileload: handleTileLoad }}
             />
+            <RouteOverlayLayers overlays={overlays} guardian />
             {markerEntries.map((entry) => (
               <CircleMarker
                 key={entry.key}

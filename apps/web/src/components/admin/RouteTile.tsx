@@ -1,19 +1,12 @@
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { StatusPill } from '@/components/ui/StatusPill';
-import type { Route, RouteStatus, RouteType } from '@/types/transportation';
+import type { Route, RouteStatus } from '@/types/transportation';
 
 const routeStatusTone: Record<RouteStatus, 'success' | 'danger' | 'neutral'> = {
   active: 'success',
   inactive: 'neutral',
   archived: 'danger',
-};
-
-const routeTypeLabels: Record<RouteType, string> = {
-  morning: 'Morning',
-  afternoon: 'Afternoon',
-  special: 'Special',
-  field_trip: 'Field trip',
 };
 
 export interface RouteTileAssignment {
@@ -60,8 +53,12 @@ export function RouteTile({
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
+        <span className="h-5 w-5 rounded-full border-2 border-white shadow" style={{ backgroundColor: route.map_color }} aria-label={`Route color ${route.map_color}`} />
         <span className="inline-flex items-center rounded-full bg-navy-50 px-2.5 py-1 text-xs font-semibold text-navy-700 ring-1 ring-navy-100">
-          {routeTypeLabels[route.route_type]}
+          {route.route_kind === 'field_trip' ? 'Field trip' : 'Regular service'}
+        </span>
+        <span className="inline-flex items-center rounded-full bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200">
+          {route.definition_status === 'ready' ? 'Map ready' : 'Setup incomplete'}
         </span>
         <span className="inline-flex items-center rounded-full bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200">
           {stopCount} {stopCount === 1 ? 'stop' : 'stops'}

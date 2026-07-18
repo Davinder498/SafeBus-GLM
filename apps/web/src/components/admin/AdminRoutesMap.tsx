@@ -24,22 +24,7 @@ interface RouteMapLocation {
   position: LatLngExpression;
   stop: RouteStop;
   route: Route;
-}
-
-// A stable palette of distinguishable colors for routes on the combined map.
-const ROUTE_COLORS = [
-  '#1d4ed8', // blue-700
-  '#047857', // emerald-700
-  '#b45309', // amber-700
-  '#be185d', // pink-700
-  '#6d28d9', // violet-700
-  '#0e7490', // cyan-700
-  '#c2410c', // orange-700
-  '#15803d', // green-700
-];
-
-function routeColor(index: number): string {
-  return ROUTE_COLORS[index % ROUTE_COLORS.length];
+  terminal: 'start' | 'end' | null;
 }
 
 function hasValidCoordinates(stop: RouteStop): boolean {
@@ -57,12 +42,13 @@ function toLocations(routes: RouteMapRoute[]): RouteMapLocation[] {
     const sorted = [...entry.stops]
       .filter((s) => s.status !== 'archived' && hasValidCoordinates(s))
       .sort((a, b) => a.stop_order - b.stop_order);
-    for (const stop of sorted) {
+    for (const [index, stop] of sorted.entries()) {
       locations.push({
         key: `${entry.route.id}-${stop.id}`,
         position: [stop.latitude as number, stop.longitude as number],
         stop,
         route: entry.route,
+        terminal: index === 0 ? 'start' : index === sorted.length - 1 ? 'end' : null,
       });
     }
   }
@@ -239,12 +225,6 @@ export function AdminRoutesMap({ routes, tileConfig }: AdminRoutesMapProps) {
     [locations],
   );
 
-  const routeIndex = useMemo(() => {
-    const map = new Map<string, number>();
-    routes.forEach((entry, index) => map.set(entry.route.id, index));
-    return map;
-  }, [routes]);
-
   const handleTileError = useCallback(() => setTileFailed(true), []);
   const handleTileLoad = useCallback(() => setTileFailed(false), []);
 
@@ -303,26 +283,29 @@ export function AdminRoutesMap({ routes, tileConfig }: AdminRoutesMapProps) {
                   key={`path-${route.id}`}
                   positions={positions}
                   pathOptions={{
-                    color: routeColor(routeIndex.get(route.id) ?? 0),
-                    weight: 3,
+                    color: route.map_color ?? '#2563EB',
+                    weight: 5,
                     opacity: 0.7,
                   }}
                 />
               ) : null,
             )}
-            {locations.map(({ key, position, stop, route }) => {
-              const color = routeColor(routeIndex.get(route.id) ?? 0);
+            {locations.map(({ key, position, stop, route, terminal }) => {
+              const color = route.map_color ?? '#2563EB';
               return (
                 <CircleMarker
                   key={key}
                   center={position}
-                  radius={7}
-                  pathOptions={{ color, fillColor: color, fillOpacity: 0.85, weight: 2 }}
+                  radius={terminal ? 9 : 6}
+                  pathOptions={{ color, fillColor: terminal ? color : '#ffffff', fillOpacity: 1, weight: terminal ? 3 : 2 }}
                   data-testid="admin-routes-map-marker"
                 >
                   <Popup>
                     <div className="space-y-1 text-sm">
-                      <p className="font-semibold">{stop.stop_name}</p>
+                      <p className="font-semibold">
+                        {terminal === 'start' ? 'Start: ' : terminal === 'end' ? 'End: ' : ''}
+                        {stop.stop_name}
+                      </p>
                       <p>Route: {route.route_name} ({route.route_code})</p>
                       <p>Stop order: {stop.stop_order}</p>
                       {stop.planned_arrival_time && (

@@ -36,6 +36,8 @@ const adminDriverRow = {
   status: 'active',
 };
 
+const tripPatternId = '12121212-1212-1212-1212-121212121212';
+
 async function installAdminAssignmentMock(page: Page) {
   let assignments: Record<string, unknown>[] = [];
   let busServices: Record<string, unknown>[] = [];
@@ -85,7 +87,11 @@ async function installAdminAssignmentMock(page: Page) {
           return;
         }
         if (path.includes('/routes')) {
-          await fulfillRows([{ id: MOCK.routeId, tenant_id: MOCK.tenantId, school_id: null, route_name: 'Riverside AM', route_code: 'RIV-AM', route_type: 'morning', status: 'active', created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z' }]);
+          await fulfillRows([{ id: MOCK.routeId, tenant_id: MOCK.tenantId, school_id: null, route_name: 'Riverside AM', route_code: 'RIV-AM', route_type: 'morning', route_kind: 'regular', map_color: '#2563EB', definition_status: 'ready', status: 'active', created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z' }]);
+          return;
+        }
+        if (path.includes('/route_trip_patterns')) {
+          await fulfillRows([{ id: tripPatternId, tenant_id: MOCK.tenantId, route_id: MOCK.routeId, direction: 'forward', display_name: 'Outbound', status: 'active', schedule_review_required: false, created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z' }]);
           return;
         }
         if (path.includes('/driver_route_assignments')) { await fulfillRows(assignments); return; }
@@ -94,15 +100,15 @@ async function installAdminAssignmentMock(page: Page) {
         return;
       }
       if (method === 'POST' && path.includes('/bus_route_assignments')) {
-        const service = { id: '88888888-8888-8888-8888-888888888888', tenant_id: MOCK.tenantId, bus_id: MOCK.busId, route_id: MOCK.routeId, trip_type: 'morning', status: 'active', effective_from: null, effective_to: null, created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z' };
+        const service = { id: '88888888-8888-8888-8888-888888888888', tenant_id: MOCK.tenantId, bus_id: MOCK.busId, route_id: MOCK.routeId, route_trip_pattern_id: tripPatternId, trip_type: 'morning', status: 'active', effective_from: '2026-07-18', effective_to: null, created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z' };
         busServices = [service];
         await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(service) }); return;
       }
       if (method === 'POST' && path.includes('/driver_route_assignments')) {
         const newAssignment = {
           id: MOCK.assignmentId, tenant_id: MOCK.tenantId, driver_id: MOCK.driverId,
-          bus_id: MOCK.busId, route_id: MOCK.routeId, trip_type: 'morning', status: 'active',
-          effective_from: null, effective_to: null, created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z',
+          bus_id: MOCK.busId, route_id: MOCK.routeId, route_trip_pattern_id: tripPatternId, trip_type: 'morning', status: 'active',
+          effective_from: '2026-07-18', effective_to: null, created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z',
         };
         assignments = [newAssignment];
         await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(newAssignment) });
@@ -144,10 +150,11 @@ test.describe('Milestone 4F — Admin driver assignments', () => {
     // Open the add-assignment form.
     await page.getByRole('button', { name: 'Add assignment' }).click();
 
-    // Select driver, bus, route, trip type.
+    // Select driver, bus, route, and named trip.
     await page.getByLabel('Driver').selectOption({ index: 1 });
     await page.getByLabel('Bus').selectOption({ index: 1 });
     await page.getByLabel('Route').selectOption({ index: 1 });
+    await page.getByLabel('Named trip').selectOption({ index: 1 });
 
     // Save.
     await page.getByRole('button', { name: 'Save assignment' }).click();

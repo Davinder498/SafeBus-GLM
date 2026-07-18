@@ -245,7 +245,7 @@ function ActiveTripCard({ trip, busNumber, routeName, onEnd, actionInProgress }:
               {routeName ?? 'Active route'}
             </h2>
             <p className="mt-2 text-base text-gray-700">
-              Bus {busNumber ?? trip.bus_id} &middot; {tripTypeLabel(trip.trip_type)} trip
+              Bus {busNumber ?? trip.bus_id} &middot; {trip.trip_name_snapshot ?? tripTypeLabel(trip.trip_type)} trip
             </p>
             <p className="mt-1 text-sm text-gray-600">
               Started {formatTimestamp(trip.started_at)}
@@ -303,7 +303,7 @@ function AssignmentListCard({
                 {assignment.routeName ?? 'Assigned route'}
               </h3>
               <p className="mt-1 text-sm text-gray-600">
-                Bus {assignment.busLabel ?? assignment.busId} &middot; {tripTypeLabel(assignment.tripType)} trip
+                Bus {assignment.busLabel ?? assignment.busId} &middot; {assignment.tripName ?? tripTypeLabel(assignment.tripType)} trip
               </p>
             </div>
             <Button

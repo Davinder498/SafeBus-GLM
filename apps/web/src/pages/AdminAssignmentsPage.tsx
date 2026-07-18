@@ -43,7 +43,7 @@ function formatDate(value: string | null) {
 
 export function AdminAssignmentsPage() {
   const { profile } = useAuth();
-  type AssignmentRow = StudentBusAssignment & { student_name: string; bus_number: string; route_name: string; route_code: string; trip_type: string; pickup_stop_name: string | null; dropoff_stop_name: string | null };
+  type AssignmentRow = StudentBusAssignment & { student_name: string; bus_number: string; route_name: string; route_code: string; trip_type: string; trip_name?: string; pickup_stop_name: string | null; dropoff_stop_name: string | null };
   const list = usePaginatedAdminList<AssignmentRow>('student_bus_assignments');
   const [services, setServices] = useState<BusServiceOption[]>([]);
   const [stops, setStops] = useState<RouteStop[]>([]);
@@ -210,7 +210,7 @@ export function AdminAssignmentsPage() {
                       {assignment.student_name ?? assignment.student_id}
                     </h2>
                     <p className="mt-1 text-sm text-gray-600">
-                      Bus {assignment.bus_number} / {assignment.route_code} - {assignment.route_name} ({assignment.trip_type})
+                      Bus {assignment.bus_number} / {assignment.route_code} - {assignment.route_name} ({assignment.trip_name ?? assignment.trip_type})
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-3">

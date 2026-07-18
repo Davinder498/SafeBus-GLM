@@ -11,6 +11,8 @@ export interface BusServiceOption extends BusRouteAssignment {
   bus_number: string;
   route_name: string;
   route_code: string;
+  trip_name: string;
+  direction: 'forward' | 'reverse';
 }
 
 function client() {
@@ -27,7 +29,7 @@ export async function fetchAdminBusServices(): Promise<BusServiceOption[]> {
 export async function ensureBusRouteAssignment(input: CreateBusRouteAssignmentInput): Promise<BusRouteAssignment> {
   const existing = await client().from('bus_route_assignments').select('*')
     .eq('tenant_id', input.tenant_id).eq('bus_id', input.bus_id).eq('route_id', input.route_id)
-    .eq('trip_type', input.trip_type).eq('status', 'active').maybeSingle();
+    .eq('route_trip_pattern_id', input.route_trip_pattern_id).eq('status', 'active').maybeSingle();
   if (existing.error) throw new Error('Unable to check the bus route service.');
   if (existing.data) return existing.data as BusRouteAssignment;
   const created = await client().from('bus_route_assignments').insert(input).select('*').single();

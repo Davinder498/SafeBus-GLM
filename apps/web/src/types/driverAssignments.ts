@@ -11,6 +11,7 @@ export interface DriverRouteAssignment {
   driver_id: string;
   bus_id: string;
   route_id: string;
+  route_trip_pattern_id: string | null;
   trip_type: TripType;
   status: AssignmentStatus;
   effective_from: string | null;
@@ -37,8 +38,11 @@ export interface CreateAssignmentInput {
   driverId: string;
   busId: string;
   routeId: string;
+  tripPatternId: string;
   tripType: TripType;
   status: AssignmentStatus;
+  effectiveFrom: string;
+  effectiveTo: string | null;
 }
 
 export type UpdateAssignmentInput = Partial<Omit<CreateAssignmentInput, 'driverId'>>;
@@ -51,6 +55,8 @@ export interface DriverAssignmentSummary {
   id: string;
   busId: string;
   routeId: string;
+  tripPatternId: string | null;
+  tripName: string | null;
   busLabel: string | null;
   routeName: string | null;
   tripType: TripType;
