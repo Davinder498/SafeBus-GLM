@@ -13,11 +13,16 @@ begin
     raise exception 'QA tenant does not exist';
   end if;
 
-  insert into public.students (tenant_id, first_name, last_name, preferred_name, grade, school_student_number, status)
+  insert into public.students (tenant_id, first_name, last_name, preferred_name, grade, status)
   select v_tenant, 'QA' || n::text, 'ScaleStudent' || lpad(n::text, 5, '0'), null,
-    ((n % 13) + 1)::text, 'QA-' || lpad(n::text, 5, '0'), 'active'
+    ((n % 13) + 1)::text, 'active'
   from generate_series(1, 10000) n
-  where not exists (select 1 from public.students s where s.tenant_id = v_tenant and s.school_student_number = 'QA-' || lpad(n::text, 5, '0'));
+  where not exists (
+    select 1
+    from public.students s
+    where s.tenant_id = v_tenant
+      and s.last_name = 'ScaleStudent' || lpad(n::text, 5, '0')
+  );
 end $$;
 
 -- Suggested checks (run with EXPLAIN (ANALYZE, BUFFERS)):

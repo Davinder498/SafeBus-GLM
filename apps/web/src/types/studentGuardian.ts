@@ -11,7 +11,6 @@ export interface Student {
   last_name: string;
   preferred_name: string | null;
   grade: string | null;
-  school_student_number: string | null;
   status: StudentStatus;
   created_at: string;
   updated_at: string;
@@ -21,6 +20,8 @@ export interface Guardian {
   id: string;
   tenant_id: string;
   profile_id: string;
+  first_name: string;
+  last_name: string;
   full_name: string;
   email: string;
   phone: string | null;

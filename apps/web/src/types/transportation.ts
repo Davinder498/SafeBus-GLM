@@ -24,6 +24,15 @@ export interface Driver {
   profile_id: string;
   employee_number: string | null;
   phone: string | null;
+  license_number: string | null;
+  license_issue_date: string | null;
+  license_expiry_date: string | null;
+  license_class: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  province: string | null;
+  postal_code: string | null;
   status: DriverStatus;
   created_at: string;
   updated_at: string;
@@ -113,6 +122,15 @@ export type CreateDriverInput = {
   profile_id: string;
   employee_number: string | null;
   phone: string | null;
+  license_number: string | null;
+  license_issue_date: string | null;
+  license_expiry_date: string | null;
+  license_class: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  province: string | null;
+  postal_code: string | null;
   status: DriverStatus;
 };
 

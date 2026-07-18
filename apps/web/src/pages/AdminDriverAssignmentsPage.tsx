@@ -6,7 +6,7 @@ import {
   DriverAssignmentForm,
   InlineFormShell,
 } from '@/components/admin/TransportationAdminForms';
-import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
+import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
@@ -113,7 +113,7 @@ export function AdminDriverAssignmentsPage() {
   }
 
   return (
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
+    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Assignments"

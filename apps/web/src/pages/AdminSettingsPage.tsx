@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
+import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -60,7 +60,7 @@ export function AdminSettingsPage() {
   }, [profile]);
 
   return (
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
+    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Settings"

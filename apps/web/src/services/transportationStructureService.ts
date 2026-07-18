@@ -77,7 +77,7 @@ export async function getVisibleDrivers(): Promise<Driver[]> {
   const client = requireSupabase();
   const { data, error } = await client
     .from('drivers')
-    .select('id, tenant_id, profile_id, employee_number, phone, status, created_at, updated_at')
+    .select('id, tenant_id, profile_id, employee_number, phone, license_number, license_issue_date, license_expiry_date, license_class, address_line1, address_line2, city, province, postal_code, status, created_at, updated_at')
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -89,10 +89,16 @@ export async function createDriver(input: CreateDriverInput): Promise<Driver> {
   const { data, error } = await client
     .from('drivers')
     .insert(input)
-    .select('id, tenant_id, profile_id, employee_number, phone, status, created_at, updated_at')
+    .select('id, tenant_id, profile_id, employee_number, phone, license_number, license_issue_date, license_expiry_date, license_class, address_line1, address_line2, city, province, postal_code, status, created_at, updated_at')
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (import.meta.env.DEV) console.error('Failed to create driver', error);
+    if (error.message.includes('drivers_tenant_license_number_unique_idx')) {
+      throw new Error('That licence number is already assigned in your organization.');
+    }
+    throw new Error('We could not save the driver. Check the licence and address details and try again.');
+  }
   return data as Driver;
 }
 
@@ -102,10 +108,16 @@ export async function updateDriver(id: string, input: UpdateDriverInput): Promis
     .from('drivers')
     .update(input)
     .eq('id', id)
-    .select('id, tenant_id, profile_id, employee_number, phone, status, created_at, updated_at')
+    .select('id, tenant_id, profile_id, employee_number, phone, license_number, license_issue_date, license_expiry_date, license_class, address_line1, address_line2, city, province, postal_code, status, created_at, updated_at')
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (import.meta.env.DEV) console.error('Failed to update driver', error);
+    if (error.message.includes('drivers_tenant_license_number_unique_idx')) {
+      throw new Error('That licence number is already assigned in your organization.');
+    }
+    throw new Error('We could not update the driver. Check the licence and address details and try again.');
+  }
   return data as Driver;
 }
 

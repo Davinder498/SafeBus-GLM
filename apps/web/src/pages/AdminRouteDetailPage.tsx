@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AdminRoutesMap } from '@/components/admin/AdminRoutesMap';
-import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
+import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -84,7 +84,7 @@ export function AdminRouteDetailPage() {
   );
 
   return (
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
+    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
       <div className="space-y-6">
         <Link to="/admin" className="inline-flex text-sm font-semibold text-navy-700 hover:underline">
           &larr; Back to overview

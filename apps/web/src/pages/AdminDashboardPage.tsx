@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
+import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { AdminRouteStatusTile } from '@/components/admin/AdminRouteStatusTile';
-import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { StatCard } from '@/components/ui/StatCard';
+import { Radio, AlertTriangle, MapPinOff, ListChecks } from 'lucide-react';
 import { fetchAdminLiveTrips } from '@/services/adminLiveMonitoringService';
 import { fetchBoundedAdminOverview, type AdminOverviewRoute } from '@/services/adminDashboardOverviewService';
 import { fetchAdminSetupSnapshot, type AdminSetupSnapshot } from '@/services/adminSetupService';
@@ -101,7 +102,7 @@ export function AdminDashboardPage() {
   const missingTrips = data?.trips.filter((t) => t.locationStatus === 'missing').length ?? 0;
 
   return (
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
+    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Overview"
@@ -123,28 +124,34 @@ export function AdminDashboardPage() {
           <>
             {/* Live operations summary */}
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Card className="p-5">
-                <p className="text-sm font-semibold text-gray-600">Active trips</p>
-                <p className="mt-1 text-3xl font-bold text-navy-900">{activeTrips}</p>
-                <p className="mt-2 text-sm text-gray-600">Driver-started trips currently operating.</p>
-              </Card>
-              <Card className="p-5">
-                <p className="text-sm font-semibold text-gray-600">Stale locations</p>
-                <p className="mt-1 text-3xl font-bold text-warning-600">{staleTrips}</p>
-                <p className="mt-2 text-sm text-gray-600">Buses with GPS not updated recently.</p>
-              </Card>
-              <Card className="p-5">
-                <p className="text-sm font-semibold text-gray-600">Missing locations</p>
-                <p className="mt-1 text-3xl font-bold text-danger-600">{missingTrips}</p>
-                <p className="mt-2 text-sm text-gray-600">Active trips without GPS data.</p>
-              </Card>
-              <Card className="p-5">
-                <p className="text-sm font-semibold text-gray-600">Setup readiness</p>
-                <p className="mt-1 text-3xl font-bold text-navy-900">
-                  {setupComplete} of {setupKeys.length}
-                </p>
-                <p className="mt-2 text-sm text-gray-600">Core setup steps complete.</p>
-              </Card>
+              <StatCard
+                label="Active trips"
+                value={activeTrips}
+                detail="Driver-started trips currently operating."
+                tone="navy"
+                icon={<Radio className="h-5 w-5" />}
+              />
+              <StatCard
+                label="Stale locations"
+                value={staleTrips}
+                detail="Buses with GPS not updated recently."
+                tone="warning"
+                icon={<AlertTriangle className="h-5 w-5" />}
+              />
+              <StatCard
+                label="Missing locations"
+                value={missingTrips}
+                detail="Active trips without GPS data."
+                tone="danger"
+                icon={<MapPinOff className="h-5 w-5" />}
+              />
+              <StatCard
+                label="Setup readiness"
+                value={`${setupComplete} of ${setupKeys.length}`}
+                detail="Core setup steps complete."
+                tone="navy"
+                icon={<ListChecks className="h-5 w-5" />}
+              />
             </section>
 
             {/* Clickable route tiles */}

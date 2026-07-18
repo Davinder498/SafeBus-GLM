@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import { Bus } from 'lucide-react';
 
 interface PublicLayoutProps {
   children: ReactNode;
@@ -8,33 +9,36 @@ interface PublicLayoutProps {
 export function PublicLayout({ children }: PublicLayoutProps) {
   return (
     <div className="min-h-screen bg-white">
-      <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link to="/" className="text-lg font-bold tracking-normal text-navy-900">
-            SafeBus Alberta
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <Link to="/" className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-navy-700 text-white shadow-sm">
+              <Bus className="h-5 w-5" aria-hidden />
+            </span>
+            <span className="text-base font-bold tracking-tight text-slate-900">SafeBus Alberta</span>
           </Link>
-          <nav className="hidden items-center gap-6 text-sm font-medium text-gray-600 md:flex">
-            <a href="/#parents" className="hover:text-navy-800">
+          <nav className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex">
+            <a href="/#parents" className="transition-colors hover:text-slate-900">
               Parents
             </a>
-            <a href="/#drivers" className="hover:text-navy-800">
+            <a href="/#drivers" className="transition-colors hover:text-slate-900">
               Drivers
             </a>
-            <a href="/#admins" className="hover:text-navy-800">
+            <a href="/#admins" className="transition-colors hover:text-slate-900">
               Admins
             </a>
           </nav>
           <NavLink
             to="/login"
-            className="rounded-lg bg-navy-700 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-800"
+            className="rounded-lg bg-navy-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-navy-800"
           >
             Demo login
           </NavLink>
         </div>
       </header>
       {children}
-      <footer className="border-t border-gray-200 bg-gray-50">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 text-sm text-gray-600 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+      <footer className="border-t border-slate-200 bg-slate-50">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 text-sm text-slate-500 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
           <p>SafeBus Alberta. Frontend MVP foundation.</p>
           <p>Works alongside existing student information systems.</p>
         </div>

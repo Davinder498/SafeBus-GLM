@@ -238,14 +238,14 @@ async function installAdminLinkMock(page: Page) {
 
       if (method === 'GET') {
         if (path.includes('/profiles')) { await fulfillRows([adminProfile]); return; }
-        if (path.includes('/guardians')) { await fulfillRows([{ id: GUARDIAN.guardianId, tenant_id: GUARDIAN.tenantId, profile_id: GUARDIAN.profileId, full_name: 'Test Guardian', email: 'guardian@smoke-test.local', phone: null, status: 'active', created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z' }]); return; }
+        if (path.includes('/guardians')) { await fulfillRows([{ id: GUARDIAN.guardianId, tenant_id: GUARDIAN.tenantId, profile_id: GUARDIAN.profileId, first_name: 'Test', last_name: 'Guardian', full_name: 'Test Guardian', email: 'guardian@smoke-test.local', phone: null, status: 'active', created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z' }]); return; }
         if (path.includes('/student_guardians')) { await fulfillRows(links); return; }
-        if (path.includes('/students')) { await fulfillRows([{ id: GUARDIAN.studentId, tenant_id: GUARDIAN.tenantId, school_id: 'school-1', first_name: 'Avery', last_name: 'Johnson', preferred_name: null, grade: 'Grade 4', school_student_number: null, status: 'active', created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z' }]); return; }
+        if (path.includes('/students')) { await fulfillRows([{ id: GUARDIAN.studentId, tenant_id: GUARDIAN.tenantId, school_id: 'school-1', first_name: 'Avery', last_name: 'Johnson', preferred_name: null, grade: 'Grade 4', status: 'active', created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z' }]); return; }
         await blockUnexpectedSupabaseRestAccess(route, method, path);
         return;
       }
       if (method === 'POST' && path.includes('/rpc/get_admin_paginated_list')) {
-        const guardian = { id: GUARDIAN.guardianId, tenant_id: GUARDIAN.tenantId, profile_id: GUARDIAN.profileId, full_name: 'Test Guardian', email: 'guardian@smoke-test.local', phone: null, status: 'active', created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z', active_link_count: links.filter((link) => link.status === 'active').length };
+        const guardian = { id: GUARDIAN.guardianId, tenant_id: GUARDIAN.tenantId, profile_id: GUARDIAN.profileId, first_name: 'Test', last_name: 'Guardian', full_name: 'Test Guardian', email: 'guardian@smoke-test.local', phone: null, status: 'active', created_at: '2025-01-01T00:00:00.000Z', updated_at: '2025-01-01T00:00:00.000Z', active_link_count: links.filter((link) => link.status === 'active').length };
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ rows: [guardian], totalCount: 1, page: 1, pageSize: 50 }) }); return;
       }
       if (method === 'POST' && path.includes('/rpc/search_admin_students')) {

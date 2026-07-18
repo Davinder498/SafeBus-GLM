@@ -1,5 +1,12 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
-import type { Student, StudentStatus } from '@/types/studentGuardian';
+import type { Guardian, Student, StudentStatus } from '@/types/studentGuardian';
+import type {
+  Bus,
+  BusRouteAssignment,
+  Route,
+  RouteStop,
+  StudentBusAssignment,
+} from '@/types/transportation';
 
 function requireSupabase() {
   if (!supabase) {
@@ -9,7 +16,7 @@ function requireSupabase() {
 }
 
 const studentColumns =
-  'id, tenant_id, school_id, first_name, last_name, preferred_name, grade, school_student_number, status, created_at, updated_at';
+  'id, tenant_id, school_id, first_name, last_name, preferred_name, grade, status, created_at, updated_at';
 
 function logDevError(context: string, error: unknown) {
   if (import.meta.env.DEV) {
@@ -22,7 +29,6 @@ export interface CreateStudentInput {
   lastName: string;
   preferredName: string | null;
   grade: string | null;
-  schoolStudentNumber: string | null;
   schoolId: string | null;
 }
 
@@ -31,8 +37,19 @@ export interface UpdateStudentInput {
   lastName?: string;
   preferredName?: string | null;
   grade?: string | null;
-  schoolStudentNumber?: string | null;
   schoolId?: string | null;
+}
+
+export interface AdminStudentDetail {
+  student: Student;
+  schoolName: string | null;
+  busAssignment: StudentBusAssignment | null;
+  busService: BusRouteAssignment | null;
+  bus: Bus | null;
+  route: Route | null;
+  pickupStop: RouteStop | null;
+  dropoffStop: RouteStop | null;
+  guardians: Guardian[];
 }
 
 function cleanText(value: string | null | undefined): string | null {
@@ -57,6 +74,143 @@ export async function fetchAdminStudents(): Promise<Student[]> {
     throw new Error('Unable to load students.');
   }
   return (data ?? []) as Student[];
+}
+
+/**
+ * Load one student and only the records directly attached to that student.
+ * Every query remains RLS-scoped; the client never downloads a tenant-wide
+ * guardian, route, stop, or bus list for the detail view.
+ */
+export async function fetchAdminStudentDetail(studentId: string): Promise<AdminStudentDetail> {
+  const client = requireSupabase();
+  const { data: studentData, error: studentError } = await client
+    .from('students')
+    .select(studentColumns)
+    .eq('id', studentId)
+    .maybeSingle();
+
+  if (studentError) {
+    logDevError('Failed to load admin student detail', studentError);
+    throw new Error('Unable to load this student.');
+  }
+  if (!studentData) throw new Error('This student is not available.');
+
+  const student = studentData as Student;
+  const [schoolResult, assignmentResult, guardianLinksResult] = await Promise.all([
+    student.school_id
+      ? client.from('schools').select('name').eq('id', student.school_id).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    client
+      .from('student_bus_assignments')
+      .select(
+        'id, tenant_id, student_id, bus_route_assignment_id, pickup_stop_id, dropoff_stop_id, effective_from, effective_to, status, created_at, updated_at',
+      )
+      .eq('student_id', student.id)
+      .eq('status', 'active')
+      .order('effective_from', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    client
+      .from('student_guardians')
+      .select('guardian_id')
+      .eq('student_id', student.id)
+      .eq('status', 'active'),
+  ]);
+
+  if (schoolResult.error || assignmentResult.error || guardianLinksResult.error) {
+    throw new Error('Some student details could not be loaded.');
+  }
+
+  const busAssignment = (assignmentResult.data as StudentBusAssignment | null) ?? null;
+  let busService: BusRouteAssignment | null = null;
+  let bus: Bus | null = null;
+  let route: Route | null = null;
+  let pickupStop: RouteStop | null = null;
+  let dropoffStop: RouteStop | null = null;
+
+  if (busAssignment) {
+    const { data: serviceData, error: serviceError } = await client
+      .from('bus_route_assignments')
+      .select(
+        'id, tenant_id, bus_id, route_id, trip_type, effective_from, effective_to, status, created_at, updated_at',
+      )
+      .eq('id', busAssignment.bus_route_assignment_id)
+      .maybeSingle();
+    if (serviceError) throw new Error('The student bus service could not be loaded.');
+    busService = (serviceData as BusRouteAssignment | null) ?? null;
+
+    if (busService) {
+      const [busResult, routeResult, pickupResult, dropoffResult] = await Promise.all([
+        client
+          .from('buses')
+          .select(
+            'id, tenant_id, school_id, bus_number, license_plate, capacity, status, created_at, updated_at',
+          )
+          .eq('id', busService.bus_id)
+          .maybeSingle(),
+        client
+          .from('routes')
+          .select(
+            'id, tenant_id, school_id, route_name, route_code, route_type, status, created_at, updated_at',
+          )
+          .eq('id', busService.route_id)
+          .maybeSingle(),
+        busAssignment.pickup_stop_id
+          ? client
+              .from('route_stops')
+              .select(
+                'id, tenant_id, route_id, school_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at',
+              )
+              .eq('id', busAssignment.pickup_stop_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+        busAssignment.dropoff_stop_id
+          ? client
+              .from('route_stops')
+              .select(
+                'id, tenant_id, route_id, school_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at',
+              )
+              .eq('id', busAssignment.dropoff_stop_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+      ]);
+      if (busResult.error || routeResult.error || pickupResult.error || dropoffResult.error) {
+        throw new Error('The student transportation details could not be loaded.');
+      }
+      bus = (busResult.data as Bus | null) ?? null;
+      route = (routeResult.data as Route | null) ?? null;
+      pickupStop = (pickupResult.data as RouteStop | null) ?? null;
+      dropoffStop = (dropoffResult.data as RouteStop | null) ?? null;
+    }
+  }
+
+  const guardianIds = (guardianLinksResult.data ?? []).map(
+    (link) => (link as { guardian_id: string }).guardian_id,
+  );
+  let guardians: Guardian[] = [];
+  if (guardianIds.length > 0) {
+    const { data, error } = await client
+      .from('guardians')
+      .select(
+        'id, tenant_id, profile_id, first_name, last_name, full_name, email, phone, status, created_at, updated_at',
+      )
+      .in('id', guardianIds)
+      .order('full_name', { ascending: true });
+    if (error) throw new Error('The linked guardians could not be loaded.');
+    guardians = (data ?? []) as Guardian[];
+  }
+
+  return {
+    student,
+    schoolName: (schoolResult.data as { name: string } | null)?.name ?? null,
+    busAssignment,
+    busService,
+    bus,
+    route,
+    pickupStop,
+    dropoffStop,
+    guardians,
+  };
 }
 
 /**
@@ -86,7 +240,6 @@ export async function createStudent(
       last_name: input.lastName.trim(),
       preferred_name: cleanText(input.preferredName ?? ''),
       grade: cleanText(input.grade ?? ''),
-      school_student_number: cleanText(input.schoolStudentNumber ?? ''),
       status: 'active',
     })
     .select(studentColumns)
@@ -115,7 +268,6 @@ export async function updateStudent(
   if (input.lastName !== undefined) update.last_name = input.lastName.trim();
   if (input.preferredName !== undefined) update.preferred_name = cleanText(input.preferredName);
   if (input.grade !== undefined) update.grade = cleanText(input.grade);
-  if (input.schoolStudentNumber !== undefined) update.school_student_number = cleanText(input.schoolStudentNumber);
   if (input.schoolId !== undefined) update.school_id = input.schoolId || null;
 
   const { data, error } = await client

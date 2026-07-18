@@ -11,6 +11,13 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
 
 - `student-roster-rls.sql`: seeds shared fixed-ID test data, tests student
   roster INSERT/UPDATE RLS, and includes safe cleanup before and after tests.
+- `people-directory-rls.sql`: after the shared student-roster seed, verifies
+  tenant-admin driver compliance writes, guardian denial, driver self-only
+  visibility, and rejection of retired student school-number writes.
+- `student-csv-import-rls.sql`: self-contained coverage for tenant-admin-only
+  CSV preview/commit, tenant-scoped school matching, duplicate warnings,
+  5,000-row enforcement, atomic invalid-file rejection, and denial for other
+  authenticated roles and anonymous callers.
 - `guardian-visibility-rls.sql`: uses the student-roster seed data to test
   `get_guardian_student_route_visibility()` and guardian SELECT policies.
 - `guardian-linking-rls.sql`: tests the `admin_link_student_guardian()` and
@@ -130,6 +137,9 @@ The default execution order is:
 9. `tests/rls/admin-live-fleet-map-rls.sql`
 10. `tests/rls/guardian-live-bus-location-rls.sql`
 11. `tests/rls/student-route-assignment-optional-school-rls.sql`
+12. `tests/rls/driver-assignment-platform-admin-write-rls.sql`
+13. `tests/rls/secure-trip-tracking-realtime-rls.sql`
+14. `tests/rls/student-csv-import-rls.sql`
 
 The database must be safe for fixed-ID seeded test data. The scripts create
 test data and clean up after themselves where designed. If a run fails midway,

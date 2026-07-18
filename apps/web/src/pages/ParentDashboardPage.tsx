@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -22,13 +22,6 @@ function getStudentDisplayName(student: Student) {
     ? `${student.first_name} ${student.last_name} (${student.preferred_name})`
     : `${student.first_name} ${student.last_name}`;
 }
-
-const guardianNavItems = [
-  { label: 'Live Bus Map', to: '/guardian/live-map' },
-  { label: 'Bus Status', to: '/guardian/live' },
-  { label: 'Pickup & Drop-off', to: '/guardian/events' },
-  { label: 'My Students & Routes', to: '/guardian/routes' },
-];
 
 export function ParentDashboardPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -71,7 +64,7 @@ export function ParentDashboardPage() {
     : `${mockStudent.firstName} ${mockStudent.lastInitial}`;
 
   return (
-    <DashboardLayout title="Parent Dashboard" portal="parent" navItems={guardianNavItems}>
+    <DashboardLayout title="Parent Dashboard" portal="parent" navItems={[]} navGroups={guardianNavGroups}>
       <div className="mx-auto max-w-3xl space-y-5">
         <PageHeader
           eyebrow="Assigned bus"

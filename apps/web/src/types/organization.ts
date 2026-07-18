@@ -26,6 +26,8 @@ export interface OrganizationProfile {
   id: string;
   tenant_id: string | null;
   school_id: string | null;
+  first_name: string | null;
+  last_name: string | null;
   full_name: string;
   email: string;
   role: ProfileRole;

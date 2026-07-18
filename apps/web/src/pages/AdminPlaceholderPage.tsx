@@ -1,4 +1,4 @@
-import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
+import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PlaceholderCard } from '@/components/ui/PlaceholderCard';
 
@@ -8,7 +8,7 @@ interface AdminPlaceholderPageProps {
 
 export function AdminPlaceholderPage({ title }: AdminPlaceholderPageProps) {
   return (
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
+    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Placeholder"

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { DashboardLayout, driverNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
@@ -131,7 +131,7 @@ export function DriverDashboardPage() {
   const locationSharing = useDriverLocationSharing(activeTripId);
 
   return (
-    <DashboardLayout title="Driver Dashboard" portal="driver" navItems={['Today']}>
+    <DashboardLayout title="Driver Dashboard" portal="driver" navItems={[]} navGroups={driverNavGroups}>
       <div className="mx-auto max-w-3xl space-y-5">
         <PageHeader
           eyebrow="Today"
