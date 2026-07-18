@@ -8,6 +8,7 @@ import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { fetchAdminLiveTrips } from '@/services/adminLiveMonitoringService';
+import { getAdminLiveRouteOverlays } from '@/services/transportationStructureService';
 import { useAuth } from '@/contexts/useAuth';
 import {
   useTrackingInvalidations,
@@ -19,6 +20,7 @@ import {
   type FleetIssueLabel,
   type LocationFreshness,
 } from '@/types/adminLiveMonitoring';
+import type { RouteOverlay } from '@/types/transportation';
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
@@ -74,6 +76,7 @@ const fleetMapFormatters: FleetMapFormatters = {
 export function AdminLiveTripsPage() {
   const { profile } = useAuth();
   const [trips, setTrips] = useState<AdminLiveTrip[]>([]);
+  const [routeOverlays, setRouteOverlays] = useState<RouteOverlay[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [initialError, setInitialError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -98,9 +101,13 @@ export function AdminLiveTripsPage() {
       setInitialError(null);
     }
     try {
-      const nextTrips = await fetchAdminLiveTrips();
+      const [nextTrips, nextOverlays] = await Promise.all([
+        fetchAdminLiveTrips(),
+        getAdminLiveRouteOverlays().catch(() => []),
+      ]);
       if (!isMountedRef.current) return;
       setTrips(nextTrips);
+      setRouteOverlays(nextOverlays);
       setLastRefreshedAt(new Date().toISOString());
       setRefreshError(null);
       if (!opts.background) setInitialLoading(false);
@@ -238,7 +245,7 @@ export function AdminLiveTripsPage() {
               ))}
             </section>
 
-            <AdminFleetMap trips={trips} tileConfig={mapTileConfig} formatters={fleetMapFormatters} />
+            <AdminFleetMap trips={trips} overlays={routeOverlays} tileConfig={mapTileConfig} formatters={fleetMapFormatters} />
 
             {trips.length === 0 ? (
               <DataState title="No active trips right now." message="Active driver trips in your organization will appear here." />

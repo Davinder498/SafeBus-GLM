@@ -8,7 +8,6 @@ import type {
   AssignmentStatus,
   CreateAssignmentInput,
 } from '@/types/driverAssignments';
-import type { TripType } from '@/types/trips';
 import type {
   Bus,
   BusStatus,
@@ -23,6 +22,7 @@ import type {
   RouteStatus,
   RouteStop,
   RouteStopStatus,
+  RouteTripPattern,
   RouteType,
   StudentRouteAssignment,
   StudentRouteAssignmentStatus,
@@ -749,6 +749,7 @@ export function DriverAssignmentForm({
   drivers,
   buses,
   routes,
+  tripPatterns,
   profileLabels,
   defaultTenantId,
   onSubmit,
@@ -757,6 +758,7 @@ export function DriverAssignmentForm({
   drivers: Driver[];
   buses: Bus[];
   routes: Route[];
+  tripPatterns: RouteTripPattern[];
   profileLabels: Map<string, string>;
   defaultTenantId: string | null;
   onSubmit: (input: CreateAssignmentInput) => Promise<void>;
@@ -765,8 +767,10 @@ export function DriverAssignmentForm({
   const [driverId, setDriverId] = useState('');
   const [busId, setBusId] = useState('');
   const [routeId, setRouteId] = useState('');
-  const [tripType, setTripType] = useState<TripType>('morning');
+  const [tripPatternId, setTripPatternId] = useState('');
   const [status, setStatus] = useState<AssignmentStatus>('active');
+  const [effectiveFrom, setEffectiveFrom] = useState(new Date().toISOString().slice(0, 10));
+  const [effectiveTo, setEffectiveTo] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
 
@@ -778,8 +782,17 @@ export function DriverAssignmentForm({
       setFormError('Use an account with a tenant before saving this assignment.');
       return;
     }
-    if (!driverId || !busId || !routeId) {
-      setFormError('Driver, bus, and route are required.');
+    const selectedPattern = tripPatterns.find((pattern) => pattern.id === tripPatternId);
+    if (!driverId || !busId || !routeId || !selectedPattern) {
+      setFormError('Driver, bus, route, and named trip are required.');
+      return;
+    }
+    if (!effectiveFrom) {
+      setFormError('An effective-from date is required.');
+      return;
+    }
+    if (effectiveTo && effectiveTo < effectiveFrom) {
+      setFormError('Effective-to date must be on or after effective-from date.');
       return;
     }
 
@@ -789,8 +802,11 @@ export function DriverAssignmentForm({
         driverId,
         busId,
         routeId,
-        tripType,
+        tripPatternId,
+        tripType: selectedPattern.direction === 'reverse' ? 'evening' : 'morning',
         status,
+        effectiveFrom,
+        effectiveTo: effectiveTo || null,
       });
     } finally {
       setSubmitState('idle');
@@ -825,7 +841,14 @@ export function DriverAssignmentForm({
         </label>
         <label className={labelClassName}>
           Route
-          <select className={fieldClassName} value={routeId} onChange={(event) => setRouteId(event.target.value)}>
+          <select
+            className={fieldClassName}
+            value={routeId}
+            onChange={(event) => {
+              setRouteId(event.target.value);
+              setTripPatternId('');
+            }}
+          >
             <option value="">Select a route</option>
             {routes.map((route) => (
               <option key={route.id} value={route.id}>
@@ -835,10 +858,16 @@ export function DriverAssignmentForm({
           </select>
         </label>
         <label className={labelClassName}>
-          Trip type
-          <select className={fieldClassName} value={tripType} onChange={(event) => setTripType(event.target.value as TripType)}>
-            <option value="morning">Morning</option>
-            <option value="evening">Evening</option>
+          Named trip
+          <select className={fieldClassName} value={tripPatternId} onChange={(event) => setTripPatternId(event.target.value)}>
+            <option value="">Select a trip</option>
+            {tripPatterns
+              .filter((pattern) => pattern.route_id === routeId && pattern.status === 'active')
+              .map((pattern) => (
+                <option key={pattern.id} value={pattern.id}>
+                  {pattern.display_name} ({pattern.direction === 'forward' ? 'Start → End' : 'End → Start'})
+                </option>
+              ))}
           </select>
         </label>
         <label className={labelClassName}>
@@ -847,6 +876,25 @@ export function DriverAssignmentForm({
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
+        </label>
+        <label className={labelClassName}>
+          Effective from
+          <input
+            className={fieldClassName}
+            type="date"
+            value={effectiveFrom}
+            onChange={(event) => setEffectiveFrom(event.target.value)}
+          />
+        </label>
+        <label className={labelClassName}>
+          Effective to
+          <input
+            className={fieldClassName}
+            type="date"
+            value={effectiveTo}
+            min={effectiveFrom}
+            onChange={(event) => setEffectiveTo(event.target.value)}
+          />
         </label>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row">

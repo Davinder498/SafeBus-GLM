@@ -70,6 +70,9 @@ const routeNoSchool = {
   route_name: 'Riverside AM',
   route_code: 'RIV-AM',
   route_type: 'morning',
+  route_kind: 'regular',
+  map_color: '#2563EB',
+  definition_status: 'ready',
   status: 'active',
   created_at: '2025-01-01T00:00:00.000Z',
   updated_at: '2025-01-01T00:00:00.000Z',
@@ -231,6 +234,18 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
           await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(newTrip) });
           return;
         }
+        if (path.includes('/rpc/admin_save_route_definition')) {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              routeId: ADMIN.routeId,
+              definitionStatus: 'incomplete',
+              activeStopCount: 0,
+            }),
+          });
+          return;
+        }
         if (path.includes('/routes')) {
           await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(routeNoSchool) });
           return;
@@ -304,29 +319,29 @@ test.describe('Milestone 4E — school optional for transportation', () => {
     await page.goto('/admin/routes');
 
     // Wait for the page to load past ProtectedRoute.
-    await expect(page.getByRole('heading', { name: 'Routes and stops', level: 1 })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Route corridors and trips', level: 1 })).toBeVisible({ timeout: 10000 });
 
     // Open the add-route form.
     await page.getByRole('button', { name: 'Add route' }).click();
 
     // The School field is labeled optional.
-    await expect(page.getByText('School (optional)')).toBeVisible();
+    await expect(page.getByText('Primary school (optional)')).toBeVisible();
 
     // Fill route name + code but leave school at "No school selected".
     await page.getByLabel('Route name').fill('Riverside PM');
     await page.getByLabel('Route code').fill('RIV-PM');
 
     // The school select shows "No school selected" by default (empty value).
-    await expect(page.getByLabel('School (optional)')).toHaveValue('');
+    await expect(page.getByLabel('Primary school (optional)')).toHaveValue('');
 
     // Submit the form.
-    await page.getByRole('button', { name: 'Save route' }).click();
+    await page.getByRole('button', { name: 'Save route definition' }).click();
 
     // No "Choose a school" validation error appears (school is optional now).
     await expect(page.getByText('Choose a school')).toHaveCount(0);
 
     // A success message appears (the mock insert returns the route).
-    await expect(page.getByText('Route created with stops.')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Route corridor and trips created.')).toBeVisible({ timeout: 10000 });
   });
 
   test('admin bus form can be submitted with no school selected', async ({ page }) => {

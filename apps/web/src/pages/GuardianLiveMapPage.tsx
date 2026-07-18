@@ -10,8 +10,10 @@ import { mapTileConfig } from '@/config/mapTiles';
 import { useGuardianLiveBusLocations } from '@/hooks/useGuardianLiveBusLocations';
 import type { TrackingConnectionState } from '@/hooks/useTrackingInvalidations';
 import { fetchGuardianStudentRoutes } from '@/services/guardianRouteVisibilityService';
+import { getGuardianLiveRouteOverlays } from '@/services/transportationStructureService';
 import { studentDisplayName, type GuardianStudentRoute } from '@/types/guardianRouteVisibility';
 import type { GuardianStudentLiveBusLocation } from '@/types/guardianLiveBusLocation';
+import type { RouteOverlay } from '@/types/transportation';
 
 const guardianNavItems: DashboardNavItem[] = [
   { label: 'Live Bus Map', to: '/guardian/live-map' },
@@ -73,8 +75,7 @@ type StudentContextState =
  * RPC for location state. Student names are joined client-side by the
  * already-authorized `student_id` from existing guardian route visibility.
  *
- * Deliberately excludes driver identity, speed, route geometry, ETA, stop
- * coordinates, student home coordinates, location history, trip replay,
+ * Deliberately excludes driver identity, speed, ETA, student home coordinates, location history, trip replay,
  * and direct live-location table access. Markers are rendered only for fresh
  * location state with valid coordinates.
  */
@@ -105,14 +106,19 @@ export function GuardianLiveMapPage() {
   const isInitialError = locationState.kind === 'error' && lastSuccessfulLocations.current.length === 0;
 
   const [studentContextState, setStudentContextState] = useState<StudentContextState>({ kind: 'loading' });
+  const [routeOverlays, setRouteOverlays] = useState<RouteOverlay[]>([]);
 
   const isMountedRef = useRef(true);
 
   const loadStudentContext = useCallback(async () => {
     try {
-      const routes = await fetchGuardianStudentRoutes();
+      const [routes, overlays] = await Promise.all([
+        fetchGuardianStudentRoutes(),
+        getGuardianLiveRouteOverlays().catch(() => []),
+      ]);
       if (!isMountedRef.current) return;
       setStudentContextState({ kind: 'ready', routes });
+      setRouteOverlays(overlays);
     } catch {
       if (!isMountedRef.current) return;
       // Student names are a UX enhancement only; the map can still render
@@ -251,6 +257,7 @@ export function GuardianLiveMapPage() {
             )}
             <GuardianLiveBusMap
               locations={effectiveLocations}
+              overlays={routeOverlays}
               studentContext={studentContext}
               tileConfig={mapTileConfig}
             />

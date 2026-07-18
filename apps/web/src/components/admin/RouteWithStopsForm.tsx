@@ -1,267 +1,230 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
+import { RouteStopMapEditor } from '@/components/admin/RouteStopMapEditor';
 import { Button } from '@/components/ui/Button';
+import { mapTileConfig } from '@/config/mapTiles';
 import type { School } from '@/types/organization';
-import type { AssignmentStatus } from '@/types/driverAssignments';
-import type { TripType } from '@/types/trips';
 import type {
-  Bus,
-  CreateRouteInput,
-  Driver,
   Route,
+  RouteDefinitionStopInput,
+  RouteDefinitionTripInput,
+  RouteKind,
   RouteStatus,
   RouteStop,
-  RouteStopStatus,
-  RouteType,
-  UpdateRouteInput,
+  RouteTripPattern,
+  RouteTripStopSchedule,
+  SaveRouteDefinitionInput,
 } from '@/types/transportation';
+import {
+  chooseRouteColor,
+  normalizeStopOrders,
+  ROUTE_COLOR_PALETTE,
+  routeDefinitionIssue,
+} from '@/utils/routeDefinition';
 
 type SubmitState = 'idle' | 'saving';
 
 const fieldClassName = 'mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base';
 const labelClassName = 'block text-sm font-semibold text-gray-700';
 
-export interface StopDraft {
-  id?: string;
-  school_id: string | null;
-  stop_name: string;
-  stop_order: number;
-  planned_arrival_time: string | null;
-  status: RouteStopStatus;
-  isNew?: boolean;
-}
-
-export interface AssignmentDraft {
-  id: string;
-  driverId: string;
-  busId: string;
-  tripType: TripType;
-  status: AssignmentStatus;
-}
-
-export interface RouteWithStopsSubmitPayload {
-  route: CreateRouteInput | UpdateRouteInput;
-  stops: StopDraft[];
-  assignments: AssignmentDraft[];
-  removedAssignmentIds: string[];
-}
-
 interface RouteWithStopsFormProps {
   route: Route | null;
   existingStops: RouteStop[];
-  existingAssignments: AssignmentDraft[];
-  /**
-   * Routes already visible to the user, used to detect duplicate route codes
-   * within the same tenant before submitting.
-   */
+  existingTripPatterns: RouteTripPattern[];
+  existingSchedules: RouteTripStopSchedule[];
   existingRoutes: Route[];
   schools: School[];
-  buses: Bus[];
-  drivers: Driver[];
-  profileLabels: Map<string, string>;
-  defaultTenantId: string | null;
-  onSubmit: (payload: RouteWithStopsSubmitPayload) => Promise<void>;
-  onCancel: () => void;
+  onSubmit(payload: SaveRouteDefinitionInput): Promise<void>;
+  onCancel(): void;
 }
 
-function getSchoolTenantId(schools: School[], schoolId: string | null): string | null {
-  if (!schoolId) return null;
-  return schools.find((school) => school.id === schoolId)?.tenant_id ?? null;
+function stopClientKey(stop: RouteStop): string {
+  return `stop-${stop.id}`;
+}
+
+function initialTrip(
+  direction: 'forward' | 'reverse',
+  existingTripPatterns: RouteTripPattern[],
+  existingStops: RouteStop[],
+  existingSchedules: RouteTripStopSchedule[],
+): RouteDefinitionTripInput {
+  const pattern = existingTripPatterns.find((item) => item.direction === direction);
+  const stopTimes: Record<string, string | null> = {};
+  for (const stop of existingStops) {
+    const schedule = existingSchedules.find(
+      (item) =>
+        item.route_trip_pattern_id === pattern?.id && item.route_stop_id === stop.id,
+    );
+    stopTimes[stopClientKey(stop)] = schedule?.planned_arrival_time?.slice(0, 5) ?? null;
+  }
+  return {
+    id: pattern?.id,
+    direction,
+    displayName: pattern?.display_name ?? (direction === 'forward' ? 'Outbound' : 'Return'),
+    status: pattern?.status ?? 'active',
+    stopTimes,
+  };
 }
 
 export function RouteWithStopsForm({
   route,
   existingStops,
-  existingAssignments,
+  existingTripPatterns,
+  existingSchedules,
   existingRoutes,
   schools,
-  buses,
-  drivers,
-  profileLabels,
-  defaultTenantId,
   onSubmit,
   onCancel,
 }: RouteWithStopsFormProps) {
   const [routeName, setRouteName] = useState(route?.route_name ?? '');
   const [routeCode, setRouteCode] = useState(route?.route_code ?? '');
-  const [routeType, setRouteType] = useState<RouteType>(route?.route_type ?? 'morning');
+  const [routeKind, setRouteKind] = useState<RouteKind>(route?.route_kind ?? 'regular');
+  const [mapColor, setMapColor] = useState(
+    route?.map_color ?? chooseRouteColor(existingRoutes, route?.id),
+  );
   const [schoolId, setSchoolId] = useState(route?.school_id ?? '');
-  const [status, setStatus] = useState<RouteStatus>(route?.status ?? 'active');
-
-  const [stops, setStops] = useState<StopDraft[]>(() =>
+  const [status, setStatus] = useState<RouteStatus>(route?.status ?? 'inactive');
+  const [stops, setStops] = useState<RouteDefinitionStopInput[]>(() =>
     existingStops
-      .filter((s) => s.status !== 'archived')
+      .filter((stop) => stop.status !== 'archived')
       .sort((a, b) => a.stop_order - b.stop_order)
-      .map((s) => ({
-        id: s.id,
-        school_id: s.school_id,
-        stop_name: s.stop_name,
-        stop_order: s.stop_order,
-        planned_arrival_time: s.planned_arrival_time?.slice(0, 5) ?? null,
-        status: s.status,
-        isNew: false,
+      .map((stop) => ({
+        id: stop.id,
+        clientKey: stopClientKey(stop),
+        schoolId: stop.school_id,
+        stopName: stop.stop_name,
+        stopOrder: stop.stop_order,
+        latitude: stop.latitude,
+        longitude: stop.longitude,
+        status: stop.status === 'inactive' ? 'inactive' : 'active',
       })),
   );
-
-  const [assignments, setAssignments] = useState<AssignmentDraft[]>(existingAssignments);
-  const [removedAssignmentIds, setRemovedAssignmentIds] = useState<string[]>([]);
-
-  const [showAssignForm, setShowAssignForm] = useState(false);
-  const [assignDriverId, setAssignDriverId] = useState('');
-  const [assignBusId, setAssignBusId] = useState('');
-  const [assignTripType, setAssignTripType] = useState<TripType>('morning');
-
+  const [trips, setTrips] = useState<[RouteDefinitionTripInput, RouteDefinitionTripInput]>(
+    () => [
+      initialTrip('forward', existingTripPatterns, existingStops, existingSchedules),
+      initialTrip('reverse', existingTripPatterns, existingStops, existingSchedules),
+    ],
+  );
+  const [selectedStopKey, setSelectedStopKey] = useState<string | null>(
+    stops[0]?.clientKey ?? null,
+  );
   const [formError, setFormError] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
+  const unavailableColors = new Set(
+    existingRoutes
+      .filter((item) => item.id !== route?.id && item.status === 'active')
+      .map((item) => item.map_color?.toUpperCase())
+      .filter((color): color is string => Boolean(color)),
+  );
 
-  const activeBuses = useMemo(() => buses.filter((b) => b.status === 'active'), [buses]);
-  const activeDrivers = useMemo(() => drivers.filter((d) => d.status === 'active'), [drivers]);
-
-  // Add a new blank stop row with auto-incremented order
-  function handleAddStop() {
-    setStops((prev) => [
-      ...prev,
-      {
-        school_id: null,
-        stop_name: '',
-        stop_order: prev.length + 1,
-        planned_arrival_time: null,
-        status: 'active',
-        isNew: true,
-      },
-    ]);
+  function updateTrip(
+    direction: 'forward' | 'reverse',
+    patch: Partial<RouteDefinitionTripInput>,
+  ) {
+    setTrips((previous) =>
+      previous.map((trip) =>
+        trip.direction === direction ? { ...trip, ...patch } : trip,
+      ) as [RouteDefinitionTripInput, RouteDefinitionTripInput],
+    );
   }
 
-  function handleStopChange(index: number, field: keyof StopDraft, value: string) {
-    setStops((prev) => {
-      const next = [...prev];
-      const stop = { ...next[index] };
-      if (field === 'stop_order') {
-        stop.stop_order = Number(value) || 0;
-      } else if (field === 'planned_arrival_time') {
-        stop.planned_arrival_time = value || null;
-      } else {
-        // stop_name
-        (stop as Record<string, unknown>)[field] = value;
-      }
-      next[index] = stop;
-      return next;
+  function updateStop(clientKey: string, patch: Partial<RouteDefinitionStopInput>) {
+    setStops((previous) =>
+      previous.map((stop) => (stop.clientKey === clientKey ? { ...stop, ...patch } : stop)),
+    );
+  }
+
+  function addStop() {
+    const clientKey = `new-${crypto.randomUUID()}`;
+    setStops((previous) => [
+      ...previous,
+      {
+        clientKey,
+        schoolId: null,
+        stopName: '',
+        stopOrder: previous.length + 1,
+        latitude: null,
+        longitude: null,
+        status: 'active',
+      },
+    ]);
+    setSelectedStopKey(clientKey);
+  }
+
+  function removeStop(clientKey: string) {
+    setStops((previous) => normalizeStopOrders(previous.filter((s) => s.clientKey !== clientKey)));
+    setTrips((previous) =>
+      previous.map((trip) => {
+        const stopTimes = { ...trip.stopTimes };
+        delete stopTimes[clientKey];
+        return { ...trip, stopTimes };
+      }) as [RouteDefinitionTripInput, RouteDefinitionTripInput],
+    );
+    if (selectedStopKey === clientKey) setSelectedStopKey(null);
+  }
+
+  function moveStop(index: number, delta: -1 | 1) {
+    const destination = index + delta;
+    if (destination < 0 || destination >= stops.length) return;
+    setStops((previous) => {
+      const next = [...previous];
+      [next[index], next[destination]] = [next[destination], next[index]];
+      return normalizeStopOrders(next);
     });
-  }
-
-  function handleRemoveStop(index: number) {
-    setStops((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  function handleAddAssignment() {
-    if (!assignDriverId || !assignBusId) {
-      setFormError('Driver and bus are required to assign.');
-      return;
-    }
-    setAssignments((prev) => [
-      ...prev,
-      {
-        id: `new-${Date.now()}`,
-        driverId: assignDriverId,
-        busId: assignBusId,
-        tripType: assignTripType,
-        status: 'active',
-      },
-    ]);
-    setShowAssignForm(false);
-    setAssignDriverId('');
-    setAssignBusId('');
-    setAssignTripType('morning');
-    setFormError(null);
-  }
-
-  function handleRemoveAssignment(id: string) {
-    setAssignments((prev) => prev.filter((a) => a.id !== id));
-    // Track removed existing assignments for deactivation
-    if (!id.startsWith('new-')) {
-      setRemovedAssignmentIds((prev) => [...prev, id]);
-    }
   }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setFormError(null);
-
-    const tenantId = route?.tenant_id ?? getSchoolTenantId(schools, schoolId || null) ?? defaultTenantId;
-
-    if (!tenantId) {
-      setFormError('Use an account with a tenant before saving this route.');
-      return;
-    }
-
     if (!routeName.trim() || !routeCode.trim()) {
       setFormError('Route name and route code are required.');
       return;
     }
-
-    // Per-tenant uniqueness check on route_code. The DB enforces this via
-    // routes_tenant_route_code_unique; this avoids the round-trip and surfaces
-    // a clear message before submitting. We compare case-insensitively and
-    // ignore the route currently being edited.
-    const normalizedCode = routeCode.trim().toLowerCase();
-    const duplicateCodeRoute = existingRoutes.find(
-      (existing) =>
-        existing.route_code.trim().toLowerCase() === normalizedCode &&
-        (!route || existing.id !== route.id),
+    const duplicateCode = existingRoutes.find(
+      (item) =>
+        item.id !== route?.id &&
+        item.route_code.trim().toLowerCase() === routeCode.trim().toLowerCase(),
     );
-    if (duplicateCodeRoute) {
-      setFormError(
-        `Route code "${routeCode.trim()}" is already used by "${duplicateCodeRoute.route_name}". Use a different code.`,
-      );
+    if (duplicateCode) {
+      setFormError(`Route code "${routeCode.trim()}" is already in use.`);
       return;
     }
-
-    // Validate stops: name required, order must be positive
-    const seenOrders = new Set<number>();
-    for (const stop of stops) {
-      if (!stop.stop_name.trim()) {
-        setFormError('Each stop must have a name.');
-        return;
-      }
-      if (!Number.isInteger(stop.stop_order) || stop.stop_order <= 0) {
-        setFormError('Stop order must be a whole number greater than zero.');
-        return;
-      }
-      if (seenOrders.has(stop.stop_order)) {
-        setFormError(`Duplicate stop order ${stop.stop_order}. Each stop needs a unique order.`);
-        return;
-      }
-      seenOrders.add(stop.stop_order);
+    if (trips.some((trip) => !trip.displayName.trim())) {
+      setFormError('Forward and reverse trips both need a name.');
+      return;
     }
-
-    const routeInput: CreateRouteInput | UpdateRouteInput = route
-      ? {
-          school_id: schoolId || null,
-          route_name: routeName.trim(),
-          route_code: routeCode.trim(),
-          route_type: routeType,
-          status,
-        }
-      : {
-          tenant_id: tenantId,
-          school_id: schoolId || null,
-          route_name: routeName.trim(),
-          route_code: routeCode.trim(),
-          route_type: routeType,
-          status,
-        };
+    if (status === 'active' && unavailableColors.has(mapColor.toUpperCase())) {
+      setFormError('Choose a color that is not used by another active route.');
+      return;
+    }
+    const issue = routeDefinitionIssue(stops);
+    if (status === 'active' && issue) {
+      setFormError(issue);
+      return;
+    }
 
     setSubmitState('saving');
     try {
       await onSubmit({
-        route: routeInput,
-        stops,
-        assignments,
-        removedAssignmentIds,
+        route: {
+          id: route?.id,
+          schoolId: schoolId || null,
+          routeName: routeName.trim(),
+          routeCode: routeCode.trim(),
+          routeKind,
+          mapColor,
+          status,
+        },
+        stops: normalizeStopOrders(stops),
+        tripPatterns: trips.map((trip) => ({
+          ...trip,
+          displayName: trip.displayName.trim(),
+          stopTimes: Object.fromEntries(
+            stops.map((stop) => [stop.clientKey, trip.stopTimes[stop.clientKey] ?? null]),
+          ),
+        })),
       });
-    } catch (submitError) {
-      setFormError(
-        submitError instanceof Error ? submitError.message : 'Unable to save route.',
-      );
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Unable to save route.');
     } finally {
       setSubmitState('idle');
     }
@@ -270,288 +233,184 @@ export function RouteWithStopsForm({
   return (
     <form className="grid gap-6" onSubmit={handleSubmit}>
       {formError && (
-        <p className="rounded-lg bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-700">
+        <p role="alert" className="rounded-lg bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-700">
           {formError}
         </p>
       )}
 
-      {/* Route Details Section */}
       <section className="rounded-lg border border-gray-200 bg-white p-5">
-        <h3 className="text-base font-bold text-navy-900">Route details</h3>
+        <h3 className="text-base font-bold text-navy-900">Route corridor</h3>
+        <p className="mt-1 text-sm text-gray-600">
+          The stop sequence defines one physical corridor from its first stop to its last.
+        </p>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label className={labelClassName}>
             Route name
-            <input
-              className={fieldClassName}
-              value={routeName}
-              onChange={(e) => setRouteName(e.target.value)}
-              placeholder="e.g., Morning Route 12"
-            />
+            <input className={fieldClassName} value={routeName} onChange={(e) => setRouteName(e.target.value)} placeholder="Route 1" />
           </label>
           <label className={labelClassName}>
             Route code
-            <input
-              className={fieldClassName}
-              value={routeCode}
-              onChange={(e) => setRouteCode(e.target.value)}
-              placeholder="e.g., MR-12"
-            />
+            <input className={fieldClassName} value={routeCode} onChange={(e) => setRouteCode(e.target.value)} placeholder="R-1" />
           </label>
           <label className={labelClassName}>
-            Route type
-            <select
-              className={fieldClassName}
-              value={routeType}
-              onChange={(e) => setRouteType(e.target.value as RouteType)}
-            >
-              <option value="morning">Morning</option>
-              <option value="afternoon">Afternoon</option>
-              <option value="special">Special</option>
+            Route kind
+            <select className={fieldClassName} value={routeKind} onChange={(e) => setRouteKind(e.target.value as RouteKind)}>
+              <option value="regular">Regular service</option>
               <option value="field_trip">Field trip</option>
             </select>
           </label>
           <label className={labelClassName}>
             Primary school (optional)
-            <select
-              className={fieldClassName}
-              value={schoolId}
-              onChange={(e) => setSchoolId(e.target.value)}
-            >
+            <select className={fieldClassName} value={schoolId} onChange={(e) => setSchoolId(e.target.value)}>
               <option value="">No school selected</option>
-              {schools.map((school) => (
-                <option key={school.id} value={school.id}>
-                  {school.name}
-                </option>
+              {schools.filter((school) => school.status === 'active').map((school) => (
+                <option key={school.id} value={school.id}>{school.name}</option>
               ))}
             </select>
           </label>
+          <fieldset>
+            <legend className={labelClassName}>Map color</legend>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {ROUTE_COLOR_PALETTE.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  className={`h-9 w-9 rounded-full border-4 ${mapColor === color ? 'border-navy-900' : 'border-white'}`}
+                  style={{ backgroundColor: color }}
+                  aria-label={`${unavailableColors.has(color) ? 'Route color in use' : 'Use route color'} ${color}`}
+                  aria-pressed={mapColor === color}
+                  disabled={unavailableColors.has(color)}
+                  onClick={() => setMapColor(color)}
+                />
+              ))}
+            </div>
+          </fieldset>
           <label className={labelClassName}>
             Status
-            <select
-              className={fieldClassName}
-              value={status}
-              onChange={(e) => setStatus(e.target.value as RouteStatus)}
-            >
+            <select className={fieldClassName} value={status} onChange={(e) => setStatus(e.target.value as RouteStatus)}>
+              <option value="inactive">Draft / inactive</option>
               <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
               <option value="archived">Archived</option>
             </select>
           </label>
         </div>
       </section>
 
-      {/* Stops Section */}
       <section className="rounded-lg border border-gray-200 bg-white p-5">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-navy-900">
-            Stops <span className="text-sm font-normal text-gray-500">({stops.length})</span>
-          </h3>
-          <Button type="button" variant="secondary" size="sm" onClick={handleAddStop}>
-            Add stop
-          </Button>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-bold text-navy-900">Directional trips</h3>
+            <p className="mt-1 text-sm text-gray-600">Names are editable; direction remains tied to the corridor.</p>
+          </div>
         </div>
-        <p className="mt-1 text-sm text-gray-500">
-          Add the ordered pickup and drop-off stops for this route. Estimated times are optional.
-        </p>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          {trips.map((trip) => (
+            <div key={trip.direction} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                {trip.direction === 'forward' ? 'Start → End' : 'End → Start'}
+              </p>
+              <label className={`${labelClassName} mt-3`}>
+                Trip name
+                <input className={fieldClassName} value={trip.displayName} onChange={(e) => updateTrip(trip.direction, { displayName: e.target.value })} />
+              </label>
+              <label className={`${labelClassName} mt-3`}>
+                Status
+                <select className={fieldClassName} value={trip.status} onChange={(e) => updateTrip(trip.direction, { status: e.target.value as 'active' | 'inactive' })}>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </label>
+            </div>
+          ))}
+        </div>
+      </section>
 
-        {stops.length === 0 ? (
-          <p className="mt-4 rounded-lg bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
-            No stops yet. Click &ldquo;Add stop&rdquo; to begin.
-          </p>
-        ) : (
-          <div className="mt-4 space-y-3">
-            {stops.map((stop, index) => (
-              <div
-                key={stop.id ?? `new-${index}`}
-                className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 sm:grid-cols-[60px_1fr_160px_120px_auto]"
-              >
-                <label className="text-xs font-semibold text-gray-600">
-                  Order
-                  <input
-                    type="number"
-                    min={1}
-                    className="mt-1 w-full rounded-md border border-gray-300 px-2 py-2 text-sm"
-                    value={stop.stop_order}
-                    onChange={(e) => handleStopChange(index, 'stop_order', e.target.value)}
-                  />
+      <section className="rounded-lg border border-gray-200 bg-white p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-bold text-navy-900">Stops ({stops.length})</h3>
+            <p className="mt-1 text-sm text-gray-600">The first and last active stops are always the route terminals.</p>
+          </div>
+          <Button type="button" variant="secondary" size="sm" onClick={addStop}>Add stop</Button>
+        </div>
+
+        <div className="mt-4 space-y-3">
+          {stops.map((stop, index) => (
+            <div
+              key={stop.clientKey}
+              className={`rounded-lg border p-4 ${selectedStopKey === stop.clientKey ? 'border-brand-500 bg-brand-50' : 'border-gray-200 bg-gray-50'}`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <button type="button" className="text-left text-sm font-bold text-navy-900" onClick={() => setSelectedStopKey(stop.clientKey)}>
+                  {index === 0 ? 'Start stop' : index === stops.length - 1 ? 'End stop' : `Stop ${index + 1}`}
+                </button>
+                <div className="flex gap-1">
+                  <Button type="button" size="sm" variant="secondary" onClick={() => moveStop(index, -1)} disabled={index === 0}>Up</Button>
+                  <Button type="button" size="sm" variant="secondary" onClick={() => moveStop(index, 1)} disabled={index === stops.length - 1}>Down</Button>
+                  <Button type="button" size="sm" variant="secondary" onClick={() => removeStop(stop.clientKey)}>Remove</Button>
+                </div>
+              </div>
+              <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <label className={labelClassName}>
+                  Stop name
+                  <input className={fieldClassName} value={stop.stopName} onChange={(e) => updateStop(stop.clientKey, { stopName: e.target.value })} />
                 </label>
-                <label className="text-xs font-semibold text-gray-600">
+                <label className={labelClassName}>
                   School stop (optional)
-                  <select
-                    className="mt-1 w-full rounded-md border border-gray-300 px-2 py-2 text-sm"
-                    value={stop.school_id ?? ''}
-                    onChange={(e) => handleStopChange(index, 'school_id', e.target.value)}
-                  >
+                  <select className={fieldClassName} value={stop.schoolId ?? ''} onChange={(e) => updateStop(stop.clientKey, { schoolId: e.target.value || null })}>
                     <option value="">Regular stop</option>
                     {schools.filter((school) => school.status === 'active').map((school) => (
                       <option key={school.id} value={school.id}>{school.name}</option>
                     ))}
                   </select>
                 </label>
-                <label className="text-xs font-semibold text-gray-600">
-                  Stop name
-                  <input
-                    type="text"
-                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                    value={stop.stop_name}
-                    placeholder="e.g., Elm Street & 4th Ave"
-                    onChange={(e) => handleStopChange(index, 'stop_name', e.target.value)}
-                  />
+                <label className={labelClassName}>
+                  Latitude
+                  <input type="number" step="any" className={fieldClassName} value={stop.latitude ?? ''} onChange={(e) => updateStop(stop.clientKey, { latitude: e.target.value === '' ? null : Number(e.target.value) })} />
                 </label>
-                <label className="text-xs font-semibold text-gray-600">
-                  Est. time
-                  <input
-                    type="time"
-                    className="mt-1 w-full rounded-md border border-gray-300 px-2 py-2 text-sm"
-                    value={stop.planned_arrival_time ?? ''}
-                    onChange={(e) =>
-                      handleStopChange(index, 'planned_arrival_time', e.target.value)
-                    }
-                  />
+                <label className={labelClassName}>
+                  Longitude
+                  <input type="number" step="any" className={fieldClassName} value={stop.longitude ?? ''} onChange={(e) => updateStop(stop.clientKey, { longitude: e.target.value === '' ? null : Number(e.target.value) })} />
                 </label>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveStop(index)}
-                  className="self-end rounded-md px-3 py-2 text-sm font-semibold text-danger-600 hover:bg-danger-50"
-                  aria-label="Remove stop"
-                >
-                  Remove
-                </button>
+                {trips.map((trip) => (
+                  <label key={trip.direction} className={labelClassName}>
+                    {trip.displayName || trip.direction} time
+                    <input
+                      type="time"
+                      className={fieldClassName}
+                      value={trip.stopTimes[stop.clientKey] ?? ''}
+                      onChange={(e) => updateTrip(trip.direction, {
+                        stopTimes: { ...trip.stopTimes, [stop.clientKey]: e.target.value || null },
+                      })}
+                    />
+                  </label>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Bus Assignment Section */}
-      <section className="rounded-lg border border-gray-200 bg-white p-5">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-navy-900">Bus assignment</h3>
-          {!showAssignForm && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => setShowAssignForm(true)}
-              disabled={activeBuses.length === 0 || activeDrivers.length === 0}
-            >
-              Assign bus
-            </Button>
+            </div>
+          ))}
+          {stops.length === 0 && (
+            <p className="rounded-lg bg-gray-50 p-5 text-center text-sm text-gray-600">Add the start stop to begin defining this corridor.</p>
           )}
         </div>
-        <p className="mt-1 text-sm text-gray-500">
-          Assign a driver and bus to this route. Drivers start trips from these assignments.
-        </p>
 
-        {showAssignForm && (
-          <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <div className="grid gap-3 sm:grid-cols-3">
-              <label className="text-xs font-semibold text-gray-600">
-                Driver
-                <select
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                  value={assignDriverId}
-                  onChange={(e) => setAssignDriverId(e.target.value)}
-                >
-                  <option value="">Select driver</option>
-                  {activeDrivers.map((driver) => (
-                    <option key={driver.id} value={driver.id}>
-                      {profileLabels.get(driver.profile_id) ??
-                        driver.employee_number ??
-                        driver.id}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="text-xs font-semibold text-gray-600">
-                Bus
-                <select
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                  value={assignBusId}
-                  onChange={(e) => setAssignBusId(e.target.value)}
-                >
-                  <option value="">Select bus</option>
-                  {activeBuses.map((bus) => (
-                    <option key={bus.id} value={bus.id}>
-                      Bus {bus.bus_number}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="text-xs font-semibold text-gray-600">
-                Trip type
-                <select
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                  value={assignTripType}
-                  onChange={(e) => setAssignTripType(e.target.value as TripType)}
-                >
-                  <option value="morning">Morning</option>
-                  <option value="evening">Evening</option>
-                </select>
-              </label>
-            </div>
-            <div className="mt-3 flex gap-2">
-              <Button type="button" size="sm" onClick={handleAddAssignment}>
-                Add assignment
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                onClick={() => setShowAssignForm(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {assignments.length === 0 && !showAssignForm ? (
-          <p className="mt-4 rounded-lg bg-gray-50 px-4 py-4 text-center text-sm text-gray-500">
-            No bus assigned yet. This route can&rsquo;t start trips until a bus and driver are
-            assigned.
-          </p>
-        ) : (
-          <ul className="mt-4 space-y-2">
-            {assignments.map((a) => (
-              <li
-                key={a.id}
-                className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3"
-              >
-                <div className="text-sm">
-                  <span className="font-semibold text-navy-900">
-                    {activeBuses.find((b) => b.id === a.busId)
-                      ? `Bus ${activeBuses.find((b) => b.id === a.busId)?.bus_number}`
-                      : 'Bus removed'}
-                  </span>
-                  <span className="ml-2 text-gray-500">
-                    {profileLabels.get(
-                      activeDrivers.find((d) => d.id === a.driverId)?.profile_id ?? '',
-                    ) ?? 'Driver'}{' '}
-                    &middot; {a.tripType}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveAssignment(a.id)}
-                  className="text-sm font-semibold text-danger-600 hover:underline"
-                >
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div className="mt-5">
+          <RouteStopMapEditor
+            stops={stops}
+            selectedKey={selectedStopKey}
+            tileConfig={mapTileConfig}
+            onSelect={setSelectedStopKey}
+            onPlace={(clientKey, latitude, longitude) =>
+              updateStop(clientKey, { latitude, longitude })
+            }
+          />
+        </div>
       </section>
 
-      {/* Submit */}
       <div className="flex flex-col gap-3 sm:flex-row">
         <Button type="submit" disabled={submitState === 'saving'}>
-          {submitState === 'saving' ? 'Saving' : 'Save route'}
+          {submitState === 'saving' ? 'Saving…' : 'Save route definition'}
         </Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          Cancel
-        </Button>
+        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
       </div>
     </form>
   );

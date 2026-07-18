@@ -17,7 +17,7 @@ function requireSupabase() {
 }
 
 const assignmentColumns =
-  'id, tenant_id, driver_id, bus_id, route_id, trip_type, status, effective_from, effective_to, created_at, updated_at';
+  'id, tenant_id, driver_id, bus_id, route_id, route_trip_pattern_id, trip_type, status, effective_from, effective_to, created_at, updated_at';
 
 function logDevError(context: string, error: unknown) {
   if (import.meta.env.DEV) {
@@ -67,10 +67,11 @@ export async function createDriverAssignment(
     tenant_id: defaultTenantId,
     bus_id: input.busId,
     route_id: input.routeId,
+    route_trip_pattern_id: input.tripPatternId,
     trip_type: input.tripType,
     status: 'active',
-    effective_from: null,
-    effective_to: null,
+    effective_from: input.effectiveFrom,
+    effective_to: input.effectiveTo,
   });
   const { data, error } = await client
     .from('driver_route_assignments')
@@ -79,8 +80,11 @@ export async function createDriverAssignment(
       driver_id: input.driverId,
       bus_id: input.busId,
       route_id: input.routeId,
+      route_trip_pattern_id: input.tripPatternId,
       trip_type: input.tripType,
       status: input.status,
+      effective_from: input.effectiveFrom,
+      effective_to: input.effectiveTo,
       bus_route_assignment_id: busService.id,
     })
     .select(assignmentColumns)
@@ -155,7 +159,7 @@ export async function updateAssignmentStatus(
 export async function fetchDriverAssignments(): Promise<DriverAssignmentSummary[]> {
   const client = requireSupabase();
 
-  const [assignmentsResult, busesResult, routesResult] = await Promise.all([
+  const [assignmentsResult, busesResult, routesResult, patternsResult] = await Promise.all([
     client
       .from('driver_route_assignments')
       .select(assignmentColumns)
@@ -168,6 +172,10 @@ export async function fetchDriverAssignments(): Promise<DriverAssignmentSummary[
     client
       .from('routes')
       .select('id, route_name')
+      .eq('status', 'active'),
+    client
+      .from('route_trip_patterns')
+      .select('id, display_name')
       .eq('status', 'active'),
   ]);
 
@@ -182,12 +190,20 @@ export async function fetchDriverAssignments(): Promise<DriverAssignmentSummary[
   const routeMap = new Map<string, string>(
     ((routesResult.data ?? []) as Array<{ id: string; route_name: string }>).map((r) => [r.id, r.route_name]),
   );
+  const patternMap = new Map<string, string>(
+    ((patternsResult.data ?? []) as Array<{ id: string; display_name: string }>).map((pattern) => [
+      pattern.id,
+      pattern.display_name,
+    ]),
+  );
 
   const rows = (assignmentsResult.data ?? []) as DriverRouteAssignment[];
   return rows.map((row) => ({
     id: row.id,
     busId: row.bus_id,
     routeId: row.route_id,
+    tripPatternId: row.route_trip_pattern_id,
+    tripName: row.route_trip_pattern_id ? patternMap.get(row.route_trip_pattern_id) ?? null : null,
     busLabel: busMap.get(row.bus_id) ?? null,
     routeName: routeMap.get(row.route_id) ?? null,
     tripType: row.trip_type as TripType,

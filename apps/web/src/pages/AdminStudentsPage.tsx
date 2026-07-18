@@ -93,7 +93,7 @@ export function AdminStudentsPage() {
   function existingBusAssignment(student: AdminStudentRow): StudentBusAssignment | null {
     if (!student.bus_assignment_id || !student.bus_route_assignment_id || !student.bus_effective_from) return null;
     return { id: student.bus_assignment_id, tenant_id: student.tenant_id, student_id: student.id,
-      bus_route_assignment_id: student.bus_route_assignment_id, pickup_stop_id: student.pickup_stop_id,
+      bus_route_assignment_id: student.bus_route_assignment_id, route_trip_pattern_id: null, pickup_stop_id: student.pickup_stop_id,
       dropoff_stop_id: student.dropoff_stop_id, effective_from: student.bus_effective_from,
       effective_to: student.bus_effective_to, status: 'active', created_at: student.created_at, updated_at: student.updated_at };
   }

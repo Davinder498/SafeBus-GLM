@@ -52,7 +52,7 @@ test.describe('Phase 15B tenant admin notification delivery summary', () => {
     await mockRole(page, 'tenant_admin');
     await page.goto('/admin/trips');
     // The summary card must never show emails or names
-    await expect(page.getByText('Notification delivery')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Notification delivery' })).toBeVisible();
     const cardText = await page.locator('h2:has-text("Notification delivery")').locator('..').textContent();
     expect(cardText).not.toContain('@');
     expect(cardText).not.toContain('guardian@example');
