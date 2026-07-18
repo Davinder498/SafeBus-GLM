@@ -1,15 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-agent/student-onboarding-workflow
-import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
-
 import { Link } from 'react-router-dom';
-import { DashboardLayout, adminNavItems } from '@/components/layout/DashboardLayout';
-main
+import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { AdminRouteStatusTile } from '@/components/admin/AdminRouteStatusTile';
+import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { StatCard } from '@/components/ui/StatCard';
-import { Radio, AlertTriangle, MapPinOff, ListChecks } from 'lucide-react';
 import { fetchAdminLiveTrips } from '@/services/adminLiveMonitoringService';
 import {
   fetchBoundedAdminOverview,
@@ -99,13 +94,8 @@ export function AdminDashboardPage() {
   const missingTrips = data?.trips.filter((t) => t.locationStatus === 'missing').length ?? 0;
 
   return (
-agent/student-onboarding-workflow
     <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
-      <div className="space-y-6">
-
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={adminNavItems}>
       <div className="space-y-6" data-testid="tenant-admin-overview">
-main
         <PageHeader
           eyebrow="Overview"
           title="Transportation overview"
@@ -127,38 +117,6 @@ main
 
         {data && (
           <>
-agent/student-onboarding-workflow
-            {/* Live operations summary */}
-            <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard
-                label="Active trips"
-                value={activeTrips}
-                detail="Driver-started trips currently operating."
-                tone="navy"
-                icon={<Radio className="h-5 w-5" />}
-              />
-              <StatCard
-                label="Stale locations"
-                value={staleTrips}
-                detail="Buses with GPS not updated recently."
-                tone="warning"
-                icon={<AlertTriangle className="h-5 w-5" />}
-              />
-              <StatCard
-                label="Missing locations"
-                value={missingTrips}
-                detail="Active trips without GPS data."
-                tone="danger"
-                icon={<MapPinOff className="h-5 w-5" />}
-              />
-              <StatCard
-                label="Setup readiness"
-                value={`${setupComplete} of ${setupKeys.length}`}
-                detail="Core setup steps complete."
-                tone="navy"
-                icon={<ListChecks className="h-5 w-5" />}
-              />
-
             <section className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm sm:p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -200,7 +158,6 @@ agent/student-onboarding-workflow
                   <p className="mt-2 text-sm text-gray-600">Core setup steps complete.</p>
                 </Card>
               </div>
-main
             </section>
 
             {/* Clickable route tiles */}
