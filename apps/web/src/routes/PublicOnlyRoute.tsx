@@ -26,8 +26,35 @@ export function PublicOnlyRoute({ children }: PublicOnlyRouteProps) {
     );
   }
 
-  if (session && profile) {
+  if (session && profile?.status === 'invited') {
+    return <Navigate to="/accept-invitation" replace />;
+  }
+
+  if (session && profile?.status === 'active') {
     return <Navigate to={getDashboardPath(profile.role)} replace />;
+  }
+
+  if (session && profile && ['suspended', 'disabled'].includes(profile.status)) {
+    return (
+      <PublicLayout>
+        <main className="mx-auto flex min-h-[calc(100vh-150px)] max-w-lg items-center px-4 py-12 sm:px-6">
+          <Card className="w-full p-8 text-center">
+            <h1 className="text-3xl font-bold text-navy-900">Account unavailable</h1>
+            <p className="mt-3 text-gray-600">
+              This SafeBus account is {profile.status}. Ask your administrator to reactivate it.
+            </p>
+            <Button
+              type="button"
+              className="mt-6"
+              variant="secondary"
+              onClick={() => void signOut()}
+            >
+              Sign out
+            </Button>
+          </Card>
+        </main>
+      </PublicLayout>
+    );
   }
 
   if (session && !profile) {

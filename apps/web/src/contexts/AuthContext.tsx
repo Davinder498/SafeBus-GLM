@@ -35,6 +35,8 @@ export interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<Profile>;
   signOut: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
+  completeInvitation: (password: string) => Promise<Profile>;
+  updatePassword: (password: string) => Promise<void>;
   refreshProfile: () => Promise<Profile>;
 }
 
@@ -46,7 +48,9 @@ export function isProfileRole(role: string | null | undefined): role is ProfileR
   return typeof role === 'string' && roleSet.has(role);
 }
 
-export function getDashboardPath(role: ProfileRole): '/admin' | '/admin/tenants' | '/driver' | '/parent' {
+export function getDashboardPath(
+  role: ProfileRole,
+): '/admin' | '/admin/tenants' | '/driver' | '/parent' {
   if (role === 'platform_super_admin') return '/admin/tenants';
   if (adminRoles.includes(role as (typeof adminRoles)[number])) return '/admin';
   if (role === 'driver') return '/driver';
@@ -237,11 +241,51 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/login`,
+      redirectTo: `${window.location.origin}/update-password`,
     });
 
     if (error) throw new Error(error.message);
   }, []);
+
+  const updatePassword = useCallback(async (password: string) => {
+    if (!supabase) {
+      throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
+    }
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw new Error(error.message);
+  }, []);
+
+  const completeInvitation = useCallback(
+    async (password: string) => {
+      if (!supabase) {
+        throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
+      }
+      const {
+        data: { session: currentSession },
+      } = await supabase.auth.getSession();
+      if (!currentSession) {
+        throw new Error(
+          'This invitation session is missing or expired. Ask your administrator to resend the invitation.',
+        );
+      }
+
+      const { error: passwordError } = await supabase.auth.updateUser({ password });
+      if (passwordError) throw new Error(passwordError.message);
+
+      const { error: activationError } = await supabase.rpc('complete_invited_account');
+      if (activationError) {
+        throw new Error(
+          'Your password was saved, but SafeBus could not finish activating the account. Retry this page or ask your administrator for help.',
+        );
+      }
+
+      const nextProfile = await loadProfile(currentSession.user.id);
+      setProfile(nextProfile);
+      setAuthError(null);
+      return nextProfile;
+    },
+    [loadProfile],
+  );
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -254,9 +298,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
       signIn,
       signOut,
       requestPasswordReset,
+      completeInvitation,
+      updatePassword,
       refreshProfile,
     }),
-    [session, profile, loading, authError, signIn, signOut, requestPasswordReset, refreshProfile],
+    [
+      session,
+      profile,
+      loading,
+      authError,
+      signIn,
+      signOut,
+      requestPasswordReset,
+      completeInvitation,
+      updatePassword,
+      refreshProfile,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

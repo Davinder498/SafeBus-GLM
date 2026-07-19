@@ -18,6 +18,10 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
   CSV preview/commit, tenant-scoped school matching, duplicate warnings,
   5,000-row enforcement, atomic invalid-file rejection, and denial for other
   authenticated roles and anonymous callers.
+- `invitation-password-activation-rls.sql`: self-contained coverage for
+  password-backed self-activation of invited profiles, invitation audit
+  activation, cross-profile isolation, disabled-account denial, and anonymous
+  execute denial.
 - `guardian-visibility-rls.sql`: uses the student-roster seed data to test
   `get_guardian_student_route_visibility()` and guardian SELECT policies.
 - `guardian-linking-rls.sql`: tests the `admin_link_student_guardian()` and
