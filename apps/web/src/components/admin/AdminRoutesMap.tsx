@@ -265,6 +265,7 @@ export function AdminRoutesMap({ routes, tileConfig }: AdminRoutesMapProps) {
               entries={stopMarkerEntries}
               paneName="admin-route-management-stops"
               testId="admin-routes-map-marker"
+              density="compact"
             />
           </MapContainer>
         </section>

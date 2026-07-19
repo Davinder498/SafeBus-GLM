@@ -1,9 +1,13 @@
 import { divIcon } from 'leaflet';
-import { Marker, Pane, Popup } from 'react-leaflet';
+import { Marker, Pane, Popup, Tooltip } from 'react-leaflet';
 import {
   groupRouteStopMarkerEntries,
   readableMarkerTextColor,
+  routeStopMarkerDimensions,
+  routeStopMarkerHoverDetails,
   safeRouteColor,
+  type RouteStopMarkerDensity,
+  type RouteStopMarkerDimensions,
   type RouteStopMarkerEntry,
   type RouteStopMarkerGroup,
 } from '@/utils/routeStopMarkers';
@@ -29,10 +33,13 @@ function markerLabel(group: RouteStopMarkerGroup): string {
   return `${group.entries.length} route stops at this location`;
 }
 
-function createStopIcon(group: RouteStopMarkerGroup, testId: string) {
+function createStopIcon(
+  group: RouteStopMarkerGroup,
+  dimensions: RouteStopMarkerDimensions,
+  testId: string,
+) {
   const isCombined = group.entries.length > 1;
-  const isTerminal = group.entries.some((entry) => entry.terminal !== null);
-  const size = isCombined || isTerminal ? 36 : 30;
+  const { size, borderWidth, fontSize, combinedLabelSize } = dimensions;
   const label = isCombined ? String(group.entries.length) : String(group.entries[0].stopNumber);
   const background = markerBackground(group);
   const textColor =
@@ -42,7 +49,7 @@ function createStopIcon(group: RouteStopMarkerGroup, testId: string) {
 
   return divIcon({
     className: '',
-    html: `<span data-testid="${testId}" data-route-stop-count="${group.entries.length}" aria-hidden="true" style="display:flex;width:${size}px;height:${size}px;align-items:center;justify-content:center;border-radius:9999px;background:${background};border:3px solid #ffffff;box-shadow:0 1px 5px #111827;color:${textColor};font-size:${isCombined ? 13 : 14}px;font-weight:800;line-height:1"><span style="${isCombined ? 'display:flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:9999px;background:rgba(17,24,39,0.78)' : ''}">${label}</span></span>`,
+    html: `<span data-testid="${testId}" data-route-stop-count="${group.entries.length}" aria-hidden="true" style="display:flex;width:${size}px;height:${size}px;align-items:center;justify-content:center;border-radius:9999px;background:${background};border:${borderWidth}px solid #ffffff;box-shadow:0 1px 4px #111827;color:${textColor};font-size:${fontSize}px;font-weight:800;line-height:1"><span style="${isCombined ? `display:flex;width:${combinedLabelSize}px;height:${combinedLabelSize}px;align-items:center;justify-content:center;border-radius:9999px;background:rgba(17,24,39,0.78)` : ''}">${label}</span></span>`,
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
@@ -76,10 +83,12 @@ export function NumberedRouteStopMarkers({
   entries,
   paneName,
   testId,
+  density = 'comfortable',
 }: {
   entries: RouteStopMarkerEntry[];
   paneName: string;
   testId: string;
+  density?: RouteStopMarkerDensity;
 }) {
   const groups = groupRouteStopMarkerEntries(entries);
 
@@ -87,15 +96,27 @@ export function NumberedRouteStopMarkers({
     <Pane name={paneName} style={{ zIndex: 350 }}>
       {groups.map((group) => {
         const label = markerLabel(group);
+        const dimensions = routeStopMarkerDimensions(group, density);
+        const hoverDetails = routeStopMarkerHoverDetails(group);
         return (
           <Marker
             key={group.key}
             position={group.position}
-            icon={createStopIcon(group, testId)}
+            icon={createStopIcon(group, dimensions, testId)}
             title={label}
             alt={label}
             keyboard
           >
+            <Tooltip
+              direction="top"
+              offset={[0, -(dimensions.size / 2 + 5)]}
+              opacity={0.96}
+            >
+              <div className="text-xs">
+                <p className="font-semibold">{hoverDetails.heading}</p>
+                <p>{hoverDetails.summary}</p>
+              </div>
+            </Tooltip>
             <Popup>
               {group.entries.length > 1 ? (
                 <div className="space-y-3">
