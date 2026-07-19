@@ -61,6 +61,16 @@ export function isValidRouteCoordinate(
   );
 }
 
+export function stopDraftIssue(stop: RouteDefinitionStopInput): string | null {
+  const name = stop.stopName.trim();
+  if (!name) return 'Enter a stop name.';
+  if (name.length > 120) return 'Stop name must be 120 characters or fewer.';
+  if (!isValidRouteCoordinate(stop.latitude, stop.longitude)) {
+    return 'Enter valid latitude and longitude, or place the stop on the map.';
+  }
+  return null;
+}
+
 export function routeDefinitionIssue(
   stops: RouteDefinitionStopInput[],
 ): string | null {
