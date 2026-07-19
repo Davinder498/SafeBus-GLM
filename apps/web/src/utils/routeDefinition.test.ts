@@ -48,7 +48,7 @@ describe('route definition model', () => {
       .toEqual([1, 2]);
   });
 
-  it('derives reverse traversal without duplicating route geometry', () => {
+  it('derives reverse traversal without duplicating the canonical stop list', () => {
     const canonical = [
       { name: 'A', order: 1 },
       { name: 'Middle', order: 2 },
