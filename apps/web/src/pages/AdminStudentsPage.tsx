@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { BusFront, Eye, Loader2, Pencil, Power, QrCode, RotateCcw, Trash2, UserRound } from 'lucide-react';
 import { AdminPagination } from '@/components/admin/AdminPagination';
 import { StudentBusAssignmentForm } from '@/components/admin/StudentBusAssignmentForm';
 import { StudentCsvImportPanel } from '@/components/admin/StudentCsvImportPanel';
@@ -20,16 +21,8 @@ import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
 import { getVisibleSchools } from '@/services/adminOrganizationService';
 import { getVisibleRouteStops } from '@/services/transportationStructureService';
 import { createStudentBusAssignment, fetchAdminBusServices, updateStudentBusAssignment, type BusServiceOption } from '@/services/studentBusAssignmentService';
-import {
-  createStudent,
-  deleteStudent,
-  setStudentStatus,
-  updateStudent,
-} from '@/services/adminStudentsService';
-import {
-  createStudentOnboarding,
-  type CreateStudentOnboardingInput,
-} from '@/services/studentOnboardingService';
+import { createStudent, deleteStudent, setStudentStatus, updateStudent } from '@/services/adminStudentsService';
+import { createStudentOnboarding, type CreateStudentOnboardingInput } from '@/services/studentOnboardingService';
 import type { School } from '@/types/organization';
 import type { Student, StudentStatus } from '@/types/studentGuardian';
 import type { CreateStudentBusAssignmentInput, RouteStop, StudentBusAssignment, UpdateStudentBusAssignmentInput } from '@/types/transportation';
@@ -57,10 +50,12 @@ const studentStatusTone: Record<StudentStatus, 'success' | 'warning' | 'danger' 
   archived: 'danger',
 };
 
+const rosterActionClass = 'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-navy-700 transition-colors hover:bg-navy-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+
+const destructiveRosterActionClass = 'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-danger-600 transition-colors hover:bg-danger-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-danger-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+
 function getStudentName(student: Student) {
-  return student.preferred_name
-    ? `${student.first_name} ${student.last_name} (${student.preferred_name})`
-    : `${student.first_name} ${student.last_name}`;
+  return student.preferred_name ? `${student.first_name} ${student.last_name} (${student.preferred_name})` : `${student.first_name} ${student.last_name}`;
 }
 
 export function AdminStudentsPage() {
@@ -81,37 +76,64 @@ export function AdminStudentsPage() {
   const [deleting, setDeleting] = useState(false);
 
   const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
-  const canDelete =
-    !!profile && (profile.role === 'tenant_admin' || profile.role === 'platform_super_admin');
+  const canDelete = !!profile && (profile.role === 'tenant_admin' || profile.role === 'platform_super_admin');
 
   useEffect(() => {
     void Promise.all([getVisibleSchools(), fetchAdminBusServices(), getVisibleRouteStops()])
-      .then(([nextSchools, services, stops]) => { setSchools(nextSchools); setBusServices(services); setRouteStops(stops); })
+      .then(([nextSchools, services, stops]) => {
+        setSchools(nextSchools);
+        setBusServices(services);
+        setRouteStops(stops);
+      })
       .catch(() => setWriteError('Some transportation options could not be loaded.'));
   }, []);
 
   function existingBusAssignment(student: AdminStudentRow): StudentBusAssignment | null {
     if (!student.bus_assignment_id || !student.bus_route_assignment_id || !student.bus_effective_from) return null;
-    return { id: student.bus_assignment_id, tenant_id: student.tenant_id, student_id: student.id,
-      bus_route_assignment_id: student.bus_route_assignment_id, route_trip_pattern_id: null, pickup_stop_id: student.pickup_stop_id,
-      dropoff_stop_id: student.dropoff_stop_id, effective_from: student.bus_effective_from,
-      effective_to: student.bus_effective_to, status: 'active', created_at: student.created_at, updated_at: student.updated_at };
+    return {
+      id: student.bus_assignment_id,
+      tenant_id: student.tenant_id,
+      student_id: student.id,
+      bus_route_assignment_id: student.bus_route_assignment_id,
+      route_trip_pattern_id: null,
+      pickup_stop_id: student.pickup_stop_id,
+      dropoff_stop_id: student.dropoff_stop_id,
+      effective_from: student.bus_effective_from,
+      effective_to: student.bus_effective_to,
+      status: 'active',
+      created_at: student.created_at,
+      updated_at: student.updated_at,
+    };
   }
 
   async function saveBusAssignment(input: CreateStudentBusAssignmentInput | UpdateStudentBusAssignmentInput) {
-    if (!busStudent) return; setWriteError(null); setSuccessMessage(null);
+    if (!busStudent) return;
+    setWriteError(null);
+    setSuccessMessage(null);
     try {
       const existing = existingBusAssignment(busStudent);
       if (existing) await updateStudentBusAssignment(existing.id, input as UpdateStudentBusAssignmentInput);
       else await createStudentBusAssignment(input as CreateStudentBusAssignmentInput);
-      setBusStudent(null); setSuccessMessage('Student bus assignment saved.'); await list.reload();
-    } catch (error) { setWriteError(error instanceof Error ? error.message : 'Unable to save bus assignment.'); }
+      setBusStudent(null);
+      setSuccessMessage('Student bus assignment saved.');
+      await list.reload();
+    } catch (error) {
+      setWriteError(error instanceof Error ? error.message : 'Unable to save bus assignment.');
+    }
   }
 
   async function removeBusAssignment(student: AdminStudentRow) {
-    if (!student.bus_assignment_id) return; setWriteError(null); setSuccessMessage(null);
-    try { await updateStudentBusAssignment(student.bus_assignment_id, { status: 'inactive' }); setBusStudent(null); setSuccessMessage('Bus assignment removed. The student remains active without bus transportation.'); await list.reload(); }
-    catch (error) { setWriteError(error instanceof Error ? error.message : 'Unable to remove bus assignment.'); }
+    if (!student.bus_assignment_id) return;
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await updateStudentBusAssignment(student.bus_assignment_id, { status: 'inactive' });
+      setBusStudent(null);
+      setSuccessMessage('Bus assignment removed. The student remains active without bus transportation.');
+      await list.reload();
+    } catch (error) {
+      setWriteError(error instanceof Error ? error.message : 'Unable to remove bus assignment.');
+    }
   }
 
   async function handleCreate(input: StudentFormInput) {
@@ -142,17 +164,10 @@ export function AdminStudentsPage() {
     try {
       const result = await createStudentOnboarding(input);
       setShowCreateForm(false);
-      setSuccessMessage(
-        result.guardianInvitationStatus === 'sent'
-          ? 'Student created and guardian invitation sent.'
-          : result.guardianLinkId
-            ? 'Student created and guardian linked.'
-            : 'Student created.',
-      );
+      setSuccessMessage(result.guardianInvitationStatus === 'sent' ? 'Student created and guardian invitation sent.' : result.guardianLinkId ? 'Student created and guardian linked.' : 'Student created.');
       await list.reload();
     } catch (createError) {
-      const next =
-        createError instanceof Error ? createError : new Error('Unable to create student.');
+      const next = createError instanceof Error ? createError : new Error('Unable to create student.');
       setWriteError(next.message);
       throw next;
     }
@@ -161,19 +176,20 @@ export function AdminStudentsPage() {
   async function handleCsvImported(count: number) {
     setShowCsvImport(false);
     setWriteError(null);
-    setSuccessMessage(
-      `${count.toLocaleString()} student${count === 1 ? '' : 's'} imported.`,
-    );
+    setSuccessMessage(`${count.toLocaleString()} student${count === 1 ? '' : 's'} imported.`);
     await list.reload();
   }
 
-  async function handleUpdate(studentId: string, input: {
-    firstName: string;
-    lastName: string;
-    preferredName: string;
-    grade: string;
-    schoolId: string;
-  }) {
+  async function handleUpdate(
+    studentId: string,
+    input: {
+      firstName: string;
+      lastName: string;
+      preferredName: string;
+      grade: string;
+      schoolId: string;
+    },
+  ) {
     setWriteError(null);
     setSuccessMessage(null);
     try {
@@ -244,11 +260,7 @@ export function AdminStudentsPage() {
   return (
     <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
       <div className="space-y-6">
-        <PageHeader
-          eyebrow="Students"
-          title="Students"
-          description="Manage student records for your transportation account. Add, edit, and deactivate students."
-        />
+        <PageHeader eyebrow="Students" title="Students" description="Manage student records for your transportation account. Add, edit, and deactivate students." />
 
         {canWrite && !showCreateForm && !showCsvImport && (
           <div className="flex flex-wrap gap-3">
@@ -297,50 +309,22 @@ export function AdminStudentsPage() {
           </Card>
         )}
 
-        {canWrite &&
-          showCreateForm &&
-          (profile?.role === 'tenant_admin' ? (
-            <StudentOnboardingForm
-              schools={schools}
-              onSubmit={handleOnboardingCreate}
-              onCancel={() => setShowCreateForm(false)}
-            />
-          ) : (
-            <StudentForm
-              title="Add student"
-              schools={schools}
-              onSubmit={(input) => handleCreate(input)}
-              onCancel={() => setShowCreateForm(false)}
-            />
-          ))}
+        {canWrite && showCreateForm && (profile?.role === 'tenant_admin' ? <StudentOnboardingForm schools={schools} onSubmit={handleOnboardingCreate} onCancel={() => setShowCreateForm(false)} /> : <StudentForm title="Add student" schools={schools} onSubmit={(input) => handleCreate(input)} onCancel={() => setShowCreateForm(false)} />)}
 
-        {profile?.role === 'tenant_admin' && showCsvImport && (
-          <StudentCsvImportPanel
-            onImported={handleCsvImported}
-            onCancel={() => setShowCsvImport(false)}
-          />
-        )}
+        {profile?.role === 'tenant_admin' && showCsvImport && <StudentCsvImportPanel onImported={handleCsvImported} onCancel={() => setShowCsvImport(false)} />}
 
-        {canWrite && editingStudent && (
-          <StudentForm
-            title={`Edit ${editingStudent.first_name} ${editingStudent.last_name}`}
-            schools={schools}
-            initial={editingStudent}
-            onSubmit={(input) => handleUpdate(editingStudent.id, input)}
-            onCancel={() => setEditingStudent(null)}
-          />
-        )}
+        {canWrite && editingStudent && <StudentForm title={`Edit ${editingStudent.first_name} ${editingStudent.last_name}`} schools={schools} initial={editingStudent} onSubmit={(input) => handleUpdate(editingStudent.id, input)} onCancel={() => setEditingStudent(null)} />}
 
-        {canWrite && qrStudent && (
-          <StudentQrCredentialPanel studentId={qrStudent.id} studentName={getStudentName(qrStudent)} onClose={() => setQrStudent(null)} />
-        )}
+        {canWrite && qrStudent && <StudentQrCredentialPanel studentId={qrStudent.id} studentName={getStudentName(qrStudent)} onClose={() => setQrStudent(null)} />}
 
         {canWrite && busStudent && (
           <InlineFormShell title={`${busStudent.bus_assignment_id ? 'Manage' : 'Assign'} bus for ${getStudentName(busStudent)}`}>
-            <StudentBusAssignmentForm assignment={existingBusAssignment(busStudent)} fixedStudentId={busStudent.id}
-              studentLabel={getStudentName(busStudent)} services={busServices} stops={routeStops}
-              defaultTenantId={profile?.tenant_id ?? null} onSubmit={saveBusAssignment} onCancel={() => setBusStudent(null)} />
-            {busStudent.bus_assignment_id && <Button type="button" variant="ghost" onClick={() => void removeBusAssignment(busStudent)}>Remove bus assignment</Button>}
+            <StudentBusAssignmentForm assignment={existingBusAssignment(busStudent)} fixedStudentId={busStudent.id} studentLabel={getStudentName(busStudent)} services={busServices} stops={routeStops} defaultTenantId={profile?.tenant_id ?? null} onSubmit={saveBusAssignment} onCancel={() => setBusStudent(null)} />
+            {busStudent.bus_assignment_id && (
+              <Button type="button" variant="ghost" onClick={() => void removeBusAssignment(busStudent)}>
+                Remove bus assignment
+              </Button>
+            )}
           </InlineFormShell>
         )}
 
@@ -348,125 +332,164 @@ export function AdminStudentsPage() {
           <label className="block text-sm font-semibold text-gray-700" htmlFor="student-search">
             Search students
           </label>
-          <input
-            id="student-search"
-            type="search"
-            value={list.searchInput}
-            onChange={(event) => list.setSearchInput(event.target.value)}
-            placeholder="Search by name, grade, status, or school"
-            className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
-          />
+          <input id="student-search" type="search" value={list.searchInput} onChange={(event) => list.setSearchInput(event.target.value)} placeholder="Search by name, grade, status, or school" className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base" />
         </div>
 
-        {list.loading && (
-          <DataState title="Loading students" message="Fetching student records visible to you." />
-        )}
+        {list.loading && <DataState title="Loading students" message="Fetching student records visible to you." />}
         {list.error && <DataState title="Unable to load students" message={list.error} />}
-        {!list.loading && !list.error && list.rows.length === 0 && list.totalCount === 0 && (
-          <DataState
-            title="No students added yet"
-            message="Add your first student to start building the roster."
-          />
-        )}
+        {!list.loading && !list.error && list.rows.length === 0 && list.totalCount === 0 && <DataState title="No students added yet" message="Add your first student to start building the roster." />}
         {!list.loading && !list.error && list.rows.length > 0 && (
           <section className="space-y-3">
-            <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-              <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
-                <thead className="bg-gray-50"><tr><th className="px-4 py-3">Student</th><th className="px-4 py-3">School</th><th className="px-4 py-3">Grade</th><th className="px-4 py-3">Bus transportation</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Actions</th></tr></thead>
-                <tbody className="divide-y divide-gray-100">
-            {list.rows.map((student) => (
-              <tr key={student.id}>
-                <td className="px-4 py-3 font-semibold text-navy-900">{getStudentName(student)}</td>
-                <td className="px-4 py-3 text-gray-600">{student.school_name ?? 'No school'}</td>
-                <td className="px-4 py-3">{student.grade ?? 'Not assigned'}</td>
-                <td className="px-4 py-3">{student.bus_number ? <div><p className="font-semibold text-navy-900">Bus {student.bus_number}</p><p className="text-xs text-gray-500">{student.route_code} / {student.trip_type}</p><p className="text-xs text-gray-500">{student.pickup_stop_name ?? 'No pickup stop'} → {student.dropoff_stop_name ?? 'No drop-off stop'}</p></div> : <span className="text-gray-500">No bus assigned</span>}</td>
-                <td className="px-4 py-3"><StatusPill tone={studentStatusTone[student.status]}>{student.status}</StatusPill></td>
-                <td className="px-4 py-3"><div className="flex flex-wrap gap-2">
-                    {canWrite && (
-                      <>
-                        <Link
-                          to={`/admin/students/${student.id}`}
-                          className="inline-flex items-center rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-navy-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
-                        >
-                          View
-                        </Link>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => {
-                            setShowCreateForm(false);
-                            setShowCsvImport(false);
-                            setEditingStudent(student);
-                            setWriteError(null);
-                            setSuccessMessage(null);
-                          }}
-                        >
-                          Edit
-                        </Button>
-                        {student.status === 'active' && <Button type="button" size="sm" variant="secondary" onClick={() => { setEditingStudent(null); setShowCreateForm(false); setShowCsvImport(false); setBusStudent(student); setWriteError(null); setSuccessMessage(null); }}>{student.bus_assignment_id ? 'Manage bus' : 'Assign bus'}</Button>}
-                        {student.status === 'active' && <Button type="button" size="sm" variant="secondary" onClick={() => { setEditingStudent(null); setShowCreateForm(false); setShowCsvImport(false); setBusStudent(null); setQrStudent(student); setWriteError(null); setSuccessMessage(null); }} data-testid="admin-manage-student-qr">QR badge</Button>}
-                        {student.status === 'active' ? (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => void handleDeactivate(student.id)}
-                            disabled={pendingStatusStudentId === student.id}
-                          >
-                            {pendingStatusStudentId === student.id ? 'Deactivating…' : 'Deactivate'}
-                          </Button>
+            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+              <table className="w-full min-w-[1120px] table-fixed text-left text-sm">
+                <thead className="border-b border-slate-200 bg-slate-50/80">
+                  <tr className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <th className="w-[20%] px-5 py-3">Student</th>
+                    <th className="w-[15%] px-5 py-3">School</th>
+                    <th className="w-[9%] px-5 py-3">Grade</th>
+                    <th className="w-[25%] px-5 py-3">Bus transportation</th>
+                    <th className="w-[9%] px-5 py-3">Status</th>
+                    <th className="w-[250px] px-5 py-3 text-right">
+                      <span className="sr-only">Student actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {list.rows.map((student) => (
+                    <tr key={student.id} className="h-[72px] transition-colors hover:bg-slate-50/70">
+                      <td className="overflow-hidden px-5 py-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-navy-50 text-navy-700">
+                            <UserRound className="h-4 w-4" aria-hidden />
+                          </span>
+                          <span className="truncate font-bold text-navy-900" title={getStudentName(student)}>
+                            {getStudentName(student)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="overflow-hidden px-5 py-3 text-slate-600">
+                        <span className="block truncate" title={student.school_name ?? 'No school'}>
+                          {student.school_name ?? 'No school'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-slate-600">{student.grade ?? '—'}</td>
+                      <td className="overflow-hidden px-5 py-3">
+                        {student.bus_number ? (
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-navy-900">Bus {student.bus_number}</p>
+                            <p className="truncate text-xs text-slate-500" title={`${student.route_code ?? 'No route'} / ${student.trip_type ?? 'No trip'} · ${student.pickup_stop_name ?? 'No pickup stop'} → ${student.dropoff_stop_name ?? 'No drop-off stop'}`}>
+                              {student.route_code ?? 'No route'} / {student.trip_type ?? 'No trip'} · {student.pickup_stop_name ?? 'No pickup stop'} → {student.dropoff_stop_name ?? 'No drop-off stop'}
+                            </p>
+                          </div>
                         ) : (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => void handleReactivate(student.id)}
-                            disabled={pendingStatusStudentId === student.id}
-                          >
-                            {pendingStatusStudentId === student.id ? 'Reactivating…' : 'Reactivate'}
-                          </Button>
+                          <span className="text-slate-500">No bus assigned</span>
                         )}
-                        {canDelete && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="danger"
-                            onClick={() => {
-                              setEditingStudent(null);
-                              setShowCreateForm(false);
-                              setShowCsvImport(false);
-                              setBusStudent(null);
-                              setQrStudent(null);
-                              setDeletingStudent(student);
-                              setWriteError(null);
-                              setSuccessMessage(null);
-                            }}
-                          >
-                            Delete
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </div></td>
-              </tr>
-            ))}
+                      </td>
+                      <td className="px-5 py-3">
+                        <StatusPill tone={studentStatusTone[student.status]}>{student.status}</StatusPill>
+                      </td>
+                      <td className="px-5 py-3">
+                        <div className="flex flex-nowrap items-center justify-end gap-1" data-testid="student-roster-actions">
+                          {canWrite && (
+                            <>
+                              <Link to={`/admin/students/${student.id}`} className={rosterActionClass} aria-label={`View ${getStudentName(student)}`} title="View student">
+                                <Eye className="h-4 w-4" aria-hidden />
+                              </Link>
+                              <button
+                                type="button"
+                                className={rosterActionClass}
+                                aria-label={`Edit ${getStudentName(student)}`}
+                                title="Edit student"
+                                onClick={() => {
+                                  setShowCreateForm(false);
+                                  setShowCsvImport(false);
+                                  setEditingStudent(student);
+                                  setWriteError(null);
+                                  setSuccessMessage(null);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" aria-hidden />
+                              </button>
+                              {student.status === 'active' && (
+                                <button
+                                  type="button"
+                                  className={rosterActionClass}
+                                  aria-label={`${student.bus_assignment_id ? 'Manage' : 'Assign'} bus for ${getStudentName(student)}`}
+                                  title={student.bus_assignment_id ? 'Manage bus assignment' : 'Assign bus'}
+                                  onClick={() => {
+                                    setEditingStudent(null);
+                                    setShowCreateForm(false);
+                                    setShowCsvImport(false);
+                                    setBusStudent(student);
+                                    setWriteError(null);
+                                    setSuccessMessage(null);
+                                  }}
+                                >
+                                  <BusFront className="h-4 w-4" aria-hidden />
+                                </button>
+                              )}
+                              {student.status === 'active' && (
+                                <button
+                                  type="button"
+                                  className={rosterActionClass}
+                                  aria-label={`Manage QR badge for ${getStudentName(student)}`}
+                                  title="Manage QR badge"
+                                  onClick={() => {
+                                    setEditingStudent(null);
+                                    setShowCreateForm(false);
+                                    setShowCsvImport(false);
+                                    setBusStudent(null);
+                                    setQrStudent(student);
+                                    setWriteError(null);
+                                    setSuccessMessage(null);
+                                  }}
+                                  data-testid="admin-manage-student-qr"
+                                >
+                                  <QrCode className="h-4 w-4" aria-hidden />
+                                </button>
+                              )}
+                              {student.status === 'active' ? (
+                                <button type="button" className={rosterActionClass} aria-label={`Deactivate ${getStudentName(student)}`} title="Deactivate student" onClick={() => void handleDeactivate(student.id)} disabled={pendingStatusStudentId === student.id}>
+                                  {pendingStatusStudentId === student.id ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Power className="h-4 w-4" aria-hidden />}
+                                </button>
+                              ) : (
+                                <button type="button" className={rosterActionClass} aria-label={`Reactivate ${getStudentName(student)}`} title="Reactivate student" onClick={() => void handleReactivate(student.id)} disabled={pendingStatusStudentId === student.id}>
+                                  {pendingStatusStudentId === student.id ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <RotateCcw className="h-4 w-4" aria-hidden />}
+                                </button>
+                              )}
+                              {canDelete && (
+                                <button
+                                  type="button"
+                                  className={destructiveRosterActionClass}
+                                  aria-label={`Delete ${getStudentName(student)}`}
+                                  title="Delete student"
+                                  onClick={() => {
+                                    setEditingStudent(null);
+                                    setShowCreateForm(false);
+                                    setShowCsvImport(false);
+                                    setBusStudent(null);
+                                    setQrStudent(null);
+                                    setDeletingStudent(student);
+                                    setWriteError(null);
+                                    setSuccessMessage(null);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" aria-hidden />
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
             <AdminPagination page={list.page} pageSize={list.pageSize} totalCount={list.totalCount} onPageChange={list.setPage} onPageSizeChange={list.setPageSize} />
           </section>
         )}
-        <ConfirmDialog
-          open={!!deletingStudent}
-          title={`Delete ${deletingStudent ? getStudentName(deletingStudent) : ''}`}
-          description="This permanently deletes the student record along with their guardian links and route assignments. This action cannot be undone."
-          confirmLabel="Delete student"
-          destructive
-          busy={deleting}
-          onConfirm={() => void handleDeleteStudent()}
-          onCancel={() => setDeletingStudent(null)}
-        />
+        <ConfirmDialog open={!!deletingStudent} title={`Delete ${deletingStudent ? getStudentName(deletingStudent) : ''}`} description="This permanently deletes the student record along with their guardian links and route assignments. This action cannot be undone." confirmLabel="Delete student" destructive busy={deleting} onConfirm={() => void handleDeleteStudent()} onCancel={() => setDeletingStudent(null)} />
       </div>
     </DashboardLayout>
   );
