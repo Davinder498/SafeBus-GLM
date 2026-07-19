@@ -36,7 +36,7 @@ create policy "routes insert tenant admin"
   with check (
     public.is_tenant_admin()
     and tenant_id = public.current_tenant_id()
-    and public.can_write_school(tenant_id, school_id)
+    and public.can_write_optional_school(tenant_id, school_id)
   );
 
 create policy "routes update tenant admin"
@@ -48,7 +48,7 @@ create policy "routes update tenant admin"
   with check (
     public.is_tenant_admin()
     and tenant_id = public.current_tenant_id()
-    and public.can_write_school(tenant_id, school_id)
+    and public.can_write_optional_school(tenant_id, school_id)
   );
 
 create policy "route stops insert tenant admin"

@@ -1,8 +1,9 @@
--- Route/trip pattern structural security regression for migration 0045.
--- Run only against hosted Supabase DEV after applying 0045.
+-- Route/trip pattern structural security regression for migrations 0045-0047.
+-- Run only against hosted Supabase DEV after applying the current migrations.
 do $$
 declare
   v_definition text;
+  v_policy_definition text;
   v_security_definer boolean;
 begin
   if to_regclass('public.route_trip_patterns') is null then
@@ -25,6 +26,42 @@ begin
       and not attisdropped
   ) <> 3 then
     raise exception 'Route kind/color/readiness columns are incomplete';
+  end if;
+
+  select pg_get_expr(policy.polwithcheck, policy.polrelid)
+  into v_policy_definition
+  from pg_policy policy
+  where policy.polrelid = 'public.routes'::regclass
+    and policy.polname = 'routes insert tenant admin';
+  if v_policy_definition is null
+    or position('can_write_optional_school' in v_policy_definition) = 0 then
+    raise exception 'Tenant-admin route inserts do not support school-less routes';
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint constraint_row
+    where constraint_row.contype = 'f'
+      and constraint_row.conrelid = 'public.route_stops'::regclass
+      and constraint_row.confrelid = 'public.routes'::regclass
+      and constraint_row.conkey = array[(
+        select attnum::smallint
+        from pg_attribute
+        where attrelid = 'public.route_stops'::regclass
+          and attname = 'route_id'
+          and not attisdropped
+      )]::smallint[]
+      and constraint_row.confkey = array[(
+        select attnum::smallint
+        from pg_attribute
+        where attrelid = 'public.routes'::regclass
+          and attname = 'id'
+          and not attisdropped
+      )]::smallint[]
+      and constraint_row.confdeltype = 'c'
+      and constraint_row.convalidated
+  ) then
+    raise exception 'route_stops.route_id foreign key to routes.id is missing or invalid';
   end if;
 
   if not exists (

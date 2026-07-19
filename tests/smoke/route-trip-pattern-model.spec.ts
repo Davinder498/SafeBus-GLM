@@ -103,14 +103,18 @@ test.describe('route corridor and named trips', () => {
     await page.getByLabel('Trip name').nth(0).fill('Up');
     await page.getByLabel('Trip name').nth(1).fill('Down');
     await page.getByRole('button', { name: 'Add stop' }).click();
-    await page.getByRole('button', { name: 'Add stop' }).click();
+    await expect(page.getByRole('button', { name: 'Add stop' })).toBeDisabled();
+    await page.getByLabel('Stop name').fill('Point A');
+    await page.getByLabel('Latitude').fill('51.0447');
+    await page.getByLabel('Longitude').fill('-114.0719');
+    await page.getByRole('button', { name: 'Save stop details' }).click();
 
-    await page.getByLabel('Stop name').nth(0).fill('Point A');
-    await page.getByLabel('Latitude').nth(0).fill('51.0447');
-    await page.getByLabel('Longitude').nth(0).fill('-114.0719');
-    await page.getByLabel('Stop name').nth(1).fill('Point B');
-    await page.getByLabel('Latitude').nth(1).fill('51.055');
-    await page.getByLabel('Longitude').nth(1).fill('-114.05');
+    await expect(page.getByRole('button', { name: 'Add stop' })).toBeEnabled();
+    await page.getByRole('button', { name: 'Add stop' }).click();
+    await page.getByLabel('Stop name').fill('Point B');
+    await page.getByLabel('Latitude').fill('51.055');
+    await page.getByLabel('Longitude').fill('-114.05');
+    await page.getByRole('button', { name: 'Save stop details' }).click();
     await page.getByLabel('Status').first().selectOption('active');
     await page.getByRole('button', { name: 'Save route definition' }).click();
 
@@ -136,18 +140,18 @@ test.describe('route corridor and named trips', () => {
     await page.getByLabel('Trip name').nth(0).fill('Museum Outbound');
     await page.getByLabel('Trip name').nth(1).fill('Museum Home');
 
-    for (let index = 0; index < 3; index += 1) {
-      await page.getByRole('button', { name: 'Add stop' }).click();
-    }
     const stopNames = ['School', 'Museum', 'Lunch stop'];
     for (let index = 0; index < stopNames.length; index += 1) {
-      await page.getByLabel('Stop name').nth(index).fill(stopNames[index]);
-      await page.getByLabel('Latitude').nth(index).fill(String(51.04 + index * 0.01));
-      await page.getByLabel('Longitude').nth(index).fill(String(-114.07 + index * 0.01));
+      await page.getByRole('button', { name: 'Add stop' }).click();
+      await page.getByLabel('Stop name').fill(stopNames[index]);
+      await page.getByLabel('Latitude').fill(String(51.04 + index * 0.01));
+      await page.getByLabel('Longitude').fill(String(-114.07 + index * 0.01));
+      await page.getByRole('button', { name: 'Save stop details' }).click();
     }
 
     await page.getByRole('button', { name: 'Down' }).first().click();
-    await expect(page.getByLabel('Stop name').first()).toHaveValue('Museum');
+    await page.getByRole('button', { name: /Start stop/ }).click();
+    await expect(page.getByLabel('Stop name')).toHaveValue('Museum');
     await page.getByLabel('Status').first().selectOption('active');
     await page.getByRole('button', { name: 'Save route definition' }).click();
 

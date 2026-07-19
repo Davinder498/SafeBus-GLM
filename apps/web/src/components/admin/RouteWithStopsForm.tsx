@@ -19,6 +19,7 @@ import {
   normalizeStopOrders,
   ROUTE_COLOR_PALETTE,
   routeDefinitionIssue,
+  stopDraftIssue,
 } from '@/utils/routeDefinition';
 
 type SubmitState = 'idle' | 'saving';
@@ -107,6 +108,14 @@ export function RouteWithStopsForm({
   const [selectedStopKey, setSelectedStopKey] = useState<string | null>(
     stops[0]?.clientKey ?? null,
   );
+  const [completedStopKeys, setCompletedStopKeys] = useState<Set<string>>(
+    () =>
+      new Set(
+        stops
+          .filter((stop) => stopDraftIssue(stop) === null)
+          .map((stop) => stop.clientKey),
+      ),
+  );
   const [formError, setFormError] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
   const unavailableColors = new Set(
@@ -115,6 +124,7 @@ export function RouteWithStopsForm({
       .map((item) => item.map_color?.toUpperCase())
       .filter((color): color is string => Boolean(color)),
   );
+  const incompleteStop = stops.find((stop) => !completedStopKeys.has(stop.clientKey));
 
   function updateTrip(
     direction: 'forward' | 'reverse',
@@ -131,9 +141,19 @@ export function RouteWithStopsForm({
     setStops((previous) =>
       previous.map((stop) => (stop.clientKey === clientKey ? { ...stop, ...patch } : stop)),
     );
+    setCompletedStopKeys((previous) => {
+      const next = new Set(previous);
+      next.delete(clientKey);
+      return next;
+    });
   }
 
   function addStop() {
+    if (incompleteStop) {
+      setSelectedStopKey(incompleteStop.clientKey);
+      setFormError('Save the current stop details before adding another stop.');
+      return;
+    }
     const clientKey = `new-${crypto.randomUUID()}`;
     setStops((previous) => [
       ...previous,
@@ -148,6 +168,7 @@ export function RouteWithStopsForm({
       },
     ]);
     setSelectedStopKey(clientKey);
+    setFormError(null);
   }
 
   function removeStop(clientKey: string) {
@@ -159,7 +180,38 @@ export function RouteWithStopsForm({
         return { ...trip, stopTimes };
       }) as [RouteDefinitionTripInput, RouteDefinitionTripInput],
     );
+    setCompletedStopKeys((previous) => {
+      const next = new Set(previous);
+      next.delete(clientKey);
+      return next;
+    });
     if (selectedStopKey === clientKey) setSelectedStopKey(null);
+  }
+
+  function selectStop(clientKey: string) {
+    if (
+      selectedStopKey &&
+      selectedStopKey !== clientKey &&
+      !completedStopKeys.has(selectedStopKey)
+    ) {
+      setFormError('Save the current stop details before moving to another stop.');
+      return;
+    }
+    setSelectedStopKey(clientKey);
+    setFormError(null);
+  }
+
+  function saveStopDetails(clientKey: string) {
+    const stop = stops.find((item) => item.clientKey === clientKey);
+    if (!stop) return;
+    const issue = stopDraftIssue(stop);
+    if (issue) {
+      setSelectedStopKey(clientKey);
+      setFormError(`Stop ${stop.stopOrder}: ${issue}`);
+      return;
+    }
+    setCompletedStopKeys((previous) => new Set(previous).add(clientKey));
+    setFormError(null);
   }
 
   function moveStop(index: number, delta: -1 | 1) {
@@ -194,6 +246,13 @@ export function RouteWithStopsForm({
     }
     if (status === 'active' && unavailableColors.has(mapColor.toUpperCase())) {
       setFormError('Choose a color that is not used by another active route.');
+      return;
+    }
+    if (incompleteStop) {
+      setSelectedStopKey(incompleteStop.clientKey);
+      setFormError(
+        `Save stop ${incompleteStop.stopOrder} details before saving the route definition.`,
+      );
       return;
     }
     const issue = routeDefinitionIssue(stops);
@@ -331,8 +390,25 @@ export function RouteWithStopsForm({
             <h3 className="text-base font-bold text-navy-900">Stops ({stops.length})</h3>
             <p className="mt-1 text-sm text-gray-600">The first and last active stops are always the route terminals.</p>
           </div>
-          <Button type="button" variant="secondary" size="sm" onClick={addStop}>Add stop</Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={addStop}
+            disabled={Boolean(incompleteStop)}
+          >
+            Add stop
+          </Button>
         </div>
+        <p className="mt-2 text-xs text-gray-500">
+          Save each stop in this form before adding or opening another. Nothing is written to the
+          database until you select Save route definition.
+        </p>
+        {incompleteStop && (
+          <p className="mt-2 text-xs font-semibold text-warning-700">
+            Complete and save stop {incompleteStop.stopOrder} to enable Add stop.
+          </p>
+        )}
 
         <div className="mt-4 space-y-3">
           {stops.map((stop, index) => (
@@ -341,8 +417,25 @@ export function RouteWithStopsForm({
               className={`rounded-lg border p-4 ${selectedStopKey === stop.clientKey ? 'border-brand-500 bg-brand-50' : 'border-gray-200 bg-gray-50'}`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <button type="button" className="text-left text-sm font-bold text-navy-900" onClick={() => setSelectedStopKey(stop.clientKey)}>
-                  {index === 0 ? 'Start stop' : index === stops.length - 1 ? 'End stop' : `Stop ${index + 1}`}
+                <button
+                  type="button"
+                  className="text-left text-sm font-bold text-navy-900"
+                  onClick={() => selectStop(stop.clientKey)}
+                >
+                  {index === 0
+                    ? 'Start stop'
+                    : index === stops.length - 1
+                      ? 'End stop'
+                      : `Stop ${index + 1}`}
+                  <span
+                    className={`ml-2 text-xs font-semibold ${
+                      completedStopKeys.has(stop.clientKey)
+                        ? 'text-success-700'
+                        : 'text-warning-700'
+                    }`}
+                  >
+                    {completedStopKeys.has(stop.clientKey) ? 'Saved in form' : 'Needs completion'}
+                  </span>
                 </button>
                 <div className="flex gap-1">
                   <Button type="button" size="sm" variant="secondary" onClick={() => moveStop(index, -1)} disabled={index === 0}>Up</Button>
@@ -350,42 +443,106 @@ export function RouteWithStopsForm({
                   <Button type="button" size="sm" variant="secondary" onClick={() => removeStop(stop.clientKey)}>Remove</Button>
                 </div>
               </div>
-              <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <label className={labelClassName}>
-                  Stop name
-                  <input className={fieldClassName} value={stop.stopName} onChange={(e) => updateStop(stop.clientKey, { stopName: e.target.value })} />
-                </label>
-                <label className={labelClassName}>
-                  School stop (optional)
-                  <select className={fieldClassName} value={stop.schoolId ?? ''} onChange={(e) => updateStop(stop.clientKey, { schoolId: e.target.value || null })}>
-                    <option value="">Regular stop</option>
-                    {schools.filter((school) => school.status === 'active').map((school) => (
-                      <option key={school.id} value={school.id}>{school.name}</option>
+              {selectedStopKey === stop.clientKey && (
+                <>
+                  <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    <label className={labelClassName}>
+                      Stop name
+                      <input
+                        className={fieldClassName}
+                        value={stop.stopName}
+                        maxLength={120}
+                        onChange={(event) =>
+                          updateStop(stop.clientKey, { stopName: event.target.value })
+                        }
+                      />
+                    </label>
+                    <label className={labelClassName}>
+                      School stop (optional)
+                      <select
+                        className={fieldClassName}
+                        value={stop.schoolId ?? ''}
+                        onChange={(event) =>
+                          updateStop(stop.clientKey, {
+                            schoolId: event.target.value || null,
+                          })
+                        }
+                      >
+                        <option value="">Regular stop</option>
+                        {schools
+                          .filter((school) => school.status === 'active')
+                          .map((school) => (
+                            <option key={school.id} value={school.id}>
+                              {school.name}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                    <label className={labelClassName}>
+                      Latitude
+                      <input
+                        type="number"
+                        step="any"
+                        className={fieldClassName}
+                        value={stop.latitude ?? ''}
+                        onChange={(event) =>
+                          updateStop(stop.clientKey, {
+                            latitude:
+                              event.target.value === '' ? null : Number(event.target.value),
+                          })
+                        }
+                      />
+                    </label>
+                    <label className={labelClassName}>
+                      Longitude
+                      <input
+                        type="number"
+                        step="any"
+                        className={fieldClassName}
+                        value={stop.longitude ?? ''}
+                        onChange={(event) =>
+                          updateStop(stop.clientKey, {
+                            longitude:
+                              event.target.value === '' ? null : Number(event.target.value),
+                          })
+                        }
+                      />
+                    </label>
+                    {trips.map((trip) => (
+                      <label key={trip.direction} className={labelClassName}>
+                        {trip.displayName || trip.direction} time
+                        <input
+                          type="time"
+                          className={fieldClassName}
+                          value={trip.stopTimes[stop.clientKey] ?? ''}
+                          onChange={(event) => {
+                            updateTrip(trip.direction, {
+                              stopTimes: {
+                                ...trip.stopTimes,
+                                [stop.clientKey]: event.target.value || null,
+                              },
+                            });
+                            setCompletedStopKeys((previous) => {
+                              const next = new Set(previous);
+                              next.delete(stop.clientKey);
+                              return next;
+                            });
+                          }}
+                        />
+                      </label>
                     ))}
-                  </select>
-                </label>
-                <label className={labelClassName}>
-                  Latitude
-                  <input type="number" step="any" className={fieldClassName} value={stop.latitude ?? ''} onChange={(e) => updateStop(stop.clientKey, { latitude: e.target.value === '' ? null : Number(e.target.value) })} />
-                </label>
-                <label className={labelClassName}>
-                  Longitude
-                  <input type="number" step="any" className={fieldClassName} value={stop.longitude ?? ''} onChange={(e) => updateStop(stop.clientKey, { longitude: e.target.value === '' ? null : Number(e.target.value) })} />
-                </label>
-                {trips.map((trip) => (
-                  <label key={trip.direction} className={labelClassName}>
-                    {trip.displayName || trip.direction} time
-                    <input
-                      type="time"
-                      className={fieldClassName}
-                      value={trip.stopTimes[stop.clientKey] ?? ''}
-                      onChange={(e) => updateTrip(trip.direction, {
-                        stopTimes: { ...trip.stopTimes, [stop.clientKey]: e.target.value || null },
-                      })}
-                    />
-                  </label>
-                ))}
-              </div>
+                  </div>
+                  <div className="mt-4 flex justify-end">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => saveStopDetails(stop.clientKey)}
+                    >
+                      Save stop details
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           ))}
           {stops.length === 0 && (
@@ -398,7 +555,7 @@ export function RouteWithStopsForm({
             stops={stops}
             selectedKey={selectedStopKey}
             tileConfig={mapTileConfig}
-            onSelect={setSelectedStopKey}
+            onSelect={selectStop}
             onPlace={(clientKey, latitude, longitude) =>
               updateStop(clientKey, { latitude, longitude })
             }

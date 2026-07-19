@@ -5,6 +5,7 @@ import {
   normalizeStopOrders,
   orderedStopsForDirection,
   routeDefinitionIssue,
+  stopDraftIssue,
 } from './routeDefinition';
 
 function stop(
@@ -66,6 +67,16 @@ describe('route definition model', () => {
     expect(routeDefinitionIssue([stop('A', 1), stop('B', 3)]))
       .toContain('contiguous');
     expect(routeDefinitionIssue([stop('A', 1), stop('B', 2)])).toBeNull();
+  });
+
+  it('requires each stop draft to have a name and complete coordinates', () => {
+    expect(stopDraftIssue({ ...stop('A', 1), stopName: '   ' })).toBe(
+      'Enter a stop name.',
+    );
+    expect(stopDraftIssue(stop('A', 1, null, -114))).toContain(
+      'valid latitude and longitude',
+    );
+    expect(stopDraftIssue(stop('A', 1))).toBeNull();
   });
 
   it('chooses an unused persistent color and ignores the route being edited', () => {

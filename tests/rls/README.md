@@ -394,14 +394,16 @@ authorization paths that mocks cannot validate.
 
 ## Route and Named Trip Pattern Coverage
 
-After applying `0045_route_trip_pattern_foundation.sql` to hosted DEV, run:
+After applying `0045_route_trip_pattern_foundation.sql` and the corrective
+`0047_route_definition_rls_and_route_stop_fk_repair.sql` to hosted DEV, run:
 
 ```bash
 pnpm test:rls:dev -- tests/rls/route-trip-pattern-rls.sql
 ```
 
 The script verifies the two-direction schema, tenant-admin-only atomic writer,
-trip-pattern references on assignments and runs, direction-aware student stop
-validation, linked-guardian geometry boundary, RLS enablement, and anonymous
-denial. Apply `0046` only after its preflight block confirms every active route
-is map-ready and every active trip schedule has been reviewed.
+school-less route writes, the route-stop foreign key, trip-pattern references
+on assignments and runs, direction-aware student stop validation,
+linked-guardian geometry boundary, RLS enablement, and anonymous denial. Apply
+`0046` only after its preflight block confirms every active route is map-ready
+and every active trip schedule has been reviewed.
