@@ -6,8 +6,9 @@ apply this migration or change production Auth settings without human approval.
 ## Hosted DEV setup
 
 1. Apply `supabase/migrations/0048_invitation_password_activation.sql`, followed
-   by `supabase/migrations/0049_atomic_platform_tenant_invitation.sql`, in the
-   hosted Supabase DEV SQL Editor.
+   by `supabase/migrations/0049_atomic_platform_tenant_invitation.sql` and
+   `supabase/migrations/0050_atomic_tenant_member_invitation.sql`, in the hosted
+   Supabase DEV SQL Editor.
 2. In Supabase Auth URL configuration, allow the deployed DEV callback:
    `https://<dev-app-host>/accept-invitation`.
 3. Set the server-side Netlify environment variable
@@ -43,6 +44,22 @@ Repeat for a tenant admin, driver, and guardian:
    form for an active account.
 10. Resend an expired invitation and confirm the replacement link uses the same
     password-setup page.
+
+## Guardian and driver invitation reliability
+
+1. Sign in as an active tenant admin and invite a guardian without selecting a
+   student. Confirm the response names the recipient and one pending invitation,
+   profile, and guardian record appear.
+2. Invite a guardian while selecting an active same-tenant student. Confirm the
+   guardian, profile, invitation audit, and student link all appear together.
+3. Attempt the same operation with a cross-tenant or inactive student through
+   the guarded DEV database test. Confirm no profile, guardian, invitation, or
+   link remains after the rejection.
+4. Resend an invitation for an existing unconfirmed guardian or driver. Confirm
+   the existing profile and links remain and a replacement email is sent.
+5. Simulate an HTML 502 response from the serverless endpoint. Confirm the UI
+   reports the HTTP status, retains the entered form data, and tells the admin
+   to retry once instead of claiming the member was created.
 
 ## Platform tenant-admin lifecycle
 
@@ -86,12 +103,14 @@ pnpm test
 pnpm test:rls
 pnpm exec playwright test tests/smoke/invitation-password-activation.spec.ts --project=desktop-chromium
 pnpm exec playwright test tests/smoke/platform-tenant-invitation-atomicity.spec.ts
+pnpm exec playwright test tests/smoke/guardian-member-invitation.spec.ts
 ```
 
-After applying migrations `0048` and `0049` to hosted Supabase DEV, run the
-guarded database tests only against DEV:
+After applying migrations `0048`, `0049`, and `0050` to hosted Supabase DEV,
+run the guarded database tests only against DEV:
 
 ```bash
 pnpm test:rls:dev -- tests/rls/invitation-password-activation-rls.sql
 pnpm test:rls:dev -- tests/rls/atomic-platform-tenant-invitation-rls.sql
+pnpm test:rls:dev -- tests/rls/atomic-tenant-member-invitation-rls.sql
 ```

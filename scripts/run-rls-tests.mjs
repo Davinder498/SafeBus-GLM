@@ -29,6 +29,7 @@ const DEFAULT_RLS_FILES = [
   'tests/rls/route-trip-pattern-rls.sql',
   'tests/rls/invitation-password-activation-rls.sql',
   'tests/rls/atomic-platform-tenant-invitation-rls.sql',
+  'tests/rls/atomic-tenant-member-invitation-rls.sql',
 ];
 
 function fail(message) {

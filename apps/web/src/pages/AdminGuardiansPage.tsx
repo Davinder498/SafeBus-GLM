@@ -48,7 +48,7 @@ export function AdminGuardiansPage() {
     setWriteError(null);
     setMessage(null);
     try {
-      await inviteTenantMember({
+      const result = await inviteTenantMember({
         role: 'guardian',
         firstName: inviteForm.firstName,
         lastName: inviteForm.lastName,
@@ -60,7 +60,7 @@ export function AdminGuardiansPage() {
       });
       setInviteForm(emptyInvite);
       setShowInviteForm(false);
-      setMessage('Guardian invitation sent. The email link lets them activate their account securely.');
+      setMessage(`Guardian invitation sent to ${result.recipientEmail}. The email link lets them activate their account securely.`);
       await list.reload();
     } catch (error) {
       setWriteError(error instanceof Error ? error.message : 'Unable to invite guardian.');

@@ -9,7 +9,15 @@ async function callOnboarding<T>(body: Record<string, unknown>): Promise<T> {
   if (!token) throw new Error('Sign in required.');
   const response = await fetch('/.netlify/functions/safebus-onboarding', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(typeof payload.error === 'string' ? payload.error : 'Onboarding request failed.');
+  if (!response.ok) {
+    throw new Error(
+      typeof payload.error === 'string'
+        ? payload.error
+        : response.status >= 500
+          ? `The onboarding service returned HTTP ${response.status} before confirming completion. No new record was confirmed; retry once.`
+          : 'The onboarding request was rejected. Review the form and try again.',
+    );
+  }
   return payload as T;
 }
 
@@ -36,7 +44,7 @@ export interface InviteTenantMemberInput {
   postalCode?: string;
   studentLinks?: Array<{ studentId: string; relationship: string }>;
 }
-export async function inviteTenantMember(input: InviteTenantMemberInput) { return callOnboarding<{ status: string; guardianId: string | null }>({ kind: 'inviteMember', ...input }); }
+export async function inviteTenantMember(input: InviteTenantMemberInput) { return callOnboarding<{ status: 'sent' | 'resent' | 'recovery_sent'; guardianId: string | null; driverId: string | null; recipientEmail: string }>({ kind: 'inviteMember', ...input }); }
 export async function updateInvitation(invitationId: string, action: 'resend' | 'cancel') { return callOnboarding<{ status: string }>({ kind: 'invitationAction', invitationId, action }); }
 export async function updateTenantLifecycle(tenantId: string, status: 'active' | 'suspended' | 'disabled') { return callOnboarding<{ status: string }>({ kind: 'tenantLifecycle', tenantId, status }); }
 export async function updateTenantAdminLifecycle(profileId: string, status: 'active' | 'disabled') { return callOnboarding<{ status: string }>({ kind: 'tenantAdminLifecycle', profileId, status }); }
