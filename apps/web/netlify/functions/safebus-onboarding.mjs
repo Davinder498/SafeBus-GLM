@@ -80,6 +80,100 @@ async function inviteAuthUser(admin, email, fullName, redirectTo, existingProfil
   throw new Error('Unable to send invitation. The email may already belong to another SafeBus account.');
 }
 
+async function sendInitialTenantAdminInvitation(ctx, email, fullName, redirectTo) {
+  const { data: orphanAuthUser, error: lookupError } = await ctx.user.rpc(
+    'platform_find_unprofiled_auth_user',
+    { p_email: email },
+  );
+  if (lookupError) {
+    return {
+      error: json(500, {
+        error:
+          'Invitation setup is unavailable because the required database update has not been applied.',
+      }),
+    };
+  }
+
+  if (orphanAuthUser?.id) {
+    if (orphanAuthUser.emailConfirmed) {
+      const unbanned = await ctx.admin.auth.admin.updateUserById(orphanAuthUser.id, {
+        ban_duration: 'none',
+        user_metadata: { full_name: fullName },
+      });
+      if (unbanned.error) {
+        return {
+          error: json(400, {
+            error:
+              'The email belongs to an unfinished account, but SafeBus could not prepare it for another invitation.',
+          }),
+        };
+      }
+      const recovered = await ctx.admin.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
+      if (recovered.error) {
+        return {
+          error: json(400, {
+            error:
+              'The invitation email was not sent. No tenant was created. Retry later or use another administrator email.',
+          }),
+        };
+      }
+      return {
+        userId: orphanAuthUser.id,
+        status: 'recovery_sent',
+        createdAuthUser: false,
+      };
+    }
+
+    // An unconfirmed orphan has no SafeBus profile or accepted identity. Remove
+    // the stale provider row so Supabase can issue a fresh invite token and use
+    // the normal Invite User email template.
+    const removed = await ctx.admin.auth.admin.deleteUser(orphanAuthUser.id);
+    if (removed.error) {
+      return {
+        error: json(400, {
+          error:
+            'The email belongs to an unfinished account that could not be safely replaced. No invitation was sent.',
+        }),
+      };
+    }
+    const options = { data: { full_name: fullName } };
+    if (redirectTo) options.redirectTo = redirectTo;
+    const reinvited = await ctx.admin.auth.admin.inviteUserByEmail(email, options);
+    if (reinvited.error || !reinvited.data?.user?.id) {
+      return {
+        error: json(400, {
+          error:
+            'The invitation email was not sent. No tenant was created. Retry later or use another administrator email.',
+        }),
+      };
+    }
+    return {
+      userId: reinvited.data.user.id,
+      status: 'sent',
+      createdAuthUser: true,
+    };
+  }
+
+  const options = { data: { full_name: fullName } };
+  if (redirectTo) options.redirectTo = redirectTo;
+  const invited = await ctx.admin.auth.admin.inviteUserByEmail(email, options);
+  if (invited.error || !invited.data?.user?.id) {
+    return {
+      error: json(409, {
+        error:
+          'The invitation email was not sent and no tenant was created. This email may already belong to another SafeBus account.',
+      }),
+    };
+  }
+  return {
+    userId: invited.data.user.id,
+    status: 'sent',
+    createdAuthUser: true,
+  };
+}
+
 async function createTenant(event, body) {
   const ctx = await requireCaller(event, ['platform_super_admin']);
   if (ctx.error) return ctx.error;
@@ -89,22 +183,60 @@ async function createTenant(event, body) {
   const city = clean(body.city);
   const adminName = clean(body.adminName);
   const email = clean(body.adminEmail).toLowerCase();
-  if (!tenantName || !adminName || !email) return json(400, { error: 'Tenant name, admin name, and admin email are required.' });
-
-  const { data: tenant, error: tenantError } = await ctx.admin.from('tenants').insert({ name: tenantName, type: tenantType, status: 'active' }).select('id, name, status').single();
-  if (tenantError) return json(400, { error: 'Unable to create tenant.' });
-  let school = null;
-  if (schoolName) {
-    const { data, error } = await ctx.admin.from('schools').insert({ tenant_id: tenant.id, name: schoolName, city: city || null, province: 'AB', status: 'active' }).select('id, name').single();
-    if (error) return json(400, { error: 'Tenant was created, but the initial school could not be created.' });
-    school = data;
+  if (!tenantName || !adminName || !email) {
+    return json(400, {
+      error: 'Tenant name, admin name, and admin email are required. No invitation was sent.',
+    });
   }
+  if (
+    tenantName.length > 200 ||
+    schoolName.length > 200 ||
+    city.length > 100 ||
+    adminName.length > 200 ||
+    email.length > 320 ||
+    !EMAIL_PATTERN.test(email)
+  ) {
+    return json(400, {
+      error: 'Enter valid tenant and administrator details. No invitation was sent.',
+    });
+  }
+
   const redirectTo = invitationRedirectUrl(event);
-  const invited = await inviteAuthUser(ctx.admin, email, adminName, redirectTo);
-  const { error: profileError } = await ctx.admin.from('profiles').upsert({ id: invited.user.id, tenant_id: tenant.id, school_id: school?.id ?? null, full_name: adminName, email, role: 'tenant_admin', status: 'invited' }, { onConflict: 'id' });
-  if (profileError) return json(400, { error: 'Tenant was created, but the admin profile could not be provisioned.' });
-  await ctx.admin.from('tenant_onboarding_invitations').insert({ tenant_id: tenant.id, email, full_name: adminName, role: 'tenant_admin', status: 'pending', invited_profile_id: invited.user.id, invited_by_profile_id: ctx.caller.id, last_sent_at: new Date().toISOString() });
-  return json(200, { tenant, school, invitationStatus: invited.status });
+  const invitation = await sendInitialTenantAdminInvitation(
+    ctx,
+    email,
+    adminName,
+    redirectTo,
+  );
+  if (invitation.error) return invitation.error;
+
+  const { data: setup, error: setupError } = await ctx.user.rpc(
+    'platform_finalize_tenant_invitation',
+    {
+      p_auth_user_id: invitation.userId,
+      p_tenant_name: tenantName,
+      p_tenant_type: tenantType,
+      p_school_name: schoolName || null,
+      p_city: city || null,
+      p_admin_name: adminName,
+      p_admin_email: email,
+    },
+  );
+  if (setupError || !setup?.tenant?.id) {
+    if (invitation.createdAuthUser) {
+      await ctx.admin.auth.admin.deleteUser(invitation.userId);
+    }
+    return json(500, {
+      error:
+        'The invitation could not be completed, so the tenant was not created. Retry the onboarding request.',
+    });
+  }
+
+  return json(200, {
+    ...setup,
+    invitationStatus: invitation.status,
+    recipientEmail: email,
+  });
 }
 
 async function inviteMember(event, body) {

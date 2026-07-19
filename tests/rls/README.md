@@ -22,6 +22,10 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
   password-backed self-activation of invited profiles, invitation audit
   activation, cross-profile isolation, disabled-account denial, and anonymous
   execute denial.
+- `atomic-platform-tenant-invitation-rls.sql`: self-contained coverage for
+  exact-email orphan Auth recovery, atomic tenant/admin/invitation creation,
+  rollback after invalid input, suppression of empty onboarding attempts, and
+  platform-super-admin-only execution.
 - `guardian-visibility-rls.sql`: uses the student-roster seed data to test
   `get_guardian_student_route_visibility()` and guardian SELECT policies.
 - `guardian-linking-rls.sql`: tests the `admin_link_student_guardian()` and

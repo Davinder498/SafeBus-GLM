@@ -28,6 +28,7 @@ const DEFAULT_RLS_FILES = [
   'tests/rls/student-csv-import-rls.sql',
   'tests/rls/route-trip-pattern-rls.sql',
   'tests/rls/invitation-password-activation-rls.sql',
+  'tests/rls/atomic-platform-tenant-invitation-rls.sql',
 ];
 
 function fail(message) {

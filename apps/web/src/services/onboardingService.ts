@@ -18,7 +18,7 @@ export interface OnboardingInvitation { id: string; tenant_id: string; email: st
 
 export async function fetchPlatformTenantSummaries(): Promise<PlatformTenantSummary[]> { const { data, error } = await client().rpc('get_platform_tenant_onboarding_summary'); if (error) throw new Error('Unable to load tenant onboarding summary.'); return (data ?? []) as PlatformTenantSummary[]; }
 export async function fetchInvitations(): Promise<OnboardingInvitation[]> { const { data, error } = await client().from('tenant_onboarding_invitations').select('id, tenant_id, email, full_name, role, status, invited_profile_id, last_sent_at, cancelled_at, created_at').order('created_at', { ascending: false }); if (error) throw new Error('Unable to load invitations.'); return (data ?? []) as OnboardingInvitation[]; }
-export async function createTenantWithAdmin(input: { tenantName: string; tenantType: string; schoolName: string; city: string; adminName: string; adminEmail: string }) { return callOnboarding<{ tenant: { id: string; name: string } }>({ kind: 'createTenant', ...input }); }
+export async function createTenantWithAdmin(input: { tenantName: string; tenantType: string; schoolName: string; city: string; adminName: string; adminEmail: string }) { return callOnboarding<{ tenant: { id: string; name: string }; school: { id: string; name: string } | null; invitationStatus: 'sent' | 'resent' | 'recovery_sent'; recipientEmail: string }>({ kind: 'createTenant', ...input }); }
 export interface InviteTenantMemberInput {
   role: 'driver' | 'guardian';
   firstName: string;
