@@ -150,7 +150,7 @@ export function AdminGuardiansPage() {
                     <th className="w-[28%] px-5 py-3">Email</th>
                     <th className="w-[22%] px-5 py-3">Phone</th>
                     <th className="w-[12%] px-5 py-3">Students</th>
-                    <th className="w-[8%] px-5 py-3 text-right"><span className="sr-only">View</span></th>
+                    <th className="w-[8%] px-5 py-3 text-right"><span className="sr-only">Guardian actions</span></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -159,11 +159,11 @@ export function AdminGuardiansPage() {
                       <td className="overflow-hidden px-5 py-3">
                         <div className="flex min-w-0 items-center gap-3">
                           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-navy-50 text-navy-700"><UserRound className="h-4 w-4" aria-hidden /></span>
-                          <span className="truncate font-bold text-navy-900">{guardianName(guardian)}</span>
+                          <span className="truncate font-bold text-navy-900" title={guardianName(guardian)}>{guardianName(guardian)}</span>
                         </div>
                       </td>
-                      <td className="overflow-hidden px-5 py-3"><span className="flex min-w-0 items-center gap-2 text-slate-600"><Mail className="h-4 w-4 shrink-0 text-slate-400" aria-hidden /><span className="truncate">{guardian.email}</span></span></td>
-                      <td className="overflow-hidden px-5 py-3"><span className="flex min-w-0 items-center gap-2 text-slate-600"><Phone className="h-4 w-4 shrink-0 text-slate-400" aria-hidden /><span className="truncate">{guardian.phone ?? 'Not provided'}</span></span></td>
+                      <td className="overflow-hidden px-5 py-3"><span className="flex min-w-0 items-center gap-2 text-slate-600"><Mail className="h-4 w-4 shrink-0 text-slate-400" aria-hidden /><span className="truncate" title={guardian.email}>{guardian.email}</span></span></td>
+                      <td className="overflow-hidden px-5 py-3"><span className="flex min-w-0 items-center gap-2 text-slate-600"><Phone className="h-4 w-4 shrink-0 text-slate-400" aria-hidden /><span className="truncate" title={guardian.phone ?? 'Not provided'}>{guardian.phone ?? 'Not provided'}</span></span></td>
                       <td className="px-5 py-3">
                         <span className="flex items-center gap-2 text-sm text-slate-600">
                           {guardian.active_link_count > 0 ? <CheckCircle2 className="h-4 w-4 text-success-600" aria-hidden /> : <CircleDashed className="h-4 w-4 text-slate-400" aria-hidden />}
@@ -171,7 +171,7 @@ export function AdminGuardiansPage() {
                         </span>
                       </td>
                       <td className="px-5 py-3 text-right">
-                        <Link to={`/admin/guardians/${guardian.id}`} aria-label={`View ${guardianName(guardian)}`} className="inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-navy-700 transition-colors hover:bg-navy-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500"><Eye className="h-4 w-4" aria-hidden />View</Link>
+                        <Link to={`/admin/guardians/${guardian.id}`} aria-label={`View ${guardianName(guardian)}`} title="View guardian" className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-navy-700 transition-colors hover:bg-navy-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 focus-visible:ring-offset-2"><Eye className="h-4 w-4" aria-hidden /></Link>
                       </td>
                     </tr>
                   ))}
