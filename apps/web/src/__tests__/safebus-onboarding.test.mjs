@@ -42,6 +42,9 @@ function query(result = { data: null, error: null }) {
 function setupClients({
   profile = null,
   callerProfile = caller,
+  rpcResults = [],
+  inviteError = null,
+  resetPasswordError = null,
   authUser = {
     id: 'guardian-auth-1',
     email: 'guardian@example.test',
@@ -55,7 +58,7 @@ function setupClients({
         error: null,
       })),
     },
-    rpc: vi.fn(async () => ({ data: null, error: null })),
+    rpc: vi.fn(async () => rpcResults.shift() ?? { data: null, error: null }),
   };
   const profileLookup = query({ data: profile, error: null });
   const callerLookup = query({ data: callerProfile, error: null });
@@ -67,7 +70,7 @@ function setupClients({
       admin: {
         inviteUserByEmail: vi.fn(async () => ({
           data: { user: authUser },
-          error: null,
+          error: inviteError,
         })),
         getUserById: vi.fn(async () => ({
           data: { user: authUser },
@@ -77,8 +80,13 @@ function setupClients({
           data: { user: authUser },
           error: null,
         })),
+        deleteUser: vi.fn(async () => ({ data: { user: authUser }, error: null })),
       },
       resend: vi.fn(async () => ({ data: {}, error: null })),
+      resetPasswordForEmail: vi.fn(async () => ({
+        data: {},
+        error: resetPasswordError,
+      })),
     },
     from: vi.fn((table) => {
       if (table === 'profiles') {
@@ -98,6 +106,23 @@ function event(body) {
     httpMethod: 'POST',
     headers: { authorization: 'Bearer test-token' },
     body: JSON.stringify({ kind: 'inviteMember', role: 'guardian', ...body }),
+  };
+}
+
+function createTenantEvent(body = {}) {
+  return {
+    httpMethod: 'POST',
+    headers: { authorization: 'Bearer test-token', origin: 'https://app.example.test' },
+    body: JSON.stringify({
+      kind: 'createTenant',
+      tenantName: 'Test Transportation',
+      tenantType: 'bus_contractor',
+      schoolName: '',
+      city: 'Red Deer',
+      adminName: 'First Admin',
+      adminEmail: 'first.admin@example.test',
+      ...body,
+    }),
   };
 }
 
@@ -331,6 +356,165 @@ describe('SafeBus member onboarding', () => {
     expect(JSON.parse(response.body)).toEqual({ status: 'disabled' });
     expect(adminClient.auth.admin.updateUserById).toHaveBeenCalledWith(tenantAdmin.id, {
       ban_duration: '876000h',
+    });
+  });
+
+  it('does not create a tenant when the initial invitation provider rejects the email', async () => {
+    const platformAdmin = {
+      ...caller,
+      id: 'platform-admin-1',
+      tenant_id: null,
+      role: 'platform_super_admin',
+    };
+    const { adminClient, userClient } = setupClients({
+      callerProfile: platformAdmin,
+      rpcResults: [{ data: null, error: null }],
+      inviteError: { message: 'User already registered' },
+      authUser: null,
+    });
+
+    const response = await handler(createTenantEvent());
+
+    expect(response.statusCode).toBe(409);
+    expect(JSON.parse(response.body).error).toContain(
+      'invitation email was not sent and no tenant was created',
+    );
+    expect(userClient.rpc).toHaveBeenCalledTimes(1);
+    expect(userClient.rpc).toHaveBeenCalledWith('platform_find_unprofiled_auth_user', {
+      p_email: 'first.admin@example.test',
+    });
+    expect(adminClient.from).not.toHaveBeenCalledWith('tenants');
+  });
+
+  it('finalizes the tenant only after the invitation provider accepts the email', async () => {
+    const platformAdmin = {
+      ...caller,
+      id: 'platform-admin-1',
+      tenant_id: null,
+      role: 'platform_super_admin',
+    };
+    const setup = {
+      tenant: { id: 'tenant-new', name: 'Test Transportation', status: 'active' },
+      school: null,
+    };
+    const { adminClient, userClient } = setupClients({
+      callerProfile: platformAdmin,
+      rpcResults: [
+        { data: null, error: null },
+        { data: setup, error: null },
+      ],
+      authUser: {
+        id: 'tenant-admin-new',
+        email: 'first.admin@example.test',
+        last_sign_in_at: null,
+      },
+    });
+
+    const response = await handler(createTenantEvent());
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual({
+      ...setup,
+      invitationStatus: 'sent',
+      recipientEmail: 'first.admin@example.test',
+    });
+    expect(userClient.rpc).toHaveBeenNthCalledWith(2, 'platform_finalize_tenant_invitation', {
+      p_auth_user_id: 'tenant-admin-new',
+      p_tenant_name: 'Test Transportation',
+      p_tenant_type: 'bus_contractor',
+      p_school_name: null,
+      p_city: 'Red Deer',
+      p_admin_name: 'First Admin',
+      p_admin_email: 'first.admin@example.test',
+    });
+    expect(adminClient.auth.admin.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it('sends account recovery when a deleted profile left an existing Auth user', async () => {
+    const platformAdmin = {
+      ...caller,
+      id: 'platform-admin-1',
+      tenant_id: null,
+      role: 'platform_super_admin',
+    };
+    const setup = {
+      tenant: { id: 'tenant-recovered', name: 'Test Transportation', status: 'active' },
+      school: null,
+    };
+    const { adminClient } = setupClients({
+      callerProfile: platformAdmin,
+      rpcResults: [
+        {
+          data: {
+            id: 'orphan-auth-user',
+            emailConfirmed: true,
+            hasPassword: false,
+          },
+          error: null,
+        },
+        { data: setup, error: null },
+      ],
+    });
+
+    const response = await handler(createTenantEvent());
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body).invitationStatus).toBe('recovery_sent');
+    expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
+    expect(adminClient.auth.resetPasswordForEmail).toHaveBeenCalledWith(
+      'first.admin@example.test',
+      { redirectTo: 'https://app.example.test/accept-invitation' },
+    );
+    expect(adminClient.auth.admin.updateUserById).toHaveBeenCalledWith('orphan-auth-user', {
+      ban_duration: 'none',
+      user_metadata: { full_name: 'First Admin' },
+    });
+  });
+
+  it('replaces an unconfirmed orphan Auth row before sending a fresh invitation', async () => {
+    const platformAdmin = {
+      ...caller,
+      id: 'platform-admin-1',
+      tenant_id: null,
+      role: 'platform_super_admin',
+    };
+    const setup = {
+      tenant: { id: 'tenant-fresh', name: 'Test Transportation', status: 'active' },
+      school: null,
+    };
+    const { adminClient, userClient } = setupClients({
+      callerProfile: platformAdmin,
+      rpcResults: [
+        {
+          data: {
+            id: 'unconfirmed-orphan-auth-user',
+            emailConfirmed: false,
+            hasPassword: false,
+          },
+          error: null,
+        },
+        { data: setup, error: null },
+      ],
+      authUser: {
+        id: 'fresh-tenant-admin-auth-user',
+        email: 'first.admin@example.test',
+        last_sign_in_at: null,
+      },
+    });
+
+    const response = await handler(createTenantEvent());
+
+    expect(response.statusCode).toBe(200);
+    expect(adminClient.auth.admin.deleteUser).toHaveBeenCalledWith('unconfirmed-orphan-auth-user');
+    expect(adminClient.auth.admin.inviteUserByEmail).toHaveBeenCalledOnce();
+    expect(userClient.rpc).toHaveBeenNthCalledWith(2, 'platform_finalize_tenant_invitation', {
+      p_auth_user_id: 'fresh-tenant-admin-auth-user',
+      p_tenant_name: 'Test Transportation',
+      p_tenant_type: 'bus_contractor',
+      p_school_name: null,
+      p_city: 'Red Deer',
+      p_admin_name: 'First Admin',
+      p_admin_email: 'first.admin@example.test',
     });
   });
 });
