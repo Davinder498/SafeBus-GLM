@@ -1,9 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode, useCallback, useMemo, useState } from 'react';
 import {
-  CircleMarker,
   MapContainer,
-  Polyline,
-  Popup,
   TileLayer,
   useMap,
 } from 'react-leaflet';
@@ -11,8 +8,10 @@ import type { LatLngBoundsExpression, LatLngExpression } from 'leaflet';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
+import { NumberedRouteStopMarkers } from '@/components/maps/NumberedRouteStopMarkers';
 import type { MapTileConfig } from '@/config/mapTiles';
 import type { Route, RouteStop } from '@/types/transportation';
+import { buildCanonicalRouteStopMarkerEntries } from '@/utils/routeStopMarkers';
 
 export interface RouteMapRoute {
   route: Route;
@@ -20,11 +19,7 @@ export interface RouteMapRoute {
 }
 
 interface RouteMapLocation {
-  key: string;
   position: LatLngExpression;
-  stop: RouteStop;
-  route: Route;
-  terminal: 'start' | 'end' | null;
 }
 
 function hasValidCoordinates(stop: RouteStop): boolean {
@@ -42,27 +37,13 @@ function toLocations(routes: RouteMapRoute[]): RouteMapLocation[] {
     const sorted = [...entry.stops]
       .filter((s) => s.status !== 'archived' && hasValidCoordinates(s))
       .sort((a, b) => a.stop_order - b.stop_order);
-    for (const [index, stop] of sorted.entries()) {
+    for (const stop of sorted) {
       locations.push({
-        key: `${entry.route.id}-${stop.id}`,
         position: [stop.latitude as number, stop.longitude as number],
-        stop,
-        route: entry.route,
-        terminal: index === 0 ? 'start' : index === sorted.length - 1 ? 'end' : null,
       });
     }
   }
   return locations;
-}
-
-function routePaths(routes: RouteMapRoute[]): Array<{ route: Route; positions: LatLngExpression[] }> {
-  return routes.map((entry) => {
-    const sorted = [...entry.stops]
-      .filter((s) => s.status !== 'archived' && hasValidCoordinates(s))
-      .sort((a, b) => a.stop_order - b.stop_order)
-      .map((s) => [s.latitude as number, s.longitude as number] as LatLngExpression);
-    return { route: entry.route, positions: sorted };
-  });
 }
 
 function FitRoutesControl({
@@ -212,7 +193,10 @@ export function AdminRoutesMap({ routes, tileConfig }: AdminRoutesMapProps) {
   const [tileFailed, setTileFailed] = useState(false);
 
   const locations = useMemo(() => toLocations(routes), [routes]);
-  const paths = useMemo(() => routePaths(routes), [routes]);
+  const stopMarkerEntries = useMemo(
+    () => buildCanonicalRouteStopMarkerEntries(routes),
+    [routes],
+  );
   const bounds = useMemo<LatLngBoundsExpression | null>(
     () =>
       locations.length === 0
@@ -238,8 +222,8 @@ export function AdminRoutesMap({ routes, tileConfig }: AdminRoutesMapProps) {
         <div className="border-b border-gray-100 p-5">
           <h2 className="text-lg font-bold text-navy-900">Routes map</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Route stops plotted by latitude and longitude. Each route uses a distinct color and its
-            stops are connected in stop order.
+            Numbered route stops plotted at their saved latitude and longitude. Each route uses a
+            distinct color; the map does not imply a road path between stops.
           </p>
           {tileFailed && (
             <p
@@ -277,45 +261,11 @@ export function AdminRoutesMap({ routes, tileConfig }: AdminRoutesMapProps) {
               onTileLoad={handleTileLoad}
             />
             <FitRoutesControl bounds={bounds} disabled={locations.length === 0} />
-            {paths.map(({ route, positions }) =>
-              positions.length >= 2 ? (
-                <Polyline
-                  key={`path-${route.id}`}
-                  positions={positions}
-                  pathOptions={{
-                    color: route.map_color ?? '#2563EB',
-                    weight: 5,
-                    opacity: 0.7,
-                  }}
-                />
-              ) : null,
-            )}
-            {locations.map(({ key, position, stop, route, terminal }) => {
-              const color = route.map_color ?? '#2563EB';
-              return (
-                <CircleMarker
-                  key={key}
-                  center={position}
-                  radius={terminal ? 9 : 6}
-                  pathOptions={{ color, fillColor: terminal ? color : '#ffffff', fillOpacity: 1, weight: terminal ? 3 : 2 }}
-                  data-testid="admin-routes-map-marker"
-                >
-                  <Popup>
-                    <div className="space-y-1 text-sm">
-                      <p className="font-semibold">
-                        {terminal === 'start' ? 'Start: ' : terminal === 'end' ? 'End: ' : ''}
-                        {stop.stop_name}
-                      </p>
-                      <p>Route: {route.route_name} ({route.route_code})</p>
-                      <p>Stop order: {stop.stop_order}</p>
-                      {stop.planned_arrival_time && (
-                        <p>Planned arrival: {stop.planned_arrival_time.slice(0, 5)}</p>
-                      )}
-                    </div>
-                  </Popup>
-                </CircleMarker>
-              );
-            })}
+            <NumberedRouteStopMarkers
+              entries={stopMarkerEntries}
+              paneName="admin-route-management-stops"
+              testId="admin-routes-map-marker"
+            />
           </MapContainer>
         </section>
       </Card>

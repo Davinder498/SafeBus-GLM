@@ -144,7 +144,7 @@ export function AdminFleetMap({ trips, overlays = [], tileConfig, formatters }: 
       <Card className="overflow-hidden" data-testid="admin-live-fleet-map">
         <div className="border-b border-gray-100 p-5">
           <h2 className="text-lg font-bold text-navy-900">Live fleet map</h2>
-          <p className="mt-1 text-sm text-gray-600">Operational marker positions for active buses with valid current coordinates. Text labels identify GPS status; the fleet table remains the primary operational view.</p>
+          <p className="mt-1 text-sm text-gray-600">Colored numbered dots show the active route stops without implying a road path. Live bus markers show valid current coordinates and remain above the stop markers.</p>
           <RouteOverlayLegend overlays={overlays} />
           {tileFailed && <p role="alert" className="mt-3 rounded-md bg-warning-50 px-3 py-2 text-sm font-semibold text-warning-700" data-testid="admin-live-fleet-map-tile-error">Map tiles could not be loaded. Markers and the fleet list remain available where supported.</p>}
           {locations.length === 0 && <p className="mt-3 text-sm font-semibold text-gray-700" data-testid="admin-live-fleet-map-empty">No active buses with valid coordinates.</p>}

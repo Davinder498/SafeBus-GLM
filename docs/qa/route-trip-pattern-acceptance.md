@@ -26,11 +26,13 @@ migration succeeds.
    for the same trip are rejected.
 9. Assign a driver to each named trip. Sign in as the driver and confirm the
    dashboard shows the configured names and starts a run from the assignment.
-10. On admin live monitoring, confirm the route line and stops remain visible
-   beneath the bus marker. Confirm route colors remain stable after reload.
+10. On admin live monitoring, confirm numbered route-color stop markers remain
+    visible beneath the bus marker and no straight route line is drawn. Confirm
+    route colors remain stable after reload.
 11. Sign in as a guardian linked to a student on the active route. Confirm only
-    that student's route geometry is visible. Make the GPS update stale and
-    confirm the route remains while the bus marker disappears.
+    that student's authorized route stops are visible and no straight route
+    line is drawn. Make the GPS update stale and confirm the route stops remain
+    while the bus marker disappears.
 12. Sign in as a school/transportation admin and confirm route edit/create
     controls are absent. Confirm guardian, driver, and anonymous users cannot
     call the route-definition writer.

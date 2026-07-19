@@ -23,7 +23,7 @@ export interface GuardianStudentContextEntry {
 export interface GuardianLiveBusMapProps {
   /** Safe location-state rows from the Milestone 11A RPC. */
   locations: GuardianStudentLiveBusLocation[];
-  /** Static route geometry independently authorized for linked students. */
+  /** Static route stops independently authorized for linked students. */
   overlays?: RouteOverlay[];
   /** Safe student context (names) from already-authorized guardian visibility. */
   studentContext: GuardianStudentContextEntry[];
@@ -220,7 +220,7 @@ export function GuardianLiveBusMap({
         <div className="border-b border-gray-100 p-5">
           <h2 className="text-lg font-bold text-navy-900">Live bus map</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Shows the assigned route and current bus location for your linked students.
+            Shows numbered stops for the assigned route and the current bus location for your linked students.
             Map markers are shown only for current updates; delayed or unavailable location updates do not appear on the map.
           </p>
           <RouteOverlayLegend overlays={overlays} />
