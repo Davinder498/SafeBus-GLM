@@ -14,6 +14,7 @@ export function RouteOverlayLayers({
       entries={buildOverlayRouteStopMarkerEntries(overlays)}
       paneName={guardian ? 'guardian-route-stops' : 'admin-live-route-stops'}
       testId={guardian ? 'guardian-route-overlay-stop' : 'admin-route-overlay-stop'}
+      density={guardian ? 'comfortable' : 'compact'}
     />
   );
 }

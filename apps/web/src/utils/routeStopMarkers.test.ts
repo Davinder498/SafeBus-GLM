@@ -5,6 +5,8 @@ import {
   buildOverlayRouteStopMarkerEntries,
   groupRouteStopMarkerEntries,
   readableMarkerTextColor,
+  routeStopMarkerDimensions,
+  routeStopMarkerHoverDetails,
   safeRouteColor,
 } from '@/utils/routeStopMarkers';
 
@@ -172,5 +174,50 @@ describe('route stop marker models', () => {
     expect(safeRouteColor('not-a-color')).toBe('#2563EB');
     expect(readableMarkerTextColor('#2563EB')).toBe('#FFFFFF');
     expect(readableMarkerTextColor('#FDE68A')).toBe('#111827');
+  });
+
+  it('uses compact admin marker dimensions while keeping terminals distinct', () => {
+    const entries = buildCanonicalRouteStopMarkerEntries([
+      {
+        route,
+        stops: [
+          routeStop('stop-a', 'Point A', 1, 51.04, -114.07),
+          routeStop('stop-b', 'Point B', 2, 51.05, -114.05),
+          routeStop('stop-c', 'Point C', 3, 51.06, -114.03),
+        ],
+      },
+    ]);
+    const groups = groupRouteStopMarkerEntries(entries);
+
+    expect(routeStopMarkerDimensions(groups[0], 'compact').size).toBe(26);
+    expect(routeStopMarkerDimensions(groups[1], 'compact').size).toBe(22);
+    expect(routeStopMarkerDimensions(groups[2], 'compact').size).toBe(26);
+  });
+
+  it('provides concise hover details for single and shared stops', () => {
+    const secondRoute = { ...route, id: 'route-2', route_code: 'EAST' };
+    const entries = buildCanonicalRouteStopMarkerEntries([
+      { route, stops: [routeStop('shared-1', 'School', 1, 51.04, -114.07)] },
+      {
+        route: secondRoute,
+        stops: [
+          {
+            ...routeStop('shared-2', 'School', 1, 51.04, -114.07),
+            route_id: secondRoute.id,
+          },
+        ],
+      },
+    ]);
+
+    expect(routeStopMarkerHoverDetails(groupRouteStopMarkerEntries(entries)[0])).toEqual({
+      heading: '2 stops at this location',
+      summary: 'Routes: WEST, EAST',
+    });
+
+    const singleGroup = groupRouteStopMarkerEntries(entries.slice(0, 1))[0];
+    expect(routeStopMarkerHoverDetails(singleGroup)).toEqual({
+      heading: 'Start: School',
+      summary: 'Stop 1 · WEST',
+    });
   });
 });
