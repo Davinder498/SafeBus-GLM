@@ -17,7 +17,7 @@ function requireSupabase() {
 }
 
 const assignmentColumns =
-  'id, tenant_id, driver_id, bus_id, route_id, route_trip_pattern_id, trip_type, status, effective_from, effective_to, created_at, updated_at';
+  'id, tenant_id, driver_id, bus_id, route_id, route_trip_pattern_id, bus_route_assignment_id, trip_type, status, effective_from, effective_to, created_at, updated_at';
 
 function logDevError(context: string, error: unknown) {
   if (import.meta.env.DEV) {
@@ -102,6 +102,11 @@ export async function createDriverAssignment(
       error.message.includes('driver_route_assignments_active_unique')
     ) {
       throw new Error('An active assignment for this driver, bus, route, and trip type already exists.');
+    }
+    if (error.code === '23P01') {
+      throw new Error(
+        'This named trip already has a driver assigned for the selected dates.',
+      );
     }
     if (error.code === '42501') {
       throw new Error(

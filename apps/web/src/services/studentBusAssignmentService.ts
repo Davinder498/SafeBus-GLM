@@ -33,7 +33,15 @@ export async function ensureBusRouteAssignment(input: CreateBusRouteAssignmentIn
   if (existing.error) throw new Error('Unable to check the bus route service.');
   if (existing.data) return existing.data as BusRouteAssignment;
   const created = await client().from('bus_route_assignments').insert(input).select('*').single();
-  if (created.error) throw new Error('Unable to assign this bus to the route.');
+  if (created.error) {
+    if (created.error.code === '23P01') {
+      throw new Error('This named trip already has a bus assigned for the selected dates.');
+    }
+    if (created.error.code === '23514') {
+      throw new Error('Bus assignment requires an active bus and a map-ready route with a reviewed trip.');
+    }
+    throw new Error('Unable to assign this bus to the route.');
+  }
   return created.data as BusRouteAssignment;
 }
 

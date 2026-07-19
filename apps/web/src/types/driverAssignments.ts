@@ -12,6 +12,7 @@ export interface DriverRouteAssignment {
   bus_id: string;
   route_id: string;
   route_trip_pattern_id: string | null;
+  bus_route_assignment_id?: string | null;
   trip_type: TripType;
   status: AssignmentStatus;
   effective_from: string | null;

@@ -27,4 +27,11 @@ describe('tenant admin shell navigation model', () => {
       new Set(['operations', 'transportation', 'people', 'management']),
     );
   });
+
+  it('keeps drivers, students, and guardians together under People', () => {
+    const peopleItems = adminNavItems
+      .filter((item) => item.group === 'people')
+      .map((item) => item.label);
+    expect(peopleItems).toEqual(['Drivers', 'Students', 'Guardians']);
+  });
 });

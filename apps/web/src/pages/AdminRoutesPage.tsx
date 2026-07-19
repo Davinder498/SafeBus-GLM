@@ -7,6 +7,7 @@ import {
 } from '@/components/admin/TransportationAdminForms';
 import { RouteWithStopsForm } from '@/components/admin/RouteWithStopsForm';
 import { RouteTile } from '@/components/admin/RouteTile';
+import { RouteBusAssignmentForm } from '@/components/admin/TransportAssignmentForms';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -16,6 +17,11 @@ import { useAuth } from '@/contexts/useAuth';
 import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
 import { getVisibleProfiles, getVisibleSchools } from '@/services/adminOrganizationService';
 import { fetchAdminAssignments } from '@/services/driverAssignmentService';
+import {
+  ensureBusRouteAssignment,
+  fetchAdminBusServices,
+  type BusServiceOption,
+} from '@/services/studentBusAssignmentService';
 import {
   deleteRoute,
   getVisibleBuses,
@@ -36,7 +42,9 @@ import type {
   RouteTripPattern,
   RouteTripStopSchedule,
   SaveRouteDefinitionInput,
+  CreateBusRouteAssignmentInput,
 } from '@/types/transportation';
+import { activeDriverForBusService } from '@/utils/transportAssignments';
 
 interface AdminRoutesPageProps {
   initialRouteId?: string;
@@ -54,9 +62,11 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [profiles, setProfiles] = useState<OrganizationProfile[]>([]);
   const [assignments, setAssignments] = useState<DriverRouteAssignment[]>([]);
+  const [busServices, setBusServices] = useState<BusServiceOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingRoute, setEditingRoute] = useState<Route | null>(null);
+  const [assigningBusRoute, setAssigningBusRoute] = useState<Route | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -85,6 +95,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
       fetchAdminAssignments(),
       getVisibleRouteTripPatterns(),
       getVisibleRouteTripStopSchedules(),
+      fetchAdminBusServices(),
     ]);
 
     const [
@@ -97,6 +108,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
       assignmentsResult,
       tripPatternsResult,
       tripSchedulesResult,
+      busServicesResult,
     ] = settled;
 
     if (routesResult.status === 'rejected') {
@@ -120,6 +132,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
         'driver assignments',
         'route trip patterns',
         'route trip schedules',
+        'bus route assignments',
       ];
       settled.slice(1).forEach((result, index) => {
         if (result.status === 'rejected') {
@@ -149,6 +162,9 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
     );
     setTripSchedules(
       tripSchedulesResult.status === 'fulfilled' ? tripSchedulesResult.value : [],
+    );
+    setBusServices(
+      busServicesResult.status === 'fulfilled' ? busServicesResult.value : [],
     );
     setLoading(false);
   }, []);
@@ -198,6 +214,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
 
   function startCreate() {
     setEditingRoute(null);
+    setAssigningBusRoute(null);
     setShowCreateForm(true);
     setWriteError(null);
     setSuccessMessage(null);
@@ -205,6 +222,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
 
   function startEdit(route: Route) {
     setShowCreateForm(false);
+    setAssigningBusRoute(null);
     setEditingRoute(route);
     setWriteError(null);
     setSuccessMessage(null);
@@ -224,6 +242,25 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
   function cancelForm() {
     setShowCreateForm(false);
     setEditingRoute(null);
+  }
+
+  async function handleAssignBus(input: CreateBusRouteAssignmentInput) {
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await ensureBusRouteAssignment(input);
+      setAssigningBusRoute(null);
+      setSuccessMessage('Bus assigned to the named trip.');
+      await loadRoutes();
+      await list.reload();
+    } catch (assignError) {
+      const message =
+        assignError instanceof Error
+          ? assignError.message
+          : 'Unable to assign this bus.';
+      setWriteError(message);
+      throw assignError;
+    }
   }
 
   async function handleDeleteRoute() {
@@ -324,6 +361,18 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
           </InlineFormShell>
         )}
 
+        {canWrite && assigningBusRoute && (
+          <InlineFormShell title={`Assign bus to ${assigningBusRoute.route_code}`}>
+            <RouteBusAssignmentForm
+              route={assigningBusRoute}
+              buses={buses}
+              tripPatterns={tripPatterns}
+              onSubmit={handleAssignBus}
+              onCancel={() => setAssigningBusRoute(null)}
+            />
+          </InlineFormShell>
+        )}
+
         <div>
           <label
             className="block text-sm font-semibold text-gray-700"
@@ -358,17 +407,24 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
           <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {list.rows.map((route) => {
               const routeStops = stopsByRoute.get(route.id) ?? [];
-              const routeAssignments = assignmentsByRoute.get(route.id) ?? [];
-              const tileAssignments = routeAssignments.map((a) => ({
-                busLabel: busLabels.get(a.bus_id) ?? null,
-                driverLabel:
-                  driverNames.get(
-                    drivers.find((d) => d.id === a.driver_id)?.profile_id ?? '',
-                  ) ?? null,
-                tripType:
-                  tripPatterns.find((pattern) => pattern.id === a.route_trip_pattern_id)
-                    ?.display_name ?? a.trip_type,
-              }));
+              const routeServices = busServices.filter(
+                (service) => service.route_id === route.id && service.status === 'active',
+              );
+              const tileAssignments = routeServices.map((service) => {
+                const driverAssignment = activeDriverForBusService(
+                  service,
+                  assignmentsByRoute.get(route.id) ?? [],
+                );
+                const driver = drivers.find(
+                  (item) => item.id === driverAssignment?.driver_id,
+                );
+                return {
+                  busLabel: busLabels.get(service.bus_id) ?? service.bus_number,
+                  driverLabel:
+                    driverNames.get(driver?.profile_id ?? '') ?? null,
+                  tripName: service.trip_name,
+                };
+              });
 
               return (
                 <RouteTile
@@ -383,9 +439,22 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
                   assignments={tileAssignments}
                   canWrite={canWrite}
                   canDelete={canDelete}
+                  canAssignBus={
+                    canWrite &&
+                    route.status === 'active' &&
+                    route.definition_status === 'ready'
+                  }
                   onEdit={() => startEdit(route)}
+                  onAssignBus={() => {
+                    setShowCreateForm(false);
+                    setEditingRoute(null);
+                    setAssigningBusRoute(route);
+                    setWriteError(null);
+                    setSuccessMessage(null);
+                  }}
                   onDelete={() => {
                     setEditingRoute(null);
+                    setAssigningBusRoute(null);
                     setShowCreateForm(false);
                     setDeletingRoute(route);
                     setWriteError(null);

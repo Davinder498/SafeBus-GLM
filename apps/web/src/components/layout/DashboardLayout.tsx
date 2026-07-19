@@ -105,14 +105,14 @@ export const adminNavItems: DashboardNavItem[] = [
   {
     label: 'Drivers',
     to: '/admin/drivers',
-    group: 'transportation',
+    group: 'people',
     description: 'Driver roster',
     icon: <Users className="h-4 w-4" />,
   },
   {
     label: 'Students',
     to: '/admin/students',
-    group: 'transportation',
+    group: 'people',
     description: 'Rider records',
     icon: <IdCard className="h-4 w-4" />,
   },
