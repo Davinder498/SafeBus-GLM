@@ -25,6 +25,20 @@ export interface RouteStopMarkerGroup {
   entries: RouteStopMarkerEntry[];
 }
 
+export type RouteStopMarkerDensity = 'compact' | 'comfortable';
+
+export interface RouteStopMarkerDimensions {
+  size: number;
+  borderWidth: number;
+  fontSize: number;
+  combinedLabelSize: number;
+}
+
+export interface RouteStopMarkerHoverDetails {
+  heading: string;
+  summary: string;
+}
+
 interface CanonicalRouteStopSource {
   route: Route;
   stops: RouteStop[];
@@ -144,4 +158,56 @@ export function groupRouteStopMarkerEntries(
   }
 
   return Array.from(groups.values());
+}
+
+export function routeStopMarkerDimensions(
+  group: RouteStopMarkerGroup,
+  density: RouteStopMarkerDensity,
+): RouteStopMarkerDimensions {
+  const isCombined = group.entries.length > 1;
+  const isTerminal = group.entries.some((entry) => entry.terminal !== null);
+
+  if (density === 'compact') {
+    return {
+      size: isCombined ? 28 : isTerminal ? 26 : 22,
+      borderWidth: 2,
+      fontSize: isCombined ? 10 : 11,
+      combinedLabelSize: 18,
+    };
+  }
+
+  return {
+    size: isCombined ? 34 : isTerminal ? 32 : 26,
+    borderWidth: 3,
+    fontSize: isCombined ? 12 : 13,
+    combinedLabelSize: 20,
+  };
+}
+
+export function routeStopMarkerHoverDetails(
+  group: RouteStopMarkerGroup,
+): RouteStopMarkerHoverDetails {
+  if (group.entries.length > 1) {
+    const routeCodes = Array.from(
+      new Set(group.entries.map((entry) => entry.routeCode)),
+    );
+    return {
+      heading: `${group.entries.length} stops at this location`,
+      summary: `Routes: ${routeCodes.join(', ')}`,
+    };
+  }
+
+  const entry = group.entries[0];
+  const terminalLabel =
+    entry.terminal === 'start'
+      ? 'Start'
+      : entry.terminal === 'end'
+        ? 'End'
+        : 'Stop';
+  const tripLabel = entry.tripName ? ` · ${entry.tripName}` : '';
+
+  return {
+    heading: `${terminalLabel}: ${entry.stopName}`,
+    summary: `Stop ${entry.stopNumber} · ${entry.routeCode}${tripLabel}`,
+  };
 }
