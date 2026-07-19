@@ -10,6 +10,10 @@ import { mapTileConfig } from '@/config/mapTiles';
 import { getVisibleProfiles, getVisibleSchools } from '@/services/adminOrganizationService';
 import { fetchAdminAssignments } from '@/services/driverAssignmentService';
 import {
+  fetchAdminBusServices,
+  type BusServiceOption,
+} from '@/services/studentBusAssignmentService';
+import {
   getVisibleBuses,
   getVisibleDrivers,
   getVisibleRouteStops,
@@ -28,6 +32,7 @@ import type {
   RouteTripPattern,
   RouteTripStopSchedule,
 } from '@/types/transportation';
+import { activeDriverForBusService } from '@/utils/transportAssignments';
 
 interface RouteDetailData {
   route: Route;
@@ -36,6 +41,7 @@ interface RouteDetailData {
   buses: Bus[];
   drivers: Driver[];
   assignments: DriverRouteAssignment[];
+  busServices: BusServiceOption[];
   profiles: OrganizationProfile[];
   tripPatterns: RouteTripPattern[];
   schedules: RouteTripStopSchedule[];
@@ -59,8 +65,9 @@ export function AdminRouteDetailPage() {
       getVisibleProfiles(),
       getVisibleRouteTripPatterns().catch(() => []),
       getVisibleRouteTripStopSchedules().catch(() => []),
+      fetchAdminBusServices().catch(() => []),
     ])
-      .then(([routes, stops, schools, buses, drivers, assignments, profiles, patterns, schedules]) => {
+      .then(([routes, stops, schools, buses, drivers, assignments, profiles, patterns, schedules, busServices]) => {
         if (!mounted) return;
         const route = routes.find((item) => item.id === routeId);
         if (!route || route.status === 'archived') {
@@ -77,6 +84,9 @@ export function AdminRouteDetailPage() {
           drivers,
           assignments: assignments.filter(
             (assignment) => assignment.route_id === route.id && assignment.status === 'active',
+          ),
+          busServices: busServices.filter(
+            (service) => service.route_id === route.id && service.status === 'active',
           ),
           profiles,
           tripPatterns: patterns.filter((pattern) => pattern.route_id === route.id),
@@ -155,21 +165,26 @@ export function AdminRouteDetailPage() {
 
             <section className="grid gap-4 lg:grid-cols-2">
               <Card className="p-5">
-                <h2 className="text-lg font-bold text-navy-900">Driver and bus</h2>
-                {data.assignments.length === 0 ? (
-                  <p className="mt-3 text-sm text-gray-600">No active driver and bus assignment.</p>
+                <h2 className="text-lg font-bold text-navy-900">Bus trips and drivers</h2>
+                {data.busServices.length === 0 ? (
+                  <p className="mt-3 text-sm text-gray-600">No active bus assignment.</p>
                 ) : (
                   <ul className="mt-3 space-y-3">
-                    {data.assignments.map((assignment) => {
-                      const driver = data.drivers.find((item) => item.id === assignment.driver_id);
+                    {data.busServices.map((service) => {
+                      const assignment = activeDriverForBusService(
+                        service,
+                        data.assignments,
+                      );
+                      const driver = data.drivers.find(
+                        (item) => item.id === assignment?.driver_id,
+                      );
                       return (
-                        <li key={assignment.id} className="rounded-lg bg-gray-50 p-3 text-sm">
-                          <p className="font-semibold text-navy-900">Bus {busNames.get(assignment.bus_id) ?? 'unavailable'}</p>
+                        <li key={service.id} className="rounded-lg bg-gray-50 p-3 text-sm">
+                          <p className="font-semibold text-navy-900">
+                            {service.trip_name} · Bus {busNames.get(service.bus_id) ?? service.bus_number}
+                          </p>
                           <p className="text-gray-600">
-                            {profileNames.get(driver?.profile_id ?? '') ?? 'Driver unavailable'} ·{' '}
-                            {data.tripPatterns.find(
-                              (pattern) => pattern.id === assignment.route_trip_pattern_id,
-                            )?.display_name ?? assignment.trip_type}
+                            Driver: {profileNames.get(driver?.profile_id ?? '') ?? 'Not assigned'}
                           </p>
                         </li>
                       );

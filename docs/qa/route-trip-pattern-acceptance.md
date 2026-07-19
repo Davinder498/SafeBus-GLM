@@ -24,19 +24,26 @@ migration succeeds.
 8. Assign one bus to both named trips, then test separate buses by deactivating
    one assignment and adding a different bus. Confirm overlapping service dates
    for the same trip are rejected.
-9. Assign a driver to each named trip. Sign in as the driver and confirm the
-   dashboard shows the configured names and starts a run from the assignment.
-10. On admin live monitoring, confirm numbered route-color stop markers remain
+9. From Routes, select **Assign bus** and assign a bus to each named trip.
+   Confirm the route card shows each trip and bus even before a driver is
+   assigned. Confirm the existing assignment pages still load.
+10. From Buses, select **Assign driver** for a bus route trip. Confirm the bus
+    card and route card both show the assigned driver. Sign in as the driver and
+    confirm the dashboard shows the configured trip name and starts a run from
+    the assignment.
+11. Confirm Drivers, Students, and Guardians appear together under People in
+    the tenant-admin sidebar.
+12. On admin live monitoring, confirm numbered route-color stop markers remain
     visible beneath the bus marker and no straight route line is drawn. Confirm
     route colors remain stable after reload.
-11. Sign in as a guardian linked to a student on the active route. Confirm only
+13. Sign in as a guardian linked to a student on the active route. Confirm only
     that student's authorized route stops are visible and no straight route
     line is drawn. Make the GPS update stale and confirm the route stops remain
     while the bus marker disappears.
-12. Sign in as a school/transportation admin and confirm route edit/create
+14. Sign in as a school/transportation admin and confirm route edit/create
     controls are absent. Confirm guardian, driver, and anonymous users cannot
     call the route-definition writer.
-13. Run:
+15. Run:
 
 ```bash
 pnpm typecheck

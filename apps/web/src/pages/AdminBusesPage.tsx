@@ -6,6 +6,7 @@ import {
   BusForm,
   InlineFormShell,
 } from '@/components/admin/TransportationAdminForms';
+import { BusDriverAssignmentForm } from '@/components/admin/TransportAssignmentForms';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -16,10 +17,34 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { adminRoles } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
-import { getVisibleSchools } from '@/services/adminOrganizationService';
-import { createBus, deleteBus, updateBus } from '@/services/transportationStructureService';
-import type { School } from '@/types/organization';
-import type { Bus, BusStatus, CreateBusInput, UpdateBusInput } from '@/types/transportation';
+import {
+  getVisibleProfiles,
+  getVisibleSchools,
+} from '@/services/adminOrganizationService';
+import {
+  createDriverAssignment,
+  fetchAdminAssignments,
+} from '@/services/driverAssignmentService';
+import {
+  fetchAdminBusServices,
+  type BusServiceOption,
+} from '@/services/studentBusAssignmentService';
+import {
+  createBus,
+  deleteBus,
+  getVisibleDrivers,
+  updateBus,
+} from '@/services/transportationStructureService';
+import type { OrganizationProfile, School } from '@/types/organization';
+import type { CreateAssignmentInput, DriverRouteAssignment } from '@/types/driverAssignments';
+import type {
+  Bus,
+  BusStatus,
+  CreateBusInput,
+  Driver,
+  UpdateBusInput,
+} from '@/types/transportation';
+import { activeDriverForBusService } from '@/utils/transportAssignments';
 
 const busStatusTone: Record<BusStatus, 'success' | 'warning' | 'danger' | 'neutral'> = {
   active: 'success',
@@ -40,7 +65,12 @@ export function AdminBusesPage() {
   const { profile } = useAuth();
   const list = usePaginatedAdminList<Bus & { school_name: string | null }>('buses');
   const [schools, setSchools] = useState<School[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [profiles, setProfiles] = useState<OrganizationProfile[]>([]);
+  const [busServices, setBusServices] = useState<BusServiceOption[]>([]);
+  const [driverAssignments, setDriverAssignments] = useState<DriverRouteAssignment[]>([]);
   const [editingBus, setEditingBus] = useState<Bus | null>(null);
+  const [assigningDriverBus, setAssigningDriverBus] = useState<Bus | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -48,16 +78,40 @@ export function AdminBusesPage() {
   const [deleting, setDeleting] = useState(false);
 
   const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
+  const canAssignDriver = profile?.role === 'tenant_admin';
   const canDelete =
     !!profile && (profile.role === 'tenant_admin' || profile.role === 'platform_super_admin');
 
+  async function loadAssignmentData() {
+    const [schoolResult, driverResult, profileResult, serviceResult, assignmentResult] =
+      await Promise.allSettled([
+        getVisibleSchools(),
+        getVisibleDrivers(),
+        getVisibleProfiles(),
+        fetchAdminBusServices(),
+        fetchAdminAssignments(),
+      ]);
+    setSchools(schoolResult.status === 'fulfilled' ? schoolResult.value : []);
+    setDrivers(driverResult.status === 'fulfilled' ? driverResult.value : []);
+    setProfiles(profileResult.status === 'fulfilled' ? profileResult.value : []);
+    setBusServices(serviceResult.status === 'fulfilled' ? serviceResult.value : []);
+    setDriverAssignments(
+      assignmentResult.status === 'fulfilled' ? assignmentResult.value : [],
+    );
+  }
+
   useEffect(() => {
-    void getVisibleSchools().then(setSchools);
+    void loadAssignmentData();
   }, []);
 
   const schoolNames = useMemo(() => {
     return new Map(schools.map((school) => [school.id, school.name]));
   }, [schools]);
+
+  const profileLabels = useMemo(
+    () => new Map(profiles.map((item) => [item.id, item.full_name])),
+    [profiles],
+  );
 
   async function handleCreateBus(input: CreateBusInput | UpdateBusInput) {
     setWriteError(null);
@@ -103,13 +157,32 @@ export function AdminBusesPage() {
     }
   }
 
+  async function handleAssignDriver(input: CreateAssignmentInput) {
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await createDriverAssignment(input, profile?.tenant_id ?? null);
+      setAssigningDriverBus(null);
+      setSuccessMessage('Driver assigned to the bus trip.');
+      await loadAssignmentData();
+      await list.reload();
+    } catch (assignError) {
+      const message =
+        assignError instanceof Error
+          ? assignError.message
+          : 'Unable to assign this driver.';
+      setWriteError(message);
+      throw assignError;
+    }
+  }
+
   return (
     <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Buses"
           title="Visible buses"
-          description="Bus records returned by Supabase under the current admin user's RLS permissions."
+          description="Manage fleet records and assign drivers to each bus's active route trips."
         />
 
         {canWrite && (
@@ -127,6 +200,23 @@ export function AdminBusesPage() {
 
         <AdminWriteMessage message={successMessage} />
         <AdminWriteError message={writeError} />
+
+        {canAssignDriver && assigningDriverBus && (
+          <InlineFormShell title={`Assign driver to Bus ${assigningDriverBus.bus_number}`}>
+            <BusDriverAssignmentForm
+              bus={assigningDriverBus}
+              services={busServices.filter(
+                (service) =>
+                  service.bus_id === assigningDriverBus.id &&
+                  service.status === 'active',
+              )}
+              drivers={drivers}
+              profileLabels={profileLabels}
+              onSubmit={handleAssignDriver}
+              onCancel={() => setAssigningDriverBus(null)}
+            />
+          </InlineFormShell>
+        )}
 
         {canWrite && showCreateForm && (
           <InlineFormShell title="Add bus">
@@ -192,14 +282,39 @@ export function AdminBusesPage() {
                   <div className="flex flex-wrap items-center gap-3">
                     <StatusPill tone={busStatusTone[bus.status]}>{bus.status}</StatusPill>
                     {canWrite && (
-                      <Button type="button" size="sm" variant="secondary" onClick={() => {
-                        setShowCreateForm(false);
-                        setEditingBus(bus);
-                        setWriteError(null);
-                        setSuccessMessage(null);
-                      }}>
-                        Edit
-                      </Button>
+                      <>
+                        {canAssignDriver && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => {
+                              setShowCreateForm(false);
+                              setEditingBus(null);
+                              setAssigningDriverBus(bus);
+                              setWriteError(null);
+                              setSuccessMessage(null);
+                            }}
+                            disabled={
+                              !busServices.some(
+                                (service) =>
+                                  service.bus_id === bus.id &&
+                                  service.status === 'active',
+                              )
+                            }
+                          >
+                            Assign driver
+                          </Button>
+                        )}
+                        <Button type="button" size="sm" variant="secondary" onClick={() => {
+                          setShowCreateForm(false);
+                          setAssigningDriverBus(null);
+                          setEditingBus(bus);
+                          setWriteError(null);
+                          setSuccessMessage(null);
+                        }}>
+                          Edit
+                        </Button>
+                      </>
                     )}
                     {canDelete && (
                       <Button
@@ -241,6 +356,54 @@ export function AdminBusesPage() {
                   <p className="text-gray-600">
                     Bus id: <span className="font-semibold text-navy-900">{bus.id}</span>
                   </p>
+                </div>
+                <div className="mt-5 border-t border-gray-100 pt-4">
+                  <h3 className="text-sm font-bold text-navy-900">
+                    Route trips and drivers
+                  </h3>
+                  {busServices.filter(
+                    (service) =>
+                      service.bus_id === bus.id && service.status === 'active',
+                  ).length === 0 ? (
+                    <p className="mt-2 text-sm text-gray-600">
+                      Assign this bus from the Routes page before assigning a driver.
+                    </p>
+                  ) : (
+                    <ul className="mt-3 grid gap-2 md:grid-cols-2">
+                      {busServices
+                        .filter(
+                          (service) =>
+                            service.bus_id === bus.id &&
+                            service.status === 'active',
+                        )
+                        .map((service) => {
+                          const assignment = activeDriverForBusService(
+                            service,
+                            driverAssignments,
+                          );
+                          const driver = drivers.find(
+                            (item) => item.id === assignment?.driver_id,
+                          );
+                          return (
+                            <li
+                              key={service.id}
+                              className="rounded-lg bg-gray-50 p-3"
+                            >
+                              <p className="font-semibold text-navy-900">
+                                {service.route_code} · {service.trip_name}
+                              </p>
+                              <p className="mt-1 text-gray-600">
+                                Driver:{' '}
+                                <span className="font-semibold text-navy-900">
+                                  {profileLabels.get(driver?.profile_id ?? '') ??
+                                    'Not assigned'}
+                                </span>
+                              </p>
+                            </li>
+                          );
+                        })}
+                    </ul>
+                  )}
                 </div>
               </Card>
             ))}

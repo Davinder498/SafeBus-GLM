@@ -12,7 +12,7 @@ const routeStatusTone: Record<RouteStatus, 'success' | 'danger' | 'neutral'> = {
 export interface RouteTileAssignment {
   busLabel: string | null;
   driverLabel: string | null;
-  tripType: string | null;
+  tripName: string;
 }
 
 interface RouteTileProps {
@@ -22,7 +22,9 @@ interface RouteTileProps {
   assignments: RouteTileAssignment[];
   canWrite: boolean;
   canDelete?: boolean;
+  canAssignBus?: boolean;
   onEdit: () => void;
+  onAssignBus?: () => void;
   onDelete?: () => void;
 }
 
@@ -33,7 +35,9 @@ export function RouteTile({
   assignments,
   canWrite,
   canDelete = false,
+  canAssignBus = false,
   onEdit,
+  onAssignBus,
   onDelete,
 }: RouteTileProps) {
   const activeAssignments = assignments.filter((a) => a.busLabel);
@@ -72,35 +76,45 @@ export function RouteTile({
             {schoolName ?? 'No school'}
           </dd>
         </div>
-        <div className="flex justify-between gap-2">
-          <dt className="text-gray-500">Bus</dt>
-          <dd className="truncate text-right font-semibold text-navy-900">
-            {activeAssignments.length > 0
-              ? activeAssignments.map((a) => a.busLabel).join(', ')
-              : 'Not assigned'}
+        <div className="flex items-start justify-between gap-3">
+          <dt className="shrink-0 text-gray-500">Bus trips</dt>
+          <dd className="min-w-0 space-y-2 text-right">
+            {activeAssignments.length === 0 ? (
+              <span className="font-semibold text-navy-900">Not assigned</span>
+            ) : (
+              activeAssignments.map((assignment, index) => (
+                <div key={`${assignment.tripName}-${assignment.busLabel}-${index}`}>
+                  <p className="font-semibold text-navy-900">
+                    {assignment.tripName}: {assignment.busLabel}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Driver: {assignment.driverLabel ?? 'Not assigned'}
+                  </p>
+                </div>
+              ))
+            )}
           </dd>
         </div>
-        {activeAssignments.length > 0 && activeAssignments[0].driverLabel && (
-          <div className="flex justify-between gap-2">
-            <dt className="text-gray-500">Driver</dt>
-            <dd className="truncate text-right font-semibold text-navy-900">
-              {activeAssignments[0].driverLabel}
-            </dd>
-          </div>
-        )}
       </dl>
 
       {canWrite && (
-        <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
-          <button
-            type="button"
-            onClick={onEdit}
-            className="text-sm font-semibold text-navy-700 hover:text-navy-900 hover:underline"
-          >
-            Edit route &rarr;
-          </button>
+        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4">
+          <Button type="button" size="sm" variant="secondary" onClick={onEdit}>
+            Edit route
+          </Button>
+          {canAssignBus && onAssignBus && (
+            <Button type="button" size="sm" onClick={onAssignBus}>
+              Assign bus
+            </Button>
+          )}
           {canDelete && onDelete && (
-            <Button type="button" size="sm" variant="danger" onClick={onDelete}>
+            <Button
+              type="button"
+              size="sm"
+              variant="danger"
+              className="ml-auto"
+              onClick={onDelete}
+            >
               Delete
             </Button>
           )}
