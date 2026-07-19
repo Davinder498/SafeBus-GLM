@@ -1,10 +1,12 @@
 import type { RouteObject } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
 import { AdminAssignmentsPage } from '@/pages/AdminAssignmentsPage';
+import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
 import { AdminBusesPage } from '@/pages/AdminBusesPage';
 import { LandingPage } from '@/pages/LandingPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
+import { UpdatePasswordPage } from '@/pages/UpdatePasswordPage';
 import { AdminDriversPage } from '@/pages/AdminDriversPage';
 import { AdminDriverDetailPage } from '@/pages/AdminDriverDetailPage';
 import { AdminDashboardPage } from '@/pages/AdminDashboardPage';
@@ -45,7 +47,9 @@ export const appRoutes: RouteObject[] = [
       </PublicOnlyRoute>
     ),
   },
+  { path: '/accept-invitation', element: <AcceptInvitationPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
+  { path: '/update-password', element: <UpdatePasswordPage /> },
   {
     path: '/admin',
     element: (
@@ -60,10 +64,21 @@ export const appRoutes: RouteObject[] = [
   { path: '/admin/people', element: <Navigate to="/admin" replace /> },
   { path: '/admin/more', element: <Navigate to="/admin" replace /> },
   { path: '/admin/stops', element: <Navigate to="/admin/routes" replace /> },
-  { path: '/admin/tenants', element: <ProtectedRoute allowedRoles={['platform_super_admin']}><PlatformTenantsPage /></ProtectedRoute> },
+  {
+    path: '/admin/tenants',
+    element: (
+      <ProtectedRoute allowedRoles={['platform_super_admin']}>
+        <PlatformTenantsPage />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: '/admin/trips',
-    element: <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}><AdminTripsPage /></ProtectedRoute>,
+    element: (
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
+        <AdminTripsPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/admin/settings',

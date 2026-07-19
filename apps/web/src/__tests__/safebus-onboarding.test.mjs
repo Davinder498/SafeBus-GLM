@@ -27,6 +27,7 @@ function query(result = { data: null, error: null }) {
     eq: vi.fn(() => value),
     ilike: vi.fn(() => value),
     neq: vi.fn(() => value),
+    in: vi.fn(() => value),
     order: vi.fn(() => value),
     maybeSingle: vi.fn(async () => result),
     single: vi.fn(async () => result),
@@ -72,6 +73,10 @@ function setupClients({
           data: { user: authUser },
           error: null,
         })),
+        updateUserById: vi.fn(async () => ({
+          data: { user: authUser },
+          error: null,
+        })),
       },
       resend: vi.fn(async () => ({ data: {}, error: null })),
     },
@@ -85,7 +90,7 @@ function setupClients({
     }),
   };
   createClient.mockReturnValueOnce(userClient).mockReturnValueOnce(adminClient);
-  return { userClient, adminClient };
+  return { userClient, adminClient, profileLookup };
 }
 
 function event(body) {
@@ -118,6 +123,12 @@ describe('SafeBus member onboarding', () => {
       guardianId: 'guardian-row-1',
     });
     expect(adminClient.auth.admin.inviteUserByEmail).toHaveBeenCalledOnce();
+    expect(adminClient.auth.admin.inviteUserByEmail).toHaveBeenCalledWith(
+      'guardian@example.test',
+      expect.objectContaining({
+        redirectTo: 'https://app.example.test/accept-invitation',
+      }),
+    );
     expect(adminClient.auth.admin.getUserById).not.toHaveBeenCalled();
     expect(adminClient.auth.admin.listUsers).toBeUndefined();
   });
@@ -145,6 +156,40 @@ describe('SafeBus member onboarding', () => {
     expect(adminClient.auth.resend).toHaveBeenCalledOnce();
     expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
     expect(adminClient.auth.admin.listUsers).toBeUndefined();
+  });
+
+  it('does not activate an invited profile merely because its invite link created an Auth session', async () => {
+    const existingProfile = {
+      id: 'guardian-auth-1',
+      tenant_id: 'tenant-1',
+      role: 'guardian',
+      status: 'invited',
+    };
+    const { adminClient, profileLookup } = setupClients({
+      profile: existingProfile,
+      authUser: {
+        id: existingProfile.id,
+        email: 'guardian@example.test',
+        last_sign_in_at: '2026-07-19T18:00:00Z',
+      },
+    });
+
+    const response = await handler(
+      event({
+        firstName: 'Guardian',
+        lastName: 'One',
+        email: 'guardian@example.test',
+        phone: '555-0100',
+      }),
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body).status).toBe('existing_email');
+    expect(adminClient.auth.resend).not.toHaveBeenCalled();
+    expect(profileLookup.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'invited' }),
+      { onConflict: 'id' },
+    );
   });
 
   it('rejects an email already assigned to another tenant', async () => {
@@ -247,5 +292,45 @@ describe('SafeBus member onboarding', () => {
 
     expect(response.statusCode).toBe(400);
     expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
+  });
+
+  it('lets only the platform super admin deactivate a tenant admin account', async () => {
+    const platformAdmin = {
+      ...caller,
+      id: 'platform-admin-1',
+      tenant_id: null,
+      role: 'platform_super_admin',
+    };
+    const tenantAdmin = {
+      id: 'tenant-admin-1',
+      tenant_id: 'tenant-1',
+      role: 'tenant_admin',
+      status: 'active',
+    };
+    const { adminClient } = setupClients({
+      callerProfile: platformAdmin,
+      profile: tenantAdmin,
+      authUser: {
+        id: tenantAdmin.id,
+        email: 'tenant-admin@example.test',
+        last_sign_in_at: '2026-01-01T00:00:00Z',
+      },
+    });
+
+    const response = await handler({
+      httpMethod: 'POST',
+      headers: { authorization: 'Bearer test-token' },
+      body: JSON.stringify({
+        kind: 'tenantAdminLifecycle',
+        profileId: tenantAdmin.id,
+        status: 'disabled',
+      }),
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual({ status: 'disabled' });
+    expect(adminClient.auth.admin.updateUserById).toHaveBeenCalledWith(tenantAdmin.id, {
+      ban_duration: '876000h',
+    });
   });
 });

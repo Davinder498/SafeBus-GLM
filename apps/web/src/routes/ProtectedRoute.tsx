@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { getDashboardPath, type ProfileRole } from '@/contexts/AuthContext';
@@ -65,6 +65,19 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
       <AuthMessage
         title="Profile setup needed"
         message={authError ?? 'Your SafeBus profile could not be loaded.'}
+      />
+    );
+  }
+
+  if (profile.status === 'invited') {
+    return <Navigate to="/accept-invitation" replace />;
+  }
+
+  if (profile.status !== 'active') {
+    return (
+      <AuthMessage
+        title="Account unavailable"
+        message={`This SafeBus account is ${profile.status}. Ask your administrator to reactivate it.`}
       />
     );
   }

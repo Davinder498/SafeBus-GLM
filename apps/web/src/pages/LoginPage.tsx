@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { signIn, configError } = useAuth();
+  const { signIn, signOut, configError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -22,6 +22,16 @@ export function LoginPage() {
 
     try {
       const profile = await signIn(email, password);
+      if (profile.status === 'invited') {
+        navigate('/accept-invitation', { replace: true });
+        return;
+      }
+      if (profile.status !== 'active') {
+        await signOut();
+        throw new Error(
+          `This SafeBus account is ${profile.status}. Ask your administrator to reactivate it.`,
+        );
+      }
       navigate(getDashboardPath(profile.role), { replace: true });
     } catch (signInError) {
       setError(signInError instanceof Error ? signInError.message : 'Unable to sign in.');
@@ -75,7 +85,9 @@ export function LoginPage() {
             <span className="text-lg font-bold tracking-tight text-slate-900">SafeBus Alberta</span>
           </Link>
 
-          <p className="text-xs font-semibold uppercase tracking-[0.1em] text-navy-600">Account access</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.1em] text-navy-600">
+            Account access
+          </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">Sign in</h1>
           <p className="mt-2 text-sm text-slate-500">
             Use your email and password. Demo accounts will be configured separately.
@@ -110,7 +122,13 @@ export function LoginPage() {
                 required
               />
             </Field>
-            <Button type="submit" fullWidth size="lg" loading={submitting} disabled={Boolean(configError)}>
+            <Button
+              type="submit"
+              fullWidth
+              size="lg"
+              loading={submitting}
+              disabled={Boolean(configError)}
+            >
               Sign in
             </Button>
           </form>

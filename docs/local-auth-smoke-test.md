@@ -137,6 +137,10 @@ Expected redirects:
 - `tenant_admin` -> `/admin`
 - `driver` -> `/driver`
 - `guardian` -> `/parent`
+- any profile with `status = 'invited'` -> `/accept-invitation` until a password
+  is created and account activation completes
+- any profile with `status = 'suspended'` or `status = 'disabled'` -> account
+  unavailable; no dashboard access
 
 Admin-style roles that should route to `/admin`:
 
