@@ -42,7 +42,17 @@ function query(result = { data: null, error: null }) {
 function setupClients({
   profile = null,
   callerProfile = caller,
-  rpcResults = [],
+  rpcResults = [
+    {
+      data: {
+        profileId: 'guardian-auth-1',
+        guardianId: 'guardian-row-1',
+        driverId: null,
+      },
+      error: null,
+    },
+  ],
+  adminRpcResults = [{ data: null, error: null }],
   inviteError = null,
   resetPasswordError = null,
   authUser = {
@@ -88,6 +98,7 @@ function setupClients({
         error: resetPasswordError,
       })),
     },
+    rpc: vi.fn(async () => adminRpcResults.shift() ?? { data: null, error: null }),
     from: vi.fn((table) => {
       if (table === 'profiles') {
         profileSelectCount += 1;
@@ -146,6 +157,11 @@ describe('SafeBus member onboarding', () => {
     expect(JSON.parse(response.body)).toEqual({
       status: 'sent',
       guardianId: 'guardian-row-1',
+      driverId: null,
+      recipientEmail: 'guardian@example.test',
+    });
+    expect(adminClient.rpc).toHaveBeenCalledWith('server_get_member_invitation_state', {
+      p_email: 'guardian@example.test',
     });
     expect(adminClient.auth.admin.inviteUserByEmail).toHaveBeenCalledOnce();
     expect(adminClient.auth.admin.inviteUserByEmail).toHaveBeenCalledWith(
@@ -158,14 +174,82 @@ describe('SafeBus member onboarding', () => {
     expect(adminClient.auth.admin.listUsers).toBeUndefined();
   });
 
-  it('uses direct user-id lookup for an existing same-tenant profile', async () => {
-    const existingProfile = {
-      id: 'guardian-auth-1',
-      tenant_id: 'tenant-1',
-      role: 'guardian',
-      status: 'invited',
-    };
-    const { adminClient } = setupClients({ profile: existingProfile });
+  it('finalizes a guardian and selected student link in one database request', async () => {
+    const { adminClient, userClient } = setupClients();
+    const response = await handler(
+      event({
+        firstName: 'Guardian',
+        lastName: 'Linked',
+        email: 'guardian@example.test',
+        phone: '5878940568',
+        studentLinks: [
+          {
+            studentId: 'student-1',
+            relationship: 'mother',
+          },
+        ],
+      }),
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(userClient.rpc).toHaveBeenCalledTimes(1);
+    expect(userClient.rpc).toHaveBeenCalledWith(
+      'admin_finalize_member_invitation',
+      expect.objectContaining({
+        p_role: 'guardian',
+        p_phone: '5878940568',
+        p_student_links: [
+          {
+            studentId: 'student-1',
+            relationship: 'mother',
+          },
+        ],
+      }),
+    );
+    expect(adminClient.from).not.toHaveBeenCalledWith('students');
+    expect(adminClient.from).not.toHaveBeenCalledWith('guardians');
+    expect(adminClient.from).not.toHaveBeenCalledWith('tenant_onboarding_invitations');
+  });
+
+  it('rolls back a newly invited Auth user when atomic member finalization fails', async () => {
+    const { adminClient } = setupClients({
+      rpcResults: [
+        {
+          data: null,
+          error: { message: 'Selected student is outside the tenant.' },
+        },
+      ],
+    });
+    const response = await handler(
+      event({
+        firstName: 'Guardian',
+        lastName: 'Invalid Link',
+        email: 'guardian@example.test',
+        phone: '5878940568',
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body).error).toContain('could not create the member record');
+    expect(adminClient.auth.admin.deleteUser).toHaveBeenCalledWith('guardian-auth-1');
+  });
+
+  it('uses account recovery for a confirmed pending member invitation', async () => {
+    const { adminClient } = setupClients({
+      adminRpcResults: [
+        {
+          data: {
+            authUserId: 'guardian-auth-1',
+            emailConfirmed: true,
+            profileId: 'guardian-auth-1',
+            profileTenantId: 'tenant-1',
+            profileRole: 'guardian',
+            profileStatus: 'invited',
+          },
+          error: null,
+        },
+      ],
+    });
     const response = await handler(
       event({
         firstName: 'Guardian',
@@ -176,27 +260,39 @@ describe('SafeBus member onboarding', () => {
     );
 
     expect(response.statusCode).toBe(200);
-    expect(JSON.parse(response.body).status).toBe('resent');
-    expect(adminClient.auth.admin.getUserById).toHaveBeenCalledWith('guardian-auth-1');
-    expect(adminClient.auth.resend).toHaveBeenCalledOnce();
+    expect(JSON.parse(response.body).status).toBe('recovery_sent');
+    expect(adminClient.auth.resetPasswordForEmail).toHaveBeenCalledWith('guardian@example.test', {
+      redirectTo: 'https://app.example.test/accept-invitation',
+    });
     expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
     expect(adminClient.auth.admin.listUsers).toBeUndefined();
   });
 
-  it('does not activate an invited profile merely because its invite link created an Auth session', async () => {
-    const existingProfile = {
-      id: 'guardian-auth-1',
-      tenant_id: 'tenant-1',
-      role: 'guardian',
-      status: 'invited',
-    };
-    const { adminClient, profileLookup } = setupClients({
-      profile: existingProfile,
-      authUser: {
-        id: existingProfile.id,
-        email: 'guardian@example.test',
-        last_sign_in_at: '2026-07-19T18:00:00Z',
-      },
+  it('resends an unconfirmed pending member without deleting its profile', async () => {
+    const { adminClient, userClient } = setupClients({
+      adminRpcResults: [
+        {
+          data: {
+            authUserId: 'stale-guardian-auth',
+            emailConfirmed: false,
+            profileId: 'stale-guardian-auth',
+            profileTenantId: 'tenant-1',
+            profileRole: 'guardian',
+            profileStatus: 'invited',
+          },
+          error: null,
+        },
+      ],
+      rpcResults: [
+        {
+          data: {
+            profileId: 'stale-guardian-auth',
+            guardianId: 'guardian-row-1',
+            driverId: null,
+          },
+          error: null,
+        },
+      ],
     });
 
     const response = await handler(
@@ -209,22 +305,36 @@ describe('SafeBus member onboarding', () => {
     );
 
     expect(response.statusCode).toBe(200);
-    expect(JSON.parse(response.body).status).toBe('existing_email');
-    expect(adminClient.auth.resend).not.toHaveBeenCalled();
-    expect(profileLookup.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'invited' }),
-      { onConflict: 'id' },
+    expect(JSON.parse(response.body).status).toBe('resent');
+    expect(adminClient.auth.resend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'signup',
+        email: 'guardian@example.test',
+      }),
+    );
+    expect(adminClient.auth.admin.deleteUser).not.toHaveBeenCalled();
+    expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
+    expect(userClient.rpc).toHaveBeenCalledWith(
+      'admin_finalize_member_invitation',
+      expect.objectContaining({ p_auth_user_id: 'stale-guardian-auth' }),
     );
   });
 
   it('rejects an email already assigned to another tenant', async () => {
     const { adminClient } = setupClients({
-      profile: {
-        id: 'guardian-auth-2',
-        tenant_id: 'tenant-2',
-        role: 'guardian',
-        status: 'active',
-      },
+      adminRpcResults: [
+        {
+          data: {
+            authUserId: 'guardian-auth-2',
+            emailConfirmed: true,
+            profileId: 'guardian-auth-2',
+            profileTenantId: 'tenant-2',
+            profileRole: 'guardian',
+            profileStatus: 'active',
+          },
+          error: null,
+        },
+      ],
     });
     const response = await handler(
       event({
@@ -242,12 +352,19 @@ describe('SafeBus member onboarding', () => {
 
   it('does not silently reactivate a suspended member', async () => {
     const { adminClient } = setupClients({
-      profile: {
-        id: 'guardian-auth-1',
-        tenant_id: 'tenant-1',
-        role: 'guardian',
-        status: 'suspended',
-      },
+      adminRpcResults: [
+        {
+          data: {
+            authUserId: 'guardian-auth-1',
+            emailConfirmed: true,
+            profileId: 'guardian-auth-1',
+            profileTenantId: 'tenant-1',
+            profileRole: 'guardian',
+            profileStatus: 'suspended',
+          },
+          error: null,
+        },
+      ],
     });
     const response = await handler(
       event({
@@ -279,7 +396,23 @@ describe('SafeBus member onboarding', () => {
   });
 
   it('validates complete driver licence and address details before sending an invite', async () => {
-    const { adminClient } = setupClients();
+    const { adminClient, userClient } = setupClients({
+      rpcResults: [
+        {
+          data: {
+            profileId: 'driver-auth-1',
+            guardianId: null,
+            driverId: 'driver-row-1',
+          },
+          error: null,
+        },
+      ],
+      authUser: {
+        id: 'driver-auth-1',
+        email: 'alex.driver@example.test',
+        last_sign_in_at: null,
+      },
+    });
     const response = await handler(
       event({
         role: 'driver',
@@ -299,8 +432,23 @@ describe('SafeBus member onboarding', () => {
     );
 
     expect(response.statusCode).toBe(200);
-    expect(JSON.parse(response.body)).toEqual({ status: 'sent', guardianId: null });
+    expect(JSON.parse(response.body)).toEqual({
+      status: 'sent',
+      guardianId: null,
+      driverId: 'driver-row-1',
+      recipientEmail: 'alex.driver@example.test',
+    });
     expect(adminClient.auth.admin.inviteUserByEmail).toHaveBeenCalledOnce();
+    expect(userClient.rpc).toHaveBeenCalledWith(
+      'admin_finalize_member_invitation',
+      expect.objectContaining({
+        p_role: 'driver',
+        p_driver_details: expect.objectContaining({
+          license_number: 'AB-123456',
+          postal_code: 'T5J 0N3',
+        }),
+      }),
+    );
   });
 
   it('does not call Auth when required driver compliance details are missing', async () => {

@@ -1,6 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-const json = (statusCode, body) => ({ statusCode, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+const json = (statusCode, body) => ({
+  statusCode,
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify(body),
+});
 const clean = (v) => (typeof v === 'string' ? v.trim() : '');
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -8,6 +12,7 @@ const CANADIAN_POSTAL_CODE_PATTERN = /^[A-Z]\d[A-Z][ -]?\d[A-Z]\d$/i;
 const MEMBER_ROLES = new Set(['driver', 'guardian']);
 const ALBERTA_LICENSE_CLASSES = new Set(['1', '2', '3', '4', '5', '6', '7']);
 const GUARDIAN_RELATIONSHIPS = new Set(['mother', 'father', 'guardian', 'caregiver', 'other']);
+const SUPABASE_REQUEST_TIMEOUT_MS = 12_000;
 
 function invitationRedirectUrl(event) {
   const configured = clean(process.env.SAFEBUS_INVITE_REDIRECT_URL);
@@ -26,14 +31,28 @@ function invitationRedirectUrl(event) {
   }
 }
 
+async function fetchWithTimeout(input, init = {}) {
+  const timeoutSignal = AbortSignal.timeout(SUPABASE_REQUEST_TIMEOUT_MS);
+  const signal = init.signal ? AbortSignal.any([init.signal, timeoutSignal]) : timeoutSignal;
+  return fetch(input, { ...init, signal });
+}
+
 function clients(token) {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const anon = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
   const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !anon || !service) throw new Error('Server onboarding is not configured.');
   return {
-    user: createClient(url, anon, { global: { headers: { Authorization: `Bearer ${token}` } } }),
-    admin: createClient(url, service, { auth: { autoRefreshToken: false, persistSession: false } }),
+    user: createClient(url, anon, {
+      global: {
+        fetch: fetchWithTimeout,
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    }),
+    admin: createClient(url, service, {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { fetch: fetchWithTimeout },
+    }),
   };
 }
 
@@ -49,35 +68,17 @@ async function requireCaller(event, allowedRoles) {
     .select('id, tenant_id, role, status, full_name, email')
     .eq('id', userData.user.id)
     .maybeSingle();
-  if (profileError || !profile || profile.status !== 'active' || !allowedRoles.includes(profile.role)) {
-    return { error: json(403, { error: 'You are not allowed to perform this onboarding action.' }) };
+  if (
+    profileError ||
+    !profile ||
+    profile.status !== 'active' ||
+    !allowedRoles.includes(profile.role)
+  ) {
+    return {
+      error: json(403, { error: 'You are not allowed to perform this onboarding action.' }),
+    };
   }
   return { ...c, caller: profile };
-}
-
-async function inviteAuthUser(admin, email, fullName, redirectTo, existingProfileId = null) {
-  if (existingProfileId) {
-    const existing = await admin.auth.admin.getUserById(existingProfileId);
-    if (existing.error || !existing.data?.user) {
-      throw new Error('The existing member account could not be verified.');
-    }
-    if (existing.data.user.last_sign_in_at) {
-      return { user: existing.data.user, status: 'existing_email' };
-    }
-    const resent = await admin.auth.resend({
-      type: 'signup',
-      email,
-      options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
-    });
-    if (resent.error) throw new Error('Unable to resend the member invitation.');
-    return { user: existing.data.user, status: 'resent' };
-  }
-
-  const options = { data: { full_name: fullName } };
-  if (redirectTo) options.redirectTo = redirectTo;
-  const invited = await admin.auth.admin.inviteUserByEmail(email, options);
-  if (!invited.error) return { user: invited.data.user, status: 'sent' };
-  throw new Error('Unable to send invitation. The email may already belong to another SafeBus account.');
 }
 
 async function sendInitialTenantAdminInvitation(ctx, email, fullName, redirectTo) {
@@ -174,6 +175,128 @@ async function sendInitialTenantAdminInvitation(ctx, email, fullName, redirectTo
   };
 }
 
+async function sendTenantMemberInvitation(ctx, { email, fullName, redirectTo, role, tenantId }) {
+  const { data: accountState, error: stateError } = await ctx.admin.rpc(
+    'server_get_member_invitation_state',
+    { p_email: email },
+  );
+  if (stateError) {
+    return {
+      error: json(500, {
+        error:
+          'Member invitations are unavailable because the required database update has not been applied.',
+      }),
+    };
+  }
+
+  if (accountState?.profileId) {
+    if (accountState.profileTenantId !== tenantId || accountState.profileRole !== role) {
+      return {
+        error: json(409, {
+          error: 'That email is already linked to a different SafeBus tenant or role.',
+        }),
+      };
+    }
+    if (accountState.profileStatus === 'active') {
+      return {
+        error: json(409, {
+          error: 'That member account is already active. No invitation was sent.',
+        }),
+      };
+    }
+    if (accountState.profileStatus !== 'invited') {
+      return {
+        error: json(409, {
+          error:
+            'That member account is suspended or disabled. Reactivate it before sending another invitation.',
+        }),
+      };
+    }
+  }
+
+  if (accountState?.authUserId && accountState.emailConfirmed) {
+    const unbanned = await ctx.admin.auth.admin.updateUserById(accountState.authUserId, {
+      ban_duration: 'none',
+      user_metadata: { full_name: fullName },
+    });
+    if (unbanned.error) {
+      return {
+        error: json(400, {
+          error:
+            'SafeBus found an unfinished member account but could not prepare it for another invitation.',
+        }),
+      };
+    }
+    const recovery = await ctx.admin.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    });
+    if (recovery.error) {
+      return {
+        error: json(400, {
+          error:
+            'The member invitation email was not accepted by the email provider. No member was added.',
+        }),
+      };
+    }
+    return {
+      userId: accountState.authUserId,
+      status: 'recovery_sent',
+      createdAuthUser: false,
+    };
+  }
+
+  if (accountState?.authUserId && accountState.profileId) {
+    const options = redirectTo ? { emailRedirectTo: redirectTo } : undefined;
+    const resent = await ctx.admin.auth.resend({
+      type: 'signup',
+      email,
+      options,
+    });
+    if (resent.error) {
+      return {
+        error: json(400, {
+          error:
+            'SafeBus found the pending member, but the invitation email could not be resent. The existing member record was preserved.',
+        }),
+      };
+    }
+    return {
+      userId: accountState.authUserId,
+      status: 'resent',
+      createdAuthUser: false,
+    };
+  }
+
+  if (accountState?.authUserId) {
+    const removed = await ctx.admin.auth.admin.deleteUser(accountState.authUserId);
+    if (removed.error) {
+      return {
+        error: json(400, {
+          error:
+            'SafeBus found an unfinished member account that could not be safely replaced. No invitation was sent.',
+        }),
+      };
+    }
+  }
+
+  const options = { data: { full_name: fullName } };
+  if (redirectTo) options.redirectTo = redirectTo;
+  const invited = await ctx.admin.auth.admin.inviteUserByEmail(email, options);
+  if (invited.error || !invited.data?.user?.id) {
+    return {
+      error: json(409, {
+        error:
+          'The member invitation email was not sent and no member was added. This email may already belong to another SafeBus account.',
+      }),
+    };
+  }
+  return {
+    userId: invited.data.user.id,
+    status: 'sent',
+    createdAuthUser: true,
+  };
+}
+
 async function createTenant(event, body) {
   const ctx = await requireCaller(event, ['platform_super_admin']);
   if (ctx.error) return ctx.error;
@@ -202,12 +325,7 @@ async function createTenant(event, body) {
   }
 
   const redirectTo = invitationRedirectUrl(event);
-  const invitation = await sendInitialTenantAdminInvitation(
-    ctx,
-    email,
-    adminName,
-    redirectTo,
-  );
+  const invitation = await sendInitialTenantAdminInvitation(ctx, email, adminName, redirectTo);
   if (invitation.error) return invitation.error;
 
   const { data: setup, error: setupError } = await ctx.user.rpc(
@@ -243,7 +361,8 @@ async function inviteMember(event, body) {
   const ctx = await requireCaller(event, ['tenant_admin']);
   if (ctx.error) return ctx.error;
   const role = clean(body.role);
-  if (!MEMBER_ROLES.has(role)) return json(400, { error: 'Only driver or guardian invitations are supported here.' });
+  if (!MEMBER_ROLES.has(role))
+    return json(400, { error: 'Only driver or guardian invitations are supported here.' });
   const tenantId = ctx.caller.tenant_id;
   const firstName = clean(body.firstName);
   const lastName = clean(body.lastName);
@@ -253,20 +372,15 @@ async function inviteMember(event, body) {
   if (!tenantId || !firstName || !lastName || !email || !phone) {
     return json(400, { error: 'First name, last name, email, and phone are required.' });
   }
-  if (firstName.length > 100 || lastName.length > 100 || email.length > 320 || phone.length > 40 || !EMAIL_PATTERN.test(email)) {
+  if (
+    firstName.length > 100 ||
+    lastName.length > 100 ||
+    email.length > 320 ||
+    phone.length > 40 ||
+    !EMAIL_PATTERN.test(email)
+  ) {
     return json(400, { error: 'Enter valid guardian or driver contact details.' });
   }
-  const { data: existingProfile, error: existingProfileError } = await ctx.admin
-    .from('profiles')
-    .select('id, tenant_id, role, status')
-    .eq('email', email)
-    .maybeSingle();
-  if (existingProfileError) return json(400, { error: 'Unable to verify the member email.' });
-  if (existingProfile && (existingProfile.tenant_id !== tenantId || existingProfile.role !== role)) return json(409, { error: 'That email is already linked to a different SafeBus tenant or role. Use a separate pilot account.' });
-  if (existingProfile && !['invited', 'active'].includes(existingProfile.status)) {
-    return json(409, { error: 'That member account is suspended or disabled. Reactivate it before sending another invitation.' });
-  }
-
   let driverDetails = null;
   if (role === 'driver') {
     const licenseNumber = clean(body.licenseNumber).toUpperCase();
@@ -278,8 +392,19 @@ async function inviteMember(event, body) {
     const city = clean(body.city);
     const province = clean(body.province).toUpperCase() || 'AB';
     const postalCode = clean(body.postalCode).toUpperCase();
-    if (!licenseNumber || !licenseIssueDate || !licenseExpiryDate || !licenseClass || !addressLine1 || !city || !province || !postalCode) {
-      return json(400, { error: 'Driver licence dates, class, number, and mailing address are required.' });
+    if (
+      !licenseNumber ||
+      !licenseIssueDate ||
+      !licenseExpiryDate ||
+      !licenseClass ||
+      !addressLine1 ||
+      !city ||
+      !province ||
+      !postalCode
+    ) {
+      return json(400, {
+        error: 'Driver licence dates, class, number, and mailing address are required.',
+      });
     }
     if (
       licenseNumber.length > 64 ||
@@ -295,16 +420,6 @@ async function inviteMember(event, body) {
     ) {
       return json(400, { error: 'Enter valid Alberta driver licence and address details.' });
     }
-    const { data: duplicateLicense, error: duplicateLicenseError } = await ctx.admin
-      .from('drivers')
-      .select('id, profile_id')
-      .eq('tenant_id', tenantId)
-      .eq('license_number', licenseNumber)
-      .maybeSingle();
-    if (duplicateLicenseError) return json(400, { error: 'Unable to verify the driver licence number.' });
-    if (duplicateLicense && duplicateLicense.profile_id !== existingProfile?.id) {
-      return json(409, { error: 'That driver licence number is already assigned in your organization.' });
-    }
     driverDetails = {
       license_number: licenseNumber,
       license_issue_date: licenseIssueDate,
@@ -317,62 +432,95 @@ async function inviteMember(event, body) {
       postal_code: postalCode.replace(/\s+/g, '').replace(/^(.{3})(.{3})$/, '$1 $2'),
     };
   }
-  const invited = await inviteAuthUser(
-    ctx.admin,
+
+  const studentLinks = Array.isArray(body.studentLinks)
+    ? body.studentLinks.map((link) => ({
+        studentId: clean(link?.studentId),
+        relationship: clean(link?.relationship) || 'guardian',
+      }))
+    : [];
+  if (studentLinks.length > 20) {
+    return json(400, { error: 'Link at most 20 students in one guardian invitation.' });
+  }
+  if (
+    role === 'guardian' &&
+    studentLinks.some((link) => !link.studentId || !GUARDIAN_RELATIONSHIPS.has(link.relationship))
+  ) {
+    return json(400, {
+      error: 'A selected student or relationship is invalid. No invitation was sent.',
+    });
+  }
+
+  const invitation = await sendTenantMemberInvitation(ctx, {
     email,
     fullName,
-    invitationRedirectUrl(event),
-    existingProfile?.id ?? null,
+    redirectTo: invitationRedirectUrl(event),
+    role,
+    tenantId,
+  });
+  if (invitation.error) return invitation.error;
+
+  const { data: finalized, error: finalizeError } = await ctx.user.rpc(
+    'admin_finalize_member_invitation',
+    {
+      p_auth_user_id: invitation.userId,
+      p_role: role,
+      p_first_name: firstName,
+      p_last_name: lastName,
+      p_email: email,
+      p_phone: phone,
+      p_driver_details: driverDetails,
+      p_student_links: role === 'guardian' ? studentLinks : [],
+    },
   );
-  // An invitation link creates an Auth session before the invitee chooses a
-  // password, so last_sign_in_at is not proof that onboarding is complete.
-  // Only complete_invited_account() may transition an invited profile to active.
-  const profileStatus = existingProfile?.status === 'active' ? 'active' : 'invited';
-  const { error: pError } = await ctx.admin.from('profiles').upsert({ id: invited.user.id, tenant_id: tenantId, school_id: null, first_name: firstName, last_name: lastName, full_name: fullName, email, role, status: profileStatus }, { onConflict: 'id' });
-  if (pError) return json(400, { error: 'Unable to provision invited profile.' });
-  let guardianId = null;
-  if (role === 'driver') {
-    const { error: driverError } = await ctx.admin.from('drivers').upsert({ tenant_id: tenantId, profile_id: invited.user.id, phone, ...driverDetails, status: 'active' }, { onConflict: 'profile_id,tenant_id' });
-    if (driverError) return json(400, { error: 'Unable to create driver record.' });
-  } else {
-    const { data: guardian, error: gError } = await ctx.admin.from('guardians').upsert({ tenant_id: tenantId, profile_id: invited.user.id, first_name: firstName, last_name: lastName, full_name: fullName, email, phone, status: 'active' }, { onConflict: 'profile_id,tenant_id' }).select('id').single();
-    if (gError) return json(400, { error: 'Unable to create guardian record.' });
-    guardianId = guardian.id;
-    const links = Array.isArray(body.studentLinks) ? body.studentLinks : [];
-    for (const link of links) {
-      const studentId = clean(link.studentId); if (!studentId) continue;
-      const { data: student } = await ctx.admin.from('students').select('id, tenant_id').eq('id', studentId).eq('tenant_id', tenantId).maybeSingle();
-      const relationship = clean(link.relationship) || 'guardian';
-      if (student && GUARDIAN_RELATIONSHIPS.has(relationship)) {
-        const { error: linkError } = await ctx.user.rpc('admin_link_student_guardian', {
-          p_student_id: student.id,
-          p_guardian_id: guardian.id,
-          p_relationship: relationship,
-          p_can_receive_notifications: true,
-        });
-        if (linkError && !linkError.message?.includes('already linked')) {
-          return json(400, { error: 'Guardian was invited, but the student link could not be created.' });
-        }
-      }
+  if (finalizeError || !finalized?.profileId) {
+    if (invitation.createdAuthUser) {
+      await ctx.admin.auth.admin.deleteUser(invitation.userId);
     }
+    return json(400, {
+      error:
+        'The email provider accepted the invitation, but SafeBus could not create the member record. No member was added; retry the invitation.',
+    });
   }
-  const { error: invitationError } = await ctx.admin.from('tenant_onboarding_invitations').insert({ tenant_id: tenantId, email, full_name: fullName, role, status: profileStatus === 'active' ? 'activated' : 'pending', invited_profile_id: invited.user.id, invited_by_profile_id: ctx.caller.id, last_sent_at: new Date().toISOString() });
-  if (invitationError) return json(400, { error: 'The member account was prepared, but the invitation audit record could not be saved.' });
-  return json(200, { status: invited.status, guardianId });
+
+  return json(200, {
+    status: invitation.status,
+    guardianId: finalized.guardianId ?? null,
+    driverId: finalized.driverId ?? null,
+    recipientEmail: email,
+  });
 }
 
 async function tenantLifecycle(event, body) {
   const ctx = await requireCaller(event, ['platform_super_admin']);
   if (ctx.error) return ctx.error;
-  const tenantId = clean(body.tenantId); const status = clean(body.status);
-  if (!['active','suspended','disabled'].includes(status)) return json(400, { error: 'Unsupported tenant status.' });
+  const tenantId = clean(body.tenantId);
+  const status = clean(body.status);
+  if (!['active', 'suspended', 'disabled'].includes(status))
+    return json(400, { error: 'Unsupported tenant status.' });
   const { error } = await ctx.admin.from('tenants').update({ status }).eq('id', tenantId);
   if (error) return json(400, { error: 'Unable to update tenant status.' });
   if (status !== 'active') {
-    await ctx.admin.from('profiles').update({ status: 'suspended' }).eq('tenant_id', tenantId).neq('role', 'platform_super_admin');
-    await ctx.admin.from('drivers').update({ status: 'suspended' }).eq('tenant_id', tenantId).eq('status', 'active');
-    await ctx.admin.from('guardians').update({ status: 'suspended' }).eq('tenant_id', tenantId).eq('status', 'active');
-    await ctx.admin.from('driver_trips').update({ status: 'cancelled', ended_at: new Date().toISOString() }).eq('tenant_id', tenantId).eq('status', 'active');
+    await ctx.admin
+      .from('profiles')
+      .update({ status: 'suspended' })
+      .eq('tenant_id', tenantId)
+      .neq('role', 'platform_super_admin');
+    await ctx.admin
+      .from('drivers')
+      .update({ status: 'suspended' })
+      .eq('tenant_id', tenantId)
+      .eq('status', 'active');
+    await ctx.admin
+      .from('guardians')
+      .update({ status: 'suspended' })
+      .eq('tenant_id', tenantId)
+      .eq('status', 'active');
+    await ctx.admin
+      .from('driver_trips')
+      .update({ status: 'cancelled', ended_at: new Date().toISOString() })
+      .eq('tenant_id', tenantId)
+      .eq('status', 'active');
   }
   return json(200, { status });
 }
@@ -416,13 +564,15 @@ async function tenantAdminLifecycle(event, body) {
     const unbanned = await ctx.admin.auth.admin.updateUserById(profile.id, {
       ban_duration: 'none',
     });
-    if (unbanned.error) return json(400, { error: 'Unable to reactivate the tenant admin sign-in.' });
+    if (unbanned.error)
+      return json(400, { error: 'Unable to reactivate the tenant admin sign-in.' });
     const { error: activateError } = await ctx.admin
       .from('profiles')
       .update({ status: 'active' })
       .eq('id', profile.id)
       .in('status', ['suspended', 'disabled']);
-    if (activateError) return json(400, { error: 'Unable to reactivate the tenant admin profile.' });
+    if (activateError)
+      return json(400, { error: 'Unable to reactivate the tenant admin profile.' });
     return json(200, { status: 'active' });
   }
 
@@ -435,25 +585,49 @@ async function tenantAdminLifecycle(event, body) {
   const banned = await ctx.admin.auth.admin.updateUserById(profile.id, {
     ban_duration: '876000h',
   });
-  if (banned.error) return json(400, { error: 'The profile was deactivated, but sign-in blocking must be retried.' });
+  if (banned.error)
+    return json(400, {
+      error: 'The profile was deactivated, but sign-in blocking must be retried.',
+    });
   return json(200, { status: 'disabled' });
 }
 
 async function action(event, body) {
   const ctx = await requireCaller(event, ['platform_super_admin', 'tenant_admin']);
   if (ctx.error) return ctx.error;
-  const id = clean(body.invitationId); const next = clean(body.action);
-  const { data: inv } = await ctx.admin.from('tenant_onboarding_invitations').select('*').eq('id', id).maybeSingle();
+  const id = clean(body.invitationId);
+  const next = clean(body.action);
+  const { data: inv } = await ctx.admin
+    .from('tenant_onboarding_invitations')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
   if (!inv) return json(404, { error: 'Invitation not found.' });
-  if (ctx.caller.role !== 'platform_super_admin' && inv.tenant_id !== ctx.caller.tenant_id) return json(403, { error: 'Invitation is outside your tenant.' });
+  if (ctx.caller.role !== 'platform_super_admin' && inv.tenant_id !== ctx.caller.tenant_id)
+    return json(403, { error: 'Invitation is outside your tenant.' });
   if (next === 'cancel') {
-    const { error: cancelError } = await ctx.admin.from('tenant_onboarding_invitations').update({ status: 'cancelled', cancelled_at: new Date().toISOString() }).eq('id', id);
+    const { error: cancelError } = await ctx.admin
+      .from('tenant_onboarding_invitations')
+      .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+      .eq('id', id);
     if (cancelError) return json(400, { error: 'Unable to cancel the invitation.' });
     if (inv.invited_profile_id) {
-      const { error: disableProfileError } = await ctx.admin.from('profiles').update({ status: 'disabled' }).eq('id', inv.invited_profile_id).eq('status', 'invited');
-      if (disableProfileError) return json(400, { error: 'The invitation was cancelled, but the invited profile could not be disabled.' });
-      const disabledAuth = await ctx.admin.auth.admin.updateUserById(inv.invited_profile_id, { ban_duration: '876000h' });
-      if (disabledAuth.error) return json(400, { error: 'The invitation was cancelled, but its sign-in link could not be disabled.' });
+      const { error: disableProfileError } = await ctx.admin
+        .from('profiles')
+        .update({ status: 'disabled' })
+        .eq('id', inv.invited_profile_id)
+        .eq('status', 'invited');
+      if (disableProfileError)
+        return json(400, {
+          error: 'The invitation was cancelled, but the invited profile could not be disabled.',
+        });
+      const disabledAuth = await ctx.admin.auth.admin.updateUserById(inv.invited_profile_id, {
+        ban_duration: '876000h',
+      });
+      if (disabledAuth.error)
+        return json(400, {
+          error: 'The invitation was cancelled, but its sign-in link could not be disabled.',
+        });
     }
     return json(200, { status: 'cancelled' });
   }
@@ -465,21 +639,44 @@ async function action(event, body) {
       options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
     });
     if (resendError) return json(400, { error: 'Unable to resend the invitation.' });
-    await ctx.admin.from('tenant_onboarding_invitations').update({ status: 'resent', last_sent_at: new Date().toISOString() }).eq('id', id);
+    await ctx.admin
+      .from('tenant_onboarding_invitations')
+      .update({ status: 'resent', last_sent_at: new Date().toISOString() })
+      .eq('id', id);
     return json(200, { status: 'resent' });
   }
   return json(400, { error: 'Unsupported action.' });
 }
 
 export async function handler(event) {
+  let requestKind = 'unknown';
   try {
     if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed.' });
     const body = JSON.parse(event.body || '{}');
+    requestKind = clean(body.kind) || 'unknown';
     if (body.kind === 'createTenant') return createTenant(event, body);
     if (body.kind === 'inviteMember') return inviteMember(event, body);
     if (body.kind === 'invitationAction') return action(event, body);
     if (body.kind === 'tenantLifecycle') return tenantLifecycle(event, body);
     if (body.kind === 'tenantAdminLifecycle') return tenantAdminLifecycle(event, body);
     return json(400, { error: 'Unknown onboarding action.' });
-  } catch (e) { return json(500, { error: e instanceof Error ? e.message : 'Onboarding failed.' }); }
+  } catch (error) {
+    const errorName = error instanceof Error ? error.name : 'UnknownError';
+    console.error(
+      JSON.stringify({
+        event: 'safebus_onboarding_failed',
+        kind: requestKind,
+        errorName,
+      }),
+    );
+    if (errorName === 'TimeoutError' || errorName === 'AbortError') {
+      return json(504, {
+        error:
+          'The invitation service timed out before SafeBus could confirm completion. No new member was confirmed; retry once.',
+      });
+    }
+    return json(500, {
+      error: 'The onboarding request failed before it could complete. No new member was confirmed.',
+    });
+  }
 }
