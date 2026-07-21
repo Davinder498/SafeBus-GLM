@@ -22,12 +22,42 @@ import type {
   UpdateStudentRouteAssignmentInput,
 } from '@/types/transportation';
 
+export type DuplicateField = 'licensePlate' | 'licenseNumber' | 'email' | 'phone';
+
+export class DuplicateIdentifierError extends Error {
+  field: DuplicateField;
+
+  constructor(field: DuplicateField, message: string) {
+    super(message);
+    this.name = 'DuplicateIdentifierError';
+    this.field = field;
+  }
+}
+
 function requireSupabase() {
   if (!supabase) {
     throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
   }
 
   return supabase;
+}
+
+
+function describeBusError(error: { message?: string; code?: string }): Error {
+  const message = error?.message ?? '';
+  if (
+    message.includes('buses_tenant_license_plate_unique_idx') ||
+    (message.includes('duplicate key value violates unique constraint') && message.includes('license_plate'))
+  ) {
+    return new DuplicateIdentifierError(
+      'licensePlate',
+      'A bus with this licence plate number already exists. Select the existing bus instead or enter a different plate number.',
+    );
+  }
+  if (message.includes('buses_tenant_bus_number_unique')) {
+    return new Error('A bus with this bus number already exists. Use a different bus number.');
+  }
+  return new Error('We could not save the bus. Check the bus details and try again.');
 }
 
 export async function getVisibleBuses(): Promise<Bus[]> {
@@ -51,7 +81,10 @@ export async function createBus(input: CreateBusInput): Promise<Bus> {
     .select('id, tenant_id, school_id, bus_number, license_plate, capacity, status, created_at, updated_at')
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (import.meta.env.DEV) console.error('Failed to create bus', error);
+    throw describeBusError(error);
+  }
   return data as Bus;
 }
 
@@ -64,7 +97,10 @@ export async function updateBus(id: string, input: UpdateBusInput): Promise<Bus>
     .select('id, tenant_id, school_id, bus_number, license_plate, capacity, status, created_at, updated_at')
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (import.meta.env.DEV) console.error('Failed to update bus', error);
+    throw describeBusError(error);
+  }
   return data as Bus;
 }
 
@@ -100,7 +136,10 @@ export async function createDriver(input: CreateDriverInput): Promise<Driver> {
   if (error) {
     if (import.meta.env.DEV) console.error('Failed to create driver', error);
     if (error.message.includes('drivers_tenant_license_number_unique_idx')) {
-      throw new Error('That licence number is already assigned in your organization.');
+      throw new DuplicateIdentifierError('licenseNumber', 'A driver with this driving licence number already exists. Select the existing driver instead.');
+    }
+    if (error.message.includes('drivers_tenant_phone_unique_idx')) {
+      throw new DuplicateIdentifierError('phone', 'A driver with this phone number already exists. Use a different phone number or select the existing driver.');
     }
     throw new Error('We could not save the driver. Check the licence and address details and try again.');
   }
@@ -119,7 +158,10 @@ export async function updateDriver(id: string, input: UpdateDriverInput): Promis
   if (error) {
     if (import.meta.env.DEV) console.error('Failed to update driver', error);
     if (error.message.includes('drivers_tenant_license_number_unique_idx')) {
-      throw new Error('That licence number is already assigned in your organization.');
+      throw new DuplicateIdentifierError('licenseNumber', 'A driver with this driving licence number already exists. Select the existing driver instead.');
+    }
+    if (error.message.includes('drivers_tenant_phone_unique_idx')) {
+      throw new DuplicateIdentifierError('phone', 'A driver with this phone number already exists. Use a different phone number or select the existing driver.');
     }
     throw new Error('We could not update the driver. Check the licence and address details and try again.');
   }

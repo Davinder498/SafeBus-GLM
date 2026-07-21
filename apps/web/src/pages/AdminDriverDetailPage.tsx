@@ -13,7 +13,9 @@ import { Select } from '@/components/ui/Select';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { useAuth } from '@/contexts/useAuth';
 import { fetchAdminDriverDetail, type AdminDriverDetail } from '@/services/adminPeopleService';
-import { deleteDriver, updateDriver } from '@/services/transportationStructureService';
+import { deleteDriver, DuplicateIdentifierError, updateDriver, type DuplicateField } from '@/services/transportationStructureService';
+
+type DriverDetailFieldErrors = Partial<Record<Extract<DuplicateField, 'phone' | 'licenseNumber'>, string>>;
 
 type DriverFormState = {
   phone: string;
@@ -72,6 +74,7 @@ export function AdminDriverDetailPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<DriverDetailFieldErrors>({});
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -113,6 +116,7 @@ export function AdminDriverDetailPage() {
     }
     setBusy(true);
     setWriteError(null);
+    setFieldErrors({});
     setMessage(null);
     try {
       await updateDriver(driverId, {
@@ -131,7 +135,12 @@ export function AdminDriverDetailPage() {
       setMessage('Driver licence and contact details updated.');
       await load();
     } catch (error) {
-      setWriteError(error instanceof Error ? error.message : 'Unable to update the driver.');
+      if (error instanceof DuplicateIdentifierError && ['phone', 'licenseNumber'].includes(error.field)) {
+        setFieldErrors({ [error.field]: error.message });
+        setWriteError(null);
+      } else {
+        setWriteError(error instanceof Error ? error.message : 'Unable to update the driver.');
+      }
     } finally {
       setBusy(false);
     }
@@ -141,6 +150,7 @@ export function AdminDriverDetailPage() {
     if (!driverId || !detail || busy) return;
     setBusy(true);
     setWriteError(null);
+    setFieldErrors({});
     setMessage(null);
     try {
       const nextStatus = detail.driver.status === 'active' ? 'inactive' : 'active';
@@ -158,6 +168,7 @@ export function AdminDriverDetailPage() {
     if (!driverId || busy) return;
     setBusy(true);
     setWriteError(null);
+    setFieldErrors({});
     try {
       await deleteDriver(driverId);
       navigate('/admin/drivers', { replace: true });
@@ -191,8 +202,8 @@ export function AdminDriverDetailPage() {
                 <p className="mt-1 text-sm text-slate-600">Identity and login email are controlled by the secure account workflow.</p>
                 <form className="mt-5 space-y-5" onSubmit={(event) => void save(event)}>
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <Field label="Phone number" htmlFor="edit-driver-phone" required><Input id="edit-driver-phone" type="tel" maxLength={40} required value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /></Field>
-                    <Field label="Licence number" htmlFor="edit-driver-licence" required><Input id="edit-driver-licence" maxLength={64} required value={form.licenseNumber} onChange={(event) => setForm({ ...form, licenseNumber: event.target.value })} /></Field>
+                    <Field label="Phone number" htmlFor="edit-driver-phone" required error={fieldErrors.phone}><Input id="edit-driver-phone" type="tel" maxLength={40} required invalid={!!fieldErrors.phone} value={form.phone} onChange={(event) => { setForm({ ...form, phone: event.target.value }); setFieldErrors((current) => ({ ...current, phone: undefined })); }} /></Field>
+                    <Field label="Licence number" htmlFor="edit-driver-licence" required error={fieldErrors.licenseNumber}><Input id="edit-driver-licence" maxLength={64} required invalid={!!fieldErrors.licenseNumber} value={form.licenseNumber} onChange={(event) => { setForm({ ...form, licenseNumber: event.target.value }); setFieldErrors((current) => ({ ...current, licenseNumber: undefined })); }} /></Field>
                     <Field label="Issue date" htmlFor="edit-driver-issue" required><Input id="edit-driver-issue" type="date" required value={form.licenseIssueDate} onChange={(event) => setForm({ ...form, licenseIssueDate: event.target.value })} /></Field>
                     <Field label="Expiry date" htmlFor="edit-driver-expiry" required><Input id="edit-driver-expiry" type="date" min={form.licenseIssueDate || undefined} required value={form.licenseExpiryDate} onChange={(event) => setForm({ ...form, licenseExpiryDate: event.target.value })} /></Field>
                     <Field label="Licence class" htmlFor="edit-driver-class" required><Select id="edit-driver-class" value={form.licenseClass} onChange={(event) => setForm({ ...form, licenseClass: event.target.value })}>{['1', '2', '3', '4', '5', '6', '7'].map((value) => <option key={value} value={value}>Class {value}</option>)}</Select></Field>
