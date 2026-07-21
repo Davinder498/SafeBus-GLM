@@ -123,6 +123,7 @@ export function AdminBusesPage() {
       await list.reload();
     } catch (createError) {
       setWriteError(createError instanceof Error ? createError.message : 'Unable to create bus.');
+      throw createError;
     }
   }
 
@@ -137,6 +138,7 @@ export function AdminBusesPage() {
       await list.reload();
     } catch (updateError) {
       setWriteError(updateError instanceof Error ? updateError.message : 'Unable to update bus.');
+      throw updateError;
     }
   }
 

@@ -477,10 +477,16 @@ async function inviteMember(event, body) {
     if (invitation.createdAuthUser) {
       await ctx.admin.auth.admin.deleteUser(invitation.userId);
     }
-    return json(400, {
-      error:
-        'The email provider accepted the invitation, but SafeBus could not create the member record. No member was added; retry the invitation.',
-    });
+    const safeFinalizeMessage = typeof finalizeError?.message === 'string' && (
+      finalizeError.message.includes('A driver with this driving licence number already exists.') ||
+      finalizeError.message.includes('A driver with this email address already exists.') ||
+      finalizeError.message.includes('A driver with this phone number already exists.') ||
+      finalizeError.message.includes('That email is already linked to a different SafeBus tenant or role.') ||
+      finalizeError.message.includes('That email is already linked to another SafeBus profile.')
+    )
+      ? finalizeError.message.replace('That email is already linked to a different SafeBus tenant or role.', 'A driver with this email address already exists. Use a different email address or select the existing driver.').replace('That email is already linked to another SafeBus profile.', 'A driver with this email address already exists. Use a different email address or select the existing driver.')
+      : 'The email provider accepted the invitation, but SafeBus could not create the member record. No member was added; retry the invitation.';
+    return json(400, { error: safeFinalizeMessage });
   }
 
   return json(200, {

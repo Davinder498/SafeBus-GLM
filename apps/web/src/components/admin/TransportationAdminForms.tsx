@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 're
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import type { OrganizationProfile, School } from '@/types/organization';
+import { DuplicateIdentifierError } from '@/services/transportationStructureService';
 import type { Student } from '@/types/studentGuardian';
 import { StudentSearchPicker } from '@/components/admin/StudentSearchPicker';
 import type {
@@ -42,6 +43,11 @@ const optionalOption = <option value="">Not assigned</option>;
 function cleanText(value: string): string | null {
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeLicensePlate(value: string): string | null {
+  const normalized = value.trim().replace(/\s+/g, '').toUpperCase();
+  return normalized.length > 0 ? normalized : null;
 }
 
 function parseNullableNumber(value: string): number | null {
@@ -114,11 +120,13 @@ export function BusForm({
   const [capacity, setCapacity] = useState(bus?.capacity?.toString() ?? '');
   const [status, setStatus] = useState<BusStatus>(bus?.status ?? 'active');
   const [formError, setFormError] = useState<string | null>(null);
+  const [licensePlateError, setLicensePlateError] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setFormError(null);
+    setLicensePlateError(null);
 
     const tenantId = bus?.tenant_id ?? getSchoolTenantId(schools, schoolId || null) ?? defaultTenantId;
     const parsedCapacity = parseNullableNumber(capacity);
@@ -144,7 +152,7 @@ export function BusForm({
         tenant_id: tenantId,
         school_id: schoolId || null,
         bus_number: busNumber.trim(),
-        license_plate: cleanText(licensePlate),
+        license_plate: normalizeLicensePlate(licensePlate),
         capacity: parsedCapacity,
         status,
       };
@@ -159,6 +167,12 @@ export function BusForm({
             }
           : input,
       );
+    } catch (error) {
+      if (error instanceof DuplicateIdentifierError && error.field === 'licensePlate') {
+        setLicensePlateError(error.message);
+        return;
+      }
+      setFormError(error instanceof Error ? error.message : 'Unable to save bus.');
     } finally {
       setSubmitState('idle');
     }
@@ -174,7 +188,8 @@ export function BusForm({
         </label>
         <label className={labelClassName}>
           License plate
-          <input className={fieldClassName} value={licensePlate} onChange={(event) => setLicensePlate(event.target.value)} />
+          <input className={`${fieldClassName} ${licensePlateError ? 'border-danger-300 focus-visible:ring-danger-500' : ''}`} aria-invalid={licensePlateError ? 'true' : undefined} aria-describedby={licensePlateError ? 'bus-license-plate-error' : undefined} value={licensePlate} onChange={(event) => { setLicensePlate(event.target.value); setLicensePlateError(null); }} />
+          {licensePlateError && <p id="bus-license-plate-error" className="mt-1 text-xs font-medium text-danger-600">{licensePlateError}</p>}
         </label>
         <label className={labelClassName}>
           Capacity
@@ -268,6 +283,8 @@ export function DriverForm({
             }
           : input,
       );
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Unable to save.');
     } finally {
       setSubmitState('idle');
     }
@@ -374,6 +391,8 @@ export function RouteForm({
             }
           : input,
       );
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Unable to save.');
     } finally {
       setSubmitState('idle');
     }
@@ -512,6 +531,8 @@ export function RouteStopForm({
             }
           : input,
       );
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Unable to save.');
     } finally {
       setSubmitState('idle');
     }
@@ -669,6 +690,8 @@ export function StudentRouteAssignmentForm({
             }
           : input,
       );
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Unable to save.');
     } finally {
       setSubmitState('idle');
     }

@@ -13,6 +13,7 @@ import { Select } from '@/components/ui/Select';
 import { useAuth } from '@/contexts/useAuth';
 import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
 import { inviteTenantMember } from '@/services/onboardingService';
+import { DuplicateIdentifierError, type DuplicateField } from '@/services/transportationStructureService';
 import type { Driver } from '@/types/transportation';
 
 type DriverRow = Driver & {
@@ -21,6 +22,8 @@ type DriverRow = Driver & {
   full_name: string;
   email: string;
 };
+
+type DriverInviteFieldErrors = Partial<Record<Extract<DuplicateField, 'email' | 'phone' | 'licenseNumber'>, string>>;
 
 const emptyInvite = {
   firstName: '',
@@ -61,6 +64,7 @@ export function AdminDriversPage() {
   const [inviteForm, setInviteForm] = useState(emptyInvite);
   const [inviting, setInviting] = useState(false);
   const [writeError, setWriteError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<DriverInviteFieldErrors>({});
   const [message, setMessage] = useState<string | null>(null);
   const canInvite = profile?.role === 'tenant_admin';
 
@@ -73,6 +77,7 @@ export function AdminDriversPage() {
     }
     setInviting(true);
     setWriteError(null);
+    setFieldErrors({});
     setMessage(null);
     try {
       await inviteTenantMember({ role: 'driver', ...inviteForm });
@@ -81,7 +86,12 @@ export function AdminDriversPage() {
       setMessage('Driver invitation sent. The email link lets them activate their account securely.');
       await list.reload();
     } catch (error) {
-      setWriteError(error instanceof Error ? error.message : 'Unable to invite driver.');
+      if (error instanceof DuplicateIdentifierError && ['email', 'phone', 'licenseNumber'].includes(error.field)) {
+        setFieldErrors({ [error.field]: error.message });
+        setWriteError(null);
+      } else {
+        setWriteError(error instanceof Error ? error.message : 'Unable to invite driver.');
+      }
     } finally {
       setInviting(false);
     }
@@ -108,14 +118,14 @@ export function AdminDriversPage() {
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Field label="First name" htmlFor="driver-first-name" required><Input id="driver-first-name" maxLength={100} autoComplete="given-name" required value={inviteForm.firstName} onChange={(event) => setInviteForm({ ...inviteForm, firstName: event.target.value })} /></Field>
                 <Field label="Last name" htmlFor="driver-last-name" required><Input id="driver-last-name" maxLength={100} autoComplete="family-name" required value={inviteForm.lastName} onChange={(event) => setInviteForm({ ...inviteForm, lastName: event.target.value })} /></Field>
-                <Field label="Email address" htmlFor="driver-email" hint="Driver login" required><Input id="driver-email" type="email" maxLength={320} autoComplete="email" required value={inviteForm.email} onChange={(event) => setInviteForm({ ...inviteForm, email: event.target.value })} /></Field>
-                <Field label="Phone number" htmlFor="driver-phone" required><Input id="driver-phone" type="tel" maxLength={40} autoComplete="tel" required value={inviteForm.phone} onChange={(event) => setInviteForm({ ...inviteForm, phone: event.target.value })} /></Field>
+                <Field label="Email address" htmlFor="driver-email" hint="Driver login" required error={fieldErrors.email}><Input id="driver-email" type="email" maxLength={320} autoComplete="email" required invalid={!!fieldErrors.email} value={inviteForm.email} onChange={(event) => { setInviteForm({ ...inviteForm, email: event.target.value }); setFieldErrors((current) => ({ ...current, email: undefined })); }} /></Field>
+                <Field label="Phone number" htmlFor="driver-phone" required error={fieldErrors.phone}><Input id="driver-phone" type="tel" maxLength={40} autoComplete="tel" required invalid={!!fieldErrors.phone} value={inviteForm.phone} onChange={(event) => { setInviteForm({ ...inviteForm, phone: event.target.value }); setFieldErrors((current) => ({ ...current, phone: undefined })); }} /></Field>
               </div>
 
               <div className="border-t border-slate-200 pt-5">
                 <h3 className="font-bold text-navy-900">Alberta driver licence</h3>
                 <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  <Field label="Licence number" htmlFor="driver-licence-number" required><Input id="driver-licence-number" maxLength={64} required value={inviteForm.licenseNumber} onChange={(event) => setInviteForm({ ...inviteForm, licenseNumber: event.target.value })} /></Field>
+                  <Field label="Licence number" htmlFor="driver-licence-number" required error={fieldErrors.licenseNumber}><Input id="driver-licence-number" maxLength={64} required invalid={!!fieldErrors.licenseNumber} value={inviteForm.licenseNumber} onChange={(event) => { setInviteForm({ ...inviteForm, licenseNumber: event.target.value }); setFieldErrors((current) => ({ ...current, licenseNumber: undefined })); }} /></Field>
                   <Field label="Issue date" htmlFor="driver-licence-issue" required><Input id="driver-licence-issue" type="date" required value={inviteForm.licenseIssueDate} onChange={(event) => setInviteForm({ ...inviteForm, licenseIssueDate: event.target.value })} /></Field>
                   <Field label="Expiry date" htmlFor="driver-licence-expiry" required><Input id="driver-licence-expiry" type="date" min={inviteForm.licenseIssueDate || undefined} required value={inviteForm.licenseExpiryDate} onChange={(event) => setInviteForm({ ...inviteForm, licenseExpiryDate: event.target.value })} /></Field>
                   <Field label="Licence class" htmlFor="driver-licence-class" required><Select id="driver-licence-class" required value={inviteForm.licenseClass} onChange={(event) => setInviteForm({ ...inviteForm, licenseClass: event.target.value })}>{['1', '2', '3', '4', '5', '6', '7'].map((value) => <option key={value} value={value}>Class {value}</option>)}</Select></Field>

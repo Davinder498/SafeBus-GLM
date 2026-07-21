@@ -1,4 +1,5 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
+import { DuplicateIdentifierError } from '@/services/transportationStructureService';
 
 function client() { if (!supabase) throw new Error(supabaseConfigError ?? 'Supabase is not configured.'); return supabase; }
 
@@ -10,6 +11,18 @@ async function callOnboarding<T>(body: Record<string, unknown>): Promise<T> {
   const response = await fetch('/.netlify/functions/safebus-onboarding', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
+    if (typeof payload.error === 'string') {
+      const message = payload.error;
+      if (message.includes('driving licence number') || message.includes('driver licence number') || message.includes('licence number')) {
+        throw new DuplicateIdentifierError('licenseNumber', message);
+      }
+      if (message.includes('email address') || message.includes('email is already') || message.includes('email is already linked') || message.includes('email belongs')) {
+        throw new DuplicateIdentifierError('email', message);
+      }
+      if (message.includes('phone number')) {
+        throw new DuplicateIdentifierError('phone', message);
+      }
+    }
     throw new Error(
       typeof payload.error === 'string'
         ? payload.error
