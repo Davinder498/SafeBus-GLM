@@ -13,7 +13,7 @@ function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
       <p className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500">{label}</p>
-      <p className="mt-2 text-base font-semibold text-navy-900">{value}</p>
+      <p className="mt-2 break-all text-base font-semibold text-navy-900">{value}</p>
     </div>
   );
 }
@@ -60,7 +60,12 @@ export function AdminSettingsPage() {
   }, [profile]);
 
   return (
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
+    <DashboardLayout
+      title="Admin Dashboard"
+      portal="admin"
+      navItems={[]}
+      navGroups={adminNavGroups}
+    >
       <div className="space-y-6">
         <PageHeader
           eyebrow="Settings"
