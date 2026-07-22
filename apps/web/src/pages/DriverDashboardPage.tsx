@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Bus, ChevronDown } from 'lucide-react';
 import { DashboardLayout, driverNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { useAuth } from '@/contexts/useAuth';
 import { useDriverLocationSharing } from '@/hooks/useDriverLocationSharing';
 import type { LocationSharingState } from '@/hooks/useDriverLocationSharing';
 import { fetchDriverAssignments } from '@/services/driverAssignmentService';
@@ -17,6 +16,7 @@ import {
 } from '@/services/driverTripService';
 import type { DriverAssignmentSummary } from '@/types/driverAssignments';
 import type { DriverTrip } from '@/types/trips';
+import { uniqueActiveAssignedBuses } from '@/utils/driverAssignments';
 
 type LoadState =
   | { kind: 'loading' }
@@ -33,7 +33,6 @@ function formatTimestamp(iso: string): string {
 }
 
 export function DriverDashboardPage() {
-  const { profile } = useAuth();
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
 
   // Action feedback.
@@ -123,8 +122,6 @@ export function DriverDashboardPage() {
     }
   }
 
-  const driverName = profile?.full_name ?? 'Driver';
-
   // Location sharing is wired to the active trip id (null when no active trip).
   const activeTripId = state.kind === 'ready' && state.activeTrip ? state.activeTrip.id : null;
   const locationSharing = useDriverLocationSharing(activeTripId, true);
@@ -138,9 +135,9 @@ export function DriverDashboardPage() {
     >
       <div className="mx-auto max-w-3xl space-y-5">
         <PageHeader
-          eyebrow="Today"
-          title="Driver Dashboard"
-          description="Start and end your trip from your assigned work."
+          eyebrow="Assignments"
+          title="Your assigned buses"
+          description="Choose the active bus you are driving to start its trip."
         />
 
         {state.kind === 'loading' && (
@@ -180,8 +177,6 @@ export function DriverDashboardPage() {
               </Card>
             )}
 
-            <StudentManifestLinkCard hasActiveTrip={Boolean(state.activeTrip)} />
-
             {state.activeTrip ? (
               <ActiveTripCard
                 trip={state.activeTrip}
@@ -197,8 +192,7 @@ export function DriverDashboardPage() {
                 message="Please contact your transportation admin."
               />
             ) : (
-              <AssignmentListCard
-                driverName={driverName}
+              <BusChooser
                 assignments={state.assignments}
                 onStart={handleStartTripFromBus}
                 actionInProgress={actionInProgress}
@@ -208,27 +202,6 @@ export function DriverDashboardPage() {
         )}
       </div>
     </DashboardLayout>
-  );
-}
-
-function StudentManifestLinkCard({ hasActiveTrip }: { hasActiveTrip: boolean }) {
-  return (
-    <Card className="p-5" data-testid="driver-manifest-link-card">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-lg font-bold text-navy-900">Student manifest</h2>
-          <p className="mt-1 text-sm text-gray-600">
-            View students assigned to your current active trip.
-          </p>
-        </div>
-        <Link
-          to="/driver/manifest"
-          className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-navy-100 px-4 py-2.5 text-base font-semibold text-navy-700 transition-colors hover:bg-navy-200"
-        >
-          {hasActiveTrip ? 'Open manifest' : 'Check manifest'}
-        </Link>
-      </div>
-    </Card>
   );
 }
 
@@ -283,39 +256,6 @@ function ActiveTripCard({
   );
 }
 
-interface AssignmentListCardProps {
-  driverName: string;
-  assignments: DriverAssignmentSummary[];
-  onStart: (assignmentId: string) => void;
-  actionInProgress: boolean;
-}
-
-function AssignmentListCard({
-  driverName,
-  assignments,
-  onStart,
-  actionInProgress,
-}: AssignmentListCardProps) {
-  return (
-    <div className="space-y-4">
-      <Card className="p-5">
-        <p className="text-sm font-semibold text-gray-500">Signed in as</p>
-        <p className="mt-1 text-lg font-bold text-navy-900">{driverName}</p>
-      </Card>
-
-      <Card className="p-5">
-        <h2 className="text-lg font-bold text-navy-900">Your assignments</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Choose the assigned bus you are driving now. Route details remain with transportation
-          operations.
-        </p>
-      </Card>
-
-      <BusChooser assignments={assignments} onStart={onStart} actionInProgress={actionInProgress} />
-    </div>
-  );
-}
-
 function BusChooser({
   assignments,
   onStart,
@@ -325,43 +265,85 @@ function BusChooser({
   onStart: (busId: string) => void;
   actionInProgress: boolean;
 }) {
-  const buses = Array.from(
-    new Map(assignments.map((assignment) => [assignment.busId, assignment])).values(),
-  );
-  const [selectedBusId, setSelectedBusId] = useState(buses.length === 1 ? buses[0].busId : '');
+  const buses = useMemo(() => uniqueActiveAssignedBuses(assignments), [assignments]);
+  const [selectedBusId, setSelectedBusId] = useState('');
+
+  useEffect(() => {
+    if (selectedBusId && !buses.some((bus) => bus.busId === selectedBusId)) {
+      setSelectedBusId('');
+    }
+  }, [buses, selectedBusId]);
 
   return (
-    <Card className="p-4 sm:p-5" data-testid="driver-assignment-card">
-      <label className="block text-sm font-semibold text-gray-700">
-        Assigned bus
-        <select
-          className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-navy-900"
-          value={selectedBusId}
-          onChange={(event) => setSelectedBusId(event.target.value)}
-        >
-          <option value="">Choose a bus</option>
-          {buses.map((assignment) => (
-            <option key={assignment.busId} value={assignment.busId}>
-              Bus {assignment.busLabel ?? assignment.busId}
-            </option>
-          ))}
-        </select>
-      </label>
-      <Button
-        className="mt-4"
-        type="button"
-        size="lg"
-        fullWidth
-        onClick={() => onStart(selectedBusId)}
-        disabled={!selectedBusId || actionInProgress}
-        data-testid="driver-assignment-start-button"
-      >
-        {actionInProgress ? 'Starting trip...' : 'Start Trip'}
-      </Button>
-      <p className="mt-3 text-xs text-gray-500">
-        Starting the trip requests location permission and begins sharing this bus automatically.
-      </p>
-    </Card>
+    <section aria-labelledby="assigned-buses-heading" data-testid="driver-assigned-buses">
+      <div className="mb-4">
+        <h2 id="assigned-buses-heading" className="text-lg font-bold text-navy-900">
+          Active assigned buses
+        </h2>
+        <p className="mt-1 text-sm text-gray-600">Select a bus to reveal the trip start action.</p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {buses.map((assignment) => {
+          const selected = assignment.busId === selectedBusId;
+          const panelId = `start-bus-${assignment.busId}`;
+
+          return (
+            <Card
+              key={assignment.busId}
+              interactive={!selected}
+              className={selected ? 'border-navy-400 ring-2 ring-navy-100' : undefined}
+              data-testid="driver-assignment-card"
+            >
+              <button
+                type="button"
+                className="flex min-h-28 w-full items-center gap-4 p-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-500"
+                onClick={() => setSelectedBusId(selected ? '' : assignment.busId)}
+                aria-expanded={selected}
+                aria-controls={panelId}
+                data-testid="driver-assigned-bus-button"
+              >
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-navy-50 text-navy-700">
+                  <Bus className="h-6 w-6" aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-gray-500">Assigned bus</span>
+                  <span className="mt-1 block truncate text-xl font-bold text-navy-900">
+                    Bus {assignment.busLabel ?? assignment.busId}
+                  </span>
+                  <span className="mt-1 block text-sm font-medium text-success-700">Active</span>
+                </span>
+                <ChevronDown
+                  className={`h-5 w-5 shrink-0 text-gray-400 transition-transform ${
+                    selected ? 'rotate-180' : ''
+                  }`}
+                  aria-hidden
+                />
+              </button>
+
+              {selected && (
+                <div id={panelId} className="border-t border-slate-100 p-5 pt-4">
+                  <Button
+                    type="button"
+                    size="lg"
+                    fullWidth
+                    onClick={() => onStart(assignment.busId)}
+                    disabled={actionInProgress}
+                    data-testid="driver-assignment-start-button"
+                  >
+                    {actionInProgress ? 'Starting trip...' : 'Start Trip'}
+                  </Button>
+                  <p className="mt-3 text-xs leading-5 text-gray-500">
+                    Starting the trip requests location permission and begins sharing this bus
+                    automatically.
+                  </p>
+                </div>
+              )}
+            </Card>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

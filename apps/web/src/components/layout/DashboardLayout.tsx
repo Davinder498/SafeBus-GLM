@@ -184,8 +184,14 @@ export const driverNavGroups: DashboardNavGroup[] = [
   {
     label: 'Driver',
     items: [
-      { label: 'Today', to: '/driver', icon: <LayoutDashboard className="h-4 w-4" /> },
-      { label: 'Manifest', to: '/driver/manifest', icon: <List className="h-4 w-4" /> },
+      { label: 'Assignments', to: '/driver', icon: <Bus className="h-4 w-4" /> },
+      {
+        label: 'Pickup & drop-off',
+        to: '/driver/pickup-drop-off',
+        icon: <List className="h-4 w-4" />,
+      },
+      { label: 'Settings', to: '/driver/settings', icon: <Settings className="h-4 w-4" /> },
+      { label: 'Profile', to: '/driver/profile', icon: <UserCircle className="h-4 w-4" /> },
     ],
   },
 ];

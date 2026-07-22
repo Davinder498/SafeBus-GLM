@@ -26,6 +26,8 @@ import { AdminUsersPage } from '@/pages/AdminUsersPage';
 import { AdminTripsPage } from '@/pages/AdminTripsPage';
 import { DriverDashboardPage } from '@/pages/DriverDashboardPage';
 import { DriverManifestPage } from '@/pages/DriverManifestPage';
+import { DriverProfilePage } from '@/pages/DriverProfilePage';
+import { DriverSettingsPage } from '@/pages/DriverSettingsPage';
 import { GuardianLiveMapPage } from '@/pages/GuardianLiveMapPage';
 import { GuardianLiveTripsPage } from '@/pages/GuardianLiveTripsPage';
 import { GuardianRoutesPage } from '@/pages/GuardianRoutesPage';
@@ -238,10 +240,27 @@ export const appRoutes: RouteObject[] = [
     ),
   },
   {
-    path: '/driver/manifest',
+    path: '/driver/pickup-drop-off',
     element: (
       <ProtectedRoute allowedRoles={['driver']}>
         <DriverManifestPage />
+      </ProtectedRoute>
+    ),
+  },
+  { path: '/driver/manifest', element: <Navigate to="/driver/pickup-drop-off" replace /> },
+  {
+    path: '/driver/settings',
+    element: (
+      <ProtectedRoute allowedRoles={['driver']}>
+        <DriverSettingsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/driver/profile',
+    element: (
+      <ProtectedRoute allowedRoles={['driver']}>
+        <DriverProfilePage />
       </ProtectedRoute>
     ),
   },

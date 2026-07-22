@@ -6,6 +6,7 @@ import type {
   DriverRouteAssignment,
 } from '@/types/driverAssignments';
 import type { DriverRecord, TripType } from '@/types/trips';
+import { isDriverAssignmentCurrentOn } from '@/utils/driverAssignments';
 import { fetchCurrentDriver } from './driverTripService';
 import { ensureBusRouteAssignment } from './studentBusAssignmentService';
 
@@ -101,17 +102,15 @@ export async function createDriverAssignment(
       error.code === '23505' ||
       error.message.includes('driver_route_assignments_active_unique')
     ) {
-      throw new Error('An active assignment for this driver, bus, route, and trip type already exists.');
+      throw new Error(
+        'An active assignment for this driver, bus, route, and trip type already exists.',
+      );
     }
     if (error.code === '23P01') {
-      throw new Error(
-        'This named trip already has a driver assigned for the selected dates.',
-      );
+      throw new Error('This named trip already has a driver assigned for the selected dates.');
     }
     if (error.code === '42501') {
-      throw new Error(
-        'Your account is not authorized to assign this driver and bus to the route.',
-      );
+      throw new Error('Your account is not authorized to assign this driver and bus to the route.');
     }
     if (error.code === '23514') {
       throw new Error(
@@ -170,30 +169,36 @@ export async function fetchDriverAssignments(): Promise<DriverAssignmentSummary[
       .select(assignmentColumns)
       .eq('status', 'active')
       .order('created_at', { ascending: true }),
-    client
-      .from('buses')
-      .select('id, bus_number')
-      .eq('status', 'active'),
-    client
-      .from('routes')
-      .select('id, route_name')
-      .eq('status', 'active'),
-    client
-      .from('route_trip_patterns')
-      .select('id, display_name')
-      .eq('status', 'active'),
+    client.from('buses').select('id, bus_number').eq('status', 'active'),
+    client.from('routes').select('id, route_name').eq('status', 'active'),
+    client.from('route_trip_patterns').select('id, display_name').eq('status', 'active'),
   ]);
 
   if (assignmentsResult.error) {
     logDevError('Failed to load driver assignments', assignmentsResult.error);
     throw new Error('We could not load your trip assignments. Please try again.');
   }
-  // Buses/routes errors are non-fatal — we just won't have display labels.
+  // A card is shown only when its bus, route, and named trip are all active.
+  if (busesResult.error || routesResult.error || patternsResult.error) {
+    logDevError('Failed to load active driver assignment references', {
+      buses: busesResult.error,
+      routes: routesResult.error,
+      patterns: patternsResult.error,
+    });
+    throw new Error('We could not load your active bus assignments. Please try again.');
+  }
+
   const busMap = new Map<string, string>(
-    ((busesResult.data ?? []) as Array<{ id: string; bus_number: string }>).map((b) => [b.id, b.bus_number]),
+    ((busesResult.data ?? []) as Array<{ id: string; bus_number: string }>).map((b) => [
+      b.id,
+      b.bus_number,
+    ]),
   );
   const routeMap = new Map<string, string>(
-    ((routesResult.data ?? []) as Array<{ id: string; route_name: string }>).map((r) => [r.id, r.route_name]),
+    ((routesResult.data ?? []) as Array<{ id: string; route_name: string }>).map((r) => [
+      r.id,
+      r.route_name,
+    ]),
   );
   const patternMap = new Map<string, string>(
     ((patternsResult.data ?? []) as Array<{ id: string; display_name: string }>).map((pattern) => [
@@ -202,13 +207,23 @@ export async function fetchDriverAssignments(): Promise<DriverAssignmentSummary[
     ]),
   );
 
-  const rows = (assignmentsResult.data ?? []) as DriverRouteAssignment[];
+  const serviceDate = new Date().toISOString().slice(0, 10);
+  const rows = ((assignmentsResult.data ?? []) as DriverRouteAssignment[]).filter(
+    (row) =>
+      isDriverAssignmentCurrentOn(row, serviceDate) &&
+      busMap.has(row.bus_id) &&
+      routeMap.has(row.route_id) &&
+      Boolean(row.route_trip_pattern_id && patternMap.has(row.route_trip_pattern_id)),
+  );
+
   return rows.map((row) => ({
     id: row.id,
     busId: row.bus_id,
     routeId: row.route_id,
     tripPatternId: row.route_trip_pattern_id,
-    tripName: row.route_trip_pattern_id ? patternMap.get(row.route_trip_pattern_id) ?? null : null,
+    tripName: row.route_trip_pattern_id
+      ? (patternMap.get(row.route_trip_pattern_id) ?? null)
+      : null,
     busLabel: busMap.get(row.bus_id) ?? null,
     routeName: routeMap.get(row.route_id) ?? null,
     tripType: row.trip_type as TripType,

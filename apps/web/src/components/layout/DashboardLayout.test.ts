@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adminNavItems } from './DashboardLayout';
+import { adminNavItems, driverNavGroups } from './DashboardLayout';
 
 const tenantAdminRoutes = [
   '/admin',
@@ -33,5 +33,18 @@ describe('tenant admin shell navigation model', () => {
       .filter((item) => item.group === 'people')
       .map((item) => item.label);
     expect(peopleItems).toEqual(['Drivers', 'Students', 'Guardians']);
+  });
+});
+
+describe('driver shell navigation model', () => {
+  it('uses the driver-facing assignment, pickup and drop-off, settings, and profile destinations', () => {
+    expect(
+      driverNavGroups.flatMap((group) => group.items).map(({ label, to }) => [label, to]),
+    ).toEqual([
+      ['Assignments', '/driver'],
+      ['Pickup & drop-off', '/driver/pickup-drop-off'],
+      ['Settings', '/driver/settings'],
+      ['Profile', '/driver/profile'],
+    ]);
   });
 });

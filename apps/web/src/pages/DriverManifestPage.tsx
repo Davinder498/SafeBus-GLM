@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { DashboardLayout, type DashboardNavItem } from '@/components/layout/DashboardLayout';
+import { DashboardLayout, driverNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
@@ -15,14 +15,7 @@ import {
 import type { DriverManifestRow } from '@/types/driverManifest';
 
 type LoadState =
-  | { kind: 'loading' }
-  | { kind: 'error' }
-  | { kind: 'ready'; rows: DriverManifestRow[] };
-
-const driverNavItems: DashboardNavItem[] = [
-  { label: 'Today', to: '/driver' },
-  { label: 'Student Manifest', to: '/driver/manifest' },
-];
+  { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; rows: DriverManifestRow[] };
 
 function tripDirectionLabel(value: string | null): string | null {
   if (!value) return null;
@@ -70,7 +63,7 @@ export function DriverManifestPage() {
         }
         const rows = await fetchDriverActiveTripStudentManifest();
         setState({ kind: 'ready', rows });
-        setActionSuccess('Student status updated.');
+        setActionSuccess('Pickup and drop-off status updated.');
       } catch {
         setActionError('Could not update student status. Please try again.');
       } finally {
@@ -91,12 +84,17 @@ export function DriverManifestPage() {
   );
 
   return (
-    <DashboardLayout title="Driver Dashboard" portal="driver" navItems={driverNavItems}>
+    <DashboardLayout
+      title="Pickup & drop-off"
+      portal="driver"
+      navItems={[]}
+      navGroups={driverNavGroups}
+    >
       <div className="mx-auto max-w-4xl space-y-5">
         <PageHeader
           eyebrow="Active trip"
-          title="Student Manifest"
-          description="View students assigned to your current active trip."
+          title="Pickup & drop-off"
+          description="Record pickup and drop-off for students assigned to the active trip."
         />
 
         <Card className="p-4">
@@ -111,11 +109,8 @@ export function DriverManifestPage() {
             >
               {refreshing ? 'Refreshing...' : 'Refresh'}
             </Button>
-            <Link
-              to="/driver"
-              className="text-sm font-semibold text-navy-700 hover:text-navy-900"
-            >
-              Back to driver dashboard
+            <Link to="/driver" className="text-sm font-semibold text-navy-700 hover:text-navy-900">
+              Back to assignments
             </Link>
           </div>
         </Card>
@@ -137,8 +132,8 @@ export function DriverManifestPage() {
         {state.kind === 'loading' && (
           <div data-testid="driver-manifest-loading">
             <DataState
-              title="Loading student manifest"
-              message="Checking your active trip and assigned students."
+              title="Loading pickup and drop-off"
+              message="Checking the active trip and its assigned students."
             />
           </div>
         )}
@@ -146,7 +141,7 @@ export function DriverManifestPage() {
         {state.kind === 'error' && (
           <div className="space-y-4" data-testid="driver-manifest-error">
             <DataState
-              title="Could not load student manifest right now."
+              title="Could not load pickup and drop-off right now."
               message="Please try again."
             />
             <Button type="button" variant="secondary" onClick={() => void load()}>
@@ -177,12 +172,12 @@ export function DriverManifestPage() {
                     {tripDirectionLabel(activeTrip.tripDirection) && (
                       <span>{tripDirectionLabel(activeTrip.tripDirection)} trip</span>
                     )}
-                    {activeTrip.tripStatus && (
-                      <span>Status: {activeTrip.tripStatus}</span>
-                    )}
+                    {activeTrip.tripStatus && <span>Status: {activeTrip.tripStatus}</span>}
                   </div>
                 </div>
-                {activeTrip.tripStatus && <StatusPill tone="success">{activeTrip.tripStatus}</StatusPill>}
+                {activeTrip.tripStatus && (
+                  <StatusPill tone="success">{activeTrip.tripStatus}</StatusPill>
+                )}
               </div>
             </Card>
 
