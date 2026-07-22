@@ -103,17 +103,18 @@ export function StudentGuardianManager({ detail, tenantId, onChanged }: {
     }
   }
 
-  return <div className="mt-4 space-y-3">
+  return <div className="mt-4 min-w-0 space-y-3">
     {error && <p className="rounded-lg bg-danger-50 p-3 text-sm font-semibold text-danger-700">{error}</p>}
     {detail.guardianLinks.length === 0 && <p className="text-sm text-slate-600">No guardian is connected.</p>}
-    {detail.guardianLinks.map((link) => <div key={link.id} className="rounded-xl border border-slate-200 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="font-bold text-navy-900">{link.guardian.full_name}</p>
-          <p className="text-sm text-slate-600">{link.guardian.email}{link.guardian.phone ? ` · ${link.guardian.phone}` : ''}</p>
+    {detail.guardianLinks.map((link) => <div key={link.id} className="min-w-0 rounded-xl border border-slate-200 p-3 sm:p-4">
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="break-words font-bold text-navy-900">{link.guardian.full_name}</p>
+          <p className="break-all text-sm text-slate-600">{link.guardian.email}</p>
+          {link.guardian.phone && <p className="mt-0.5 text-sm text-slate-600">{link.guardian.phone}</p>}
           <p className="mt-1 text-xs capitalize text-slate-500">{link.relationship}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 sm:justify-end">
           <StatusPill tone={link.status === 'active' ? 'success' : 'neutral'}>{link.status === 'active' ? 'Connected' : 'Inactive'}</StatusPill>
           <StatusPill tone={link.profileStatus === 'active' ? 'success' : 'warning'}>{link.profileStatus === 'active' ? 'Account active' : 'Invitation pending'}</StatusPill>
         </div>
@@ -122,18 +123,18 @@ export function StudentGuardianManager({ detail, tenantId, onChanged }: {
         {link.status_comment && <p><span className="font-semibold">Latest status comment:</span> {link.status_comment}</p>}
         {link.admin_note && <p><span className="font-semibold">Internal note:</span> {link.admin_note}</p>}
       </div>}
-      {link.profileStatus !== 'active' && <Button className="mt-3" size="sm" type="button" variant="outline" disabled={busy || !link.guardian.phone} onClick={() => void resendInvitation(link)}>Send invitation again</Button>}
+      {link.profileStatus !== 'active' && <Button className="mt-3 w-full sm:w-auto" size="sm" type="button" variant="outline" disabled={busy || !link.guardian.phone} onClick={() => void resendInvitation(link)}>Send invitation again</Button>}
       {editingLinkId === link.id ? <div className="mt-3 grid gap-3">
         <label className="text-sm font-semibold text-slate-700">{link.status === 'active' ? 'Reason for deactivation' : 'Reason for activation'}<input className={field} maxLength={300} value={comment} onChange={(event) => setComment(event.target.value)} /></label>
         <label className="text-sm font-semibold text-slate-700">Internal admin note (optional)<textarea className={field} rows={2} maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} /></label>
-        <div className="flex gap-2"><Button size="sm" type="button" disabled={busy || !comment.trim()} onClick={() => void updateLink(link)}>Confirm</Button><Button size="sm" type="button" variant="secondary" onClick={() => setEditingLinkId(null)}>Cancel</Button></div>
-      </div> : <Button className="mt-3" size="sm" type="button" variant="ghost" onClick={() => { setEditingLinkId(link.id); setComment(link.status_comment ?? ''); setNote(link.admin_note ?? ''); }}>{link.status === 'active' ? 'Deactivate connection' : 'Activate connection'}</Button>}
+        <div className="flex flex-col gap-2 sm:flex-row"><Button className="w-full sm:w-auto" size="sm" type="button" disabled={busy || !comment.trim()} onClick={() => void updateLink(link)}>Confirm</Button><Button className="w-full sm:w-auto" size="sm" type="button" variant="secondary" onClick={() => setEditingLinkId(null)}>Cancel</Button></div>
+      </div> : <Button className="mt-3 w-full sm:w-auto" size="sm" type="button" variant="ghost" onClick={() => { setEditingLinkId(link.id); setComment(link.status_comment ?? ''); setNote(link.admin_note ?? ''); }}>{link.status === 'active' ? 'Deactivate connection' : 'Activate connection'}</Button>}
     </div>)}
 
-    {mode === 'closed' ? <div className="flex flex-wrap gap-2">
-      <Button type="button" size="sm" variant="outline" leftIcon={<Plus className="h-4 w-4" />} onClick={() => setMode('existing')}>Connect existing guardian</Button>
-      <Button type="button" size="sm" variant="outline" leftIcon={<MailPlus className="h-4 w-4" />} onClick={() => setMode('new')}>Invite new guardian</Button>
-    </div> : <form className="rounded-xl border border-navy-100 bg-navy-50/40 p-4" onSubmit={(event) => void addGuardian(event)}>
+    {mode === 'closed' ? <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+      <Button className="w-full sm:w-auto" type="button" size="sm" variant="outline" leftIcon={<Plus className="h-4 w-4" />} onClick={() => setMode('existing')}>Connect existing guardian</Button>
+      <Button className="w-full sm:w-auto" type="button" size="sm" variant="outline" leftIcon={<MailPlus className="h-4 w-4" />} onClick={() => setMode('new')}>Invite new guardian</Button>
+    </div> : <form className="min-w-0 rounded-xl border border-navy-100 bg-navy-50/40 p-3 sm:p-4" onSubmit={(event) => void addGuardian(event)}>
       <div className="mb-3 flex items-center gap-2"><UserRoundCheck className="h-5 w-5 text-navy-700" /><h3 className="font-bold text-navy-900">{mode === 'existing' ? 'Connect existing guardian' : 'Invite new guardian'}</h3></div>
       <div className="grid gap-3 sm:grid-cols-2">
         {mode === 'existing' ? <label className="text-sm font-semibold text-slate-700">Guardian<select className={field} value={guardianId} onChange={(event) => setGuardianId(event.target.value)}><option value="">Choose guardian</option>{guardians.filter((guardian) => !detail.guardianLinks.some((link) => link.guardian_id === guardian.id)).map((guardian) => <option key={guardian.id} value={guardian.id}>{guardian.full_name} — {guardian.email}</option>)}</select></label> : <>
@@ -144,7 +145,7 @@ export function StudentGuardianManager({ detail, tenantId, onChanged }: {
         </>}
         <label className="text-sm font-semibold text-slate-700">Relationship<select className={field} value={relationship} onChange={(event) => setRelationship(event.target.value as StudentGuardianRelationship)}>{relationships.map((item) => <option key={item} value={item} className="capitalize">{item}</option>)}</select></label>
       </div>
-      <div className="mt-4 flex gap-2"><Button type="submit" size="sm" disabled={busy}>{mode === 'new' ? 'Send invitation' : 'Connect guardian'}</Button><Button type="button" size="sm" variant="secondary" onClick={() => setMode('closed')}>Cancel</Button></div>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row"><Button className="w-full sm:w-auto" type="submit" size="sm" disabled={busy}>{mode === 'new' ? 'Send invitation' : 'Connect guardian'}</Button><Button className="w-full sm:w-auto" type="button" size="sm" variant="secondary" onClick={() => setMode('closed')}>Cancel</Button></div>
     </form>}
   </div>;
 }
