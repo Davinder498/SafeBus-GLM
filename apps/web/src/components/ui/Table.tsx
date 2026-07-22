@@ -19,7 +19,12 @@ interface TableProps extends TableHTMLAttributes<HTMLTableElement> {
  */
 export function Table({ children, className, ...props }: TableProps) {
   return (
-    <div className="w-full overflow-x-auto">
+    <div
+      className="w-full max-w-full overflow-x-auto overscroll-x-contain"
+      tabIndex={0}
+      role="region"
+      aria-label="Scrollable data table"
+    >
       <table className={cn('w-full border-collapse text-sm', className)} {...props}>
         {children}
       </table>
@@ -32,15 +37,11 @@ export function TableHeader({ children, className }: { children: ReactNode; clas
 }
 
 export function TableBody({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <tbody className={cn('divide-y divide-slate-100', className)}>{children}</tbody>
-  );
+  return <tbody className={cn('divide-y divide-slate-100', className)}>{children}</tbody>;
 }
 
 export function TableRow({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <tr className={cn('transition-colors hover:bg-slate-50/60', className)}>{children}</tr>
-  );
+  return <tr className={cn('transition-colors hover:bg-slate-50/60', className)}>{children}</tr>;
 }
 
 interface TableColumnProps extends ThHTMLAttributes<HTMLTableCellElement> {
@@ -52,7 +53,7 @@ export function TableColumn({ children, className, ...props }: TableColumnProps)
     <th
       scope="col"
       className={cn(
-        'px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500',
+        'whitespace-nowrap px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 sm:px-5',
         className,
       )}
       {...props}
@@ -68,7 +69,7 @@ interface TableCellProps extends TdHTMLAttributes<HTMLTableCellElement> {
 
 export function TableCell({ children, className, ...props }: TableCellProps) {
   return (
-    <td className={cn('px-5 py-3.5 text-sm text-slate-700', className)} {...props}>
+    <td className={cn('px-3 py-3.5 text-sm text-slate-700 sm:px-5', className)} {...props}>
       {children}
     </td>
   );
