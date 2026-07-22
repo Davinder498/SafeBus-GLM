@@ -13,10 +13,10 @@ import { fetchDriverAssignments } from '@/services/driverAssignmentService';
 import {
   endDriverTrip,
   fetchActiveDriverTrip,
-  startTripFromAssignment,
+  startTripFromBus,
 } from '@/services/driverTripService';
 import type { DriverAssignmentSummary } from '@/types/driverAssignments';
-import type { DriverTrip, TripType } from '@/types/trips';
+import type { DriverTrip } from '@/types/trips';
 
 type LoadState =
   | { kind: 'loading' }
@@ -30,10 +30,6 @@ function formatTimestamp(iso: string): string {
     dateStyle: 'medium',
     timeStyle: 'short',
   });
-}
-
-function tripTypeLabel(tripType: TripType): string {
-  return tripType === 'morning' ? 'Morning' : 'Evening';
 }
 
 export function DriverDashboardPage() {
@@ -74,7 +70,8 @@ export function DriverDashboardPage() {
       ]);
       setState({ kind: 'ready', assignments, activeTrip });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Could not refresh your driver dashboard.';
+      const message =
+        err instanceof Error ? err.message : 'Could not refresh your driver dashboard.';
       setState({ kind: 'error', message });
     }
   }, []);
@@ -88,18 +85,20 @@ export function DriverDashboardPage() {
   // Resolve bus/route labels for the active trip from the loaded assignments.
   const activeAssignment = useMemo(() => {
     if (state.kind !== 'ready' || !state.activeTrip) return null;
-    return state.assignments.find(
-      (a) => a.busId === state.activeTrip!.bus_id && a.routeId === state.activeTrip!.route_id,
-    ) ?? null;
+    return (
+      state.assignments.find(
+        (a) => a.busId === state.activeTrip!.bus_id && a.routeId === state.activeTrip!.route_id,
+      ) ?? null
+    );
   }, [state]);
 
-  async function handleStartTripFromAssignment(assignmentId: string) {
+  async function handleStartTripFromBus(busId: string) {
     setActionInProgress(true);
     setActionError(null);
     setSuccessMessage(null);
     try {
-      await startTripFromAssignment(assignmentId);
-      setSuccessMessage('Trip started. Have a safe drive.');
+      await startTripFromBus(busId);
+      setSuccessMessage('Trip started. Location sharing is starting automatically.');
       await refreshDashboard();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Could not start the trip.');
@@ -128,10 +127,15 @@ export function DriverDashboardPage() {
 
   // Location sharing is wired to the active trip id (null when no active trip).
   const activeTripId = state.kind === 'ready' && state.activeTrip ? state.activeTrip.id : null;
-  const locationSharing = useDriverLocationSharing(activeTripId);
+  const locationSharing = useDriverLocationSharing(activeTripId, true);
 
   return (
-    <DashboardLayout title="Driver Dashboard" portal="driver" navItems={[]} navGroups={driverNavGroups}>
+    <DashboardLayout
+      title="Driver Dashboard"
+      portal="driver"
+      navItems={[]}
+      navGroups={driverNavGroups}
+    >
       <div className="mx-auto max-w-3xl space-y-5">
         <PageHeader
           eyebrow="Today"
@@ -139,7 +143,12 @@ export function DriverDashboardPage() {
           description="Start and end your trip from your assigned work."
         />
 
-        {state.kind === 'loading' && <DataState title="Loading your dashboard" message="Checking your assignments and active trip..." />}
+        {state.kind === 'loading' && (
+          <DataState
+            title="Loading your dashboard"
+            message="Checking your assignments and active trip..."
+          />
+        )}
 
         {state.kind === 'error' && (
           <div className="space-y-4">
@@ -162,18 +171,14 @@ export function DriverDashboardPage() {
               </Card>
             )}
             {successMessage && (
-              <Card role="status" aria-live="polite" className="border-success-200 bg-success-50 p-4">
+              <Card
+                role="status"
+                aria-live="polite"
+                className="border-success-200 bg-success-50 p-4"
+              >
                 <p className="text-sm font-semibold text-success-700">{successMessage}</p>
               </Card>
             )}
-
-            <LocationSharingPanel
-              hasActiveTrip={Boolean(state.activeTrip)}
-              supported={locationSharing.supported}
-              state={locationSharing.state}
-              onStart={locationSharing.start}
-              onStop={locationSharing.stop}
-            />
 
             <StudentManifestLinkCard hasActiveTrip={Boolean(state.activeTrip)} />
 
@@ -181,7 +186,8 @@ export function DriverDashboardPage() {
               <ActiveTripCard
                 trip={state.activeTrip}
                 busNumber={activeAssignment?.busLabel ?? null}
-                routeName={activeAssignment?.routeName ?? null}
+                locationSupported={locationSharing.supported}
+                locationState={locationSharing.state}
                 onEnd={handleEndTrip}
                 actionInProgress={actionInProgress}
               />
@@ -194,7 +200,7 @@ export function DriverDashboardPage() {
               <AssignmentListCard
                 driverName={driverName}
                 assignments={state.assignments}
-                onStart={handleStartTripFromAssignment}
+                onStart={handleStartTripFromBus}
                 actionInProgress={actionInProgress}
               />
             )}
@@ -229,12 +235,20 @@ function StudentManifestLinkCard({ hasActiveTrip }: { hasActiveTrip: boolean }) 
 interface ActiveTripCardProps {
   trip: DriverTrip;
   busNumber: string | null;
-  routeName: string | null;
+  locationSupported: boolean;
+  locationState: LocationSharingState;
   onEnd: () => void;
   actionInProgress: boolean;
 }
 
-function ActiveTripCard({ trip, busNumber, routeName, onEnd, actionInProgress }: ActiveTripCardProps) {
+function ActiveTripCard({
+  trip,
+  busNumber,
+  locationSupported,
+  locationState,
+  onEnd,
+  actionInProgress,
+}: ActiveTripCardProps) {
   return (
     <div className="space-y-4">
       <Card className="p-5">
@@ -242,16 +256,17 @@ function ActiveTripCard({ trip, busNumber, routeName, onEnd, actionInProgress }:
           <div>
             <p className="text-sm font-semibold text-gray-500">Active trip</p>
             <h2 className="mt-1 text-2xl font-bold text-navy-900">
-              {routeName ?? 'Active route'}
+              Bus {busNumber ?? trip.bus_id}
             </h2>
             <p className="mt-2 text-base text-gray-700">
-              Bus {busNumber ?? trip.bus_id} &middot; {trip.trip_name_snapshot ?? tripTypeLabel(trip.trip_type)} trip
+              Your bus location is available to authorized families and transportation admins.
             </p>
-            <p className="mt-1 text-sm text-gray-600">
-              Started {formatTimestamp(trip.started_at)}
-            </p>
+            <p className="mt-1 text-sm text-gray-600">Started {formatTimestamp(trip.started_at)}</p>
           </div>
           <StatusPill tone="success">active</StatusPill>
+        </div>
+        <div className="mt-4 border-t border-slate-100 pt-4">
+          <LocationStatus supported={locationSupported} state={locationState} />
         </div>
       </Card>
       <Button
@@ -291,52 +306,71 @@ function AssignmentListCard({
       <Card className="p-5">
         <h2 className="text-lg font-bold text-navy-900">Your assignments</h2>
         <p className="mt-1 text-sm text-gray-600">
-          Start a trip from one of your assigned routes below.
+          Choose the assigned bus you are driving now. Route details remain with transportation
+          operations.
         </p>
       </Card>
 
-      {assignments.map((assignment) => (
-        <Card key={assignment.id} className="p-5" data-testid="driver-assignment-card">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h3 className="text-xl font-bold text-navy-900">
-                {assignment.routeName ?? 'Assigned route'}
-              </h3>
-              <p className="mt-1 text-sm text-gray-600">
-                Bus {assignment.busLabel ?? assignment.busId} &middot; {assignment.tripName ?? tripTypeLabel(assignment.tripType)} trip
-              </p>
-            </div>
-            <Button
-              type="button"
-              size="md"
-              onClick={() => onStart(assignment.id)}
-              disabled={actionInProgress}
-              data-testid="driver-assignment-start-button"
-            >
-              {actionInProgress ? 'Starting...' : 'Start Trip'}
-            </Button>
-          </div>
-        </Card>
-      ))}
+      <BusChooser assignments={assignments} onStart={onStart} actionInProgress={actionInProgress} />
     </div>
   );
 }
 
-interface LocationSharingPanelProps {
-  hasActiveTrip: boolean;
-  supported: boolean;
-  state: LocationSharingState;
-  onStart: () => void;
-  onStop: () => void;
+function BusChooser({
+  assignments,
+  onStart,
+  actionInProgress,
+}: {
+  assignments: DriverAssignmentSummary[];
+  onStart: (busId: string) => void;
+  actionInProgress: boolean;
+}) {
+  const buses = Array.from(
+    new Map(assignments.map((assignment) => [assignment.busId, assignment])).values(),
+  );
+  const [selectedBusId, setSelectedBusId] = useState(buses.length === 1 ? buses[0].busId : '');
+
+  return (
+    <Card className="p-4 sm:p-5" data-testid="driver-assignment-card">
+      <label className="block text-sm font-semibold text-gray-700">
+        Assigned bus
+        <select
+          className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-navy-900"
+          value={selectedBusId}
+          onChange={(event) => setSelectedBusId(event.target.value)}
+        >
+          <option value="">Choose a bus</option>
+          {buses.map((assignment) => (
+            <option key={assignment.busId} value={assignment.busId}>
+              Bus {assignment.busLabel ?? assignment.busId}
+            </option>
+          ))}
+        </select>
+      </label>
+      <Button
+        className="mt-4"
+        type="button"
+        size="lg"
+        fullWidth
+        onClick={() => onStart(selectedBusId)}
+        disabled={!selectedBusId || actionInProgress}
+        data-testid="driver-assignment-start-button"
+      >
+        {actionInProgress ? 'Starting trip...' : 'Start Trip'}
+      </Button>
+      <p className="mt-3 text-xs text-gray-500">
+        Starting the trip requests location permission and begins sharing this bus automatically.
+      </p>
+    </Card>
+  );
 }
 
-function LocationSharingPanel({
-  hasActiveTrip,
-  supported,
-  state,
-  onStart,
-  onStop,
-}: LocationSharingPanelProps) {
+interface LocationStatusProps {
+  supported: boolean;
+  state: LocationSharingState;
+}
+
+function LocationStatus({ supported, state }: LocationStatusProps) {
   const tracking = state.kind === 'waiting' || state.kind === 'sharing' || state.kind === 'offline';
   const errorMessage = state.kind === 'error' || state.kind === 'denied' ? state.message : null;
 
@@ -363,50 +397,22 @@ function LocationSharingPanel({
     statusMessage = 'Location permission denied.';
   }
 
-  // No active trip: location sharing is unavailable.
-  if (!hasActiveTrip) {
-    return (
-      <Card data-testid="driver-location-panel" className="p-5">
-        <h2 className="text-lg font-bold text-navy-900">Location sharing</h2>
-        <p
-          data-testid="driver-location-status"
-          className="mt-2 text-sm text-gray-600"
-        >
-          Start a trip before sharing location.
-        </p>
-        <Button
-          type="button"
-          size="md"
-          className="mt-4"
-          data-testid="driver-location-start-button"
-          disabled
-        >
-          Start location sharing
-        </Button>
-      </Card>
-    );
-  }
-
-  // Browser does not support geolocation.
   if (!supported) {
     return (
-      <Card data-testid="driver-location-panel" className="p-5">
-        <h2 className="text-lg font-bold text-navy-900">Location sharing</h2>
-        <p
-          data-testid="driver-location-error"
-          className="mt-2 text-sm text-danger-700"
-        >
+      <div data-testid="driver-location-panel">
+        <h3 className="font-bold text-navy-900">Location status</h3>
+        <p data-testid="driver-location-error" className="mt-2 text-sm text-danger-700">
           Location sharing is not supported in this browser.
         </p>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <Card data-testid="driver-location-panel" className="p-5">
+    <div data-testid="driver-location-panel">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-lg font-bold text-navy-900">Location sharing</h2>
+          <h3 className="font-bold text-navy-900">Location status</h3>
           <p data-testid="driver-location-status" className="mt-1 text-sm text-gray-600">
             {statusMessage}
           </p>
@@ -422,28 +428,11 @@ function LocationSharingPanel({
         </div>
         {statusLabel && <StatusPill tone={statusTone}>{statusLabel}</StatusPill>}
       </div>
-      <div className="mt-4 flex gap-3">
-        {!tracking ? (
-          <Button
-            type="button"
-            size="md"
-            data-testid="driver-location-start-button"
-            onClick={onStart}
-          >
-            Start location sharing
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            size="md"
-            variant="secondary"
-            data-testid="driver-location-stop-button"
-            onClick={onStop}
-          >
-            Stop location sharing
-          </Button>
-        )}
-      </div>
-    </Card>
+      {!tracking && !errorMessage && (
+        <p className="mt-2 text-sm text-gray-600">
+          Location permission is being requested automatically.
+        </p>
+      )}
+    </div>
   );
 }
