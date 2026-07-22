@@ -14,8 +14,8 @@ interface PageHeaderProps {
 
 export function PageHeader({ eyebrow, title, description, icon, badge, action }: PageHeaderProps) {
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-start gap-4">
+    <div className="min-w-0 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-start gap-3 sm:gap-4">
         {icon && (
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-navy-50 text-navy-600 ring-1 ring-inset ring-navy-100">
             {icon}
@@ -31,7 +31,7 @@ export function PageHeader({ eyebrow, title, description, icon, badge, action }:
               )}
             </div>
           )}
-          <h1 className="truncate text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <h1 className="break-words text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             {title}
           </h1>
           {description && (
@@ -39,7 +39,11 @@ export function PageHeader({ eyebrow, title, description, icon, badge, action }:
           )}
         </div>
       </div>
-      {action && <div className="flex shrink-0 items-center gap-2">{action}</div>}
+      {action && (
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:shrink-0 sm:flex-row sm:items-center">
+          {action}
+        </div>
+      )}
     </div>
   );
 }

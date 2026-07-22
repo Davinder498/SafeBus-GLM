@@ -11,11 +11,13 @@ export function PublicLayout({ children }: PublicLayoutProps) {
     <div className="min-h-screen bg-white">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link to="/" className="flex items-center gap-2.5">
+          <Link to="/" className="flex min-w-0 items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-navy-700 text-white shadow-sm">
               <Bus className="h-5 w-5" aria-hidden />
             </span>
-            <span className="text-base font-bold tracking-tight text-slate-900">SafeBus Alberta</span>
+            <span className="hidden text-base font-bold tracking-tight text-slate-900 min-[390px]:inline">
+              SafeBus Alberta
+            </span>
           </Link>
           <nav className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex">
             <a href="/#parents" className="transition-colors hover:text-slate-900">
@@ -30,7 +32,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
           </nav>
           <NavLink
             to="/login"
-            className="rounded-lg bg-navy-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-navy-800"
+            className="shrink-0 rounded-lg bg-navy-700 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-navy-800 sm:px-4"
           >
             Demo login
           </NavLink>

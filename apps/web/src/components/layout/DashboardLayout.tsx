@@ -212,7 +212,11 @@ const portalTitles: Record<DashboardLayoutProps['portal'], string> = {
   parent: 'Guardian',
 };
 
-function normalizeItem(item: DashboardNavItem | string, index: number, portal: string): DashboardNavItem {
+function normalizeItem(
+  item: DashboardNavItem | string,
+  index: number,
+  portal: string,
+): DashboardNavItem {
   if (typeof item === 'string') {
     return {
       label: item,
@@ -254,7 +258,13 @@ function NavListItem({
 
 /* ------------------------------- layout shell ------------------------------ */
 
-export function DashboardLayout({ title, portal, navItems, navGroups, children }: DashboardLayoutProps) {
+export function DashboardLayout({
+  title,
+  portal,
+  navItems,
+  navGroups,
+  children,
+}: DashboardLayoutProps) {
   const { signOut, profile } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -272,7 +282,7 @@ export function DashboardLayout({ title, portal, navItems, navGroups, children }
     <div className="min-h-screen bg-slate-50">
       {/* Top header */}
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-16 max-w-[1400px] min-w-0 items-center gap-2 px-3 sm:gap-4 sm:px-6 lg:px-8">
           {/* Mobile menu button */}
           <button
             type="button"
@@ -284,7 +294,7 @@ export function DashboardLayout({ title, portal, navItems, navGroups, children }
           </button>
 
           {/* Brand */}
-          <Link to="/" className="flex items-center gap-2.5">
+          <Link to="/" className="flex min-w-0 items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-navy-700 text-white shadow-sm">
               <Bus className="h-5 w-5" aria-hidden />
             </span>
@@ -298,7 +308,9 @@ export function DashboardLayout({ title, portal, navItems, navGroups, children }
           <div className="ml-2 hidden min-w-0 flex-1 md:block">
             <p className="truncate text-sm font-medium text-slate-500">
               {portalTitles[portal]} <span className="mx-1 text-slate-300">/</span>{' '}
-              <span className="font-semibold text-slate-900">{title.replace(`${portalTitles[portal]} `, '')}</span>
+              <span className="font-semibold text-slate-900">
+                {title.replace(`${portalTitles[portal]} `, '')}
+              </span>
             </p>
           </div>
 
@@ -309,7 +321,7 @@ export function DashboardLayout({ title, portal, navItems, navGroups, children }
           <div className="flex items-center gap-1.5">
             <button
               type="button"
-              className="relative rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              className="relative hidden rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 min-[360px]:block"
               aria-label="Notifications"
             >
               <Bell className="h-5 w-5" />
@@ -331,7 +343,9 @@ export function DashboardLayout({ title, portal, navItems, navGroups, children }
               }
             >
               <div className="px-3 py-2">
-                <p className="text-sm font-semibold text-slate-900">{profile?.full_name ?? 'Account'}</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  {profile?.full_name ?? 'Account'}
+                </p>
                 <p className="truncate text-xs text-slate-500">{profile?.email}</p>
               </div>
               <DropdownSeparator />
@@ -377,7 +391,7 @@ export function DashboardLayout({ title, portal, navItems, navGroups, children }
         )}
 
         {/* Main content */}
-        <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <main className="min-w-0 max-w-full flex-1 px-3 py-5 sm:px-6 sm:py-6 lg:px-8">
           <div className="animate-fade-in-up">{children}</div>
         </main>
       </div>
