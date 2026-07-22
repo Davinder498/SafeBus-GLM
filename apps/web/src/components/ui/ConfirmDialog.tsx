@@ -58,8 +58,8 @@ export function ConfirmDialog({
       aria-labelledby="confirm-dialog-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm animate-fade-in"
     >
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-popover animate-scale-in">
-        <div className="flex items-start gap-4">
+      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-4 shadow-popover animate-scale-in sm:p-6">
+        <div className="flex items-start gap-3 sm:gap-4">
           <div
             className={cn(
               'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset',
@@ -69,17 +69,24 @@ export function ConfirmDialog({
             <Icon className="h-5 w-5" aria-hidden />
           </div>
           <div className="min-w-0">
-            <h2 id="confirm-dialog-title" className="text-lg font-bold text-slate-900">
+            <h2 id="confirm-dialog-title" className="break-words text-lg font-bold text-slate-900">
               {title}
             </h2>
             <div className="mt-1 text-sm leading-6 text-slate-500">{description}</div>
           </div>
         </div>
-        <div className="mt-6 flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={busy}>
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <Button
+            className="w-full sm:w-auto"
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={busy}
+          >
             {cancelLabel}
           </Button>
           <Button
+            className="w-full sm:w-auto"
             type="button"
             variant={destructive ? 'danger' : 'primary'}
             onClick={onConfirm}
