@@ -40,7 +40,7 @@ export async function getVisibleStudentGuardianLinks(): Promise<StudentGuardian[
   const { data, error } = await client
     .from('student_guardians')
     .select(
-      'id, tenant_id, student_id, guardian_id, relationship, can_receive_notifications, status, created_at, updated_at',
+      'id, tenant_id, student_id, guardian_id, relationship, can_receive_notifications, status, admin_note, status_comment, created_at, updated_at',
     )
     .order('created_at', { ascending: false });
 
@@ -146,4 +146,25 @@ export async function deactivateStudentGuardianLink(linkId: string): Promise<voi
     }
     throw new Error('We could not update the student guardian link. Please try again.');
   }
+}
+
+export async function setStudentGuardianLinkStatus(input: {
+  linkId: string;
+  status: 'active' | 'inactive';
+  comment: string;
+  adminNote: string;
+}): Promise<StudentGuardian> {
+  const { data, error } = await requireSupabase().rpc('admin_set_student_guardian_status', {
+    p_link_id: input.linkId,
+    p_status: input.status,
+    p_comment: input.comment,
+    p_admin_note: input.adminNote,
+  });
+  if (error) {
+    if (import.meta.env.DEV) console.error('Failed to update guardian link status', error);
+    throw new Error(error.message.includes('must be active')
+      ? 'Activate the guardian account before activating this connection.'
+      : 'We could not update this guardian connection.');
+  }
+  return data as StudentGuardian;
 }
