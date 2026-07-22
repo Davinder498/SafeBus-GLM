@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { isFatalLocationUpdateError, updateDriverTripLocation } from '@/services/driverLocationService';
+import {
+  isFatalLocationUpdateError,
+  updateDriverTripLocation,
+} from '@/services/driverLocationService';
 
 export type LocationSharingState =
   | { kind: 'inactive' }
@@ -28,7 +31,10 @@ interface GeolocationFix {
   speed: number | null;
 }
 
-export function useDriverLocationSharing(activeTripId: string | null): UseDriverLocationSharingResult {
+export function useDriverLocationSharing(
+  activeTripId: string | null,
+  autoStart = false,
+): UseDriverLocationSharingResult {
   const supported = typeof navigator !== 'undefined' && 'geolocation' in navigator;
   const [state, setState] = useState<LocationSharingState>({ kind: 'inactive' });
   const watchIdRef = useRef<number | null>(null);
@@ -67,10 +73,13 @@ export function useDriverLocationSharing(activeTripId: string | null): UseDriver
     if (mountedRef.current) setState({ kind: 'inactive' });
   }, [clearTimer, clearWatcher]);
 
-  const scheduleFlush = useCallback((delayMs: number) => {
-    clearTimer();
-    timerRef.current = setTimeout(() => flushRef.current(), delayMs);
-  }, [clearTimer]);
+  const scheduleFlush = useCallback(
+    (delayMs: number) => {
+      clearTimer();
+      timerRef.current = setTimeout(() => flushRef.current(), delayMs);
+    },
+    [clearTimer],
+  );
 
   const flush = useCallback(async () => {
     const tripId = activeTripIdRef.current;
@@ -176,7 +185,8 @@ export function useDriverLocationSharing(activeTripId: string | null): UseDriver
         if (error.code === 1) {
           setState({
             kind: 'denied',
-            message: 'Location permission was denied. Enable location access to share the bus location.',
+            message:
+              'Location permission was denied. Enable location access to share the bus location.',
           });
         } else if (error.code === 2) {
           setState({ kind: 'error', message: 'Location information is unavailable right now.' });
@@ -215,6 +225,10 @@ export function useDriverLocationSharing(activeTripId: string | null): UseDriver
   useEffect(() => {
     if (!activeTripId) stop();
   }, [activeTripId, stop]);
+
+  useEffect(() => {
+    if (activeTripId && autoStart && !sharingRequestedRef.current) start();
+  }, [activeTripId, autoStart, start]);
 
   useEffect(() => {
     mountedRef.current = true;
