@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { StudentBusAssignmentForm } from '@/components/admin/StudentBusAssignmentForm';
+import { StudentGuardianManager } from '@/components/admin/StudentGuardianManager';
 import { StudentForm, type StudentFormInput } from '@/components/admin/StudentForm';
 import { InlineFormShell } from '@/components/admin/TransportationAdminForms';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
@@ -243,6 +244,11 @@ export function AdminStudentDetailPage() {
   const assigned = !!detail?.busAssignment && !!detail.bus && !!detail.route;
   const rosterActive = detail?.student.status === 'active';
 
+  async function refreshAfterGuardianChange(nextMessage: string) {
+    setMessage(nextMessage);
+    await loadDetail();
+  }
+
   return (
     <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
       <div className="space-y-6">
@@ -260,10 +266,20 @@ export function AdminStudentDetailPage() {
         {detail && !loading && (
           <>
             <PageHeader
-              eyebrow="Student record"
+              eyebrow="Student workspace"
               title={studentName(detail)}
-              description="Student details, guardian connections, transportation, and administrative actions."
+              description="Manage the student, guardians, school, bus service, route, and route stops from one place."
             />
+
+            <Card className="p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div><h2 className="font-bold text-navy-900">Setup progress</h2><p className="text-sm text-slate-600">Each section saves independently.</p></div>
+                <p className="text-sm font-semibold text-navy-700">{[detail.student.first_name, detail.schoolName, detail.guardianLinks.some((link) => link.status === 'active'), assigned].filter(Boolean).length} of 4 ready</p>
+              </div>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {[['Student details', true], ['School', !!detail.schoolName], ['Guardian', detail.guardianLinks.some((link) => link.status === 'active')], ['Transportation', assigned]].map(([label, ready]) => <div key={String(label)} className={`rounded-lg px-3 py-2 text-sm font-semibold ${ready ? 'bg-success-50 text-success-700' : 'bg-slate-100 text-slate-600'}`}>{ready ? '✓' : '○'} {label}</div>)}
+              </div>
+            </Card>
 
             {writeError && (
               <Card className="border-danger-200 bg-danger-50 p-4">
@@ -277,7 +293,7 @@ export function AdminStudentDetailPage() {
             )}
 
             <section className="grid gap-4 lg:grid-cols-3">
-              <Card className="p-5">
+              <Card className="p-5 lg:col-span-2">
                 <div className="flex items-start gap-3">
                   <span className="rounded-lg bg-navy-50 p-2 text-navy-700">
                     <School className="h-5 w-5" aria-hidden />
@@ -374,24 +390,8 @@ export function AdminStudentDetailPage() {
                   <UsersRound className="h-5 w-5 text-navy-700" aria-hidden />
                   <h2 className="text-lg font-bold text-navy-900">Linked guardians</h2>
                 </div>
-                {detail.guardians.length === 0 ? (
-                  <p className="mt-4 text-sm text-slate-600">No guardian is linked.</p>
-                ) : (
-                  <ul className="mt-4 divide-y divide-slate-100">
-                    {detail.guardians.map((guardian) => (
-                      <li key={guardian.id} className="py-3 first:pt-0 last:pb-0">
-                        <p className="font-semibold text-navy-900">{guardian.full_name}</p>
-                        <p className="text-sm text-slate-600">{guardian.email}</p>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <Link
-                  to="/admin/guardians"
-                  className="mt-4 inline-flex text-sm font-semibold text-navy-700 hover:underline"
-                >
-                  Manage guardian connections
-                </Link>
+                <p className="mt-1 text-sm text-slate-600">Connect multiple guardians, send invitations, and manage each relationship without leaving this student.</p>
+                {canWrite && <StudentGuardianManager detail={detail} tenantId={profile?.tenant_id ?? null} onChanged={refreshAfterGuardianChange} />}
               </Card>
             </section>
 
