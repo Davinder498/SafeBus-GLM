@@ -1,5 +1,5 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
-import type { Guardian, Student, StudentStatus } from '@/types/studentGuardian';
+import type { Guardian, Student, StudentGuardian, StudentStatus } from '@/types/studentGuardian';
 import type {
   Bus,
   BusRouteAssignment,
@@ -50,6 +50,7 @@ export interface AdminStudentDetail {
   pickupStop: RouteStop | null;
   dropoffStop: RouteStop | null;
   guardians: Guardian[];
+  guardianLinks: Array<StudentGuardian & { guardian: Guardian; profileStatus: string | null }>;
 }
 
 function cleanText(value: string | null | undefined): string | null {
@@ -112,9 +113,8 @@ export async function fetchAdminStudentDetail(studentId: string): Promise<AdminS
       .maybeSingle(),
     client
       .from('student_guardians')
-      .select('guardian_id')
-      .eq('student_id', student.id)
-      .eq('status', 'active'),
+      .select('id, tenant_id, student_id, guardian_id, relationship, can_receive_notifications, status, admin_note, status_comment, created_at, updated_at')
+      .eq('student_id', student.id),
   ]);
 
   if (schoolResult.error || assignmentResult.error || guardianLinksResult.error) {
@@ -188,6 +188,7 @@ export async function fetchAdminStudentDetail(studentId: string): Promise<AdminS
     (link) => (link as { guardian_id: string }).guardian_id,
   );
   let guardians: Guardian[] = [];
+  let guardianLinks: AdminStudentDetail['guardianLinks'] = [];
   if (guardianIds.length > 0) {
     const { data, error } = await client
       .from('guardians')
@@ -198,6 +199,20 @@ export async function fetchAdminStudentDetail(studentId: string): Promise<AdminS
       .order('full_name', { ascending: true });
     if (error) throw new Error('The linked guardians could not be loaded.');
     guardians = (data ?? []) as Guardian[];
+    const profileIds = guardians.map((guardian) => guardian.profile_id).filter(Boolean);
+    const profileStatuses = new Map<string, string>();
+    if (profileIds.length > 0) {
+      const profilesResult = await client.from('profiles').select('id, status').in('id', profileIds);
+      if (profilesResult.error) throw new Error('Guardian invitation status could not be loaded.');
+      for (const profile of profilesResult.data ?? []) {
+        profileStatuses.set(profile.id, profile.status);
+      }
+    }
+    guardianLinks = (guardianLinksResult.data ?? []).flatMap((row) => {
+      const link = row as StudentGuardian;
+      const guardian = guardians.find((item) => item.id === link.guardian_id);
+      return guardian ? [{ ...link, guardian, profileStatus: profileStatuses.get(guardian.profile_id) ?? null }] : [];
+    });
   }
 
   return {
@@ -210,6 +225,7 @@ export async function fetchAdminStudentDetail(studentId: string): Promise<AdminS
     pickupStop,
     dropoffStop,
     guardians,
+    guardianLinks,
   };
 }
 

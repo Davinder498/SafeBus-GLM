@@ -38,6 +38,8 @@ export interface StudentGuardian {
   relationship: StudentGuardianRelationship;
   can_receive_notifications: boolean;
   status: StudentGuardianStatus;
+  admin_note: string | null;
+  status_comment: string | null;
   created_at: string;
   updated_at: string;
 }
