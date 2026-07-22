@@ -271,10 +271,10 @@ export function AdminStudentDetailPage() {
               description="Manage the student, guardians, school, bus service, route, and route stops from one place."
             />
 
-            <Card className="p-5">
+            <Card className="p-4 sm:p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div><h2 className="font-bold text-navy-900">Setup progress</h2><p className="text-sm text-slate-600">Each section saves independently.</p></div>
-                <p className="text-sm font-semibold text-navy-700">{[detail.student.first_name, detail.schoolName, detail.guardianLinks.some((link) => link.status === 'active'), assigned].filter(Boolean).length} of 4 ready</p>
+                <p className="shrink-0 text-sm font-semibold text-navy-700">{[detail.student.first_name, detail.schoolName, detail.guardianLinks.some((link) => link.status === 'active'), assigned].filter(Boolean).length} of 4 ready</p>
               </div>
               <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 {[['Student details', true], ['School', !!detail.schoolName], ['Guardian', detail.guardianLinks.some((link) => link.status === 'active')], ['Transportation', assigned]].map(([label, ready]) => <div key={String(label)} className={`rounded-lg px-3 py-2 text-sm font-semibold ${ready ? 'bg-success-50 text-success-700' : 'bg-slate-100 text-slate-600'}`}>{ready ? '✓' : '○'} {label}</div>)}
@@ -302,7 +302,7 @@ export function AdminStudentDetailPage() {
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                       School
                     </p>
-                    <p className="mt-1 font-bold text-navy-900">
+                    <p className="mt-1 break-words font-bold text-navy-900">
                       {detail.schoolName ?? 'Not assigned'}
                     </p>
                   </div>
@@ -324,7 +324,7 @@ export function AdminStudentDetailPage() {
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Transportation
                     </p>
-                    <p className="mt-1 font-bold text-navy-900">
+                    <p className="mt-1 break-words font-bold text-navy-900">
                       {assigned
                         ? `Bus ${detail.bus?.bus_number} · ${detail.route?.route_code}`
                         : 'Not assigned'}
@@ -336,7 +336,7 @@ export function AdminStudentDetailPage() {
                 </div>
               </Card>
 
-              <Card className="p-5">
+              <Card className="min-w-0 p-4 sm:p-5">
                 <div className="flex items-start gap-3">
                   <span
                     className={`rounded-lg p-2 ${rosterActive ? 'bg-success-50 text-success-700' : 'bg-warning-50 text-warning-700'}`}
@@ -365,7 +365,7 @@ export function AdminStudentDetailPage() {
             </section>
 
             <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-              <Card className="p-5">
+              <Card className="min-w-0 p-4 sm:p-5">
                 <div className="flex items-center gap-2">
                   <UserRound className="h-5 w-5 text-navy-700" aria-hidden />
                   <h2 className="text-lg font-bold text-navy-900">Student details</h2>
@@ -401,8 +401,9 @@ export function AdminStudentDetailPage() {
                 <p className="mt-1 text-sm text-slate-600">
                   Changes are restricted by your tenant and role permissions.
                 </p>
-                <div className="mt-4 flex flex-wrap gap-3">
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                   <Button
+                    className="w-full sm:w-auto"
                     type="button"
                     variant="outline"
                     leftIcon={<Pencil className="h-4 w-4" aria-hidden />}
@@ -412,6 +413,7 @@ export function AdminStudentDetailPage() {
                   </Button>
                   {rosterActive && (
                     <Button
+                      className="w-full sm:w-auto"
                       type="button"
                       variant="outline"
                       leftIcon={<BusFront className="h-4 w-4" aria-hidden />}
@@ -421,6 +423,7 @@ export function AdminStudentDetailPage() {
                     </Button>
                   )}
                   <Button
+                    className="w-full sm:w-auto"
                     type="button"
                     variant="ghost"
                     leftIcon={
@@ -437,6 +440,7 @@ export function AdminStudentDetailPage() {
                   </Button>
                   {canDelete && (
                     <Button
+                      className="w-full sm:w-auto"
                       type="button"
                       variant="danger"
                       leftIcon={<Trash2 className="h-4 w-4" aria-hidden />}
