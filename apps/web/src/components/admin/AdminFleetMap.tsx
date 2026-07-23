@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode, useCallback, useMemo, useState } from 'react';
-import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet';
-import type { LatLngBoundsExpression, LatLngExpression } from 'leaflet';
+import { CircleMarker, MapContainer, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import type { LatLngBoundsExpression, LatLngExpression, Map as LeafletMap } from 'leaflet';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
@@ -9,7 +9,7 @@ import {
   RouteOverlayLegend,
 } from '@/components/maps/RouteOverlayLayers';
 import type { MapTileConfig } from '@/config/mapTiles';
-import { hasValidCoordinates, type AdminLiveTrip } from '@/types/adminLiveMonitoring';
+import { hasValidCoordinates, type AdminLiveTrip, type AdminMapViewportBounds } from '@/types/adminLiveMonitoring';
 import type { RouteOverlay } from '@/types/transportation';
 
 export interface FleetMapFormatters {
@@ -119,7 +119,28 @@ function CoordinateFallback({ trips, formatters, missingConfig }: { trips: Admin
   );
 }
 
-export function AdminFleetMap({ trips, overlays = [], tileConfig, formatters }: { trips: AdminLiveTrip[]; overlays?: RouteOverlay[]; tileConfig: MapTileConfig; formatters: FleetMapFormatters }) {
+
+function ViewportChangeReporter({ onViewportChange }: { onViewportChange?: (bounds: AdminMapViewportBounds) => void }) {
+  const report = useCallback((map: LeafletMap) => {
+    if (!onViewportChange) return;
+    const bounds = map.getBounds();
+    onViewportChange({
+      southLatitude: bounds.getSouth(),
+      westLongitude: bounds.getWest(),
+      northLatitude: bounds.getNorth(),
+      eastLongitude: bounds.getEast(),
+    });
+  }, [onViewportChange]);
+
+  const map = useMapEvents({
+    moveend: () => report(map),
+    zoomend: () => report(map),
+  });
+
+  return null;
+}
+
+export function AdminFleetMap({ trips, overlays = [], tileConfig, formatters, onViewportChange }: { trips: AdminLiveTrip[]; overlays?: RouteOverlay[]; tileConfig: MapTileConfig; formatters: FleetMapFormatters; onViewportChange?: (bounds: AdminMapViewportBounds) => void }) {
   const [tileFailed, setTileFailed] = useState(false);
   const locations = useMemo(() => toFleetMapLocations(trips, formatters.safeFleetLabel), [trips, formatters.safeFleetLabel]);
   const overlayPositions = useMemo(
@@ -153,6 +174,7 @@ export function AdminFleetMap({ trips, overlays = [], tileConfig, formatters }: 
           <MapContainer center={center} zoom={locations.length === 1 ? 14 : 11} scrollWheelZoom className="h-full w-full" data-testid="admin-live-fleet-leaflet-map">
             <FleetTileLayer config={tileConfig} onTileError={handleTileError} onTileLoad={handleTileLoad} />
             <FitFleetControl bounds={bounds} disabled={bounds === null} />
+            <ViewportChangeReporter onViewportChange={onViewportChange} />
             <RouteOverlayLayers overlays={overlays} />
             {locations.map(({ key, position, trip }) => {
               const style = markerStyle(trip.locationStatus);

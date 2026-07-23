@@ -17,6 +17,7 @@ import {
 import {
   UI_STALE_LOCATION_THRESHOLD_LABEL,
   type AdminLiveTrip,
+  type AdminMapViewportBounds,
   type FleetIssueLabel,
   type LocationFreshness,
 } from '@/types/adminLiveMonitoring';
@@ -84,6 +85,8 @@ export function AdminLiveTripsPage() {
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
   const fetchingRef = useRef(false);
   const pendingLoadRef = useRef(false);
+  const viewportBoundsRef = useRef<AdminMapViewportBounds | null>(null);
+  const viewportDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadRef = useRef<(opts: { background: boolean }) => void>(() => undefined);
   const isMountedRef = useRef(true);
 
@@ -102,7 +105,7 @@ export function AdminLiveTripsPage() {
     }
     try {
       const [nextTrips, nextOverlays] = await Promise.all([
-        fetchAdminLiveTrips(),
+        fetchAdminLiveTrips(viewportBoundsRef.current),
         getAdminLiveRouteOverlays().catch(() => []),
       ]);
       if (!isMountedRef.current) return;
@@ -134,6 +137,14 @@ export function AdminLiveTripsPage() {
     void load({ background: true });
   }, [load]);
 
+  const handleViewportChange = useCallback((bounds: AdminMapViewportBounds) => {
+    viewportBoundsRef.current = bounds;
+    if (viewportDebounceRef.current) clearTimeout(viewportDebounceRef.current);
+    viewportDebounceRef.current = setTimeout(() => {
+      void loadRef.current({ background: true });
+    }, 400);
+  }, []);
+
   const clearUnverifiedFleetCoordinates = useCallback(() => {
     setTrips((current) =>
       current.map((trip) => ({
@@ -155,6 +166,7 @@ export function AdminLiveTripsPage() {
     void load({ background: false });
     return () => {
       isMountedRef.current = false;
+      if (viewportDebounceRef.current) clearTimeout(viewportDebounceRef.current);
     };
   }, [load]);
 
@@ -245,7 +257,7 @@ export function AdminLiveTripsPage() {
               ))}
             </section>
 
-            <AdminFleetMap trips={trips} overlays={routeOverlays} tileConfig={mapTileConfig} formatters={fleetMapFormatters} />
+            <AdminFleetMap trips={trips} overlays={routeOverlays} onViewportChange={handleViewportChange} tileConfig={mapTileConfig} formatters={fleetMapFormatters} />
 
             {trips.length === 0 ? (
               <DataState title="No active trips right now." message="Active driver trips in your organization will appear here." />
