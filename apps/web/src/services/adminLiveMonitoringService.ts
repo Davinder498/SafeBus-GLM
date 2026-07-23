@@ -1,5 +1,5 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
-import type { AdminLiveTrip, FleetIssueLabel, LocationFreshness } from '@/types/adminLiveMonitoring';
+import type { AdminLiveTrip, AdminMapViewportBounds, FleetIssueLabel, LocationFreshness } from '@/types/adminLiveMonitoring';
 
 function requireSupabase() {
   if (!supabase) {
@@ -64,10 +64,17 @@ function mapRow(row: AdminLiveFleetRpcRow): AdminLiveTrip {
   };
 }
 
-export async function fetchAdminLiveTrips(): Promise<AdminLiveTrip[]> {
+export async function fetchAdminLiveTrips(bounds?: AdminMapViewportBounds | null): Promise<AdminLiveTrip[]> {
   const client = requireSupabase();
 
-  const { data, error } = await client.rpc('get_admin_live_fleet_monitoring');
+  const { data, error } = bounds
+    ? await client.rpc('get_admin_live_fleet_monitoring_in_viewport', {
+      p_south_latitude: bounds.southLatitude,
+      p_west_longitude: bounds.westLongitude,
+      p_north_latitude: bounds.northLatitude,
+      p_east_longitude: bounds.eastLongitude,
+    })
+    : await client.rpc('get_admin_live_fleet_monitoring');
 
   if (error) {
     if (import.meta.env.DEV) {

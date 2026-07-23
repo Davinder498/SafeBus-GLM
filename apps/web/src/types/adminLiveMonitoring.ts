@@ -42,3 +42,11 @@ export function hasValidCoordinates(trip: Pick<AdminLiveTrip, 'latestLatitude' |
     && trip.latestLongitude <= 180
   );
 }
+
+
+export interface AdminMapViewportBounds {
+  southLatitude: number;
+  westLongitude: number;
+  northLatitude: number;
+  eastLongitude: number;
+}
