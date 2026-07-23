@@ -313,93 +313,157 @@ function AssignmentChooser({
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {assignments.map((assignment) => {
-          const selected = assignment.id === selectedAssignmentId;
-          const inProgress = assignmentMatchesTrip(assignment, activeTrip);
-          const panelId = `start-assignment-${assignment.id}`;
-
-          return (
-            <Card
-              key={assignment.id}
-              interactive={!selected}
-              className={selected ? 'border-navy-400 ring-2 ring-navy-100' : undefined}
-              data-testid="driver-assignment-card"
-              data-assignment-id={assignment.id}
-            >
-              <button
-                type="button"
-                className="flex min-h-28 w-full items-center gap-4 p-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-500"
-                onClick={() => setSelectedAssignmentId(selected ? '' : assignment.id)}
-                aria-expanded={selected}
-                aria-controls={panelId}
-                data-testid="driver-assignment-select-button"
-              >
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-navy-50 text-navy-700">
-                  <Bus className="h-6 w-6" aria-hidden />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-gray-500">Assigned route</span>
-                  <span
-                    className="mt-1 block text-xl font-bold text-navy-900"
-                    data-testid="driver-assignment-route-name"
-                  >
-                    {assignment.routeName}
-                  </span>
-                  <span
-                    className="mt-1 block text-sm font-medium text-gray-600"
-                    data-testid="driver-assignment-trip-name"
-                  >
-                    {assignment.tripName} · Bus {assignment.busLabel}
-                  </span>
-                  <span
-                    className={`mt-2 block text-sm font-medium ${
-                      inProgress ? 'text-success-700' : 'text-gray-500'
-                    }`}
-                  >
-                    {inProgress ? 'In progress' : 'Ready'}
-                  </span>
-                </span>
-                <ChevronDown
-                  className={`h-5 w-5 shrink-0 text-gray-400 transition-transform ${
-                    selected ? 'rotate-180' : ''
-                  }`}
-                  aria-hidden
-                />
-              </button>
-
-              {selected && (
-                <div id={panelId} className="space-y-4 border-t border-slate-100 p-5 pt-4">
-                  <AssignmentDetails assignment={assignment} />
-                  {inProgress ? (
-                    <p className="rounded-lg bg-success-50 p-3 text-sm font-semibold text-success-700">
-                      This trip is currently in progress.
-                    </p>
-                  ) : (
-                    <>
-                      <Button
-                        type="button"
-                        size="lg"
-                        fullWidth
-                        onClick={() => onStart(assignment.id)}
-                        disabled={actionInProgress}
-                        data-testid="driver-assignment-start-button"
-                      >
-                        {actionInProgress ? 'Starting trip...' : `Start ${assignment.tripName}`}
-                      </Button>
-                      <p className="text-xs leading-5 text-gray-500">
-                        Starting the trip requests location permission and begins sharing this bus
-                        automatically.
-                      </p>
-                    </>
-                  )}
-                </div>
-              )}
-            </Card>
-          );
-        })}
+      <div className="grid gap-5 lg:grid-cols-2">
+        <AssignmentColumn
+          title="Outbound"
+          description="Morning or outbound runs appear on the left."
+          assignments={assignments.filter((assignment) => assignment.direction === 'forward')}
+          emptyMessage="No outbound trips assigned."
+          activeTrip={activeTrip}
+          selectedAssignmentId={selectedAssignmentId}
+          setSelectedAssignmentId={setSelectedAssignmentId}
+          onStart={onStart}
+          actionInProgress={actionInProgress}
+        />
+        <AssignmentColumn
+          title="Return"
+          description="Afternoon or return runs appear on the right."
+          assignments={assignments.filter((assignment) => assignment.direction === 'reverse')}
+          emptyMessage="No return trips assigned."
+          activeTrip={activeTrip}
+          selectedAssignmentId={selectedAssignmentId}
+          setSelectedAssignmentId={setSelectedAssignmentId}
+          onStart={onStart}
+          actionInProgress={actionInProgress}
+        />
       </div>
     </section>
+  );
+}
+
+function AssignmentColumn({
+  title,
+  description,
+  assignments,
+  emptyMessage,
+  activeTrip,
+  selectedAssignmentId,
+  setSelectedAssignmentId,
+  onStart,
+  actionInProgress,
+}: {
+  title: string;
+  description: string;
+  assignments: DriverAssignmentSummary[];
+  emptyMessage: string;
+  activeTrip: DriverTrip | null;
+  selectedAssignmentId: string;
+  setSelectedAssignmentId: (assignmentId: string) => void;
+  onStart: (assignmentId: string) => void;
+  actionInProgress: boolean;
+}) {
+  return (
+    <div className="space-y-3" data-testid={`driver-${title.toLowerCase()}-assignments`}>
+      <div className="rounded-2xl border border-slate-200 bg-white/70 p-4 shadow-sm">
+        <h3 className="text-base font-bold text-navy-900">{title}</h3>
+        <p className="mt-1 text-sm text-gray-600">{description}</p>
+      </div>
+
+      {assignments.length === 0 ? (
+        <Card className="p-5">
+          <p className="text-sm font-medium text-gray-500">{emptyMessage}</p>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {assignments.map((assignment) => {
+            const selected = assignment.id === selectedAssignmentId;
+            const inProgress = assignmentMatchesTrip(assignment, activeTrip);
+            const panelId = `start-assignment-${assignment.id}`;
+
+            return (
+              <Card
+                key={assignment.id}
+                interactive={!selected}
+                className={selected ? 'border-navy-400 ring-2 ring-navy-100' : undefined}
+                data-testid="driver-assignment-card"
+                data-assignment-id={assignment.id}
+              >
+                <button
+                  type="button"
+                  className="flex min-h-28 w-full items-center gap-4 p-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-500"
+                  onClick={() => setSelectedAssignmentId(selected ? '' : assignment.id)}
+                  aria-expanded={selected}
+                  aria-controls={panelId}
+                  data-testid="driver-assignment-select-button"
+                >
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-navy-50 text-navy-700">
+                    <Bus className="h-6 w-6" aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-gray-500">
+                      Assigned route
+                    </span>
+                    <span
+                      className="mt-1 block text-xl font-bold text-navy-900"
+                      data-testid="driver-assignment-route-name"
+                    >
+                      {assignment.routeName}
+                    </span>
+                    <span
+                      className="mt-1 block text-sm font-medium text-gray-600"
+                      data-testid="driver-assignment-trip-name"
+                    >
+                      {assignment.tripName} · Bus {assignment.busLabel}
+                    </span>
+                    <span
+                      className={`mt-2 block text-sm font-medium ${
+                        inProgress ? 'text-success-700' : 'text-gray-500'
+                      }`}
+                    >
+                      {inProgress ? 'In progress' : 'Ready'}
+                    </span>
+                  </span>
+                  <ChevronDown
+                    className={`h-5 w-5 shrink-0 text-gray-400 transition-transform ${
+                      selected ? 'rotate-180' : ''
+                    }`}
+                    aria-hidden
+                  />
+                </button>
+
+                {selected && (
+                  <div id={panelId} className="space-y-4 border-t border-slate-100 p-5 pt-4">
+                    <AssignmentDetails assignment={assignment} />
+                    {inProgress ? (
+                      <p className="rounded-lg bg-success-50 p-3 text-sm font-semibold text-success-700">
+                        This trip is currently in progress.
+                      </p>
+                    ) : (
+                      <>
+                        <Button
+                          type="button"
+                          size="lg"
+                          fullWidth
+                          onClick={() => onStart(assignment.id)}
+                          disabled={actionInProgress}
+                          data-testid="driver-assignment-start-button"
+                        >
+                          {actionInProgress ? 'Starting trip...' : `Start ${assignment.tripName}`}
+                        </Button>
+                        <p className="text-xs leading-5 text-gray-500">
+                          Starting the trip requests location permission and begins sharing this bus
+                          automatically.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
