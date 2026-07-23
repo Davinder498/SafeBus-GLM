@@ -317,7 +317,20 @@ export async function getAdminLiveRouteOverlays(): Promise<RouteOverlay[]> {
   const client = requireSupabase();
   const { data, error } = await client.rpc('get_admin_live_route_overlays');
   if (error) throw new Error(error.message);
-  return (data ?? []) as RouteOverlay[];
+  return (data ?? []).map((row: Record<string, unknown>) => ({
+    routeId: row.route_id as string | undefined,
+    routeCode: row.route_code as string,
+    routeName: row.route_name as string,
+    routeKind: row.route_kind as RouteOverlay['routeKind'],
+    mapColor: row.map_color as string,
+    tripPatternId: row.trip_pattern_id as string | undefined,
+    tripName: row.trip_name as string,
+    direction: row.direction as RouteOverlay['direction'],
+    stops: (row.stops ?? []) as RouteOverlay['stops'],
+    routeShapeGeojson: (row.route_shape_geojson ?? null) as RouteOverlay['routeShapeGeojson'],
+    routeShapeVersion: (row.route_shape_version ?? null) as RouteOverlay['routeShapeVersion'],
+    routeShapeDistanceMeters: (row.route_shape_distance_meters ?? null) as RouteOverlay['routeShapeDistanceMeters'],
+  }));
 }
 
 export async function getGuardianLiveRouteOverlays(): Promise<RouteOverlay[]> {

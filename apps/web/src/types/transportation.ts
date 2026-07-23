@@ -143,6 +143,11 @@ export interface RouteOverlayStop {
   plannedArrivalTime: string | null;
 }
 
+export interface RouteShapeGeoJson {
+  type: 'LineString';
+  coordinates: [number, number][];
+}
+
 export interface RouteOverlay {
   studentId?: string;
   routeId?: string;
@@ -154,6 +159,9 @@ export interface RouteOverlay {
   tripName: string;
   direction: RouteDirection;
   stops: RouteOverlayStop[];
+  routeShapeGeojson?: RouteShapeGeoJson | null;
+  routeShapeVersion?: number | null;
+  routeShapeDistanceMeters?: number | null;
 }
 
 export interface StudentRouteAssignment {
