@@ -23,6 +23,7 @@ const ADMIN = {
   routeId: '11111111-2222-3333-4444-555555555555',
   tripId: '22222222-3333-4444-5555-666666666666',
   assignmentId: '33333333-4444-5555-6666-777777777777',
+  tripPatternId: '44444444-5555-6666-7777-888888888888',
 } as const;
 
 const adminProfile = {
@@ -134,7 +135,12 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
             refresh_token: 'mock-refresh',
             token_type: 'bearer',
             expires_in: 3600,
-            user: { id: profile.id, email: profile.email, aud: 'authenticated', role: 'authenticated' },
+            user: {
+              id: profile.id,
+              email: profile.email,
+              aud: 'authenticated',
+              role: 'authenticated',
+            },
           }),
         });
         return;
@@ -151,13 +157,25 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
       const fulfillRows = async (rows: Record<string, unknown>[]) => {
         if (wantsSingle) {
           if (rows.length === 0) {
-            await route.fulfill({ status: 406, contentType: 'application/json', body: JSON.stringify({ message: 'no rows' }) });
+            await route.fulfill({
+              status: 406,
+              contentType: 'application/json',
+              body: JSON.stringify({ message: 'no rows' }),
+            });
             return;
           }
-          await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rows[0]) });
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(rows[0]),
+          });
           return;
         }
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rows) });
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(rows),
+        });
       };
 
       // GET selects
@@ -193,19 +211,21 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
         }
         if (path.includes('/driver_route_assignments')) {
           // Return a mock assignment referencing the no-school bus + route.
-          await fulfillRows([{
-            id: ADMIN.assignmentId,
-            tenant_id: ADMIN.tenantId,
-            driver_id: ADMIN.driverId,
-            bus_id: ADMIN.busId,
-            route_id: ADMIN.routeId,
-            trip_type: 'morning',
-            status: 'active',
-            effective_from: null,
-            effective_to: null,
-            created_at: '2025-01-01T00:00:00.000Z',
-            updated_at: '2025-01-01T00:00:00.000Z',
-          }]);
+          await fulfillRows([
+            {
+              id: ADMIN.assignmentId,
+              tenant_id: ADMIN.tenantId,
+              driver_id: ADMIN.driverId,
+              bus_id: ADMIN.busId,
+              route_id: ADMIN.routeId,
+              trip_type: 'morning',
+              status: 'active',
+              effective_from: null,
+              effective_to: null,
+              created_at: '2025-01-01T00:00:00.000Z',
+              updated_at: '2025-01-01T00:00:00.000Z',
+            },
+          ]);
           return;
         }
         await blockUnexpectedSupabaseRestAccess(route, method, path);
@@ -214,6 +234,27 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
 
       // POST (insert a route, bus, or driver_trip)
       if (method === 'POST') {
+        if (path.includes('/rpc/get_current_driver_trip_assignments')) {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify([
+              {
+                assignment_id: ADMIN.assignmentId,
+                bus_id: ADMIN.busId,
+                route_id: ADMIN.routeId,
+                route_trip_pattern_id: ADMIN.tripPatternId,
+                trip_name: 'Riverside Outbound',
+                direction: 'forward',
+                route_name: routeNoSchool.route_name,
+                route_code: routeNoSchool.route_code,
+                bus_number: busNoSchool.bus_number,
+                scheduled_start_time: '08:00:00',
+              },
+            ]),
+          });
+          return;
+        }
         if (path.includes('/rpc/start_driver_trip_from_assignment')) {
           // Start a trip from an assignment — return a new active trip.
           const newTrip = {
@@ -222,6 +263,9 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
             driver_id: ADMIN.driverId,
             bus_id: ADMIN.busId,
             route_id: ADMIN.routeId,
+            route_trip_pattern_id: ADMIN.tripPatternId,
+            driver_route_assignment_id: ADMIN.assignmentId,
+            trip_name_snapshot: 'Riverside Outbound',
             trip_type: 'morning',
             status: 'active',
             service_date: '2025-01-01',
@@ -231,7 +275,11 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
             updated_at: '2025-01-01T12:00:00.000Z',
           };
           activeTrip = newTrip;
-          await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(newTrip) });
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(newTrip),
+          });
           return;
         }
         if (path.includes('/rpc/admin_save_route_definition')) {
@@ -247,11 +295,19 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
           return;
         }
         if (path.includes('/routes')) {
-          await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(routeNoSchool) });
+          await route.fulfill({
+            status: 201,
+            contentType: 'application/json',
+            body: JSON.stringify(routeNoSchool),
+          });
           return;
         }
         if (path.includes('/buses')) {
-          await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(busNoSchool) });
+          await route.fulfill({
+            status: 201,
+            contentType: 'application/json',
+            body: JSON.stringify(busNoSchool),
+          });
           return;
         }
         if (path.includes('/driver_trips')) {
@@ -270,7 +326,11 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
             updated_at: '2025-01-01T12:00:00.000Z',
           };
           activeTrip = newTrip;
-          await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(newTrip) });
+          await route.fulfill({
+            status: 201,
+            contentType: 'application/json',
+            body: JSON.stringify(newTrip),
+          });
           return;
         }
         await blockUnexpectedSupabaseRestAccess(route, method, path);
@@ -302,8 +362,12 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
         created_at: '2025-01-01T00:00:00.000Z',
       },
     };
-    for (const k of ['supabase.auth.token', 'sb-placeholder-auth-token',
-      'sb-bppmqykkbhrmotcybxrh-auth-token', 'sb-localhost-auth-token']) {
+    for (const k of [
+      'supabase.auth.token',
+      'sb-placeholder-auth-token',
+      'sb-bppmqykkbhrmotcybxrh-auth-token',
+      'sb-localhost-auth-token',
+    ]) {
       try {
         window.localStorage.setItem(k, JSON.stringify(fakeSession));
       } catch {
@@ -319,7 +383,9 @@ test.describe('Milestone 4E — school optional for transportation', () => {
     await page.goto('/admin/routes');
 
     // Wait for the page to load past ProtectedRoute.
-    await expect(page.getByRole('heading', { name: 'Route corridors and trips', level: 1 })).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByRole('heading', { name: 'Route corridors and trips', level: 1 }),
+    ).toBeVisible({ timeout: 10000 });
 
     // Open the add-route form.
     await page.getByRole('button', { name: 'Add route' }).click();
@@ -341,7 +407,9 @@ test.describe('Milestone 4E — school optional for transportation', () => {
     await expect(page.getByText('Choose a school')).toHaveCount(0);
 
     // A success message appears (the mock insert returns the route).
-    await expect(page.getByText('Route corridor and trips created.')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Route corridor and trips created.')).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('admin bus form can be submitted with no school selected', async ({ page }) => {
@@ -349,7 +417,9 @@ test.describe('Milestone 4E — school optional for transportation', () => {
     await page.goto('/admin/buses');
 
     // Wait for the page to load past ProtectedRoute.
-    await expect(page.getByRole('heading', { name: 'Visible buses', level: 1 })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Visible buses', level: 1 })).toBeVisible({
+      timeout: 10000,
+    });
 
     // Open the add-bus form.
     await page.getByRole('button', { name: 'Add bus' }).click();
@@ -395,8 +465,12 @@ test.describe('Milestone 4E — driver trip start with no-school bus + route', (
           created_at: '2025-01-01T00:00:00.000Z',
         },
       };
-      for (const k of ['supabase.auth.token', 'sb-placeholder-auth-token',
-      'sb-bppmqykkbhrmotcybxrh-auth-token', 'sb-localhost-auth-token']) {
+      for (const k of [
+        'supabase.auth.token',
+        'sb-placeholder-auth-token',
+        'sb-bppmqykkbhrmotcybxrh-auth-token',
+        'sb-localhost-auth-token',
+      ]) {
         try {
           window.localStorage.setItem(k, JSON.stringify(fakeSession));
         } catch {
@@ -408,16 +482,21 @@ test.describe('Milestone 4E — driver trip start with no-school bus + route', (
     await page.goto('/driver');
 
     // The driver dashboard renders.
-    await expect(page.getByRole('heading', { name: 'Driver Dashboard', level: 1 })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Your assigned trips', level: 1 })).toBeVisible({
+      timeout: 10000,
+    });
 
     // The assignment card appears (the no-school bus + route are assigned).
     await expect(page.getByTestId('driver-assignment-card')).toBeVisible({ timeout: 10000 });
 
     // Start the trip from the assignment — no school field blocks the action.
+    await page.getByTestId('driver-assignment-select-button').click();
     await page.getByTestId('driver-assignment-start-button').click();
 
     // The active trip card appears with the route name.
-    await expect(page.getByRole('heading', { name: 'Riverside AM' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Riverside Outbound' })).toBeVisible({
+      timeout: 10000,
+    });
     await expect(page.getByText('active', { exact: true })).toBeVisible();
   });
 });

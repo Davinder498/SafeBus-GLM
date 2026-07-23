@@ -19,6 +19,7 @@ import {
   X,
   MapPinned,
   List,
+  History,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAuth } from '@/contexts/useAuth';
@@ -185,6 +186,7 @@ export const driverNavGroups: DashboardNavGroup[] = [
     label: 'Driver',
     items: [
       { label: 'Assignments', to: '/driver', icon: <Bus className="h-4 w-4" /> },
+      { label: 'Trip history', to: '/driver/history', icon: <History className="h-4 w-4" /> },
       {
         label: 'Pickup & drop-off',
         to: '/driver/pickup-drop-off',

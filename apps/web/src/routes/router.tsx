@@ -28,6 +28,7 @@ import { DriverDashboardPage } from '@/pages/DriverDashboardPage';
 import { DriverManifestPage } from '@/pages/DriverManifestPage';
 import { DriverProfilePage } from '@/pages/DriverProfilePage';
 import { DriverSettingsPage } from '@/pages/DriverSettingsPage';
+import { DriverTripHistoryPage } from '@/pages/DriverTripHistoryPage';
 import { GuardianLiveMapPage } from '@/pages/GuardianLiveMapPage';
 import { GuardianLiveTripsPage } from '@/pages/GuardianLiveTripsPage';
 import { GuardianRoutesPage } from '@/pages/GuardianRoutesPage';
@@ -248,6 +249,14 @@ export const appRoutes: RouteObject[] = [
     ),
   },
   { path: '/driver/manifest', element: <Navigate to="/driver/pickup-drop-off" replace /> },
+  {
+    path: '/driver/history',
+    element: (
+      <ProtectedRoute allowedRoles={['driver']}>
+        <DriverTripHistoryPage />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: '/driver/settings',
     element: (

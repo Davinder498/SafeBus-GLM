@@ -37,7 +37,8 @@ export async function fetchAdminSetupSnapshot(): Promise<AdminSetupSnapshot> {
   };
 }
 
-const tripColumns = 'id, tenant_id, driver_id, bus_id, route_id, route_trip_pattern_id, trip_name_snapshot, trip_type, status, service_date, started_at, ended_at, created_at, updated_at';
+const tripColumns =
+  'id, tenant_id, driver_id, bus_id, route_id, route_trip_pattern_id, driver_route_assignment_id, trip_name_snapshot, trip_type, status, service_date, started_at, ended_at, created_at, updated_at';
 
 export async function fetchAdminTrips(): Promise<DriverTrip[]> {
   const client = requireSupabase();

@@ -5,8 +5,8 @@ import type {
   DriverAssignmentSummary,
   DriverRouteAssignment,
 } from '@/types/driverAssignments';
-import type { DriverRecord, TripType } from '@/types/trips';
-import { isDriverAssignmentCurrentOn } from '@/utils/driverAssignments';
+import type { DriverRecord } from '@/types/trips';
+import { prepareDriverTripAssignments } from '@/utils/driverAssignments';
 import { fetchCurrentDriver } from './driverTripService';
 import { ensureBusRouteAssignment } from './studentBusAssignmentService';
 
@@ -151,84 +151,44 @@ export async function updateAssignmentStatus(
 // Driver-facing service functions
 // ---------------------------------------------------------------------------
 
-/**
- * Fetch the current driver's active assignments, enriched with bus/route
- * display names for the dashboard. Scoped by RLS to the driver's own
- * assignments in their tenant.
- *
- * Fetches assignments, buses, and routes in parallel (all RLS-scoped to the
- * driver's tenant) and joins bus_number/route_name client-side to avoid
- * PostgREST nested-select typing complexity.
- */
+interface DriverAssignmentRpcRow {
+  assignment_id: string;
+  bus_id: string;
+  route_id: string;
+  route_trip_pattern_id: string;
+  trip_name: string;
+  direction: 'forward' | 'reverse';
+  route_name: string;
+  route_code: string;
+  bus_number: string;
+  scheduled_start_time: string | null;
+}
+
+/** Fetch the authenticated driver's exact, currently startable trip assignments. */
 export async function fetchDriverAssignments(): Promise<DriverAssignmentSummary[]> {
   const client = requireSupabase();
+  const { data, error } = await client.rpc('get_current_driver_trip_assignments');
 
-  const [assignmentsResult, busesResult, routesResult, patternsResult] = await Promise.all([
-    client
-      .from('driver_route_assignments')
-      .select(assignmentColumns)
-      .eq('status', 'active')
-      .order('created_at', { ascending: true }),
-    client.from('buses').select('id, bus_number').eq('status', 'active'),
-    client.from('routes').select('id, route_name').eq('status', 'active'),
-    client.from('route_trip_patterns').select('id, display_name').eq('status', 'active'),
-  ]);
-
-  if (assignmentsResult.error) {
-    logDevError('Failed to load driver assignments', assignmentsResult.error);
+  if (error) {
+    logDevError('Failed to load current driver trip assignments', error);
     throw new Error('We could not load your trip assignments. Please try again.');
   }
-  // A card is shown only when its bus, route, and named trip are all active.
-  if (busesResult.error || routesResult.error || patternsResult.error) {
-    logDevError('Failed to load active driver assignment references', {
-      buses: busesResult.error,
-      routes: routesResult.error,
-      patterns: patternsResult.error,
-    });
-    throw new Error('We could not load your active bus assignments. Please try again.');
-  }
 
-  const busMap = new Map<string, string>(
-    ((busesResult.data ?? []) as Array<{ id: string; bus_number: string }>).map((b) => [
-      b.id,
-      b.bus_number,
-    ]),
+  return prepareDriverTripAssignments(
+    ((data ?? []) as DriverAssignmentRpcRow[]).map((row) => ({
+      id: row.assignment_id,
+      busId: row.bus_id,
+      routeId: row.route_id,
+      tripPatternId: row.route_trip_pattern_id,
+      tripName: row.trip_name,
+      direction: row.direction,
+      busLabel: row.bus_number,
+      routeName: row.route_name,
+      routeCode: row.route_code,
+      scheduledStartTime: row.scheduled_start_time,
+      status: 'active',
+    })),
   );
-  const routeMap = new Map<string, string>(
-    ((routesResult.data ?? []) as Array<{ id: string; route_name: string }>).map((r) => [
-      r.id,
-      r.route_name,
-    ]),
-  );
-  const patternMap = new Map<string, string>(
-    ((patternsResult.data ?? []) as Array<{ id: string; display_name: string }>).map((pattern) => [
-      pattern.id,
-      pattern.display_name,
-    ]),
-  );
-
-  const serviceDate = new Date().toISOString().slice(0, 10);
-  const rows = ((assignmentsResult.data ?? []) as DriverRouteAssignment[]).filter(
-    (row) =>
-      isDriverAssignmentCurrentOn(row, serviceDate) &&
-      busMap.has(row.bus_id) &&
-      routeMap.has(row.route_id) &&
-      Boolean(row.route_trip_pattern_id && patternMap.has(row.route_trip_pattern_id)),
-  );
-
-  return rows.map((row) => ({
-    id: row.id,
-    busId: row.bus_id,
-    routeId: row.route_id,
-    tripPatternId: row.route_trip_pattern_id,
-    tripName: row.route_trip_pattern_id
-      ? (patternMap.get(row.route_trip_pattern_id) ?? null)
-      : null,
-    busLabel: busMap.get(row.bus_id) ?? null,
-    routeName: routeMap.get(row.route_id) ?? null,
-    tripType: row.trip_type as TripType,
-    status: row.status as AssignmentStatus,
-  }));
 }
 
 /** Re-exported for the driver dashboard to avoid an extra import. */

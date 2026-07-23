@@ -37,11 +37,12 @@ describe('tenant admin shell navigation model', () => {
 });
 
 describe('driver shell navigation model', () => {
-  it('uses the driver-facing assignment, pickup and drop-off, settings, and profile destinations', () => {
+  it('uses the driver-facing assignment, history, pickup and drop-off, settings, and profile destinations', () => {
     expect(
       driverNavGroups.flatMap((group) => group.items).map(({ label, to }) => [label, to]),
     ).toEqual([
       ['Assignments', '/driver'],
+      ['Trip history', '/driver/history'],
       ['Pickup & drop-off', '/driver/pickup-drop-off'],
       ['Settings', '/driver/settings'],
       ['Profile', '/driver/profile'],

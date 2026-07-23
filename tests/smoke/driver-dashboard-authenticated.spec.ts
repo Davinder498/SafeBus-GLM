@@ -1,108 +1,121 @@
-import { test, expect } from '@playwright/test';
-import { installSupabaseMock } from './fixtures/supabase-mock';
+import { expect, test } from '@playwright/test';
+import { installSupabaseMock, MOCK } from './fixtures/supabase-mock';
 
-/**
- * Authenticated driver dashboard smoke tests (updated for Milestone 4F —
- * assignment-based trip start).
- *
- * These tests use a mocked Supabase layer (see fixtures/supabase-mock.ts).
- * No production Supabase credentials are used, no real network calls are
- * made, and no test backdoors are added to the production app — all mocking
- * happens via Playwright `page.route` interception inside the test runner.
- *
- * Coverage:
- *   - authenticated driver dashboard rendering with assignment cards
- *   - start trip from assignment (active trip card appears, success message)
- *   - end trip (assignment list returns)
- *   - refresh persistence (active trip survives reload)
- *   - mobile layout
- */
+const ACTIVE_TRIP_ERROR = 'You already have an active trip. End it before starting another.';
+
+async function expandAssignment(page: import('@playwright/test').Page, name: string) {
+  const card = page.getByTestId('driver-assignment-card').filter({ hasText: name });
+  await card.getByTestId('driver-assignment-select-button').click();
+  return card;
+}
 
 test.describe('Driver dashboard — authenticated', () => {
-  test('renders the driver dashboard with assignment cards', async ({ page }) => {
+  test('renders assignment-first trip cards', async ({ page }) => {
     await installSupabaseMock(page, { withAssignments: true });
     await page.goto('/driver');
 
-    // Main heading
-    await expect(page.getByRole('heading', { name: 'Driver Dashboard', level: 1 })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Your assigned trips', level: 1 }),
+    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Current trip assignments' })).toBeVisible();
 
-    // Driver name card (scope to main to avoid matching the header banner)
-    await expect(page.getByRole('main').getByText('Test Driver')).toBeVisible();
+    const card = page.getByTestId('driver-assignment-card');
+    await expect(card).toHaveCount(1);
+    await expect(card.getByTestId('driver-assignment-route-name')).toHaveText('North Ridge Morning');
+    await expect(card.getByTestId('driver-assignment-trip-name')).toHaveText(
+      'North Ridge Outbound · Bus 12',
+    );
+    await expect(card).toContainText('Ready');
+    await expect(page.getByTestId('driver-assignment-start-button')).toHaveCount(0);
 
-    // "Your assignments" heading
-    await expect(page.getByRole('heading', { name: 'Your assignments' })).toBeVisible();
-
-    // Assignment card is present with route name and Start Trip button
-    await expect(page.getByTestId('driver-assignment-card')).toBeVisible();
-    await expect(page.getByText('North Ridge Morning')).toBeVisible();
+    await expandAssignment(page, 'North Ridge Outbound');
     await expect(page.getByTestId('driver-assignment-start-button')).toBeVisible();
   });
 
-  test('starts a trip from an assignment', async ({ page }) => {
-    await installSupabaseMock(page, { withAssignments: true });
+  test('starts the exact selected assignment and preserves all cards', async ({ page }) => {
+    let startedAssignmentId: string | undefined;
+    await installSupabaseMock(page, { withMultipleAssignments: true });
+    await page.route('**/rpc/start_driver_trip_from_assignment', async (route) => {
+      startedAssignmentId = (route.request().postDataJSON() as { p_assignment_id?: string })
+        .p_assignment_id;
+      await route.fallback();
+    });
     await page.goto('/driver');
 
-    // Click Start Trip on the assignment card
-    await page.getByTestId('driver-assignment-start-button').click();
+    const returnCard = await expandAssignment(page, 'North Ridge Return');
+    await returnCard.getByTestId('driver-assignment-start-button').click();
 
-    // The active trip card appears with the route name and an active status pill
-    await expect(page.getByRole('heading', { name: 'North Ridge Morning' })).toBeVisible();
-    await expect(page.getByText('active', { exact: true })).toBeVisible();
-
-    // Success message is visible and NOT cleared by the silent refresh
-    await expect(page.getByText('Trip started. Have a safe drive.')).toBeVisible();
-
-    // End Trip button is now visible
+    await expect(page.getByRole('heading', { name: 'North Ridge Return' })).toBeVisible();
+    await expect(
+      page.getByText('Trip started. Location sharing is starting automatically.'),
+    ).toBeVisible();
     await expect(page.getByRole('button', { name: 'End Trip' })).toBeVisible();
-
-    // Start Trip button on the assignment card is gone (active trip card replaces the assignment list)
-    await expect(page.getByTestId('driver-assignment-start-button')).toHaveCount(0);
+    await expect(page.getByTestId('driver-assignment-card')).toHaveCount(2);
+    await expect(returnCard).toContainText('In progress');
+    expect(startedAssignmentId).toBe(MOCK.secondAssignmentId);
   });
 
-  test('ends an active trip and returns to the assignment list', async ({ page }) => {
-    await installSupabaseMock(page, { withActiveTrip: true, withAssignments: true });
+  test('blocks a second assignment immediately while one trip is active', async ({ page }) => {
+    let startRequests = 0;
+    await installSupabaseMock(page, { withMultipleAssignments: true });
+    await page.route('**/rpc/start_driver_trip_from_assignment', async (route) => {
+      startRequests += 1;
+      await route.fallback();
+    });
     await page.goto('/driver');
 
-    // Active trip card is shown immediately
-    await expect(page.getByRole('heading', { name: 'North Ridge Morning' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'End Trip' })).toBeVisible();
+    const returnCard = await expandAssignment(page, 'North Ridge Return');
+    await returnCard.getByTestId('driver-assignment-start-button').click();
+    await expect(page.getByRole('heading', { name: 'North Ridge Return' })).toBeVisible();
 
-    // End the trip
+    const outboundCard = await expandAssignment(page, 'North Ridge Outbound');
+    await outboundCard.getByTestId('driver-assignment-start-button').click();
+
+    await expect(page.getByRole('alert').filter({ hasText: ACTIVE_TRIP_ERROR })).toHaveText(
+      ACTIVE_TRIP_ERROR,
+    );
+    await expect(page.getByRole('heading', { name: 'North Ridge Return' })).toBeVisible();
+    expect(startRequests).toBe(1);
+  });
+
+  test('ending the active trip enables another assignment', async ({ page }) => {
+    await installSupabaseMock(page, { withActiveTrip: true, withMultipleAssignments: true });
+    await page.goto('/driver');
+
+    await expect(page.getByRole('heading', { name: 'North Ridge Outbound' })).toBeVisible();
     await page.getByRole('button', { name: 'End Trip' }).click();
 
-    // Success message is visible
     await expect(page.getByText('Trip ended. Nice work.')).toBeVisible();
-
-    // Assignment list returns with Start Trip button
-    await expect(page.getByTestId('driver-assignment-card')).toBeVisible();
-    await expect(page.getByTestId('driver-assignment-start-button')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'End Trip' })).toHaveCount(0);
+    const returnCard = await expandAssignment(page, 'North Ridge Return');
+    await expect(returnCard.getByTestId('driver-assignment-start-button')).toBeEnabled();
   });
 
-  test('persists the active trip across a page refresh', async ({ page }) => {
-    await installSupabaseMock(page, { withAssignments: true });
+  test('persists the exact active assignment across refresh', async ({ page }) => {
+    await installSupabaseMock(page, { withMultipleAssignments: true });
     await page.goto('/driver');
 
-    // Start a trip from an assignment
-    await page.getByTestId('driver-assignment-start-button').click();
-    await expect(page.getByRole('heading', { name: 'North Ridge Morning' })).toBeVisible();
+    const returnCard = await expandAssignment(page, 'North Ridge Return');
+    await returnCard.getByTestId('driver-assignment-start-button').click();
+    await expect(page.getByRole('heading', { name: 'North Ridge Return' })).toBeVisible();
 
-    // Reload — the mock layer still has the active trip in its internal state,
-    // so the active trip should re-render after refresh.
     await page.reload();
 
-    await expect(page.getByRole('heading', { name: 'North Ridge Morning' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'End Trip' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'North Ridge Return' })).toBeVisible();
+    await expect(
+      page.getByTestId('driver-assignment-card').filter({ hasText: 'North Ridge Return' }),
+    ).toContainText('In progress');
   });
 });
 
 test.describe('Driver dashboard — authenticated mobile layout', () => {
-  test('renders dashboard controls without horizontal overflow on mobile', async ({ page }) => {
-    await installSupabaseMock(page, { withAssignments: true });
+  test('renders trip controls without horizontal overflow on mobile', async ({ page }) => {
+    await installSupabaseMock(page, { withMultipleAssignments: true });
     await page.goto('/driver');
 
-    await expect(page.getByRole('heading', { name: 'Driver Dashboard', level: 1 })).toBeVisible();
-    await expect(page.getByTestId('driver-assignment-card')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Your assigned trips', level: 1 }),
+    ).toBeVisible();
+    await expect(page.getByTestId('driver-assignment-card')).toHaveCount(2);
 
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);

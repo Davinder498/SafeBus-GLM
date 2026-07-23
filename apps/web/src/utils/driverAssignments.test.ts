@@ -1,62 +1,58 @@
 import { describe, expect, it } from 'vitest';
 import type { DriverAssignmentSummary } from '@/types/driverAssignments';
-import { isDriverAssignmentCurrentOn, uniqueActiveAssignedBuses } from '@/utils/driverAssignments';
+import { prepareDriverTripAssignments } from '@/utils/driverAssignments';
 
 function assignment(
-  busId: string,
+  id: string,
   overrides: Partial<DriverAssignmentSummary> = {},
 ): DriverAssignmentSummary {
   return {
-    id: `assignment-${busId}`,
-    busId,
+    id,
+    busId: 'bus-12',
     routeId: 'route-1',
     tripPatternId: 'pattern-1',
     tripName: 'Morning run',
-    busLabel: busId,
+    direction: 'forward',
+    busLabel: '12',
     routeName: 'Route 1',
-    tripType: 'morning',
+    routeCode: 'R1',
+    scheduledStartTime: '07:30:00',
     status: 'active',
     ...overrides,
   };
 }
 
-describe('driver assigned bus list', () => {
-  it('shows each active assigned bus once', () => {
+describe('driver trip assignment list', () => {
+  it('keeps multiple active trips assigned to the same bus', () => {
     expect(
-      uniqueActiveAssignedBuses([
-        assignment('12'),
-        assignment('12', { id: 'another-assignment' }),
-        assignment('24'),
-      ]).map((item) => item.busId),
-    ).toEqual(['12', '24']);
+      prepareDriverTripAssignments([
+        assignment('outbound', { tripPatternId: 'outbound', tripName: 'Outbound' }),
+        assignment('return', {
+          tripPatternId: 'return',
+          tripName: 'Return',
+          direction: 'reverse',
+          scheduledStartTime: '15:30:00',
+        }),
+      ]).map((item) => item.id),
+    ).toEqual(['outbound', 'return']);
   });
 
   it('does not expose inactive assignments as trip-start choices', () => {
     expect(
-      uniqueActiveAssignedBuses([assignment('12', { status: 'inactive' }), assignment('24')]).map(
-        (item) => item.busId,
-      ),
-    ).toEqual(['24']);
+      prepareDriverTripAssignments([
+        assignment('inactive', { status: 'inactive' }),
+        assignment('active'),
+      ]).map((item) => item.id),
+    ).toEqual(['active']);
   });
 
-  it('treats only assignments effective on the service date as current', () => {
+  it('sorts scheduled trips first and unscheduled trips last', () => {
     expect(
-      isDriverAssignmentCurrentOn(
-        { effective_from: '2026-07-01', effective_to: '2026-07-31' },
-        '2026-07-22',
-      ),
-    ).toBe(true);
-    expect(
-      isDriverAssignmentCurrentOn(
-        { effective_from: '2026-08-01', effective_to: null },
-        '2026-07-22',
-      ),
-    ).toBe(false);
-    expect(
-      isDriverAssignmentCurrentOn(
-        { effective_from: null, effective_to: '2026-07-21' },
-        '2026-07-22',
-      ),
-    ).toBe(false);
+      prepareDriverTripAssignments([
+        assignment('unscheduled', { tripName: 'Field trip', scheduledStartTime: null }),
+        assignment('late', { tripName: 'Return', scheduledStartTime: '15:30:00' }),
+        assignment('early', { tripName: 'Outbound', scheduledStartTime: '07:30:00' }),
+      ]).map((item) => item.id),
+    ).toEqual(['early', 'late', 'unscheduled']);
   });
 });

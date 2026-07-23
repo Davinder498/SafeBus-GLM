@@ -27,6 +27,8 @@ const DEFAULT_RLS_FILES = [
   'tests/rls/secure-trip-tracking-realtime-rls.sql',
   'tests/rls/student-csv-import-rls.sql',
   'tests/rls/route-trip-pattern-rls.sql',
+  'tests/rls/assignment-selected-driver-trips-rls.sql',
+  'tests/rls/driver-completed-trip-history-rls.sql',
   'tests/rls/invitation-password-activation-rls.sql',
   'tests/rls/atomic-platform-tenant-invitation-rls.sql',
   'tests/rls/atomic-tenant-member-invitation-rls.sql',
@@ -117,9 +119,9 @@ async function resolveSqlFiles(args) {
       const realPath = await fs.realpath(absolutePath);
       const relativeRlsPath = path.relative(rlsRoot, realPath);
       if (
-        relativeRlsPath === ''
-        || relativeRlsPath.startsWith('..')
-        || path.isAbsolute(relativeRlsPath)
+        relativeRlsPath === '' ||
+        relativeRlsPath.startsWith('..') ||
+        path.isAbsolute(relativeRlsPath)
       ) {
         throw new Error(`RLS test file must be inside tests/rls: ${file}`);
       }

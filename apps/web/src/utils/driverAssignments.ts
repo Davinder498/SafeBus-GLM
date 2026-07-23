@@ -1,30 +1,26 @@
-import type { DriverAssignmentSummary, DriverRouteAssignment } from '@/types/driverAssignments';
-
-export function isDriverAssignmentCurrentOn(
-  assignment: Pick<DriverRouteAssignment, 'effective_from' | 'effective_to'>,
-  serviceDate: string,
-): boolean {
-  return (
-    (!assignment.effective_from || assignment.effective_from <= serviceDate) &&
-    (!assignment.effective_to || assignment.effective_to >= serviceDate)
-  );
-}
+import type { DriverAssignmentSummary } from '@/types/driverAssignments';
 
 /**
- * Builds the bus-first list used by the driver dashboard. A bus can be linked
- * to more than one historical assignment, but it should appear only once and
- * inactive assignments must never become trip-start choices.
+ * Keeps every active trip assignment, including multiple trips on the same
+ * bus, and applies the dashboard's deterministic schedule-first ordering.
  */
-export function uniqueActiveAssignedBuses(
+export function prepareDriverTripAssignments(
   assignments: DriverAssignmentSummary[],
 ): DriverAssignmentSummary[] {
-  const buses = new Map<string, DriverAssignmentSummary>();
+  return assignments
+    .filter((assignment) => assignment.status === 'active')
+    .sort((left, right) => {
+      if (left.scheduledStartTime && !right.scheduledStartTime) return -1;
+      if (!left.scheduledStartTime && right.scheduledStartTime) return 1;
+      if (left.scheduledStartTime && right.scheduledStartTime) {
+        const timeOrder = left.scheduledStartTime.localeCompare(right.scheduledStartTime);
+        if (timeOrder !== 0) return timeOrder;
+      }
 
-  for (const assignment of assignments) {
-    if (assignment.status === 'active' && !buses.has(assignment.busId)) {
-      buses.set(assignment.busId, assignment);
-    }
-  }
-
-  return Array.from(buses.values());
+      const tripOrder = left.tripName.localeCompare(right.tripName);
+      if (tripOrder !== 0) return tripOrder;
+      const busOrder = left.busLabel.localeCompare(right.busLabel, undefined, { numeric: true });
+      if (busOrder !== 0) return busOrder;
+      return left.id.localeCompare(right.id);
+    });
 }

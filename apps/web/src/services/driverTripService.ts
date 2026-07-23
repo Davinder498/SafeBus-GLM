@@ -10,7 +10,7 @@ function requireSupabase() {
 
 const driverColumns = 'id, tenant_id, profile_id, employee_number, phone, status';
 const tripColumns =
-  'id, tenant_id, driver_id, bus_id, route_id, route_trip_pattern_id, trip_name_snapshot, trip_type, status, service_date, started_at, ended_at, created_at, updated_at';
+  'id, tenant_id, driver_id, bus_id, route_id, route_trip_pattern_id, driver_route_assignment_id, trip_name_snapshot, trip_type, status, service_date, started_at, ended_at, created_at, updated_at';
 
 /**
  * Fetch the current driver's own driver record. Returns null if the signed-in
@@ -93,49 +93,39 @@ export type { TripType };
  * client passes only the assignment id. Preserves the one-active-trip-per-
  * driver and one-active-trip-per-bus invariants.
  *
- * Raw backend errors are logged in DEV only; a generic safe error is thrown.
+ * Raw backend errors are logged in DEV only; safe actionable errors are thrown.
  */
-export async function startTripFromBus(busId: string): Promise<DriverTrip> {
+export function mapStartTripError(message: string): string {
+  if (message.includes('already have an active trip')) {
+    return 'You already have an active trip. End it before starting another.';
+  }
+  if (message.includes('bus already has an active trip')) {
+    return 'This bus already has an active trip. Choose another assignment or contact your transportation admin.';
+  }
+  if (
+    message.includes('not active today') ||
+    message.includes('active bus service and trip pattern')
+  ) {
+    return 'This assignment is no longer available today. Refresh your assignments.';
+  }
+  if (message.includes('does not belong') || message.includes('Assignment not found')) {
+    return 'This assignment is not available to your account. Refresh your assignments.';
+  }
+  return 'We could not start this trip. Please try again or contact your transportation admin.';
+}
+
+export async function startTripFromAssignment(assignmentId: string): Promise<DriverTrip> {
   const client = requireSupabase();
 
-  const { data, error } = await client.rpc('start_driver_trip_from_bus', {
-    p_bus_id: busId,
+  const { data, error } = await client.rpc('start_driver_trip_from_assignment', {
+    p_assignment_id: assignmentId,
   });
 
   if (error) {
     if (import.meta.env.DEV) {
-      console.error('Failed to start trip from bus', error);
+      console.error('Failed to start trip from assignment', error);
     }
-    const message = error.message ?? 'Could not start the trip.';
-    if (message.includes('already have an active trip')) {
-      throw new Error('You already have an active trip. End it before starting a new one.');
-    }
-    if (message.includes('bus already has an active trip')) {
-      throw new Error(
-        'This bus already has an active trip. End the existing trip or choose a different assignment.',
-      );
-    }
-    if (message.includes('multiple active route assignments')) {
-      throw new Error(
-        'This bus has multiple active route assignments today. Ask your transportation admin to leave only one current assignment.',
-      );
-    }
-    if (message.includes('No active assignment')) {
-      throw new Error(
-        'This bus is not assigned to you for today. Refresh the page or contact your transportation admin.',
-      );
-    }
-    if (message.includes('not active')) {
-      throw new Error('This assignment is no longer active. Refresh your dashboard.');
-    }
-    if (message.includes('not found') || message.includes('Only a driver')) {
-      throw new Error(
-        'We could not start this trip. Please try again or contact your transportation admin.',
-      );
-    }
-    throw new Error(
-      'We could not start this trip. Please try again or contact your transportation admin.',
-    );
+    throw new Error(mapStartTripError(error.message ?? 'Could not start the trip.'));
   }
 
   return data as DriverTrip;

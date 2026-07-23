@@ -5,6 +5,8 @@ export interface DriverManifestRow {
   studentId: string | null;
   studentDisplayName: string | null;
   routeName: string | null;
+  tripName: string | null;
+  busNumber: string | null;
   tripStatus: string | null;
   tripDirection: string | null;
   pickupStopName: string | null;

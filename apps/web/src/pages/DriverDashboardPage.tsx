@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Bus, ChevronDown } from 'lucide-react';
+import { Bus, ChevronDown, Clock3, Route as RouteIcon } from 'lucide-react';
 import { DashboardLayout, driverNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -12,11 +12,12 @@ import { fetchDriverAssignments } from '@/services/driverAssignmentService';
 import {
   endDriverTrip,
   fetchActiveDriverTrip,
-  startTripFromBus,
+  startTripFromAssignment,
 } from '@/services/driverTripService';
 import type { DriverAssignmentSummary } from '@/types/driverAssignments';
 import type { DriverTrip } from '@/types/trips';
-import { uniqueActiveAssignedBuses } from '@/utils/driverAssignments';
+
+const ACTIVE_TRIP_ERROR = 'You already have an active trip. End it before starting another.';
 
 type LoadState =
   | { kind: 'loading' }
@@ -81,22 +82,36 @@ export function DriverDashboardPage() {
 
   const activeTrip = state.kind === 'ready' ? state.activeTrip : null;
 
-  // Resolve bus/route labels for the active trip from the loaded assignments.
+  // Resolve labels through the exact selected assignment, with an ID fallback
+  // for trip history created before migration 0054.
   const activeAssignment = useMemo(() => {
     if (state.kind !== 'ready' || !state.activeTrip) return null;
     return (
       state.assignments.find(
-        (a) => a.busId === state.activeTrip!.bus_id && a.routeId === state.activeTrip!.route_id,
-      ) ?? null
+        (assignment) => assignment.id === state.activeTrip!.driver_route_assignment_id,
+      ) ??
+      state.assignments.find(
+        (assignment) =>
+          assignment.busId === state.activeTrip!.bus_id &&
+          assignment.routeId === state.activeTrip!.route_id &&
+          assignment.tripPatternId === state.activeTrip!.route_trip_pattern_id,
+      ) ??
+      null
     );
   }, [state]);
 
-  async function handleStartTripFromBus(busId: string) {
+  async function handleStartTripFromAssignment(assignmentId: string) {
+    if (activeTrip) {
+      setActionError(ACTIVE_TRIP_ERROR);
+      setSuccessMessage(null);
+      return;
+    }
+
     setActionInProgress(true);
     setActionError(null);
     setSuccessMessage(null);
     try {
-      await startTripFromBus(busId);
+      await startTripFromAssignment(assignmentId);
       setSuccessMessage('Trip started. Location sharing is starting automatically.');
       await refreshDashboard();
     } catch (err) {
@@ -136,8 +151,8 @@ export function DriverDashboardPage() {
       <div className="mx-auto max-w-3xl space-y-5">
         <PageHeader
           eyebrow="Assignments"
-          title="Your assigned buses"
-          description="Choose the active bus you are driving to start its trip."
+          title="Your assigned trips"
+          description="Choose the route trip you are ready to drive."
         />
 
         {state.kind === 'loading' && (
@@ -177,24 +192,29 @@ export function DriverDashboardPage() {
               </Card>
             )}
 
-            {state.activeTrip ? (
+            {state.activeTrip && (
               <ActiveTripCard
                 trip={state.activeTrip}
-                busNumber={activeAssignment?.busLabel ?? null}
+                assignment={activeAssignment}
                 locationSupported={locationSharing.supported}
                 locationState={locationSharing.state}
                 onEnd={handleEndTrip}
                 actionInProgress={actionInProgress}
               />
-            ) : state.assignments.length === 0 ? (
+            )}
+
+            {state.assignments.length === 0 && !state.activeTrip && (
               <DataState
                 title="No active trip assignments."
                 message="Please contact your transportation admin."
               />
-            ) : (
-              <BusChooser
+            )}
+
+            {state.assignments.length > 0 && (
+              <AssignmentChooser
                 assignments={state.assignments}
-                onStart={handleStartTripFromBus}
+                activeTrip={state.activeTrip}
+                onStart={handleStartTripFromAssignment}
                 actionInProgress={actionInProgress}
               />
             )}
@@ -207,7 +227,7 @@ export function DriverDashboardPage() {
 
 interface ActiveTripCardProps {
   trip: DriverTrip;
-  busNumber: string | null;
+  assignment: DriverAssignmentSummary | null;
   locationSupported: boolean;
   locationState: LocationSharingState;
   onEnd: () => void;
@@ -216,7 +236,7 @@ interface ActiveTripCardProps {
 
 function ActiveTripCard({
   trip,
-  busNumber,
+  assignment,
   locationSupported,
   locationState,
   onEnd,
@@ -229,8 +249,12 @@ function ActiveTripCard({
           <div>
             <p className="text-sm font-semibold text-gray-500">Active trip</p>
             <h2 className="mt-1 text-2xl font-bold text-navy-900">
-              Bus {busNumber ?? trip.bus_id}
+              {trip.trip_name_snapshot ?? assignment?.tripName ?? 'Active trip'}
             </h2>
+            <p className="mt-1 text-sm font-semibold text-gray-700">
+              {assignment?.routeName ?? 'Assigned route'} · Bus{' '}
+              {assignment?.busLabel ?? trip.bus_id}
+            </p>
             <p className="mt-2 text-base text-gray-700">
               Your bus location is available to authorized families and transportation admins.
             </p>
@@ -256,62 +280,85 @@ function ActiveTripCard({
   );
 }
 
-function BusChooser({
+function AssignmentChooser({
   assignments,
+  activeTrip,
   onStart,
   actionInProgress,
 }: {
   assignments: DriverAssignmentSummary[];
-  onStart: (busId: string) => void;
+  activeTrip: DriverTrip | null;
+  onStart: (assignmentId: string) => void;
   actionInProgress: boolean;
 }) {
-  const buses = useMemo(() => uniqueActiveAssignedBuses(assignments), [assignments]);
-  const [selectedBusId, setSelectedBusId] = useState('');
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState('');
 
   useEffect(() => {
-    if (selectedBusId && !buses.some((bus) => bus.busId === selectedBusId)) {
-      setSelectedBusId('');
+    if (
+      selectedAssignmentId &&
+      !assignments.some((assignment) => assignment.id === selectedAssignmentId)
+    ) {
+      setSelectedAssignmentId('');
     }
-  }, [buses, selectedBusId]);
+  }, [assignments, selectedAssignmentId]);
 
   return (
-    <section aria-labelledby="assigned-buses-heading" data-testid="driver-assigned-buses">
+    <section aria-labelledby="assigned-trips-heading" data-testid="driver-assigned-trips">
       <div className="mb-4">
-        <h2 id="assigned-buses-heading" className="text-lg font-bold text-navy-900">
-          Active assigned buses
+        <h2 id="assigned-trips-heading" className="text-lg font-bold text-navy-900">
+          Current trip assignments
         </h2>
-        <p className="mt-1 text-sm text-gray-600">Select a bus to reveal the trip start action.</p>
+        <p className="mt-1 text-sm text-gray-600">
+          Select an assignment to review and start that exact trip.
+        </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {buses.map((assignment) => {
-          const selected = assignment.busId === selectedBusId;
-          const panelId = `start-bus-${assignment.busId}`;
+        {assignments.map((assignment) => {
+          const selected = assignment.id === selectedAssignmentId;
+          const inProgress = assignmentMatchesTrip(assignment, activeTrip);
+          const panelId = `start-assignment-${assignment.id}`;
 
           return (
             <Card
-              key={assignment.busId}
+              key={assignment.id}
               interactive={!selected}
               className={selected ? 'border-navy-400 ring-2 ring-navy-100' : undefined}
               data-testid="driver-assignment-card"
+              data-assignment-id={assignment.id}
             >
               <button
                 type="button"
                 className="flex min-h-28 w-full items-center gap-4 p-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-500"
-                onClick={() => setSelectedBusId(selected ? '' : assignment.busId)}
+                onClick={() => setSelectedAssignmentId(selected ? '' : assignment.id)}
                 aria-expanded={selected}
                 aria-controls={panelId}
-                data-testid="driver-assigned-bus-button"
+                data-testid="driver-assignment-select-button"
               >
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-navy-50 text-navy-700">
                   <Bus className="h-6 w-6" aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-gray-500">Assigned bus</span>
-                  <span className="mt-1 block truncate text-xl font-bold text-navy-900">
-                    Bus {assignment.busLabel ?? assignment.busId}
+                  <span className="block text-sm font-semibold text-gray-500">Assigned route</span>
+                  <span
+                    className="mt-1 block text-xl font-bold text-navy-900"
+                    data-testid="driver-assignment-route-name"
+                  >
+                    {assignment.routeName}
                   </span>
-                  <span className="mt-1 block text-sm font-medium text-success-700">Active</span>
+                  <span
+                    className="mt-1 block text-sm font-medium text-gray-600"
+                    data-testid="driver-assignment-trip-name"
+                  >
+                    {assignment.tripName} · Bus {assignment.busLabel}
+                  </span>
+                  <span
+                    className={`mt-2 block text-sm font-medium ${
+                      inProgress ? 'text-success-700' : 'text-gray-500'
+                    }`}
+                  >
+                    {inProgress ? 'In progress' : 'Ready'}
+                  </span>
                 </span>
                 <ChevronDown
                   className={`h-5 w-5 shrink-0 text-gray-400 transition-transform ${
@@ -322,21 +369,30 @@ function BusChooser({
               </button>
 
               {selected && (
-                <div id={panelId} className="border-t border-slate-100 p-5 pt-4">
-                  <Button
-                    type="button"
-                    size="lg"
-                    fullWidth
-                    onClick={() => onStart(assignment.busId)}
-                    disabled={actionInProgress}
-                    data-testid="driver-assignment-start-button"
-                  >
-                    {actionInProgress ? 'Starting trip...' : 'Start Trip'}
-                  </Button>
-                  <p className="mt-3 text-xs leading-5 text-gray-500">
-                    Starting the trip requests location permission and begins sharing this bus
-                    automatically.
-                  </p>
+                <div id={panelId} className="space-y-4 border-t border-slate-100 p-5 pt-4">
+                  <AssignmentDetails assignment={assignment} />
+                  {inProgress ? (
+                    <p className="rounded-lg bg-success-50 p-3 text-sm font-semibold text-success-700">
+                      This trip is currently in progress.
+                    </p>
+                  ) : (
+                    <>
+                      <Button
+                        type="button"
+                        size="lg"
+                        fullWidth
+                        onClick={() => onStart(assignment.id)}
+                        disabled={actionInProgress}
+                        data-testid="driver-assignment-start-button"
+                      >
+                        {actionInProgress ? 'Starting trip...' : `Start ${assignment.tripName}`}
+                      </Button>
+                      <p className="text-xs leading-5 text-gray-500">
+                        Starting the trip requests location permission and begins sharing this bus
+                        automatically.
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
             </Card>
@@ -345,6 +401,56 @@ function BusChooser({
       </div>
     </section>
   );
+}
+
+function assignmentMatchesTrip(
+  assignment: DriverAssignmentSummary,
+  activeTrip: DriverTrip | null,
+): boolean {
+  if (!activeTrip) return false;
+  if (activeTrip.driver_route_assignment_id) {
+    return activeTrip.driver_route_assignment_id === assignment.id;
+  }
+  return (
+    activeTrip.bus_id === assignment.busId &&
+    activeTrip.route_id === assignment.routeId &&
+    activeTrip.route_trip_pattern_id === assignment.tripPatternId
+  );
+}
+
+function AssignmentDetails({ assignment }: { assignment: DriverAssignmentSummary }) {
+  return (
+    <dl className="grid gap-3 text-sm text-gray-700">
+      <div className="flex items-start gap-2">
+        <RouteIcon className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" aria-hidden />
+        <div>
+          <dt className="sr-only">Route</dt>
+          <dd>
+            {assignment.routeName} ({assignment.routeCode}) ·{' '}
+            {assignment.direction === 'forward' ? 'Forward' : 'Return'}
+          </dd>
+        </div>
+      </div>
+      <div className="flex items-start gap-2">
+        <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" aria-hidden />
+        <div>
+          <dt className="sr-only">Scheduled start</dt>
+          <dd>
+            {assignment.scheduledStartTime
+              ? `Scheduled ${formatScheduledTime(assignment.scheduledStartTime)}`
+              : 'No scheduled start time'}
+          </dd>
+        </div>
+      </div>
+    </dl>
+  );
+}
+
+function formatScheduledTime(value: string): string {
+  const [hours, minutes] = value.split(':').map(Number);
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return value;
+  const time = new Date(2000, 0, 1, hours, minutes);
+  return time.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
 interface LocationStatusProps {

@@ -13,6 +13,8 @@ interface DriverManifestRpcRow {
   student_id: string | null;
   student_display_name: string | null;
   route_name: string | null;
+  trip_name: string | null;
+  bus_number: string | null;
   trip_status: string | null;
   trip_direction: string | null;
   pickup_stop_name: string | null;
@@ -29,6 +31,8 @@ function mapRow(row: DriverManifestRpcRow): DriverManifestRow {
     studentId: row.student_id,
     studentDisplayName: row.student_display_name,
     routeName: row.route_name,
+    tripName: row.trip_name,
+    busNumber: row.bus_number,
     tripStatus: row.trip_status,
     tripDirection: row.trip_direction,
     pickupStopName: row.pickup_stop_name,
@@ -60,9 +64,7 @@ export async function fetchDriverActiveTripStudentManifest(): Promise<DriverMani
 }
 
 async function markStudentTripEvent(
-  rpcName:
-    | 'mark_student_picked_up_for_active_trip'
-    | 'mark_student_dropped_off_for_active_trip',
+  rpcName: 'mark_student_picked_up_for_active_trip' | 'mark_student_dropped_off_for_active_trip',
   studentId: string,
 ): Promise<void> {
   const client = requireSupabase();

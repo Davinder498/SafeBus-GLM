@@ -56,10 +56,12 @@ export interface DriverAssignmentSummary {
   id: string;
   busId: string;
   routeId: string;
-  tripPatternId: string | null;
-  tripName: string | null;
-  busLabel: string | null;
-  routeName: string | null;
-  tripType: TripType;
+  tripPatternId: string;
+  tripName: string;
+  direction: 'forward' | 'reverse';
+  busLabel: string;
+  routeName: string;
+  routeCode: string;
+  scheduledStartTime: string | null;
   status: AssignmentStatus;
 }

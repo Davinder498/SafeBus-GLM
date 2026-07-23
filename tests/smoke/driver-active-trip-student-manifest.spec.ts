@@ -43,6 +43,8 @@ interface DriverManifestRpcRow {
   student_id: string | null;
   student_display_name: string | null;
   route_name: string | null;
+  trip_name: string | null;
+  bus_number: string | null;
   trip_status: string | null;
   trip_direction: string | null;
   pickup_stop_name: string | null;
@@ -66,6 +68,8 @@ function manifestRow(): DriverManifestRpcRow {
     student_id: DRIVER.studentId,
     student_display_name: 'Avery Johnson',
     route_name: 'North Ridge Morning',
+    trip_name: 'North Ridge Outbound',
+    bus_number: '12',
     trip_status: 'active',
     trip_direction: 'morning',
     pickup_stop_name: 'Elm & 4th',
@@ -90,6 +94,8 @@ function activeTripNoStudentsRow(): DriverManifestRpcRow {
     student_id: null,
     student_display_name: null,
     route_name: 'North Ridge Morning',
+    trip_name: 'North Ridge Outbound',
+    bus_number: '12',
     trip_status: 'active',
     trip_direction: 'morning',
     pickup_stop_name: null,
@@ -307,7 +313,7 @@ test.describe('Milestone 7B - Driver student trip event recording', () => {
       'href',
       '/parent',
     );
-    await expect(page.getByRole('heading', { name: 'Student Manifest', level: 1 })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Pickup & drop-off', level: 1 })).toHaveCount(0);
   });
 
   test('admin user is blocked from driver manifest page', async ({ page }) => {
@@ -321,14 +327,14 @@ test.describe('Milestone 7B - Driver student trip event recording', () => {
       'href',
       '/admin',
     );
-    await expect(page.getByRole('heading', { name: 'Student Manifest', level: 1 })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Pickup & drop-off', level: 1 })).toHaveCount(0);
   });
 
   test('driver can access manifest and see safe assigned student content', async ({ page }) => {
     await installDriverManifestMock(page, { rows: [manifestRow()] });
     await page.goto('/driver/manifest');
 
-    await expect(page.getByRole('heading', { name: 'Student Manifest', level: 1 })).toBeVisible({
+    await expect(page.getByRole('heading', { name: 'Pickup & drop-off', level: 1 })).toBeVisible({
       timeout: 10000,
     });
     await expect(page.getByTestId('driver-manifest-student-card')).toBeVisible();
@@ -361,7 +367,7 @@ test.describe('Milestone 7B - Driver student trip event recording', () => {
     await page.goto('/driver/manifest');
 
     await page.getByRole('button', { name: 'Mark picked up' }).click();
-    await expect(page.getByText('Student status updated.')).toBeVisible();
+    await expect(page.getByText('Pickup and drop-off status updated.')).toBeVisible();
     await expect(page.getByText('Picked up')).toHaveCount(2);
     await expect(page.getByRole('button', { name: 'Mark dropped off' })).toBeVisible();
 
@@ -420,7 +426,7 @@ test.describe('Milestone 7B - Driver student trip event recording', () => {
     await page.goto('/driver/manifest');
 
     await expect(page.getByTestId('driver-manifest-error')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('Could not load student manifest right now.')).toBeVisible();
+    await expect(page.getByText('Could not load pickup and drop-off right now.')).toBeVisible();
     await expect(page.getByText(rawError)).toHaveCount(0);
   });
 });

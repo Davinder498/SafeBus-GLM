@@ -24,6 +24,9 @@ export const MOCK = {
   routeId: '55555555-5555-5555-5555-555555555555',
   tripId: '66666666-6666-6666-6666-666666666666',
   assignmentId: '77777777-7777-7777-7777-777777777777',
+  secondAssignmentId: '88888888-8888-8888-8888-888888888888',
+  tripPatternId: '99999999-9999-9999-9999-999999999999',
+  secondTripPatternId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
   authToken: 'mock-access-token-for-smoke-test-only',
 } as const;
 
@@ -64,13 +67,59 @@ const routeRow = {
   status: 'active',
 };
 
-function activeTripRow() {
+interface MockDriverAssignmentRpcRow {
+  assignment_id: string;
+  bus_id: string;
+  route_id: string;
+  route_trip_pattern_id: string;
+  trip_name: string;
+  direction: 'forward' | 'reverse';
+  route_name: string;
+  route_code: string;
+  bus_number: string;
+  scheduled_start_time: string | null;
+}
+
+function assignmentRow(): MockDriverAssignmentRpcRow {
+  return {
+    assignment_id: MOCK.assignmentId,
+    bus_id: MOCK.busId,
+    route_id: MOCK.routeId,
+    route_trip_pattern_id: MOCK.tripPatternId,
+    trip_name: 'North Ridge Outbound',
+    direction: 'forward',
+    route_name: routeRow.route_name,
+    route_code: routeRow.route_code,
+    bus_number: busRow.bus_number,
+    scheduled_start_time: '08:00:00',
+  };
+}
+
+function secondAssignmentRow(): MockDriverAssignmentRpcRow {
+  return {
+    assignment_id: MOCK.secondAssignmentId,
+    bus_id: MOCK.busId,
+    route_id: MOCK.routeId,
+    route_trip_pattern_id: MOCK.secondTripPatternId,
+    trip_name: 'North Ridge Return',
+    direction: 'reverse',
+    route_name: routeRow.route_name,
+    route_code: routeRow.route_code,
+    bus_number: busRow.bus_number,
+    scheduled_start_time: '15:30:00',
+  };
+}
+
+function activeTripRow(assignment: MockDriverAssignmentRpcRow = assignmentRow()) {
   return {
     id: MOCK.tripId,
     tenant_id: MOCK.tenantId,
     driver_id: MOCK.driverId,
     bus_id: MOCK.busId,
     route_id: MOCK.routeId,
+    route_trip_pattern_id: assignment.route_trip_pattern_id,
+    driver_route_assignment_id: assignment.assignment_id,
+    trip_name_snapshot: assignment.trip_name,
     trip_type: 'morning',
     status: 'active',
     service_date: '2025-01-01',
@@ -81,11 +130,25 @@ function activeTripRow() {
   };
 }
 
-function completedTripRow() {
+function completedTripRow(trip: ReturnType<typeof activeTripRow> = activeTripRow()) {
   return {
-    ...activeTripRow(),
+    ...trip,
     status: 'completed',
     ended_at: '2025-01-01T12:30:00.000Z',
+  };
+}
+
+function completedTripHistoryRow() {
+  return {
+    driver_trip_id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+    service_date: '2026-07-21',
+    started_at: '2026-07-21T14:00:00.000Z',
+    ended_at: '2026-07-21T15:05:00.000Z',
+    route_name: 'North Ridge Morning',
+    route_code: 'NR-AM',
+    trip_name: 'North Ridge Outbound',
+    direction: 'forward',
+    bus_number: '12',
   };
 }
 
@@ -109,27 +172,14 @@ function currentLocationRow() {
   };
 }
 
-/** Mock driver route assignment row (4F). */
-function assignmentRow() {
-  return {
-    id: MOCK.assignmentId,
-    tenant_id: MOCK.tenantId,
-    driver_id: MOCK.driverId,
-    bus_id: MOCK.busId,
-    route_id: MOCK.routeId,
-    trip_type: 'morning',
-    status: 'active',
-    effective_from: null,
-    effective_to: null,
-    created_at: '2025-01-01T00:00:00.000Z',
-    updated_at: '2025-01-01T00:00:00.000Z',
-  };
-}
-
 export const unexpectedSupabaseRestAccessHint =
   'Unexpected Supabase REST table access in smoke test. Add an explicit mock for legitimate access, or fix a forbidden direct browser table call.';
 
-export async function blockUnexpectedSupabaseRestAccess(route: Route, method: string, path: string) {
+export async function blockUnexpectedSupabaseRestAccess(
+  route: Route,
+  method: string,
+  path: string,
+) {
   await route.fulfill({
     status: 500,
     contentType: 'application/json',
@@ -153,12 +203,14 @@ function tableFromPath(pathname: string): string {
 
 export interface MockControl {
   setActiveTrip: (trip: ReturnType<typeof activeTripRow> | null) => void;
-  setAssignments: (assignments: ReturnType<typeof assignmentRow>[] | null) => void;
+  setAssignments: (assignments: MockDriverAssignmentRpcRow[] | null) => void;
 }
 
 export interface MockSupabaseOptions {
   withActiveTrip?: boolean;
   withAssignments?: boolean;
+  withMultipleAssignments?: boolean;
+  withCompletedTrips?: boolean;
   locationUpdateDelayMs?: number;
 }
 
@@ -171,17 +223,19 @@ export async function installSupabaseMock(
   page: Page,
   opts: MockSupabaseOptions = {},
 ): Promise<MockControl> {
+  let currentAssignments: MockDriverAssignmentRpcRow[] | null = opts.withMultipleAssignments
+    ? [assignmentRow(), secondAssignmentRow()]
+    : opts.withAssignments
+      ? [assignmentRow()]
+      : null;
   let currentActiveTrip: ReturnType<typeof activeTripRow> | null = opts.withActiveTrip
-    ? activeTripRow()
-    : null;
-  let currentAssignments: ReturnType<typeof assignmentRow>[] | null = opts.withAssignments
-    ? [assignmentRow()]
+    ? activeTripRow(currentAssignments?.[0] ?? assignmentRow())
     : null;
 
   const setActiveTrip = (trip: ReturnType<typeof activeTripRow> | null) => {
     currentActiveTrip = trip;
   };
-  const setAssignments = (assignments: ReturnType<typeof assignmentRow>[] | null) => {
+  const setAssignments = (assignments: MockDriverAssignmentRpcRow[] | null) => {
     currentAssignments = assignments;
   };
 
@@ -261,7 +315,9 @@ export async function installSupabaseMock(
             await route.fulfill({
               status: 406,
               contentType: 'application/json',
-              body: JSON.stringify({ message: 'JSON object requested, multiple (or no) rows returned' }),
+              body: JSON.stringify({
+                message: 'JSON object requested, multiple (or no) rows returned',
+              }),
             });
             return;
           }
@@ -318,8 +374,24 @@ export async function installSupabaseMock(
 
       // POST (insert a new trip, or call an RPC)
       if (method === 'POST') {
+        if (table === 'rpc/get_current_driver_trip_assignments') {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(currentAssignments ?? []),
+          });
+          return;
+        }
+        if (table === 'rpc/get_driver_completed_trip_history') {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(opts.withCompletedTrips ? [completedTripHistoryRow()] : []),
+          });
+          return;
+        }
         if (table === 'rpc/end_driver_trip') {
-          const completed = completedTripRow();
+          const completed = completedTripRow(currentActiveTrip ?? activeTripRow());
           currentActiveTrip = null;
           // RPCs return a single object.
           await route.fulfill({
@@ -330,8 +402,22 @@ export async function installSupabaseMock(
           return;
         }
         if (table === 'rpc/start_driver_trip_from_assignment') {
-          // Start a trip from an assignment — return a new active trip.
-          const newTrip = activeTripRow();
+          const requestBody = route.request().postDataJSON() as { p_assignment_id?: string } | null;
+          const selectedAssignment = currentAssignments?.find(
+            (assignment) => assignment.assignment_id === requestBody?.p_assignment_id,
+          );
+
+          if (!selectedAssignment) {
+            await route.fulfill({
+              status: 400,
+              contentType: 'application/json',
+              body: JSON.stringify({ message: 'Assignment is unavailable.' }),
+            });
+            return;
+          }
+
+          // Start the exact selected assignment and preserve its pattern identity.
+          const newTrip = activeTripRow(selectedAssignment);
           currentActiveTrip = newTrip;
           await route.fulfill({
             status: 200,

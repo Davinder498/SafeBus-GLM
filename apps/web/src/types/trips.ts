@@ -11,6 +11,7 @@ export interface DriverTrip {
   bus_id: string;
   route_id: string;
   route_trip_pattern_id: string | null;
+  driver_route_assignment_id: string | null;
   trip_name_snapshot: string | null;
   trip_type: TripType;
   status: TripStatus;
