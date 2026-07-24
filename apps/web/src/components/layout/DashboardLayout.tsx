@@ -76,13 +76,6 @@ export const adminNavItems: DashboardNavItem[] = [
     icon: <LayoutDashboard className="h-4 w-4" />,
   },
   {
-    label: 'Trips',
-    to: '/admin/trips',
-    group: 'operations',
-    description: 'Trip details',
-    icon: <Calendar className="h-4 w-4" />,
-  },
-  {
     label: 'Live',
     to: '/admin/live-trips',
     group: 'operations',
