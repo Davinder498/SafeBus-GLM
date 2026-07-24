@@ -1,13 +1,6 @@
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { StatusPill } from '@/components/ui/StatusPill';
-import type { Route, RouteStatus } from '@/types/transportation';
-
-const routeStatusTone: Record<RouteStatus, 'success' | 'danger' | 'neutral'> = {
-  active: 'success',
-  inactive: 'neutral',
-  archived: 'danger',
-};
+import type { Route } from '@/types/transportation';
 
 export interface RouteTileAssignment {
   busLabel: string | null;
@@ -53,7 +46,6 @@ export function RouteTile({
             {route.route_name}
           </h3>
         </div>
-        <StatusPill tone={routeStatusTone[route.status]}>{route.status}</StatusPill>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">

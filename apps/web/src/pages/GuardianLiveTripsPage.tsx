@@ -72,6 +72,17 @@ export function GuardianLiveTripsPage() {
 
   useEffect(() => {
     void load();
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void load();
+    }, 15_000);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') void load();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [load]);
 
   return (
