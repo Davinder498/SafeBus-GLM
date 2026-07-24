@@ -79,7 +79,7 @@ export const adminNavItems: DashboardNavItem[] = [
     label: 'Trips',
     to: '/admin/trips',
     group: 'operations',
-    description: 'Route readiness',
+    description: 'Trip details',
     icon: <Calendar className="h-4 w-4" />,
   },
   {
@@ -118,7 +118,7 @@ export const adminNavItems: DashboardNavItem[] = [
     icon: <IdCard className="h-4 w-4" />,
   },
   {
-    label: 'Assignments',
+    label: 'Student Bus Assignment',
     to: '/admin/assignments',
     group: 'transportation',
     description: 'Student routes',
@@ -267,7 +267,7 @@ function NavListItem({
 /* ------------------------------- layout shell ------------------------------ */
 
 export function DashboardLayout({
-  title,
+  title: _title,
   portal,
   navItems,
   navGroups,
@@ -312,18 +312,7 @@ export function DashboardLayout({
             </span>
           </Link>
 
-          {/* Page title (breadcrumb-style) */}
-          <div className="ml-2 hidden min-w-0 flex-1 md:block">
-            <p className="truncate text-sm font-medium text-slate-500">
-              {portalTitles[portal]} <span className="mx-1 text-slate-300">/</span>{' '}
-              <span className="font-semibold text-slate-900">
-                {title.replace(`${portalTitles[portal]} `, '')}
-              </span>
-            </p>
-          </div>
-
-          {/* Spacer for mobile when title hidden */}
-          <div className="flex-1 md:hidden" />
+          <div className="flex-1" />
 
           {/* Right side actions */}
           <div className="flex items-center gap-1.5">

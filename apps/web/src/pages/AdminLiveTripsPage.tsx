@@ -245,7 +245,7 @@ export function AdminLiveTripsPage() {
           <>
             <section className="grid gap-4 md:grid-cols-4" data-testid="admin-live-fleet-summary">
               {[
-                ['Active trips / buses', summary.active],
+                ['Active trips', summary.active],
                 ['Stale locations', summary.stale],
                 ['Missing locations', summary.missing],
                 ['Needs attention', summary.needsAttention],
@@ -264,14 +264,13 @@ export function AdminLiveTripsPage() {
             ) : (
               <Card className="overflow-hidden" data-testid="admin-live-trips-list">
                 <div className="border-b border-gray-100 p-5">
-                  <h2 className="text-lg font-bold text-navy-900">Active fleet list</h2>
+                  <h2 className="text-lg font-bold text-navy-900">Trip details</h2>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-100 text-sm">
                     <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">
                       <tr>
                         <th className="px-4 py-3">Bus</th>
-                        <th className="px-4 py-3">Route</th>
                         <th className="px-4 py-3">Driver</th>
                         <th className="px-4 py-3">Trip status</th>
                         <th className="px-4 py-3">Latest update</th>
@@ -285,7 +284,6 @@ export function AdminLiveTripsPage() {
                       {trips.map((trip, index) => (
                         <tr key={`${safeFleetLabel(trip)}-${trip.startedAt}-${index}`} data-testid="admin-live-trip-card">
                           <td className="px-4 py-3 font-semibold text-navy-900">{trip.busLabel ? `Bus ${trip.busLabel}` : 'Bus label unavailable'}</td>
-                          <td className="px-4 py-3 text-gray-700">{trip.routeName ?? 'Route unavailable'}</td>
                           <td className="px-4 py-3 text-gray-700">{trip.driverName ?? 'Driver unavailable'}</td>
                           <td className="px-4 py-3"><StatusPill tone="success">{trip.status}</StatusPill></td>
                           <td className="px-4 py-3 text-gray-700" data-testid="admin-live-trip-location-time">{trip.latestLocationAt ? formatTimestamp(trip.latestLocationAt) : 'No GPS update yet'}</td>

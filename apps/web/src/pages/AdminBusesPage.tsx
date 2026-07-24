@@ -6,6 +6,7 @@ import {
   BusForm,
   InlineFormShell,
 } from '@/components/admin/TransportationAdminForms';
+import { StudentBusAssignmentForm } from '@/components/admin/StudentBusAssignmentForm';
 import { BusDriverAssignmentForm } from '@/components/admin/TransportAssignmentForms';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
@@ -26,6 +27,7 @@ import {
   fetchAdminAssignments,
 } from '@/services/driverAssignmentService';
 import {
+  createStudentBusAssignment,
   fetchAdminBusServices,
   type BusServiceOption,
 } from '@/services/studentBusAssignmentService';
@@ -33,6 +35,7 @@ import {
   createBus,
   deleteBus,
   getVisibleDrivers,
+  getVisibleRouteStops,
   updateBus,
 } from '@/services/transportationStructureService';
 import type { OrganizationProfile, School } from '@/types/organization';
@@ -41,7 +44,9 @@ import type {
   Bus,
   BusStatus,
   CreateBusInput,
+  CreateStudentBusAssignmentInput,
   Driver,
+  RouteStop,
   UpdateBusInput,
 } from '@/types/transportation';
 import { activeDriverForBusService } from '@/utils/transportAssignments';
@@ -68,9 +73,11 @@ export function AdminBusesPage() {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [profiles, setProfiles] = useState<OrganizationProfile[]>([]);
   const [busServices, setBusServices] = useState<BusServiceOption[]>([]);
+  const [routeStops, setRouteStops] = useState<RouteStop[]>([]);
   const [driverAssignments, setDriverAssignments] = useState<DriverRouteAssignment[]>([]);
   const [editingBus, setEditingBus] = useState<Bus | null>(null);
   const [assigningDriverBus, setAssigningDriverBus] = useState<Bus | null>(null);
+  const [assigningStudentBus, setAssigningStudentBus] = useState<Bus | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -83,13 +90,14 @@ export function AdminBusesPage() {
     !!profile && (profile.role === 'tenant_admin' || profile.role === 'platform_super_admin');
 
   async function loadAssignmentData() {
-    const [schoolResult, driverResult, profileResult, serviceResult, assignmentResult] =
+    const [schoolResult, driverResult, profileResult, serviceResult, assignmentResult, stopsResult] =
       await Promise.allSettled([
         getVisibleSchools(),
         getVisibleDrivers(),
         getVisibleProfiles(),
         fetchAdminBusServices(),
         fetchAdminAssignments(),
+        getVisibleRouteStops(),
       ]);
     setSchools(schoolResult.status === 'fulfilled' ? schoolResult.value : []);
     setDrivers(driverResult.status === 'fulfilled' ? driverResult.value : []);
@@ -98,6 +106,7 @@ export function AdminBusesPage() {
     setDriverAssignments(
       assignmentResult.status === 'fulfilled' ? assignmentResult.value : [],
     );
+    setRouteStops(stopsResult.status === 'fulfilled' ? stopsResult.value : []);
   }
 
   useEffect(() => {
@@ -178,6 +187,25 @@ export function AdminBusesPage() {
     }
   }
 
+  async function handleAssignStudent(input: CreateStudentBusAssignmentInput) {
+    setWriteError(null);
+    setSuccessMessage(null);
+    try {
+      await createStudentBusAssignment(input);
+      setAssigningStudentBus(null);
+      setSuccessMessage('Student assigned to the bus service.');
+      await loadAssignmentData();
+      await list.reload();
+    } catch (assignError) {
+      const message =
+        assignError instanceof Error
+          ? assignError.message
+          : 'Unable to assign this student to the bus.';
+      setWriteError(message);
+      throw assignError;
+    }
+  }
+
   return (
     <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
       <div className="space-y-6">
@@ -216,6 +244,24 @@ export function AdminBusesPage() {
               profileLabels={profileLabels}
               onSubmit={handleAssignDriver}
               onCancel={() => setAssigningDriverBus(null)}
+            />
+          </InlineFormShell>
+        )}
+
+
+        {canWrite && assigningStudentBus && (
+          <InlineFormShell title={`Assign student to Bus ${assigningStudentBus.bus_number}`}>
+            <StudentBusAssignmentForm
+              assignment={null}
+              services={busServices.filter(
+                (service) =>
+                  service.bus_id === assigningStudentBus.id &&
+                  service.status === 'active',
+              )}
+              stops={routeStops}
+              defaultTenantId={profile?.tenant_id ?? null}
+              onSubmit={(input) => handleAssignStudent(input as CreateStudentBusAssignmentInput)}
+              onCancel={() => setAssigningStudentBus(null)}
             />
           </InlineFormShell>
         )}
@@ -292,6 +338,7 @@ export function AdminBusesPage() {
                             onClick={() => {
                               setShowCreateForm(false);
                               setEditingBus(null);
+                              setAssigningStudentBus(null);
                               setAssigningDriverBus(bus);
                               setWriteError(null);
                               setSuccessMessage(null);
@@ -307,9 +354,33 @@ export function AdminBusesPage() {
                             Assign driver
                           </Button>
                         )}
+
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              setShowCreateForm(false);
+                              setEditingBus(null);
+                              setAssigningDriverBus(null);
+                              setAssigningStudentBus(bus);
+                              setWriteError(null);
+                              setSuccessMessage(null);
+                            }}
+                            disabled={
+                              !busServices.some(
+                                (service) =>
+                                  service.bus_id === bus.id &&
+                                  service.status === 'active',
+                              )
+                            }
+                          >
+                            Assign student
+                          </Button>
                         <Button type="button" size="sm" variant="secondary" onClick={() => {
                           setShowCreateForm(false);
                           setAssigningDriverBus(null);
+                          setAssigningStudentBus(null);
                           setEditingBus(bus);
                           setWriteError(null);
                           setSuccessMessage(null);

@@ -9,6 +9,21 @@ function requireSupabase() {
 }
 
 const driverColumns = 'id, tenant_id, profile_id, employee_number, phone, status';
+
+async function broadcastTripChanged(tenantId: string | null): Promise<void> {
+  const client = supabase;
+  if (!client || !tenantId) return;
+  try {
+    await client.channel(`safebus:tenant:${tenantId}`, { config: { private: true } }).send({
+      type: 'broadcast',
+      event: 'tracking_changed',
+      payload: { changedAt: new Date().toISOString() },
+    });
+  } catch {
+    // Realtime invalidation is best-effort; secured polling remains authoritative.
+  }
+}
+
 const tripColumns =
   'id, tenant_id, driver_id, bus_id, route_id, route_trip_pattern_id, driver_route_assignment_id, trip_name_snapshot, trip_type, status, service_date, started_at, ended_at, created_at, updated_at';
 
@@ -79,7 +94,9 @@ export async function endDriverTrip(tripId: string): Promise<DriverTrip> {
     throw new Error(message);
   }
 
-  return data as DriverTrip;
+  const trip = data as DriverTrip;
+  await broadcastTripChanged(trip.tenant_id);
+  return trip;
 }
 
 export type { TripType };
@@ -128,5 +145,7 @@ export async function startTripFromAssignment(assignmentId: string): Promise<Dri
     throw new Error(mapStartTripError(error.message ?? 'Could not start the trip.'));
   }
 
-  return data as DriverTrip;
+  const trip = data as DriverTrip;
+  await broadcastTripChanged(trip.tenant_id);
+  return trip;
 }

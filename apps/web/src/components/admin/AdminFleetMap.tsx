@@ -1,4 +1,4 @@
-import { Component, type ErrorInfo, type ReactNode, useCallback, useMemo, useState } from 'react';
+import { Component, type ErrorInfo, type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import type { LatLngBoundsExpression, LatLngExpression, Map as LeafletMap } from 'leaflet';
 import { Button } from '@/components/ui/Button';
@@ -37,6 +37,18 @@ function markerStyle(status: AdminLiveTrip['locationStatus']): { color: string; 
   if (status === 'live') return { color: '#047857', fillColor: '#10b981' };
   if (status === 'stale') return { color: '#b45309', fillColor: '#f59e0b' };
   return { color: '#b91c1c', fillColor: '#ef4444' };
+}
+
+
+function FitInitialBounds({ bounds }: { bounds: LatLngBoundsExpression | null }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!bounds) return;
+    map.fitBounds(bounds, { padding: [32, 32], maxZoom: 14 });
+  }, [bounds, map]);
+
+  return null;
 }
 
 function FitFleetControl({ bounds, disabled }: { bounds: LatLngBoundsExpression | null; disabled: boolean }) {
@@ -173,6 +185,7 @@ export function AdminFleetMap({ trips, overlays = [], tileConfig, formatters, on
         <section className="h-96" aria-label="Admin live fleet interactive map" data-testid="admin-live-fleet-map-region">
           <MapContainer center={center} zoom={locations.length === 1 ? 14 : 11} scrollWheelZoom className="h-full w-full" data-testid="admin-live-fleet-leaflet-map">
             <FleetTileLayer config={tileConfig} onTileError={handleTileError} onTileLoad={handleTileLoad} />
+            <FitInitialBounds bounds={bounds} />
             <FitFleetControl bounds={bounds} disabled={bounds === null} />
             <ViewportChangeReporter onViewportChange={onViewportChange} />
             <RouteOverlayLayers overlays={overlays} />
