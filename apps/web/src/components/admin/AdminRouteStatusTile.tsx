@@ -1,12 +1,5 @@
 import { Link } from 'react-router-dom';
-import { StatusPill } from '@/components/ui/StatusPill';
-import type { Route, RouteStatus, RouteType } from '@/types/transportation';
-
-const routeStatusTone: Record<RouteStatus, 'success' | 'danger' | 'neutral'> = {
-  active: 'success',
-  inactive: 'neutral',
-  archived: 'danger',
-};
+import type { Route, RouteType } from '@/types/transportation';
 
 const routeTypeLabels: Record<RouteType, string> = {
   morning: 'Morning',
@@ -48,7 +41,6 @@ export function AdminRouteStatusTile({ route, stopCount, to }: AdminRouteStatusT
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-3">
-        <StatusPill tone={routeStatusTone[route.status]}>{route.status}</StatusPill>
         <span
           aria-hidden="true"
           className="text-lg text-navy-400 transition-transform group-hover:translate-x-1"
