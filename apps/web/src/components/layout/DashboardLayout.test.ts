@@ -3,7 +3,6 @@ import { adminNavItems, driverNavGroups } from './DashboardLayout';
 
 const tenantAdminRoutes = [
   '/admin',
-  '/admin/trips',
   '/admin/live-trips',
   '/admin/routes',
   '/admin/buses',
