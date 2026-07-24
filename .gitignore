@@ -45,6 +45,7 @@ playwright/.cache/
 supabase/.branches
 supabase/.temp
 
-# Mobile
-apps/driver-mobile/ios/
-apps/driver-mobile/android/
+# Mobile (Capacitor native projects)
+apps/mobile/android/
+apps/mobile/ios/
+apps/mobile/.sourcemaps/

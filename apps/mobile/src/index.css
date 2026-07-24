@@ -1,0 +1,18 @@
+/*
+ * Mobile app styles — imports the web app's complete CSS (Tailwind layers,
+ * base styles, component utilities, and Leaflet tile fix) to guarantee
+ * 100% visual parity with the web app. No overrides needed.
+ */
+@import '../../web/src/index.css';
+
+/* Safe-area insets for notched Android devices (Capacitor) */
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900;
+    /* Account for status bar and gesture nav */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}

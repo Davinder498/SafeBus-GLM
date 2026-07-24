@@ -148,6 +148,65 @@ export interface RouteShapeGeoJson {
   coordinates: [number, number][];
 }
 
+/**
+ * Status of a versioned route shape (migration 0057).
+ * Drafts are unpublished previews; published is the single current authoritative
+ * shape; archived shapes retain history but are no longer current.
+ */
+export type RouteShapeStatus = 'draft' | 'published' | 'archived';
+
+/**
+ * Origin of a route shape version. Admin-authored GeoJSON is the default.
+ */
+export type RouteShapeSource = 'admin_geojson' | 'import' | 'system';
+
+/**
+ * A single versioned route shape returned by the PostGIS-backed RPCs in
+ * migration 0057. The `geojson` field is a LineString in longitude, latitude
+ * order (GeoJSON / SRID 4326) emitted by ST_AsGeoJSON.
+ */
+export interface RouteShapeVersion {
+  id: string;
+  routeId: string;
+  version: number;
+  status: RouteShapeStatus;
+  distanceMeters: number;
+  geojson: RouteShapeGeoJson | null;
+  effectiveFrom: string | null;
+  effectiveTo: string | null;
+  createdAt?: string | null;
+}
+
+/**
+ * Result shape returned by get_current_route_shape. Identical to
+ * RouteShapeVersion minus the audit timestamp.
+ */
+export type CurrentRouteShape = Omit<RouteShapeVersion, 'createdAt'>;
+
+/**
+ * Driver active trip route shape returned by get_driver_active_trip_route_shape.
+ * Surfaces the snapshot taken at trip start (driver_trips.route_shape_id).
+ */
+export interface DriverActiveTripRouteShape {
+  driverTripId: string;
+  routeShapeId: string;
+  routeId: string;
+  version: number;
+  distanceMeters: number;
+  geojson: RouteShapeGeoJson | null;
+}
+
+/**
+ * Input for admin_create_route_shape_version. The GeoJSON must be a valid
+ * LineString in [longitude, latitude] order with at least two distinct points.
+ */
+export interface CreateRouteShapeVersionInput {
+  routeId: string;
+  geojson: RouteShapeGeoJson;
+  status?: 'draft' | 'published';
+  source?: RouteShapeSource;
+}
+
 export interface RouteOverlay {
   studentId?: string;
   routeId?: string;

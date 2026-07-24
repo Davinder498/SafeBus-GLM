@@ -241,7 +241,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/update-password`,
+      redirectTo: `${import.meta.env.VITE_APP_ORIGIN ?? window.location.origin}/update-password`,
     });
 
     if (error) throw new Error(error.message);
