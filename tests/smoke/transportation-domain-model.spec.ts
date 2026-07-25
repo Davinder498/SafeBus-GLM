@@ -486,14 +486,19 @@ test.describe('Milestone 4E — driver trip start with no-school bus + route', (
       timeout: 10000,
     });
 
-    // The assignment card appears (the no-school bus + route are assigned).
+    // The assignment card appears under the closed-by-default Outbound group.
+    await page.getByTestId('driver-outbound-toggle').click();
     await expect(page.getByTestId('driver-assignment-card')).toBeVisible({ timeout: 10000 });
 
-    // Start the trip from the assignment — no school field blocks the action.
+    // Start the trip from the assignment and confirm the exact no-school trip.
     await page.getByTestId('driver-assignment-select-button').click();
     await page.getByTestId('driver-assignment-start-button').click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Start trip' }).click();
 
-    // The active trip card appears with the route name.
+    // A successful start opens pickup/drop-off. Returning to Assignments shows
+    // only the active trip card with the route name.
+    await expect(page).toHaveURL(/\/driver\/pickup-drop-off$/);
+    await page.goto('/driver');
     await expect(page.getByRole('heading', { name: 'Riverside Outbound' })).toBeVisible({
       timeout: 10000,
     });

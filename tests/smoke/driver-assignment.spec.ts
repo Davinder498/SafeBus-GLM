@@ -351,12 +351,14 @@ test.describe('Milestone 4F — Driver assignment workflow', () => {
 
     await page.goto('/driver');
 
-    // Wait for the assignment card.
+    // Open Outbound and wait for the nested assignment card.
+    await page.getByTestId('driver-outbound-toggle').click();
     await expect(page.getByTestId('driver-assignment-card')).toBeVisible({ timeout: 10000 });
 
-    // Expand the assignment, then click Start Trip.
+    // Expand the assignment, request Start Trip, then confirm the exact trip.
     await page.getByTestId('driver-assignment-select-button').click();
     await page.getByTestId('driver-assignment-start-button').click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Start trip' }).click();
 
     // Generic safe error appears (case-insensitive match).
     await expect(page.getByText(/could not start/i)).toBeVisible({ timeout: 10000 });

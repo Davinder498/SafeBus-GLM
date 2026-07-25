@@ -8,6 +8,8 @@ const DRIVER = {
   studentId: '44444444-4444-4444-4444-444444444444',
 } as const;
 
+const STUDENT_QR_TOKEN = `sbus_qr_v1_${'A'.repeat(43)}`;
+
 const driverProfile = {
   id: DRIVER.profileId,
   tenant_id: DRIVER.tenantId,
@@ -110,6 +112,8 @@ function activeTripNoStudentsRow(): DriverManifestRpcRow {
 interface DriverManifestMockControl {
   eventRpcCalls: string[];
   directEventTableWrites: string[];
+  locationUpdateCalls: number[];
+  qrResolveCalls: string[];
 }
 
 async function installDriverManifestMock(
@@ -119,6 +123,7 @@ async function installDriverManifestMock(
     rows?: DriverManifestRpcRow[];
     failRpc?: boolean;
     failActionRpc?: boolean;
+    failQrResolve?: boolean;
     rawError?: string;
     rawActionError?: string;
   } = {},
@@ -127,10 +132,11 @@ async function installDriverManifestMock(
   let rows = opts.rows ?? [];
   const rawError =
     opts.rawError ?? 'permission denied for function get_driver_active_trip_student_manifest';
-  const rawActionError =
-    opts.rawActionError ?? 'duplicate key value violates unique constraint';
+  const rawActionError = opts.rawActionError ?? 'duplicate key value violates unique constraint';
   const eventRpcCalls: string[] = [];
   const directEventTableWrites: string[] = [];
+  const locationUpdateCalls: number[] = [];
+  const qrResolveCalls: string[] = [];
 
   await page.route('**/*', async (route: Route) => {
     const url = new URL(route.request().url());
@@ -193,6 +199,64 @@ async function installDriverManifestMock(
         return;
       }
 
+      if (method === 'POST' && path.includes('/rpc/update_driver_trip_location')) {
+        locationUpdateCalls.push(Date.now());
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            driver_trip_id: DRIVER.tripId,
+            recorded_at: '2025-01-01T12:05:00.000Z',
+          }),
+        });
+        return;
+      }
+
+      if (method === 'POST' && path.includes('/rpc/resolve_student_qr_for_active_trip')) {
+        const token = (route.request().postDataJSON() as { p_qr_token?: string } | null)
+          ?.p_qr_token;
+        qrResolveCalls.push(token ?? '');
+        if (opts.failQrResolve) {
+          await route.fulfill({
+            status: 403,
+            contentType: 'application/json',
+            body: JSON.stringify({ message: 'Badge is not assigned to this active trip.' }),
+          });
+          return;
+        }
+        const row = rows.find((candidate) => candidate.student_id);
+        if (!row?.student_id || !row.student_display_name) {
+          await route.fulfill({
+            status: 404,
+            contentType: 'application/json',
+            body: JSON.stringify({ message: 'No eligible student.' }),
+          });
+          return;
+        }
+        const nextEventType =
+          row.student_trip_status === 'not_picked_up'
+            ? 'picked_up'
+            : row.student_trip_status === 'picked_up'
+              ? 'dropped_off'
+              : null;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            {
+              student_id: row.student_id,
+              student_display_name: row.student_display_name,
+              pickup_stop_name: row.pickup_stop_name,
+              dropoff_stop_name: row.dropoff_stop_name,
+              student_trip_status: row.student_trip_status,
+              next_event_type: nextEventType,
+              message: nextEventType ? 'Ready to record.' : 'Trip events complete.',
+            },
+          ]),
+        });
+        return;
+      }
+
       if (method === 'POST' && path.includes('/rpc/mark_student_picked_up_for_active_trip')) {
         eventRpcCalls.push('mark_student_picked_up_for_active_trip');
         if (opts.failActionRpc) {
@@ -239,10 +303,7 @@ async function installDriverManifestMock(
         return;
       }
 
-      if (
-        path.includes('/student_trip_events')
-        && ['POST', 'PATCH', 'PUT'].includes(method)
-      ) {
+      if (path.includes('/student_trip_events') && ['POST', 'PATCH', 'PUT'].includes(method)) {
         directEventTableWrites.push(`${method} ${path}`);
         await route.fulfill({
           status: 405,
@@ -290,7 +351,104 @@ async function installDriverManifestMock(
     }
   }, profile);
 
-  return { eventRpcCalls, directEventTableWrites };
+  return { eventRpcCalls, directEventTableWrites, locationUpdateCalls, qrResolveCalls };
+}
+
+async function installCameraAndLocationMock(page: Page, token: string | null = STUDENT_QR_TOKEN) {
+  await page.addInitScript((scannedToken: string | null) => {
+    const runtime = window as unknown as {
+      __cameraConstraints?: MediaStreamConstraints;
+      __cameraTrackStops?: number;
+      __locationWatchStarts?: number;
+      BarcodeDetector?: new () => { detect: () => Promise<Array<{ rawValue: string }>> };
+    };
+    runtime.__cameraTrackStops = 0;
+    runtime.__locationWatchStarts = 0;
+
+    const track = {
+      stop: () => {
+        runtime.__cameraTrackStops = (runtime.__cameraTrackStops ?? 0) + 1;
+      },
+    };
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: async (constraints: MediaStreamConstraints) => {
+          runtime.__cameraConstraints = constraints;
+          return {
+            getTracks: () => [track],
+          };
+        },
+      },
+    });
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        watchPosition: (success: PositionCallback) => {
+          runtime.__locationWatchStarts = (runtime.__locationWatchStarts ?? 0) + 1;
+          window.setTimeout(
+            () =>
+              success({
+                coords: {
+                  latitude: 51.0447,
+                  longitude: -114.0719,
+                  accuracy: 10,
+                  altitude: null,
+                  altitudeAccuracy: null,
+                  heading: 90,
+                  speed: 8,
+                },
+                timestamp: Date.now(),
+              } as GeolocationPosition),
+            0,
+          );
+          return 1;
+        },
+        clearWatch: () => undefined,
+        getCurrentPosition: () => undefined,
+      },
+    });
+    Object.defineProperty(HTMLMediaElement.prototype, 'readyState', {
+      configurable: true,
+      get: () => 4,
+    });
+    Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', {
+      configurable: true,
+      get() {
+        return (this as HTMLMediaElement & { __mockStream?: MediaStream }).__mockStream ?? null;
+      },
+      set(value: MediaStream | null) {
+        (this as HTMLMediaElement & { __mockStream?: MediaStream | null }).__mockStream = value;
+      },
+    });
+    HTMLMediaElement.prototype.play = async () => undefined;
+
+    runtime.BarcodeDetector = class {
+      async detect() {
+        return scannedToken ? [{ rawValue: scannedToken }] : [];
+      }
+    };
+  }, token);
+}
+
+async function installDeniedCameraMock(page: Page) {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: async () => {
+          throw new DOMException('Camera permission denied', 'NotAllowedError');
+        },
+      },
+    });
+    (
+      window as unknown as { BarcodeDetector?: new () => { detect: () => Promise<never[]> } }
+    ).BarcodeDetector = class {
+      async detect() {
+        return [];
+      }
+    };
+  });
 }
 
 test.describe('Milestone 7B - Driver student trip event recording', () => {
@@ -367,11 +525,12 @@ test.describe('Milestone 7B - Driver student trip event recording', () => {
     await page.goto('/driver/manifest');
 
     await page.getByRole('button', { name: 'Mark picked up' }).click();
-    await expect(page.getByText('Pickup and drop-off status updated.')).toBeVisible();
+    await expect(page.getByText('Pickup recorded.')).toBeVisible();
     await expect(page.getByText('Picked up')).toHaveCount(2);
     await expect(page.getByRole('button', { name: 'Mark dropped off' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Mark dropped off' }).click();
+    await expect(page.getByText('Drop-off recorded.')).toBeVisible();
     await expect(page.getByText('Dropped off')).toHaveCount(2);
     await expect(page.getByRole('button', { name: 'Mark picked up' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Mark dropped off' })).toHaveCount(0);
@@ -394,7 +553,9 @@ test.describe('Milestone 7B - Driver student trip event recording', () => {
 
     await page.getByRole('button', { name: 'Mark picked up' }).click();
 
-    await expect(page.getByText('Could not update student status. Please try again.')).toBeVisible();
+    await expect(
+      page.getByText('Could not update student status. Please try again.'),
+    ).toBeVisible();
     await expect(page.getByText(rawActionError)).toHaveCount(0);
   });
 
@@ -418,6 +579,147 @@ test.describe('Milestone 7B - Driver student trip event recording', () => {
     await expect(page.getByText('North Ridge Morning')).toBeVisible();
     await expect(page.getByTestId('driver-manifest-no-students')).toBeVisible();
     await expect(page.getByText('No students are assigned to this active trip.')).toBeVisible();
+  });
+
+  test('continues location sharing on the active-trip pickup and drop-off page', async ({
+    page,
+  }) => {
+    const control = await installDriverManifestMock(page, { rows: [manifestRow()] });
+    await installCameraAndLocationMock(page);
+    await page.goto('/driver/pickup-drop-off');
+
+    await expect(page.getByTestId('driver-manifest-location-status')).toBeVisible();
+    await expect(page.getByTestId('driver-location-status')).toContainText(
+      'Location sharing active',
+    );
+    expect(control.locationUpdateCalls).toHaveLength(1);
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { __locationWatchStarts?: number }).__locationWatchStarts ?? 0,
+      ),
+    ).toBe(1);
+  });
+
+  test('camera scan automatically records the next event and stops after one pass', async ({
+    page,
+  }) => {
+    const control = await installDriverManifestMock(page, { rows: [manifestRow()] });
+    await installCameraAndLocationMock(page);
+    await page.goto('/driver/pickup-drop-off');
+
+    await page.getByTestId('driver-open-qr-scanner').click();
+
+    await expect(page.getByTestId('driver-qr-recorded-message')).toHaveText('Pickup recorded.');
+    await expect(page.getByText('Picked up')).toHaveCount(2);
+    expect(control.qrResolveCalls).toEqual([STUDENT_QR_TOKEN]);
+    expect(control.eventRpcCalls).toEqual(['mark_student_picked_up_for_active_trip']);
+
+    const cameraState = await page.evaluate(() => {
+      const runtime = window as unknown as {
+        __cameraConstraints?: MediaStreamConstraints;
+        __cameraTrackStops?: number;
+      };
+      return {
+        constraints: runtime.__cameraConstraints,
+        stops: runtime.__cameraTrackStops ?? 0,
+      };
+    });
+    expect(cameraState.constraints?.video).toEqual({
+      facingMode: { ideal: 'environment' },
+    });
+    expect(cameraState.stops).toBeGreaterThanOrEqual(1);
+    await expect(page.getByTestId('driver-qr-video')).toHaveCount(0);
+    await expect(page.getByTestId('driver-qr-scan-another')).toBeVisible();
+  });
+
+  test('shows camera permission denial without attempting a trip event', async ({ page }) => {
+    const control = await installDriverManifestMock(page, { rows: [manifestRow()] });
+    await installDeniedCameraMock(page);
+    await page.goto('/driver/pickup-drop-off');
+
+    await page.getByTestId('driver-open-qr-scanner').click();
+
+    await expect(
+      page.getByText('Camera permission was denied. Allow camera access and try again.'),
+    ).toBeVisible();
+    expect(control.qrResolveCalls).toEqual([]);
+    expect(control.eventRpcCalls).toEqual([]);
+  });
+
+  test('stops an open camera when the scanner unmounts', async ({ page }) => {
+    await installDriverManifestMock(page, { rows: [manifestRow()] });
+    await installCameraAndLocationMock(page, null);
+    await page.goto('/driver/pickup-drop-off');
+
+    await page.getByTestId('driver-open-qr-scanner').click();
+    await expect(page.getByTestId('driver-qr-video')).toBeVisible();
+    await page.getByRole('link', { name: 'Back to active trip' }).click();
+    await expect(page).toHaveURL(/\/driver$/);
+
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { __cameraTrackStops?: number }).__cameraTrackStops ?? 0,
+      ),
+    ).toBeGreaterThanOrEqual(1);
+  });
+
+  test('does not process the same badge again while it remains in view', async ({ page }) => {
+    const control = await installDriverManifestMock(page, { rows: [manifestRow()] });
+    await installCameraAndLocationMock(page);
+    await page.goto('/driver/pickup-drop-off');
+
+    await page.getByTestId('driver-open-qr-scanner').click();
+    await expect(page.getByTestId('driver-qr-recorded-message')).toHaveText('Pickup recorded.');
+    await page.getByTestId('driver-qr-scan-another').click();
+    await expect(page.getByTestId('driver-qr-video')).toBeVisible();
+    await page.waitForTimeout(1_200);
+
+    expect(control.qrResolveCalls).toHaveLength(1);
+    expect(control.eventRpcCalls).toHaveLength(1);
+    await page.getByTestId('driver-close-qr-scanner').click();
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { __cameraTrackStops?: number }).__cameraTrackStops ?? 0,
+      ),
+    ).toBeGreaterThanOrEqual(2);
+  });
+
+  test('shows a safe retry state when a scanned badge is not valid for the active trip', async ({
+    page,
+  }) => {
+    const control = await installDriverManifestMock(page, {
+      rows: [manifestRow()],
+      failQrResolve: true,
+    });
+    await installCameraAndLocationMock(page);
+    await page.goto('/driver/pickup-drop-off');
+
+    await page.getByTestId('driver-open-qr-scanner').click();
+
+    await expect(
+      page.getByText('This pass could not be verified for the active trip. Nothing was recorded.'),
+    ).toBeVisible();
+    await expect(page.getByTestId('driver-qr-retry-scan')).toBeVisible();
+    expect(control.qrResolveCalls).toEqual([STUDENT_QR_TOKEN]);
+    expect(control.eventRpcCalls).toEqual([]);
+  });
+
+  test('shows record failure without presenting the scan as successful', async ({ page }) => {
+    const control = await installDriverManifestMock(page, {
+      rows: [manifestRow()],
+      failActionRpc: true,
+    });
+    await installCameraAndLocationMock(page);
+    await page.goto('/driver/pickup-drop-off');
+
+    await page.getByTestId('driver-open-qr-scanner').click();
+
+    await expect(
+      page.getByText('This event could not be recorded. The student status was not changed.'),
+    ).toBeVisible();
+    await expect(page.getByTestId('driver-qr-retry-record')).toBeVisible();
+    await expect(page.getByTestId('driver-qr-recorded-message')).toHaveCount(0);
+    expect(control.eventRpcCalls).toEqual(['mark_student_picked_up_for_active_trip']);
   });
 
   test('raw backend error is not rendered', async ({ page }) => {
