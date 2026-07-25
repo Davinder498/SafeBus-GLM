@@ -4,6 +4,7 @@ import { adminNavItems, driverNavGroups } from './DashboardLayout';
 const tenantAdminRoutes = [
   '/admin',
   '/admin/live-trips',
+  '/admin/trips',
   '/admin/routes',
   '/admin/buses',
   '/admin/drivers',

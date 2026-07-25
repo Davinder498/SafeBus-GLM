@@ -22,6 +22,7 @@ import { AdminSchoolsPage } from '@/pages/AdminSchoolsPage';
 import { AdminSettingsPage } from '@/pages/AdminSettingsPage';
 import { AdminStudentDetailPage } from '@/pages/AdminStudentDetailPage';
 import { AdminStudentsPage } from '@/pages/AdminStudentsPage';
+import { AdminTripsPage } from '@/pages/AdminTripsPage';
 import { AdminUsersPage } from '@/pages/AdminUsersPage';
 import { DriverDashboardPage } from '@/pages/DriverDashboardPage';
 import { DriverManifestPage } from '@/pages/DriverManifestPage';
@@ -74,7 +75,14 @@ export const appRoutes: RouteObject[] = [
       </ProtectedRoute>
     ),
   },
-  { path: '/admin/trips', element: <Navigate to="/admin" replace /> },
+  {
+    path: '/admin/trips',
+    element: (
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
+        <AdminTripsPage />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: '/admin/settings',
     element: (

@@ -83,6 +83,13 @@ export const adminNavItems: DashboardNavItem[] = [
     icon: <Radio className="h-4 w-4" />,
   },
   {
+    label: 'Trips',
+    to: '/admin/trips',
+    group: 'operations',
+    description: 'Run history',
+    icon: <Calendar className="h-4 w-4" />,
+  },
+  {
     label: 'Routes',
     to: '/admin/routes',
     group: 'transportation',
