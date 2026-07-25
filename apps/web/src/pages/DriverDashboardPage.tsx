@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Bus, ChevronDown, Clock3, Route as RouteIcon } from 'lucide-react';
+import { Bus, ChevronDown, ClipboardCheck, Clock3, Route as RouteIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+  DriverLocationStatus,
+  type DriverLocationStatusProps,
+} from '@/components/driver/DriverLocationStatus';
 import { DashboardLayout, driverNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { useDriverLocationSharing } from '@/hooks/useDriverLocationSharing';
-import type { LocationSharingState } from '@/hooks/useDriverLocationSharing';
 import { fetchDriverAssignments } from '@/services/driverAssignmentService';
 import {
   endDriverTrip,
@@ -34,12 +39,16 @@ function formatTimestamp(iso: string): string {
 }
 
 export function DriverDashboardPage() {
+  const navigate = useNavigate();
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
 
   // Action feedback.
   const [actionInProgress, setActionInProgress] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [pendingStartAssignment, setPendingStartAssignment] =
+    useState<DriverAssignmentSummary | null>(null);
+  const [confirmEndOpen, setConfirmEndOpen] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     setState({ kind: 'loading' });
@@ -100,10 +109,13 @@ export function DriverDashboardPage() {
     );
   }, [state]);
 
-  async function handleStartTripFromAssignment(assignmentId: string) {
+  async function handleConfirmStartTrip() {
+    const assignment = pendingStartAssignment;
+    if (!assignment) return;
     if (activeTrip) {
       setActionError(ACTIVE_TRIP_ERROR);
       setSuccessMessage(null);
+      setPendingStartAssignment(null);
       return;
     }
 
@@ -111,11 +123,17 @@ export function DriverDashboardPage() {
     setActionError(null);
     setSuccessMessage(null);
     try {
-      await startTripFromAssignment(assignmentId);
-      setSuccessMessage('Trip started. Location sharing is starting automatically.');
-      await refreshDashboard();
+      await startTripFromAssignment(assignment.id);
+      setPendingStartAssignment(null);
+      navigate('/driver/pickup-drop-off', {
+        state: {
+          tripStarted: true,
+          tripName: assignment.tripName,
+        },
+      });
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Could not start the trip.');
+      setPendingStartAssignment(null);
     } finally {
       setActionInProgress(false);
     }
@@ -128,6 +146,7 @@ export function DriverDashboardPage() {
     setSuccessMessage(null);
     try {
       await endDriverTrip(activeTrip.id);
+      setConfirmEndOpen(false);
       setSuccessMessage('Trip ended. Nice work.');
       await refreshDashboard();
     } catch (err) {
@@ -150,9 +169,13 @@ export function DriverDashboardPage() {
     >
       <div className="mx-auto max-w-3xl space-y-5">
         <PageHeader
-          eyebrow="Assignments"
-          title="Your assigned trips"
-          description="Choose the route trip you are ready to drive."
+          eyebrow={activeTrip ? 'Trip in progress' : 'Assignments'}
+          title={activeTrip ? 'Your active trip' : 'Your assigned trips'}
+          description={
+            activeTrip
+              ? 'Only this trip is available until you end it.'
+              : 'Open Outbound or Return, then choose the exact route trip you are ready to drive.'
+          }
         />
 
         {state.kind === 'loading' && (
@@ -192,35 +215,108 @@ export function DriverDashboardPage() {
               </Card>
             )}
 
-            {state.activeTrip && (
+            {state.activeTrip ? (
               <ActiveTripCard
                 trip={state.activeTrip}
                 assignment={activeAssignment}
                 locationSupported={locationSharing.supported}
                 locationState={locationSharing.state}
-                onEnd={handleEndTrip}
+                onOpenManifest={() => navigate('/driver/pickup-drop-off')}
+                onEnd={() => setConfirmEndOpen(true)}
                 actionInProgress={actionInProgress}
               />
-            )}
+            ) : (
+              <>
+                {state.assignments.length === 0 && (
+                  <DataState
+                    title="No active trip assignments."
+                    message="Please contact your transportation admin."
+                  />
+                )}
 
-            {state.assignments.length === 0 && !state.activeTrip && (
-              <DataState
-                title="No active trip assignments."
-                message="Please contact your transportation admin."
-              />
-            )}
-
-            {state.assignments.length > 0 && (
-              <AssignmentChooser
-                assignments={state.assignments}
-                activeTrip={state.activeTrip}
-                onStart={handleStartTripFromAssignment}
-                actionInProgress={actionInProgress}
-              />
+                {state.assignments.length > 0 && (
+                  <AssignmentChooser
+                    assignments={state.assignments}
+                    onStart={setPendingStartAssignment}
+                    actionInProgress={actionInProgress}
+                  />
+                )}
+              </>
             )}
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={pendingStartAssignment !== null}
+        title={`Start ${pendingStartAssignment?.tripName ?? 'this trip'}?`}
+        description={
+          pendingStartAssignment ? (
+            <div className="space-y-1">
+              <p>
+                Route:{' '}
+                <span className="font-semibold text-slate-700">
+                  {pendingStartAssignment.routeName} ({pendingStartAssignment.routeCode})
+                </span>
+              </p>
+              <p>
+                Named trip:{' '}
+                <span className="font-semibold text-slate-700">
+                  {pendingStartAssignment.tripName}
+                </span>
+              </p>
+              <p>
+                Bus:{' '}
+                <span className="font-semibold text-slate-700">
+                  {pendingStartAssignment.busLabel}
+                </span>
+              </p>
+              <p className="pt-2">Confirm that this is the exact trip you are ready to drive.</p>
+            </div>
+          ) : null
+        }
+        confirmLabel="Start trip"
+        busy={actionInProgress}
+        onConfirm={() => void handleConfirmStartTrip()}
+        onCancel={() => setPendingStartAssignment(null)}
+      />
+      <ConfirmDialog
+        open={confirmEndOpen}
+        title={`End ${state.kind === 'ready' && state.activeTrip ? (state.activeTrip.trip_name_snapshot ?? activeAssignment?.tripName ?? 'this trip') : 'this trip'}?`}
+        description={
+          state.kind === 'ready' && state.activeTrip ? (
+            <div className="space-y-1">
+              <p>
+                Route:{' '}
+                <span className="font-semibold text-slate-700">
+                  {activeAssignment?.routeName ?? 'Assigned route'}
+                </span>
+              </p>
+              <p>
+                Named trip:{' '}
+                <span className="font-semibold text-slate-700">
+                  {state.activeTrip.trip_name_snapshot ??
+                    activeAssignment?.tripName ??
+                    'Active trip'}
+                </span>
+              </p>
+              <p>
+                Bus:{' '}
+                <span className="font-semibold text-slate-700">
+                  {activeAssignment?.busLabel ?? state.activeTrip.bus_id}
+                </span>
+              </p>
+              <p className="pt-2">
+                Ending the trip stops pickup and drop-off recording for this run.
+              </p>
+            </div>
+          ) : null
+        }
+        confirmLabel="End trip"
+        destructive
+        busy={actionInProgress}
+        onConfirm={() => void handleEndTrip()}
+        onCancel={() => setConfirmEndOpen(false)}
+      />
     </DashboardLayout>
   );
 }
@@ -229,7 +325,8 @@ interface ActiveTripCardProps {
   trip: DriverTrip;
   assignment: DriverAssignmentSummary | null;
   locationSupported: boolean;
-  locationState: LocationSharingState;
+  locationState: DriverLocationStatusProps['state'];
+  onOpenManifest: () => void;
   onEnd: () => void;
   actionInProgress: boolean;
 }
@@ -239,12 +336,13 @@ function ActiveTripCard({
   assignment,
   locationSupported,
   locationState,
+  onOpenManifest,
   onEnd,
   actionInProgress,
 }: ActiveTripCardProps) {
   return (
-    <div className="space-y-4">
-      <Card className="p-5">
+    <div className="space-y-5" data-testid="driver-active-trip-only">
+      <Card className="border-success-200 p-5 ring-1 ring-success-100">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-gray-500">Active trip</p>
@@ -263,34 +361,54 @@ function ActiveTripCard({
           <StatusPill tone="success">active</StatusPill>
         </div>
         <div className="mt-4 border-t border-slate-100 pt-4">
-          <LocationStatus supported={locationSupported} state={locationState} />
+          <DriverLocationStatus supported={locationSupported} state={locationState} />
         </div>
       </Card>
-      <Button
-        type="button"
-        size="lg"
-        fullWidth
-        variant="danger"
-        onClick={onEnd}
-        disabled={actionInProgress}
-      >
-        {actionInProgress ? 'Ending trip...' : 'End Trip'}
-      </Button>
+      <Card className="space-y-4 p-4 sm:p-5">
+        <Button
+          type="button"
+          size="lg"
+          fullWidth
+          variant="primary"
+          leftIcon={<ClipboardCheck className="h-5 w-5" aria-hidden />}
+          onClick={onOpenManifest}
+          disabled={actionInProgress}
+          data-testid="driver-active-trip-manifest-button"
+        >
+          Open pickup &amp; drop-off
+        </Button>
+        <div className="border-t border-slate-200 pt-4">
+          <Button
+            type="button"
+            size="lg"
+            fullWidth
+            variant="danger"
+            onClick={onEnd}
+            disabled={actionInProgress}
+          >
+            End trip
+          </Button>
+          <p className="mt-2 text-center text-xs leading-5 text-gray-500">
+            End only after this run and its pickup and drop-off work are complete.
+          </p>
+        </div>
+      </Card>
     </div>
   );
 }
 
 function AssignmentChooser({
   assignments,
-  activeTrip,
   onStart,
   actionInProgress,
 }: {
   assignments: DriverAssignmentSummary[];
-  activeTrip: DriverTrip | null;
-  onStart: (assignmentId: string) => void;
+  onStart: (assignment: DriverAssignmentSummary) => void;
   actionInProgress: boolean;
 }) {
+  const [expandedDirection, setExpandedDirection] = useState<
+    DriverAssignmentSummary['direction'] | null
+  >(null);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState('');
 
   useEffect(() => {
@@ -302,6 +420,11 @@ function AssignmentChooser({
     }
   }, [assignments, selectedAssignmentId]);
 
+  function toggleDirection(direction: DriverAssignmentSummary['direction']) {
+    setSelectedAssignmentId('');
+    setExpandedDirection((current) => (current === direction ? null : direction));
+  }
+
   return (
     <section aria-labelledby="assigned-trips-heading" data-testid="driver-assigned-trips">
       <div className="mb-4">
@@ -309,28 +432,32 @@ function AssignmentChooser({
           Current trip assignments
         </h2>
         <p className="mt-1 text-sm text-gray-600">
-          Select an assignment to review and start that exact trip.
+          Open one direction, then select a route to review and start that exact trip.
         </p>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <AssignmentColumn
+      <div className="space-y-4">
+        <AssignmentDirectionGroup
+          direction="forward"
           title="Outbound"
-          description="Morning or outbound runs appear on the left."
+          description="Morning and outbound runs."
           assignments={assignments.filter((assignment) => assignment.direction === 'forward')}
           emptyMessage="No outbound trips assigned."
-          activeTrip={activeTrip}
+          expanded={expandedDirection === 'forward'}
+          onToggle={() => toggleDirection('forward')}
           selectedAssignmentId={selectedAssignmentId}
           setSelectedAssignmentId={setSelectedAssignmentId}
           onStart={onStart}
           actionInProgress={actionInProgress}
         />
-        <AssignmentColumn
+        <AssignmentDirectionGroup
+          direction="reverse"
           title="Return"
-          description="Afternoon or return runs appear on the right."
+          description="Afternoon and return runs."
           assignments={assignments.filter((assignment) => assignment.direction === 'reverse')}
           emptyMessage="No return trips assigned."
-          activeTrip={activeTrip}
+          expanded={expandedDirection === 'reverse'}
+          onToggle={() => toggleDirection('reverse')}
           selectedAssignmentId={selectedAssignmentId}
           setSelectedAssignmentId={setSelectedAssignmentId}
           onStart={onStart}
@@ -341,43 +468,75 @@ function AssignmentChooser({
   );
 }
 
-function AssignmentColumn({
+function AssignmentDirectionGroup({
+  direction,
   title,
   description,
   assignments,
   emptyMessage,
-  activeTrip,
+  expanded,
+  onToggle,
   selectedAssignmentId,
   setSelectedAssignmentId,
   onStart,
   actionInProgress,
 }: {
+  direction: DriverAssignmentSummary['direction'];
   title: string;
   description: string;
   assignments: DriverAssignmentSummary[];
   emptyMessage: string;
-  activeTrip: DriverTrip | null;
+  expanded: boolean;
+  onToggle: () => void;
   selectedAssignmentId: string;
   setSelectedAssignmentId: (assignmentId: string) => void;
-  onStart: (assignmentId: string) => void;
+  onStart: (assignment: DriverAssignmentSummary) => void;
   actionInProgress: boolean;
 }) {
-  return (
-    <div className="space-y-3" data-testid={`driver-${title.toLowerCase()}-assignments`}>
-      <div className="rounded-2xl border border-slate-200 bg-white/70 p-4 shadow-sm">
-        <h3 className="text-base font-bold text-navy-900">{title}</h3>
-        <p className="mt-1 text-sm text-gray-600">{description}</p>
-      </div>
+  const groupId = `driver-${direction}-assignment-group`;
 
-      {assignments.length === 0 ? (
-        <Card className="p-5">
-          <p className="text-sm font-medium text-gray-500">{emptyMessage}</p>
-        </Card>
-      ) : (
-        <div className="space-y-4">
+  return (
+    <div
+      className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+      data-testid={`driver-${title.toLowerCase()}-assignments`}
+    >
+      <button
+        type="button"
+        className="flex min-h-16 w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-500 sm:px-5"
+        onClick={onToggle}
+        aria-expanded={expanded}
+        aria-controls={groupId}
+        data-testid={`driver-${title.toLowerCase()}-toggle`}
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-navy-50 text-navy-700">
+          <RouteIcon className="h-5 w-5" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="text-lg font-bold text-navy-900">{title}</span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+              {assignments.length} {assignments.length === 1 ? 'trip' : 'trips'}
+            </span>
+          </span>
+          <span className="mt-0.5 block text-sm text-gray-600">{description}</span>
+        </span>
+        <ChevronDown
+          className={`h-5 w-5 shrink-0 text-gray-500 transition-transform ${
+            expanded ? 'rotate-180' : ''
+          }`}
+          aria-hidden
+        />
+      </button>
+
+      {expanded && (
+        <div id={groupId} className="space-y-4 border-t border-slate-200 bg-slate-50/70 p-3 sm:p-4">
+          {assignments.length === 0 && (
+            <Card className="p-5">
+              <p className="text-sm font-medium text-gray-500">{emptyMessage}</p>
+            </Card>
+          )}
           {assignments.map((assignment) => {
             const selected = assignment.id === selectedAssignmentId;
-            const inProgress = assignmentMatchesTrip(assignment, activeTrip);
             const panelId = `start-assignment-${assignment.id}`;
 
             return (
@@ -415,12 +574,8 @@ function AssignmentColumn({
                     >
                       {assignment.tripName} · Bus {assignment.busLabel}
                     </span>
-                    <span
-                      className={`mt-2 block text-sm font-medium ${
-                        inProgress ? 'text-success-700' : 'text-gray-500'
-                      }`}
-                    >
-                      {inProgress ? 'In progress' : 'Ready'}
+                    <span className="mt-2 block text-sm font-medium text-success-700">
+                      Ready to review
                     </span>
                   </span>
                   <ChevronDown
@@ -434,28 +589,20 @@ function AssignmentColumn({
                 {selected && (
                   <div id={panelId} className="space-y-4 border-t border-slate-100 p-5 pt-4">
                     <AssignmentDetails assignment={assignment} />
-                    {inProgress ? (
-                      <p className="rounded-lg bg-success-50 p-3 text-sm font-semibold text-success-700">
-                        This trip is currently in progress.
-                      </p>
-                    ) : (
-                      <>
-                        <Button
-                          type="button"
-                          size="lg"
-                          fullWidth
-                          onClick={() => onStart(assignment.id)}
-                          disabled={actionInProgress}
-                          data-testid="driver-assignment-start-button"
-                        >
-                          {actionInProgress ? 'Starting trip...' : `Start ${assignment.tripName}`}
-                        </Button>
-                        <p className="text-xs leading-5 text-gray-500">
-                          Starting the trip requests location permission and begins sharing this bus
-                          automatically.
-                        </p>
-                      </>
-                    )}
+                    <Button
+                      type="button"
+                      size="lg"
+                      fullWidth
+                      variant="success"
+                      onClick={() => onStart(assignment)}
+                      disabled={actionInProgress}
+                      data-testid="driver-assignment-start-button"
+                    >
+                      {actionInProgress ? 'Starting trip...' : `Start trip: ${assignment.tripName}`}
+                    </Button>
+                    <p className="text-xs leading-5 text-gray-500">
+                      You will confirm the exact route, trip, and bus before it starts.
+                    </p>
                   </div>
                 )}
               </Card>
@@ -464,21 +611,6 @@ function AssignmentColumn({
         </div>
       )}
     </div>
-  );
-}
-
-function assignmentMatchesTrip(
-  assignment: DriverAssignmentSummary,
-  activeTrip: DriverTrip | null,
-): boolean {
-  if (!activeTrip) return false;
-  if (activeTrip.driver_route_assignment_id) {
-    return activeTrip.driver_route_assignment_id === assignment.id;
-  }
-  return (
-    activeTrip.bus_id === assignment.busId &&
-    activeTrip.route_id === assignment.routeId &&
-    activeTrip.route_trip_pattern_id === assignment.tripPatternId
   );
 }
 
@@ -515,76 +647,4 @@ function formatScheduledTime(value: string): string {
   if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return value;
   const time = new Date(2000, 0, 1, hours, minutes);
   return time.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-}
-
-interface LocationStatusProps {
-  supported: boolean;
-  state: LocationSharingState;
-}
-
-function LocationStatus({ supported, state }: LocationStatusProps) {
-  const tracking = state.kind === 'waiting' || state.kind === 'sharing' || state.kind === 'offline';
-  const errorMessage = state.kind === 'error' || state.kind === 'denied' ? state.message : null;
-
-  let statusMessage = 'Share your live bus location during this trip.';
-  let statusTone: 'success' | 'warning' | 'neutral' = 'neutral';
-  let statusLabel: string | null = null;
-  if (state.kind === 'waiting') {
-    statusMessage = 'Waiting for the first location update...';
-    statusLabel = 'waiting';
-  } else if (state.kind === 'sharing') {
-    statusMessage =
-      state.delivery === 'active'
-        ? `Location sharing active. Last update ${formatTimestamp(state.lastUpdateAt)}.`
-        : `Location updates are delayed. Last successful update ${formatTimestamp(state.lastUpdateAt)}.`;
-    statusTone = state.delivery === 'active' ? 'success' : 'warning';
-    statusLabel = state.delivery === 'active' ? 'active' : 'delayed';
-  } else if (state.kind === 'offline') {
-    statusMessage = state.lastUpdateAt
-      ? `Offline. Last successful update ${formatTimestamp(state.lastUpdateAt)}. Tracking will resume automatically.`
-      : 'Offline. Waiting to send the first location when the connection returns.';
-    statusTone = 'warning';
-    statusLabel = 'offline';
-  } else if (state.kind === 'denied') {
-    statusMessage = 'Location permission denied.';
-  }
-
-  if (!supported) {
-    return (
-      <div data-testid="driver-location-panel">
-        <h3 className="font-bold text-navy-900">Location status</h3>
-        <p data-testid="driver-location-error" className="mt-2 text-sm text-danger-700">
-          Location sharing is not supported in this browser.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div data-testid="driver-location-panel">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h3 className="font-bold text-navy-900">Location status</h3>
-          <p data-testid="driver-location-status" className="mt-1 text-sm text-gray-600">
-            {statusMessage}
-          </p>
-          {errorMessage && (
-            <p
-              data-testid="driver-location-error"
-              role="alert"
-              className="mt-2 text-sm text-danger-700"
-            >
-              {errorMessage}
-            </p>
-          )}
-        </div>
-        {statusLabel && <StatusPill tone={statusTone}>{statusLabel}</StatusPill>}
-      </div>
-      {!tracking && !errorMessage && (
-        <p className="mt-2 text-sm text-gray-600">
-          Location permission is being requested automatically.
-        </p>
-      )}
-    </div>
-  );
 }

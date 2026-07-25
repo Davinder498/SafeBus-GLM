@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { LogOut, UserCheck } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { DriverLocationStatus } from '@/components/driver/DriverLocationStatus';
 import { DashboardLayout, driverNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -7,6 +9,7 @@ import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { StudentQrScanner } from '@/components/driver/StudentQrScanner';
+import { useDriverLocationSharing } from '@/hooks/useDriverLocationSharing';
 import {
   fetchDriverActiveTripStudentManifest,
   markStudentDroppedOffForActiveTrip,
@@ -31,6 +34,7 @@ function studentTripStatusLabel(value: DriverManifestRow['studentTripStatus']): 
 }
 
 export function DriverManifestPage() {
+  const location = useLocation();
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [refreshing, setRefreshing] = useState(false);
   const [pendingStudentId, setPendingStudentId] = useState<string | null>(null);
@@ -50,7 +54,7 @@ export function DriverManifestPage() {
   }, []);
 
   const updateStudentStatus = useCallback(
-    async (studentId: string, action: 'pickup' | 'dropoff') => {
+    async (studentId: string, action: 'pickup' | 'dropoff'): Promise<boolean> => {
       setPendingStudentId(studentId);
       setActionError(null);
       setActionSuccess(null);
@@ -63,9 +67,11 @@ export function DriverManifestPage() {
         }
         const rows = await fetchDriverActiveTripStudentManifest();
         setState({ kind: 'ready', rows });
-        setActionSuccess('Pickup and drop-off status updated.');
+        setActionSuccess(action === 'pickup' ? 'Pickup recorded.' : 'Drop-off recorded.');
+        return true;
       } catch {
         setActionError('Could not update student status. Please try again.');
+        return false;
       } finally {
         setPendingStudentId(null);
       }
@@ -82,6 +88,8 @@ export function DriverManifestPage() {
     () => (state.kind === 'ready' ? state.rows.filter((row) => row.studentId) : []),
     [state],
   );
+  const locationSharing = useDriverLocationSharing(activeTrip?.activeTripId ?? null, true);
+  const navigationState = location.state as { tripStarted?: boolean; tripName?: string } | null;
 
   return (
     <DashboardLayout
@@ -110,10 +118,24 @@ export function DriverManifestPage() {
               {refreshing ? 'Refreshing...' : 'Refresh'}
             </Button>
             <Link to="/driver" className="text-sm font-semibold text-navy-700 hover:text-navy-900">
-              Back to assignments
+              {activeTrip ? 'Back to active trip' : 'Back to assignments'}
             </Link>
           </div>
         </Card>
+
+        {navigationState?.tripStarted && activeTrip && (
+          <Card
+            role="status"
+            aria-live="polite"
+            className="border-success-200 bg-success-50 p-4"
+            data-testid="driver-trip-started-message"
+          >
+            <p className="text-sm font-semibold text-success-800">
+              {navigationState.tripName ?? activeTrip.tripName ?? 'Trip'} started. Location sharing
+              is starting automatically.
+            </p>
+          </Card>
+        )}
 
         {(actionError || actionSuccess) && (
           <div
@@ -185,7 +207,15 @@ export function DriverManifestPage() {
               </div>
             </Card>
 
-            <StudentQrScanner onConfirm={updateStudentStatus} busyStudentId={pendingStudentId} />
+            <Card className="p-4 sm:p-5" data-testid="driver-manifest-location-status">
+              <DriverLocationStatus
+                supported={locationSharing.supported}
+                state={locationSharing.state}
+                compact
+              />
+            </Card>
+
+            <StudentQrScanner onRecord={updateStudentStatus} busyStudentId={pendingStudentId} />
 
             {students.length === 0 ? (
               <div data-testid="driver-manifest-no-students">
@@ -228,7 +258,7 @@ export function DriverManifestPage() {
                           </div>
                         </dl>
                       </div>
-                      <div className="flex flex-col items-start gap-3 sm:items-end">
+                      <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:items-end">
                         <StatusPill
                           tone={
                             student.studentTripStatus === 'dropped_off'
@@ -243,9 +273,17 @@ export function DriverManifestPage() {
                         {student.studentId && student.studentTripStatus !== 'dropped_off' && (
                           <Button
                             type="button"
-                            size="sm"
+                            size="lg"
+                            className="w-full sm:w-auto"
                             variant={
-                              student.studentTripStatus === 'picked_up' ? 'primary' : 'secondary'
+                              student.studentTripStatus === 'picked_up' ? 'primary' : 'success'
+                            }
+                            leftIcon={
+                              student.studentTripStatus === 'picked_up' ? (
+                                <LogOut className="h-5 w-5" aria-hidden />
+                              ) : (
+                                <UserCheck className="h-5 w-5" aria-hidden />
+                              )
                             }
                             onClick={() =>
                               void updateStudentStatus(
