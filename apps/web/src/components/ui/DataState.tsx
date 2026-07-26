@@ -7,9 +7,11 @@ interface DataStateProps {
   message: string;
   /** Optional Lucide icon shown in a tinted circle above the title. */
   icon?: ReactNode;
+  /** Optional action shown below the empty-state message. */
+  action?: ReactNode;
 }
 
-export function DataState({ title, message, icon }: DataStateProps) {
+export function DataState({ title, message, icon, action }: DataStateProps) {
   return (
     <Card className="p-8 text-center">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
@@ -17,6 +19,7 @@ export function DataState({ title, message, icon }: DataStateProps) {
       </div>
       <p className="mt-4 text-base font-semibold text-slate-900">{title}</p>
       <p className="mt-1 text-sm leading-6 text-slate-500">{message}</p>
+      {action && <div className="mt-5 flex justify-center">{action}</div>}
     </Card>
   );
 }

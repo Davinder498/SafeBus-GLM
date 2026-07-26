@@ -21,6 +21,8 @@ describe('platform privacy boundary routing', () => {
       '/admin/guardians',
       '/admin/drivers',
       '/admin/buses',
+      '/admin/buses/new',
+      '/admin/buses/:busId',
       '/admin/routes',
       '/admin/assignments',
       '/admin/trips',
@@ -28,7 +30,9 @@ describe('platform privacy boundary routing', () => {
       '/admin/live-fleet',
       '/admin/driver-assignments',
     ]) {
-      expect(routeAllowsPlatform(path), `${path} should not allow Platform Super Admin`).toBe(false);
+      expect(routeAllowsPlatform(path), `${path} should not allow Platform Super Admin`).toBe(
+        false,
+      );
     }
   });
 });
