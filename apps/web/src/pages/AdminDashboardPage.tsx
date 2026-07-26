@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { AdminRouteStatusTile } from '@/components/admin/AdminRouteStatusTile';
+import { AdminTripsOverview } from '@/components/admin/AdminTripsOverview';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -11,7 +12,9 @@ import {
   type AdminOverviewRoute,
 } from '@/services/adminDashboardOverviewService';
 import { fetchAdminSetupSnapshot, type AdminSetupSnapshot } from '@/services/adminSetupService';
+import { fetchAdminTripOverview } from '@/services/adminTripOverviewService';
 import type { AdminLiveTrip } from '@/types/adminLiveMonitoring';
+import type { AdminTripOverviewItem } from '@/types/adminTripOverview';
 
 const emptySetupSnapshot: AdminSetupSnapshot = {
   buses: 0,
@@ -43,6 +46,8 @@ const setupKeys: Array<{ label: string; key: keyof AdminSetupSnapshot; to: strin
 interface OverviewData {
   setup: AdminSetupSnapshot;
   trips: AdminLiveTrip[];
+  tripOverview: AdminTripOverviewItem[];
+  tripOverviewFailed: boolean;
   routes: AdminOverviewRoute[];
 }
 
@@ -55,15 +60,18 @@ export function AdminDashboardPage() {
     // the top status cards, while the rest enrich the routes map. If any
     // single query fails (e.g., an RLS hiccup on one supporting table),
     // we still show the rest of the overview instead of blanking the page.
-    const [setupResult, tripsResult, overviewResult] = await Promise.allSettled([
-      fetchAdminSetupSnapshot(),
-      fetchAdminLiveTrips(),
-      fetchBoundedAdminOverview(),
-    ]);
+    const [setupResult, tripsResult, overviewResult, tripOverviewResult] = await Promise.allSettled(
+      [
+        fetchAdminSetupSnapshot(),
+        fetchAdminLiveTrips(),
+        fetchBoundedAdminOverview(),
+        fetchAdminTripOverview(25),
+      ],
+    );
 
     if (import.meta.env.DEV) {
-      const names = ['setup snapshot', 'live trips', 'bounded route overview'];
-      [setupResult, tripsResult, overviewResult].forEach((result, index) => {
+      const names = ['setup snapshot', 'live trips', 'bounded route overview', 'trip overview'];
+      [setupResult, tripsResult, overviewResult, tripOverviewResult].forEach((result, index) => {
         if (result.status === 'rejected') {
           console.warn(
             `[AdminDashboardPage] Non-fatal failure loading ${names[index]}.`,
@@ -77,6 +85,8 @@ export function AdminDashboardPage() {
       setup: setupResult.status === 'fulfilled' ? setupResult.value : emptySetupSnapshot,
       trips: tripsResult.status === 'fulfilled' ? tripsResult.value : [],
       routes: overviewResult.status === 'fulfilled' ? overviewResult.value.routes : [],
+      tripOverview: tripOverviewResult.status === 'fulfilled' ? tripOverviewResult.value : [],
+      tripOverviewFailed: tripOverviewResult.status === 'rejected',
     });
   }, []);
 
@@ -94,7 +104,12 @@ export function AdminDashboardPage() {
   const missingTrips = data?.trips.filter((t) => t.locationStatus === 'missing').length ?? 0;
 
   return (
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
+    <DashboardLayout
+      title="Admin Dashboard"
+      portal="admin"
+      navItems={[]}
+      navGroups={adminNavGroups}
+    >
       <div className="space-y-6" data-testid="tenant-admin-overview">
         <PageHeader
           eyebrow="Overview"
@@ -159,6 +174,8 @@ export function AdminDashboardPage() {
                 </Card>
               </div>
             </section>
+
+            <AdminTripsOverview trips={data.tripOverview} failed={data.tripOverviewFailed} />
 
             {/* Clickable route tiles */}
             <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
