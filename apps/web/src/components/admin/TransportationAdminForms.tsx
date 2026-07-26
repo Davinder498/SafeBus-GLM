@@ -5,10 +5,7 @@ import type { OrganizationProfile, School } from '@/types/organization';
 import { DuplicateIdentifierError } from '@/services/transportationStructureService';
 import type { Student } from '@/types/studentGuardian';
 import { StudentSearchPicker } from '@/components/admin/StudentSearchPicker';
-import type {
-  AssignmentStatus,
-  CreateAssignmentInput,
-} from '@/types/driverAssignments';
+import type { AssignmentStatus, CreateAssignmentInput } from '@/types/driverAssignments';
 import type {
   Bus,
   BusStatus,
@@ -66,13 +63,7 @@ function getStudentName(student: Student) {
     : `${student.first_name} ${student.last_name}`;
 }
 
-export function InlineFormShell({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
+export function InlineFormShell({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Card className="border-navy-100 bg-white p-5">
       <h2 className="text-lg font-bold text-navy-900">{title}</h2>
@@ -107,28 +98,37 @@ export function BusForm({
   defaultTenantId,
   onSubmit,
   onCancel,
+  onDirtyChange,
 }: {
   bus: Bus | null;
   schools: School[];
   defaultTenantId: string | null;
   onSubmit: (input: CreateBusInput | UpdateBusInput) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [schoolId, setSchoolId] = useState(bus?.school_id ?? '');
   const [busNumber, setBusNumber] = useState(bus?.bus_number ?? '');
   const [licensePlate, setLicensePlate] = useState(bus?.license_plate ?? '');
   const [capacity, setCapacity] = useState(bus?.capacity?.toString() ?? '');
   const [status, setStatus] = useState<BusStatus>(bus?.status ?? 'active');
+  const currentSignature = JSON.stringify({ schoolId, busNumber, licensePlate, capacity, status });
+  const [savedSignature, setSavedSignature] = useState(currentSignature);
   const [formError, setFormError] = useState<string | null>(null);
   const [licensePlateError, setLicensePlateError] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
+
+  useEffect(() => {
+    onDirtyChange?.(currentSignature !== savedSignature);
+  }, [currentSignature, onDirtyChange, savedSignature]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setFormError(null);
     setLicensePlateError(null);
 
-    const tenantId = bus?.tenant_id ?? getSchoolTenantId(schools, schoolId || null) ?? defaultTenantId;
+    const tenantId =
+      bus?.tenant_id ?? getSchoolTenantId(schools, schoolId || null) ?? defaultTenantId;
     const parsedCapacity = parseNullableNumber(capacity);
 
     if (!tenantId) {
@@ -167,6 +167,7 @@ export function BusForm({
             }
           : input,
       );
+      setSavedSignature(currentSignature);
     } catch (error) {
       if (error instanceof DuplicateIdentifierError && error.field === 'licensePlate') {
         setLicensePlateError(error.message);
@@ -184,20 +185,46 @@ export function BusForm({
       <div className="grid gap-4 md:grid-cols-2">
         <label className={labelClassName}>
           Bus number
-          <input className={fieldClassName} value={busNumber} onChange={(event) => setBusNumber(event.target.value)} />
+          <input
+            className={fieldClassName}
+            value={busNumber}
+            onChange={(event) => setBusNumber(event.target.value)}
+          />
         </label>
         <label className={labelClassName}>
           License plate
-          <input className={`${fieldClassName} ${licensePlateError ? 'border-danger-300 focus-visible:ring-danger-500' : ''}`} aria-invalid={licensePlateError ? 'true' : undefined} aria-describedby={licensePlateError ? 'bus-license-plate-error' : undefined} value={licensePlate} onChange={(event) => { setLicensePlate(event.target.value); setLicensePlateError(null); }} />
-          {licensePlateError && <p id="bus-license-plate-error" className="mt-1 text-xs font-medium text-danger-600">{licensePlateError}</p>}
+          <input
+            className={`${fieldClassName} ${licensePlateError ? 'border-danger-300 focus-visible:ring-danger-500' : ''}`}
+            aria-invalid={licensePlateError ? 'true' : undefined}
+            aria-describedby={licensePlateError ? 'bus-license-plate-error' : undefined}
+            value={licensePlate}
+            onChange={(event) => {
+              setLicensePlate(event.target.value);
+              setLicensePlateError(null);
+            }}
+          />
+          {licensePlateError && (
+            <p id="bus-license-plate-error" className="mt-1 text-xs font-medium text-danger-600">
+              {licensePlateError}
+            </p>
+          )}
         </label>
         <label className={labelClassName}>
           Capacity
-          <input className={fieldClassName} inputMode="numeric" value={capacity} onChange={(event) => setCapacity(event.target.value)} />
+          <input
+            className={fieldClassName}
+            inputMode="numeric"
+            value={capacity}
+            onChange={(event) => setCapacity(event.target.value)}
+          />
         </label>
         <label className={labelClassName}>
           School (optional)
-          <select className={fieldClassName} value={schoolId} onChange={(event) => setSchoolId(event.target.value)}>
+          <select
+            className={fieldClassName}
+            value={schoolId}
+            onChange={(event) => setSchoolId(event.target.value)}
+          >
             {optionalOption}
             {schools.map((school) => (
               <option key={school.id} value={school.id}>
@@ -208,7 +235,11 @@ export function BusForm({
         </label>
         <label className={labelClassName}>
           Status
-          <select className={fieldClassName} value={status} onChange={(event) => setStatus(event.target.value as BusStatus)}>
+          <select
+            className={fieldClassName}
+            value={status}
+            onChange={(event) => setStatus(event.target.value as BusStatus)}
+          >
             <option value="active">Active</option>
             <option value="maintenance">Maintenance</option>
             <option value="inactive">Inactive</option>
@@ -217,8 +248,12 @@ export function BusForm({
         </label>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Button type="submit" disabled={submitState === 'saving'}>{submitState === 'saving' ? 'Saving' : 'Save bus'}</Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+        <Button type="submit" disabled={submitState === 'saving'}>
+          {submitState === 'saving' ? 'Saving' : 'Save bus'}
+        </Button>
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          Cancel
+        </Button>
       </div>
     </form>
   );
@@ -235,7 +270,10 @@ export function DriverForm({
   onSubmit: (input: CreateDriverInput | UpdateDriverInput) => Promise<void>;
   onCancel: () => void;
 }) {
-  const driverProfiles = useMemo(() => profiles.filter((profile) => profile.role === 'driver'), [profiles]);
+  const driverProfiles = useMemo(
+    () => profiles.filter((profile) => profile.role === 'driver'),
+    [profiles],
+  );
   const [profileId, setProfileId] = useState(driver?.profile_id ?? driverProfiles[0]?.id ?? '');
   const [employeeNumber, setEmployeeNumber] = useState(driver?.employee_number ?? '');
   const [phone, setPhone] = useState(driver?.phone ?? '');
@@ -296,7 +334,11 @@ export function DriverForm({
       <div className="grid gap-4 md:grid-cols-2">
         <label className={labelClassName}>
           Driver profile
-          <select className={fieldClassName} value={profileId} onChange={(event) => setProfileId(event.target.value)}>
+          <select
+            className={fieldClassName}
+            value={profileId}
+            onChange={(event) => setProfileId(event.target.value)}
+          >
             <option value="">Choose driver</option>
             {driverProfiles.map((profile) => (
               <option key={profile.id} value={profile.id}>
@@ -307,15 +349,27 @@ export function DriverForm({
         </label>
         <label className={labelClassName}>
           Employee number
-          <input className={fieldClassName} value={employeeNumber} onChange={(event) => setEmployeeNumber(event.target.value)} />
+          <input
+            className={fieldClassName}
+            value={employeeNumber}
+            onChange={(event) => setEmployeeNumber(event.target.value)}
+          />
         </label>
         <label className={labelClassName}>
           Phone
-          <input className={fieldClassName} value={phone} onChange={(event) => setPhone(event.target.value)} />
+          <input
+            className={fieldClassName}
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+          />
         </label>
         <label className={labelClassName}>
           Status
-          <select className={fieldClassName} value={status} onChange={(event) => setStatus(event.target.value as DriverStatus)}>
+          <select
+            className={fieldClassName}
+            value={status}
+            onChange={(event) => setStatus(event.target.value as DriverStatus)}
+          >
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
             <option value="suspended">Suspended</option>
@@ -324,8 +378,12 @@ export function DriverForm({
         </label>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Button type="submit" disabled={submitState === 'saving'}>{submitState === 'saving' ? 'Saving' : 'Save driver'}</Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+        <Button type="submit" disabled={submitState === 'saving'}>
+          {submitState === 'saving' ? 'Saving' : 'Save driver'}
+        </Button>
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          Cancel
+        </Button>
       </div>
     </form>
   );
@@ -358,7 +416,8 @@ export function RouteForm({
 
     // School is optional. Derive the tenant from the existing route, the
     // selected school (if any), or the admin's default tenant id.
-    const tenantId = route?.tenant_id ?? getSchoolTenantId(schools, schoolId || null) ?? defaultTenantId;
+    const tenantId =
+      route?.tenant_id ?? getSchoolTenantId(schools, schoolId || null) ?? defaultTenantId;
 
     if (!tenantId) {
       setFormError('Use an account with a tenant before saving this route.');
@@ -404,15 +463,27 @@ export function RouteForm({
       <div className="grid gap-4 md:grid-cols-2">
         <label className={labelClassName}>
           Route name
-          <input className={fieldClassName} value={routeName} onChange={(event) => setRouteName(event.target.value)} />
+          <input
+            className={fieldClassName}
+            value={routeName}
+            onChange={(event) => setRouteName(event.target.value)}
+          />
         </label>
         <label className={labelClassName}>
           Route code
-          <input className={fieldClassName} value={routeCode} onChange={(event) => setRouteCode(event.target.value)} />
+          <input
+            className={fieldClassName}
+            value={routeCode}
+            onChange={(event) => setRouteCode(event.target.value)}
+          />
         </label>
         <label className={labelClassName}>
           Route type
-          <select className={fieldClassName} value={routeType} onChange={(event) => setRouteType(event.target.value as RouteType)}>
+          <select
+            className={fieldClassName}
+            value={routeType}
+            onChange={(event) => setRouteType(event.target.value as RouteType)}
+          >
             <option value="morning">Morning</option>
             <option value="afternoon">Afternoon</option>
             <option value="special">Special</option>
@@ -421,7 +492,11 @@ export function RouteForm({
         </label>
         <label className={labelClassName}>
           School (optional)
-          <select className={fieldClassName} value={schoolId} onChange={(event) => setSchoolId(event.target.value)}>
+          <select
+            className={fieldClassName}
+            value={schoolId}
+            onChange={(event) => setSchoolId(event.target.value)}
+          >
             <option value="">No school selected</option>
             {schools.map((school) => (
               <option key={school.id} value={school.id}>
@@ -432,7 +507,11 @@ export function RouteForm({
         </label>
         <label className={labelClassName}>
           Status
-          <select className={fieldClassName} value={status} onChange={(event) => setStatus(event.target.value as RouteStatus)}>
+          <select
+            className={fieldClassName}
+            value={status}
+            onChange={(event) => setStatus(event.target.value as RouteStatus)}
+          >
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
             <option value="archived">Archived</option>
@@ -440,8 +519,12 @@ export function RouteForm({
         </label>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Button type="submit" disabled={submitState === 'saving'}>{submitState === 'saving' ? 'Saving' : 'Save route'}</Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+        <Button type="submit" disabled={submitState === 'saving'}>
+          {submitState === 'saving' ? 'Saving' : 'Save route'}
+        </Button>
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          Cancel
+        </Button>
       </div>
     </form>
   );
@@ -461,7 +544,9 @@ export function RouteStopForm({
   const [routeId, setRouteId] = useState(stop?.route_id ?? routes[0]?.id ?? '');
   const [stopName, setStopName] = useState(stop?.stop_name ?? '');
   const [stopOrder, setStopOrder] = useState(stop?.stop_order.toString() ?? '');
-  const [plannedArrivalTime, setPlannedArrivalTime] = useState(stop?.planned_arrival_time?.slice(0, 5) ?? '');
+  const [plannedArrivalTime, setPlannedArrivalTime] = useState(
+    stop?.planned_arrival_time?.slice(0, 5) ?? '',
+  );
   const [latitude, setLatitude] = useState(stop?.latitude?.toString() ?? '');
   const [longitude, setLongitude] = useState(stop?.longitude?.toString() ?? '');
   const [status, setStatus] = useState<RouteStopStatus>(stop?.status ?? 'active');
@@ -544,7 +629,11 @@ export function RouteStopForm({
       <div className="grid gap-4 md:grid-cols-2">
         <label className={labelClassName}>
           Route
-          <select className={fieldClassName} value={routeId} onChange={(event) => setRouteId(event.target.value)}>
+          <select
+            className={fieldClassName}
+            value={routeId}
+            onChange={(event) => setRouteId(event.target.value)}
+          >
             <option value="">Choose route</option>
             {routes.map((route) => (
               <option key={route.id} value={route.id}>
@@ -555,27 +644,55 @@ export function RouteStopForm({
         </label>
         <label className={labelClassName}>
           Stop name
-          <input className={fieldClassName} value={stopName} onChange={(event) => setStopName(event.target.value)} />
+          <input
+            className={fieldClassName}
+            value={stopName}
+            onChange={(event) => setStopName(event.target.value)}
+          />
         </label>
         <label className={labelClassName}>
           Stop order
-          <input className={fieldClassName} inputMode="numeric" value={stopOrder} onChange={(event) => setStopOrder(event.target.value)} />
+          <input
+            className={fieldClassName}
+            inputMode="numeric"
+            value={stopOrder}
+            onChange={(event) => setStopOrder(event.target.value)}
+          />
         </label>
         <label className={labelClassName}>
           Planned arrival time
-          <input className={fieldClassName} type="time" value={plannedArrivalTime} onChange={(event) => setPlannedArrivalTime(event.target.value)} />
+          <input
+            className={fieldClassName}
+            type="time"
+            value={plannedArrivalTime}
+            onChange={(event) => setPlannedArrivalTime(event.target.value)}
+          />
         </label>
         <label className={labelClassName}>
           Latitude
-          <input className={fieldClassName} inputMode="decimal" value={latitude} onChange={(event) => setLatitude(event.target.value)} />
+          <input
+            className={fieldClassName}
+            inputMode="decimal"
+            value={latitude}
+            onChange={(event) => setLatitude(event.target.value)}
+          />
         </label>
         <label className={labelClassName}>
           Longitude
-          <input className={fieldClassName} inputMode="decimal" value={longitude} onChange={(event) => setLongitude(event.target.value)} />
+          <input
+            className={fieldClassName}
+            inputMode="decimal"
+            value={longitude}
+            onChange={(event) => setLongitude(event.target.value)}
+          />
         </label>
         <label className={labelClassName}>
           Status
-          <select className={fieldClassName} value={status} onChange={(event) => setStatus(event.target.value as RouteStopStatus)}>
+          <select
+            className={fieldClassName}
+            value={status}
+            onChange={(event) => setStatus(event.target.value as RouteStopStatus)}
+          >
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
             <option value="archived">Archived</option>
@@ -583,8 +700,12 @@ export function RouteStopForm({
         </label>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Button type="submit" disabled={submitState === 'saving'}>{submitState === 'saving' ? 'Saving' : 'Save stop'}</Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+        <Button type="submit" disabled={submitState === 'saving'}>
+          {submitState === 'saving' ? 'Saving' : 'Save stop'}
+        </Button>
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          Cancel
+        </Button>
       </div>
     </form>
   );
@@ -615,18 +736,32 @@ export function StudentRouteAssignmentForm({
   const [routeId, setRouteId] = useState(assignment?.route_id ?? routes[0]?.id ?? '');
   const [pickupStopId, setPickupStopId] = useState(assignment?.pickup_stop_id ?? '');
   const [dropoffStopId, setDropoffStopId] = useState(assignment?.dropoff_stop_id ?? '');
-  const [effectiveFrom, setEffectiveFrom] = useState(assignment?.effective_from ?? new Date().toISOString().slice(0, 10));
+  const [effectiveFrom, setEffectiveFrom] = useState(
+    assignment?.effective_from ?? new Date().toISOString().slice(0, 10),
+  );
   const [effectiveTo, setEffectiveTo] = useState(assignment?.effective_to ?? '');
-  const [status, setStatus] = useState<StudentRouteAssignmentStatus>(assignment?.status ?? 'active');
+  const [status, setStatus] = useState<StudentRouteAssignmentStatus>(
+    assignment?.status ?? 'active',
+  );
   const [formError, setFormError] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
 
   const routeStops = useMemo(
-    () => stops.filter((stop) => stop.route_id === routeId && (stop.status === 'active' || stop.id === assignment?.pickup_stop_id || stop.id === assignment?.dropoff_stop_id)),
+    () =>
+      stops.filter(
+        (stop) =>
+          stop.route_id === routeId &&
+          (stop.status === 'active' ||
+            stop.id === assignment?.pickup_stop_id ||
+            stop.id === assignment?.dropoff_stop_id),
+      ),
     [assignment?.dropoff_stop_id, assignment?.pickup_stop_id, routeId, stops],
   );
   const selectableStudents = useMemo(
-    () => students.filter((student) => student.status === 'active' || student.id === assignment?.student_id),
+    () =>
+      students.filter(
+        (student) => student.status === 'active' || student.id === assignment?.student_id,
+      ),
     [assignment?.student_id, students],
   );
   const selectableRoutes = useMemo(
@@ -641,7 +776,8 @@ export function StudentRouteAssignmentForm({
 
   useEffect(() => {
     if (pickupStopId && !routeStops.some((stop) => stop.id === pickupStopId)) setPickupStopId('');
-    if (dropoffStopId && !routeStops.some((stop) => stop.id === dropoffStopId)) setDropoffStopId('');
+    if (dropoffStopId && !routeStops.some((stop) => stop.id === dropoffStopId))
+      setDropoffStopId('');
   }, [dropoffStopId, pickupStopId, routeStops]);
 
   async function handleSubmit(event: FormEvent) {
@@ -650,7 +786,11 @@ export function StudentRouteAssignmentForm({
 
     const selectedRoute = routes.find((route) => route.id === routeId);
 
-    if (!studentId || !selectedRoute || (!defaultTenantId && !students.find((student) => student.id === studentId))) {
+    if (
+      !studentId ||
+      !selectedRoute ||
+      (!defaultTenantId && !students.find((student) => student.id === studentId))
+    ) {
       setFormError('Choose a student and route before saving this assignment.');
       return;
     }
@@ -668,7 +808,8 @@ export function StudentRouteAssignmentForm({
     setSubmitState('saving');
     try {
       const input = {
-        tenant_id: defaultTenantId ?? students.find((student) => student.id === studentId)!.tenant_id,
+        tenant_id:
+          defaultTenantId ?? students.find((student) => student.id === studentId)!.tenant_id,
         student_id: studentId,
         route_id: routeId,
         pickup_stop_id: pickupStopId || null,
@@ -704,15 +845,33 @@ export function StudentRouteAssignmentForm({
         <label className={labelClassName}>
           Student
           {students.length > 0 ? (
-            <select className={fieldClassName} value={studentId} onChange={(event) => setStudentId(event.target.value)}>
+            <select
+              className={fieldClassName}
+              value={studentId}
+              onChange={(event) => setStudentId(event.target.value)}
+            >
               <option value="">Choose student</option>
-              {selectableStudents.map((student) => <option key={student.id} value={student.id}>{getStudentName(student)}</option>)}
+              {selectableStudents.map((student) => (
+                <option key={student.id} value={student.id}>
+                  {getStudentName(student)}
+                </option>
+              ))}
             </select>
-          ) : <StudentSearchPicker value={studentId} initialLabel={studentLabel} onChange={setStudentId} />}
+          ) : (
+            <StudentSearchPicker
+              value={studentId}
+              initialLabel={studentLabel}
+              onChange={setStudentId}
+            />
+          )}
         </label>
         <label className={labelClassName}>
           Route
-          <select className={fieldClassName} value={routeId} onChange={(event) => setRouteId(event.target.value)}>
+          <select
+            className={fieldClassName}
+            value={routeId}
+            onChange={(event) => setRouteId(event.target.value)}
+          >
             <option value="">Choose route</option>
             {selectableRoutes.map((route) => (
               <option key={route.id} value={route.id}>
@@ -723,7 +882,11 @@ export function StudentRouteAssignmentForm({
         </label>
         <label className={labelClassName}>
           Pickup stop
-          <select className={fieldClassName} value={pickupStopId} onChange={(event) => setPickupStopId(event.target.value)}>
+          <select
+            className={fieldClassName}
+            value={pickupStopId}
+            onChange={(event) => setPickupStopId(event.target.value)}
+          >
             {optionalOption}
             {routeStops.map((stop) => (
               <option key={stop.id} value={stop.id}>
@@ -734,7 +897,11 @@ export function StudentRouteAssignmentForm({
         </label>
         <label className={labelClassName}>
           Dropoff stop
-          <select className={fieldClassName} value={dropoffStopId} onChange={(event) => setDropoffStopId(event.target.value)}>
+          <select
+            className={fieldClassName}
+            value={dropoffStopId}
+            onChange={(event) => setDropoffStopId(event.target.value)}
+          >
             {optionalOption}
             {routeStops.map((stop) => (
               <option key={stop.id} value={stop.id}>
@@ -745,15 +912,29 @@ export function StudentRouteAssignmentForm({
         </label>
         <label className={labelClassName}>
           Effective from
-          <input className={fieldClassName} type="date" value={effectiveFrom} onChange={(event) => setEffectiveFrom(event.target.value)} />
+          <input
+            className={fieldClassName}
+            type="date"
+            value={effectiveFrom}
+            onChange={(event) => setEffectiveFrom(event.target.value)}
+          />
         </label>
         <label className={labelClassName}>
           Effective to
-          <input className={fieldClassName} type="date" value={effectiveTo} onChange={(event) => setEffectiveTo(event.target.value)} />
+          <input
+            className={fieldClassName}
+            type="date"
+            value={effectiveTo}
+            onChange={(event) => setEffectiveTo(event.target.value)}
+          />
         </label>
         <label className={labelClassName}>
           Status
-          <select className={fieldClassName} value={status} onChange={(event) => setStatus(event.target.value as StudentRouteAssignmentStatus)}>
+          <select
+            className={fieldClassName}
+            value={status}
+            onChange={(event) => setStatus(event.target.value as StudentRouteAssignmentStatus)}
+          >
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
             <option value="archived">Archived</option>
@@ -761,8 +942,12 @@ export function StudentRouteAssignmentForm({
         </label>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Button type="submit" disabled={submitState === 'saving'}>{submitState === 'saving' ? 'Saving' : 'Save assignment'}</Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+        <Button type="submit" disabled={submitState === 'saving'}>
+          {submitState === 'saving' ? 'Saving' : 'Save assignment'}
+        </Button>
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          Cancel
+        </Button>
       </div>
     </form>
   );
@@ -842,18 +1027,28 @@ export function DriverAssignmentForm({
       <div className="grid gap-4 md:grid-cols-2">
         <label className={labelClassName}>
           Driver
-          <select className={fieldClassName} value={driverId} onChange={(event) => setDriverId(event.target.value)}>
+          <select
+            className={fieldClassName}
+            value={driverId}
+            onChange={(event) => setDriverId(event.target.value)}
+          >
             <option value="">Select a driver</option>
             {drivers.map((driver) => (
               <option key={driver.id} value={driver.id}>
-                {profileLabels.get(driver.profile_id) ?? driver.employee_number ?? driver.profile_id}
+                {profileLabels.get(driver.profile_id) ??
+                  driver.employee_number ??
+                  driver.profile_id}
               </option>
             ))}
           </select>
         </label>
         <label className={labelClassName}>
           Bus
-          <select className={fieldClassName} value={busId} onChange={(event) => setBusId(event.target.value)}>
+          <select
+            className={fieldClassName}
+            value={busId}
+            onChange={(event) => setBusId(event.target.value)}
+          >
             <option value="">Select a bus</option>
             {buses.map((bus) => (
               <option key={bus.id} value={bus.id}>
@@ -882,20 +1077,29 @@ export function DriverAssignmentForm({
         </label>
         <label className={labelClassName}>
           Named trip
-          <select className={fieldClassName} value={tripPatternId} onChange={(event) => setTripPatternId(event.target.value)}>
+          <select
+            className={fieldClassName}
+            value={tripPatternId}
+            onChange={(event) => setTripPatternId(event.target.value)}
+          >
             <option value="">Select a trip</option>
             {tripPatterns
               .filter((pattern) => pattern.route_id === routeId && pattern.status === 'active')
               .map((pattern) => (
                 <option key={pattern.id} value={pattern.id}>
-                  {pattern.display_name} ({pattern.direction === 'forward' ? 'Start → End' : 'End → Start'})
+                  {pattern.display_name} (
+                  {pattern.direction === 'forward' ? 'Start → End' : 'End → Start'})
                 </option>
               ))}
           </select>
         </label>
         <label className={labelClassName}>
           Status
-          <select className={fieldClassName} value={status} onChange={(event) => setStatus(event.target.value as AssignmentStatus)}>
+          <select
+            className={fieldClassName}
+            value={status}
+            onChange={(event) => setStatus(event.target.value as AssignmentStatus)}
+          >
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
@@ -921,8 +1125,12 @@ export function DriverAssignmentForm({
         </label>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Button type="submit" disabled={submitState === 'saving'}>{submitState === 'saving' ? 'Saving' : 'Save assignment'}</Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+        <Button type="submit" disabled={submitState === 'saving'}>
+          {submitState === 'saving' ? 'Saving' : 'Save assignment'}
+        </Button>
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          Cancel
+        </Button>
       </div>
     </form>
   );

@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { AdminAssignmentsPage } from '@/pages/AdminAssignmentsPage';
 import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
 import { AdminBusesPage } from '@/pages/AdminBusesPage';
+import { AdminBusWorkspacePage } from '@/pages/AdminBusWorkspacePage';
 import { LandingPage } from '@/pages/LandingPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
@@ -136,6 +137,22 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminGuardiansPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/buses/new',
+    element: (
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
+        <AdminBusWorkspacePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/buses/:busId',
+    element: (
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
+        <AdminBusWorkspacePage />
       </ProtectedRoute>
     ),
   },
