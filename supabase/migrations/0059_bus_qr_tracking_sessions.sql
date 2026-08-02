@@ -45,7 +45,7 @@ alter table public.driver_trip_current_locations
   add constraint driver_trip_current_locations_source_check
   check (source in ('browser', 'manual', 'bus_qr'));
 
-create table public.bus_qr_credentials (
+create table if not exists public.bus_qr_credentials (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tenants(id) on delete cascade,
   bus_id uuid not null references public.buses(id) on delete cascade,
@@ -63,15 +63,15 @@ create table public.bus_qr_credentials (
   )
 );
 
-create unique index bus_qr_credentials_token_hash_unique
+create unique index if not exists bus_qr_credentials_token_hash_unique
   on public.bus_qr_credentials(token_hash);
-create unique index bus_qr_credentials_one_active_per_bus
+create unique index if not exists bus_qr_credentials_one_active_per_bus
   on public.bus_qr_credentials(bus_id)
   where status = 'active';
-create index bus_qr_credentials_tenant_bus_idx
+create index if not exists bus_qr_credentials_tenant_bus_idx
   on public.bus_qr_credentials(tenant_id, bus_id, status);
 
-create table public.bus_run_dispatches (
+create table if not exists public.bus_run_dispatches (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tenants(id) on delete cascade,
   bus_id uuid not null references public.buses(id) on delete restrict,
@@ -91,16 +91,16 @@ create table public.bus_run_dispatches (
     check (status in ('ready', 'active', 'completed', 'cancelled'))
 );
 
-create unique index bus_run_dispatches_one_open_per_bus
+create unique index if not exists bus_run_dispatches_one_open_per_bus
   on public.bus_run_dispatches(bus_id)
   where status in ('ready', 'active');
-create unique index bus_run_dispatches_driver_trip_unique
+create unique index if not exists bus_run_dispatches_driver_trip_unique
   on public.bus_run_dispatches(driver_trip_id)
   where driver_trip_id is not null;
-create index bus_run_dispatches_tenant_date_idx
+create index if not exists bus_run_dispatches_tenant_date_idx
   on public.bus_run_dispatches(tenant_id, service_date, status);
 
-create table public.bus_tracking_sessions (
+create table if not exists public.bus_tracking_sessions (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tenants(id) on delete cascade,
   driver_trip_id uuid not null references public.driver_trips(id) on delete cascade,
@@ -121,18 +121,18 @@ create table public.bus_tracking_sessions (
   )
 );
 
-create unique index bus_tracking_sessions_token_hash_unique
+create unique index if not exists bus_tracking_sessions_token_hash_unique
   on public.bus_tracking_sessions(session_token_hash);
-create unique index bus_tracking_sessions_one_active_per_trip
+create unique index if not exists bus_tracking_sessions_one_active_per_trip
   on public.bus_tracking_sessions(driver_trip_id)
   where status = 'active';
-create unique index bus_tracking_sessions_one_active_per_driver
+create unique index if not exists bus_tracking_sessions_one_active_per_driver
   on public.bus_tracking_sessions(driver_id)
   where status = 'active';
-create unique index bus_tracking_sessions_one_active_per_bus
+create unique index if not exists bus_tracking_sessions_one_active_per_bus
   on public.bus_tracking_sessions(bus_id)
   where status = 'active';
-create index bus_tracking_sessions_tenant_trip_idx
+create index if not exists bus_tracking_sessions_tenant_trip_idx
   on public.bus_tracking_sessions(tenant_id, driver_trip_id, status);
 
 alter table public.bus_qr_credentials enable row level security;
@@ -147,7 +147,7 @@ create or replace function public.hash_bus_tracking_token(p_token text)
 returns text
 language sql
 immutable
-set search_path = public, pg_temp
+set search_path = public, extensions, pg_temp
 as $$
   select encode(digest(convert_to(p_token, 'UTF8'), 'sha256'), 'hex')
 $$;
@@ -156,7 +156,7 @@ create or replace function public.create_bus_qr_token()
 returns text
 language sql
 volatile
-set search_path = public, pg_temp
+set search_path = public, extensions, pg_temp
 as $$
   select 'sbus_bus_v1_' || translate(replace(encode(gen_random_bytes(32), 'base64'), '=', ''), '+/', '-_')
 $$;
@@ -165,7 +165,7 @@ create or replace function public.create_bus_tracking_session_token()
 returns text
 language sql
 volatile
-set search_path = public, pg_temp
+set search_path = public, extensions, pg_temp
 as $$
   select 'sbus_track_v1_' || translate(replace(encode(gen_random_bytes(32), 'base64'), '=', ''), '+/', '-_')
 $$;

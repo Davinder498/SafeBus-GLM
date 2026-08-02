@@ -9,7 +9,16 @@ declare
   v_prepare_definition text;
   v_function record;
   v_table_name text;
+  v_generated_token text;
 begin
+  if length(public.hash_bus_tracking_token('crypto-resolution-check')) <> 64 then
+    raise exception 'TEST FAILED: bus token hashing is unavailable';
+  end if;
+  v_generated_token := public.create_bus_qr_token();
+  if v_generated_token !~ '^sbus_bus_v1_[A-Za-z0-9_-]{40,80}$' then
+    raise exception 'TEST FAILED: bus QR token generation is unavailable';
+  end if;
+
   if to_regprocedure('public.protect_assigned_bus_number()') is null then
     raise exception 'TEST FAILED: stable bus-number protection is missing';
   end if;
