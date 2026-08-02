@@ -54,6 +54,14 @@ export function BusQrCredentialPanel({ busId, busNumber }: { busId: string; busN
     }
   }
 
+  function printQr() {
+    const printClass = 'printing-bus-qr';
+    const cleanup = () => document.body.classList.remove(printClass);
+    document.body.classList.add(printClass);
+    window.addEventListener('afterprint', cleanup, { once: true });
+    window.requestAnimationFrame(() => window.print());
+  }
+
   return (
     <Card className="mt-6 border-blue-200 p-5" data-testid="admin-bus-qr-panel">
       <div className="space-y-4">
@@ -102,7 +110,7 @@ export function BusQrCredentialPanel({ busId, busNumber }: { busId: string; busN
         </div>
         {qrDataUrl && (
           <div
-            className="rounded-xl border border-gray-200 bg-white p-4 text-center print:border-0"
+            className="bus-qr-print-sheet rounded-xl border border-gray-200 bg-white p-4 text-center print:border-0"
             data-testid="admin-bus-qr-result"
           >
             <p className="text-sm font-semibold text-gray-500">SafeBus Alberta</p>
@@ -113,12 +121,7 @@ export function BusQrCredentialPanel({ busId, busNumber }: { busId: string; busN
               className="mx-auto my-4 h-64 w-64"
             />
             <p className="text-sm text-gray-700">Driver: open SafeBus and choose Scan to start.</p>
-            <Button
-              type="button"
-              size="sm"
-              className="mt-3 print:hidden"
-              onClick={() => window.print()}
-            >
+            <Button type="button" size="sm" className="mt-3 print:hidden" onClick={printQr}>
               Print QR
             </Button>
           </div>

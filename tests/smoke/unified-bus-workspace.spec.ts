@@ -417,9 +417,17 @@ test.describe('unified bus workspace', () => {
     await page.goto(`/admin/buses/${busId}`);
     await expect(page.getByTestId('admin-bus-qr-panel')).toContainText('No active QR');
     await page.getByRole('button', { name: 'Generate QR' }).click();
-    await expect(page.getByTestId('admin-bus-qr-result')).toBeVisible();
+    const qrSheet = page.getByTestId('admin-bus-qr-result');
+    await expect(qrSheet).toBeVisible();
+    await expect(qrSheet).toHaveClass(/bus-qr-print-sheet/);
     await expect(page.getByAltText('Driver scan QR for Bus AF02')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Replace QR' })).toBeEnabled();
     await expect(page.getByRole('button', { name: 'Revoke QR' })).toBeEnabled();
+
+    await page.emulateMedia({ media: 'print' });
+    await page.evaluate(() => document.body.classList.add('printing-bus-qr'));
+    await expect(qrSheet).toHaveCSS('visibility', 'visible');
+    await expect(page.locator('header').first()).toHaveCSS('visibility', 'hidden');
+    await page.evaluate(() => document.body.classList.remove('printing-bus-qr'));
   });
 });
