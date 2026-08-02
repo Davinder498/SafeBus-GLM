@@ -4,7 +4,11 @@
 
 @layer base {
   html {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family:
+      'Inter',
+      system-ui,
+      -apple-system,
+      sans-serif;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -68,4 +72,48 @@
  */
 .leaflet-container img.leaflet-tile {
   mix-blend-mode: normal;
+}
+
+/* Print only the generated bus QR card when its Print QR action is used. */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  body.printing-bus-qr {
+    background: white !important;
+  }
+
+  body.printing-bus-qr * {
+    visibility: hidden !important;
+  }
+
+  body.printing-bus-qr .bus-qr-print-sheet,
+  body.printing-bus-qr .bus-qr-print-sheet * {
+    visibility: visible !important;
+  }
+
+  body.printing-bus-qr .bus-qr-print-sheet {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    width: 100%;
+    min-height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: white !important;
+    box-shadow: none !important;
+    color: black !important;
+    padding: 8mm !important;
+  }
+
+  body.printing-bus-qr .bus-qr-print-sheet img {
+    width: 70mm !important;
+    height: 70mm !important;
+    max-width: 100%;
+    image-rendering: pixelated;
+  }
 }
