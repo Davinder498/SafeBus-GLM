@@ -206,17 +206,17 @@ begin
   end if;
 
   perform 1 from public.buses b where b.id = p_bus_id for update;
-  select coalesce(array_agg(id), '{}') into v_old_ids
-  from public.bus_qr_credentials
-  where tenant_id = v_tenant_id and bus_qr_credentials.bus_id = p_bus_id and status = 'active';
+  select coalesce(array_agg(c.id), '{}') into v_old_ids
+  from public.bus_qr_credentials c
+  where c.tenant_id = v_tenant_id and c.bus_id = p_bus_id and c.status = 'active';
 
   if p_action = 'revoke' then
-    update public.bus_qr_credentials
+    update public.bus_qr_credentials c
     set status = 'revoked', revoked_at = now(), revoked_by = auth.uid()
-    where tenant_id = v_tenant_id and bus_qr_credentials.bus_id = p_bus_id and status = 'active';
-    update public.bus_tracking_sessions
+    where c.tenant_id = v_tenant_id and c.bus_id = p_bus_id and c.status = 'active';
+    update public.bus_tracking_sessions s
     set status = 'revoked', ended_at = now()
-    where bus_qr_credential_id = any(v_old_ids) and status = 'active';
+    where s.bus_qr_credential_id = any(v_old_ids) and s.status = 'active';
     return query select p_bus_id, null::uuid, 'revoked'::text, null::text, now();
     return;
   end if;
@@ -228,22 +228,26 @@ begin
   loop
     v_token := public.create_bus_qr_token();
     v_hash := public.hash_bus_tracking_token(v_token);
-    exit when not exists (select 1 from public.bus_qr_credentials where token_hash = v_hash);
+    exit when not exists (
+      select 1 from public.bus_qr_credentials c where c.token_hash = v_hash
+    );
   end loop;
 
-  update public.bus_qr_credentials
+  update public.bus_qr_credentials c
   set status = 'revoked', revoked_at = now(), revoked_by = auth.uid()
-  where tenant_id = v_tenant_id and bus_qr_credentials.bus_id = p_bus_id and status = 'active';
+  where c.tenant_id = v_tenant_id and c.bus_id = p_bus_id and c.status = 'active';
 
-  update public.bus_tracking_sessions
+  update public.bus_tracking_sessions s
   set status = 'revoked', ended_at = now()
-  where bus_qr_credential_id = any(v_old_ids) and status = 'active';
+  where s.bus_qr_credential_id = any(v_old_ids) and s.status = 'active';
 
   insert into public.bus_qr_credentials(tenant_id, bus_id, token_hash, created_by)
   values (v_tenant_id, p_bus_id, v_hash, auth.uid())
   returning id into v_new_id;
 
-  update public.bus_qr_credentials set replaced_by = v_new_id where id = any(v_old_ids);
+  update public.bus_qr_credentials c
+  set replaced_by = v_new_id
+  where c.id = any(v_old_ids);
   return query select p_bus_id, v_new_id, 'active'::text, v_token, now();
 end;
 $$;

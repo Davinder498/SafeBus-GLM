@@ -86,6 +86,12 @@ begin
     raise exception 'TEST FAILED: QR start lacks active-driver, hashed-token, ready-run, or exact-pattern checks';
   end if;
 
+  if position('c.status = ''active''' in lower(pg_get_functiondef(
+    'public.manage_bus_qr_credential(uuid,text)'::regprocedure
+  ))) = 0 then
+    raise exception 'TEST FAILED: credential management does not qualify its status column';
+  end if;
+
   if position('current_user_role() <> ''driver''' in v_update_definition) = 0
     or position('s.session_token_hash = v_hash' in v_update_definition) = 0
     or position('v_session.driver_id is distinct from public.current_driver_id()' in v_update_definition) = 0
