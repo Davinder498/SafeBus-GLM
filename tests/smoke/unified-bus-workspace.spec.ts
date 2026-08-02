@@ -29,8 +29,9 @@ const bus = {
 };
 
 async function mockBusWorkspace(page: Page) {
-  let replacedDriverPayload: Record<string, unknown> | null = null;
   let routeEnded = false;
+  let runReady = false;
+  let hasActiveQr = false;
   const routeAssignments = [
     {
       id: serviceId,
@@ -247,9 +248,63 @@ async function mockBusWorkspace(page: Page) {
         }),
       });
     }
-    if (path.includes('/rpc/admin_replace_bus_trip_driver')) {
-      replacedDriverPayload = route.request().postDataJSON();
+    if (path.includes('/rpc/get_admin_bus_ready_dispatch')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          runReady
+            ? [
+                {
+                  dispatch_id: 'dispatch-1',
+                  bus_id: busId,
+                  bus_route_assignment_id: serviceId,
+                  service_date: '2026-08-01',
+                  status: 'ready',
+                  route_name: 'Downtown',
+                  route_code: 'DR02',
+                  trip_name: 'Outbound',
+                  prepared_at: '2026-08-01T12:00:00Z',
+                },
+              ]
+            : [],
+        ),
+      });
+    }
+    if (path.includes('/rpc/prepare_bus_run')) {
+      runReady = true;
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+    }
+    if (path.includes('/rpc/get_admin_bus_qr_credential_status')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            bus_id: busId,
+            has_active_credential: hasActiveQr,
+            credential_status: hasActiveQr ? 'active' : null,
+            credential_created_at: hasActiveQr ? '2026-08-01T12:00:00Z' : null,
+          },
+        ]),
+      });
+    }
+    if (path.includes('/rpc/manage_bus_qr_credential')) {
+      const body = route.request().postDataJSON() as { p_action?: string };
+      hasActiveQr = body.p_action !== 'revoke';
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            bus_id: busId,
+            credential_id: hasActiveQr ? 'credential-1' : null,
+            status: hasActiveQr ? 'active' : 'revoked',
+            raw_token: hasActiveQr ? `sbus_bus_v1_${'A'.repeat(43)}` : null,
+            created_at: '2026-08-01T12:00:00Z',
+          },
+        ]),
+      });
     }
     if (path.includes('/rpc/admin_end_bus_route_assignment')) {
       routeEnded = true;
@@ -312,10 +367,6 @@ async function mockBusWorkspace(page: Page) {
     }
     return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
   });
-
-  return {
-    replacedDriverPayload: () => replacedDriverPayload,
-  };
 }
 
 test.describe('unified bus workspace', () => {
@@ -324,7 +375,7 @@ test.describe('unified bus workspace', () => {
     await page.goto('/admin/buses/new');
 
     await expect(page.getByRole('tab', { name: 'Routes' })).toBeDisabled();
-    await expect(page.getByRole('tab', { name: 'Drivers' })).toBeDisabled();
+    await expect(page.getByRole('tab', { name: 'Drivers' })).toHaveCount(0);
     await expect(page.getByRole('tab', { name: 'Students' })).toBeDisabled();
 
     await page.getByLabel('Bus number').fill('AF02');
@@ -337,23 +388,17 @@ test.describe('unified bus workspace', () => {
     await expect(page.getByRole('button', { name: 'Assign route trip' })).toBeVisible();
   });
 
-  test('shows assignment history and manages one route-trip driver', async ({ page }) => {
-    const mock = await mockBusWorkspace(page);
+  test('shows route history, prepares one run, and manages students', async ({ page }) => {
+    await mockBusWorkspace(page);
     await page.goto(`/admin/buses/${busId}?tab=routes`);
 
     await expect(page.getByRole('heading', { name: 'Current' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Upcoming' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'History' })).toBeVisible();
 
-    await page.getByRole('tab', { name: 'Drivers' }).click();
-    await expect(page.getByText('Driver One', { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Change driver' }).click();
-    await page.getByRole('combobox', { name: 'Driver', exact: true }).selectOption('driver-2');
-    await page.getByRole('button', { name: 'Save driver assignment' }).click();
-    expect(mock.replacedDriverPayload()).toMatchObject({
-      p_bus_route_assignment_id: serviceId,
-      p_driver_id: 'driver-2',
-    });
+    await page.getByRole('button', { name: 'Make next run' }).first().click();
+    await expect(page.getByText(/Any active driver can scan its QR to start/)).toBeVisible();
+    await expect(page.getByText('Ready for driver scan')).toBeVisible();
 
     await page.getByRole('tab', { name: 'Students' }).click();
     await expect(page.getByText('Avery Johnson')).toBeVisible();
@@ -367,42 +412,14 @@ test.describe('unified bus workspace', () => {
     ).toBeVisible();
   });
 
-  test('returns from normal driver onboarding and preselects the new driver', async ({ page }) => {
+  test('generates a printable, revocable bus QR credential', async ({ page }) => {
     await mockBusWorkspace(page);
-    await page.route('**/.netlify/functions/safebus-onboarding', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          status: 'sent',
-          guardianId: null,
-          driverId: 'driver-2',
-          recipientEmail: 'two@example.test',
-        }),
-      });
-    });
-    await page.goto(`/admin/buses/${busId}?tab=drivers`);
-    await page.getByRole('button', { name: 'Change driver' }).click();
-    await page.getByRole('button', { name: 'Add driver' }).click();
-
-    await expect(page).toHaveURL(/\/admin\/drivers\?invite=1/);
-    await expect(page.getByRole('heading', { name: 'Add driver' })).toBeVisible();
-    await page.getByLabel('First name').fill('Driver');
-    await page.getByLabel('Last name').fill('Two');
-    await page.getByLabel('Email address').fill('two@example.test');
-    await page.getByLabel('Phone number').fill('4035550102');
-    await page.getByLabel('Licence number').fill('AB-2');
-    await page.getByLabel('Issue date').fill('2025-01-01');
-    await page.getByLabel('Expiry date').fill('2028-01-01');
-    await page.getByLabel('Address line 1').fill('2 Main St');
-    await page.getByLabel('City').fill('Calgary');
-    await page.getByLabel('Province').fill('AB');
-    await page.getByLabel('Postal code').fill('T1T 1T2');
-    await page.getByRole('button', { name: 'Send invitation' }).click();
-
-    await expect(page).toHaveURL(new RegExp(`/admin/buses/${busId}\\?tab=drivers`));
-    await expect(page.getByRole('combobox', { name: 'Driver', exact: true })).toHaveValue(
-      'driver-2',
-    );
+    await page.goto(`/admin/buses/${busId}`);
+    await expect(page.getByTestId('admin-bus-qr-panel')).toContainText('No active QR');
+    await page.getByRole('button', { name: 'Generate QR' }).click();
+    await expect(page.getByTestId('admin-bus-qr-result')).toBeVisible();
+    await expect(page.getByAltText('Driver scan QR for Bus AF02')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Replace QR' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Revoke QR' })).toBeEnabled();
   });
 });

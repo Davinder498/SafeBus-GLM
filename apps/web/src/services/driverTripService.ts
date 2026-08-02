@@ -25,7 +25,7 @@ async function broadcastTripChanged(tenantId: string | null): Promise<void> {
 }
 
 const tripColumns =
-  'id, tenant_id, driver_id, bus_id, route_id, route_trip_pattern_id, driver_route_assignment_id, trip_name_snapshot, trip_type, status, service_date, started_at, ended_at, created_at, updated_at';
+  'id, tenant_id, driver_id, bus_id, route_id, route_trip_pattern_id, driver_route_assignment_id, bus_number_snapshot, trip_name_snapshot, trip_type, status, service_date, started_at, ended_at, created_at, updated_at';
 
 /**
  * Fetch the current driver's own driver record. Returns null if the signed-in

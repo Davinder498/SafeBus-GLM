@@ -1,7 +1,7 @@
 // Driver trip location update types for Milestone 4B.
 // Field names mirror the public.driver_trip_current_locations table columns.
 
-export type LocationSource = 'browser' | 'manual';
+export type LocationSource = 'browser' | 'manual' | 'bus_qr';
 
 /** Latest/current location row for a trip (mirrors driver_trip_current_locations). */
 export interface DriverTripCurrentLocation {
@@ -39,4 +39,15 @@ export interface UpdateLocationInput {
   headingDeg?: number | null;
   speedMps?: number | null;
   source?: LocationSource;
+}
+
+/** Session-bound GPS input. Bus, route, driver, tenant, and trip identity are
+ * resolved from the short-lived token created by the bus QR scan. */
+export interface UpdateBusTrackingLocationInput {
+  trackingToken: string;
+  latitude: number;
+  longitude: number;
+  accuracyM?: number | null;
+  headingDeg?: number | null;
+  speedMps?: number | null;
 }

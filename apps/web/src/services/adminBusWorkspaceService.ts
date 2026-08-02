@@ -32,6 +32,19 @@ export interface AdminBusWorkspace {
   routeAssignments: AdminBusRouteAssignment[];
   driverAssignments: AdminBusDriverAssignment[];
   studentAssignments: AdminBusStudentAssignment[];
+  readyDispatch: AdminBusReadyDispatch | null;
+}
+
+export interface AdminBusReadyDispatch {
+  dispatch_id: string;
+  bus_id: string;
+  bus_route_assignment_id: string;
+  service_date: string;
+  status: 'ready';
+  route_name: string;
+  route_code: string;
+  trip_name: string;
+  prepared_at: string;
 }
 
 export interface ReplaceBusTripDriverInput {
@@ -47,12 +60,29 @@ function client() {
 }
 
 export async function fetchAdminBusWorkspace(busId: string): Promise<AdminBusWorkspace> {
-  const { data, error } = await client().rpc('get_admin_bus_workspace', { p_bus_id: busId });
+  const [workspaceResult, dispatchResult] = await Promise.all([
+    client().rpc('get_admin_bus_workspace', { p_bus_id: busId }),
+    client().rpc('get_admin_bus_ready_dispatch', { p_bus_id: busId }),
+  ]);
+  const { data, error } = workspaceResult;
   if (error) {
     if (error.code === 'P0002') throw new Error('This bus is not available.');
     throw new Error('Unable to load the bus workspace.');
   }
-  return data as unknown as AdminBusWorkspace;
+  if (dispatchResult.error) throw new Error('Unable to load this bus ready run.');
+  const readyDispatch = ((dispatchResult.data ?? []) as AdminBusReadyDispatch[])[0] ?? null;
+  return { ...(data as unknown as Omit<AdminBusWorkspace, 'readyDispatch'>), readyDispatch };
+}
+
+export async function prepareBusRun(busRouteAssignmentId: string): Promise<void> {
+  const { error } = await client().rpc('prepare_bus_run', {
+    p_bus_route_assignment_id: busRouteAssignmentId,
+  });
+  if (error) {
+    if (error.code === '55006')
+      throw new Error(error.message || 'This run cannot be prepared now.');
+    throw new Error('Unable to prepare this bus run.');
+  }
 }
 
 export async function endBusRouteAssignment(busRouteAssignmentId: string): Promise<void> {

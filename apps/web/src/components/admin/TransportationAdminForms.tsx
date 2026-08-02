@@ -184,15 +184,22 @@ export function BusForm({
       {formError && <p className="text-sm font-semibold text-danger-700">{formError}</p>}
       <div className="grid gap-4 md:grid-cols-2">
         <label className={labelClassName}>
-          Bus number
+          Bus number (stable service number)
           <input
             className={fieldClassName}
             value={busNumber}
+            readOnly={!!bus}
+            aria-describedby={bus ? 'stable-bus-number-help' : undefined}
             onChange={(event) => setBusNumber(event.target.value)}
           />
+          {bus && (
+            <span id="stable-bus-number-help" className="text-xs font-medium text-gray-500">
+              Students keep this number. Update the physical plate when the vehicle changes.
+            </span>
+          )}
         </label>
         <label className={labelClassName}>
-          License plate
+          License plate (physical vehicle)
           <input
             className={`${fieldClassName} ${licensePlateError ? 'border-danger-300 focus-visible:ring-danger-500' : ''}`}
             aria-invalid={licensePlateError ? 'true' : undefined}

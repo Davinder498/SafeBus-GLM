@@ -125,13 +125,6 @@ export const adminNavItems: DashboardNavItem[] = [
     icon: <ClipboardList className="h-4 w-4" />,
   },
   {
-    label: 'Driver Assignments',
-    to: '/admin/driver-assignments',
-    group: 'transportation',
-    description: 'Driver and bus links',
-    icon: <ClipboardList className="h-4 w-4" />,
-  },
-  {
     label: 'Guardians',
     to: '/admin/guardians',
     group: 'people',
@@ -185,7 +178,7 @@ export const driverNavGroups: DashboardNavGroup[] = [
   {
     label: 'Driver',
     items: [
-      { label: 'Assignments', to: '/driver', icon: <Bus className="h-4 w-4" /> },
+      { label: 'Scan bus', to: '/driver', icon: <Bus className="h-4 w-4" /> },
       { label: 'Trip history', to: '/driver/history', icon: <History className="h-4 w-4" /> },
       {
         label: 'Pickup & drop-off',

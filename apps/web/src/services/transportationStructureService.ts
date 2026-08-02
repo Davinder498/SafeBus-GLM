@@ -42,12 +42,12 @@ function requireSupabase() {
   return supabase;
 }
 
-
 function describeBusError(error: { message?: string; code?: string }): Error {
   const message = error?.message ?? '';
   if (
     message.includes('buses_tenant_license_plate_unique_idx') ||
-    (message.includes('duplicate key value violates unique constraint') && message.includes('license_plate'))
+    (message.includes('duplicate key value violates unique constraint') &&
+      message.includes('license_plate'))
   ) {
     return new DuplicateIdentifierError(
       'licensePlate',
@@ -56,6 +56,11 @@ function describeBusError(error: { message?: string; code?: string }): Error {
   }
   if (message.includes('buses_tenant_bus_number_unique')) {
     return new Error('A bus with this bus number already exists. Use a different bus number.');
+  }
+  if (message.includes('Bus number is permanent')) {
+    return new Error(
+      'The stable bus number cannot change after service assignment. Update the physical plate instead.',
+    );
   }
   return new Error('We could not save the bus. Check the bus details and try again.');
 }
@@ -78,7 +83,9 @@ export async function createBus(input: CreateBusInput): Promise<Bus> {
   const { data, error } = await client
     .from('buses')
     .insert(input)
-    .select('id, tenant_id, school_id, bus_number, license_plate, capacity, status, created_at, updated_at')
+    .select(
+      'id, tenant_id, school_id, bus_number, license_plate, capacity, status, created_at, updated_at',
+    )
     .single();
 
   if (error) {
@@ -94,7 +101,9 @@ export async function updateBus(id: string, input: UpdateBusInput): Promise<Bus>
     .from('buses')
     .update(input)
     .eq('id', id)
-    .select('id, tenant_id, school_id, bus_number, license_plate, capacity, status, created_at, updated_at')
+    .select(
+      'id, tenant_id, school_id, bus_number, license_plate, capacity, status, created_at, updated_at',
+    )
     .single();
 
   if (error) {
@@ -118,7 +127,9 @@ export async function getVisibleDrivers(): Promise<Driver[]> {
   const client = requireSupabase();
   const { data, error } = await client
     .from('drivers')
-    .select('id, tenant_id, profile_id, employee_number, phone, license_number, license_issue_date, license_expiry_date, license_class, address_line1, address_line2, city, province, postal_code, status, created_at, updated_at')
+    .select(
+      'id, tenant_id, profile_id, employee_number, phone, license_number, license_issue_date, license_expiry_date, license_class, address_line1, address_line2, city, province, postal_code, status, created_at, updated_at',
+    )
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -130,18 +141,28 @@ export async function createDriver(input: CreateDriverInput): Promise<Driver> {
   const { data, error } = await client
     .from('drivers')
     .insert(input)
-    .select('id, tenant_id, profile_id, employee_number, phone, license_number, license_issue_date, license_expiry_date, license_class, address_line1, address_line2, city, province, postal_code, status, created_at, updated_at')
+    .select(
+      'id, tenant_id, profile_id, employee_number, phone, license_number, license_issue_date, license_expiry_date, license_class, address_line1, address_line2, city, province, postal_code, status, created_at, updated_at',
+    )
     .single();
 
   if (error) {
     if (import.meta.env.DEV) console.error('Failed to create driver', error);
     if (error.message.includes('drivers_tenant_license_number_unique_idx')) {
-      throw new DuplicateIdentifierError('licenseNumber', 'A driver with this driving licence number already exists. Select the existing driver instead.');
+      throw new DuplicateIdentifierError(
+        'licenseNumber',
+        'A driver with this driving licence number already exists. Select the existing driver instead.',
+      );
     }
     if (error.message.includes('drivers_tenant_phone_unique_idx')) {
-      throw new DuplicateIdentifierError('phone', 'A driver with this phone number already exists. Use a different phone number or select the existing driver.');
+      throw new DuplicateIdentifierError(
+        'phone',
+        'A driver with this phone number already exists. Use a different phone number or select the existing driver.',
+      );
     }
-    throw new Error('We could not save the driver. Check the licence and address details and try again.');
+    throw new Error(
+      'We could not save the driver. Check the licence and address details and try again.',
+    );
   }
   return data as Driver;
 }
@@ -152,18 +173,28 @@ export async function updateDriver(id: string, input: UpdateDriverInput): Promis
     .from('drivers')
     .update(input)
     .eq('id', id)
-    .select('id, tenant_id, profile_id, employee_number, phone, license_number, license_issue_date, license_expiry_date, license_class, address_line1, address_line2, city, province, postal_code, status, created_at, updated_at')
+    .select(
+      'id, tenant_id, profile_id, employee_number, phone, license_number, license_issue_date, license_expiry_date, license_class, address_line1, address_line2, city, province, postal_code, status, created_at, updated_at',
+    )
     .single();
 
   if (error) {
     if (import.meta.env.DEV) console.error('Failed to update driver', error);
     if (error.message.includes('drivers_tenant_license_number_unique_idx')) {
-      throw new DuplicateIdentifierError('licenseNumber', 'A driver with this driving licence number already exists. Select the existing driver instead.');
+      throw new DuplicateIdentifierError(
+        'licenseNumber',
+        'A driver with this driving licence number already exists. Select the existing driver instead.',
+      );
     }
     if (error.message.includes('drivers_tenant_phone_unique_idx')) {
-      throw new DuplicateIdentifierError('phone', 'A driver with this phone number already exists. Use a different phone number or select the existing driver.');
+      throw new DuplicateIdentifierError(
+        'phone',
+        'A driver with this phone number already exists. Use a different phone number or select the existing driver.',
+      );
     }
-    throw new Error('We could not update the driver. Check the licence and address details and try again.');
+    throw new Error(
+      'We could not update the driver. Check the licence and address details and try again.',
+    );
   }
   return data as Driver;
 }
@@ -191,9 +222,7 @@ export async function getVisibleRoutes(): Promise<Route[]> {
     if (import.meta.env.DEV) {
       console.error('Failed to load routes', error);
     }
-    throw new Error(
-      error.message || 'Unable to load routes. Please try again.',
-    );
+    throw new Error(error.message || 'Unable to load routes. Please try again.');
   }
   return (data ?? []) as Route[];
 }
@@ -222,7 +251,9 @@ export async function createRoute(input: CreateRouteInput): Promise<Route> {
   const { data, error } = await client
     .from('routes')
     .insert(input)
-    .select('id, tenant_id, school_id, route_name, route_code, route_type, route_kind, map_color, definition_status, status, created_at, updated_at')
+    .select(
+      'id, tenant_id, school_id, route_name, route_code, route_type, route_kind, map_color, definition_status, status, created_at, updated_at',
+    )
     .single();
 
   if (error) {
@@ -238,7 +269,9 @@ export async function updateRoute(id: string, input: UpdateRouteInput): Promise<
     .from('routes')
     .update(input)
     .eq('id', id)
-    .select('id, tenant_id, school_id, route_name, route_code, route_type, route_kind, map_color, definition_status, status, created_at, updated_at')
+    .select(
+      'id, tenant_id, school_id, route_name, route_code, route_type, route_kind, map_color, definition_status, status, created_at, updated_at',
+    )
     .single();
 
   if (error) {
@@ -329,7 +362,8 @@ export async function getAdminLiveRouteOverlays(): Promise<RouteOverlay[]> {
     stops: (row.stops ?? []) as RouteOverlay['stops'],
     routeShapeGeojson: (row.route_shape_geojson ?? null) as RouteOverlay['routeShapeGeojson'],
     routeShapeVersion: (row.route_shape_version ?? null) as RouteOverlay['routeShapeVersion'],
-    routeShapeDistanceMeters: (row.route_shape_distance_meters ?? null) as RouteOverlay['routeShapeDistanceMeters'],
+    routeShapeDistanceMeters: (row.route_shape_distance_meters ??
+      null) as RouteOverlay['routeShapeDistanceMeters'],
   }));
 }
 
@@ -345,23 +379,24 @@ export async function createRouteStop(input: CreateRouteStopInput): Promise<Rout
   const { data, error } = await client
     .from('route_stops')
     .insert(input)
-    .select('id, tenant_id, route_id, school_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at')
+    .select(
+      'id, tenant_id, route_id, school_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at',
+    )
     .single();
 
   if (error) throw new Error(error.message);
   return data as RouteStop;
 }
 
-export async function updateRouteStop(
-  id: string,
-  input: UpdateRouteStopInput,
-): Promise<RouteStop> {
+export async function updateRouteStop(id: string, input: UpdateRouteStopInput): Promise<RouteStop> {
   const client = requireSupabase();
   const { data, error } = await client
     .from('route_stops')
     .update(input)
     .eq('id', id)
-    .select('id, tenant_id, route_id, school_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at')
+    .select(
+      'id, tenant_id, route_id, school_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at',
+    )
     .single();
 
   if (error) throw new Error(error.message);
@@ -388,12 +423,16 @@ export async function createStudentRouteAssignment(
   const { data, error } = await client
     .from('student_route_assignments')
     .insert(input)
-    .select('id, tenant_id, student_id, route_id, pickup_stop_id, dropoff_stop_id, effective_from, effective_to, status, created_at, updated_at')
+    .select(
+      'id, tenant_id, student_id, route_id, pickup_stop_id, dropoff_stop_id, effective_from, effective_to, status, created_at, updated_at',
+    )
     .single();
 
   if (error) {
     if (import.meta.env.DEV) console.error('Failed to create student route assignment', error);
-    throw new Error('We could not save this assignment. Confirm the student, route, and stops are active and belong to your organization.');
+    throw new Error(
+      'We could not save this assignment. Confirm the student, route, and stops are active and belong to your organization.',
+    );
   }
   return data as StudentRouteAssignment;
 }
@@ -407,12 +446,16 @@ export async function updateStudentRouteAssignment(
     .from('student_route_assignments')
     .update(input)
     .eq('id', id)
-    .select('id, tenant_id, student_id, route_id, pickup_stop_id, dropoff_stop_id, effective_from, effective_to, status, created_at, updated_at')
+    .select(
+      'id, tenant_id, student_id, route_id, pickup_stop_id, dropoff_stop_id, effective_from, effective_to, status, created_at, updated_at',
+    )
     .single();
 
   if (error) {
     if (import.meta.env.DEV) console.error('Failed to update student route assignment', error);
-    throw new Error('We could not update this assignment. Confirm the student, route, and stops are active and belong to your organization.');
+    throw new Error(
+      'We could not update this assignment. Confirm the student, route, and stops are active and belong to your organization.',
+    );
   }
   return data as StudentRouteAssignment;
 }

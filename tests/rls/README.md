@@ -90,6 +90,10 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
   for migration 0054, confirming assignment-scoped start authorization,
   one-active-trip enforcement, exact trip-pattern student/guardian matching,
   anonymous denial, and blocked direct trip inserts.
+- `bus-qr-tracking-sessions-rls.sql`: structural security regression for
+  migration 0059, confirming protected credential/session tables, admin-only
+  run preparation, active-driver QR claims, hashed credentials, exact prepared
+  route-pattern binding, session-derived location writes, and anonymous denial.
 - `driver-completed-trip-history-rls.sql`: structural security regression for
   migration 0055, confirming driver/tenant/completed-run scoping, anonymous
   denial, historical visibility after route deactivation, and exclusion of
