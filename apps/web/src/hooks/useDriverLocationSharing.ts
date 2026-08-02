@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   isFatalLocationUpdateError,
-  updateDriverTripLocation,
+  updateBusTrackingLocation,
 } from '@/services/driverLocationService';
 
 export type LocationSharingState =
@@ -32,13 +32,13 @@ interface GeolocationFix {
 }
 
 export function useDriverLocationSharing(
-  activeTripId: string | null,
+  trackingToken: string | null,
   autoStart = false,
 ): UseDriverLocationSharingResult {
   const supported = typeof navigator !== 'undefined' && 'geolocation' in navigator;
   const [state, setState] = useState<LocationSharingState>({ kind: 'inactive' });
   const watchIdRef = useRef<number | null>(null);
-  const activeTripIdRef = useRef(activeTripId);
+  const trackingTokenRef = useRef(trackingToken);
   const sharingRequestedRef = useRef(false);
   const latestFixRef = useRef<GeolocationFix | null>(null);
   const inFlightRef = useRef(false);
@@ -48,7 +48,7 @@ export function useDriverLocationSharing(
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
   const flushRef = useRef<() => void>(() => undefined);
-  activeTripIdRef.current = activeTripId;
+  trackingTokenRef.current = trackingToken;
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -82,9 +82,9 @@ export function useDriverLocationSharing(
   );
 
   const flush = useCallback(async () => {
-    const tripId = activeTripIdRef.current;
+    const token = trackingTokenRef.current;
     const fix = latestFixRef.current;
-    if (!tripId || !fix || !sharingRequestedRef.current || inFlightRef.current) return;
+    if (!token || !fix || !sharingRequestedRef.current || inFlightRef.current) return;
 
     if (!navigator.onLine) {
       setState({ kind: 'offline', lastUpdateAt: lastUpdateAtRef.current });
@@ -101,14 +101,13 @@ export function useDriverLocationSharing(
     lastAttemptAtRef.current = Date.now();
 
     try {
-      const result = await updateDriverTripLocation({
-        driverTripId: tripId,
+      const result = await updateBusTrackingLocation({
+        trackingToken: token,
         latitude: fix.latitude,
         longitude: fix.longitude,
         accuracyM: fix.accuracy,
         headingDeg: fix.heading,
         speedMps: fix.speed,
-        source: 'browser',
       });
       retryAttemptRef.current = 0;
       lastUpdateAtRef.current = result.recorded_at;
@@ -159,7 +158,7 @@ export function useDriverLocationSharing(
       setState({ kind: 'error', message: 'Location sharing is not supported in this browser.' });
       return;
     }
-    if (!activeTripIdRef.current) return;
+    if (!trackingTokenRef.current) return;
 
     clearWatcher();
     clearTimer();
@@ -223,12 +222,12 @@ export function useDriverLocationSharing(
   }, [clearTimer]);
 
   useEffect(() => {
-    if (!activeTripId) stop();
-  }, [activeTripId, stop]);
+    if (!trackingToken) stop();
+  }, [trackingToken, stop]);
 
   useEffect(() => {
-    if (activeTripId && autoStart && !sharingRequestedRef.current) start();
-  }, [activeTripId, autoStart, start]);
+    if (trackingToken && autoStart && !sharingRequestedRef.current) start();
+  }, [trackingToken, autoStart, start]);
 
   useEffect(() => {
     mountedRef.current = true;

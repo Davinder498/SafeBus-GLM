@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { ArrowLeft, BusFront, Route as RouteIcon, UserRound, UsersRound } from 'lucide-react';
+import { ArrowLeft, BusFront, Route as RouteIcon, UsersRound } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import {
-  BusWorkspaceDriverForm,
-  BusWorkspaceRouteForm,
-} from '@/components/admin/BusWorkspaceForms';
+import { BusWorkspaceRouteForm } from '@/components/admin/BusWorkspaceForms';
 import { StudentBusAssignmentForm } from '@/components/admin/StudentBusAssignmentForm';
+import { BusQrCredentialPanel } from '@/components/admin/BusQrCredentialPanel';
 import {
   AdminWriteError,
   AdminWriteMessage,
@@ -23,13 +21,13 @@ import { useAuth } from '@/contexts/useAuth';
 import {
   endBusRouteAssignment,
   fetchAdminBusWorkspace,
-  replaceBusTripDriver,
-  type AdminBusDriverAssignment,
+  prepareBusRun,
   type AdminBusRouteAssignment,
   type AdminBusStudentAssignment,
   type AdminBusWorkspace,
+  type AdminBusReadyDispatch,
 } from '@/services/adminBusWorkspaceService';
-import { getVisibleProfiles, getVisibleSchools } from '@/services/adminOrganizationService';
+import { getVisibleSchools } from '@/services/adminOrganizationService';
 import {
   createStudentBusAssignment,
   ensureBusRouteAssignment,
@@ -38,18 +36,16 @@ import {
 } from '@/services/studentBusAssignmentService';
 import {
   createBus,
-  getVisibleDrivers,
   getVisibleRoutes,
   getVisibleRouteStops,
   getVisibleRouteTripPatterns,
   updateBus,
 } from '@/services/transportationStructureService';
-import type { OrganizationProfile, School } from '@/types/organization';
+import type { School } from '@/types/organization';
 import type {
   Bus,
   CreateBusInput,
   CreateStudentBusAssignmentInput,
-  Driver,
   Route,
   RouteStop,
   RouteTripPattern,
@@ -60,10 +56,10 @@ import type {
 import { cn } from '@/utils/cn';
 import { busWorkspaceLifecycle, type BusWorkspaceLifecycle } from '@/utils/busWorkspace';
 
-type WorkspaceTab = 'details' | 'routes' | 'drivers' | 'students';
+type WorkspaceTab = 'details' | 'routes' | 'students';
 type LifecycleBucket = BusWorkspaceLifecycle;
 
-const validTabs = new Set<WorkspaceTab>(['details', 'routes', 'drivers', 'students']);
+const validTabs = new Set<WorkspaceTab>(['details', 'routes', 'students']);
 function formatDate(value: string | null) {
   if (!value) return 'Open ended';
   return new Intl.DateTimeFormat('en-CA', {
@@ -104,8 +100,6 @@ export function AdminBusWorkspacePage() {
   const [schools, setSchools] = useState<School[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [tripPatterns, setTripPatterns] = useState<RouteTripPattern[]>([]);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [profiles, setProfiles] = useState<OrganizationProfile[]>([]);
   const [stops, setStops] = useState<RouteStop[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -115,12 +109,11 @@ export function AdminBusWorkspacePage() {
   const [showRouteForm, setShowRouteForm] = useState(false);
   const [endingRoute, setEndingRoute] = useState<AdminBusRouteAssignment | null>(null);
   const [ending, setEnding] = useState(false);
-  const [driverService, setDriverService] = useState<AdminBusRouteAssignment | null>(null);
+  const [preparingServiceId, setPreparingServiceId] = useState<string | null>(null);
   const [studentForm, setStudentForm] = useState<{
     assignment: AdminBusStudentAssignment | null;
   } | null>(null);
 
-  const canInviteDriver = profile?.role === 'tenant_admin';
   const canManageRoutesAndDrivers = profile?.role === 'tenant_admin';
 
   const load = useCallback(async () => {
@@ -130,16 +123,12 @@ export function AdminBusWorkspacePage() {
       getVisibleSchools(),
       getVisibleRoutes(),
       getVisibleRouteTripPatterns(),
-      getVisibleDrivers(),
-      getVisibleProfiles(),
       getVisibleRouteStops(),
     ]);
     setSchools(optionResults[0].status === 'fulfilled' ? optionResults[0].value : []);
     setRoutes(optionResults[1].status === 'fulfilled' ? optionResults[1].value : []);
     setTripPatterns(optionResults[2].status === 'fulfilled' ? optionResults[2].value : []);
-    setDrivers(optionResults[3].status === 'fulfilled' ? optionResults[3].value : []);
-    setProfiles(optionResults[4].status === 'fulfilled' ? optionResults[4].value : []);
-    setStops(optionResults[5].status === 'fulfilled' ? optionResults[5].value : []);
+    setStops(optionResults[3].status === 'fulfilled' ? optionResults[3].value : []);
 
     if (busId) {
       try {
@@ -170,14 +159,6 @@ export function AdminBusWorkspacePage() {
     window.addEventListener('beforeunload', beforeUnload);
     return () => window.removeEventListener('beforeunload', beforeUnload);
   }, [detailsDirty]);
-
-  useEffect(() => {
-    if (!workspace || activeTab !== 'drivers' || !canManageRoutesAndDrivers) return;
-    const serviceId = searchParams.get('service');
-    if (!serviceId) return;
-    const service = workspace.routeAssignments.find((item) => item.id === serviceId);
-    if (service && busWorkspaceLifecycle(service) !== 'history') setDriverService(service);
-  }, [activeTab, canManageRoutesAndDrivers, searchParams, workspace]);
 
   function confirmDiscard() {
     return !detailsDirty || window.confirm('Discard unsaved bus detail changes?');
@@ -224,6 +205,23 @@ export function AdminBusWorkspacePage() {
     await reloadWorkspace();
   }
 
+  async function makeRunReady(service: AdminBusRouteAssignment) {
+    setPreparingServiceId(service.id);
+    setWriteError(null);
+    setMessage(null);
+    try {
+      await prepareBusRun(service.id);
+      setMessage(
+        `Bus ${workspace?.bus.bus_number ?? ''} is ready for ${service.trip_name}. Any active driver can scan its QR to start.`,
+      );
+      await reloadWorkspace();
+    } catch (error) {
+      setWriteError(error instanceof Error ? error.message : 'Unable to prepare this run.');
+    } finally {
+      setPreparingServiceId(null);
+    }
+  }
+
   async function confirmEndRoute() {
     if (!endingRoute || ending) return;
     setEnding(true);
@@ -239,22 +237,6 @@ export function AdminBusWorkspacePage() {
     } finally {
       setEnding(false);
     }
-  }
-
-  async function saveDriver(input: Parameters<typeof replaceBusTripDriver>[0]) {
-    setWriteError(null);
-    setMessage(null);
-    await replaceBusTripDriver(input);
-    setDriverService(null);
-    setMessage('Driver assignment saved.');
-    setSearchParams({ tab: 'drivers' });
-    await Promise.all([reloadWorkspace(), getVisibleDrivers().then(setDrivers)]);
-  }
-
-  function addDriver(service: AdminBusRouteAssignment) {
-    if (!workspace) return;
-    const returnTo = `/admin/buses/${workspace.bus.id}?tab=drivers&service=${service.id}`;
-    navigate(`/admin/drivers?invite=1&returnTo=${encodeURIComponent(returnTo)}`);
   }
 
   async function saveStudentAssignment(
@@ -340,7 +322,6 @@ export function AdminBusWorkspacePage() {
   const tabs: Array<{ id: WorkspaceTab; label: string; icon: ReactNode }> = [
     { id: 'details', label: 'Bus details', icon: <BusFront className="h-4 w-4" /> },
     { id: 'routes', label: 'Routes', icon: <RouteIcon className="h-4 w-4" /> },
-    { id: 'drivers', label: 'Drivers', icon: <UserRound className="h-4 w-4" /> },
     { id: 'students', label: 'Students', icon: <UsersRound className="h-4 w-4" /> },
   ];
 
@@ -365,8 +346,8 @@ export function AdminBusWorkspacePage() {
           title={bus ? `Bus ${bus.bus_number}` : 'Add bus'}
           description={
             bus
-              ? 'Manage this bus, its named route trips, drivers, and student roster.'
-              : 'Save the bus details first to unlock route, driver, and student assignments.'
+              ? 'Manage this bus, its named route trips, QR credential, and student roster.'
+              : 'Save the bus details first to unlock route and student assignments.'
           }
         />
 
@@ -424,6 +405,7 @@ export function AdminBusWorkspacePage() {
                   onCancel={backToBuses}
                   onDirtyChange={setDetailsDirty}
                 />
+                {bus && <BusQrCredentialPanel busId={bus.id} busNumber={bus.bus_number} />}
               </div>
             </Card>
           )}
@@ -434,30 +416,15 @@ export function AdminBusWorkspacePage() {
               routes={routes}
               tripPatterns={tripPatterns}
               assignments={workspace.routeAssignments}
+              readyDispatch={workspace.readyDispatch}
+              preparingServiceId={preparingServiceId}
               canManage={canManageRoutesAndDrivers}
               showForm={showRouteForm}
               onShowForm={() => setShowRouteForm(true)}
               onCancelForm={() => setShowRouteForm(false)}
               onSubmit={assignRoute}
               onEnd={setEndingRoute}
-            />
-          )}
-
-          {activeTab === 'drivers' && bus && workspace && (
-            <DriversPanel
-              assignments={workspace.driverAssignments}
-              services={workspace.routeAssignments}
-              drivers={drivers}
-              profiles={profiles}
-              editingService={driverService}
-              initialDriverId={searchParams.get('newDriverId') ?? undefined}
-              canInviteDriver={canInviteDriver}
-              canManage={canManageRoutesAndDrivers}
-              onEdit={setDriverService}
-              onAddDriver={addDriver}
-              onSubmit={saveDriver}
-              onCancel={() => setDriverService(null)}
-              onGoRoutes={() => goToTab('routes')}
+              onPrepare={(assignment) => void makeRunReady(assignment)}
             />
           )}
 
@@ -499,23 +466,29 @@ function RoutesPanel({
   routes,
   tripPatterns,
   assignments,
+  readyDispatch,
+  preparingServiceId,
   canManage,
   showForm,
   onShowForm,
   onCancelForm,
   onSubmit,
   onEnd,
+  onPrepare,
 }: {
   bus: Bus;
   routes: Route[];
   tripPatterns: RouteTripPattern[];
   assignments: AdminBusRouteAssignment[];
+  readyDispatch: AdminBusReadyDispatch | null;
+  preparingServiceId: string | null;
   canManage: boolean;
   showForm: boolean;
   onShowForm: () => void;
   onCancelForm: () => void;
   onSubmit: (input: Parameters<typeof ensureBusRouteAssignment>[0]) => Promise<void>;
   onEnd: (assignment: AdminBusRouteAssignment) => void;
+  onPrepare: (assignment: AdminBusRouteAssignment) => void;
 }) {
   return (
     <div className="space-y-5">
@@ -543,6 +516,14 @@ function RoutesPanel({
             onCancel={onCancelForm}
           />
         </InlineFormShell>
+      )}
+      {readyDispatch && (
+        <Card className="border-success-200 bg-success-50 p-4" data-testid="admin-ready-bus-run">
+          <p className="text-sm font-bold text-success-800">Ready for driver scan</p>
+          <p className="mt-1 text-sm text-success-800">
+            Bus {bus.bus_number} · {readyDispatch.trip_name} ({readyDispatch.route_code})
+          </p>
+        </Card>
       )}
       {assignments.length === 0 ? (
         <DataState
@@ -575,6 +556,22 @@ function RoutesPanel({
                     <Button
                       type="button"
                       size="sm"
+                      variant="secondary"
+                      disabled={assignment.has_active_trip || preparingServiceId === assignment.id}
+                      onClick={() => onPrepare(assignment)}
+                      data-testid={`prepare-bus-run-${assignment.id}`}
+                    >
+                      {preparingServiceId === assignment.id
+                        ? 'Preparing...'
+                        : readyDispatch?.bus_route_assignment_id === assignment.id
+                          ? 'Ready to scan'
+                          : 'Make next run'}
+                    </Button>
+                  )}
+                  {canManage && bucket !== 'history' && (
+                    <Button
+                      type="button"
+                      size="sm"
                       variant="danger"
                       disabled={assignment.has_active_trip}
                       onClick={() => onEnd(assignment)}
@@ -588,144 +585,6 @@ function RoutesPanel({
           )}
         />
       )}
-    </div>
-  );
-}
-
-function DriversPanel({
-  assignments,
-  services,
-  drivers,
-  profiles,
-  editingService,
-  initialDriverId,
-  canInviteDriver,
-  canManage,
-  onEdit,
-  onAddDriver,
-  onSubmit,
-  onCancel,
-  onGoRoutes,
-}: {
-  assignments: AdminBusDriverAssignment[];
-  services: AdminBusRouteAssignment[];
-  drivers: Driver[];
-  profiles: OrganizationProfile[];
-  editingService: AdminBusRouteAssignment | null;
-  initialDriverId?: string;
-  canInviteDriver: boolean;
-  canManage: boolean;
-  onEdit: (service: AdminBusRouteAssignment) => void;
-  onAddDriver: (service: AdminBusRouteAssignment) => void;
-  onSubmit: (input: Parameters<typeof replaceBusTripDriver>[0]) => Promise<void>;
-  onCancel: () => void;
-  onGoRoutes: () => void;
-}) {
-  const availableServices = services.filter(
-    (service) => busWorkspaceLifecycle(service) !== 'history',
-  );
-  if (availableServices.length === 0) {
-    return (
-      <DataState
-        title="Assign a route trip first"
-        message="Drivers are assigned to a bus’s named route trips."
-        action={
-          canManage ? (
-            <Button type="button" onClick={onGoRoutes}>
-              Go to Routes
-            </Button>
-          ) : undefined
-        }
-      />
-    );
-  }
-
-  return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="text-xl font-bold text-navy-900">Drivers by route trip</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Each named trip can have its own effective driver assignment.
-        </p>
-      </div>
-      {canManage && editingService && (
-        <InlineFormShell title="Assign or change driver">
-          <BusWorkspaceDriverForm
-            key={`${editingService.id}:${initialDriverId ?? ''}`}
-            service={editingService}
-            drivers={drivers}
-            profiles={profiles}
-            initialDriverId={initialDriverId}
-            canInviteDriver={canInviteDriver}
-            onAddDriver={() => onAddDriver(editingService)}
-            onSubmit={onSubmit}
-            onCancel={onCancel}
-          />
-        </InlineFormShell>
-      )}
-      <div className="grid gap-4">
-        {availableServices.map((service) => {
-          const serviceAssignments = assignments.filter(
-            (assignment) => assignment.bus_route_assignment_id === service.id,
-          );
-          const activeTrip = serviceAssignments.some((assignment) => assignment.has_active_trip);
-          return (
-            <Card key={service.id} className="p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h3 className="font-bold text-navy-900">
-                    {service.route_code} · {service.trip_name}
-                  </h3>
-                  {serviceAssignments.length === 0 ? (
-                    <p className="mt-2 text-sm text-gray-600">No driver assigned.</p>
-                  ) : (
-                    <ul className="mt-3 space-y-2">
-                      {serviceAssignments.map((assignment) => {
-                        const bucket = busWorkspaceLifecycle(assignment);
-                        return (
-                          <li
-                            key={assignment.id}
-                            className="rounded-lg bg-gray-50 px-4 py-3 text-sm"
-                          >
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <span className="font-semibold text-navy-900">
-                                {assignment.driver_name}
-                              </span>
-                              <StatusPill tone={bucketTone(bucket)}>
-                                {bucketLabel(bucket)}
-                              </StatusPill>
-                            </div>
-                            <p className="mt-1 text-gray-600">
-                              {dateRange(assignment.effective_from, assignment.effective_to)}
-                            </p>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                  {activeTrip && (
-                    <p className="mt-3 text-sm font-semibold text-warning-700">
-                      Trip currently in progress
-                    </p>
-                  )}
-                </div>
-                {canManage && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={activeTrip}
-                    onClick={() => onEdit(service)}
-                  >
-                    {serviceAssignments.some((item) => busWorkspaceLifecycle(item) === 'current')
-                      ? 'Change driver'
-                      : 'Assign driver'}
-                  </Button>
-                )}
-              </div>
-            </Card>
-          );
-        })}
-      </div>
     </div>
   );
 }

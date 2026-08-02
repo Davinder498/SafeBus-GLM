@@ -28,6 +28,8 @@ export const MOCK = {
   tripPatternId: '99999999-9999-9999-9999-999999999999',
   secondTripPatternId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
   authToken: 'mock-access-token-for-smoke-test-only',
+  busQrToken: `sbus_bus_v1_${'A'.repeat(43)}`,
+  trackingToken: `sbus_track_v1_${'B'.repeat(43)}`,
 } as const;
 
 const driverProfile = {
@@ -116,6 +118,7 @@ function activeTripRow(assignment: MockDriverAssignmentRpcRow = assignmentRow())
     tenant_id: MOCK.tenantId,
     driver_id: MOCK.driverId,
     bus_id: MOCK.busId,
+    bus_number_snapshot: busRow.bus_number,
     route_id: MOCK.routeId,
     route_trip_pattern_id: assignment.route_trip_pattern_id,
     driver_route_assignment_id: assignment.assignment_id,
@@ -401,6 +404,31 @@ export async function installSupabaseMock(
           });
           return;
         }
+        if (table === 'rpc/start_bus_tracking_from_qr') {
+          const requestBody = route.request().postDataJSON() as { p_qr_token?: string } | null;
+          if (requestBody?.p_qr_token !== MOCK.busQrToken) {
+            await route.fulfill({
+              status: 404,
+              contentType: 'application/json',
+              body: JSON.stringify({ message: 'Bus QR could not be verified.' }),
+            });
+            return;
+          }
+          const resumed = currentActiveTrip !== null;
+          const newTrip = currentActiveTrip ?? activeTripRow();
+          currentActiveTrip = newTrip;
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              trip: newTrip,
+              trackingToken: MOCK.trackingToken,
+              busNumber: busRow.bus_number,
+              resumed,
+            }),
+          });
+          return;
+        }
         if (table === 'rpc/start_driver_trip_from_assignment') {
           const requestBody = route.request().postDataJSON() as { p_assignment_id?: string } | null;
           const selectedAssignment = currentAssignments?.find(
@@ -435,6 +463,17 @@ export async function installSupabaseMock(
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify(currentLocationRow()),
+          });
+          return;
+        }
+        if (table === 'rpc/update_bus_tracking_location') {
+          if (opts.locationUpdateDelayMs) {
+            await new Promise((resolve) => setTimeout(resolve, opts.locationUpdateDelayMs));
+          }
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ ...currentLocationRow(), source: 'bus_qr' }),
           });
           return;
         }

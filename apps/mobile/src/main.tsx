@@ -5,6 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import App from './App.tsx';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { DriverTrackingProvider } from '@/contexts/DriverTrackingContext';
 import 'leaflet/dist/leaflet.css';
 import './index.css';
 
@@ -33,7 +34,9 @@ async function bootstrap() {
     <React.StrictMode>
       <BrowserRouter>
         <AuthProvider>
-          <App />
+          <DriverTrackingProvider>
+            <App />
+          </DriverTrackingProvider>
         </AuthProvider>
       </BrowserRouter>
     </React.StrictMode>,

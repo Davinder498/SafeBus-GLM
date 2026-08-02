@@ -234,6 +234,23 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
 
       // POST (insert a route, bus, or driver_trip)
       if (method === 'POST') {
+        if (path.includes('/rpc/get_admin_bus_workspace')) {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              bus: { ...busNoSchool, school_name: null },
+              routeAssignments: [],
+              driverAssignments: [],
+              studentAssignments: [],
+            }),
+          });
+          return;
+        }
+        if (path.includes('/rpc/get_admin_bus_ready_dispatch')) {
+          await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+          return;
+        }
         if (path.includes('/rpc/get_current_driver_trip_assignments')) {
           await route.fulfill({
             status: 200,
@@ -436,13 +453,13 @@ test.describe('Milestone 4E — school optional for transportation', () => {
     // No school-required validation error appears.
     await expect(page.getByText('Choose a school')).toHaveCount(0);
 
-    // A success message appears.
-    await expect(page.getByText('Bus created.')).toBeVisible({ timeout: 10000 });
+    await expect(page).toHaveURL(new RegExp(`/admin/buses/${ADMIN.busId}\\?tab=routes`));
+    await expect(page.getByRole('button', { name: 'Assign route trip' })).toBeVisible();
   });
 });
 
 test.describe('Milestone 4E — driver trip start with no-school bus + route', () => {
-  test('driver can start a trip using a bus and route that have no school', async ({ page }) => {
+  test('driver receives the bus scan workflow without a school selector', async ({ page }) => {
     // Use a driver profile for this test. The init script seeds a session with
     // the driver's profile id.
     await installTransportMock(page, driverProfileRow);
@@ -482,26 +499,13 @@ test.describe('Milestone 4E — driver trip start with no-school bus + route', (
     await page.goto('/driver');
 
     // The driver dashboard renders.
-    await expect(page.getByRole('heading', { name: 'Your assigned trips', level: 1 })).toBeVisible({
+    await expect(
+      page.getByRole('heading', { name: 'Scan the bus to start', level: 1 }),
+    ).toBeVisible({
       timeout: 10000,
     });
 
-    // The assignment card appears under the closed-by-default Outbound group.
-    await page.getByTestId('driver-outbound-toggle').click();
-    await expect(page.getByTestId('driver-assignment-card')).toBeVisible({ timeout: 10000 });
-
-    // Start the trip from the assignment and confirm the exact no-school trip.
-    await page.getByTestId('driver-assignment-select-button').click();
-    await page.getByTestId('driver-assignment-start-button').click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Start trip' }).click();
-
-    // A successful start opens pickup/drop-off. Returning to Assignments shows
-    // only the active trip card with the route name.
-    await expect(page).toHaveURL(/\/driver\/pickup-drop-off$/);
-    await page.goto('/driver');
-    await expect(page.getByRole('heading', { name: 'Riverside Outbound' })).toBeVisible({
-      timeout: 10000,
-    });
-    await expect(page.getByText('active', { exact: true })).toBeVisible();
+    await expect(page.getByTestId('driver-scan-bus-qr')).toBeVisible();
+    await expect(page.getByLabel('School')).toHaveCount(0);
   });
 });

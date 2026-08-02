@@ -9,7 +9,7 @@ import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { StudentQrScanner } from '@/components/driver/StudentQrScanner';
-import { useDriverLocationSharing } from '@/hooks/useDriverLocationSharing';
+import { useDriverTracking } from '@/contexts/DriverTrackingContext';
 import {
   fetchDriverActiveTripStudentManifest,
   markStudentDroppedOffForActiveTrip,
@@ -35,6 +35,7 @@ function studentTripStatusLabel(value: DriverManifestRow['studentTripStatus']): 
 
 export function DriverManifestPage() {
   const location = useLocation();
+  const tracking = useDriverTracking();
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [refreshing, setRefreshing] = useState(false);
   const [pendingStudentId, setPendingStudentId] = useState<string | null>(null);
@@ -88,7 +89,6 @@ export function DriverManifestPage() {
     () => (state.kind === 'ready' ? state.rows.filter((row) => row.studentId) : []),
     [state],
   );
-  const locationSharing = useDriverLocationSharing(activeTrip?.activeTripId ?? null, true);
   const navigationState = location.state as { tripStarted?: boolean; tripName?: string } | null;
 
   return (
@@ -118,7 +118,7 @@ export function DriverManifestPage() {
               {refreshing ? 'Refreshing...' : 'Refresh'}
             </Button>
             <Link to="/driver" className="text-sm font-semibold text-navy-700 hover:text-navy-900">
-              {activeTrip ? 'Back to active trip' : 'Back to assignments'}
+              {activeTrip ? 'Back to active bus' : 'Back to scan bus'}
             </Link>
           </div>
         </Card>
@@ -176,7 +176,7 @@ export function DriverManifestPage() {
           <div data-testid="driver-manifest-no-active-trip">
             <DataState
               title="No active trip right now."
-              message="Start a trip from your driver dashboard to see assigned students."
+              message="Scan the bus from your driver dashboard to start its prepared run."
             />
           </div>
         )}
@@ -209,8 +209,8 @@ export function DriverManifestPage() {
 
             <Card className="p-4 sm:p-5" data-testid="driver-manifest-location-status">
               <DriverLocationStatus
-                supported={locationSharing.supported}
-                state={locationSharing.state}
+                supported={tracking.location.supported}
+                state={tracking.location.state}
                 compact
               />
             </Card>

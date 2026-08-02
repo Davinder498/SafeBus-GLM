@@ -2,6 +2,7 @@ import { supabase, supabaseConfigError } from '@/lib/supabase';
 import type {
   DriverTripCurrentLocation,
   LocationSource,
+  UpdateBusTrackingLocationInput,
   UpdateLocationInput,
   UpdateLocationResult,
 } from '@/types/driverLocation';
@@ -59,13 +60,27 @@ function validateGeoInput(input: UpdateLocationInput): void {
   if (input.longitude < -180 || input.longitude > 180) {
     throw new Error('Longitude must be between -180 and 180.');
   }
-  if (input.accuracyM != null && (typeof input.accuracyM !== 'number' || !Number.isFinite(input.accuracyM) || input.accuracyM < 0)) {
+  if (
+    input.accuracyM != null &&
+    (typeof input.accuracyM !== 'number' ||
+      !Number.isFinite(input.accuracyM) ||
+      input.accuracyM < 0)
+  ) {
     throw new Error('Accuracy must be a non-negative number.');
   }
-  if (input.headingDeg != null && (typeof input.headingDeg !== 'number' || !Number.isFinite(input.headingDeg) || input.headingDeg < 0 || input.headingDeg > 360)) {
+  if (
+    input.headingDeg != null &&
+    (typeof input.headingDeg !== 'number' ||
+      !Number.isFinite(input.headingDeg) ||
+      input.headingDeg < 0 ||
+      input.headingDeg > 360)
+  ) {
     throw new Error('Heading must be between 0 and 360.');
   }
-  if (input.speedMps != null && (typeof input.speedMps !== 'number' || !Number.isFinite(input.speedMps) || input.speedMps < 0)) {
+  if (
+    input.speedMps != null &&
+    (typeof input.speedMps !== 'number' || !Number.isFinite(input.speedMps) || input.speedMps < 0)
+  ) {
     throw new Error('Speed must be a non-negative number.');
   }
 }
@@ -98,10 +113,14 @@ export async function updateDriverTripLocation(
   if (error) {
     const message = error.message ?? 'Could not update location.';
     if (message.includes('not active')) {
-      throw new FatalLocationUpdateError('This trip is no longer active. Location sharing stopped.');
+      throw new FatalLocationUpdateError(
+        'This trip is no longer active. Location sharing stopped.',
+      );
     }
     if (message.includes('not found') || message.includes('Only a driver')) {
-      throw new FatalLocationUpdateError('Could not update location. This trip may belong to another driver.');
+      throw new FatalLocationUpdateError(
+        'Could not update location. This trip may belong to another driver.',
+      );
     }
     throw new Error(message);
   }
@@ -111,6 +130,55 @@ export async function updateDriverTripLocation(
     throw new Error('Location update returned no result.');
   }
 
+  return {
+    driver_trip_id: row.driver_trip_id,
+    recorded_at: row.recorded_at,
+    latitude: row.latitude,
+    longitude: row.longitude,
+  };
+}
+
+/**
+ * Send GPS through the short-lived session produced by a bus QR scan. The
+ * phone supplies no bus, route, driver, tenant, or trip identifier.
+ */
+export async function updateBusTrackingLocation(
+  input: UpdateBusTrackingLocationInput,
+): Promise<UpdateLocationResult> {
+  validateGeoInput({
+    driverTripId: 'session-bound',
+    latitude: input.latitude,
+    longitude: input.longitude,
+    accuracyM: input.accuracyM,
+    headingDeg: input.headingDeg,
+    speedMps: input.speedMps,
+    source: 'bus_qr',
+  });
+  if (!input.trackingToken) throw new Error('Missing tracking session.');
+
+  const { data, error } = await requireSupabase().rpc('update_bus_tracking_location', {
+    p_tracking_token: input.trackingToken,
+    p_latitude: input.latitude,
+    p_longitude: input.longitude,
+    p_accuracy_m: input.accuracyM ?? null,
+    p_heading_deg: input.headingDeg ?? null,
+    p_speed_mps: input.speedMps ?? null,
+  });
+
+  if (error) {
+    const message = error.message ?? 'Could not update bus location.';
+    if (
+      message.includes('session is not valid') ||
+      message.includes('no longer active') ||
+      message.includes('Only an active driver')
+    ) {
+      throw new FatalLocationUpdateError('This bus tracking session ended. Scan the bus QR again.');
+    }
+    throw new Error(message);
+  }
+
+  const row = data as DriverTripCurrentLocation | null;
+  if (!row) throw new Error('Location update returned no result.');
   return {
     driver_trip_id: row.driver_trip_id,
     recorded_at: row.recorded_at,

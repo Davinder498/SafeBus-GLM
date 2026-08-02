@@ -28,7 +28,6 @@ describe('platform privacy boundary routing', () => {
       '/admin/trips',
       '/admin/live-trips',
       '/admin/live-fleet',
-      '/admin/driver-assignments',
     ]) {
       expect(routeAllowsPlatform(path), `${path} should not allow Platform Super Admin`).toBe(
         false,
