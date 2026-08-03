@@ -1,103 +1,69 @@
-import { Component, type ErrorInfo, type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Component,
+  type ErrorInfo,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet';
 import type { LatLngExpression } from 'leaflet';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
-import {
-  RouteOverlayLayers,
-  RouteOverlayLegend,
-} from '@/components/maps/RouteOverlayLayers';
 import type { MapTileConfig } from '@/config/mapTiles';
 import type { GuardianStudentLiveBusLocation } from '@/types/guardianLiveBusLocation';
-import type { RouteOverlay } from '@/types/transportation';
-
-/**
- * A student context entry used to correlate safe location state with
- * guardian-authorized student names. Only `studentId` is used as a join key.
- */
-export interface GuardianStudentContextEntry {
-  studentId: string;
-  studentName: string;
-}
 
 export interface GuardianLiveBusMapProps {
-  /** Safe location-state rows from the Milestone 11A RPC. */
   locations: GuardianStudentLiveBusLocation[];
-  /** Static route stops independently authorized for linked students. */
-  overlays?: RouteOverlay[];
-  /** Safe student context (names) from already-authorized guardian visibility. */
-  studentContext: GuardianStudentContextEntry[];
-  /** Public tile configuration. When unconfigured, the map degrades gracefully. */
   tileConfig: MapTileConfig;
-  /** Optional accessible label for the map region. */
   regionLabel?: string;
 }
 
 interface MapMarkerEntry {
   key: string;
   position: [number, number];
-  studentNames: string[];
+  busNumber: string;
+  licensePlate: string | null;
   locationRecordedAt: string | null;
-}
-
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value);
 }
 
 function isValidCoordinate(lat: number | null, lng: number | null): boolean {
   return (
-    isFiniteNumber(lat) &&
-    isFiniteNumber(lng) &&
+    typeof lat === 'number' &&
+    Number.isFinite(lat) &&
     lat >= -90 &&
     lat <= 90 &&
+    typeof lng === 'number' &&
+    Number.isFinite(lng) &&
     lng >= -180 &&
     lng <= 180
   );
 }
 
-/**
- * Build the set of markers to render.
- *
- * Only `fresh` rows with valid coordinates produce a marker. Siblings sharing
- * the same coordinates are grouped into ONE marker so we never imply two buses
- * from matching points; the popup lists every linked student at that location.
- *
- * Stale, missing, invalid, loading, and error states intentionally produce no
- * marker. A stale position can never remain on the map looking live.
- */
-function buildMarkerEntries(
-  locations: GuardianStudentLiveBusLocation[],
-  studentContext: GuardianStudentContextEntry[],
-): MapMarkerEntry[] {
-  const fresh = locations.filter(
-    (loc) => loc.locationState === 'fresh' && isValidCoordinate(loc.latitude, loc.longitude),
-  );
-
+function buildMarkerEntries(locations: GuardianStudentLiveBusLocation[]): MapMarkerEntry[] {
   const grouped = new Map<string, MapMarkerEntry>();
-  for (const loc of fresh) {
-    const lat = loc.latitude as number;
-    const lng = loc.longitude as number;
-    const key = `${lat.toFixed(5)}|${lng.toFixed(5)}`;
-    const studentName =
-      studentContext.find((s) => s.studentId === loc.studentId)?.studentName ?? 'Linked student';
-    const existing = grouped.get(key);
-    if (existing) {
-      // Sibling/cotraveler at the exact same safe point: keep one marker and
-      // list all linked students it applies to. Do NOT infer shared bus from
-      // coordinates alone; the page explains this is "current bus location".
-      if (!existing.studentNames.includes(studentName)) {
-        existing.studentNames.push(studentName);
-      }
-    } else {
+  for (const location of locations) {
+    if (
+      location.locationState !== 'fresh' ||
+      !location.busNumber ||
+      !isValidCoordinate(location.latitude, location.longitude)
+    ) {
+      continue;
+    }
+    const latitude = location.latitude as number;
+    const longitude = location.longitude as number;
+    const key = `${location.busNumber}|${latitude.toFixed(5)}|${longitude.toFixed(5)}`;
+    if (!grouped.has(key)) {
       grouped.set(key, {
         key,
-        position: [lat, lng],
-        studentNames: [studentName],
-        locationRecordedAt: loc.locationRecordedAt,
+        position: [latitude, longitude],
+        busNumber: location.busNumber,
+        licensePlate: location.licensePlate,
+        locationRecordedAt: location.locationRecordedAt,
       });
     }
   }
-
   return Array.from(grouped.values());
 }
 
@@ -109,13 +75,11 @@ class GuardianMapBoundary extends Component<{ children: ReactNode }, { hasError:
   }
 
   override componentDidCatch(_error: Error, _errorInfo: ErrorInfo) {
-    // Intentionally do not log guardian location payloads or coordinates.
+    // Guardian location payloads are deliberately not logged.
   }
 
   override render() {
-    if (this.state.hasError) {
-      return <GuardianMapUnavailable />;
-    }
+    if (this.state.hasError) return <GuardianMapUnavailable />;
     return this.props.children;
   }
 }
@@ -126,71 +90,37 @@ function GuardianMapUnavailable() {
       <h2 className="text-lg font-bold text-navy-900">Live bus map</h2>
       <DataState
         title="Map unavailable"
-        message="The interactive map could not be shown. Student status remains available."
+        message="The interactive map could not be shown. Bus status remains available."
       />
     </Card>
   );
 }
 
-/**
- * Keeps the Leaflet map in sync with its container size.
- *
- * Leaflet computes its tile layout once at initialization and does not detect
- * later container size changes (e.g. when this map mounts while the page is
- * still revealing content after an async data load). Without this, the map
- * tiles render blank or shifted inside the guardian layout. We call
- * `invalidateSize()` on mount and observe container resizes.
- */
 function MapResizer() {
   const map = useMap();
-
   useEffect(() => {
-    // Run once shortly after mount so the map recalculates against the
-    // now-settled container dimensions. A short delay is more reliable than a
-    // synchronous call because the parent layout may still be measuring when
-    // the effect fires (e.g. async data load reveals the map region).
-    const timeoutId = window.setTimeout(() => {
-      map.invalidateSize();
-    }, 0);
-
-    // Recalculate on any future container resize (responsive layout changes,
-    // collapsible regions, font loading reflow, async data arrival, etc.).
-    const container = map.getContainer();
-    const resizeObserver = new ResizeObserver(() => {
-      map.invalidateSize();
-    });
-    resizeObserver.observe(container);
-
+    const timeoutId = window.setTimeout(() => map.invalidateSize(), 0);
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(map.getContainer());
     return () => {
       window.clearTimeout(timeoutId);
-      resizeObserver.disconnect();
+      observer.disconnect();
     };
   }, [map]);
-
   return null;
 }
 
 export function GuardianLiveBusMap({
   locations,
-  overlays = [],
-  studentContext,
   tileConfig,
   regionLabel = 'Guardian live bus interactive map',
 }: GuardianLiveBusMapProps) {
   const [tileFailed, setTileFailed] = useState(false);
-
-  const markerEntries = useMemo(
-    () => buildMarkerEntries(locations, studentContext),
-    [locations, studentContext],
+  const markerEntries = useMemo(() => buildMarkerEntries(locations), [locations]);
+  const center = useMemo<LatLngExpression>(
+    () => markerEntries[0]?.position ?? [51.0447, -114.0719],
+    [markerEntries],
   );
-
-  const center = useMemo<LatLngExpression>(() => {
-    if (markerEntries[0]) return markerEntries[0].position;
-    const firstStop = overlays[0]?.stops[0];
-    if (firstStop) return [firstStop.latitude, firstStop.longitude];
-    return [51.0447, -114.0719];
-  }, [markerEntries, overlays]);
-
   const handleTileError = useCallback(() => setTileFailed(true), []);
   const handleTileLoad = useCallback(() => setTileFailed(false), []);
 
@@ -198,16 +128,16 @@ export function GuardianLiveBusMap({
     return (
       <Card className="p-5" data-testid="guardian-live-bus-map-config-missing">
         <h2 className="text-lg font-bold text-navy-900">Live bus map</h2>
-        <div className="mt-3 rounded-lg bg-navy-50 p-3 text-sm text-navy-700">
-          The interactive map is not available right now. Student and trip status remains available below.
-        </div>
+        <p className="mt-2 text-sm text-gray-600">
+          The interactive map is not available right now. Bus status remains available below.
+        </p>
         {markerEntries.length > 0 && (
           <p
-            className="mt-3 text-sm text-gray-600"
+            className="mt-3 text-sm font-semibold text-success-700"
             data-testid="guardian-live-bus-map-fresh-summary"
           >
-            Current bus location is available for {markerEntries.length} linked student
-            {markerEntries.length === 1 ? '' : 's'}.
+            Current location is available for {markerEntries.length} bus
+            {markerEntries.length === 1 ? '' : 'es'}.
           </p>
         )}
       </Card>
@@ -220,17 +150,16 @@ export function GuardianLiveBusMap({
         <div className="border-b border-gray-100 p-5">
           <h2 className="text-lg font-bold text-navy-900">Live bus map</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Shows numbered stops for the assigned route and the current bus location for your linked students.
-            Map markers are shown only for current updates; delayed or unavailable location updates do not appear on the map.
+            Only the current bus location is shown. Route lines and other operational details are
+            not displayed.
           </p>
-          <RouteOverlayLegend overlays={overlays} />
           {tileFailed && (
             <p
               role="alert"
               className="mt-3 rounded-md bg-warning-50 px-3 py-2 text-sm font-semibold text-warning-700"
               data-testid="guardian-live-bus-map-tile-error"
             >
-              The map could not be loaded. Student status remains available.
+              The map could not be loaded. Bus status remains available.
             </p>
           )}
           {markerEntries.length === 0 && (
@@ -238,11 +167,15 @@ export function GuardianLiveBusMap({
               className="mt-3 text-sm font-semibold text-gray-700"
               data-testid="guardian-live-bus-map-empty"
             >
-              No current bus location to show on the map right now.
+              No current bus location to show right now.
             </p>
           )}
         </div>
-        <section className="h-80" aria-label={regionLabel} data-testid="guardian-live-bus-map-region">
+        <section
+          className="h-80"
+          aria-label={regionLabel}
+          data-testid="guardian-live-bus-map-region"
+        >
           <MapContainer
             center={center}
             zoom={markerEntries.length === 1 ? 14 : 11}
@@ -252,25 +185,29 @@ export function GuardianLiveBusMap({
           >
             <MapResizer />
             <TileLayer
-              url={tileConfig.tileUrl as string}
-              attribution={tileConfig.attribution as string}
+              url={tileConfig.tileUrl}
+              attribution={tileConfig.attribution}
               eventHandlers={{ tileerror: handleTileError, tileload: handleTileLoad }}
             />
-            <RouteOverlayLayers overlays={overlays} guardian />
             {markerEntries.map((entry) => (
               <CircleMarker
                 key={entry.key}
                 center={entry.position}
                 radius={10}
-                pathOptions={{ color: '#047857', fillColor: '#10b981', fillOpacity: 0.8, weight: 3 }}
+                pathOptions={{
+                  color: '#047857',
+                  fillColor: '#10b981',
+                  fillOpacity: 0.8,
+                  weight: 3,
+                }}
                 data-testid="guardian-live-bus-map-marker"
               >
                 <Popup>
                   <div className="space-y-1 text-sm">
-                    <p className="font-semibold">Current bus location</p>
-                    <p>For: {entry.studentNames.join(', ')}</p>
+                    <p className="font-semibold">Bus {entry.busNumber}</p>
+                    {entry.licensePlate && <p>Plate {entry.licensePlate}</p>}
                     {entry.locationRecordedAt && (
-                      <p>Updated: {new Date(entry.locationRecordedAt).toLocaleString()}</p>
+                      <p>Updated {new Date(entry.locationRecordedAt).toLocaleString()}</p>
                     )}
                   </div>
                 </Popup>

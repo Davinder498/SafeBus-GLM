@@ -76,6 +76,11 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
   enforcement, fresh/stale/missing/invalid location states, one row per student,
   ambiguous-trip fail-closed behavior, direct live-location table denial, and
   result-contract privacy.
+- `guardian-bus-first-visibility-rls.sql`: structural and privilege regression
+  for migration 0061, confirming the single guardian browser contract returns
+  stable bus number and physical plate without route, stop, driver, or internal
+  identifiers; exact bus/route/pattern matching remains server-side and the
+  legacy route-oriented guardian RPCs are no longer browser-executable.
 - `student-route-assignment-optional-school-rls.sql`: structural security
   regression for migration 0028, confirming school-less students/routes use
   tenant-scoped optional-school authorization while tenant, route-stop, and
@@ -106,6 +111,11 @@ and this README exist, then prints a manual-test notice.
 
 It does not connect to Supabase, does not execute SQL, and must not be reported
 as proof that the RLS assertions passed.
+
+After migration 0061, use `guardian-bus-first-visibility-rls.sql` for the active
+guardian contract. Older guardian route, trip, event, and location scripts
+remain historical regression fixtures for their originating migrations, but
+their browser RPC grants are intentionally retired by 0061.
 
 ## `pnpm test:rls:dev`
 

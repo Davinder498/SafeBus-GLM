@@ -191,16 +191,21 @@ export const driverNavGroups: DashboardNavGroup[] = [
   },
 ];
 
-// Modern grouped nav for the guardian portal. Routes match the router.
+// Bus-first guardian navigation. The legacy /guardian/routes path is retained
+// as a stable URL, but the page intentionally exposes assigned buses only.
 export const guardianNavGroups: DashboardNavGroup[] = [
   {
     label: 'Guardian',
     items: [
       { label: 'Home', to: '/parent', icon: <LayoutDashboard className="h-4 w-4" /> },
       { label: 'Live map', to: '/guardian/live-map', icon: <MapPinned className="h-4 w-4" /> },
-      { label: 'Live trips', to: '/guardian/live', icon: <Radio className="h-4 w-4" /> },
-      { label: 'Routes', to: '/guardian/routes', icon: <Route className="h-4 w-4" /> },
-      { label: 'Events', to: '/guardian/events', icon: <Calendar className="h-4 w-4" /> },
+      { label: 'Bus status', to: '/guardian/live', icon: <Radio className="h-4 w-4" /> },
+      { label: 'My buses', to: '/guardian/routes', icon: <Bus className="h-4 w-4" /> },
+      {
+        label: 'Pickup & drop-off',
+        to: '/guardian/events',
+        icon: <Calendar className="h-4 w-4" />,
+      },
     ],
   },
 ];
