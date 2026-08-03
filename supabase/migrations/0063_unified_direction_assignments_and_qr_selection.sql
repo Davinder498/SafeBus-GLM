@@ -66,7 +66,7 @@ begin
     and not rtp.schedule_review_required
     and (p_direction_scope = 'both' or rtp.direction = p_direction_scope);
 
-  if v_expected_count <> case when p_direction_scope = 'both' then 2 else 1 end then
+  if v_expected_count <> (case when p_direction_scope = 'both' then 2 else 1 end) then
     raise exception 'The selected route does not have every requested reviewed direction.'
       using errcode = '23514';
   end if;
