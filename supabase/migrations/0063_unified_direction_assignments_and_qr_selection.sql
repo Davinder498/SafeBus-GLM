@@ -612,10 +612,9 @@ $$;
 
 -- Replace the old immediate, prepared-dispatch start contract with an exact
 -- bus assignment choice made after the QR has securely resolved the bus.
-revoke all on function public.start_bus_tracking_from_qr(text) from public, anon, authenticated;
-drop function public.start_bus_tracking_from_qr(text);
+drop function if exists public.start_bus_tracking_from_qr(text);
 
-create function public.start_bus_tracking_from_qr(
+create or replace function public.start_bus_tracking_from_qr(
   p_qr_token text,
   p_bus_route_assignment_id uuid
 )
@@ -670,7 +669,7 @@ begin
     raise exception 'This bus is not active.' using errcode = '55006';
   end if;
 
-  select bra, rtp into v_assignment, v_pattern
+  select bra.* into v_assignment
   from public.bus_route_assignments bra
   join public.routes r
     on r.id = bra.route_id and r.tenant_id = bra.tenant_id
@@ -686,6 +685,11 @@ begin
   if not found then
     raise exception 'The selected route direction is not assigned to this bus.' using errcode = 'P0002';
   end if;
+
+  select rtp.* into v_pattern
+  from public.route_trip_patterns rtp
+  where rtp.id = v_assignment.route_trip_pattern_id
+    and rtp.tenant_id = v_tenant_id;
 
   select dt.* into v_existing_trip
   from public.driver_trips dt
