@@ -17,6 +17,8 @@ const labelClassName = 'block text-sm font-semibold text-gray-700';
 
 export function BusWorkspaceRouteForm({
   bus,
+  assignment,
+  identityLocked = false,
   routes,
   tripPatterns,
   assignments,
@@ -24,6 +26,8 @@ export function BusWorkspaceRouteForm({
   onCancel,
 }: {
   bus: Bus;
+  assignment?: AdminBusRouteAssignment | null;
+  identityLocked?: boolean;
   routes: Route[];
   tripPatterns: RouteTripPattern[];
   assignments: AdminBusRouteAssignment[];
@@ -32,23 +36,29 @@ export function BusWorkspaceRouteForm({
 }) {
   const eligibleRoutes = useMemo(
     () =>
-      routes.filter((route) => route.status === 'active' && route.definition_status === 'ready'),
-    [routes],
+      routes.filter(
+        (route) =>
+          (route.status === 'active' && route.definition_status === 'ready') ||
+          route.id === assignment?.route_id,
+      ),
+    [assignment?.route_id, routes],
   );
-  const [routeId, setRouteId] = useState(eligibleRoutes[0]?.id ?? '');
+  const [routeId, setRouteId] = useState(assignment?.route_id ?? eligibleRoutes[0]?.id ?? '');
   const patterns = useMemo(
     () =>
       tripPatterns.filter(
         (pattern) =>
           pattern.route_id === routeId &&
-          pattern.status === 'active' &&
-          !pattern.schedule_review_required,
+          ((pattern.status === 'active' && !pattern.schedule_review_required) ||
+            pattern.id === assignment?.route_trip_pattern_id),
       ),
-    [routeId, tripPatterns],
+    [assignment?.route_trip_pattern_id, routeId, tripPatterns],
   );
-  const [tripPatternId, setTripPatternId] = useState('');
-  const [effectiveFrom, setEffectiveFrom] = useState(new Date().toISOString().slice(0, 10));
-  const [effectiveTo, setEffectiveTo] = useState('');
+  const [tripPatternId, setTripPatternId] = useState(assignment?.route_trip_pattern_id ?? '');
+  const [effectiveFrom, setEffectiveFrom] = useState(
+    assignment?.effective_from ?? new Date().toISOString().slice(0, 10),
+  );
+  const [effectiveTo, setEffectiveTo] = useState(assignment?.effective_to ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,6 +75,7 @@ export function BusWorkspaceRouteForm({
     }
     const duplicate = assignments.some(
       (item) =>
+        item.id !== assignment?.id &&
         item.status === 'active' &&
         item.route_trip_pattern_id === pattern.id &&
         (!item.effective_to || item.effective_to >= effectiveFrom) &&
@@ -100,9 +111,16 @@ export function BusWorkspaceRouteForm({
   return (
     <form className="grid gap-4" onSubmit={submit}>
       <p className="text-sm text-gray-600">
-        Assign Bus {bus.bus_number} to one reviewed named trip. Outbound and return trips are
-        assigned separately.
+        {assignment ? 'Update' : 'Assign'} Bus {bus.bus_number}{' '}
+        {assignment ? 'route-trip dates and configuration.' : 'to one reviewed named trip.'}{' '}
+        Outbound and return trips are assigned separately.
       </p>
+      {identityLocked && (
+        <p className="rounded-lg bg-warning-50 p-3 text-sm font-semibold text-warning-700">
+          This route trip has linked people or history. You can update its dates, but preserving
+          that history requires a new assignment when the route or named trip changes.
+        </p>
+      )}
       {error && <p className="text-sm font-semibold text-danger-700">{error}</p>}
       <div className="grid gap-4 md:grid-cols-2">
         <label className={labelClassName}>
@@ -110,6 +128,7 @@ export function BusWorkspaceRouteForm({
           <select
             className={fieldClassName}
             value={routeId}
+            disabled={identityLocked}
             onChange={(event) => {
               setRouteId(event.target.value);
               setTripPatternId('');
@@ -128,6 +147,7 @@ export function BusWorkspaceRouteForm({
           <select
             className={fieldClassName}
             value={tripPatternId}
+            disabled={identityLocked}
             onChange={(event) => setTripPatternId(event.target.value)}
           >
             <option value="">Select a trip</option>
@@ -166,7 +186,7 @@ export function BusWorkspaceRouteForm({
       )}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" loading={saving} disabled={eligibleRoutes.length === 0}>
-          Assign route trip
+          {assignment ? 'Save route assignment' : 'Assign route trip'}
         </Button>
         <Button type="button" variant="secondary" disabled={saving} onClick={onCancel}>
           Cancel

@@ -31,6 +31,7 @@ import { getVisibleSchools } from '@/services/adminOrganizationService';
 import {
   createStudentBusAssignment,
   ensureBusRouteAssignment,
+  updateBusRouteAssignment,
   updateStudentBusAssignment,
   type BusServiceOption,
 } from '@/services/studentBusAssignmentService';
@@ -52,6 +53,7 @@ import type {
   RouteTripPattern,
   StudentBusAssignment,
   UpdateBusInput,
+  UpdateBusRouteAssignmentInput,
   UpdateStudentBusAssignmentInput,
 } from '@/types/transportation';
 import { cn } from '@/utils/cn';
@@ -59,6 +61,7 @@ import { busWorkspaceLifecycle, type BusWorkspaceLifecycle } from '@/utils/busWo
 
 type WorkspaceTab = 'details' | 'routes' | 'students';
 type LifecycleBucket = BusWorkspaceLifecycle;
+type StudentAssignmentAction = 'deassign' | 'archive';
 
 const validTabs = new Set<WorkspaceTab>(['details', 'routes', 'students']);
 function formatDate(value: string | null) {
@@ -87,6 +90,16 @@ function bucketTone(bucket: LifecycleBucket): 'success' | 'info' | 'neutral' {
   return 'neutral';
 }
 
+function assignmentStatusLabel(status: string) {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function assignmentStatusTone(status: string): 'success' | 'warning' | 'neutral' {
+  if (status === 'active') return 'success';
+  if (status === 'inactive') return 'warning';
+  return 'neutral';
+}
+
 export function AdminBusWorkspacePage() {
   const { busId } = useParams<{ busId: string }>();
   const { profile } = useAuth();
@@ -107,7 +120,9 @@ export function AdminBusWorkspacePage() {
   const [writeError, setWriteError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [detailsDirty, setDetailsDirty] = useState(false);
-  const [showRouteForm, setShowRouteForm] = useState(false);
+  const [routeForm, setRouteForm] = useState<{
+    assignment: AdminBusRouteAssignment | null;
+  } | null>(null);
   const [endingRoute, setEndingRoute] = useState<AdminBusRouteAssignment | null>(null);
   const [ending, setEnding] = useState(false);
   const [preparingServiceId, setPreparingServiceId] = useState<string | null>(null);
@@ -116,6 +131,11 @@ export function AdminBusWorkspacePage() {
   const [studentForm, setStudentForm] = useState<{
     assignment: AdminBusStudentAssignment | null;
   } | null>(null);
+  const [studentAction, setStudentAction] = useState<{
+    assignment: AdminBusStudentAssignment;
+    action: StudentAssignmentAction;
+  } | null>(null);
+  const [studentActionBusy, setStudentActionBusy] = useState(false);
 
   const canManageRoutesAndDrivers = profile?.role === 'tenant_admin';
   const canDeleteBus = profile?.role === 'tenant_admin' || profile?.role === 'platform_super_admin';
@@ -215,12 +235,24 @@ export function AdminBusWorkspacePage() {
     }
   }
 
-  async function assignRoute(input: Parameters<typeof ensureBusRouteAssignment>[0]) {
+  async function saveRouteAssignment(input: Parameters<typeof ensureBusRouteAssignment>[0]) {
     setWriteError(null);
     setMessage(null);
-    await ensureBusRouteAssignment(input);
-    setShowRouteForm(false);
-    setMessage('Route trip assigned to this bus.');
+    if (routeForm?.assignment) {
+      const update: UpdateBusRouteAssignmentInput = {
+        route_id: input.route_id,
+        route_trip_pattern_id: input.route_trip_pattern_id,
+        trip_type: input.trip_type,
+        effective_from: input.effective_from,
+        effective_to: input.effective_to,
+      };
+      await updateBusRouteAssignment(routeForm.assignment.id, update);
+      setMessage('Route assignment updated.');
+    } else {
+      await ensureBusRouteAssignment(input);
+      setMessage('Route trip assigned to this bus.');
+    }
+    setRouteForm(null);
     await reloadWorkspace();
   }
 
@@ -249,7 +281,7 @@ export function AdminBusWorkspacePage() {
     try {
       await endBusRouteAssignment(endingRoute.id);
       setEndingRoute(null);
-      setMessage('Route trip and its linked active assignments were ended.');
+      setMessage('Route trip deassigned. Linked active assignments were ended.');
       await reloadWorkspace();
     } catch (error) {
       setWriteError(error instanceof Error ? error.message : 'Unable to end this route trip.');
@@ -277,17 +309,53 @@ export function AdminBusWorkspacePage() {
     await reloadWorkspace();
   }
 
-  async function deactivateStudent(assignment: AdminBusStudentAssignment) {
+  async function setStudentStatus(
+    assignment: AdminBusStudentAssignment,
+    status: 'active' | 'inactive',
+  ) {
     setWriteError(null);
     setMessage(null);
     try {
-      await updateStudentBusAssignment(assignment.id, { status: 'inactive' });
-      setMessage('Student assignment deactivated.');
+      await updateStudentBusAssignment(assignment.id, {
+        status,
+        ...(status === 'active' ? { effective_to: null } : {}),
+      });
+      setMessage(`Student assignment ${status === 'active' ? 'activated' : 'deactivated'}.`);
       await reloadWorkspace();
     } catch (error) {
       setWriteError(
-        error instanceof Error ? error.message : 'Unable to deactivate this assignment.',
+        error instanceof Error ? error.message : `Unable to ${status} this assignment.`,
       );
+    }
+  }
+
+  async function confirmStudentAssignmentAction() {
+    if (!studentAction || studentActionBusy) return;
+    setStudentActionBusy(true);
+    setWriteError(null);
+    setMessage(null);
+    const { assignment, action } = studentAction;
+    const today = new Date().toISOString().slice(0, 10);
+    const endDate = today < assignment.effective_from ? assignment.effective_from : today;
+    try {
+      await updateStudentBusAssignment(assignment.id, {
+        status: action === 'archive' ? 'archived' : 'inactive',
+        effective_to: endDate,
+      });
+      setStudentAction(null);
+      setMessage(
+        action === 'archive'
+          ? 'Student assignment removed and archived.'
+          : 'Student deassigned from this bus route trip.',
+      );
+      await reloadWorkspace();
+    } catch (error) {
+      setWriteError(
+        error instanceof Error ? error.message : 'Unable to update this student assignment.',
+      );
+      setStudentAction(null);
+    } finally {
+      setStudentActionBusy(false);
     }
   }
 
@@ -300,6 +368,17 @@ export function AdminBusWorkspacePage() {
         bus_number: workspace.bus.bus_number,
       }));
   }, [workspace]);
+
+  const routeFormIdentityLocked = !!(
+    workspace &&
+    routeForm?.assignment &&
+    (workspace.driverAssignments.some(
+      (assignment) => assignment.bus_route_assignment_id === routeForm.assignment?.id,
+    ) ||
+      workspace.studentAssignments.some(
+        (assignment) => assignment.bus_route_assignment_id === routeForm.assignment?.id,
+      ))
+  );
 
   if (loading) {
     return (
@@ -459,10 +538,12 @@ export function AdminBusWorkspacePage() {
               readyDispatch={workspace.readyDispatch}
               preparingServiceId={preparingServiceId}
               canManage={canManageRoutesAndDrivers}
-              showForm={showRouteForm}
-              onShowForm={() => setShowRouteForm(true)}
-              onCancelForm={() => setShowRouteForm(false)}
-              onSubmit={assignRoute}
+              form={routeForm}
+              formIdentityLocked={routeFormIdentityLocked}
+              onAdd={() => setRouteForm({ assignment: null })}
+              onEdit={(assignment) => setRouteForm({ assignment })}
+              onCancelForm={() => setRouteForm(null)}
+              onSubmit={saveRouteAssignment}
               onEnd={setEndingRoute}
               onPrepare={(assignment) => void makeRunReady(assignment)}
             />
@@ -480,7 +561,9 @@ export function AdminBusWorkspacePage() {
               onEdit={(assignment) => setStudentForm({ assignment })}
               onCancel={() => setStudentForm(null)}
               onSubmit={saveStudentAssignment}
-              onDeactivate={(assignment) => void deactivateStudent(assignment)}
+              onSetStatus={(assignment, status) => void setStudentStatus(assignment, status)}
+              onDeassign={(assignment) => setStudentAction({ assignment, action: 'deassign' })}
+              onArchive={(assignment) => setStudentAction({ assignment, action: 'archive' })}
               onGoRoutes={() => goToTab('routes')}
             />
           )}
@@ -489,13 +572,31 @@ export function AdminBusWorkspacePage() {
 
       <ConfirmDialog
         open={!!endingRoute}
-        title={`End ${endingRoute?.route_code ?? ''} ${endingRoute?.trip_name ?? ''}?`}
-        description="This deactivates the route-trip assignment and all linked active driver and student assignments. History is preserved."
-        confirmLabel="End route trip"
+        title={`Deassign ${endingRoute?.route_code ?? ''} ${endingRoute?.trip_name ?? ''}?`}
+        description="This deassigns the route trip and deactivates all linked driver and student assignments. History is preserved."
+        confirmLabel="Deassign route"
         destructive
         busy={ending}
         onConfirm={() => void confirmEndRoute()}
         onCancel={() => setEndingRoute(null)}
+      />
+      <ConfirmDialog
+        open={!!studentAction}
+        title={
+          studentAction?.action === 'archive'
+            ? `Delete ${studentAction.assignment.student_name}'s bus assignment?`
+            : `Deassign ${studentAction?.assignment.student_name ?? 'student'}?`
+        }
+        description={
+          studentAction?.action === 'archive'
+            ? 'This removes the assignment from the active roster and archives it for operational history. The student record is not deleted.'
+            : 'This ends the student’s assignment to this bus route trip today. History is preserved.'
+        }
+        confirmLabel={studentAction?.action === 'archive' ? 'Delete assignment' : 'Deassign'}
+        destructive
+        busy={studentActionBusy}
+        onConfirm={() => void confirmStudentAssignmentAction()}
+        onCancel={() => setStudentAction(null)}
       />
       <ConfirmDialog
         open={confirmDeleteOpen}
@@ -519,8 +620,10 @@ function RoutesPanel({
   readyDispatch,
   preparingServiceId,
   canManage,
-  showForm,
-  onShowForm,
+  form,
+  formIdentityLocked,
+  onAdd,
+  onEdit,
   onCancelForm,
   onSubmit,
   onEnd,
@@ -533,8 +636,10 @@ function RoutesPanel({
   readyDispatch: AdminBusReadyDispatch | null;
   preparingServiceId: string | null;
   canManage: boolean;
-  showForm: boolean;
-  onShowForm: () => void;
+  form: { assignment: AdminBusRouteAssignment | null } | null;
+  formIdentityLocked: boolean;
+  onAdd: () => void;
+  onEdit: (assignment: AdminBusRouteAssignment) => void;
   onCancelForm: () => void;
   onSubmit: (input: Parameters<typeof ensureBusRouteAssignment>[0]) => Promise<void>;
   onEnd: (assignment: AdminBusRouteAssignment) => void;
@@ -549,16 +654,19 @@ function RoutesPanel({
             Outbound and return trips are separate assignments.
           </p>
         </div>
-        {canManage && !showForm && (
-          <Button type="button" onClick={onShowForm}>
+        {canManage && !form && (
+          <Button type="button" onClick={onAdd}>
             Assign route trip
           </Button>
         )}
       </div>
-      {showForm && (
-        <InlineFormShell title="Assign route trip">
+      {form && (
+        <InlineFormShell title={form.assignment ? 'Edit route assignment' : 'Assign route trip'}>
           <BusWorkspaceRouteForm
+            key={form.assignment?.id ?? 'new-route-assignment'}
             bus={bus}
+            assignment={form.assignment}
+            identityLocked={formIdentityLocked}
             routes={routes}
             tripPatterns={tripPatterns}
             assignments={assignments}
@@ -607,6 +715,17 @@ function RoutesPanel({
                       type="button"
                       size="sm"
                       variant="secondary"
+                      disabled={assignment.has_active_trip}
+                      onClick={() => onEdit(assignment)}
+                    >
+                      Edit assignment
+                    </Button>
+                  )}
+                  {canManage && bucket !== 'history' && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
                       disabled={assignment.has_active_trip || preparingServiceId === assignment.id}
                       onClick={() => onPrepare(assignment)}
                       data-testid={`prepare-bus-run-${assignment.id}`}
@@ -626,7 +745,7 @@ function RoutesPanel({
                       disabled={assignment.has_active_trip}
                       onClick={() => onEnd(assignment)}
                     >
-                      End assignment
+                      Deassign route
                     </Button>
                   )}
                 </div>
@@ -650,7 +769,9 @@ function StudentsPanel({
   onEdit,
   onCancel,
   onSubmit,
-  onDeactivate,
+  onSetStatus,
+  onDeassign,
+  onArchive,
   onGoRoutes,
 }: {
   bus: Bus;
@@ -665,7 +786,9 @@ function StudentsPanel({
   onSubmit: (
     input: CreateStudentBusAssignmentInput | UpdateStudentBusAssignmentInput,
   ) => Promise<void>;
-  onDeactivate: (assignment: AdminBusStudentAssignment) => void;
+  onSetStatus: (assignment: AdminBusStudentAssignment, status: 'active' | 'inactive') => void;
+  onDeassign: (assignment: AdminBusStudentAssignment) => void;
+  onArchive: (assignment: AdminBusStudentAssignment) => void;
   onGoRoutes: () => void;
 }) {
   const serviceNames = new Map(
@@ -691,7 +814,7 @@ function StudentsPanel({
         <div>
           <h2 className="text-xl font-bold text-navy-900">Student roster</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Manage students and stops for each named route trip.
+            Assign students, update stops, temporarily change status, or end their bus assignment.
           </p>
         </div>
         {!form && services.length > 0 && (
@@ -706,9 +829,11 @@ function StudentsPanel({
             key={form.assignment?.id ?? 'new-student-assignment'}
             assignment={form.assignment as StudentBusAssignment | null}
             studentLabel={form.assignment?.student_name}
+            fixedStudentId={form.assignment?.student_id}
             services={services}
             stops={stops}
             defaultTenantId={bus.tenant_id}
+            showStatusField={false}
             onSubmit={onSubmit}
             onCancel={onCancel}
           />
@@ -722,50 +847,76 @@ function StudentsPanel({
       ) : (
         <BucketSections
           items={assignments}
-          render={(assignment, bucket) => (
-            <Card key={assignment.id} className="p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h3 className="font-bold text-navy-900">{assignment.student_name}</h3>
-                  <p className="mt-1 text-sm font-semibold text-navy-700">
-                    {serviceNames.get(assignment.bus_route_assignment_id) ??
-                      'Historical route trip'}
-                  </p>
-                  <div className="mt-3 grid gap-1 text-sm text-gray-600">
-                    <p>Pickup: {assignment.pickup_stop_name ?? 'Not assigned'}</p>
-                    <p>Drop-off: {assignment.dropoff_stop_name ?? 'Not assigned'}</p>
-                    <p>{dateRange(assignment.effective_from, assignment.effective_to)}</p>
+          render={(assignment) => {
+            const hasActiveService = services.some(
+              (service) => service.id === assignment.bus_route_assignment_id,
+            );
+            const isActive = assignment.status === 'active';
+            const isArchived = assignment.status === 'archived';
+            return (
+              <Card key={assignment.id} className="p-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h3 className="font-bold text-navy-900">{assignment.student_name}</h3>
+                    <p className="mt-1 text-sm font-semibold text-navy-700">
+                      {serviceNames.get(assignment.bus_route_assignment_id) ??
+                        'Historical route trip'}
+                    </p>
+                    <div className="mt-3 grid gap-1 text-sm text-gray-600">
+                      <p>Pickup: {assignment.pickup_stop_name ?? 'Not assigned'}</p>
+                      <p>Drop-off: {assignment.dropoff_stop_name ?? 'Not assigned'}</p>
+                      <p>{dateRange(assignment.effective_from, assignment.effective_to)}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusPill tone={assignmentStatusTone(assignment.status)}>
+                      {assignmentStatusLabel(assignment.status)}
+                    </StatusPill>
+                    {!isArchived && hasActiveService && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => onEdit(assignment)}
+                      >
+                        Edit assignment
+                      </Button>
+                    )}
+                    {!isArchived && hasActiveService && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => onSetStatus(assignment, isActive ? 'inactive' : 'active')}
+                      >
+                        {isActive ? 'Deactivate' : 'Activate'}
+                      </Button>
+                    )}
+                    {isActive && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="danger"
+                        onClick={() => onDeassign(assignment)}
+                      >
+                        Deassign
+                      </Button>
+                    )}
+                    {!isArchived && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="danger"
+                        onClick={() => onArchive(assignment)}
+                      >
+                        Delete assignment
+                      </Button>
+                    )}
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <StatusPill tone={bucketTone(bucket)}>{bucketLabel(bucket)}</StatusPill>
-                  {bucket !== 'history' &&
-                    services.some(
-                      (service) => service.id === assignment.bus_route_assignment_id,
-                    ) && (
-                      <>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => onEdit(assignment)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="danger"
-                          onClick={() => onDeactivate(assignment)}
-                        >
-                          Deactivate
-                        </Button>
-                      </>
-                    )}
-                </div>
-              </div>
-            </Card>
-          )}
+              </Card>
+            );
+          }}
         />
       )}
     </div>

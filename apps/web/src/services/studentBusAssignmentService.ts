@@ -4,6 +4,7 @@ import type {
   CreateBusRouteAssignmentInput,
   CreateStudentBusAssignmentInput,
   StudentBusAssignment,
+  UpdateBusRouteAssignmentInput,
   UpdateStudentBusAssignmentInput,
 } from '@/types/transportation';
 
@@ -26,10 +27,18 @@ export async function fetchAdminBusServices(): Promise<BusServiceOption[]> {
   return (data ?? []) as BusServiceOption[];
 }
 
-export async function ensureBusRouteAssignment(input: CreateBusRouteAssignmentInput): Promise<BusRouteAssignment> {
-  const existing = await client().from('bus_route_assignments').select('*')
-    .eq('tenant_id', input.tenant_id).eq('bus_id', input.bus_id).eq('route_id', input.route_id)
-    .eq('route_trip_pattern_id', input.route_trip_pattern_id).eq('status', 'active').maybeSingle();
+export async function ensureBusRouteAssignment(
+  input: CreateBusRouteAssignmentInput,
+): Promise<BusRouteAssignment> {
+  const existing = await client()
+    .from('bus_route_assignments')
+    .select('*')
+    .eq('tenant_id', input.tenant_id)
+    .eq('bus_id', input.bus_id)
+    .eq('route_id', input.route_id)
+    .eq('route_trip_pattern_id', input.route_trip_pattern_id)
+    .eq('status', 'active')
+    .maybeSingle();
   if (existing.error) throw new Error('Unable to check the bus route service.');
   if (existing.data) return existing.data as BusRouteAssignment;
   const created = await client().from('bus_route_assignments').insert(input).select('*').single();
@@ -38,21 +47,60 @@ export async function ensureBusRouteAssignment(input: CreateBusRouteAssignmentIn
       throw new Error('This named trip already has a bus assigned for the selected dates.');
     }
     if (created.error.code === '23514') {
-      throw new Error('Bus assignment requires an active bus and a map-ready route with a reviewed trip.');
+      throw new Error(
+        'Bus assignment requires an active bus and a map-ready route with a reviewed trip.',
+      );
     }
     throw new Error('Unable to assign this bus to the route.');
   }
   return created.data as BusRouteAssignment;
 }
 
-export async function createStudentBusAssignment(input: CreateStudentBusAssignmentInput): Promise<StudentBusAssignment> {
-  const { data, error } = await client().from('student_bus_assignments').insert(input).select('*').single();
-  if (error) throw new Error('Unable to assign this student to the bus service. Check the selected stops.');
+export async function updateBusRouteAssignment(
+  id: string,
+  input: UpdateBusRouteAssignmentInput,
+): Promise<BusRouteAssignment> {
+  const { data, error } = await client()
+    .from('bus_route_assignments')
+    .update(input)
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) {
+    if (error.code === '23P01' || error.code === '23505') {
+      throw new Error('That route trip overlaps another active bus assignment.');
+    }
+    if (error.code === '23514') {
+      throw new Error('Choose an active bus and a map-ready route with a reviewed trip.');
+    }
+    throw new Error('Unable to update this bus route assignment.');
+  }
+  return data as BusRouteAssignment;
+}
+
+export async function createStudentBusAssignment(
+  input: CreateStudentBusAssignmentInput,
+): Promise<StudentBusAssignment> {
+  const { data, error } = await client()
+    .from('student_bus_assignments')
+    .insert(input)
+    .select('*')
+    .single();
+  if (error)
+    throw new Error('Unable to assign this student to the bus service. Check the selected stops.');
   return data as StudentBusAssignment;
 }
 
-export async function updateStudentBusAssignment(id: string, input: UpdateStudentBusAssignmentInput): Promise<StudentBusAssignment> {
-  const { data, error } = await client().from('student_bus_assignments').update(input).eq('id', id).select('*').single();
+export async function updateStudentBusAssignment(
+  id: string,
+  input: UpdateStudentBusAssignmentInput,
+): Promise<StudentBusAssignment> {
+  const { data, error } = await client()
+    .from('student_bus_assignments')
+    .update(input)
+    .eq('id', id)
+    .select('*')
+    .single();
   if (error) throw new Error('Unable to update this student bus assignment.');
   return data as StudentBusAssignment;
 }
