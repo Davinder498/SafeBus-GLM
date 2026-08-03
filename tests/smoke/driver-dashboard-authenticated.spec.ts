@@ -16,7 +16,7 @@ test.describe('Driver dashboard — authenticated', () => {
     await expect(page.getByTestId('driver-return-toggle')).toHaveCount(0);
   });
 
-  test('claims the prepared bus from its QR and binds this phone to the active bus', async ({
+  test('chooses a route direction after scanning and binds this phone to the active bus', async ({
     page,
   }) => {
     let scannedToken: string | undefined;
@@ -32,6 +32,10 @@ test.describe('Driver dashboard — authenticated', () => {
     await page.getByTestId('driver-scan-bus-qr').click();
     await page.getByLabel('Manual bus QR token for QA').fill(MOCK.busQrToken);
     await page.getByRole('button', { name: 'Connect' }).click();
+    await expect(page.getByText('Choose the route direction to start.')).toBeVisible();
+    await expect(page.getByRole('button', { name: /North Ridge Outbound/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /North Ridge Return/ })).toBeVisible();
+    await page.getByRole('button', { name: /North Ridge Outbound/ }).click();
 
     await expect(page.getByRole('heading', { name: 'Bus 12', level: 1 })).toBeVisible();
     await expect(page.getByTestId('driver-active-trip-only')).toBeVisible();
@@ -51,6 +55,7 @@ test.describe('Driver dashboard — authenticated', () => {
     await page.getByTestId('driver-scan-bus-qr').click();
     await page.getByLabel('Manual bus QR token for QA').fill(MOCK.busQrToken);
     await page.getByRole('button', { name: 'Connect' }).click();
+    await page.getByRole('button', { name: /North Ridge Outbound/ }).click();
 
     await expect(
       page.getByText('Location permission is required. The bus was not started.'),

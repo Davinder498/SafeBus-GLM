@@ -1,5 +1,5 @@
 -- QR-paired bus tracking session security regression checks.
--- Apply migration 0059 before running this file against hosted Supabase DEV.
+-- Apply through migration 0063 before running this file against hosted Supabase DEV.
 begin;
 
 do $$
@@ -53,7 +53,8 @@ begin
       ('public.get_admin_bus_qr_credential_status(uuid)'),
       ('public.prepare_bus_run(uuid)'),
       ('public.get_admin_bus_ready_dispatch(uuid)'),
-      ('public.start_bus_tracking_from_qr(text)'),
+      ('public.get_bus_qr_start_options(text)'),
+      ('public.start_bus_tracking_from_qr(text,uuid)'),
       ('public.update_bus_tracking_location(text,double precision,double precision,double precision,double precision,double precision)')
     ) as functions(signature)
   loop
@@ -69,7 +70,7 @@ begin
     end if;
   end loop;
 
-  select lower(pg_get_functiondef('public.start_bus_tracking_from_qr(text)'::regprocedure))
+  select lower(pg_get_functiondef('public.start_bus_tracking_from_qr(text,uuid)'::regprocedure))
     into v_start_definition;
   select lower(pg_get_functiondef(
     'public.update_bus_tracking_location(text,double precision,double precision,double precision,double precision,double precision)'::regprocedure
@@ -80,10 +81,10 @@ begin
   if position('current_user_role() <> ''driver''' in v_start_definition) = 0
     or position('d.status = ''active''' in v_start_definition) = 0
     or position('hash_bus_tracking_token(p_qr_token)' in v_start_definition) = 0
-    or position('d.status = ''ready''' in v_start_definition) = 0
-    or position('d.service_date = current_date' in v_start_definition) = 0
-    or position('bra.route_trip_pattern_id = v_dispatch.route_trip_pattern_id' in v_start_definition) = 0 then
-    raise exception 'TEST FAILED: QR start lacks active-driver, hashed-token, ready-run, or exact-pattern checks';
+    or position('p_bus_route_assignment_id' in v_start_definition) = 0
+    or position('bra.bus_id = v_bus.id' in v_start_definition) = 0
+    or position('v_existing_trip.route_trip_pattern_id' in v_start_definition) = 0 then
+    raise exception 'TEST FAILED: QR start lacks active-driver, hashed-token, selected-assignment, or resume-direction checks';
   end if;
 
   if position('c.status = ''active''' in lower(pg_get_functiondef(
@@ -111,7 +112,9 @@ set local role anon;
 do $$
 begin
   begin
-    perform public.start_bus_tracking_from_qr('sbus_bus_v1_' || repeat('A', 43));
+    perform public.start_bus_tracking_from_qr(
+      'sbus_bus_v1_' || repeat('A', 43), gen_random_uuid()
+    );
     raise exception 'TEST FAILED: anonymous QR start was not denied';
   exception when insufficient_privilege then
     null;

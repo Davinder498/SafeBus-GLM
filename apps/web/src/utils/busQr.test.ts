@@ -10,8 +10,13 @@ describe('bus QR utilities', () => {
   });
 
   it('maps operational start failures without exposing internal identifiers', () => {
-    expect(mapBusQrStartError('This bus has no run ready to start.')).toMatch(/run ready/i);
+    expect(mapBusQrStartError('The selected route direction is not active today.')).toMatch(
+      /no longer available/i,
+    );
     expect(mapBusQrStartError('This bus already has an active trip.')).toMatch(/already/i);
+    expect(
+      mapBusQrStartError('The active bus run direction cannot be changed while resuming.'),
+    ).toMatch(/resume/i);
     expect(mapBusQrStartError('database detail about credential row')).toBe(
       'This bus QR could not be verified or started.',
     );

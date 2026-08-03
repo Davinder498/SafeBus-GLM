@@ -176,7 +176,7 @@ export function DriverManifestPage() {
           <div data-testid="driver-manifest-no-active-trip">
             <DataState
               title="No active trip right now."
-              message="Scan the bus from your driver dashboard to start its prepared run."
+              message="Scan the bus from your driver dashboard and choose a route direction to start."
             />
           </div>
         )}

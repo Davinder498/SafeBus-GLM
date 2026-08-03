@@ -69,7 +69,7 @@ export function BusQrCredentialPanel({ busId, busNumber }: { busId: string; busN
           <h2 className="text-lg font-bold text-navy-900">Driver scan QR</h2>
           <p className="mt-1 text-sm text-gray-600">
             Mount this QR inside Bus {busNumber}. An authenticated active driver scans it to turn
-            that phone into this bus&apos;s GPS for the prepared run.
+            that phone into this bus&apos;s GPS for the selected route direction.
           </p>
         </div>
         {error && <p className="text-sm font-semibold text-danger-700">{error}</p>}

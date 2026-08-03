@@ -2,7 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Bus, Camera, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { startBusTrackingFromQr, type BusTrackingStartResult } from '@/services/busTrackingService';
+import {
+  getBusQrStartOptions,
+  startBusTrackingFromQr,
+  type BusQrStartOption,
+  type BusTrackingStartResult,
+} from '@/services/busTrackingService';
 import { isLikelyBusQrToken } from '@/utils/busQr';
 
 type BarcodeDetectorConstructor = new (options?: { formats?: string[] }) => {
@@ -22,6 +27,7 @@ type ScannerState =
   | 'permission-denied'
   | 'no-camera'
   | 'unsupported'
+  | 'choosing'
   | 'checking-location'
   | 'starting-trip'
   | 'started'
@@ -43,6 +49,8 @@ export function BusQrStartScanner({
   const [state, setState] = useState<ScannerState>('idle');
   const [message, setMessage] = useState<string | null>(null);
   const [manualToken, setManualToken] = useState('');
+  const [scannedToken, setScannedToken] = useState('');
+  const [startOptions, setStartOptions] = useState<BusQrStartOption[]>([]);
 
   const stopCamera = useCallback(() => {
     scanningRef.current = false;
@@ -68,6 +76,30 @@ export function BusQrStartScanner({
         return;
       }
       try {
+        setState('starting-trip');
+        const options = await getBusQrStartOptions(rawToken);
+        if (options.length === 0) {
+          throw new Error('This bus has no active route directions available today.');
+        }
+        setScannedToken(rawToken.trim());
+        setStartOptions(options);
+        setState('choosing');
+      } catch (cause) {
+        setState('invalid');
+        setMessage(cause instanceof Error ? cause.message : 'The bus could not be started.');
+      } finally {
+        processingRef.current = false;
+      }
+    },
+    [stopCamera],
+  );
+
+  const startSelected = useCallback(
+    async (option: BusQrStartOption) => {
+      if (processingRef.current || !scannedToken) return;
+      processingRef.current = true;
+      setMessage(null);
+      try {
         if (!('geolocation' in navigator)) {
           throw new Error('Location is not available on this phone. The bus was not started.');
         }
@@ -88,7 +120,7 @@ export function BusQrStartScanner({
           );
         });
         setState('starting-trip');
-        const result = await startBusTrackingFromQr(rawToken);
+        const result = await startBusTrackingFromQr(scannedToken, option.busRouteAssignmentId);
         setState('started');
         setMessage(
           result.resumed
@@ -103,7 +135,7 @@ export function BusQrStartScanner({
         processingRef.current = false;
       }
     },
-    [onStarted, stopCamera],
+    [onStarted, scannedToken],
   );
 
   const start = useCallback(async () => {
@@ -170,6 +202,8 @@ export function BusQrStartScanner({
     setState('idle');
     setMessage(null);
     setManualToken('');
+    setScannedToken('');
+    setStartOptions([]);
   }
 
   return (
@@ -184,8 +218,8 @@ export function BusQrStartScanner({
               {hasActiveTrip ? 'Resume this bus GPS' : 'Scan to start the bus'}
             </h2>
             <p className="mt-1 text-sm text-gray-600">
-              Scan the QR mounted inside the bus. SafeBus will identify its prepared run and use
-              this phone as the bus GPS.
+              Scan the QR mounted inside the bus, choose its route direction, and use this phone as
+              the bus GPS.
             </p>
           </div>
         </div>
@@ -222,6 +256,36 @@ export function BusQrStartScanner({
                 Point the rear camera at the QR inside the bus.
               </p>
             )}
+            {state === 'choosing' && (
+              <div className="space-y-3">
+                <div>
+                  <p className="font-bold text-navy-900">Bus {startOptions[0]?.busNumber}</p>
+                  <p className="text-sm text-gray-600">Choose the route direction to start.</p>
+                </div>
+                {startOptions.map((option) => (
+                  <button
+                    key={option.busRouteAssignmentId}
+                    type="button"
+                    className="flex w-full items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    onClick={() => void startSelected(option)}
+                  >
+                    <span>
+                      <span className="block font-bold text-navy-900">
+                        {option.routeCode} · {option.tripName}
+                      </span>
+                      <span className="mt-1 block text-sm text-gray-600">{option.routeName}</span>
+                    </span>
+                    <span className="shrink-0 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                      {option.resumed
+                        ? 'Resume'
+                        : option.direction === 'forward'
+                          ? 'Outbound'
+                          : 'Return'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
             {state === 'checking-location' && (
               <p className="text-sm font-semibold text-blue-700">
                 Confirming location permission before starting the bus...
@@ -254,24 +318,26 @@ export function BusQrStartScanner({
               </p>
             )}
 
-            {(state === 'unsupported' || import.meta.env.DEV) && state !== 'started' && (
-              <form
-                className="flex flex-col gap-2 sm:flex-row"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void processToken(manualToken);
-                }}
-              >
-                <input
-                  aria-label="Manual bus QR token for QA"
-                  className="min-h-11 min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm"
-                  value={manualToken}
-                  onChange={(event) => setManualToken(event.target.value)}
-                  placeholder="QA token entry"
-                />
-                <Button type="submit">Connect</Button>
-              </form>
-            )}
+            {(state === 'unsupported' || import.meta.env.DEV) &&
+              state !== 'started' &&
+              state !== 'choosing' && (
+                <form
+                  className="flex flex-col gap-2 sm:flex-row"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void processToken(manualToken);
+                  }}
+                >
+                  <input
+                    aria-label="Manual bus QR token for QA"
+                    className="min-h-11 min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm"
+                    value={manualToken}
+                    onChange={(event) => setManualToken(event.target.value)}
+                    placeholder="QA token entry"
+                  />
+                  <Button type="submit">Connect</Button>
+                </form>
+              )}
 
             {state === 'invalid' && (
               <Button

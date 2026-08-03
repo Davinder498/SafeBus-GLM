@@ -18,9 +18,10 @@ import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
 import { getVisibleProfiles, getVisibleSchools } from '@/services/adminOrganizationService';
 import { fetchAdminAssignments } from '@/services/driverAssignmentService';
 import {
-  ensureBusRouteAssignment,
   fetchAdminBusServices,
+  setBusRouteService,
   type BusServiceOption,
+  type SetBusRouteServiceInput,
 } from '@/services/studentBusAssignmentService';
 import {
   deleteRoute,
@@ -42,7 +43,6 @@ import type {
   RouteTripPattern,
   RouteTripStopSchedule,
   SaveRouteDefinitionInput,
-  CreateBusRouteAssignmentInput,
 } from '@/types/transportation';
 import { activeDriverForBusService } from '@/utils/transportAssignments';
 
@@ -53,7 +53,9 @@ interface AdminRoutesPageProps {
 export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
   const { profile } = useAuth();
   const [routes, setRoutes] = useState<Route[]>([]);
-  const list = usePaginatedAdminList<Route & { school_name: string | null; stop_count: number; active_assignment_count: number }>('routes');
+  const list = usePaginatedAdminList<
+    Route & { school_name: string | null; stop_count: number; active_assignment_count: number }
+  >('routes');
   const [schools, setSchools] = useState<School[]>([]);
   const [stops, setStops] = useState<RouteStop[]>([]);
   const [tripPatterns, setTripPatterns] = useState<RouteTripPattern[]>([]);
@@ -113,9 +115,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
 
     if (routesResult.status === 'rejected') {
       const reason = routesResult.reason;
-      setError(
-        reason instanceof Error ? reason.message : 'Unable to load routes.',
-      );
+      setError(reason instanceof Error ? reason.message : 'Unable to load routes.');
       setLoading(false);
       return;
     }
@@ -149,23 +149,11 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
     setStops(stopsResult.status === 'fulfilled' ? stopsResult.value : []);
     setBuses(busesResult.status === 'fulfilled' ? busesResult.value : []);
     setDrivers(driversResult.status === 'fulfilled' ? driversResult.value : []);
-    setProfiles(
-      profilesResult.status === 'fulfilled' ? profilesResult.value : [],
-    );
-    setAssignments(
-      assignmentsResult.status === 'fulfilled'
-        ? assignmentsResult.value
-        : [],
-    );
-    setTripPatterns(
-      tripPatternsResult.status === 'fulfilled' ? tripPatternsResult.value : [],
-    );
-    setTripSchedules(
-      tripSchedulesResult.status === 'fulfilled' ? tripSchedulesResult.value : [],
-    );
-    setBusServices(
-      busServicesResult.status === 'fulfilled' ? busServicesResult.value : [],
-    );
+    setProfiles(profilesResult.status === 'fulfilled' ? profilesResult.value : []);
+    setAssignments(assignmentsResult.status === 'fulfilled' ? assignmentsResult.value : []);
+    setTripPatterns(tripPatternsResult.status === 'fulfilled' ? tripPatternsResult.value : []);
+    setTripSchedules(tripSchedulesResult.status === 'fulfilled' ? tripSchedulesResult.value : []);
+    setBusServices(busServicesResult.status === 'fulfilled' ? busServicesResult.value : []);
     setLoading(false);
   }, []);
 
@@ -178,15 +166,9 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
     [schools],
   );
 
-  const driverNames = useMemo(
-    () => new Map(profiles.map((p) => [p.id, p.full_name])),
-    [profiles],
-  );
+  const driverNames = useMemo(() => new Map(profiles.map((p) => [p.id, p.full_name])), [profiles]);
 
-  const busLabels = useMemo(
-    () => new Map(buses.map((b) => [b.id, b.bus_number])),
-    [buses],
-  );
+  const busLabels = useMemo(() => new Map(buses.map((b) => [b.id, b.bus_number])), [buses]);
 
   // Stops grouped by route
   const stopsByRoute = useMemo(() => {
@@ -244,20 +226,18 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
     setEditingRoute(null);
   }
 
-  async function handleAssignBus(input: CreateBusRouteAssignmentInput) {
+  async function handleAssignBus(input: SetBusRouteServiceInput) {
     setWriteError(null);
     setSuccessMessage(null);
     try {
-      await ensureBusRouteAssignment(input);
+      await setBusRouteService(input);
       setAssigningBusRoute(null);
-      setSuccessMessage('Bus assigned to the named trip.');
+      setSuccessMessage('Bus assigned to the route service.');
       await loadRoutes();
       await list.reload();
     } catch (assignError) {
       const message =
-        assignError instanceof Error
-          ? assignError.message
-          : 'Unable to assign this bus.';
+        assignError instanceof Error ? assignError.message : 'Unable to assign this bus.';
       setWriteError(message);
       throw assignError;
     }
@@ -275,9 +255,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
       await loadRoutes();
       await list.reload();
     } catch (deleteError) {
-      setWriteError(
-        deleteError instanceof Error ? deleteError.message : 'Unable to delete route.',
-      );
+      setWriteError(deleteError instanceof Error ? deleteError.message : 'Unable to delete route.');
     } finally {
       setDeleting(false);
     }
@@ -298,17 +276,18 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
       await loadRoutes();
       await list.reload();
     } catch (submitError) {
-      setWriteError(
-        submitError instanceof Error
-          ? submitError.message
-          : 'Unable to save route.',
-      );
+      setWriteError(submitError instanceof Error ? submitError.message : 'Unable to save route.');
       throw submitError;
     }
   }
 
   return (
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
+    <DashboardLayout
+      title="Admin Dashboard"
+      portal="admin"
+      navItems={[]}
+      navGroups={adminNavGroups}
+    >
       <div className="space-y-6">
         <PageHeader
           eyebrow="Routes"
@@ -374,10 +353,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
         )}
 
         <div>
-          <label
-            className="block text-sm font-semibold text-gray-700"
-            htmlFor="route-search"
-          >
+          <label className="block text-sm font-semibold text-gray-700" htmlFor="route-search">
             Search routes
           </label>
           <input
@@ -391,10 +367,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
         </div>
 
         {loading && (
-          <DataState
-            title="Loading routes"
-            message="Fetching route records visible to you."
-          />
+          <DataState title="Loading routes" message="Fetching route records visible to you." />
         )}
         {error && <DataState title="Unable to load routes" message={error} />}
         {!loading && !error && list.rows.length === 0 && list.totalCount === 0 && (
@@ -415,13 +388,10 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
                   service,
                   assignmentsByRoute.get(route.id) ?? [],
                 );
-                const driver = drivers.find(
-                  (item) => item.id === driverAssignment?.driver_id,
-                );
+                const driver = drivers.find((item) => item.id === driverAssignment?.driver_id);
                 return {
                   busLabel: busLabels.get(service.bus_id) ?? service.bus_number,
-                  driverLabel:
-                    driverNames.get(driver?.profile_id ?? '') ?? null,
+                  driverLabel: driverNames.get(driver?.profile_id ?? '') ?? null,
                   tripName: service.trip_name,
                 };
               });
@@ -430,19 +400,13 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
                 <RouteTile
                   key={route.id}
                   route={route}
-                  schoolName={
-                    route.school_id
-                      ? (schoolNames.get(route.school_id) ?? null)
-                      : null
-                  }
+                  schoolName={route.school_id ? (schoolNames.get(route.school_id) ?? null) : null}
                   stopCount={routeStops.length}
                   assignments={tileAssignments}
                   canWrite={canWrite}
                   canDelete={canDelete}
                   canAssignBus={
-                    canWrite &&
-                    route.status === 'active' &&
-                    route.definition_status === 'ready'
+                    canWrite && route.status === 'active' && route.definition_status === 'ready'
                   }
                   onEdit={() => startEdit(route)}
                   onAssignBus={() => {
@@ -463,7 +427,15 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
                 />
               );
             })}
-            <div className="sm:col-span-2 lg:col-span-3"><AdminPagination page={list.page} pageSize={list.pageSize} totalCount={list.totalCount} onPageChange={list.setPage} onPageSizeChange={list.setPageSize} /></div>
+            <div className="sm:col-span-2 lg:col-span-3">
+              <AdminPagination
+                page={list.page}
+                pageSize={list.pageSize}
+                totalCount={list.totalCount}
+                onPageChange={list.setPage}
+                onPageSizeChange={list.setPageSize}
+              />
+            </div>
           </section>
         )}
         <ConfirmDialog
