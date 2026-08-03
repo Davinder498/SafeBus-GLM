@@ -38,6 +38,7 @@ async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean 
   let routeEffectiveTo: string | null = null;
   let studentStatus: 'active' | 'inactive' | 'archived' = 'active';
   let studentEffectiveTo: string | null = null;
+  let addedStudentStatus: 'active' | 'archived' | null = null;
   let expiredStudentStatus: 'active' | 'inactive' | 'archived' = 'active';
   let expiredStudentEffectiveTo = '2000-01-31';
   const routeAssignments = [
@@ -331,6 +332,44 @@ async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean 
               pickup_stop_name: 'Last Stop',
               dropoff_stop_name: 'First Stop',
             },
+            ...(addedStudentStatus === 'active'
+              ? [
+                  {
+                    id: 'student-assignment-2',
+                    tenant_id: tenantId,
+                    student_id: 'student-2',
+                    bus_route_assignment_id: serviceId,
+                    route_trip_pattern_id: 'pattern-current',
+                    pickup_stop_id: 'stop-1',
+                    dropoff_stop_id: 'stop-2',
+                    effective_from: '2026-08-03',
+                    effective_to: null,
+                    status: 'active' as const,
+                    created_at: '2026-08-03T00:00:00Z',
+                    updated_at: '2026-08-03T00:00:00Z',
+                    student_name: 'Morgan Lee',
+                    pickup_stop_name: 'First Stop',
+                    dropoff_stop_name: 'Last Stop',
+                  },
+                  {
+                    id: 'student-assignment-2-return',
+                    tenant_id: tenantId,
+                    student_id: 'student-2',
+                    bus_route_assignment_id: 'service-return',
+                    route_trip_pattern_id: 'pattern-return',
+                    pickup_stop_id: 'stop-2',
+                    dropoff_stop_id: 'stop-1',
+                    effective_from: '2026-08-03',
+                    effective_to: null,
+                    status: 'active' as const,
+                    created_at: '2026-08-03T00:00:00Z',
+                    updated_at: '2026-08-03T00:00:00Z',
+                    student_name: 'Morgan Lee',
+                    pickup_stop_name: 'Last Stop',
+                    dropoff_stop_name: 'First Stop',
+                  },
+                ]
+              : []),
             ...(options.includeExpired
               ? [
                   {
@@ -412,8 +451,20 @@ async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean 
     }
     if (path.endsWith('/rpc/admin_set_student_bus_service')) {
       const body = route.request().postDataJSON() as {
+        p_student_id?: string;
         p_effective_to?: string | null;
       };
+      if (body.p_student_id === 'student-2') {
+        addedStudentStatus = 'active';
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            { id: 'student-assignment-2', status: 'active' },
+            { id: 'student-assignment-2-return', status: 'active' },
+          ]),
+        });
+      }
       studentEffectiveTo = body.p_effective_to ?? null;
       return route.fulfill({
         status: 200,
@@ -438,7 +489,10 @@ async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean 
         p_status?: 'active' | 'inactive' | 'archived';
       };
       const expired = body.p_assignment_ids?.includes('student-assignment-expired');
-      if (expired) {
+      const addedStudent = body.p_assignment_ids?.includes('student-assignment-2');
+      if (addedStudent) {
+        addedStudentStatus = body.p_status === 'archived' ? 'archived' : 'active';
+      } else if (expired) {
         expiredStudentStatus = body.p_status ?? expiredStudentStatus;
       } else {
         studentStatus = body.p_status ?? studentStatus;
@@ -452,6 +506,13 @@ async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean 
             status: body.p_status,
           })),
         ),
+      });
+    }
+    if (path.includes('/rpc/search_admin_students')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([{ id: 'student-2', label: 'Morgan Lee', school_name: null }]),
       });
     }
     if (path.includes('/rpc/admin_update_bus_route_assignment')) {
@@ -705,9 +766,7 @@ test.describe('unified bus workspace', () => {
     await expect(page.getByRole('button', { name: 'Assign route', exact: true })).toBeVisible();
   });
 
-  test('updates and deassigns routes and manages the student assignment lifecycle', async ({
-    page,
-  }) => {
+  test('assigns, updates, and removes students through the bus roster', async ({ page }) => {
     await mockBusWorkspace(page);
     await page.goto(`/admin/buses/${busId}?tab=routes`);
 
@@ -740,28 +799,33 @@ test.describe('unified bus workspace', () => {
     await expect(studentRow).toContainText('Return: Last Stop');
     await expect(studentRow).toContainText('Outbound: Last Stop');
     await expect(studentRow).toContainText('Return: First Stop');
+
     await page.getByRole('button', { name: 'Assign student' }).click();
     await expect(page.getByRole('heading', { name: 'Assign student' })).toBeVisible();
-    await page.getByRole('button', { name: 'Cancel' }).click();
+    await page.getByLabel('Search students').fill('Morgan');
+    await page.getByRole('button', { name: 'Morgan Lee', exact: true }).click();
+    await page.getByLabel('Bus route').selectOption('route-current');
+    const outboundStops = page.locator('fieldset').filter({ hasText: 'Outbound stops' });
+    await outboundStops.getByLabel('Pickup stop').selectOption('stop-1');
+    await outboundStops.getByLabel('Drop-off stop').selectOption('stop-2');
+    await page.locator('form').getByRole('button', { name: 'Assign student' }).click();
+    await expect(page.getByText('Student assigned to this bus.')).toBeVisible();
+    await expect(page.getByTestId('student-assignment-student-assignment-2')).toContainText(
+      'Morgan Lee',
+    );
 
-    await page.getByRole('button', { name: 'Edit assignment' }).click();
-    await expect(page.getByRole('heading', { name: 'Edit student bus service' })).toBeVisible();
+    await studentRow.getByRole('button', { name: 'Update assignment' }).click();
+    await expect(page.getByRole('heading', { name: 'Update student assignment' })).toBeVisible();
     await page.getByLabel('Effective to').fill('2026-11-30');
-    await page.getByRole('button', { name: 'Save bus service' }).click();
-    await expect(page.getByText('Student bus service updated.')).toBeVisible();
+    await page.locator('form').getByRole('button', { name: 'Update assignment' }).click();
+    await expect(page.getByText('Student assignment updated.')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Deactivate', exact: true }).click();
-    await expect(page.getByText('Student bus service deactivated.')).toBeVisible();
-    await page.getByRole('button', { name: 'Activate', exact: true }).click();
-    await expect(page.getByText('Student bus service activated.')).toBeVisible();
-
-    await page.getByRole('button', { name: 'Deassign', exact: true }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Deassign' }).click();
-    await expect(page.getByText('Student deassigned from this bus route service.')).toBeVisible();
-
-    await page.getByRole('button', { name: 'Delete assignment' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Delete assignment' }).click();
-    await expect(page.getByText('Student assignment removed and archived.')).toBeVisible();
+    await studentRow.getByRole('button', { name: 'Remove from bus' }).click();
+    await expect(page.getByRole('dialog')).toContainText(
+      'The student remains in the Students directory',
+    );
+    await page.getByRole('dialog').getByRole('button', { name: 'Remove from bus' }).click();
+    await expect(page.getByText('Student removed from this bus.')).toBeVisible();
     await expect(page.getByText('Archived', { exact: true })).toHaveCount(0);
     await expect(page.getByTestId('student-assignment-student-assignment-1')).toHaveCount(0);
 
@@ -792,25 +856,17 @@ test.describe('unified bus workspace', () => {
     await page.evaluate(() => document.body.classList.remove('printing-bus-qr'));
   });
 
-  test('labels expired assignments correctly and closes them without changing history', async ({
-    page,
-  }) => {
+  test('removes expired students and closes expired route history', async ({ page }) => {
     await mockBusWorkspace(page, { includeExpired: true });
     await page.goto(`/admin/buses/${busId}?tab=students`);
 
     const expiredStudent = page.getByTestId('student-assignment-student-assignment-expired');
     await expect(expiredStudent.getByText('Expired', { exact: true })).toBeVisible();
-    await expect(expiredStudent.getByRole('button', { name: 'Edit assignment' })).toHaveCount(0);
-    await expect(expiredStudent.getByRole('button', { name: 'Deactivate' })).toHaveCount(0);
-    await expiredStudent.getByRole('button', { name: 'Close expired' }).click();
-    await expect(page.getByRole('dialog')).toContainText(
-      'without changing its historical end date',
-    );
-    await page.getByRole('dialog').getByRole('button', { name: 'Close expired' }).click();
-    await expect(
-      page.getByText('Expired student assignment closed. Historical dates were preserved.'),
-    ).toBeVisible();
-    await expect(expiredStudent.getByText('Jan 31, 2000')).toBeVisible();
+    await expect(expiredStudent.getByRole('button', { name: 'Update assignment' })).toHaveCount(0);
+    await expiredStudent.getByRole('button', { name: 'Remove from bus' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Remove from bus' }).click();
+    await expect(page.getByText('Student removed from this bus.')).toBeVisible();
+    await expect(expiredStudent).toHaveCount(0);
 
     await page.getByRole('tab', { name: 'Routes' }).click();
     const upcomingRoute = page.getByTestId('route-assignment-service-upcoming');
