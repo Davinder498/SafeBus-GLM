@@ -727,10 +727,7 @@ test.describe('unified bus workspace', () => {
     const studentRoster = page.getByRole('table', { name: 'Student roster for bus AF02' });
     await expect(studentRoster.getByRole('columnheader')).toHaveText([
       'Student',
- agent/unified-direction-assignment
       'Route service',
-      'Route trip',
- main
       'Pickup',
       'Drop-off',
       'Service dates',
@@ -739,15 +736,10 @@ test.describe('unified bus workspace', () => {
     ]);
     const studentRow = page.getByTestId('student-assignment-student-assignment-1');
     await expect(studentRow).toContainText('Avery Johnson');
- agent/unified-direction-assignment
     await expect(studentRow).toContainText('Outbound: First Stop');
     await expect(studentRow).toContainText('Return: Last Stop');
     await expect(studentRow).toContainText('Outbound: Last Stop');
     await expect(studentRow).toContainText('Return: First Stop');
-
-    await expect(studentRow).toContainText('First Stop');
-    await expect(studentRow).toContainText('Last Stop');
- main
     await page.getByRole('button', { name: 'Assign student' }).click();
     await expect(page.getByRole('heading', { name: 'Assign student' })).toBeVisible();
     await page.getByRole('button', { name: 'Cancel' }).click();
