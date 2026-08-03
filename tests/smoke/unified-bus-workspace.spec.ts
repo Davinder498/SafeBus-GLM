@@ -623,8 +623,20 @@ test.describe('unified bus workspace', () => {
     await expect(page.getByText('Ready for driver scan')).toBeVisible();
 
     await page.getByRole('tab', { name: 'Students' }).click();
-    await expect(page.getByText('Avery Johnson')).toBeVisible();
-    await expect(page.getByText('Pickup: First Stop')).toBeVisible();
+    const studentRoster = page.getByRole('table', { name: 'Student roster for bus AF02' });
+    await expect(studentRoster.getByRole('columnheader')).toHaveText([
+      'Student',
+      'Route trip',
+      'Pickup',
+      'Drop-off',
+      'Service dates',
+      'Status',
+      'Actions',
+    ]);
+    const studentRow = page.getByTestId('student-assignment-student-assignment-1');
+    await expect(studentRow).toContainText('Avery Johnson');
+    await expect(studentRow).toContainText('First Stop');
+    await expect(studentRow).toContainText('Last Stop');
     await page.getByRole('button', { name: 'Assign student' }).click();
     await expect(page.getByRole('heading', { name: 'Assign student' })).toBeVisible();
     await page.getByRole('button', { name: 'Cancel' }).click();
@@ -647,7 +659,8 @@ test.describe('unified bus workspace', () => {
     await page.getByRole('button', { name: 'Delete assignment' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Delete assignment' }).click();
     await expect(page.getByText('Student assignment removed and archived.')).toBeVisible();
-    await expect(page.getByText('Archived', { exact: true })).toBeVisible();
+    await expect(page.getByText('Archived', { exact: true })).toHaveCount(0);
+    await expect(page.getByTestId('student-assignment-student-assignment-1')).toHaveCount(0);
 
     await page.getByRole('tab', { name: 'Routes' }).click();
     await page.getByRole('button', { name: 'Deassign route' }).first().click();

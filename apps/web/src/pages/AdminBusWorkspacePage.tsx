@@ -17,6 +17,14 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/Table';
 import { useAuth } from '@/contexts/useAuth';
 import {
   endBusRouteAssignment,
@@ -870,7 +878,9 @@ function StudentsPanel({
   const serviceNames = new Map(
     serviceRecords.map((service) => [service.id, `${service.route_code} · ${service.trip_name}`]),
   );
-  if (services.length === 0 && assignments.length === 0) {
+  const rosterAssignments = assignments.filter((assignment) => assignment.status !== 'archived');
+
+  if (services.length === 0 && rosterAssignments.length === 0) {
     return (
       <DataState
         title="Assign a route trip first"
@@ -890,7 +900,7 @@ function StudentsPanel({
         <div>
           <h2 className="text-xl font-bold text-navy-900">Student roster</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Assign students, update stops, temporarily change status, or end their bus assignment.
+            Assign students to this bus, update their stops, or manage their service status.
           </p>
         </div>
         {!form && services.length > 0 && (
@@ -915,101 +925,117 @@ function StudentsPanel({
           />
         </InlineFormShell>
       )}
-      {assignments.length === 0 ? (
+      {rosterAssignments.length === 0 ? (
         <DataState
           title="No students assigned"
           message="Assign an existing student to one of this bus’s route trips."
         />
       ) : (
-        <BucketSections
-          items={assignments}
-          render={(assignment) => {
-            const hasActiveService = services.some(
-              (service) => service.id === assignment.bus_route_assignment_id,
-            );
-            const isActive = assignment.status === 'active';
-            const isArchived = assignment.status === 'archived';
-            const effectiveStatus = busAssignmentEffectiveStatus(assignment);
-            const isExpired = effectiveStatus === 'expired';
-            return (
-              <Card
-                key={assignment.id}
-                className="p-5"
-                data-testid={`student-assignment-${assignment.id}`}
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h3 className="font-bold text-navy-900">{assignment.student_name}</h3>
-                    <p className="mt-1 text-sm font-semibold text-navy-700">
+        <Card className="overflow-visible p-0">
+          <Table aria-label={`Student roster for bus ${bus.bus_number}`}>
+            <TableHeader>
+              <tr>
+                <TableColumn>Student</TableColumn>
+                <TableColumn>Route trip</TableColumn>
+                <TableColumn>Pickup</TableColumn>
+                <TableColumn>Drop-off</TableColumn>
+                <TableColumn>Service dates</TableColumn>
+                <TableColumn>Status</TableColumn>
+                <TableColumn className="w-16 text-right">Actions</TableColumn>
+              </tr>
+            </TableHeader>
+            <TableBody>
+              {rosterAssignments.map((assignment) => {
+                const hasActiveService = services.some(
+                  (service) => service.id === assignment.bus_route_assignment_id,
+                );
+                const isActive = assignment.status === 'active';
+                const effectiveStatus = busAssignmentEffectiveStatus(assignment);
+                const isExpired = effectiveStatus === 'expired';
+                return (
+                  <TableRow key={assignment.id} data-testid={`student-assignment-${assignment.id}`}>
+                    <TableCell className="whitespace-nowrap font-bold text-navy-900">
+                      {assignment.student_name}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap font-semibold text-navy-700">
                       {serviceNames.get(assignment.bus_route_assignment_id) ??
-                        'Historical route trip'}
-                    </p>
-                    <div className="mt-3 grid gap-1 text-sm text-gray-600">
-                      <p>Pickup: {assignment.pickup_stop_name ?? 'Not assigned'}</p>
-                      <p>Drop-off: {assignment.dropoff_stop_name ?? 'Not assigned'}</p>
-                      <p>{dateRange(assignment.effective_from, assignment.effective_to)}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusPill tone={assignmentStatusTone(effectiveStatus)}>
-                      {assignmentStatusLabel(effectiveStatus)}
-                    </StatusPill>
-                    {!isArchived && !isExpired && hasActiveService && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => onEdit(assignment)}
-                      >
-                        Edit assignment
-                      </Button>
-                    )}
-                    {!isArchived && !isExpired && hasActiveService && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => onSetStatus(assignment, isActive ? 'inactive' : 'active')}
-                      >
-                        {isActive ? 'Deactivate' : 'Activate'}
-                      </Button>
-                    )}
-                    {isActive && !isExpired && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="danger"
-                        onClick={() => onDeassign(assignment)}
-                      >
-                        Deassign
-                      </Button>
-                    )}
-                    {isExpired && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="danger"
-                        onClick={() => onDeassign(assignment)}
-                      >
-                        Close expired
-                      </Button>
-                    )}
-                    {!isArchived && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="danger"
-                        onClick={() => onArchive(assignment)}
-                      >
-                        Delete assignment
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            );
-          }}
-        />
+                        'Previous route trip'}
+                    </TableCell>
+                    <TableCell className="min-w-36">
+                      {assignment.pickup_stop_name ?? 'Not assigned'}
+                    </TableCell>
+                    <TableCell className="min-w-36">
+                      {assignment.dropoff_stop_name ?? 'Not assigned'}
+                    </TableCell>
+                    <TableCell className="min-w-48 whitespace-nowrap text-slate-600">
+                      {dateRange(assignment.effective_from, assignment.effective_to)}
+                    </TableCell>
+                    <TableCell>
+                      <StatusPill tone={assignmentStatusTone(effectiveStatus)}>
+                        {assignmentStatusLabel(effectiveStatus)}
+                      </StatusPill>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                        {!isExpired && hasActiveService && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => onEdit(assignment)}
+                          >
+                            Edit assignment
+                          </Button>
+                        )}
+                        {!isExpired && hasActiveService && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            onClick={() =>
+                              onSetStatus(assignment, isActive ? 'inactive' : 'active')
+                            }
+                          >
+                            {isActive ? 'Deactivate' : 'Activate'}
+                          </Button>
+                        )}
+                        {isActive && !isExpired && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="danger"
+                            onClick={() => onDeassign(assignment)}
+                          >
+                            Deassign
+                          </Button>
+                        )}
+                        {isExpired && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="danger"
+                            onClick={() => onDeassign(assignment)}
+                          >
+                            Close expired
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="text-danger-700 hover:bg-danger-50 hover:text-danger-800"
+                          onClick={() => onArchive(assignment)}
+                        >
+                          Delete assignment
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );
