@@ -2,12 +2,8 @@ import { supabase, supabaseConfigError } from '@/lib/supabase';
 import type {
   AssignmentStatus,
   CreateAssignmentInput,
-  DriverAssignmentSummary,
   DriverRouteAssignment,
 } from '@/types/driverAssignments';
-import type { DriverRecord } from '@/types/trips';
-import { prepareDriverTripAssignments } from '@/utils/driverAssignments';
-import { fetchCurrentDriver } from './driverTripService';
 import { ensureBusRouteAssignment } from './studentBusAssignmentService';
 
 function requireSupabase() {
@@ -146,50 +142,3 @@ export async function updateAssignmentStatus(
 
   return data as DriverRouteAssignment;
 }
-
-// ---------------------------------------------------------------------------
-// Driver-facing service functions
-// ---------------------------------------------------------------------------
-
-interface DriverAssignmentRpcRow {
-  assignment_id: string;
-  bus_id: string;
-  route_id: string;
-  route_trip_pattern_id: string;
-  trip_name: string;
-  direction: 'forward' | 'reverse';
-  route_name: string;
-  route_code: string;
-  bus_number: string;
-  scheduled_start_time: string | null;
-}
-
-/** Fetch the authenticated driver's exact, currently startable trip assignments. */
-export async function fetchDriverAssignments(): Promise<DriverAssignmentSummary[]> {
-  const client = requireSupabase();
-  const { data, error } = await client.rpc('get_current_driver_trip_assignments');
-
-  if (error) {
-    logDevError('Failed to load current driver trip assignments', error);
-    throw new Error('We could not load your trip assignments. Please try again.');
-  }
-
-  return prepareDriverTripAssignments(
-    ((data ?? []) as DriverAssignmentRpcRow[]).map((row) => ({
-      id: row.assignment_id,
-      busId: row.bus_id,
-      routeId: row.route_id,
-      tripPatternId: row.route_trip_pattern_id,
-      tripName: row.trip_name,
-      direction: row.direction,
-      busLabel: row.bus_number,
-      routeName: row.route_name,
-      routeCode: row.route_code,
-      scheduledStartTime: row.scheduled_start_time,
-      status: 'active',
-    })),
-  );
-}
-
-/** Re-exported for the driver dashboard to avoid an extra import. */
-export { fetchCurrentDriver, type DriverRecord };

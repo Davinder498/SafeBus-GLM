@@ -1,5 +1,5 @@
-// Driver route assignment types for Milestone 4F.
-// Field names mirror the public.driver_route_assignments table columns.
+// Admin-facing driver assignment types. Driver assignments support scheduling
+// and operational planning; they are not a driver trip-start mechanism.
 
 import type { TripType } from './trips';
 
@@ -21,11 +21,6 @@ export interface DriverRouteAssignment {
   updated_at: string;
 }
 
-/**
- * Assignment enriched with driver/bus/route display names for admin lists.
- * The admin page joins these client-side from the separately loaded
- * drivers/buses/routes.
- */
 export interface DriverRouteAssignmentWithDetails extends DriverRouteAssignment {
   driverName: string | null;
   driverEmail: string | null;
@@ -33,8 +28,7 @@ export interface DriverRouteAssignmentWithDetails extends DriverRouteAssignment 
   routeName: string | null;
 }
 
-/** Input the client provides when creating an assignment. tenant_id is derived
- * server-side from the admin's tenant, never trusted from the client. */
+/** The tenant is derived from the authenticated admin profile. */
 export interface CreateAssignmentInput {
   driverId: string;
   busId: string;
@@ -47,21 +41,3 @@ export interface CreateAssignmentInput {
 }
 
 export type UpdateAssignmentInput = Partial<Omit<CreateAssignmentInput, 'driverId'>>;
-
-/**
- * Driver-facing assignment summary — the driver dashboard shows these instead
- * of raw bus/route dropdowns.
- */
-export interface DriverAssignmentSummary {
-  id: string;
-  busId: string;
-  routeId: string;
-  tripPatternId: string;
-  tripName: string;
-  direction: 'forward' | 'reverse';
-  busLabel: string;
-  routeName: string;
-  routeCode: string;
-  scheduledStartTime: string | null;
-  status: AssignmentStatus;
-}
