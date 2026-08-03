@@ -1,4 +1,10 @@
-import type { ReactNode, ThHTMLAttributes, TdHTMLAttributes, TableHTMLAttributes } from 'react';
+import type {
+  HTMLAttributes,
+  ReactNode,
+  TdHTMLAttributes,
+  ThHTMLAttributes,
+  TableHTMLAttributes,
+} from 'react';
 import { cn } from '@/utils/cn';
 
 interface TableProps extends TableHTMLAttributes<HTMLTableElement> {
@@ -40,8 +46,16 @@ export function TableBody({ children, className }: { children: ReactNode; classN
   return <tbody className={cn('divide-y divide-slate-100', className)}>{children}</tbody>;
 }
 
-export function TableRow({ children, className }: { children: ReactNode; className?: string }) {
-  return <tr className={cn('transition-colors hover:bg-slate-50/60', className)}>{children}</tr>;
+interface TableRowProps extends HTMLAttributes<HTMLTableRowElement> {
+  children: ReactNode;
+}
+
+export function TableRow({ children, className, ...props }: TableRowProps) {
+  return (
+    <tr className={cn('transition-colors hover:bg-slate-50/60', className)} {...props}>
+      {children}
+    </tr>
+  );
 }
 
 interface TableColumnProps extends ThHTMLAttributes<HTMLTableCellElement> {
