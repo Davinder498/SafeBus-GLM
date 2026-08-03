@@ -31,6 +31,7 @@ import { getVisibleSchools } from '@/services/adminOrganizationService';
 import {
   createStudentBusAssignment,
   ensureBusRouteAssignment,
+  renewBusRouteAssignment,
   updateBusRouteAssignment,
   updateStudentBusAssignment,
   type BusServiceOption,
@@ -53,7 +54,6 @@ import type {
   RouteTripPattern,
   StudentBusAssignment,
   UpdateBusInput,
-  UpdateBusRouteAssignmentInput,
   UpdateStudentBusAssignmentInput,
 } from '@/types/transportation';
 import { cn } from '@/utils/cn';
@@ -68,6 +68,7 @@ import {
 type WorkspaceTab = 'details' | 'routes' | 'students';
 type LifecycleBucket = BusWorkspaceLifecycle;
 type StudentAssignmentAction = 'deassign' | 'archive';
+type RouteFormMode = 'create' | 'edit' | 'renew';
 
 const validTabs = new Set<WorkspaceTab>(['details', 'routes', 'students']);
 function formatDate(value: string | null) {
@@ -125,6 +126,7 @@ export function AdminBusWorkspacePage() {
   const [detailsDirty, setDetailsDirty] = useState(false);
   const [routeForm, setRouteForm] = useState<{
     assignment: AdminBusRouteAssignment | null;
+    mode: RouteFormMode;
   } | null>(null);
   const [endingRoute, setEndingRoute] = useState<AdminBusRouteAssignment | null>(null);
   const [ending, setEnding] = useState(false);
@@ -241,8 +243,14 @@ export function AdminBusWorkspacePage() {
   async function saveRouteAssignment(input: Parameters<typeof ensureBusRouteAssignment>[0]) {
     setWriteError(null);
     setMessage(null);
-    if (routeForm?.assignment) {
-      const update: UpdateBusRouteAssignmentInput = {
+    if (routeForm?.assignment && routeForm.mode === 'renew') {
+      await renewBusRouteAssignment(routeForm.assignment.id, {
+        effective_from: input.effective_from ?? new Date().toISOString().slice(0, 10),
+        effective_to: input.effective_to,
+      });
+      setMessage('Route assignment renewed. The earlier assignment remains in history.');
+    } else if (routeForm?.assignment) {
+      const update = {
         route_id: input.route_id,
         route_trip_pattern_id: input.route_trip_pattern_id,
         trip_type: input.trip_type,
@@ -555,9 +563,10 @@ export function AdminBusWorkspacePage() {
               preparingServiceId={preparingServiceId}
               canManage={canManageRoutesAndDrivers}
               form={routeForm}
-              formIdentityLocked={routeFormIdentityLocked}
-              onAdd={() => setRouteForm({ assignment: null })}
-              onEdit={(assignment) => setRouteForm({ assignment })}
+              formIdentityLocked={routeFormIdentityLocked || routeForm?.mode === 'renew'}
+              onAdd={() => setRouteForm({ assignment: null, mode: 'create' })}
+              onEdit={(assignment) => setRouteForm({ assignment, mode: 'edit' })}
+              onRenew={(assignment) => setRouteForm({ assignment, mode: 'renew' })}
               onCancelForm={() => setRouteForm(null)}
               onSubmit={saveRouteAssignment}
               onEnd={setEndingRoute}
@@ -654,6 +663,7 @@ function RoutesPanel({
   formIdentityLocked,
   onAdd,
   onEdit,
+  onRenew,
   onCancelForm,
   onSubmit,
   onEnd,
@@ -666,10 +676,11 @@ function RoutesPanel({
   readyDispatch: AdminBusReadyDispatch | null;
   preparingServiceId: string | null;
   canManage: boolean;
-  form: { assignment: AdminBusRouteAssignment | null } | null;
+  form: { assignment: AdminBusRouteAssignment | null; mode: RouteFormMode } | null;
   formIdentityLocked: boolean;
   onAdd: () => void;
   onEdit: (assignment: AdminBusRouteAssignment) => void;
+  onRenew: (assignment: AdminBusRouteAssignment) => void;
   onCancelForm: () => void;
   onSubmit: (input: Parameters<typeof ensureBusRouteAssignment>[0]) => Promise<void>;
   onEnd: (assignment: AdminBusRouteAssignment) => void;
@@ -691,11 +702,20 @@ function RoutesPanel({
         )}
       </div>
       {form && (
-        <InlineFormShell title={form.assignment ? 'Edit route assignment' : 'Assign route trip'}>
+        <InlineFormShell
+          title={
+            form.mode === 'renew'
+              ? 'Renew route assignment'
+              : form.assignment
+                ? 'Edit route assignment'
+                : 'Assign route trip'
+          }
+        >
           <BusWorkspaceRouteForm
-            key={form.assignment?.id ?? 'new-route-assignment'}
+            key={`${form.mode}-${form.assignment?.id ?? 'new-route-assignment'}`}
             bus={bus}
             assignment={form.assignment}
+            mode={form.mode}
             identityLocked={formIdentityLocked}
             routes={routes}
             tripPatterns={tripPatterns}
@@ -792,6 +812,16 @@ function RoutesPanel({
                       onClick={() => onEnd(assignment)}
                     >
                       Close expired
+                    </Button>
+                  )}
+                  {canManage && bucket === 'history' && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => onRenew(assignment)}
+                    >
+                      Renew assignment
                     </Button>
                   )}
                 </div>

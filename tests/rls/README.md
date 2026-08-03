@@ -409,6 +409,21 @@ The `guardian-live-bus-location-rls.sql` script is self-contained and verifies
 - The RPC has no input arguments and excludes speed, driver, guardian, trip,
   bus, route, stop, address, manifest, event, history, and metadata columns.
 
+## Server-Enforced Bus Route Assignment Operations
+
+After applying `0060_server_enforced_bus_route_assignment_operations.sql` to
+hosted DEV, run:
+
+```bash
+pnpm test:rls:dev -- tests/rls/bus-route-assignment-operations-rls.sql
+```
+
+The script verifies that route edits and renewals are tenant-scoped SECURITY
+DEFINER operations, reject anonymous access, enforce active-trip and linked
+history safeguards, and replace direct authenticated table updates. Renewal
+closes the source assignment and creates a new row instead of rewriting its
+historical dates.
+
 ## Why Playwright Smoke Tests Are Not Enough
 
 Playwright smoke tests verify UI behavior with mocked Supabase responses. They

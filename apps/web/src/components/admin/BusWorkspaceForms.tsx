@@ -18,6 +18,7 @@ const labelClassName = 'block text-sm font-semibold text-gray-700';
 export function BusWorkspaceRouteForm({
   bus,
   assignment,
+  mode = assignment ? 'edit' : 'create',
   identityLocked = false,
   routes,
   tripPatterns,
@@ -27,6 +28,7 @@ export function BusWorkspaceRouteForm({
 }: {
   bus: Bus;
   assignment?: AdminBusRouteAssignment | null;
+  mode?: 'create' | 'edit' | 'renew';
   identityLocked?: boolean;
   routes: Route[];
   tripPatterns: RouteTripPattern[];
@@ -56,9 +58,13 @@ export function BusWorkspaceRouteForm({
   );
   const [tripPatternId, setTripPatternId] = useState(assignment?.route_trip_pattern_id ?? '');
   const [effectiveFrom, setEffectiveFrom] = useState(
-    assignment?.effective_from ?? new Date().toISOString().slice(0, 10),
+    mode === 'renew'
+      ? new Date().toISOString().slice(0, 10)
+      : (assignment?.effective_from ?? new Date().toISOString().slice(0, 10)),
   );
-  const [effectiveTo, setEffectiveTo] = useState(assignment?.effective_to ?? '');
+  const [effectiveTo, setEffectiveTo] = useState(
+    mode === 'renew' ? '' : (assignment?.effective_to ?? ''),
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -111,14 +117,19 @@ export function BusWorkspaceRouteForm({
   return (
     <form className="grid gap-4" onSubmit={submit}>
       <p className="text-sm text-gray-600">
-        {assignment ? 'Update' : 'Assign'} Bus {bus.bus_number}{' '}
-        {assignment ? 'route-trip dates and configuration.' : 'to one reviewed named trip.'}{' '}
+        {mode === 'renew' ? 'Renew' : assignment ? 'Update' : 'Assign'} Bus {bus.bus_number}{' '}
+        {mode === 'renew'
+          ? 'with a new date range while keeping the earlier assignment in history.'
+          : assignment
+            ? 'route-trip dates and configuration.'
+            : 'to one reviewed named trip.'}{' '}
         Outbound and return trips are assigned separately.
       </p>
       {identityLocked && (
         <p className="rounded-lg bg-warning-50 p-3 text-sm font-semibold text-warning-700">
-          This route trip has linked people or history. You can update its dates, but preserving
-          that history requires a new assignment when the route or named trip changes.
+          {mode === 'renew'
+            ? 'The route and named trip are copied from history and cannot be changed. People are assigned separately to the renewed service.'
+            : 'This route trip has linked people or history. You can update its dates, but preserving that history requires a new assignment when the route or named trip changes.'}
         </p>
       )}
       {error && <p className="text-sm font-semibold text-danger-700">{error}</p>}
@@ -186,7 +197,11 @@ export function BusWorkspaceRouteForm({
       )}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" loading={saving} disabled={eligibleRoutes.length === 0}>
-          {assignment ? 'Save route assignment' : 'Assign route trip'}
+          {mode === 'renew'
+            ? 'Renew route assignment'
+            : assignment
+              ? 'Save route assignment'
+              : 'Assign route trip'}
         </Button>
         <Button type="button" variant="secondary" disabled={saving} onClick={onCancel}>
           Cancel
