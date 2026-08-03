@@ -367,13 +367,6 @@ export async function getAdminLiveRouteOverlays(): Promise<RouteOverlay[]> {
   }));
 }
 
-export async function getGuardianLiveRouteOverlays(): Promise<RouteOverlay[]> {
-  const client = requireSupabase();
-  const { data, error } = await client.rpc('get_guardian_live_route_overlays');
-  if (error) throw new Error(error.message);
-  return (data ?? []) as RouteOverlay[];
-}
-
 export async function createRouteStop(input: CreateRouteStopInput): Promise<RouteStop> {
   const client = requireSupabase();
   const { data, error } = await client

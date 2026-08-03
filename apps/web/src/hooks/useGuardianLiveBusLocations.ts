@@ -29,13 +29,13 @@ export interface UseGuardianLiveBusLocationsResult {
  * A school-bus guardian map does not need sub-second updates. 15 seconds is
  * frequent enough to reflect an active trip without generating excessive
  * database requests, and stays well below the 2-minute freshness threshold
- * enforced by the secured Milestone 11A RPC.
+ * enforced by the secured bus-first RPC.
  */
 const REFRESH_INTERVAL_MS = 15_000;
 
 /**
- * React hook that loads guardian live bus location state through the secured
- * Milestone 11A RPC, with safe periodic refresh.
+ * React hook that loads guardian bus-only visibility through the secured
+ * get_guardian_bus_visibility() RPC, with safe periodic refresh.
  *
  * Safety properties (Milestone 11C):
  *   - Conservative 15-second auto-refresh; no user-configurable high-frequency

@@ -1,51 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
-import { DashboardLayout, type DashboardNavItem } from '@/components/layout/DashboardLayout';
+import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { fetchGuardianStudentRoutes } from '@/services/guardianRouteVisibilityService';
-import { fetchGuardianLiveTrips } from '@/services/guardianLiveTripService';
-import { studentDisplayName, type GuardianStudentRoute } from '@/types/guardianRouteVisibility';
-import type { GuardianLiveTrip } from '@/types/guardianLiveTrip';
+import { fetchGuardianBusVisibility } from '@/services/guardianLiveBusLocationService';
+import type { GuardianBusVisibility } from '@/types/guardianLiveBusLocation';
 
 type LoadState =
-  | { kind: 'loading' }
-  | { kind: 'error'; message: string }
-  | { kind: 'ready'; routes: GuardianStudentRoute[]; liveTrips: Map<string, GuardianLiveTrip> };
-
-const guardianNavItems: DashboardNavItem[] = [
-  { label: 'Live Bus Map', to: '/guardian/live-map' },
-  { label: 'Bus Status', to: '/guardian/live' },
-  { label: 'Pickup & Drop-off', to: '/guardian/events' },
-  { label: 'My Students & Routes', to: '/guardian/routes' },
-];
+  { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; buses: GuardianBusVisibility[] };
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-}
-
-/**
- * Text-only live bus status line for a linked student's route (Milestone 6A).
- * Deliberately excludes map, ETA, route line, bus id, driver id, and trip id.
- */
-function LiveBusStatusLine({ trip }: { trip: GuardianLiveTrip | undefined }) {
-  if (!trip || !trip.hasActiveTrip || !trip.lastLocationRecordedAt) {
-    return (
-      <p className="mt-3 text-sm text-gray-600" data-testid="guardian-live-bus-status">
-        Live bus status: <span className="font-semibold text-gray-500">No active trip right now</span>
-      </p>
-    );
-  }
-  return (
-    <p className="mt-3 text-sm text-gray-600" data-testid="guardian-live-bus-status">
-      Live bus status: <span className="font-semibold text-green-700">On trip</span>
-      <span className="text-gray-500"> - Bus location last updated at {formatTimestamp(trip.lastLocationRecordedAt)}</span>
-    </p>
-  );
 }
 
 export function GuardianRoutesPage() {
@@ -56,23 +25,10 @@ export function GuardianRoutesPage() {
   const load = useCallback(async () => {
     setRefreshing(true);
     try {
-      const routes = await fetchGuardianStudentRoutes();
-      // Live trip visibility is fetched in parallel and degrades gracefully:
-      // a live-status failure must NOT break the existing route visibility list.
-      let liveTrips = new Map<string, GuardianLiveTrip>();
-      try {
-        const live = await fetchGuardianLiveTrips();
-        liveTrips = new Map(live.map((t) => [t.studentId, t]));
-      } catch (liveErr) {
-        if (import.meta.env.DEV) {
-          console.error('Live trip visibility failed; route visibility still shown', liveErr);
-        }
-      }
-      setState({ kind: 'ready', routes, liveTrips });
+      setState({ kind: 'ready', buses: await fetchGuardianBusVisibility() });
       setLastRefreshedAt(new Date().toISOString());
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'We could not load your student route information. Please try again.';
-      setState({ kind: 'error', message });
+    } catch {
+      setState({ kind: 'error' });
     } finally {
       setRefreshing(false);
     }
@@ -83,12 +39,17 @@ export function GuardianRoutesPage() {
   }, [load]);
 
   return (
-    <DashboardLayout title="Parent Dashboard" portal="parent" navItems={guardianNavItems}>
+    <DashboardLayout
+      title="Parent Dashboard"
+      portal="parent"
+      navItems={[]}
+      navGroups={guardianNavGroups}
+    >
       <div className="mx-auto max-w-3xl space-y-5">
         <PageHeader
-          eyebrow="My Students"
-          title="My Students & Routes"
-          description="View your linked students and their assigned route information."
+          eyebrow="Assigned buses"
+          title="My Buses"
+          description="See each linked student's stable bus number and the plate of the physical vehicle currently assigned to it."
         />
 
         <Card className="p-4">
@@ -104,78 +65,84 @@ export function GuardianRoutesPage() {
               {refreshing ? 'Refreshing...' : 'Refresh'}
             </Button>
             <span className="text-sm text-gray-600" data-testid="guardian-routes-last-refreshed">
-              {lastRefreshedAt ? `Last refreshed ${formatTimestamp(lastRefreshedAt)}` : 'Not refreshed yet'}
+              {lastRefreshedAt
+                ? `Last refreshed ${formatTimestamp(lastRefreshedAt)}`
+                : 'Not refreshed yet'}
             </span>
           </div>
         </Card>
 
         {state.kind === 'loading' && (
-          <DataState title="Loading transportation information" message="Fetching your linked students and bus service details." />
+          <DataState
+            title="Loading bus information"
+            message="Fetching the buses assigned to your linked students."
+          />
         )}
-
         {state.kind === 'error' && (
           <div className="space-y-4" data-testid="guardian-routes-error">
-            <DataState title="We could not load your student route information." message="Please try again." />
+            <DataState
+              title="We could not load your bus information."
+              message="Please try again."
+            />
             <Button type="button" variant="secondary" onClick={() => void load()}>
               Try again
             </Button>
           </div>
         )}
-
-        {state.kind === 'ready' && state.routes.length === 0 && (
+        {state.kind === 'ready' && state.buses.length === 0 && (
           <div data-testid="guardian-routes-empty">
             <DataState
-              title="No bus assignment is available yet."
+              title="No linked students are available yet."
               message="Please contact your school transportation office."
             />
           </div>
         )}
-
-        {state.kind === 'ready' && state.routes.length > 0 && (
+        {state.kind === 'ready' && state.buses.length > 0 && (
           <section className="grid gap-4" data-testid="guardian-routes-list">
-            {state.routes.map((route) => (
-              <Card key={route.studentId} className="p-5" data-testid="guardian-student-route-card">
+            {state.buses.map((bus) => (
+              <Card key={bus.studentId} className="p-5" data-testid="guardian-student-bus-card">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h2 className="text-xl font-bold text-navy-900">
-                      {studentDisplayName(route)}
-                    </h2>
-                    {route.studentGrade && (
-                      <p className="mt-1 text-sm text-gray-600">
-                        Grade {route.studentGrade}
-                      </p>
-                    )}
-                    {route.routeName ? (
-                      <p className="mt-2 text-base text-gray-700">
-                        Route: <span className="font-semibold">{route.routeName}</span>
-                      </p>
-                    ) : (
-                      <p className="mt-2 text-sm text-gray-500">
-                        No route assigned yet.
-                      </p>
+                    <h2 className="text-xl font-bold text-navy-900">{bus.studentName}</h2>
+                    {bus.studentGrade && (
+                      <p className="mt-1 text-sm text-gray-600">Grade {bus.studentGrade}</p>
                     )}
                   </div>
-                  {route.assignmentStatus && (
-                    <StatusPill tone={route.assignmentStatus === 'active' ? 'success' : 'neutral'}>
-                      {route.assignmentStatus}
-                    </StatusPill>
-                  )}
+                  <StatusPill tone={bus.hasActiveTrip ? 'success' : 'neutral'}>
+                    {bus.hasActiveTrip ? 'School run active' : 'Not active right now'}
+                  </StatusPill>
                 </div>
-                {(route.pickupStopName || route.dropoffStopName) && (
-                  <div className="mt-4 grid gap-3 border-t border-gray-200 pt-4 text-sm sm:grid-cols-2">
-                    {route.pickupStopName && (
-                      <p className="text-gray-600">
-                        Pickup: <span className="font-semibold text-navy-900">{route.pickupStopName}</span>
+
+                {bus.assignmentState === 'assigned' && bus.busNumber ? (
+                  <div className="mt-4 grid gap-3 border-t border-gray-200 pt-4 sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Bus number
                       </p>
-                    )}
-                    {route.dropoffStopName && (
-                      <p className="text-gray-600">
-                        Drop-off: <span className="font-semibold text-navy-900">{route.dropoffStopName}</span>
+                      <p className="mt-1 text-2xl font-bold text-navy-900">{bus.busNumber}</p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        This service number stays the same.
                       </p>
-                    )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        License plate
+                      </p>
+                      <p className="mt-1 text-lg font-semibold text-navy-900">
+                        {bus.licensePlate ?? 'Not available'}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        This may change when the physical vehicle changes.
+                      </p>
+                    </div>
                   </div>
+                ) : (
+                  <p className="mt-4 border-t border-gray-200 pt-4 text-sm text-gray-600">
+                    {bus.assignmentState === 'unavailable'
+                      ? 'Bus information is temporarily unavailable.'
+                      : 'No bus is assigned yet.'}
+                  </p>
                 )}
-                {route.routeId && <LiveBusStatusLine trip={state.liveTrips.get(route.studentId)} />}
               </Card>
             ))}
           </section>

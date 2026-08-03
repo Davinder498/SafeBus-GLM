@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adminNavItems, driverNavGroups } from './DashboardLayout';
+import { adminNavItems, driverNavGroups, guardianNavGroups } from './DashboardLayout';
 
 const tenantAdminRoutes = [
   '/admin',
@@ -45,6 +45,20 @@ describe('driver shell navigation model', () => {
       ['Pickup & drop-off', '/driver/pickup-drop-off'],
       ['Settings', '/driver/settings'],
       ['Profile', '/driver/profile'],
+    ]);
+  });
+});
+
+describe('guardian shell navigation model', () => {
+  it('uses bus-first language and does not expose routes as a guardian destination', () => {
+    expect(
+      guardianNavGroups.flatMap((group) => group.items).map(({ label, to }) => [label, to]),
+    ).toEqual([
+      ['Home', '/parent'],
+      ['Live map', '/guardian/live-map'],
+      ['Bus status', '/guardian/live'],
+      ['My buses', '/guardian/routes'],
+      ['Pickup & drop-off', '/guardian/events'],
     ]);
   });
 });
