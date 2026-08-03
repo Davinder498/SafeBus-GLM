@@ -31,6 +31,9 @@ const bus = {
 async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean } = {}) {
   let routeEnded = false;
   let expiredRouteClosed = false;
+  let expiredRouteRenewed = false;
+  let renewedRouteEffectiveFrom = '2099-02-01';
+  let renewedRouteEffectiveTo: string | null = null;
   let runReady = false;
   let hasActiveQr = false;
   let routeEffectiveTo: string | null = null;
@@ -235,6 +238,20 @@ async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean 
             ? { ...item, status: expiredRouteClosed ? ('inactive' as const) : item.status }
             : item,
       );
+      if (expiredRouteRenewed) {
+        const source = routeAssignments.find((item) => item.id === 'service-expired');
+        if (source) {
+          currentRoutes.push({
+            ...source,
+            id: 'service-renewed',
+            effective_from: renewedRouteEffectiveFrom,
+            effective_to: renewedRouteEffectiveTo,
+            status: 'active',
+            created_at: '2026-08-03T00:00:00Z',
+            updated_at: '2026-08-03T00:00:00Z',
+          });
+        }
+      }
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -330,6 +347,36 @@ async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean 
     if (path.includes('/rpc/prepare_bus_run')) {
       runReady = true;
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+    }
+    if (path.includes('/rpc/admin_update_bus_route_assignment')) {
+      const body = route.request().postDataJSON() as { p_effective_to?: string | null };
+      routeEffectiveTo = body.p_effective_to ?? null;
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ...routeAssignments[0], effective_to: routeEffectiveTo }),
+      });
+    }
+    if (path.includes('/rpc/admin_renew_bus_route_assignment')) {
+      const body = route.request().postDataJSON() as {
+        p_effective_from: string;
+        p_effective_to?: string | null;
+      };
+      expiredRouteClosed = true;
+      expiredRouteRenewed = true;
+      renewedRouteEffectiveFrom = body.p_effective_from;
+      renewedRouteEffectiveTo = body.p_effective_to ?? null;
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ...routeAssignments.find((item) => item.id === 'service-expired'),
+          id: 'service-renewed',
+          effective_from: renewedRouteEffectiveFrom,
+          effective_to: renewedRouteEffectiveTo,
+          status: 'active',
+        }),
+      });
     }
     if (path.includes('/rpc/get_admin_bus_qr_credential_status')) {
       return route.fulfill({
@@ -448,6 +495,24 @@ async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean 
             created_at: '2026-01-01T00:00:00Z',
             updated_at: '2026-01-01T00:00:00Z',
           },
+          ...(options.includeExpired
+            ? [
+                {
+                  id: 'route-expired',
+                  tenant_id: tenantId,
+                  school_id: null,
+                  route_name: 'Expired Route',
+                  route_code: 'EXP1',
+                  route_type: 'morning',
+                  route_kind: 'regular',
+                  map_color: '#2563EB',
+                  definition_status: 'ready',
+                  status: 'active',
+                  created_at: '2000-01-01T00:00:00Z',
+                  updated_at: '2000-01-01T00:00:00Z',
+                },
+              ]
+            : []),
         ]),
       });
     }
@@ -467,6 +532,21 @@ async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean 
             created_at: '2026-01-01T00:00:00Z',
             updated_at: '2026-01-01T00:00:00Z',
           },
+          ...(options.includeExpired
+            ? [
+                {
+                  id: 'pattern-expired',
+                  tenant_id: tenantId,
+                  route_id: 'route-expired',
+                  direction: 'forward',
+                  display_name: 'Expired Outbound',
+                  status: 'active',
+                  schedule_review_required: false,
+                  created_at: '2000-01-01T00:00:00Z',
+                  updated_at: '2000-01-01T00:00:00Z',
+                },
+              ]
+            : []),
         ]),
       });
     }
@@ -629,5 +709,29 @@ test.describe('unified bus workspace', () => {
       page.getByText('Expired route assignment closed. Historical dates were preserved.'),
     ).toBeVisible();
     await expect(expiredRoute.getByText('Jan 31, 2000')).toBeVisible();
+  });
+
+  test('renews a historical route as a new assignment while preserving the source', async ({
+    page,
+  }) => {
+    await mockBusWorkspace(page, { includeExpired: true });
+    await page.goto(`/admin/buses/${busId}?tab=routes`);
+
+    const expiredRoute = page.getByTestId('route-assignment-service-expired');
+    await expiredRoute.getByRole('button', { name: 'Renew assignment' }).click();
+    await expect(page.getByRole('heading', { name: 'Renew route assignment' })).toBeVisible();
+    await expect(page.getByRole('combobox').first()).toBeDisabled();
+    await expect(page.getByRole('combobox').nth(1)).toBeDisabled();
+    await page.getByLabel('Effective from').fill('2099-02-01');
+    await page.getByLabel('Effective to').fill('2099-12-31');
+    await page.getByRole('button', { name: 'Renew route assignment' }).click();
+
+    await expect(
+      page.getByText('Route assignment renewed. The earlier assignment remains in history.'),
+    ).toBeVisible();
+    await expect(expiredRoute.getByText('Jan 31, 2000')).toBeVisible();
+    const renewedRoute = page.getByTestId('route-assignment-service-renewed');
+    await expect(renewedRoute.getByText('Scheduled', { exact: true })).toBeVisible();
+    await expect(renewedRoute.getByText('Dec 31, 2099')).toBeVisible();
   });
 });
