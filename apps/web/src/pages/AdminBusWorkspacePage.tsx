@@ -74,7 +74,6 @@ import {
 
 type WorkspaceTab = 'details' | 'routes' | 'students';
 type LifecycleBucket = BusWorkspaceLifecycle;
-type StudentAssignmentAction = 'deassign' | 'archive';
 type RouteFormMode = 'create' | 'edit' | 'renew';
 type RouteAssignmentGroup = DirectionalAssignmentGroup<AdminBusRouteAssignment>;
 type StudentAssignmentGroup = DirectionalAssignmentGroup<AdminBusStudentAssignment>;
@@ -146,7 +145,6 @@ export function AdminBusWorkspacePage() {
   } | null>(null);
   const [studentAction, setStudentAction] = useState<{
     group: StudentAssignmentGroup;
-    action: StudentAssignmentAction;
   } | null>(null);
   const [studentActionBusy, setStudentActionBusy] = useState(false);
 
@@ -291,27 +289,10 @@ export function AdminBusWorkspacePage() {
     setMessage(null);
     await setStudentBusService(input);
     setMessage(
-      studentForm?.group ? 'Student bus service updated.' : 'Student assigned to this bus.',
+      studentForm?.group ? 'Student assignment updated.' : 'Student assigned to this bus.',
     );
     setStudentForm(null);
     await reloadWorkspace();
-  }
-
-  async function setStudentStatus(group: StudentAssignmentGroup, status: 'active' | 'inactive') {
-    setWriteError(null);
-    setMessage(null);
-    try {
-      await setStudentBusServiceStatus(
-        group.assignments.map((assignment) => assignment.id),
-        status,
-      );
-      setMessage(`Student bus service ${status === 'active' ? 'activated' : 'deactivated'}.`);
-      await reloadWorkspace();
-    } catch (error) {
-      setWriteError(
-        error instanceof Error ? error.message : `Unable to ${status} this assignment.`,
-      );
-    }
   }
 
   async function confirmStudentAssignmentAction() {
@@ -319,24 +300,15 @@ export function AdminBusWorkspacePage() {
     setStudentActionBusy(true);
     setWriteError(null);
     setMessage(null);
-    const { group, action } = studentAction;
-    const closingExpired = group.assignments.every(
-      (assignment) => busAssignmentEffectiveStatus(assignment) === 'expired',
-    );
+    const { group } = studentAction;
     try {
       await setStudentBusServiceStatus(
         group.assignments.map((assignment) => assignment.id),
-        action === 'archive' ? 'archived' : 'inactive',
+        'archived',
         true,
       );
       setStudentAction(null);
-      setMessage(
-        action === 'archive'
-          ? 'Student assignment removed and archived.'
-          : closingExpired
-            ? 'Expired student assignment closed. Historical dates were preserved.'
-            : 'Student deassigned from this bus route service.',
-      );
+      setMessage('Student removed from this bus.');
       await reloadWorkspace();
     } catch (error) {
       setWriteError(
@@ -413,12 +385,6 @@ export function AdminBusWorkspacePage() {
   const endingExpiredRoute =
     !!endingRoute &&
     endingRoute.assignments.every(
-      (assignment) => busAssignmentEffectiveStatus(assignment) === 'expired',
-    );
-  const closingExpiredStudent =
-    !!studentAction &&
-    studentAction.action === 'deassign' &&
-    studentAction.group.assignments.every(
       (assignment) => busAssignmentEffectiveStatus(assignment) === 'expired',
     );
   const tabs: Array<{ id: WorkspaceTab; label: string; icon: ReactNode }> = [
@@ -563,9 +529,7 @@ export function AdminBusWorkspacePage() {
               onEdit={(group) => setStudentForm({ group })}
               onCancel={() => setStudentForm(null)}
               onSubmit={saveStudentAssignment}
-              onSetStatus={(group, status) => void setStudentStatus(group, status)}
-              onDeassign={(group) => setStudentAction({ group, action: 'deassign' })}
-              onArchive={(group) => setStudentAction({ group, action: 'archive' })}
+              onDelete={(group) => setStudentAction({ group })}
               onGoRoutes={() => goToTab('routes')}
             />
           )}
@@ -588,27 +552,9 @@ export function AdminBusWorkspacePage() {
       />
       <ConfirmDialog
         open={!!studentAction}
-        title={
-          studentAction?.action === 'archive'
-            ? `Delete ${studentAction.group.assignments[0]?.student_name ?? 'student'}'s bus assignment?`
-            : closingExpiredStudent
-              ? `Close expired assignment for ${studentAction?.group.assignments[0]?.student_name ?? 'student'}?`
-              : `Deassign ${studentAction?.group.assignments[0]?.student_name ?? 'student'}?`
-        }
-        description={
-          studentAction?.action === 'archive'
-            ? 'This removes the assignment from the active roster and archives it for operational history. The student record is not deleted.'
-            : closingExpiredStudent
-              ? 'This marks the expired record inactive without changing its historical end date.'
-              : 'This ends every direction in the student’s bus route service today. History is preserved.'
-        }
-        confirmLabel={
-          studentAction?.action === 'archive'
-            ? 'Delete assignment'
-            : closingExpiredStudent
-              ? 'Close expired'
-              : 'Deassign'
-        }
+        title={`Remove ${studentAction?.group.assignments[0]?.student_name ?? 'student'} from this bus?`}
+        description="This removes every direction of the student's bus assignment from this roster. The student remains in the Students directory, and operational history is retained."
+        confirmLabel="Remove from bus"
         destructive
         busy={studentActionBusy}
         onConfirm={() => void confirmStudentAssignmentAction()}
@@ -820,9 +766,7 @@ function StudentsPanel({
   onEdit,
   onCancel,
   onSubmit,
-  onSetStatus,
-  onDeassign,
-  onArchive,
+  onDelete,
   onGoRoutes,
 }: {
   bus: Bus;
@@ -835,9 +779,7 @@ function StudentsPanel({
   onEdit: (group: StudentAssignmentGroup) => void;
   onCancel: () => void;
   onSubmit: (input: SetStudentBusServiceInput) => Promise<void>;
-  onSetStatus: (group: StudentAssignmentGroup, status: 'active' | 'inactive') => void;
-  onDeassign: (group: StudentAssignmentGroup) => void;
-  onArchive: (group: StudentAssignmentGroup) => void;
+  onDelete: (group: StudentAssignmentGroup) => void;
   onGoRoutes: () => void;
 }) {
   const serviceById = new Map(serviceRecords.map((service) => [service.id, service]));
@@ -871,7 +813,7 @@ function StudentsPanel({
         <div>
           <h2 className="text-xl font-bold text-navy-900">Student roster</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Assign students to this bus, update their stops, or manage their service status.
+            Assign students, update their bus service, or remove them from this bus.
           </p>
         </div>
         {!form && services.length > 0 && (
@@ -881,7 +823,7 @@ function StudentsPanel({
         )}
       </div>
       {form && (
-        <InlineFormShell title={form.group ? 'Edit student bus service' : 'Assign student'}>
+        <InlineFormShell title={form.group ? 'Update student assignment' : 'Assign student'}>
           <DirectionalStudentBusAssignmentForm
             key={form.group?.id ?? 'new-student-assignment'}
             assignments={form.group?.assignments}
@@ -925,7 +867,6 @@ function StudentsPanel({
                 const hasActiveService = group.assignments.every((item) =>
                   services.some((service) => service.id === item.bus_route_assignment_id),
                 );
-                const isActive = group.assignments.every((item) => item.status === 'active');
                 const effectiveStatus = busAssignmentEffectiveStatus(assignment);
                 const isExpired = group.assignments.every(
                   (item) => busAssignmentEffectiveStatus(item) === 'expired',
@@ -986,47 +927,16 @@ function StudentsPanel({
                             variant="secondary"
                             onClick={() => onEdit(group)}
                           >
-                            Edit assignment
-                          </Button>
-                        )}
-                        {!isExpired && hasActiveService && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => onSetStatus(group, isActive ? 'inactive' : 'active')}
-                          >
-                            {isActive ? 'Deactivate' : 'Activate'}
-                          </Button>
-                        )}
-                        {isActive && !isExpired && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="danger"
-                            onClick={() => onDeassign(group)}
-                          >
-                            Deassign
-                          </Button>
-                        )}
-                        {isExpired && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="danger"
-                            onClick={() => onDeassign(group)}
-                          >
-                            Close expired
+                            Update assignment
                           </Button>
                         )}
                         <Button
                           type="button"
                           size="sm"
-                          variant="ghost"
-                          className="text-danger-700 hover:bg-danger-50 hover:text-danger-800"
-                          onClick={() => onArchive(group)}
+                          variant="danger"
+                          onClick={() => onDelete(group)}
                         >
-                          Delete assignment
+                          Remove from bus
                         </Button>
                       </div>
                     </TableCell>
