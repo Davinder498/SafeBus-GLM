@@ -32,6 +32,9 @@ async function mockBusWorkspace(page: Page) {
   let routeEnded = false;
   let runReady = false;
   let hasActiveQr = false;
+  let routeEffectiveTo: string | null = null;
+  let studentStatus: 'active' | 'inactive' | 'archived' = 'active';
+  let studentEffectiveTo: string | null = null;
   const routeAssignments = [
     {
       id: serviceId,
@@ -195,11 +198,15 @@ async function mockBusWorkspace(page: Page) {
       });
     }
     if (path.includes('/rpc/get_admin_bus_workspace')) {
-      const currentRoutes = routeEnded
-        ? routeAssignments.map((item) =>
-            item.id === serviceId ? { ...item, status: 'inactive' } : item,
-          )
-        : routeAssignments;
+      const currentRoutes = routeAssignments.map((item) =>
+        item.id === serviceId
+          ? {
+              ...item,
+              effective_to: routeEffectiveTo,
+              status: routeEnded ? ('inactive' as const) : item.status,
+            }
+          : item,
+      );
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -236,8 +243,8 @@ async function mockBusWorkspace(page: Page) {
               pickup_stop_id: 'stop-1',
               dropoff_stop_id: 'stop-2',
               effective_from: '2026-01-01',
-              effective_to: null,
-              status: routeEnded ? 'inactive' : 'active',
+              effective_to: studentEffectiveTo,
+              status: routeEnded ? 'inactive' : studentStatus,
               created_at: '2026-01-01T00:00:00Z',
               updated_at: '2026-01-01T00:00:00Z',
               student_name: 'Avery Johnson',
@@ -325,6 +332,33 @@ async function mockBusWorkspace(page: Page) {
         body: JSON.stringify(bus),
       });
     }
+    if (path.includes('/rest/v1/bus_route_assignments') && method === 'PATCH') {
+      const body = route.request().postDataJSON() as { effective_to?: string | null };
+      routeEffectiveTo = body.effective_to ?? null;
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ...routeAssignments[0], ...body }),
+      });
+    }
+    if (path.includes('/rest/v1/student_bus_assignments') && method === 'PATCH') {
+      const body = route.request().postDataJSON() as {
+        status?: 'active' | 'inactive' | 'archived';
+        effective_to?: string | null;
+      };
+      studentStatus = body.status ?? studentStatus;
+      if ('effective_to' in body) studentEffectiveTo = body.effective_to ?? null;
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'student-assignment-1',
+          ...body,
+          status: studentStatus,
+          effective_to: studentEffectiveTo,
+        }),
+      });
+    }
     if (path.includes('/rest/v1/drivers')) {
       return route.fulfill({
         status: 200,
@@ -333,10 +367,45 @@ async function mockBusWorkspace(page: Page) {
       });
     }
     if (path.includes('/rest/v1/routes')) {
-      return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            id: 'route-current',
+            tenant_id: tenantId,
+            school_id: null,
+            route_name: 'Downtown',
+            route_code: 'DR02',
+            route_type: 'morning',
+            route_kind: 'regular',
+            map_color: '#2563EB',
+            definition_status: 'ready',
+            status: 'active',
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
+          },
+        ]),
+      });
     }
     if (path.includes('/rest/v1/route_trip_patterns')) {
-      return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            id: 'pattern-current',
+            tenant_id: tenantId,
+            route_id: 'route-current',
+            direction: 'forward',
+            display_name: 'Outbound',
+            status: 'active',
+            schedule_review_required: false,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
+          },
+        ]),
+      });
     }
     if (path.includes('/rest/v1/route_stops')) {
       return route.fulfill({
@@ -388,13 +457,23 @@ test.describe('unified bus workspace', () => {
     await expect(page.getByRole('button', { name: 'Assign route trip' })).toBeVisible();
   });
 
-  test('shows route history, prepares one run, and manages students', async ({ page }) => {
+  test('updates and deassigns routes and manages the student assignment lifecycle', async ({
+    page,
+  }) => {
     await mockBusWorkspace(page);
     await page.goto(`/admin/buses/${busId}?tab=routes`);
 
     await expect(page.getByRole('heading', { name: 'Current' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Upcoming' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'History' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Assign route trip' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Edit assignment' }).first().click();
+    await expect(page.getByRole('heading', { name: 'Edit route assignment' })).toBeVisible();
+    await expect(page.getByRole('combobox').first()).toBeDisabled();
+    await page.getByLabel('Effective to').fill('2026-12-31');
+    await page.getByRole('button', { name: 'Save route assignment' }).click();
+    await expect(page.getByText('Route assignment updated.')).toBeVisible();
 
     await page.getByRole('button', { name: 'Make next run' }).first().click();
     await expect(page.getByText(/Any active driver can scan its QR to start/)).toBeVisible();
@@ -403,12 +482,35 @@ test.describe('unified bus workspace', () => {
     await page.getByRole('tab', { name: 'Students' }).click();
     await expect(page.getByText('Avery Johnson')).toBeVisible();
     await expect(page.getByText('Pickup: First Stop')).toBeVisible();
+    await page.getByRole('button', { name: 'Assign student' }).click();
+    await expect(page.getByRole('heading', { name: 'Assign student' })).toBeVisible();
+    await page.getByRole('button', { name: 'Cancel' }).click();
+
+    await page.getByRole('button', { name: 'Edit assignment' }).click();
+    await expect(page.getByRole('heading', { name: 'Edit student assignment' })).toBeVisible();
+    await page.getByLabel('Effective to').fill('2026-11-30');
+    await page.getByRole('button', { name: 'Save assignment' }).click();
+    await expect(page.getByText('Student assignment updated.')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Deactivate' }).click();
+    await expect(page.getByText('Student assignment deactivated.')).toBeVisible();
+    await page.getByRole('button', { name: 'Activate' }).click();
+    await expect(page.getByText('Student assignment activated.')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Deassign', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Deassign' }).click();
+    await expect(page.getByText('Student deassigned from this bus route trip.')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Delete assignment' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Delete assignment' }).click();
+    await expect(page.getByText('Student assignment removed and archived.')).toBeVisible();
+    await expect(page.getByText('Archived', { exact: true })).toBeVisible();
 
     await page.getByRole('tab', { name: 'Routes' }).click();
-    await page.getByRole('button', { name: 'End assignment' }).first().click();
-    await page.getByRole('button', { name: 'End route trip' }).click();
+    await page.getByRole('button', { name: 'Deassign route' }).first().click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Deassign route' }).click();
     await expect(
-      page.getByText('Route trip and its linked active assignments were ended.'),
+      page.getByText('Route trip deassigned. Linked active assignments were ended.'),
     ).toBeVisible();
   });
 
