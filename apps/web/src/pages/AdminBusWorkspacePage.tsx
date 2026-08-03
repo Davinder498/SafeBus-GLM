@@ -850,8 +850,14 @@ function StudentsPanel({
     },
     (assignment) => serviceById.get(assignment.bus_route_assignment_id)?.direction ?? null,
   );
+agent/unified-direction-assignment
 
   if (services.length === 0 && groups.length === 0) {
+
+  const rosterAssignments = assignments.filter((assignment) => assignment.status !== 'archived');
+
+  if (services.length === 0 && rosterAssignments.length === 0) {
+ main
     return (
       <DataState
         title="Assign a route first"
@@ -894,7 +900,11 @@ function StudentsPanel({
           />
         </InlineFormShell>
       )}
+ agent/unified-direction-assignment
       {groups.length === 0 ? (
+
+      {rosterAssignments.length === 0 ? (
+main
         <DataState
           title="No students assigned"
           message="Assign an existing student to one of this bus’s routes."
@@ -905,7 +915,11 @@ function StudentsPanel({
             <TableHeader>
               <tr>
                 <TableColumn>Student</TableColumn>
+ agent/unified-direction-assignment
                 <TableColumn>Route service</TableColumn>
+
+                <TableColumn>Route trip</TableColumn>
+main
                 <TableColumn>Pickup</TableColumn>
                 <TableColumn>Drop-off</TableColumn>
                 <TableColumn>Service dates</TableColumn>
@@ -914,6 +928,7 @@ function StudentsPanel({
               </tr>
             </TableHeader>
             <TableBody>
+agent/unified-direction-assignment
               {groups.map((group) => {
                 const assignment = group.assignments[0];
                 const forwardService = group.forward
@@ -932,10 +947,21 @@ function StudentsPanel({
                 );
                 return (
                   <TableRow key={group.id} data-testid={`student-assignment-${assignment.id}`}>
+              {rosterAssignments.map((assignment) => {
+                const hasActiveService = services.some(
+                  (service) => service.id === assignment.bus_route_assignment_id,
+                );
+                const isActive = assignment.status === 'active';
+                const effectiveStatus = busAssignmentEffectiveStatus(assignment);
+                const isExpired = effectiveStatus === 'expired';
+                return (
+                  <TableRow key={assignment.id} data-testid={`student-assignment-${assignment.id}`}>
+main
                     <TableCell className="whitespace-nowrap font-bold text-navy-900">
                       {assignment.student_name}
                     </TableCell>
                     <TableCell className="whitespace-nowrap font-semibold text-navy-700">
+agent/unified-direction-assignment
                       <span className="block">
                         {forwardService?.route_code ??
                           reverseService?.route_code ??
@@ -968,6 +994,16 @@ function StudentsPanel({
                           Return: {group.reverse.dropoff_stop_name ?? 'Not assigned'}
                         </span>
                       )}
+
+                      {serviceNames.get(assignment.bus_route_assignment_id) ??
+                        'Previous route trip'}
+                    </TableCell>
+                    <TableCell className="min-w-36">
+                      {assignment.pickup_stop_name ?? 'Not assigned'}
+                    </TableCell>
+                    <TableCell className="min-w-36">
+                      {assignment.dropoff_stop_name ?? 'Not assigned'}
+main
                     </TableCell>
                     <TableCell className="min-w-48 whitespace-nowrap text-slate-600">
                       {dateRange(assignment.effective_from, assignment.effective_to)}
@@ -984,7 +1020,11 @@ function StudentsPanel({
                             type="button"
                             size="sm"
                             variant="secondary"
+ agent/unified-direction-assignment
                             onClick={() => onEdit(group)}
+
+                            onClick={() => onEdit(assignment)}
+ main
                           >
                             Edit assignment
                           </Button>
@@ -994,7 +1034,13 @@ function StudentsPanel({
                             type="button"
                             size="sm"
                             variant="secondary"
+agent/unified-direction-assignment
                             onClick={() => onSetStatus(group, isActive ? 'inactive' : 'active')}
+
+                            onClick={() =>
+                              onSetStatus(assignment, isActive ? 'inactive' : 'active')
+                            }
+ main
                           >
                             {isActive ? 'Deactivate' : 'Activate'}
                           </Button>
@@ -1004,7 +1050,11 @@ function StudentsPanel({
                             type="button"
                             size="sm"
                             variant="danger"
+ agent/unified-direction-assignment
                             onClick={() => onDeassign(group)}
+
+                            onClick={() => onDeassign(assignment)}
+main
                           >
                             Deassign
                           </Button>
@@ -1014,7 +1064,11 @@ function StudentsPanel({
                             type="button"
                             size="sm"
                             variant="danger"
+ agent/unified-direction-assignment
                             onClick={() => onDeassign(group)}
+
+                            onClick={() => onDeassign(assignment)}
+ main
                           >
                             Close expired
                           </Button>
@@ -1024,7 +1078,11 @@ function StudentsPanel({
                           size="sm"
                           variant="ghost"
                           className="text-danger-700 hover:bg-danger-50 hover:text-danger-800"
+ agent/unified-direction-assignment
                           onClick={() => onArchive(group)}
+
+                          onClick={() => onArchive(assignment)}
+ main
                         >
                           Delete assignment
                         </Button>
