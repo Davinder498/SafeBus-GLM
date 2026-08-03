@@ -99,6 +99,10 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
   migration 0059, confirming protected credential/session tables, admin-only
   run preparation, active-driver QR claims, hashed credentials, exact prepared
   route-pattern binding, session-derived location writes, and anonymous denial.
+- `qr-only-driver-trip-start-rls.sql`: structural and privilege regression for
+  migration 0062, confirming the QR/session entrypoint is the only
+  browser-executable driver trip start path while driver assignments remain
+  available to admins for operational planning.
 - `driver-completed-trip-history-rls.sql`: structural security regression for
   migration 0055, confirming driver/tenant/completed-run scoping, anonymous
   denial, historical visibility after route deactivation, and exclusion of
@@ -111,6 +115,11 @@ and this README exist, then prints a manual-test notice.
 
 It does not connect to Supabase, does not execute SQL, and must not be reported
 as proof that the RLS assertions passed.
+
+After migration 0062, `assignment-selected-driver-trips-rls.sql` remains a
+historical regression fixture for migration 0054. Its expectation that drivers
+can execute the assignment-start RPC is intentionally superseded by
+`qr-only-driver-trip-start-rls.sql`.
 
 After migration 0061, use `guardian-bus-first-visibility-rls.sql` for the active
 guardian contract. Older guardian route, trip, event, and location scripts
