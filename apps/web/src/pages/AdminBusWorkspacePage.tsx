@@ -36,6 +36,7 @@ import {
 } from '@/services/studentBusAssignmentService';
 import {
   createBus,
+  deleteBus,
   getVisibleRoutes,
   getVisibleRouteStops,
   getVisibleRouteTripPatterns,
@@ -110,11 +111,14 @@ export function AdminBusWorkspacePage() {
   const [endingRoute, setEndingRoute] = useState<AdminBusRouteAssignment | null>(null);
   const [ending, setEnding] = useState(false);
   const [preparingServiceId, setPreparingServiceId] = useState<string | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deletingBus, setDeletingBus] = useState(false);
   const [studentForm, setStudentForm] = useState<{
     assignment: AdminBusStudentAssignment | null;
   } | null>(null);
 
   const canManageRoutesAndDrivers = profile?.role === 'tenant_admin';
+  const canDeleteBus = profile?.role === 'tenant_admin' || profile?.role === 'platform_super_admin';
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -193,6 +197,21 @@ export function AdminBusWorkspacePage() {
     } catch (error) {
       setWriteError(error instanceof Error ? error.message : 'Unable to save this bus.');
       throw error;
+    }
+  }
+
+  async function confirmDeleteBus() {
+    if (!workspace || deletingBus) return;
+    setDeletingBus(true);
+    setWriteError(null);
+    try {
+      await deleteBus(workspace.bus.id);
+      navigate('/admin/buses', { replace: true });
+    } catch (error) {
+      setWriteError(error instanceof Error ? error.message : 'Unable to delete this bus.');
+      setConfirmDeleteOpen(false);
+    } finally {
+      setDeletingBus(false);
     }
   }
 
@@ -406,6 +425,27 @@ export function AdminBusWorkspacePage() {
                   onDirtyChange={setDetailsDirty}
                 />
                 {bus && <BusQrCredentialPanel busId={bus.id} busNumber={bus.bus_number} />}
+                {bus && canDeleteBus && (
+                  <div className="mt-6 border-t border-danger-100 pt-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h3 className="font-bold text-danger-800">Delete bus</h3>
+                        <p className="mt-1 text-sm text-gray-600">
+                          Permanently remove this bus after its active operational records are
+                          cleared.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="danger"
+                        onClick={() => setConfirmDeleteOpen(true)}
+                      >
+                        Delete bus
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </Card>
           )}
@@ -456,6 +496,16 @@ export function AdminBusWorkspacePage() {
         busy={ending}
         onConfirm={() => void confirmEndRoute()}
         onCancel={() => setEndingRoute(null)}
+      />
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title={`Delete bus ${bus?.bus_number ?? ''}?`}
+        description="This permanently deletes the bus record. This action cannot be undone."
+        confirmLabel="Delete bus"
+        destructive
+        busy={deletingBus}
+        onConfirm={() => void confirmDeleteBus()}
+        onCancel={() => setConfirmDeleteOpen(false)}
       />
     </DashboardLayout>
   );

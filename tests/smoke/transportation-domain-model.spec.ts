@@ -234,6 +234,21 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
 
       // POST (insert a route, bus, or driver_trip)
       if (method === 'POST') {
+        if (path.includes('/rpc/get_admin_paginated_list')) {
+          const body = route.request().postDataJSON() as { p_entity?: string };
+          const rows =
+            body.p_entity === 'buses'
+              ? [busNoSchool]
+              : body.p_entity === 'routes'
+                ? [routeNoSchool]
+                : [];
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ rows, totalCount: rows.length, page: 1, pageSize: 25 }),
+          });
+          return;
+        }
         if (path.includes('/rpc/get_admin_bus_workspace')) {
           await route.fulfill({
             status: 200,
@@ -249,6 +264,21 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
         }
         if (path.includes('/rpc/get_admin_bus_ready_dispatch')) {
           await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+          return;
+        }
+        if (path.includes('/rpc/get_admin_bus_qr_credential_status')) {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify([
+              {
+                bus_id: ADMIN.busId,
+                has_active_credential: false,
+                credential_status: null,
+                credential_created_at: null,
+              },
+            ]),
+          });
           return;
         }
         if (path.includes('/rpc/get_current_driver_trip_assignments')) {
@@ -437,6 +467,25 @@ test.describe('Milestone 4E — school optional for transportation', () => {
     await expect(page.getByRole('heading', { name: 'Visible buses', level: 1 })).toBeVisible({
       timeout: 10000,
     });
+
+    // The list stays focused on identity and status. Administrative details and
+    // destructive actions belong in the bus workspace.
+    const busCard = page.getByTestId('admin-bus-card');
+    await expect(busCard).toContainText('Bus 42');
+    await expect(busCard).toContainText('Active');
+    await expect(busCard).toContainText('Plate: SB-42');
+    await expect(busCard).not.toContainText(ADMIN.busId);
+    await expect(busCard).not.toContainText('Capacity');
+    await expect(busCard).not.toContainText('Created');
+    await expect(busCard.getByRole('button', { name: 'Edit' })).toHaveCount(0);
+    await expect(busCard.getByRole('button', { name: 'Delete' })).toHaveCount(0);
+    await expect(busCard.getByRole('button', { name: 'View bus 42' })).toBeVisible();
+
+    await busCard.getByRole('button', { name: 'View bus 42' }).click();
+    await expect(page).toHaveURL(new RegExp(`/admin/buses/${ADMIN.busId}\\?tab=details`));
+    await expect(page.getByRole('heading', { name: 'Bus 42', level: 1 })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Delete bus' })).toBeVisible();
+    await page.getByRole('button', { name: 'Back to buses' }).click();
 
     // Open the add-bus form.
     await page.getByRole('button', { name: 'Add bus' }).click();
