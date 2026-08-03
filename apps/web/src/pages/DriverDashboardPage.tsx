@@ -101,7 +101,7 @@ export function DriverDashboardPage() {
           description={
             activeTrip
               ? 'This phone is connected to the active bus tracking session.'
-              : 'Scan the QR inside the bus. SafeBus will start its prepared run and use this phone as the bus GPS.'
+              : 'Scan the QR inside the bus, choose its route direction, and use this phone as the bus GPS.'
           }
         />
 

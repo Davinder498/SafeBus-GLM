@@ -126,6 +126,11 @@ guardian contract. Older guardian route, trip, event, and location scripts
 remain historical regression fixtures for their originating migrations, but
 their browser RPC grants are intentionally retired by 0061.
 
+After migration 0063, run `unified-direction-assignment-rls.sql`. It verifies
+the atomic grouped bus/student writers, direction-specific stop contract, QR
+choice/start split, tenant-scoped execute grants, and anonymous denial. The
+earlier prepared-dispatch start signature is intentionally retired.
+
 ## `pnpm test:rls:dev`
 
 `pnpm test:rls:dev` executes the RLS SQL scripts against a configured hosted

@@ -404,7 +404,7 @@ export async function installSupabaseMock(
           });
           return;
         }
-        if (table === 'rpc/start_bus_tracking_from_qr') {
+        if (table === 'rpc/get_bus_qr_start_options') {
           const requestBody = route.request().postDataJSON() as { p_qr_token?: string } | null;
           if (requestBody?.p_qr_token !== MOCK.busQrToken) {
             await route.fulfill({
@@ -414,8 +414,60 @@ export async function installSupabaseMock(
             });
             return;
           }
+          const available = currentActiveTrip
+            ? [
+                currentActiveTrip.route_trip_pattern_id === MOCK.secondTripPatternId
+                  ? secondAssignmentRow()
+                  : assignmentRow(),
+              ]
+            : [assignmentRow(), secondAssignmentRow()];
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(
+              available.map((assignment) => ({
+                bus_route_assignment_id: assignment.assignment_id,
+                bus_number: assignment.bus_number,
+                route_code: assignment.route_code,
+                route_name: assignment.route_name,
+                trip_name: assignment.trip_name,
+                direction: assignment.direction,
+                resumed: currentActiveTrip !== null,
+              })),
+            ),
+          });
+          return;
+        }
+        if (table === 'rpc/start_bus_tracking_from_qr') {
+          const requestBody = route.request().postDataJSON() as {
+            p_qr_token?: string;
+            p_bus_route_assignment_id?: string;
+          } | null;
+          if (requestBody?.p_qr_token !== MOCK.busQrToken) {
+            await route.fulfill({
+              status: 404,
+              contentType: 'application/json',
+              body: JSON.stringify({ message: 'Bus QR could not be verified.' }),
+            });
+            return;
+          }
+          if (
+            requestBody.p_bus_route_assignment_id !== MOCK.assignmentId &&
+            requestBody.p_bus_route_assignment_id !== MOCK.secondAssignmentId
+          ) {
+            await route.fulfill({
+              status: 404,
+              contentType: 'application/json',
+              body: JSON.stringify({ message: 'The selected route direction is unavailable.' }),
+            });
+            return;
+          }
           const resumed = currentActiveTrip !== null;
-          const newTrip = currentActiveTrip ?? activeTripRow();
+          const selectedAssignment =
+            requestBody.p_bus_route_assignment_id === MOCK.secondAssignmentId
+              ? secondAssignmentRow()
+              : assignmentRow();
+          const newTrip = currentActiveTrip ?? activeTripRow(selectedAssignment);
           currentActiveTrip = newTrip;
           await route.fulfill({
             status: 200,

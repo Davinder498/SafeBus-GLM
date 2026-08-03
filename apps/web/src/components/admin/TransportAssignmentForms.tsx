@@ -1,14 +1,11 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import type { CreateAssignmentInput } from '@/types/driverAssignments';
+import type { Bus, DirectionScope, Driver, Route, RouteTripPattern } from '@/types/transportation';
 import type {
-  Bus,
-  CreateBusRouteAssignmentInput,
-  Driver,
-  Route,
-  RouteTripPattern,
-} from '@/types/transportation';
-import type { BusServiceOption } from '@/services/studentBusAssignmentService';
+  BusServiceOption,
+  SetBusRouteServiceInput,
+} from '@/services/studentBusAssignmentService';
 
 const fieldClassName =
   'mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900';
@@ -24,7 +21,7 @@ export function RouteBusAssignmentForm({
   route: Route;
   buses: Bus[];
   tripPatterns: RouteTripPattern[];
-  onSubmit: (input: CreateBusRouteAssignmentInput) => Promise<void>;
+  onSubmit: (input: SetBusRouteServiceInput) => Promise<void>;
   onCancel: () => void;
 }) {
   const patterns = useMemo(
@@ -37,7 +34,7 @@ export function RouteBusAssignmentForm({
       ),
     [route.id, tripPatterns],
   );
-  const [tripPatternId, setTripPatternId] = useState(patterns[0]?.id ?? '');
+  const [directionScope, setDirectionScope] = useState<DirectionScope>('both');
   const [busId, setBusId] = useState('');
   const [effectiveFrom, setEffectiveFrom] = useState(new Date().toISOString().slice(0, 10));
   const [effectiveTo, setEffectiveTo] = useState('');
@@ -46,9 +43,15 @@ export function RouteBusAssignmentForm({
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    const pattern = patterns.find((item) => item.id === tripPatternId);
-    if (!pattern || !busId || !effectiveFrom) {
-      setError('Select a named trip, bus, and effective-from date.');
+    const selectedPatterns = patterns.filter(
+      (pattern) => directionScope === 'both' || pattern.direction === directionScope,
+    );
+    if (
+      selectedPatterns.length !== (directionScope === 'both' ? 2 : 1) ||
+      !busId ||
+      !effectiveFrom
+    ) {
+      setError('Select a bus and every requested route direction.');
       return;
     }
     if (effectiveTo && effectiveTo < effectiveFrom) {
@@ -60,14 +63,11 @@ export function RouteBusAssignmentForm({
     setError(null);
     try {
       await onSubmit({
-        tenant_id: route.tenant_id,
-        bus_id: busId,
-        route_id: route.id,
-        route_trip_pattern_id: pattern.id,
-        trip_type: pattern.direction === 'reverse' ? 'evening' : 'morning',
-        effective_from: effectiveFrom,
-        effective_to: effectiveTo || null,
-        status: 'active',
+        busId,
+        routeId: route.id,
+        directionScope,
+        effectiveFrom,
+        effectiveTo: effectiveTo || null,
       });
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Unable to assign this bus.');
@@ -79,8 +79,7 @@ export function RouteBusAssignmentForm({
   return (
     <form className="grid gap-4" onSubmit={handleSubmit}>
       <p className="text-sm text-gray-600">
-        Assign one bus to a named trip. Forward and reverse trips can use the same or different
-        buses.
+        Assign both route directions together, or choose one direction when buses differ.
       </p>
       {route.definition_status !== 'ready' || route.status !== 'active' ? (
         <p className="rounded-lg bg-warning-50 p-3 text-sm font-semibold text-warning-700">
@@ -90,19 +89,15 @@ export function RouteBusAssignmentForm({
       {error && <p className="text-sm font-semibold text-danger-700">{error}</p>}
       <div className="grid gap-4 md:grid-cols-2">
         <label className={labelClassName}>
-          Named trip
+          Service directions
           <select
             className={fieldClassName}
-            value={tripPatternId}
-            onChange={(event) => setTripPatternId(event.target.value)}
+            value={directionScope}
+            onChange={(event) => setDirectionScope(event.target.value as DirectionScope)}
           >
-            <option value="">Select a trip</option>
-            {patterns.map((pattern) => (
-              <option key={pattern.id} value={pattern.id}>
-                {pattern.display_name} (
-                {pattern.direction === 'forward' ? 'Start → End' : 'End → Start'})
-              </option>
-            ))}
+            <option value="both">Both directions</option>
+            <option value="forward">Outbound only</option>
+            <option value="reverse">Return only</option>
           </select>
         </label>
         <label className={labelClassName}>

@@ -5,6 +5,7 @@ export type RouteType = 'morning' | 'afternoon' | 'special' | 'field_trip';
 export type RouteKind = 'regular' | 'field_trip';
 export type RouteDefinitionStatus = 'incomplete' | 'ready';
 export type RouteDirection = 'forward' | 'reverse';
+export type DirectionScope = 'both' | RouteDirection;
 export type RouteTripPatternStatus = 'active' | 'inactive';
 export type RouteStopStatus = 'active' | 'inactive' | 'archived';
 export type StudentRouteAssignmentStatus = 'active' | 'inactive' | 'archived';
@@ -336,7 +337,17 @@ export type UpdateStudentRouteAssignmentInput = Partial<
   Omit<CreateStudentRouteAssignmentInput, 'tenant_id'>
 >;
 
-export type CreateBusRouteAssignmentInput = Omit<BusRouteAssignment, 'id' | 'created_at' | 'updated_at'>;
-export type UpdateBusRouteAssignmentInput = Partial<Omit<CreateBusRouteAssignmentInput, 'tenant_id'>>;
-export type CreateStudentBusAssignmentInput = Omit<StudentBusAssignment, 'id' | 'created_at' | 'updated_at'>;
-export type UpdateStudentBusAssignmentInput = Partial<Omit<CreateStudentBusAssignmentInput, 'tenant_id'>>;
+export type CreateBusRouteAssignmentInput = Omit<
+  BusRouteAssignment,
+  'id' | 'created_at' | 'updated_at'
+>;
+export type UpdateBusRouteAssignmentInput = Partial<
+  Omit<CreateBusRouteAssignmentInput, 'tenant_id'>
+>;
+export type CreateStudentBusAssignmentInput = Omit<
+  StudentBusAssignment,
+  'id' | 'created_at' | 'updated_at'
+>;
+export type UpdateStudentBusAssignmentInput = Partial<
+  Omit<CreateStudentBusAssignmentInput, 'tenant_id'>
+>;

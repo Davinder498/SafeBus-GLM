@@ -1,15 +1,11 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import type { OrganizationProfile } from '@/types/organization';
-import type {
-  Bus,
-  CreateBusRouteAssignmentInput,
-  Driver,
-  Route,
-  RouteTripPattern,
-} from '@/types/transportation';
+import type { Bus, DirectionScope, Driver, Route, RouteTripPattern } from '@/types/transportation';
 import type { AdminBusRouteAssignment } from '@/services/adminBusWorkspaceService';
 import type { ReplaceBusTripDriverInput } from '@/services/adminBusWorkspaceService';
+import type { SetBusRouteServiceInput } from '@/services/studentBusAssignmentService';
+import { directionScopeFromDirections } from '@/utils/directionalAssignments';
 
 const fieldClassName =
   'mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-gray-900';
@@ -18,6 +14,7 @@ const labelClassName = 'block text-sm font-semibold text-gray-700';
 export function BusWorkspaceRouteForm({
   bus,
   assignment,
+  assignmentGroup,
   mode = assignment ? 'edit' : 'create',
   identityLocked = false,
   routes,
@@ -28,67 +25,84 @@ export function BusWorkspaceRouteForm({
 }: {
   bus: Bus;
   assignment?: AdminBusRouteAssignment | null;
+  assignmentGroup?: AdminBusRouteAssignment[];
   mode?: 'create' | 'edit' | 'renew';
   identityLocked?: boolean;
   routes: Route[];
   tripPatterns: RouteTripPattern[];
   assignments: AdminBusRouteAssignment[];
-  onSubmit: (input: CreateBusRouteAssignmentInput) => Promise<void>;
+  onSubmit: (input: SetBusRouteServiceInput) => Promise<void>;
   onCancel: () => void;
 }) {
+  const groupAssignments = useMemo(
+    () => assignmentGroup ?? (assignment ? [assignment] : []),
+    [assignment, assignmentGroup],
+  );
+  const initialAssignment = groupAssignments[0] ?? null;
   const eligibleRoutes = useMemo(
     () =>
       routes.filter(
         (route) =>
           (route.status === 'active' && route.definition_status === 'ready') ||
-          route.id === assignment?.route_id,
+          route.id === initialAssignment?.route_id,
       ),
-    [assignment?.route_id, routes],
+    [initialAssignment?.route_id, routes],
   );
-  const [routeId, setRouteId] = useState(assignment?.route_id ?? eligibleRoutes[0]?.id ?? '');
+  const [routeId, setRouteId] = useState(
+    initialAssignment?.route_id ?? eligibleRoutes[0]?.id ?? '',
+  );
   const patterns = useMemo(
     () =>
       tripPatterns.filter(
         (pattern) =>
           pattern.route_id === routeId &&
           ((pattern.status === 'active' && !pattern.schedule_review_required) ||
-            pattern.id === assignment?.route_trip_pattern_id),
+            groupAssignments.some((item) => item.route_trip_pattern_id === pattern.id)),
       ),
-    [assignment?.route_trip_pattern_id, routeId, tripPatterns],
+    [groupAssignments, routeId, tripPatterns],
   );
-  const [tripPatternId, setTripPatternId] = useState(assignment?.route_trip_pattern_id ?? '');
+  const [directionScope, setDirectionScope] = useState<DirectionScope>(() =>
+    groupAssignments.length > 0
+      ? directionScopeFromDirections(groupAssignments.map((item) => item.direction))
+      : 'both',
+  );
   const [effectiveFrom, setEffectiveFrom] = useState(
     mode === 'renew'
       ? new Date().toISOString().slice(0, 10)
-      : (assignment?.effective_from ?? new Date().toISOString().slice(0, 10)),
+      : (initialAssignment?.effective_from ?? new Date().toISOString().slice(0, 10)),
   );
   const [effectiveTo, setEffectiveTo] = useState(
-    mode === 'renew' ? '' : (assignment?.effective_to ?? ''),
+    mode === 'renew' ? '' : (initialAssignment?.effective_to ?? ''),
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    const pattern = patterns.find((item) => item.id === tripPatternId);
-    if (!pattern || !routeId || !effectiveFrom) {
-      setError('Select a route, named trip, and effective-from date.');
+    const selectedPatterns = patterns.filter(
+      (pattern) => directionScope === 'both' || pattern.direction === directionScope,
+    );
+    const expectedPatternCount = directionScope === 'both' ? 2 : 1;
+    if (!routeId || !effectiveFrom || selectedPatterns.length !== expectedPatternCount) {
+      setError('Select a ready route with every requested direction.');
       return;
     }
     if (effectiveTo && effectiveTo < effectiveFrom) {
       setError('Effective-to date must be on or after effective-from date.');
       return;
     }
+    const groupIds = new Set(groupAssignments.map((item) => item.id));
+    const selectedPatternIds = new Set(selectedPatterns.map((pattern) => pattern.id));
     const duplicate = assignments.some(
       (item) =>
-        item.id !== assignment?.id &&
+        !groupIds.has(item.id) &&
         item.status === 'active' &&
-        item.route_trip_pattern_id === pattern.id &&
+        selectedPatternIds.has(item.route_trip_pattern_id ?? '') &&
         (!item.effective_to || item.effective_to >= effectiveFrom) &&
         (!effectiveTo || !item.effective_from || item.effective_from <= effectiveTo),
     );
     if (duplicate) {
-      setError('This bus already has an overlapping assignment for that named trip.');
+      setError('A requested route direction already has a bus for those dates.');
       return;
     }
 
@@ -96,14 +110,12 @@ export function BusWorkspaceRouteForm({
     setError(null);
     try {
       await onSubmit({
-        tenant_id: bus.tenant_id,
-        bus_id: bus.id,
-        route_id: routeId,
-        route_trip_pattern_id: pattern.id,
-        trip_type: pattern.direction === 'reverse' ? 'evening' : 'morning',
-        effective_from: effectiveFrom,
-        effective_to: effectiveTo || null,
-        status: 'active',
+        busId: bus.id,
+        routeId,
+        directionScope,
+        effectiveFrom,
+        effectiveTo: effectiveTo || null,
+        existingAssignmentIds: groupAssignments.map((item) => item.id),
       });
     } catch (submitError) {
       setError(
@@ -122,14 +134,13 @@ export function BusWorkspaceRouteForm({
           ? 'with a new date range while keeping the earlier assignment in history.'
           : assignment
             ? 'route-trip dates and configuration.'
-            : 'to one reviewed named trip.'}{' '}
-        Outbound and return trips are assigned separately.
+            : 'to a reviewed route service.'}
       </p>
       {identityLocked && (
         <p className="rounded-lg bg-warning-50 p-3 text-sm font-semibold text-warning-700">
           {mode === 'renew'
-            ? 'The route and named trip are copied from history and cannot be changed. People are assigned separately to the renewed service.'
-            : 'This route trip has linked people or history. You can update its dates, but preserving that history requires a new assignment when the route or named trip changes.'}
+            ? 'The route is copied from history and cannot be changed. People are assigned separately to the renewed service.'
+            : 'This route service has linked people or history. You can update its directions and dates while the route identity stays fixed.'}
         </p>
       )}
       {error && <p className="text-sm font-semibold text-danger-700">{error}</p>}
@@ -142,7 +153,6 @@ export function BusWorkspaceRouteForm({
             disabled={identityLocked}
             onChange={(event) => {
               setRouteId(event.target.value);
-              setTripPatternId('');
             }}
           >
             <option value="">Select a route</option>
@@ -154,20 +164,16 @@ export function BusWorkspaceRouteForm({
           </select>
         </label>
         <label className={labelClassName}>
-          Named trip
+          Service directions
           <select
             className={fieldClassName}
-            value={tripPatternId}
-            disabled={identityLocked}
-            onChange={(event) => setTripPatternId(event.target.value)}
+            value={directionScope}
+            disabled={mode === 'renew'}
+            onChange={(event) => setDirectionScope(event.target.value as DirectionScope)}
           >
-            <option value="">Select a trip</option>
-            {patterns.map((pattern) => (
-              <option key={pattern.id} value={pattern.id}>
-                {pattern.display_name} (
-                {pattern.direction === 'forward' ? 'Start → End' : 'End → Start'})
-              </option>
-            ))}
+            <option value="both">Both directions</option>
+            <option value="forward">Outbound only</option>
+            <option value="reverse">Return only</option>
           </select>
         </label>
         <label className={labelClassName}>
@@ -201,7 +207,7 @@ export function BusWorkspaceRouteForm({
             ? 'Renew route assignment'
             : assignment
               ? 'Save route assignment'
-              : 'Assign route trip'}
+              : 'Assign route'}
         </Button>
         <Button type="button" variant="secondary" disabled={saving} onClick={onCancel}>
           Cancel

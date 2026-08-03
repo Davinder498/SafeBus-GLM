@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { ArrowLeft, BusFront, Route as RouteIcon, UsersRound } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { BusWorkspaceRouteForm } from '@/components/admin/BusWorkspaceForms';
-import { StudentBusAssignmentForm } from '@/components/admin/StudentBusAssignmentForm';
+import { DirectionalStudentBusAssignmentForm } from '@/components/admin/DirectionalStudentBusAssignmentForm';
 import { BusQrCredentialPanel } from '@/components/admin/BusQrCredentialPanel';
 import {
   AdminWriteError,
@@ -27,22 +27,20 @@ import {
 } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/useAuth';
 import {
-  endBusRouteAssignment,
   fetchAdminBusWorkspace,
-  prepareBusRun,
   type AdminBusRouteAssignment,
   type AdminBusStudentAssignment,
   type AdminBusWorkspace,
-  type AdminBusReadyDispatch,
 } from '@/services/adminBusWorkspaceService';
 import { getVisibleSchools } from '@/services/adminOrganizationService';
 import {
-  createStudentBusAssignment,
-  ensureBusRouteAssignment,
-  renewBusRouteAssignment,
-  updateBusRouteAssignment,
-  updateStudentBusAssignment,
+  endBusRouteService,
+  setBusRouteService,
+  setStudentBusService,
+  setStudentBusServiceStatus,
   type BusServiceOption,
+  type SetBusRouteServiceInput,
+  type SetStudentBusServiceInput,
 } from '@/services/studentBusAssignmentService';
 import {
   createBus,
@@ -56,27 +54,30 @@ import type { School } from '@/types/organization';
 import type {
   Bus,
   CreateBusInput,
-  CreateStudentBusAssignmentInput,
   Route,
   RouteStop,
   RouteTripPattern,
-  StudentBusAssignment,
   UpdateBusInput,
-  UpdateStudentBusAssignmentInput,
 } from '@/types/transportation';
 import { cn } from '@/utils/cn';
 import {
   busAssignmentEffectiveStatus,
-  busAssignmentEndDate,
   busWorkspaceLifecycle,
   type BusAssignmentEffectiveStatus,
   type BusWorkspaceLifecycle,
 } from '@/utils/busWorkspace';
+import {
+  directionScopeLabel,
+  groupDirectionalAssignments,
+  type DirectionalAssignmentGroup,
+} from '@/utils/directionalAssignments';
 
 type WorkspaceTab = 'details' | 'routes' | 'students';
 type LifecycleBucket = BusWorkspaceLifecycle;
 type StudentAssignmentAction = 'deassign' | 'archive';
 type RouteFormMode = 'create' | 'edit' | 'renew';
+type RouteAssignmentGroup = DirectionalAssignmentGroup<AdminBusRouteAssignment>;
+type StudentAssignmentGroup = DirectionalAssignmentGroup<AdminBusStudentAssignment>;
 
 const validTabs = new Set<WorkspaceTab>(['details', 'routes', 'students']);
 function formatDate(value: string | null) {
@@ -133,19 +134,18 @@ export function AdminBusWorkspacePage() {
   const [message, setMessage] = useState<string | null>(null);
   const [detailsDirty, setDetailsDirty] = useState(false);
   const [routeForm, setRouteForm] = useState<{
-    assignment: AdminBusRouteAssignment | null;
+    group: RouteAssignmentGroup | null;
     mode: RouteFormMode;
   } | null>(null);
-  const [endingRoute, setEndingRoute] = useState<AdminBusRouteAssignment | null>(null);
+  const [endingRoute, setEndingRoute] = useState<RouteAssignmentGroup | null>(null);
   const [ending, setEnding] = useState(false);
-  const [preparingServiceId, setPreparingServiceId] = useState<string | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [deletingBus, setDeletingBus] = useState(false);
   const [studentForm, setStudentForm] = useState<{
-    assignment: AdminBusStudentAssignment | null;
+    group: StudentAssignmentGroup | null;
   } | null>(null);
   const [studentAction, setStudentAction] = useState<{
-    assignment: AdminBusStudentAssignment;
+    group: StudentAssignmentGroup;
     action: StudentAssignmentAction;
   } | null>(null);
   const [studentActionBusy, setStudentActionBusy] = useState(false);
@@ -248,103 +248,64 @@ export function AdminBusWorkspacePage() {
     }
   }
 
-  async function saveRouteAssignment(input: Parameters<typeof ensureBusRouteAssignment>[0]) {
+  async function saveRouteAssignment(input: SetBusRouteServiceInput) {
     setWriteError(null);
     setMessage(null);
-    if (routeForm?.assignment && routeForm.mode === 'renew') {
-      await renewBusRouteAssignment(routeForm.assignment.id, {
-        effective_from: input.effective_from ?? new Date().toISOString().slice(0, 10),
-        effective_to: input.effective_to,
-      });
+    if (routeForm?.mode === 'renew') {
+      await setBusRouteService({ ...input, existingAssignmentIds: [] });
       setMessage('Route assignment renewed. The earlier assignment remains in history.');
-    } else if (routeForm?.assignment) {
-      const update = {
-        route_id: input.route_id,
-        route_trip_pattern_id: input.route_trip_pattern_id,
-        trip_type: input.trip_type,
-        effective_from: input.effective_from,
-        effective_to: input.effective_to,
-      };
-      await updateBusRouteAssignment(routeForm.assignment.id, update);
-      setMessage('Route assignment updated.');
     } else {
-      await ensureBusRouteAssignment(input);
-      setMessage('Route trip assigned to this bus.');
+      await setBusRouteService(input);
+      setMessage(routeForm?.group ? 'Route service updated.' : 'Route assigned to this bus.');
     }
     setRouteForm(null);
     await reloadWorkspace();
   }
 
-  async function makeRunReady(service: AdminBusRouteAssignment) {
-    setPreparingServiceId(service.id);
-    setWriteError(null);
-    setMessage(null);
-    try {
-      await prepareBusRun(service.id);
-      setMessage(
-        `Bus ${workspace?.bus.bus_number ?? ''} is ready for ${service.trip_name}. Any active driver can scan its QR to start.`,
-      );
-      await reloadWorkspace();
-    } catch (error) {
-      setWriteError(error instanceof Error ? error.message : 'Unable to prepare this run.');
-    } finally {
-      setPreparingServiceId(null);
-    }
-  }
-
   async function confirmEndRoute() {
     if (!endingRoute || ending) return;
-    const closingExpired = busAssignmentEffectiveStatus(endingRoute) === 'expired';
+    const closingExpired = endingRoute.assignments.every(
+      (assignment) => busAssignmentEffectiveStatus(assignment) === 'expired',
+    );
     setEnding(true);
     setWriteError(null);
     setMessage(null);
     try {
-      await endBusRouteAssignment(endingRoute.id);
+      await endBusRouteService(endingRoute.assignments.map((assignment) => assignment.id));
       setEndingRoute(null);
       setMessage(
         closingExpired
           ? 'Expired route assignment closed. Historical dates were preserved.'
-          : 'Route trip deassigned. Linked active assignments were ended.',
+          : 'Route service deassigned. Linked active assignments were ended.',
       );
       await reloadWorkspace();
     } catch (error) {
-      setWriteError(error instanceof Error ? error.message : 'Unable to end this route trip.');
+      setWriteError(error instanceof Error ? error.message : 'Unable to end this route service.');
     } finally {
       setEnding(false);
     }
   }
 
-  async function saveStudentAssignment(
-    input: CreateStudentBusAssignmentInput | UpdateStudentBusAssignmentInput,
-  ) {
+  async function saveStudentAssignment(input: SetStudentBusServiceInput) {
     setWriteError(null);
     setMessage(null);
-    if (studentForm?.assignment) {
-      await updateStudentBusAssignment(
-        studentForm.assignment.id,
-        input as UpdateStudentBusAssignmentInput,
-      );
-      setMessage('Student assignment updated.');
-    } else {
-      await createStudentBusAssignment(input as CreateStudentBusAssignmentInput);
-      setMessage('Student assigned to this bus.');
-    }
+    await setStudentBusService(input);
+    setMessage(
+      studentForm?.group ? 'Student bus service updated.' : 'Student assigned to this bus.',
+    );
     setStudentForm(null);
     await reloadWorkspace();
   }
 
-  async function setStudentStatus(
-    assignment: AdminBusStudentAssignment,
-    status: 'active' | 'inactive',
-  ) {
+  async function setStudentStatus(group: StudentAssignmentGroup, status: 'active' | 'inactive') {
     setWriteError(null);
     setMessage(null);
     try {
-      await updateStudentBusAssignment(assignment.id, {
+      await setStudentBusServiceStatus(
+        group.assignments.map((assignment) => assignment.id),
         status,
-        ...(status === 'active' ? { effective_to: null } : {}),
-      });
-      setMessage(`Student assignment ${status === 'active' ? 'activated' : 'deactivated'}.`);
+      );
+      setMessage(`Student bus service ${status === 'active' ? 'activated' : 'deactivated'}.`);
       await reloadWorkspace();
     } catch (error) {
       setWriteError(
@@ -358,21 +319,23 @@ export function AdminBusWorkspacePage() {
     setStudentActionBusy(true);
     setWriteError(null);
     setMessage(null);
-    const { assignment, action } = studentAction;
-    const closingExpired = busAssignmentEffectiveStatus(assignment) === 'expired';
-    const endDate = busAssignmentEndDate(assignment);
+    const { group, action } = studentAction;
+    const closingExpired = group.assignments.every(
+      (assignment) => busAssignmentEffectiveStatus(assignment) === 'expired',
+    );
     try {
-      await updateStudentBusAssignment(assignment.id, {
-        status: action === 'archive' ? 'archived' : 'inactive',
-        effective_to: endDate,
-      });
+      await setStudentBusServiceStatus(
+        group.assignments.map((assignment) => assignment.id),
+        action === 'archive' ? 'archived' : 'inactive',
+        true,
+      );
       setStudentAction(null);
       setMessage(
         action === 'archive'
           ? 'Student assignment removed and archived.'
           : closingExpired
             ? 'Expired student assignment closed. Historical dates were preserved.'
-            : 'Student deassigned from this bus route trip.',
+            : 'Student deassigned from this bus route service.',
       );
       await reloadWorkspace();
     } catch (error) {
@@ -397,12 +360,16 @@ export function AdminBusWorkspacePage() {
 
   const routeFormIdentityLocked = !!(
     workspace &&
-    routeForm?.assignment &&
-    (workspace.driverAssignments.some(
-      (assignment) => assignment.bus_route_assignment_id === routeForm.assignment?.id,
+    routeForm?.group &&
+    (workspace.driverAssignments.some((assignment) =>
+      routeForm.group?.assignments.some(
+        (routeAssignment) => routeAssignment.id === assignment.bus_route_assignment_id,
+      ),
     ) ||
-      workspace.studentAssignments.some(
-        (assignment) => assignment.bus_route_assignment_id === routeForm.assignment?.id,
+      workspace.studentAssignments.some((assignment) =>
+        routeForm.group?.assignments.some(
+          (routeAssignment) => routeAssignment.id === assignment.bus_route_assignment_id,
+        ),
       ))
   );
 
@@ -444,11 +411,16 @@ export function AdminBusWorkspacePage() {
 
   const bus = workspace?.bus ?? null;
   const endingExpiredRoute =
-    !!endingRoute && busAssignmentEffectiveStatus(endingRoute) === 'expired';
+    !!endingRoute &&
+    endingRoute.assignments.every(
+      (assignment) => busAssignmentEffectiveStatus(assignment) === 'expired',
+    );
   const closingExpiredStudent =
     !!studentAction &&
     studentAction.action === 'deassign' &&
-    busAssignmentEffectiveStatus(studentAction.assignment) === 'expired';
+    studentAction.group.assignments.every(
+      (assignment) => busAssignmentEffectiveStatus(assignment) === 'expired',
+    );
   const tabs: Array<{ id: WorkspaceTab; label: string; icon: ReactNode }> = [
     { id: 'details', label: 'Bus details', icon: <BusFront className="h-4 w-4" /> },
     { id: 'routes', label: 'Routes', icon: <RouteIcon className="h-4 w-4" /> },
@@ -476,7 +448,7 @@ export function AdminBusWorkspacePage() {
           title={bus ? `Bus ${bus.bus_number}` : 'Add bus'}
           description={
             bus
-              ? 'Manage this bus, its named route trips, QR credential, and student roster.'
+              ? 'Manage this bus, its route services, QR credential, and student roster.'
               : 'Save the bus details first to unlock route and student assignments.'
           }
         />
@@ -567,18 +539,15 @@ export function AdminBusWorkspacePage() {
               routes={routes}
               tripPatterns={tripPatterns}
               assignments={workspace.routeAssignments}
-              readyDispatch={workspace.readyDispatch}
-              preparingServiceId={preparingServiceId}
               canManage={canManageRoutesAndDrivers}
               form={routeForm}
               formIdentityLocked={routeFormIdentityLocked || routeForm?.mode === 'renew'}
-              onAdd={() => setRouteForm({ assignment: null, mode: 'create' })}
-              onEdit={(assignment) => setRouteForm({ assignment, mode: 'edit' })}
-              onRenew={(assignment) => setRouteForm({ assignment, mode: 'renew' })}
+              onAdd={() => setRouteForm({ group: null, mode: 'create' })}
+              onEdit={(group) => setRouteForm({ group, mode: 'edit' })}
+              onRenew={(group) => setRouteForm({ group, mode: 'renew' })}
               onCancelForm={() => setRouteForm(null)}
               onSubmit={saveRouteAssignment}
               onEnd={setEndingRoute}
-              onPrepare={(assignment) => void makeRunReady(assignment)}
             />
           )}
 
@@ -590,13 +559,13 @@ export function AdminBusWorkspacePage() {
               serviceRecords={workspace.routeAssignments}
               stops={stops}
               form={studentForm}
-              onAdd={() => setStudentForm({ assignment: null })}
-              onEdit={(assignment) => setStudentForm({ assignment })}
+              onAdd={() => setStudentForm({ group: null })}
+              onEdit={(group) => setStudentForm({ group })}
               onCancel={() => setStudentForm(null)}
               onSubmit={saveStudentAssignment}
-              onSetStatus={(assignment, status) => void setStudentStatus(assignment, status)}
-              onDeassign={(assignment) => setStudentAction({ assignment, action: 'deassign' })}
-              onArchive={(assignment) => setStudentAction({ assignment, action: 'archive' })}
+              onSetStatus={(group, status) => void setStudentStatus(group, status)}
+              onDeassign={(group) => setStudentAction({ group, action: 'deassign' })}
+              onArchive={(group) => setStudentAction({ group, action: 'archive' })}
               onGoRoutes={() => goToTab('routes')}
             />
           )}
@@ -605,11 +574,11 @@ export function AdminBusWorkspacePage() {
 
       <ConfirmDialog
         open={!!endingRoute}
-        title={`${endingExpiredRoute ? 'Close expired' : 'Deassign'} ${endingRoute?.route_code ?? ''} ${endingRoute?.trip_name ?? ''}?`}
+        title={`${endingExpiredRoute ? 'Close expired' : 'Deassign'} ${endingRoute?.assignments[0]?.route_code ?? ''} route service?`}
         description={
           endingExpiredRoute
             ? 'This closes the expired active record and linked active assignments without changing their historical end dates.'
-            : 'This deassigns the route trip and deactivates all linked driver and student assignments. History is preserved.'
+            : 'This deassigns every direction in the route service and deactivates all linked driver and student assignments. History is preserved.'
         }
         confirmLabel={endingExpiredRoute ? 'Close expired' : 'Deassign route'}
         destructive
@@ -621,17 +590,17 @@ export function AdminBusWorkspacePage() {
         open={!!studentAction}
         title={
           studentAction?.action === 'archive'
-            ? `Delete ${studentAction.assignment.student_name}'s bus assignment?`
+            ? `Delete ${studentAction.group.assignments[0]?.student_name ?? 'student'}'s bus assignment?`
             : closingExpiredStudent
-              ? `Close expired assignment for ${studentAction?.assignment.student_name ?? 'student'}?`
-              : `Deassign ${studentAction?.assignment.student_name ?? 'student'}?`
+              ? `Close expired assignment for ${studentAction?.group.assignments[0]?.student_name ?? 'student'}?`
+              : `Deassign ${studentAction?.group.assignments[0]?.student_name ?? 'student'}?`
         }
         description={
           studentAction?.action === 'archive'
             ? 'This removes the assignment from the active roster and archives it for operational history. The student record is not deleted.'
             : closingExpiredStudent
               ? 'This marks the expired record inactive without changing its historical end date.'
-              : 'This ends the student’s assignment to this bus route trip today. History is preserved.'
+              : 'This ends every direction in the student’s bus route service today. History is preserved.'
         }
         confirmLabel={
           studentAction?.action === 'archive'
@@ -664,8 +633,6 @@ function RoutesPanel({
   routes,
   tripPatterns,
   assignments,
-  readyDispatch,
-  preparingServiceId,
   canManage,
   form,
   formIdentityLocked,
@@ -675,37 +642,40 @@ function RoutesPanel({
   onCancelForm,
   onSubmit,
   onEnd,
-  onPrepare,
 }: {
   bus: Bus;
   routes: Route[];
   tripPatterns: RouteTripPattern[];
   assignments: AdminBusRouteAssignment[];
-  readyDispatch: AdminBusReadyDispatch | null;
-  preparingServiceId: string | null;
   canManage: boolean;
-  form: { assignment: AdminBusRouteAssignment | null; mode: RouteFormMode } | null;
+  form: { group: RouteAssignmentGroup | null; mode: RouteFormMode } | null;
   formIdentityLocked: boolean;
   onAdd: () => void;
-  onEdit: (assignment: AdminBusRouteAssignment) => void;
-  onRenew: (assignment: AdminBusRouteAssignment) => void;
+  onEdit: (group: RouteAssignmentGroup) => void;
+  onRenew: (group: RouteAssignmentGroup) => void;
   onCancelForm: () => void;
-  onSubmit: (input: Parameters<typeof ensureBusRouteAssignment>[0]) => Promise<void>;
-  onEnd: (assignment: AdminBusRouteAssignment) => void;
-  onPrepare: (assignment: AdminBusRouteAssignment) => void;
+  onSubmit: (input: SetBusRouteServiceInput) => Promise<void>;
+  onEnd: (group: RouteAssignmentGroup) => void;
 }) {
+  const groups = groupDirectionalAssignments(
+    assignments,
+    (assignment) => assignment.route_id,
+    (assignment) => assignment.direction,
+  );
+  const buckets: LifecycleBucket[] = ['current', 'upcoming', 'history'];
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-navy-900">Route trips</h2>
+          <h2 className="text-xl font-bold text-navy-900">Route services</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Outbound and return trips are separate assignments.
+            Assign both directions together, or use one direction when buses differ.
           </p>
         </div>
         {canManage && !form && (
           <Button type="button" onClick={onAdd}>
-            Assign route trip
+            Assign route
           </Button>
         )}
       </div>
@@ -714,15 +684,16 @@ function RoutesPanel({
           title={
             form.mode === 'renew'
               ? 'Renew route assignment'
-              : form.assignment
-                ? 'Edit route assignment'
-                : 'Assign route trip'
+              : form.group
+                ? 'Edit route service'
+                : 'Assign route'
           }
         >
           <BusWorkspaceRouteForm
-            key={`${form.mode}-${form.assignment?.id ?? 'new-route-assignment'}`}
+            key={`${form.mode}-${form.group?.id ?? 'new-route-assignment'}`}
             bus={bus}
-            assignment={form.assignment}
+            assignment={form.group?.assignments[0]}
+            assignmentGroup={form.group?.assignments}
             mode={form.mode}
             identityLocked={formIdentityLocked}
             routes={routes}
@@ -733,110 +704,106 @@ function RoutesPanel({
           />
         </InlineFormShell>
       )}
-      {readyDispatch && (
-        <Card className="border-success-200 bg-success-50 p-4" data-testid="admin-ready-bus-run">
-          <p className="text-sm font-bold text-success-800">Ready for driver scan</p>
-          <p className="mt-1 text-sm text-success-800">
-            Bus {bus.bus_number} · {readyDispatch.trip_name} ({readyDispatch.route_code})
-          </p>
-        </Card>
-      )}
-      {assignments.length === 0 ? (
+      {groups.length === 0 ? (
         <DataState
-          title="No route trips assigned"
-          message="Assign this bus to a reviewed named route trip to continue."
+          title="No routes assigned"
+          message="Assign this bus to a reviewed route to continue."
         />
       ) : (
-        <BucketSections
-          items={assignments}
-          render={(assignment, bucket) => (
-            <Card
-              key={assignment.id}
-              className="p-5"
-              data-testid={`route-assignment-${assignment.id}`}
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h3 className="font-bold text-navy-900">
-                    {assignment.route_code} · {assignment.trip_name}
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-600">{assignment.route_name}</p>
-                  <p className="mt-2 text-sm text-gray-600">
-                    {dateRange(assignment.effective_from, assignment.effective_to)}
-                  </p>
-                  {assignment.has_active_trip && (
-                    <p className="mt-2 text-sm font-semibold text-warning-700">
-                      Trip currently in progress
-                    </p>
-                  )}
+        <div className="space-y-6">
+          {buckets.map((bucket) => {
+            const bucketGroups = groups.filter(
+              (group) => busWorkspaceLifecycle(group.assignments[0]) === bucket,
+            );
+            if (bucketGroups.length === 0) return null;
+            return (
+              <section key={bucket} className="space-y-3">
+                <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                  {bucketLabel(bucket)}
+                </h3>
+                <div className="grid gap-3">
+                  {bucketGroups.map((group) => {
+                    const assignment = group.assignments[0];
+                    const hasActiveTrip = group.assignments.some((item) => item.has_active_trip);
+                    const expired = group.assignments.every(
+                      (item) => busAssignmentEffectiveStatus(item) === 'expired',
+                    );
+                    return (
+                      <Card
+                        key={group.id}
+                        className="p-5"
+                        data-testid={`route-assignment-${assignment.id}`}
+                      >
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="font-bold text-navy-900">
+                                {assignment.route_code} · {assignment.route_name}
+                              </h4>
+                              <StatusPill tone="info">
+                                {directionScopeLabel(group.directionScope)}
+                              </StatusPill>
+                            </div>
+                            <p className="mt-2 text-sm text-gray-600">
+                              {dateRange(group.effectiveFrom, group.effectiveTo)}
+                            </p>
+                            <p className="mt-1 text-sm text-gray-600">
+                              {group.assignments.map((item) => item.trip_name).join(' · ')}
+                            </p>
+                            {hasActiveTrip && (
+                              <p className="mt-2 text-sm font-semibold text-warning-700">
+                                Bus run currently in progress
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <StatusPill
+                              tone={assignmentStatusTone(busAssignmentEffectiveStatus(assignment))}
+                            >
+                              {assignmentStatusLabel(busAssignmentEffectiveStatus(assignment))}
+                            </StatusPill>
+                            {canManage && bucket !== 'history' && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                disabled={hasActiveTrip}
+                                onClick={() => onEdit(group)}
+                              >
+                                Edit service
+                              </Button>
+                            )}
+                            {canManage && (bucket !== 'history' || expired) && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="danger"
+                                disabled={hasActiveTrip}
+                                onClick={() => onEnd(group)}
+                              >
+                                {expired ? 'Close expired' : 'Deassign route'}
+                              </Button>
+                            )}
+                            {canManage && bucket === 'history' && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => onRenew(group)}
+                              >
+                                Renew assignment
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <StatusPill tone={assignmentStatusTone(busAssignmentEffectiveStatus(assignment))}>
-                    {assignmentStatusLabel(busAssignmentEffectiveStatus(assignment))}
-                  </StatusPill>
-                  {canManage && bucket !== 'history' && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      disabled={assignment.has_active_trip}
-                      onClick={() => onEdit(assignment)}
-                    >
-                      Edit assignment
-                    </Button>
-                  )}
-                  {canManage && bucket === 'current' && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      disabled={assignment.has_active_trip || preparingServiceId === assignment.id}
-                      onClick={() => onPrepare(assignment)}
-                      data-testid={`prepare-bus-run-${assignment.id}`}
-                    >
-                      {preparingServiceId === assignment.id
-                        ? 'Preparing...'
-                        : readyDispatch?.bus_route_assignment_id === assignment.id
-                          ? 'Ready to scan'
-                          : 'Make next run'}
-                    </Button>
-                  )}
-                  {canManage && bucket !== 'history' && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="danger"
-                      disabled={assignment.has_active_trip}
-                      onClick={() => onEnd(assignment)}
-                    >
-                      Deassign route
-                    </Button>
-                  )}
-                  {canManage && busAssignmentEffectiveStatus(assignment) === 'expired' && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="danger"
-                      onClick={() => onEnd(assignment)}
-                    >
-                      Close expired
-                    </Button>
-                  )}
-                  {canManage && bucket === 'history' && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => onRenew(assignment)}
-                    >
-                      Renew assignment
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </Card>
-          )}
-        />
+              </section>
+            );
+          })}
+        </div>
       )}
     </div>
   );
@@ -863,28 +830,32 @@ function StudentsPanel({
   services: BusServiceOption[];
   serviceRecords: AdminBusRouteAssignment[];
   stops: RouteStop[];
-  form: { assignment: AdminBusStudentAssignment | null } | null;
+  form: { group: StudentAssignmentGroup | null } | null;
   onAdd: () => void;
-  onEdit: (assignment: AdminBusStudentAssignment) => void;
+  onEdit: (group: StudentAssignmentGroup) => void;
   onCancel: () => void;
-  onSubmit: (
-    input: CreateStudentBusAssignmentInput | UpdateStudentBusAssignmentInput,
-  ) => Promise<void>;
-  onSetStatus: (assignment: AdminBusStudentAssignment, status: 'active' | 'inactive') => void;
-  onDeassign: (assignment: AdminBusStudentAssignment) => void;
-  onArchive: (assignment: AdminBusStudentAssignment) => void;
+  onSubmit: (input: SetStudentBusServiceInput) => Promise<void>;
+  onSetStatus: (group: StudentAssignmentGroup, status: 'active' | 'inactive') => void;
+  onDeassign: (group: StudentAssignmentGroup) => void;
+  onArchive: (group: StudentAssignmentGroup) => void;
   onGoRoutes: () => void;
 }) {
-  const serviceNames = new Map(
-    serviceRecords.map((service) => [service.id, `${service.route_code} · ${service.trip_name}`]),
-  );
+  const serviceById = new Map(serviceRecords.map((service) => [service.id, service]));
   const rosterAssignments = assignments.filter((assignment) => assignment.status !== 'archived');
+  const groups = groupDirectionalAssignments(
+    rosterAssignments,
+    (assignment) => {
+      const service = serviceById.get(assignment.bus_route_assignment_id);
+      return `${assignment.student_id}|${service?.route_id ?? assignment.bus_route_assignment_id}`;
+    },
+    (assignment) => serviceById.get(assignment.bus_route_assignment_id)?.direction ?? null,
+  );
 
-  if (services.length === 0 && rosterAssignments.length === 0) {
+  if (services.length === 0 && groups.length === 0) {
     return (
       <DataState
-        title="Assign a route trip first"
-        message="Students are assigned to this bus through a named route trip."
+        title="Assign a route first"
+        message="Students are assigned through this bus’s active route directions."
         action={
           <Button type="button" onClick={onGoRoutes}>
             Go to Routes
@@ -910,25 +881,23 @@ function StudentsPanel({
         )}
       </div>
       {form && (
-        <InlineFormShell title={form.assignment ? 'Edit student assignment' : 'Assign student'}>
-          <StudentBusAssignmentForm
-            key={form.assignment?.id ?? 'new-student-assignment'}
-            assignment={form.assignment as StudentBusAssignment | null}
-            studentLabel={form.assignment?.student_name}
-            fixedStudentId={form.assignment?.student_id}
+        <InlineFormShell title={form.group ? 'Edit student bus service' : 'Assign student'}>
+          <DirectionalStudentBusAssignmentForm
+            key={form.group?.id ?? 'new-student-assignment'}
+            assignments={form.group?.assignments}
+            studentLabel={form.group?.assignments[0]?.student_name}
+            fixedStudentId={form.group?.assignments[0]?.student_id}
             services={services}
             stops={stops}
-            defaultTenantId={bus.tenant_id}
-            showStatusField={false}
             onSubmit={onSubmit}
             onCancel={onCancel}
           />
         </InlineFormShell>
       )}
-      {rosterAssignments.length === 0 ? (
+      {groups.length === 0 ? (
         <DataState
           title="No students assigned"
-          message="Assign an existing student to one of this bus’s route trips."
+          message="Assign an existing student to one of this bus’s routes."
         />
       ) : (
         <Card className="overflow-visible p-0">
@@ -936,7 +905,7 @@ function StudentsPanel({
             <TableHeader>
               <tr>
                 <TableColumn>Student</TableColumn>
-                <TableColumn>Route trip</TableColumn>
+                <TableColumn>Route service</TableColumn>
                 <TableColumn>Pickup</TableColumn>
                 <TableColumn>Drop-off</TableColumn>
                 <TableColumn>Service dates</TableColumn>
@@ -945,27 +914,60 @@ function StudentsPanel({
               </tr>
             </TableHeader>
             <TableBody>
-              {rosterAssignments.map((assignment) => {
-                const hasActiveService = services.some(
-                  (service) => service.id === assignment.bus_route_assignment_id,
+              {groups.map((group) => {
+                const assignment = group.assignments[0];
+                const forwardService = group.forward
+                  ? serviceById.get(group.forward.bus_route_assignment_id)
+                  : null;
+                const reverseService = group.reverse
+                  ? serviceById.get(group.reverse.bus_route_assignment_id)
+                  : null;
+                const hasActiveService = group.assignments.every((item) =>
+                  services.some((service) => service.id === item.bus_route_assignment_id),
                 );
-                const isActive = assignment.status === 'active';
+                const isActive = group.assignments.every((item) => item.status === 'active');
                 const effectiveStatus = busAssignmentEffectiveStatus(assignment);
-                const isExpired = effectiveStatus === 'expired';
+                const isExpired = group.assignments.every(
+                  (item) => busAssignmentEffectiveStatus(item) === 'expired',
+                );
                 return (
-                  <TableRow key={assignment.id} data-testid={`student-assignment-${assignment.id}`}>
+                  <TableRow key={group.id} data-testid={`student-assignment-${assignment.id}`}>
                     <TableCell className="whitespace-nowrap font-bold text-navy-900">
                       {assignment.student_name}
                     </TableCell>
                     <TableCell className="whitespace-nowrap font-semibold text-navy-700">
-                      {serviceNames.get(assignment.bus_route_assignment_id) ??
-                        'Previous route trip'}
+                      <span className="block">
+                        {forwardService?.route_code ??
+                          reverseService?.route_code ??
+                          'Previous route'}
+                      </span>
+                      <span className="mt-1 block text-xs text-slate-500">
+                        {directionScopeLabel(group.directionScope)}
+                      </span>
                     </TableCell>
                     <TableCell className="min-w-36">
-                      {assignment.pickup_stop_name ?? 'Not assigned'}
+                      {group.forward && (
+                        <span className="block">
+                          Outbound: {group.forward.pickup_stop_name ?? 'Not assigned'}
+                        </span>
+                      )}
+                      {group.reverse && (
+                        <span className="mt-1 block">
+                          Return: {group.reverse.pickup_stop_name ?? 'Not assigned'}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="min-w-36">
-                      {assignment.dropoff_stop_name ?? 'Not assigned'}
+                      {group.forward && (
+                        <span className="block">
+                          Outbound: {group.forward.dropoff_stop_name ?? 'Not assigned'}
+                        </span>
+                      )}
+                      {group.reverse && (
+                        <span className="mt-1 block">
+                          Return: {group.reverse.dropoff_stop_name ?? 'Not assigned'}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="min-w-48 whitespace-nowrap text-slate-600">
                       {dateRange(assignment.effective_from, assignment.effective_to)}
@@ -982,7 +984,7 @@ function StudentsPanel({
                             type="button"
                             size="sm"
                             variant="secondary"
-                            onClick={() => onEdit(assignment)}
+                            onClick={() => onEdit(group)}
                           >
                             Edit assignment
                           </Button>
@@ -992,9 +994,7 @@ function StudentsPanel({
                             type="button"
                             size="sm"
                             variant="secondary"
-                            onClick={() =>
-                              onSetStatus(assignment, isActive ? 'inactive' : 'active')
-                            }
+                            onClick={() => onSetStatus(group, isActive ? 'inactive' : 'active')}
                           >
                             {isActive ? 'Deactivate' : 'Activate'}
                           </Button>
@@ -1004,7 +1004,7 @@ function StudentsPanel({
                             type="button"
                             size="sm"
                             variant="danger"
-                            onClick={() => onDeassign(assignment)}
+                            onClick={() => onDeassign(group)}
                           >
                             Deassign
                           </Button>
@@ -1014,7 +1014,7 @@ function StudentsPanel({
                             type="button"
                             size="sm"
                             variant="danger"
-                            onClick={() => onDeassign(assignment)}
+                            onClick={() => onDeassign(group)}
                           >
                             Close expired
                           </Button>
@@ -1024,7 +1024,7 @@ function StudentsPanel({
                           size="sm"
                           variant="ghost"
                           className="text-danger-700 hover:bg-danger-50 hover:text-danger-800"
-                          onClick={() => onArchive(assignment)}
+                          onClick={() => onArchive(group)}
                         >
                           Delete assignment
                         </Button>
@@ -1037,33 +1037,6 @@ function StudentsPanel({
           </Table>
         </Card>
       )}
-    </div>
-  );
-}
-
-function BucketSections<
-  T extends {
-    id: string;
-    status: string;
-    effective_from: string | null;
-    effective_to: string | null;
-  },
->({ items, render }: { items: T[]; render: (item: T, bucket: LifecycleBucket) => ReactNode }) {
-  const buckets: LifecycleBucket[] = ['current', 'upcoming', 'history'];
-  return (
-    <div className="space-y-6">
-      {buckets.map((bucket) => {
-        const bucketItems = items.filter((item) => busWorkspaceLifecycle(item) === bucket);
-        if (bucketItems.length === 0) return null;
-        return (
-          <section key={bucket} className="space-y-3">
-            <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-              {bucketLabel(bucket)}
-            </h3>
-            <div className="grid gap-3">{bucketItems.map((item) => render(item, bucket))}</div>
-          </section>
-        );
-      })}
     </div>
   );
 }
