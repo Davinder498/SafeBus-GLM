@@ -28,13 +28,16 @@ const bus = {
   updated_at: '2026-07-20T00:00:00Z',
 };
 
-async function mockBusWorkspace(page: Page) {
+async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean } = {}) {
   let routeEnded = false;
+  let expiredRouteClosed = false;
   let runReady = false;
   let hasActiveQr = false;
   let routeEffectiveTo: string | null = null;
   let studentStatus: 'active' | 'inactive' | 'archived' = 'active';
   let studentEffectiveTo: string | null = null;
+  let expiredStudentStatus: 'active' | 'inactive' | 'archived' = 'active';
+  let expiredStudentEffectiveTo = '2000-01-31';
   const routeAssignments = [
     {
       id: serviceId,
@@ -93,6 +96,29 @@ async function mockBusWorkspace(page: Page) {
       direction: 'forward',
       has_active_trip: false,
     },
+    ...(options.includeExpired
+      ? [
+          {
+            id: 'service-expired',
+            tenant_id: tenantId,
+            bus_id: busId,
+            route_id: 'route-expired',
+            route_trip_pattern_id: 'pattern-expired',
+            trip_type: 'morning',
+            effective_from: '2000-01-01',
+            effective_to: '2000-01-31',
+            status: 'active',
+            created_at: '2000-01-01T00:00:00Z',
+            updated_at: '2000-01-31T00:00:00Z',
+            route_name: 'Expired Route',
+            route_code: 'EXP1',
+            route_status: 'active',
+            trip_name: 'Expired Outbound',
+            direction: 'forward' as const,
+            has_active_trip: false,
+          },
+        ]
+      : []),
   ];
   const drivers = [
     {
@@ -205,7 +231,9 @@ async function mockBusWorkspace(page: Page) {
               effective_to: routeEffectiveTo,
               status: routeEnded ? ('inactive' as const) : item.status,
             }
-          : item,
+          : item.id === 'service-expired'
+            ? { ...item, status: expiredRouteClosed ? ('inactive' as const) : item.status }
+            : item,
       );
       return route.fulfill({
         status: 200,
@@ -251,6 +279,27 @@ async function mockBusWorkspace(page: Page) {
               pickup_stop_name: 'First Stop',
               dropoff_stop_name: 'Last Stop',
             },
+            ...(options.includeExpired
+              ? [
+                  {
+                    id: 'student-assignment-expired',
+                    tenant_id: tenantId,
+                    student_id: 'student-expired',
+                    bus_route_assignment_id: 'service-expired',
+                    route_trip_pattern_id: 'pattern-expired',
+                    pickup_stop_id: 'stop-1',
+                    dropoff_stop_id: 'stop-2',
+                    effective_from: '2000-01-01',
+                    effective_to: expiredStudentEffectiveTo,
+                    status: expiredStudentStatus,
+                    created_at: '2000-01-01T00:00:00Z',
+                    updated_at: '2000-01-31T00:00:00Z',
+                    student_name: 'Expired Student',
+                    pickup_stop_name: 'First Stop',
+                    dropoff_stop_name: 'Last Stop',
+                  },
+                ]
+              : []),
           ],
         }),
       });
@@ -314,7 +363,15 @@ async function mockBusWorkspace(page: Page) {
       });
     }
     if (path.includes('/rpc/admin_end_bus_route_assignment')) {
-      routeEnded = true;
+      const body = route.request().postDataJSON() as {
+        p_bus_route_assignment_id?: string;
+      };
+      if (body.p_bus_route_assignment_id === 'service-expired') {
+        expiredRouteClosed = true;
+        expiredStudentStatus = 'inactive';
+      } else {
+        routeEnded = true;
+      }
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
     }
     if (path.includes('/profiles')) {
@@ -346,16 +403,22 @@ async function mockBusWorkspace(page: Page) {
         status?: 'active' | 'inactive' | 'archived';
         effective_to?: string | null;
       };
-      studentStatus = body.status ?? studentStatus;
-      if ('effective_to' in body) studentEffectiveTo = body.effective_to ?? null;
+      const isExpiredAssignment = url.searchParams.get('id') === 'eq.student-assignment-expired';
+      if (isExpiredAssignment) {
+        expiredStudentStatus = body.status ?? expiredStudentStatus;
+        if ('effective_to' in body) expiredStudentEffectiveTo = body.effective_to ?? '';
+      } else {
+        studentStatus = body.status ?? studentStatus;
+        if ('effective_to' in body) studentEffectiveTo = body.effective_to ?? null;
+      }
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          id: 'student-assignment-1',
+          id: isExpiredAssignment ? 'student-assignment-expired' : 'student-assignment-1',
           ...body,
-          status: studentStatus,
-          effective_to: studentEffectiveTo,
+          status: isExpiredAssignment ? expiredStudentStatus : studentStatus,
+          effective_to: isExpiredAssignment ? expiredStudentEffectiveTo : studentEffectiveTo,
         }),
       });
     }
@@ -531,5 +594,40 @@ test.describe('unified bus workspace', () => {
     await expect(qrSheet).toHaveCSS('visibility', 'visible');
     await expect(page.locator('header').first()).toHaveCSS('visibility', 'hidden');
     await page.evaluate(() => document.body.classList.remove('printing-bus-qr'));
+  });
+
+  test('labels expired assignments correctly and closes them without changing history', async ({
+    page,
+  }) => {
+    await mockBusWorkspace(page, { includeExpired: true });
+    await page.goto(`/admin/buses/${busId}?tab=students`);
+
+    const expiredStudent = page.getByTestId('student-assignment-student-assignment-expired');
+    await expect(expiredStudent.getByText('Expired', { exact: true })).toBeVisible();
+    await expect(expiredStudent.getByRole('button', { name: 'Edit assignment' })).toHaveCount(0);
+    await expect(expiredStudent.getByRole('button', { name: 'Deactivate' })).toHaveCount(0);
+    await expiredStudent.getByRole('button', { name: 'Close expired' }).click();
+    await expect(page.getByRole('dialog')).toContainText(
+      'without changing its historical end date',
+    );
+    await page.getByRole('dialog').getByRole('button', { name: 'Close expired' }).click();
+    await expect(
+      page.getByText('Expired student assignment closed. Historical dates were preserved.'),
+    ).toBeVisible();
+    await expect(expiredStudent.getByText('Jan 31, 2000')).toBeVisible();
+
+    await page.getByRole('tab', { name: 'Routes' }).click();
+    const upcomingRoute = page.getByTestId('route-assignment-service-upcoming');
+    await expect(upcomingRoute.getByText('Scheduled', { exact: true })).toBeVisible();
+    await expect(upcomingRoute.getByRole('button', { name: 'Make next run' })).toHaveCount(0);
+
+    const expiredRoute = page.getByTestId('route-assignment-service-expired');
+    await expect(expiredRoute.getByText('Expired', { exact: true })).toBeVisible();
+    await expiredRoute.getByRole('button', { name: 'Close expired' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Close expired' }).click();
+    await expect(
+      page.getByText('Expired route assignment closed. Historical dates were preserved.'),
+    ).toBeVisible();
+    await expect(expiredRoute.getByText('Jan 31, 2000')).toBeVisible();
   });
 });
