@@ -4,7 +4,6 @@ import type {
   CreateBusRouteAssignmentInput,
   CreateStudentBusAssignmentInput,
   StudentBusAssignment,
-  UpdateBusRouteAssignmentInput,
   UpdateStudentBusAssignmentInput,
 } from '@/types/transportation';
 import { busAssignmentEffectiveStatus } from '@/utils/busWorkspace';
@@ -45,7 +44,7 @@ export async function ensureBusRouteAssignment(
     const assignment = existing.data as BusRouteAssignment;
     if (busAssignmentEffectiveStatus(assignment) === 'expired') {
       throw new Error(
-        'This route trip has an expired active assignment. Close it in History before assigning it again.',
+        'This route trip has an expired active assignment. Renew or close it in History before assigning it again.',
       );
     }
     return assignment;
@@ -67,22 +66,51 @@ export async function ensureBusRouteAssignment(
 
 export async function updateBusRouteAssignment(
   id: string,
-  input: UpdateBusRouteAssignmentInput,
+  input: Pick<
+    CreateBusRouteAssignmentInput,
+    'route_id' | 'route_trip_pattern_id' | 'trip_type' | 'effective_from' | 'effective_to'
+  >,
 ): Promise<BusRouteAssignment> {
-  const { data, error } = await client()
-    .from('bus_route_assignments')
-    .update(input)
-    .eq('id', id)
-    .select('*')
-    .single();
+  const { data, error } = await client().rpc('admin_update_bus_route_assignment', {
+    p_bus_route_assignment_id: id,
+    p_route_id: input.route_id,
+    p_route_trip_pattern_id: input.route_trip_pattern_id,
+    p_trip_type: input.trip_type,
+    p_effective_from: input.effective_from,
+    p_effective_to: input.effective_to,
+  });
   if (error) {
     if (error.code === '23P01' || error.code === '23505') {
       throw new Error('That route trip overlaps another active bus assignment.');
     }
     if (error.code === '23514') {
-      throw new Error('Choose an active bus and a map-ready route with a reviewed trip.');
+      throw new Error(error.message || 'Choose an active bus and a map-ready reviewed trip.');
+    }
+    if (error.code === '55006' || error.code === '22007') {
+      throw new Error(error.message || 'This route assignment cannot be updated.');
     }
     throw new Error('Unable to update this bus route assignment.');
+  }
+  return data as BusRouteAssignment;
+}
+
+export async function renewBusRouteAssignment(
+  id: string,
+  input: { effective_from: string; effective_to: string | null },
+): Promise<BusRouteAssignment> {
+  const { data, error } = await client().rpc('admin_renew_bus_route_assignment', {
+    p_bus_route_assignment_id: id,
+    p_effective_from: input.effective_from,
+    p_effective_to: input.effective_to,
+  });
+  if (error) {
+    if (error.code === '23P01' || error.code === '23505') {
+      throw new Error('That route trip overlaps another active bus assignment.');
+    }
+    if (error.code === '23514' || error.code === '55006' || error.code === '22007') {
+      throw new Error(error.message || 'This historical route assignment cannot be renewed.');
+    }
+    throw new Error('Unable to renew this bus route assignment.');
   }
   return data as BusRouteAssignment;
 }
