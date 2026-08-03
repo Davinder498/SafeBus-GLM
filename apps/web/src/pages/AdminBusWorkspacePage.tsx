@@ -57,7 +57,13 @@ import type {
   UpdateStudentBusAssignmentInput,
 } from '@/types/transportation';
 import { cn } from '@/utils/cn';
-import { busWorkspaceLifecycle, type BusWorkspaceLifecycle } from '@/utils/busWorkspace';
+import {
+  busAssignmentEffectiveStatus,
+  busAssignmentEndDate,
+  busWorkspaceLifecycle,
+  type BusAssignmentEffectiveStatus,
+  type BusWorkspaceLifecycle,
+} from '@/utils/busWorkspace';
 
 type WorkspaceTab = 'details' | 'routes' | 'students';
 type LifecycleBucket = BusWorkspaceLifecycle;
@@ -84,19 +90,16 @@ function bucketLabel(bucket: LifecycleBucket) {
   return 'History';
 }
 
-function bucketTone(bucket: LifecycleBucket): 'success' | 'info' | 'neutral' {
-  if (bucket === 'current') return 'success';
-  if (bucket === 'upcoming') return 'info';
-  return 'neutral';
-}
-
-function assignmentStatusLabel(status: string) {
+function assignmentStatusLabel(status: BusAssignmentEffectiveStatus) {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
-function assignmentStatusTone(status: string): 'success' | 'warning' | 'neutral' {
+function assignmentStatusTone(
+  status: BusAssignmentEffectiveStatus,
+): 'success' | 'warning' | 'info' | 'neutral' {
   if (status === 'active') return 'success';
-  if (status === 'inactive') return 'warning';
+  if (status === 'scheduled') return 'info';
+  if (status === 'expired' || status === 'inactive') return 'warning';
   return 'neutral';
 }
 
@@ -275,13 +278,18 @@ export function AdminBusWorkspacePage() {
 
   async function confirmEndRoute() {
     if (!endingRoute || ending) return;
+    const closingExpired = busAssignmentEffectiveStatus(endingRoute) === 'expired';
     setEnding(true);
     setWriteError(null);
     setMessage(null);
     try {
       await endBusRouteAssignment(endingRoute.id);
       setEndingRoute(null);
-      setMessage('Route trip deassigned. Linked active assignments were ended.');
+      setMessage(
+        closingExpired
+          ? 'Expired route assignment closed. Historical dates were preserved.'
+          : 'Route trip deassigned. Linked active assignments were ended.',
+      );
       await reloadWorkspace();
     } catch (error) {
       setWriteError(error instanceof Error ? error.message : 'Unable to end this route trip.');
@@ -335,8 +343,8 @@ export function AdminBusWorkspacePage() {
     setWriteError(null);
     setMessage(null);
     const { assignment, action } = studentAction;
-    const today = new Date().toISOString().slice(0, 10);
-    const endDate = today < assignment.effective_from ? assignment.effective_from : today;
+    const closingExpired = busAssignmentEffectiveStatus(assignment) === 'expired';
+    const endDate = busAssignmentEndDate(assignment);
     try {
       await updateStudentBusAssignment(assignment.id, {
         status: action === 'archive' ? 'archived' : 'inactive',
@@ -346,7 +354,9 @@ export function AdminBusWorkspacePage() {
       setMessage(
         action === 'archive'
           ? 'Student assignment removed and archived.'
-          : 'Student deassigned from this bus route trip.',
+          : closingExpired
+            ? 'Expired student assignment closed. Historical dates were preserved.'
+            : 'Student deassigned from this bus route trip.',
       );
       await reloadWorkspace();
     } catch (error) {
@@ -417,6 +427,12 @@ export function AdminBusWorkspacePage() {
   }
 
   const bus = workspace?.bus ?? null;
+  const endingExpiredRoute =
+    !!endingRoute && busAssignmentEffectiveStatus(endingRoute) === 'expired';
+  const closingExpiredStudent =
+    !!studentAction &&
+    studentAction.action === 'deassign' &&
+    busAssignmentEffectiveStatus(studentAction.assignment) === 'expired';
   const tabs: Array<{ id: WorkspaceTab; label: string; icon: ReactNode }> = [
     { id: 'details', label: 'Bus details', icon: <BusFront className="h-4 w-4" /> },
     { id: 'routes', label: 'Routes', icon: <RouteIcon className="h-4 w-4" /> },
@@ -572,9 +588,13 @@ export function AdminBusWorkspacePage() {
 
       <ConfirmDialog
         open={!!endingRoute}
-        title={`Deassign ${endingRoute?.route_code ?? ''} ${endingRoute?.trip_name ?? ''}?`}
-        description="This deassigns the route trip and deactivates all linked driver and student assignments. History is preserved."
-        confirmLabel="Deassign route"
+        title={`${endingExpiredRoute ? 'Close expired' : 'Deassign'} ${endingRoute?.route_code ?? ''} ${endingRoute?.trip_name ?? ''}?`}
+        description={
+          endingExpiredRoute
+            ? 'This closes the expired active record and linked active assignments without changing their historical end dates.'
+            : 'This deassigns the route trip and deactivates all linked driver and student assignments. History is preserved.'
+        }
+        confirmLabel={endingExpiredRoute ? 'Close expired' : 'Deassign route'}
         destructive
         busy={ending}
         onConfirm={() => void confirmEndRoute()}
@@ -585,14 +605,24 @@ export function AdminBusWorkspacePage() {
         title={
           studentAction?.action === 'archive'
             ? `Delete ${studentAction.assignment.student_name}'s bus assignment?`
-            : `Deassign ${studentAction?.assignment.student_name ?? 'student'}?`
+            : closingExpiredStudent
+              ? `Close expired assignment for ${studentAction?.assignment.student_name ?? 'student'}?`
+              : `Deassign ${studentAction?.assignment.student_name ?? 'student'}?`
         }
         description={
           studentAction?.action === 'archive'
             ? 'This removes the assignment from the active roster and archives it for operational history. The student record is not deleted.'
-            : 'This ends the student’s assignment to this bus route trip today. History is preserved.'
+            : closingExpiredStudent
+              ? 'This marks the expired record inactive without changing its historical end date.'
+              : 'This ends the student’s assignment to this bus route trip today. History is preserved.'
         }
-        confirmLabel={studentAction?.action === 'archive' ? 'Delete assignment' : 'Deassign'}
+        confirmLabel={
+          studentAction?.action === 'archive'
+            ? 'Delete assignment'
+            : closingExpiredStudent
+              ? 'Close expired'
+              : 'Deassign'
+        }
         destructive
         busy={studentActionBusy}
         onConfirm={() => void confirmStudentAssignmentAction()}
@@ -692,7 +722,11 @@ function RoutesPanel({
         <BucketSections
           items={assignments}
           render={(assignment, bucket) => (
-            <Card key={assignment.id} className="p-5">
+            <Card
+              key={assignment.id}
+              className="p-5"
+              data-testid={`route-assignment-${assignment.id}`}
+            >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h3 className="font-bold text-navy-900">
@@ -709,7 +743,9 @@ function RoutesPanel({
                   )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <StatusPill tone={bucketTone(bucket)}>{bucketLabel(bucket)}</StatusPill>
+                  <StatusPill tone={assignmentStatusTone(busAssignmentEffectiveStatus(assignment))}>
+                    {assignmentStatusLabel(busAssignmentEffectiveStatus(assignment))}
+                  </StatusPill>
                   {canManage && bucket !== 'history' && (
                     <Button
                       type="button"
@@ -721,7 +757,7 @@ function RoutesPanel({
                       Edit assignment
                     </Button>
                   )}
-                  {canManage && bucket !== 'history' && (
+                  {canManage && bucket === 'current' && (
                     <Button
                       type="button"
                       size="sm"
@@ -746,6 +782,16 @@ function RoutesPanel({
                       onClick={() => onEnd(assignment)}
                     >
                       Deassign route
+                    </Button>
+                  )}
+                  {canManage && busAssignmentEffectiveStatus(assignment) === 'expired' && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="danger"
+                      onClick={() => onEnd(assignment)}
+                    >
+                      Close expired
                     </Button>
                   )}
                 </div>
@@ -853,8 +899,14 @@ function StudentsPanel({
             );
             const isActive = assignment.status === 'active';
             const isArchived = assignment.status === 'archived';
+            const effectiveStatus = busAssignmentEffectiveStatus(assignment);
+            const isExpired = effectiveStatus === 'expired';
             return (
-              <Card key={assignment.id} className="p-5">
+              <Card
+                key={assignment.id}
+                className="p-5"
+                data-testid={`student-assignment-${assignment.id}`}
+              >
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h3 className="font-bold text-navy-900">{assignment.student_name}</h3>
@@ -869,10 +921,10 @@ function StudentsPanel({
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <StatusPill tone={assignmentStatusTone(assignment.status)}>
-                      {assignmentStatusLabel(assignment.status)}
+                    <StatusPill tone={assignmentStatusTone(effectiveStatus)}>
+                      {assignmentStatusLabel(effectiveStatus)}
                     </StatusPill>
-                    {!isArchived && hasActiveService && (
+                    {!isArchived && !isExpired && hasActiveService && (
                       <Button
                         type="button"
                         size="sm"
@@ -882,7 +934,7 @@ function StudentsPanel({
                         Edit assignment
                       </Button>
                     )}
-                    {!isArchived && hasActiveService && (
+                    {!isArchived && !isExpired && hasActiveService && (
                       <Button
                         type="button"
                         size="sm"
@@ -892,7 +944,7 @@ function StudentsPanel({
                         {isActive ? 'Deactivate' : 'Activate'}
                       </Button>
                     )}
-                    {isActive && (
+                    {isActive && !isExpired && (
                       <Button
                         type="button"
                         size="sm"
@@ -900,6 +952,16 @@ function StudentsPanel({
                         onClick={() => onDeassign(assignment)}
                       >
                         Deassign
+                      </Button>
+                    )}
+                    {isExpired && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="danger"
+                        onClick={() => onDeassign(assignment)}
+                      >
+                        Close expired
                       </Button>
                     )}
                     {!isArchived && (

@@ -7,6 +7,7 @@ import type {
   UpdateBusRouteAssignmentInput,
   UpdateStudentBusAssignmentInput,
 } from '@/types/transportation';
+import { busAssignmentEffectiveStatus } from '@/utils/busWorkspace';
 
 export interface BusServiceOption extends BusRouteAssignment {
   bus_number: string;
@@ -40,7 +41,15 @@ export async function ensureBusRouteAssignment(
     .eq('status', 'active')
     .maybeSingle();
   if (existing.error) throw new Error('Unable to check the bus route service.');
-  if (existing.data) return existing.data as BusRouteAssignment;
+  if (existing.data) {
+    const assignment = existing.data as BusRouteAssignment;
+    if (busAssignmentEffectiveStatus(assignment) === 'expired') {
+      throw new Error(
+        'This route trip has an expired active assignment. Close it in History before assigning it again.',
+      );
+    }
+    return assignment;
+  }
   const created = await client().from('bus_route_assignments').insert(input).select('*').single();
   if (created.error) {
     if (created.error.code === '23P01') {

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { busWorkspaceLifecycle, safeBusWorkspaceReturn } from '@/utils/busWorkspace';
+import {
+  busAssignmentEffectiveStatus,
+  busAssignmentEndDate,
+  busWorkspaceLifecycle,
+  safeBusWorkspaceReturn,
+} from '@/utils/busWorkspace';
 
 describe('bus workspace assignment lifecycle', () => {
   const currentDate = '2026-07-25';
@@ -29,6 +34,45 @@ describe('bus workspace assignment lifecycle', () => {
         currentDate,
       ),
     ).toBe('history');
+  });
+
+  it('reports the effective status instead of showing expired active records as active', () => {
+    expect(
+      busAssignmentEffectiveStatus(
+        { status: 'active', effective_from: '2026-06-01', effective_to: '2026-07-01' },
+        currentDate,
+      ),
+    ).toBe('expired');
+    expect(
+      busAssignmentEffectiveStatus(
+        { status: 'active', effective_from: '2026-08-01', effective_to: null },
+        currentDate,
+      ),
+    ).toBe('scheduled');
+    expect(
+      busAssignmentEffectiveStatus(
+        { status: 'inactive', effective_from: '2026-06-01', effective_to: '2026-07-01' },
+        currentDate,
+      ),
+    ).toBe('inactive');
+  });
+
+  it('preserves an earlier historical end date when closing or archiving an assignment', () => {
+    expect(
+      busAssignmentEndDate(
+        { effective_from: '2026-06-01', effective_to: '2026-07-01' },
+        currentDate,
+      ),
+    ).toBe('2026-07-01');
+    expect(
+      busAssignmentEndDate(
+        { effective_from: '2026-06-01', effective_to: '2026-12-01' },
+        currentDate,
+      ),
+    ).toBe(currentDate);
+    expect(
+      busAssignmentEndDate({ effective_from: '2026-08-01', effective_to: null }, currentDate),
+    ).toBe('2026-08-01');
   });
 });
 
