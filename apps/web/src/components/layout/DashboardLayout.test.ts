@@ -4,7 +4,6 @@ import { adminNavItems, driverNavGroups, guardianNavGroups } from './DashboardLa
 const tenantAdminRoutes = [
   '/admin',
   '/admin/live-trips',
-  '/admin/trips',
   '/admin/routes',
   '/admin/buses',
   '/admin/drivers',
@@ -25,6 +24,14 @@ describe('tenant admin shell navigation model', () => {
     expect(new Set(adminNavItems.map((item) => item.group))).toEqual(
       new Set(['operations', 'transportation', 'people', 'management']),
     );
+  });
+
+  it('consolidates live fleet monitoring and trip history into one operations destination', () => {
+    const operationItems = adminNavItems.filter((item) => item.group === 'operations');
+    expect(operationItems.map(({ label, to }) => [label, to])).toEqual([
+      ['Overview', '/admin'],
+      ['Live Operations', '/admin/live-trips'],
+    ]);
   });
 
   it('keeps drivers, students, and guardians together under People', () => {

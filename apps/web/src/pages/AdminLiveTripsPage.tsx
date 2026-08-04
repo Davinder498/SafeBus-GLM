@@ -3,11 +3,13 @@ import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLa
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { AdminFleetMap, type FleetMapFormatters } from '@/components/admin/AdminFleetMap';
+import { AdminTripsOverview } from '@/components/admin/AdminTripsOverview';
 import { mapTileConfig } from '@/config/mapTiles';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { fetchAdminLiveTrips } from '@/services/adminLiveMonitoringService';
+import { fetchAdminTripOverview } from '@/services/adminTripOverviewService';
 import { getAdminLiveRouteOverlays } from '@/services/transportationStructureService';
 import { useAuth } from '@/contexts/useAuth';
 import {
@@ -22,6 +24,10 @@ import {
   type LocationFreshness,
 } from '@/types/adminLiveMonitoring';
 import type { RouteOverlay } from '@/types/transportation';
+import type { AdminTripOverviewItem } from '@/types/adminTripOverview';
+
+type TripHistoryState =
+  { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; trips: AdminTripOverviewItem[] };
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
@@ -83,6 +89,7 @@ export function AdminLiveTripsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
+  const [tripHistory, setTripHistory] = useState<TripHistoryState>({ kind: 'loading' });
   const fetchingRef = useRef(false);
   const pendingLoadRef = useRef(false);
   const viewportBoundsRef = useRef<AdminMapViewportBounds | null>(null);
@@ -133,6 +140,16 @@ export function AdminLiveTripsPage() {
   }, []);
   loadRef.current = (opts) => void load(opts);
 
+  const loadTripHistory = useCallback(async () => {
+    setTripHistory({ kind: 'loading' });
+    try {
+      const history = await fetchAdminTripOverview(50);
+      if (isMountedRef.current) setTripHistory({ kind: 'ready', trips: history });
+    } catch {
+      if (isMountedRef.current) setTripHistory({ kind: 'error' });
+    }
+  }, []);
+
   const handleRealtimeInvalidate = useCallback(() => {
     void load({ background: true });
   }, [load]);
@@ -164,11 +181,12 @@ export function AdminLiveTripsPage() {
   useEffect(() => {
     isMountedRef.current = true;
     void load({ background: false });
+    void loadTripHistory();
     return () => {
       isMountedRef.current = false;
       if (viewportDebounceRef.current) clearTimeout(viewportDebounceRef.current);
     };
-  }, [load]);
+  }, [load, loadTripHistory]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -199,8 +217,8 @@ export function AdminLiveTripsPage() {
       <div className="space-y-6">
         <PageHeader
           eyebrow="Live monitoring"
-          title="Live Fleet Monitoring"
-          description="Monitor active buses, current GPS freshness, and safely available speed for your organization."
+          title="Live Operations"
+          description="Monitor active buses on the map, review current trip details, and access recent trip history in one place."
         />
 
         {showReady && (
@@ -264,13 +282,14 @@ export function AdminLiveTripsPage() {
             ) : (
               <Card className="overflow-hidden" data-testid="admin-live-trips-list">
                 <div className="border-b border-gray-100 p-5">
-                  <h2 className="text-lg font-bold text-navy-900">Trip details</h2>
+                  <h2 className="text-lg font-bold text-navy-900">Active trips</h2>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-100 text-sm">
                     <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">
                       <tr>
                         <th className="px-4 py-3">Bus</th>
+                        <th className="px-4 py-3">Route / trip</th>
                         <th className="px-4 py-3">Driver</th>
                         <th className="px-4 py-3">Trip status</th>
                         <th className="px-4 py-3">Latest update</th>
@@ -284,6 +303,7 @@ export function AdminLiveTripsPage() {
                       {trips.map((trip, index) => (
                         <tr key={`${safeFleetLabel(trip)}-${trip.startedAt}-${index}`} data-testid="admin-live-trip-card">
                           <td className="px-4 py-3 font-semibold text-navy-900">{trip.busLabel ? `Bus ${trip.busLabel}` : 'Bus label unavailable'}</td>
+                          <td className="px-4 py-3 text-gray-700"><span className="font-semibold text-navy-900">{trip.routeName ?? 'Route unavailable'}</span>{trip.tripType && <span className="block capitalize text-gray-600">{trip.tripType}</span>}</td>
                           <td className="px-4 py-3 text-gray-700">{trip.driverName ?? 'Driver unavailable'}</td>
                           <td className="px-4 py-3"><StatusPill tone="success">{trip.status}</StatusPill></td>
                           <td className="px-4 py-3 text-gray-700" data-testid="admin-live-trip-location-time">{trip.latestLocationAt ? formatTimestamp(trip.latestLocationAt) : 'No GPS update yet'}</td>
@@ -303,6 +323,21 @@ export function AdminLiveTripsPage() {
             )}
           </>
         )}
+
+        <section aria-label="Recent trip history" id="history">
+          {tripHistory.kind === 'loading' && (
+            <DataState title="Loading trip history" message="Loading recent completed and cancelled runs." />
+          )}
+          {tripHistory.kind === 'error' && (
+            <div className="space-y-4">
+              <DataState title="Could not load trip history" message="Live monitoring is still available. Try loading the history again." />
+              <Button type="button" variant="secondary" onClick={() => void loadTripHistory()}>Try again</Button>
+            </div>
+          )}
+          {tripHistory.kind === 'ready' && (
+            <AdminTripsOverview trips={tripHistory.trips} showLiveLink={false} initialFilter="non-active" title="Recent trip history" description="Review dated trip runs without leaving live operations. Use All trips for the complete history view." />
+          )}
+        </section>
       </div>
     </DashboardLayout>
   );
