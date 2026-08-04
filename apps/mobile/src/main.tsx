@@ -5,6 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import App from './App.tsx';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { AppSurfaceProvider } from '@/contexts/AppSurfaceContext';
 import { DriverTrackingProvider } from '@/contexts/DriverTrackingContext';
 import 'leaflet/dist/leaflet.css';
 import './index.css';
@@ -33,11 +34,13 @@ async function bootstrap() {
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
       <BrowserRouter>
-        <AuthProvider>
-          <DriverTrackingProvider>
-            <App />
-          </DriverTrackingProvider>
-        </AuthProvider>
+        <AppSurfaceProvider surface="native-mobile">
+          <AuthProvider>
+            <DriverTrackingProvider>
+              <App />
+            </DriverTrackingProvider>
+          </AuthProvider>
+        </AppSurfaceProvider>
       </BrowserRouter>
     </React.StrictMode>,
   );

@@ -22,6 +22,7 @@ import {
   History,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { useAppSurface, type AppSurface } from '@/contexts/AppSurfaceContext';
 import { useAuth } from '@/contexts/useAuth';
 import { Avatar } from '@/components/ui/Avatar';
 import { DropdownMenu, DropdownItem, DropdownSeparator } from '@/components/ui/DropdownMenu';
@@ -210,6 +211,24 @@ export const guardianNavGroups: DashboardNavGroup[] = [
   },
 ];
 
+export const driverNativeNavItems: DashboardNavItem[] = [
+  { label: 'Scan', to: '/driver', icon: <Bus className="h-5 w-5" /> },
+  {
+    label: 'Riders',
+    to: '/driver/pickup-drop-off',
+    icon: <List className="h-5 w-5" />,
+  },
+  { label: 'History', to: '/driver/history', icon: <History className="h-5 w-5" /> },
+  { label: 'Settings', to: '/driver/settings', icon: <Settings className="h-5 w-5" /> },
+];
+
+export const guardianNativeNavItems: DashboardNavItem[] = [
+  { label: 'Home', to: '/parent', icon: <LayoutDashboard className="h-5 w-5" /> },
+  { label: 'Map', to: '/guardian/live-map', icon: <MapPinned className="h-5 w-5" /> },
+  { label: 'Buses', to: '/guardian/routes', icon: <Bus className="h-5 w-5" /> },
+  { label: 'Updates', to: '/guardian/events', icon: <Calendar className="h-5 w-5" /> },
+];
+
 /* -------------------------------- helpers --------------------------------- */
 
 const portalTitles: Record<DashboardLayoutProps['portal'], string> = {
@@ -217,6 +236,15 @@ const portalTitles: Record<DashboardLayoutProps['portal'], string> = {
   driver: 'Driver',
   parent: 'Guardian',
 };
+
+export type DashboardNavigationMode = 'sidebar' | 'bottom-tabs';
+
+export function getDashboardNavigationMode(
+  surface: AppSurface,
+  portal: DashboardLayoutProps['portal'],
+): DashboardNavigationMode {
+  return surface === 'native-mobile' && portal !== 'admin' ? 'bottom-tabs' : 'sidebar';
+}
 
 function normalizeItem(
   item: DashboardNavItem | string,
@@ -272,8 +300,12 @@ export function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
   const { signOut, profile } = useAuth();
+  const appSurface = useAppSurface();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navigationMode = getDashboardNavigationMode(appSurface, portal);
+  const usesBottomTabs = navigationMode === 'bottom-tabs';
+  const bottomTabItems = portal === 'driver' ? driverNativeNavItems : guardianNativeNavItems;
 
   async function handleLogout() {
     await signOut();
@@ -290,14 +322,16 @@ export function DashboardLayout({
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-[1400px] min-w-0 items-center gap-2 px-3 sm:gap-4 sm:px-6 lg:px-8">
           {/* Mobile menu button */}
-          <button
-            type="button"
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
-            aria-label="Open navigation"
-            onClick={() => setMobileOpen(true)}
-          >
-            <Menu className="h-5 w-5" />
-          </button>
+          {!usesBottomTabs && (
+            <button
+              type="button"
+              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
+              aria-label="Open navigation"
+              onClick={() => setMobileOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          )}
 
           {/* Brand */}
           <Link to="/" className="flex min-w-0 items-center gap-2.5">
@@ -344,6 +378,17 @@ export function DashboardLayout({
                 <p className="truncate text-xs text-slate-500">{profile?.email}</p>
               </div>
               <DropdownSeparator />
+              {usesBottomTabs && portal === 'driver' && (
+                <>
+                  <DropdownItem
+                    icon={<UserCircle className="h-4 w-4" />}
+                    onClick={() => navigate('/driver/profile')}
+                  >
+                    Profile
+                  </DropdownItem>
+                  <DropdownSeparator />
+                </>
+              )}
               <DropdownItem icon={<LogOut className="h-4 w-4" />} onClick={handleLogout}>
                 Sign out
               </DropdownItem>
@@ -355,12 +400,14 @@ export function DashboardLayout({
       {/* Body: sidebar + main */}
       <div className="mx-auto flex max-w-[1400px] gap-0 px-0 lg:px-6">
         {/* Desktop sidebar */}
-        <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto border-r border-slate-200 bg-white py-6 lg:block">
-          <SidebarNav groups={groups} portal={portal} />
-        </aside>
+        {!usesBottomTabs && (
+          <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto border-r border-slate-200 bg-white py-6 lg:block">
+            <SidebarNav groups={groups} portal={portal} />
+          </aside>
+        )}
 
         {/* Mobile sidebar drawer */}
-        {mobileOpen && (
+        {!usesBottomTabs && mobileOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
             <div
               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
@@ -386,11 +433,61 @@ export function DashboardLayout({
         )}
 
         {/* Main content */}
-        <main className="min-w-0 max-w-full flex-1 px-3 py-5 sm:px-6 sm:py-6 lg:px-8">
+        <main
+          className="min-w-0 max-w-full flex-1 px-3 py-5 sm:px-6 sm:py-6 lg:px-8"
+          style={
+            usesBottomTabs
+              ? { paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }
+              : undefined
+          }
+        >
           <div className="animate-fade-in-up">{children}</div>
         </main>
       </div>
+
+      {usesBottomTabs && <BottomTabNav items={bottomTabItems} portal={portal} />}
     </div>
+  );
+}
+
+function BottomTabNav({
+  items,
+  portal,
+}: {
+  items: DashboardNavItem[];
+  portal: DashboardLayoutProps['portal'];
+}) {
+  return (
+    <nav
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 shadow-[0_-4px_16px_rgba(15,23,42,0.08)] backdrop-blur-md"
+      aria-label="Primary navigation"
+      data-testid="native-bottom-navigation"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <div className="mx-auto grid min-h-16 max-w-2xl grid-cols-4 px-1">
+        {items.map((item) => {
+          const to = item.to ?? `/${portal}`;
+          return (
+            <NavLink
+              key={item.label}
+              to={to}
+              end={to === `/${portal}`}
+              className={({ isActive }) =>
+                cn(
+                  'flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-500',
+                  isActive
+                    ? 'bg-navy-50 font-bold text-navy-700'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800',
+                )
+              }
+            >
+              {item.icon && <span aria-hidden>{item.icon}</span>}
+              <span className="max-w-full truncate">{item.label}</span>
+            </NavLink>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
 
