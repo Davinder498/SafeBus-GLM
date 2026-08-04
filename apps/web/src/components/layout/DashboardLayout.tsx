@@ -76,18 +76,11 @@ export const adminNavItems: DashboardNavItem[] = [
     icon: <LayoutDashboard className="h-4 w-4" />,
   },
   {
-    label: 'Live',
+    label: 'Live Operations',
     to: '/admin/live-trips',
     group: 'operations',
-    description: 'Active trips',
+    description: 'Live fleet and trip history',
     icon: <Radio className="h-4 w-4" />,
-  },
-  {
-    label: 'Trips',
-    to: '/admin/trips',
-    group: 'operations',
-    description: 'Run history',
-    icon: <Calendar className="h-4 w-4" />,
   },
   {
     label: 'Routes',
