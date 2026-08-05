@@ -178,6 +178,40 @@ async function sendInitialTenantAdminInvitation(ctx, email, fullName, redirectTo
   };
 }
 
+async function sendInvitedPasswordSetup(ctx, { userId, email, redirectTo }) {
+  const normalizedEmail = clean(email).toLowerCase();
+  const { data: authData, error: authLookupError } =
+    await ctx.admin.auth.admin.getUserById(userId);
+  const authUser = authData?.user;
+
+  if (
+    authLookupError ||
+    !authUser ||
+    authUser.id !== userId ||
+    clean(authUser.email).toLowerCase() !== normalizedEmail
+  ) {
+    return { error: 'The invited Auth account could not be verified.' };
+  }
+
+  const attributes = { ban_duration: 'none' };
+  if (!authUser.email_confirmed_at) attributes.email_confirm = true;
+
+  const prepared = await ctx.admin.auth.admin.updateUserById(userId, attributes);
+  if (prepared.error) {
+    return { error: 'The invited Auth account could not be prepared for password setup.' };
+  }
+
+  const recovery = await ctx.admin.auth.resetPasswordForEmail(
+    normalizedEmail,
+    redirectTo ? { redirectTo } : undefined,
+  );
+  if (recovery.error) {
+    return { error: 'The password setup email was not accepted by the email provider.' };
+  }
+
+  return { error: null };
+}
+
 async function sendTenantMemberInvitation(ctx, { email, fullName, redirectTo, role, tenantId }) {
   const { data: accountState, error: stateError } = await ctx.admin.rpc(
     'server_get_member_invitation_state',
@@ -217,27 +251,16 @@ async function sendTenantMemberInvitation(ctx, { email, fullName, redirectTo, ro
     }
   }
 
-  if (accountState?.authUserId && accountState.emailConfirmed) {
-    const unbanned = await ctx.admin.auth.admin.updateUserById(accountState.authUserId, {
-      ban_duration: 'none',
-      user_metadata: { full_name: fullName },
-    });
-    if (unbanned.error) {
-      return {
-        error: json(400, {
-          error:
-            'SafeBus found an unfinished member account but could not prepare it for another invitation.',
-        }),
-      };
-    }
-    const recovery = await ctx.admin.auth.resetPasswordForEmail(email, {
+  if (accountState?.authUserId && accountState.profileId) {
+    const passwordSetup = await sendInvitedPasswordSetup(ctx, {
+      userId: accountState.authUserId,
+      email,
       redirectTo,
     });
-    if (recovery.error) {
+    if (passwordSetup.error) {
       return {
         error: json(400, {
-          error:
-            'The member invitation email was not accepted by the email provider. No member was added.',
+          error: `${passwordSetup.error} The existing member record was preserved.`,
         }),
       };
     }
@@ -248,24 +271,18 @@ async function sendTenantMemberInvitation(ctx, { email, fullName, redirectTo, ro
     };
   }
 
-  if (accountState?.authUserId && accountState.profileId) {
-    const options = redirectTo ? { emailRedirectTo: redirectTo } : undefined;
-    const resent = await ctx.admin.auth.resend({
-      type: 'signup',
+  if (accountState?.authUserId && accountState.emailConfirmed) {
+    const passwordSetup = await sendInvitedPasswordSetup(ctx, {
+      userId: accountState.authUserId,
       email,
-      options,
+      redirectTo,
     });
-    if (resent.error) {
-      return {
-        error: json(400, {
-          error:
-            'SafeBus found the pending member, but the invitation email could not be resent. The existing member record was preserved.',
-        }),
-      };
+    if (passwordSetup.error) {
+      return { error: json(400, { error: passwordSetup.error }) };
     }
     return {
       userId: accountState.authUserId,
-      status: 'resent',
+      status: 'recovery_sent',
       createdAuthUser: false,
     };
   }
@@ -641,17 +658,44 @@ async function action(event, body) {
     return json(200, { status: 'cancelled' });
   }
   if (next === 'resend') {
+    if (
+      !inv.invited_profile_id ||
+      !['pending', 'resent', 'failed'].includes(inv.status)
+    ) {
+      return json(409, { error: 'Only a pending invitation can be resent.' });
+    }
+
+    const { data: invitedProfile, error: invitedProfileError } = await ctx.admin
+      .from('profiles')
+      .select('id, email, status')
+      .eq('id', inv.invited_profile_id)
+      .maybeSingle();
+    if (
+      invitedProfileError ||
+      !invitedProfile ||
+      invitedProfile.status !== 'invited' ||
+      clean(invitedProfile.email).toLowerCase() !== clean(inv.email).toLowerCase()
+    ) {
+      return json(409, { error: 'The invited profile is no longer pending.' });
+    }
+
     const redirectTo = invitationRedirectUrl(event);
-    const { error: resendError } = await ctx.admin.auth.resend({
-      type: 'signup',
+    const passwordSetup = await sendInvitedPasswordSetup(ctx, {
+      userId: inv.invited_profile_id,
       email: inv.email,
-      options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
+      redirectTo,
     });
-    if (resendError) return json(400, { error: 'Unable to resend the invitation.' });
-    await ctx.admin
+    if (passwordSetup.error) return json(400, { error: passwordSetup.error });
+
+    const { error: invitationUpdateError } = await ctx.admin
       .from('tenant_onboarding_invitations')
       .update({ status: 'resent', last_sent_at: new Date().toISOString() })
       .eq('id', id);
+    if (invitationUpdateError) {
+      return json(500, {
+        error: 'The password setup email was sent, but its invitation status was not updated.',
+      });
+    }
     return json(200, { status: 'resent' });
   }
   return json(400, { error: 'Unsupported action.' });

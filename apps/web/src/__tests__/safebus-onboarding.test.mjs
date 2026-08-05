@@ -41,6 +41,7 @@ function query(result = { data: null, error: null }) {
 
 function setupClients({
   profile = null,
+  invitation = null,
   callerProfile = caller,
   rpcResults = [
     {
@@ -73,6 +74,7 @@ function setupClients({
   const profileLookup = query({ data: profile, error: null });
   const callerLookup = query({ data: callerProfile, error: null });
   const guardianWrite = query({ data: { id: 'guardian-row-1' }, error: null });
+  const invitationWrite = query({ data: invitation, error: null });
   const defaultWrite = query({ data: null, error: null });
   let profileSelectCount = 0;
   const adminClient = {
@@ -104,6 +106,7 @@ function setupClients({
         profileSelectCount += 1;
         return profileSelectCount === 1 ? callerLookup : profileLookup;
       }
+      if (table === 'tenant_onboarding_invitations') return invitationWrite;
       if (table === 'guardians') return guardianWrite;
       return defaultWrite;
     }),
@@ -289,6 +292,12 @@ describe('SafeBus member onboarding', () => {
           error: null,
         },
       ],
+      authUser: {
+        id: 'guardian-auth-1',
+        email: 'guardian@example.test',
+        email_confirmed_at: '2026-01-01T00:00:00Z',
+        last_sign_in_at: null,
+      },
     });
     const response = await handler(
       event({
@@ -308,7 +317,7 @@ describe('SafeBus member onboarding', () => {
     expect(adminClient.auth.admin.listUsers).toBeUndefined();
   });
 
-  it('resends an unconfirmed pending member without deleting its profile', async () => {
+  it('sends password setup for an unconfirmed pending member without deleting its profile', async () => {
     const { adminClient, userClient } = setupClients({
       adminRpcResults: [
         {
@@ -323,6 +332,12 @@ describe('SafeBus member onboarding', () => {
           error: null,
         },
       ],
+      authUser: {
+        id: 'stale-guardian-auth',
+        email: 'guardian@example.test',
+        email_confirmed_at: null,
+        last_sign_in_at: null,
+      },
       rpcResults: [
         {
           data: {
@@ -345,19 +360,78 @@ describe('SafeBus member onboarding', () => {
     );
 
     expect(response.statusCode).toBe(200);
-    expect(JSON.parse(response.body).status).toBe('resent');
-    expect(adminClient.auth.resend).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'signup',
-        email: 'guardian@example.test',
-      }),
+    expect(JSON.parse(response.body).status).toBe('recovery_sent');
+    expect(adminClient.auth.admin.getUserById).toHaveBeenCalledWith('stale-guardian-auth');
+    expect(adminClient.auth.admin.updateUserById).toHaveBeenCalledWith('stale-guardian-auth', {
+      ban_duration: 'none',
+      email_confirm: true,
+    });
+    expect(adminClient.auth.resetPasswordForEmail).toHaveBeenCalledWith(
+      'guardian@example.test',
+      { redirectTo: 'https://app.example.test/accept-invitation' },
     );
+    expect(adminClient.auth.resend).not.toHaveBeenCalled();
     expect(adminClient.auth.admin.deleteUser).not.toHaveBeenCalled();
     expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
     expect(userClient.rpc).toHaveBeenCalledWith(
       'admin_finalize_member_invitation',
       expect.objectContaining({ p_auth_user_id: 'stale-guardian-auth' }),
     );
+  });
+
+  it('resends an expired tenant-admin invitation as a fresh password setup email', async () => {
+    const platformAdmin = {
+      ...caller,
+      id: 'platform-admin-1',
+      tenant_id: null,
+      role: 'platform_super_admin',
+    };
+    const invitedProfile = {
+      id: 'tenant-admin-invited',
+      email: 'tenant.admin@example.test',
+      status: 'invited',
+    };
+    const invitation = {
+      id: 'invitation-1',
+      tenant_id: 'tenant-1',
+      email: invitedProfile.email,
+      full_name: 'Tenant Admin',
+      role: 'tenant_admin',
+      status: 'pending',
+      invited_profile_id: invitedProfile.id,
+    };
+    const { adminClient } = setupClients({
+      callerProfile: platformAdmin,
+      profile: invitedProfile,
+      invitation,
+      authUser: {
+        id: invitedProfile.id,
+        email: invitedProfile.email,
+        email_confirmed_at: null,
+        last_sign_in_at: null,
+      },
+    });
+
+    const response = await handler({
+      httpMethod: 'POST',
+      headers: { authorization: 'Bearer test-token', origin: 'https://app.example.test' },
+      body: JSON.stringify({
+        kind: 'invitationAction',
+        invitationId: invitation.id,
+        action: 'resend',
+      }),
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual({ status: 'resent' });
+    expect(adminClient.auth.admin.updateUserById).toHaveBeenCalledWith(invitedProfile.id, {
+      ban_duration: 'none',
+      email_confirm: true,
+    });
+    expect(adminClient.auth.resetPasswordForEmail).toHaveBeenCalledWith(invitedProfile.email, {
+      redirectTo: 'https://app.example.test/accept-invitation',
+    });
+    expect(adminClient.auth.resend).not.toHaveBeenCalled();
   });
 
   it('rejects an email already assigned to another tenant', async () => {
