@@ -27,12 +27,12 @@ revoke all on public.student_qr_credentials from public, anon, authenticated;
 
 drop function if exists public.hash_student_qr_token(text);
 create function public.hash_student_qr_token(p_token text)
-returns text language sql immutable set search_path = public, pg_temp as $$
+returns text language sql immutable set search_path = public, extensions, pg_temp as $$
   select encode(digest(convert_to(p_token, 'UTF8'), 'sha256'), 'hex')
 $$;
 
 create or replace function public.create_student_qr_token()
-returns text language sql volatile set search_path = public, pg_temp as $$
+returns text language sql volatile set search_path = public, extensions, pg_temp as $$
   select 'sbus_qr_v1_' || translate(replace(encode(gen_random_bytes(32), 'base64'), '=', ''), '+/', '-_')
 $$;
 

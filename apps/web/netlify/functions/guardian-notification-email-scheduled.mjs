@@ -13,7 +13,7 @@
 // `for update skip locked`, so two concurrent runs will never claim the
 // same outbox row.
 //
-// Server-side secrets (SUPABASE_SERVICE_ROLE_KEY,
+// Server-side secrets (SUPABASE_SECRET_KEY or legacy SUPABASE_SERVICE_ROLE_KEY,
 // SAFABUS_EMAIL_PROVIDER_API_KEY, SAFABUS_NOTIFICATION_DISPATCHER_SECRET)
 // are used directly here and are never exposed to the browser.
 //

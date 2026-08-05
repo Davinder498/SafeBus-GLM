@@ -56,8 +56,6 @@ comment on column public.bus_route_assignments.trip_type is
   'Deprecated compatibility value derived from route_trip_patterns.direction.';
 comment on column public.driver_trips.trip_type is
   'Deprecated compatibility snapshot. Use route_trip_pattern_id and trip_name_snapshot.';
-comment on column public.student_bus_assignments.trip_type is
-  'Deprecated compatibility value derived from route_trip_patterns.direction.';
 
 create or replace function public.enforce_ready_route_trip_start()
 returns trigger

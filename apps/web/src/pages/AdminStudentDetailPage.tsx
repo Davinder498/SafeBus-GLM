@@ -2,13 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ArrowLeft,
   BusFront,
-  CheckCircle2,
-  CircleDashed,
   Pencil,
   PlayCircle,
   Power,
-  School,
-  ShieldCheck,
   Trash2,
   UserRound,
   UsersRound,
@@ -17,13 +13,14 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { StudentBusAssignmentForm } from '@/components/admin/StudentBusAssignmentForm';
 import { StudentGuardianManager } from '@/components/admin/StudentGuardianManager';
 import { StudentForm, type StudentFormInput } from '@/components/admin/StudentForm';
-import { InlineFormShell } from '@/components/admin/TransportationAdminForms';
+import { StudentQrCredentialPanel } from '@/components/admin/StudentQrCredentialPanel';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { adminRoles } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 import { getVisibleSchools } from '@/services/adminOrganizationService';
@@ -55,19 +52,28 @@ function studentName(detail: AdminStudentDetail) {
     : `${student.first_name} ${student.last_name}`;
 }
 
-function DetailItem({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function DetailItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
       <dd className="mt-1 text-sm font-semibold text-navy-900">{value}</dd>
     </div>
   );
+}
+
+function readableValue(value: string | null | undefined, fallback = 'Not assigned') {
+  if (!value) return fallback;
+  return value.replaceAll('_', ' ').replace(/^./, (character) => character.toUpperCase());
+}
+
+function readableDate(value: string | null | undefined, fallback: string) {
+  if (!value) return fallback;
+  const parsed = new Date(`${value.slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat('en-CA', {
+    dateStyle: 'medium',
+    timeZone: 'UTC',
+  }).format(parsed);
 }
 
 export function AdminStudentDetailPage() {
@@ -87,8 +93,7 @@ export function AdminStudentDetailPage() {
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const canWrite =
-    !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
+  const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
   const canDelete = profile?.role === 'tenant_admin';
 
   const loadDetail = useCallback(async () => {
@@ -180,8 +185,7 @@ export function AdminStudentDetailPage() {
       setMessage('Student transportation updated.');
       await loadDetail();
     } catch (error) {
-      const next =
-        error instanceof Error ? error : new Error('Unable to update transportation.');
+      const next = error instanceof Error ? error : new Error('Unable to update transportation.');
       setWriteError(next.message);
       throw next;
     }
@@ -209,6 +213,8 @@ export function AdminStudentDetailPage() {
     if (!detail || busy) return;
     setBusy(true);
     setWriteError(null);
+    setEditing(false);
+    setManagingBus(false);
     try {
       const nextStatus = detail.student.status === 'active' ? 'inactive' : 'active';
       await setStudentStatus(detail.student.id, nextStatus);
@@ -250,7 +256,12 @@ export function AdminStudentDetailPage() {
   }
 
   return (
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
+    <DashboardLayout
+      title="Admin Dashboard"
+      portal="admin"
+      navItems={[]}
+      navGroups={adminNavGroups}
+    >
       <div className="space-y-6">
         <Link
           to="/admin/students"
@@ -271,16 +282,6 @@ export function AdminStudentDetailPage() {
               description="Manage the student, guardians, school, bus service, route, and route stops from one place."
             />
 
-            <Card className="p-4 sm:p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div><h2 className="font-bold text-navy-900">Setup progress</h2><p className="text-sm text-slate-600">Each section saves independently.</p></div>
-                <p className="shrink-0 text-sm font-semibold text-navy-700">{[detail.student.first_name, detail.schoolName, detail.guardianLinks.some((link) => link.status === 'active'), assigned].filter(Boolean).length} of 4 ready</p>
-              </div>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                {[['Student details', true], ['School', !!detail.schoolName], ['Guardian', detail.guardianLinks.some((link) => link.status === 'active')], ['Transportation', assigned]].map(([label, ready]) => <div key={String(label)} className={`rounded-lg px-3 py-2 text-sm font-semibold ${ready ? 'bg-success-50 text-success-700' : 'bg-slate-100 text-slate-600'}`}>{ready ? '✓' : '○'} {label}</div>)}
-              </div>
-            </Card>
-
             {writeError && (
               <Card className="border-danger-200 bg-danger-50 p-4">
                 <p className="text-sm font-semibold text-danger-700">{writeError}</p>
@@ -292,88 +293,132 @@ export function AdminStudentDetailPage() {
               </Card>
             )}
 
-            <section className="grid gap-4 lg:grid-cols-3">
-              <Card className="p-5 lg:col-span-2">
-                <div className="flex items-start gap-3">
-                  <span className="rounded-lg bg-navy-50 p-2 text-navy-700">
-                    <School className="h-5 w-5" aria-hidden />
-                  </span>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      School
-                    </p>
-                    <p className="mt-1 break-words font-bold text-navy-900">
-                      {detail.schoolName ?? 'Not assigned'}
-                    </p>
+            {editing ? (
+              <StudentForm
+                title="Edit student details"
+                schools={schools}
+                initial={detail.student}
+                onSubmit={saveStudent}
+                onCancel={() => setEditing(false)}
+              />
+            ) : (
+              <Card className="p-5" data-testid="student-details-section">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-2">
+                    <UserRound className="h-5 w-5 text-navy-700" aria-hidden />
+                    <h2 className="text-lg font-bold text-navy-900">Student details</h2>
                   </div>
-                </div>
-              </Card>
-
-              <Card className="p-5">
-                <div className="flex items-start gap-3">
-                  <span
-                    className={`rounded-lg p-2 ${assigned ? 'bg-success-50 text-success-700' : 'bg-slate-100 text-slate-500'}`}
-                  >
-                    {assigned ? (
-                      <CheckCircle2 className="h-5 w-5" aria-hidden />
-                    ) : (
-                      <CircleDashed className="h-5 w-5" aria-hidden />
-                    )}
-                  </span>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Transportation
-                    </p>
-                    <p className="mt-1 break-words font-bold text-navy-900">
-                      {assigned
-                        ? `Bus ${detail.bus?.bus_number} · ${detail.route?.route_code}`
-                        : 'Not assigned'}
-                    </p>
-                    {assigned && (
-                      <p className="mt-1 text-sm text-slate-600">{detail.route?.route_name}</p>
-                    )}
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="min-w-0 p-4 sm:p-5">
-                <div className="flex items-start gap-3">
-                  <span
-                    className={`rounded-lg p-2 ${rosterActive ? 'bg-success-50 text-success-700' : 'bg-warning-50 text-warning-700'}`}
-                  >
-                    {rosterActive ? (
-                      <ShieldCheck className="h-5 w-5" aria-hidden />
-                    ) : (
-                      <Power className="h-5 w-5" aria-hidden />
-                    )}
-                  </span>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Roster availability
-                    </p>
-                    <p className="mt-1 font-bold text-navy-900">
-                      {rosterActive ? 'Available for transportation' : 'Not in active workflows'}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {rosterActive
-                        ? 'The student can be assigned to current bus service.'
-                        : 'The record is retained but excluded from current operations.'}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            </section>
-
-            <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-              <Card className="min-w-0 p-4 sm:p-5">
-                <div className="flex items-center gap-2">
-                  <UserRound className="h-5 w-5 text-navy-700" aria-hidden />
-                  <h2 className="text-lg font-bold text-navy-900">Student details</h2>
+                  {canWrite && (
+                    <Button
+                      className="w-full sm:w-auto"
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      leftIcon={<Pencil className="h-4 w-4" aria-hidden />}
+                      onClick={() => void startEditing()}
+                    >
+                      Edit details
+                    </Button>
+                  )}
                 </div>
                 <dl className="mt-5 grid gap-5 sm:grid-cols-2">
-                  <DetailItem label="Legal name" value={`${detail.student.first_name} ${detail.student.last_name}`} />
-                  <DetailItem label="Preferred name" value={detail.student.preferred_name ?? 'Not provided'} />
+                  <DetailItem
+                    label="Legal name"
+                    value={`${detail.student.first_name} ${detail.student.last_name}`}
+                  />
+                  <DetailItem
+                    label="Preferred name"
+                    value={detail.student.preferred_name ?? 'Not provided'}
+                  />
                   <DetailItem label="Grade" value={detail.student.grade ?? 'Not provided'} />
+                  <DetailItem label="School" value={detail.schoolName ?? 'Not assigned'} />
+                </dl>
+              </Card>
+            )}
+
+            <Card className="p-5" data-testid="student-guardians-section">
+              <div className="flex items-center gap-2">
+                <UsersRound className="h-5 w-5 text-navy-700" aria-hidden />
+                <h2 className="text-lg font-bold text-navy-900">Guardians</h2>
+              </div>
+              <p className="mt-1 text-sm text-slate-600">
+                Connect guardians, send invitations, and manage each relationship without leaving
+                this student.
+              </p>
+              {canWrite && (
+                <StudentGuardianManager
+                  detail={detail}
+                  tenantId={profile?.tenant_id ?? null}
+                  onChanged={refreshAfterGuardianChange}
+                />
+              )}
+            </Card>
+
+            <Card className="p-5" data-testid="student-transportation-section">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2">
+                  <BusFront className="h-5 w-5 text-navy-700" aria-hidden />
+                  <h2 className="text-lg font-bold text-navy-900">Transportation</h2>
+                </div>
+                {canWrite && rosterActive && !managingBus && (
+                  <Button
+                    className="w-full sm:w-auto"
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void startManagingBus()}
+                  >
+                    {assigned ? 'Manage transportation' : 'Assign transportation'}
+                  </Button>
+                )}
+              </div>
+              {!rosterActive && (
+                <p className="mt-4 rounded-lg bg-warning-50 p-3 text-sm font-semibold text-warning-700">
+                  Reactivate the student to manage their transportation.
+                </p>
+              )}
+              {managingBus ? (
+                <div className="mt-5 space-y-4">
+                  <StudentBusAssignmentForm
+                    assignment={detail.busAssignment}
+                    fixedStudentId={detail.student.id}
+                    studentLabel={studentName(detail)}
+                    services={busServices}
+                    stops={routeStops}
+                    defaultTenantId={profile?.tenant_id ?? null}
+                    onSubmit={saveBusAssignment}
+                    onCancel={() => setManagingBus(false)}
+                  />
+                  {detail.busAssignment && (
+                    <Button
+                      className="w-full sm:w-auto"
+                      type="button"
+                      variant="ghost"
+                      onClick={() => void removeBusAssignment()}
+                      disabled={busy}
+                    >
+                      Remove bus assignment
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <dl className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  <DetailItem
+                    label="Bus"
+                    value={detail.bus ? `Bus ${detail.bus.bus_number}` : 'Not assigned'}
+                  />
+                  <DetailItem
+                    label="Route"
+                    value={
+                      detail.route
+                        ? `${detail.route.route_code} · ${detail.route.route_name}`
+                        : 'Not assigned'
+                    }
+                  />
+                  <DetailItem
+                    label="Trip type"
+                    value={readableValue(detail.busService?.trip_type)}
+                  />
                   <DetailItem
                     label="Pickup stop"
                     value={detail.pickupStop?.stop_name ?? 'Not assigned'}
@@ -382,50 +427,59 @@ export function AdminStudentDetailPage() {
                     label="Drop-off stop"
                     value={detail.dropoffStop?.stop_name ?? 'Not assigned'}
                   />
+                  <DetailItem
+                    label="Effective from"
+                    value={readableDate(detail.busAssignment?.effective_from, 'Not assigned')}
+                  />
+                  <DetailItem
+                    label="Effective to"
+                    value={readableDate(detail.busAssignment?.effective_to, 'No end date')}
+                  />
                 </dl>
-              </Card>
+              )}
+            </Card>
 
-              <Card className="p-5">
-                <div className="flex items-center gap-2">
-                  <UsersRound className="h-5 w-5 text-navy-700" aria-hidden />
-                  <h2 className="text-lg font-bold text-navy-900">Linked guardians</h2>
-                </div>
-                <p className="mt-1 text-sm text-slate-600">Connect multiple guardians, send invitations, and manage each relationship without leaving this student.</p>
-                {canWrite && <StudentGuardianManager detail={detail} tenantId={profile?.tenant_id ?? null} onChanged={refreshAfterGuardianChange} />}
-              </Card>
-            </section>
+            <StudentQrCredentialPanel
+              studentId={detail.student.id}
+              studentName={studentName(detail)}
+              disabled={!canWrite || !rosterActive}
+            />
 
-            {canWrite && (
-              <Card className="p-5">
-                <h2 className="text-lg font-bold text-navy-900">Actions</h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  Changes are restricted by your tenant and role permissions.
-                </p>
-                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                  <Button
-                    className="w-full sm:w-auto"
-                    type="button"
-                    variant="outline"
-                    leftIcon={<Pencil className="h-4 w-4" aria-hidden />}
-                    onClick={() => void startEditing()}
+            <Card className="p-5" data-testid="student-status-section">
+              <div className="flex items-center gap-2">
+                {rosterActive ? (
+                  <Power className="h-5 w-5 text-success-700" aria-hidden />
+                ) : (
+                  <PlayCircle className="h-5 w-5 text-warning-700" aria-hidden />
+                )}
+                <h2 className="text-lg font-bold text-navy-900">Student status</h2>
+              </div>
+              <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <StatusPill
+                    tone={
+                      rosterActive
+                        ? 'success'
+                        : detail.student.status === 'archived'
+                          ? 'danger'
+                          : detail.student.status === 'transferred'
+                            ? 'warning'
+                            : 'neutral'
+                    }
                   >
-                    Edit details
-                  </Button>
-                  {rosterActive && (
-                    <Button
-                      className="w-full sm:w-auto"
-                      type="button"
-                      variant="outline"
-                      leftIcon={<BusFront className="h-4 w-4" aria-hidden />}
-                      onClick={() => void startManagingBus()}
-                    >
-                      {assigned ? 'Manage transportation' : 'Assign transportation'}
-                    </Button>
-                  )}
+                    {readableValue(detail.student.status)}
+                  </StatusPill>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {rosterActive
+                      ? 'This student is available for current transportation workflows.'
+                      : 'The record is retained but excluded from current transportation workflows.'}
+                  </p>
+                </div>
+                {canWrite && (
                   <Button
                     className="w-full sm:w-auto"
                     type="button"
-                    variant="ghost"
+                    variant={rosterActive ? 'ghost' : 'outline'}
                     leftIcon={
                       rosterActive ? (
                         <Power className="h-4 w-4" aria-hidden />
@@ -436,58 +490,33 @@ export function AdminStudentDetailPage() {
                     onClick={() => void changeRosterAvailability()}
                     disabled={busy}
                   >
-                    {rosterActive ? 'Remove from active roster' : 'Return to active roster'}
-                  </Button>
-                  {canDelete && (
-                    <Button
-                      className="w-full sm:w-auto"
-                      type="button"
-                      variant="danger"
-                      leftIcon={<Trash2 className="h-4 w-4" aria-hidden />}
-                      onClick={() => setConfirmDelete(true)}
-                    >
-                      Delete student
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            )}
-
-            {editing && (
-              <StudentForm
-                title="Edit student details"
-                schools={schools}
-                initial={detail.student}
-                onSubmit={saveStudent}
-                onCancel={() => setEditing(false)}
-              />
-            )}
-
-            {managingBus && (
-              <InlineFormShell
-                title={`${assigned ? 'Manage' : 'Assign'} transportation for ${studentName(detail)}`}
-              >
-                <StudentBusAssignmentForm
-                  assignment={detail.busAssignment}
-                  fixedStudentId={detail.student.id}
-                  studentLabel={studentName(detail)}
-                  services={busServices}
-                  stops={routeStops}
-                  defaultTenantId={profile?.tenant_id ?? null}
-                  onSubmit={saveBusAssignment}
-                  onCancel={() => setManagingBus(false)}
-                />
-                {detail.busAssignment && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => void removeBusAssignment()}
-                    disabled={busy}
-                  >
-                    Remove bus assignment
+                    {rosterActive ? 'Deactivate student' : 'Reactivate student'}
                   </Button>
                 )}
-              </InlineFormShell>
+              </div>
+            </Card>
+
+            {canDelete && (
+              <Card
+                className="border-danger-200 bg-danger-50/40 p-5"
+                data-testid="student-danger-section"
+              >
+                <div className="flex items-center gap-2">
+                  <Trash2 className="h-5 w-5 text-danger-700" aria-hidden />
+                  <h2 className="text-lg font-bold text-danger-700">Danger zone</h2>
+                </div>
+                <p className="mt-2 text-sm text-slate-600">
+                  Permanently delete this student, guardian links, and transportation assignments.
+                </p>
+                <Button
+                  className="mt-4 w-full sm:w-auto"
+                  type="button"
+                  variant="danger"
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  Delete student
+                </Button>
+              </Card>
             )}
           </>
         )}

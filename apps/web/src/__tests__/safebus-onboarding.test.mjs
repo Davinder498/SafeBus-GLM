@@ -142,6 +142,46 @@ describe('SafeBus member onboarding', () => {
     vi.clearAllMocks();
   });
 
+  it('accepts current Supabase publishable and secret server keys', async () => {
+    const legacyAnon = process.env.SUPABASE_ANON_KEY;
+    const legacyService = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.SUPABASE_ANON_KEY;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    process.env.SUPABASE_PUBLISHABLE_KEY = 'publishable-key';
+    process.env.SUPABASE_SECRET_KEY = 'secret-key';
+
+    try {
+      setupClients();
+      const response = await handler(
+        event({
+          firstName: 'Guardian',
+          lastName: 'One',
+          email: 'guardian@example.test',
+          phone: '555-0100',
+        }),
+      );
+
+      expect(response.statusCode).toBe(200);
+      expect(createClient).toHaveBeenNthCalledWith(
+        1,
+        'https://example.supabase.co',
+        'publishable-key',
+        expect.any(Object),
+      );
+      expect(createClient).toHaveBeenNthCalledWith(
+        2,
+        'https://example.supabase.co',
+        'secret-key',
+        expect.any(Object),
+      );
+    } finally {
+      process.env.SUPABASE_ANON_KEY = legacyAnon;
+      process.env.SUPABASE_SERVICE_ROLE_KEY = legacyService;
+      delete process.env.SUPABASE_PUBLISHABLE_KEY;
+      delete process.env.SUPABASE_SECRET_KEY;
+    }
+  });
+
   it('invites a new guardian and returns the tenant-scoped guardian id', async () => {
     const { adminClient } = setupClients();
     const response = await handler(

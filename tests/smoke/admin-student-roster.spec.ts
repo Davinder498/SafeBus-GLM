@@ -45,7 +45,10 @@ const mockStudent = {
   updated_at: '2025-01-01T00:00:00.000Z',
 };
 
-async function installAdminStudentMock(page: Page, opts: { students?: (typeof mockStudent)[]; totalCount?: number } = {}) {
+async function installAdminStudentMock(
+  page: Page,
+  opts: { students?: (typeof mockStudent)[]; totalCount?: number } = {},
+) {
   let students: Record<string, unknown>[] = opts.students ?? [];
 
   await page.route('**/*', async (route: Route) => {
@@ -156,6 +159,10 @@ async function installAdminStudentMock(page: Page, opts: { students?: (typeof mo
           ]);
           return;
         }
+        if (path.includes('/student_bus_assignments') || path.includes('/student_guardians')) {
+          await fulfillRows([]);
+          return;
+        }
         await blockUnexpectedSupabaseRestAccess(route, method, path);
         return;
       }
@@ -169,7 +176,11 @@ async function installAdminStudentMock(page: Page, opts: { students?: (typeof mo
         });
         return;
       }
-      if (method === 'POST' && (path.includes('/rpc/get_admin_paginated_list') || path.includes('/rpc/get_admin_students_page'))) {
+      if (
+        method === 'POST' &&
+        (path.includes('/rpc/get_admin_paginated_list') ||
+          path.includes('/rpc/get_admin_students_page'))
+      ) {
         const body = route.request().postDataJSON() as { p_page_size?: number };
         const pageSize = body.p_page_size ?? 50;
         await route.fulfill({
@@ -226,6 +237,14 @@ async function installAdminStudentMock(page: Page, opts: { students?: (typeof mo
         });
         return;
       }
+      if (method === 'POST' && path.includes('/rpc/get_admin_student_qr_credential_status')) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([]),
+        });
+        return;
+      }
       if (method === 'POST' && path.includes('/student_bus_assignments')) {
         await route.fulfill({
           status: 201,
@@ -267,7 +286,12 @@ async function installAdminStudentMock(page: Page, opts: { students?: (typeof mo
         created_at: '2025-01-01T00:00:00.000Z',
       },
     };
-    for (const k of ['supabase.auth.token', 'sb-placeholder-auth-token', 'sb-bppmqykkbhrmotcybxrh-auth-token', 'sb-localhost-auth-token']) {
+    for (const k of [
+      'supabase.auth.token',
+      'sb-placeholder-auth-token',
+      'sb-bppmqykkbhrmotcybxrh-auth-token',
+      'sb-localhost-auth-token',
+    ]) {
       try {
         window.localStorage.setItem(k, JSON.stringify(s));
       } catch {
@@ -318,33 +342,34 @@ test.describe('Milestone 5A.1 — Admin student roster', () => {
     await expect(page.getByTestId('admin-pagination')).toContainText('Showing 1-1 of 1');
     await expect(page.getByLabel('Rows')).toHaveValue('50');
     await expect(page.getByText('No bus assigned')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Assign bus' })).toBeVisible();
+    await expect(page.getByTestId('student-roster-row')).toBeVisible();
   });
 
-  test('student actions stay in one compact, labelled row', async ({ page }) => {
+  test('student rows open the standalone workspace by mouse and keyboard', async ({ page }) => {
     await installAdminStudentMock(page, { students: [mockStudent] });
     await page.goto('/admin/students');
 
-    const actions = page.getByTestId('student-roster-actions');
-    await expect(actions).toHaveCSS('flex-wrap', 'nowrap');
-    await expect(actions.locator('a, button')).toHaveCount(6);
-    await expect(page.getByRole('link', { name: 'View Avery Johnson' })).toHaveAttribute('title', 'View student');
-    await expect(page.getByRole('button', { name: 'Edit Avery Johnson' })).toHaveAttribute('title', 'Edit student');
-    await expect(page.getByRole('button', { name: 'Assign bus for Avery Johnson' })).toHaveAttribute('title', 'Assign bus');
-    await expect(page.getByRole('button', { name: 'Manage QR badge for Avery Johnson' })).toHaveAttribute('title', 'Manage QR badge');
-    await expect(page.getByRole('button', { name: 'Deactivate Avery Johnson' })).toHaveAttribute('title', 'Deactivate student');
-    await expect(page.getByRole('button', { name: 'Delete Avery Johnson' })).toHaveAttribute('title', 'Delete student');
+    const row = page.getByTestId('student-roster-row');
+    await expect(row.locator('a, button')).toHaveCount(0);
+    await row.click();
+    await expect(page).toHaveURL(`/admin/students/${ADMIN.studentId}`);
+
+    await page.goto('/admin/students');
+    await page.getByTestId('student-roster-row').focus();
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(`/admin/students/${ADMIN.studentId}`);
+
+    await page.goto('/admin/students');
+    await page.getByTestId('student-roster-row').focus();
+    await page.keyboard.press('Space');
+    await expect(page).toHaveURL(`/admin/students/${ADMIN.studentId}`);
   });
 
-  test('admin can optionally assign a student to a bus from the student section', async ({ page }) => {
+  test('transportation actions are not exposed from the roster', async ({ page }) => {
     await installAdminStudentMock(page, { students: [mockStudent] });
     await page.goto('/admin/students');
-    await page.getByRole('button', { name: 'Assign bus' }).click();
-    await page.getByLabel('Bus service').selectOption('ffffffff-ffff-ffff-ffff-ffffffffffff');
-    await page.getByLabel('Pickup stop').selectOption('dddddddd-dddd-dddd-dddd-dddddddddddd');
-    await page.getByLabel('Drop-off stop').selectOption('dddddddd-dddd-dddd-dddd-dddddddddddd');
-    await page.getByRole('button', { name: 'Save assignment' }).click();
-    await expect(page.getByText('Student bus assignment saved.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Assign bus' })).toHaveCount(0);
+    await expect(page.getByTestId('student-roster-actions')).toHaveCount(0);
   });
 
   test('10,000-student tenant renders only the bounded 50-row page', async ({ page }) => {
