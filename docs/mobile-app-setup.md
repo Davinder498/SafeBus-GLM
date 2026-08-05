@@ -38,6 +38,21 @@ apps/
 - All pages, services, hooks, components — unchanged
 - Environment variables: still only `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`
 
+### Native navigation
+
+The mobile entry point identifies the app as the `native-mobile` surface. Driver and guardian
+pages therefore use a fixed, safe-area-aware bottom tab bar instead of the responsive web
+drawer. The regular web app continues to use its existing desktop sidebar and small-screen
+drawer.
+
+- Driver tabs: **Scan**, **Riders**, **History**, and **Settings**. Driver Profile remains
+  available from the account avatar.
+- Guardian tabs: **Home**, **Map**, **Buses**, and **Updates**. Live Bus Status remains available
+  from its existing action on Home.
+
+The same native navigation is shown when running `apps/mobile` through its browser-based Vite
+preview, which allows fast layout testing without rebuilding the Android wrapper.
+
 ## Prerequisites
 
 - **Android Studio** installed (with Android SDK)
