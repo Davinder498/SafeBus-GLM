@@ -38,10 +38,18 @@ import { PlatformTenantsPage } from '@/pages/PlatformTenantsPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { ProtectedRoute } from './ProtectedRoute';
 import { PublicOnlyRoute } from './PublicOnlyRoute';
+import { InvitationEntryRoute } from './InvitationEntryRoute';
 import { adminRoles } from '@/contexts/AuthContext';
 
 export const appRoutes: RouteObject[] = [
-  { path: '/', element: <LandingPage /> },
+  {
+    path: '/',
+    element: (
+      <InvitationEntryRoute>
+        <LandingPage />
+      </InvitationEntryRoute>
+    ),
+  },
   {
     path: '/login',
     element: (
