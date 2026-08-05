@@ -101,7 +101,7 @@ export function redactLog(details) {
 
 function requireConfig() {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const service = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   const apiKey = process.env.SAFEBUS_EMAIL_PROVIDER_API_KEY;
   const from = process.env.SAFEBUS_EMAIL_FROM;
   const dispatcherSecret = process.env.SAFEBUS_NOTIFICATION_DISPATCHER_SECRET;

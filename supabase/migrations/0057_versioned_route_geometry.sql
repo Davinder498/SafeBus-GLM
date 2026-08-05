@@ -345,7 +345,9 @@ grant execute on function public.start_driver_trip_from_bus(uuid) to authenticat
 comment on function public.start_driver_trip_from_bus(uuid) is
   'Deprecated compatibility trip start. It preserves current behavior while snapshotting the current published route shape when one exists.';
 
-create or replace function public.get_admin_live_route_overlays()
+drop function if exists public.get_admin_live_route_overlays();
+
+create function public.get_admin_live_route_overlays()
 returns table (route_id uuid, route_code text, route_name text, route_kind text, map_color text, trip_pattern_id uuid, trip_name text, direction text, stops jsonb, route_shape_geojson jsonb, route_shape_version integer, route_shape_distance_meters double precision)
 language sql
 stable
