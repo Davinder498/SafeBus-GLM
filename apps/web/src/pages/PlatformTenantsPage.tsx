@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { DashboardLayout, platformNavItems } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import {
   createTenantWithAdmin,
+  deleteTenantAdminAccount,
   fetchInvitations,
   fetchPlatformTenantSummaries,
   updateInvitation,
@@ -21,6 +23,12 @@ export function PlatformTenantsPage() {
   const [invitations, setInvitations] = useState<OnboardingInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [invitationAction, setInvitationAction] = useState<{
+    id: string;
+    action: 'resend' | 'cancel';
+  } | null>(null);
+  const [adminDeleteTarget, setAdminDeleteTarget] = useState<PlatformTenantSummary | null>(null);
+  const [deletingAdmin, setDeletingAdmin] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -33,18 +41,20 @@ export function PlatformTenantsPage() {
   });
   async function load() {
     setLoading(true);
-    const [summary, invites] = await Promise.all([
-      fetchPlatformTenantSummaries(),
-      fetchInvitations(),
-    ]);
-    setTenants(summary);
-    setInvitations(invites);
-    setLoading(false);
+    try {
+      const [summary, invites] = await Promise.all([
+        fetchPlatformTenantSummaries(),
+        fetchInvitations(),
+      ]);
+      setTenants(summary);
+      setInvitations(invites);
+    } finally {
+      setLoading(false);
+    }
   }
   useEffect(() => {
     void load().catch((e) => {
       setError(e instanceof Error ? e.message : 'Unable to load onboarding.');
-      setLoading(false);
     });
   }, []);
   const invitesByTenant = useMemo(
@@ -71,7 +81,11 @@ export function PlatformTenantsPage() {
       setMessage(
         `Invitation email sent to ${result.recipientEmail}. ${result.tenant.name} is now ready for administrator acceptance.`,
       );
-      await load();
+      try {
+        await load();
+      } catch {
+        setError('The invitation was sent, but the tenant list could not refresh. Reload the page.');
+      }
     } catch (e) {
       setError(
         e instanceof Error ? e.message : 'The invitation was not sent and no tenant was created.',
@@ -100,14 +114,48 @@ export function PlatformTenantsPage() {
       setError(e instanceof Error ? e.message : 'Unable to update tenant administrator.');
     }
   }
-  async function act(id: string, action: 'resend' | 'cancel') {
+  async function deleteAdmin() {
+    const target = adminDeleteTarget;
+    if (!target?.first_tenant_admin_profile_id || deletingAdmin) return;
     setError(null);
+    setMessage(null);
+    setDeletingAdmin(true);
     try {
-      await updateInvitation(id, action);
-      setMessage(action === 'resend' ? 'Invitation resent.' : 'Invitation cancelled.');
-      await load();
+      await deleteTenantAdminAccount(target.first_tenant_admin_profile_id);
+      setAdminDeleteTarget(null);
+      setMessage(`Tenant administrator ${target.first_tenant_admin_email ?? ''} was deleted.`);
+      try {
+        await load();
+      } catch {
+        setError('The account was deleted, but the tenant list could not refresh. Reload the page.');
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unable to delete the tenant administrator.');
+    } finally {
+      setDeletingAdmin(false);
+    }
+  }
+  async function act(invitation: OnboardingInvitation, action: 'resend' | 'cancel') {
+    if (invitationAction) return;
+    setError(null);
+    setMessage(null);
+    setInvitationAction({ id: invitation.id, action });
+    try {
+      await updateInvitation(invitation.id, action);
+      setMessage(
+        action === 'resend'
+          ? `A new password setup email was sent to ${invitation.email}.`
+          : `Invitation for ${invitation.email} was cancelled.`,
+      );
+      try {
+        await load();
+      } catch {
+        setError('The action completed, but the invitation list could not refresh. Reload the page.');
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to update invitation.');
+    } finally {
+      setInvitationAction(null);
     }
   }
   return (
@@ -280,34 +328,50 @@ export function PlatformTenantsPage() {
                       {t.first_tenant_admin_email} · {t.tenant_admin_status}
                     </p>
                   </div>
-                  {t.first_tenant_admin_profile_id && t.tenant_admin_status === 'active' && (
-                    <Button
-                      className="w-full sm:w-auto"
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      onClick={() =>
-                        void adminLifecycle(t.first_tenant_admin_profile_id!, 'disabled')
-                      }
-                    >
-                      Deactivate admin
-                    </Button>
-                  )}
-                  {t.first_tenant_admin_profile_id &&
-                    ['suspended', 'disabled'].includes(t.tenant_admin_status) && (
+                  {t.first_tenant_admin_profile_id && (
+                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                      {t.tenant_admin_status === 'active' && (
+                        <Button
+                          className="w-full sm:w-auto"
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          disabled={deletingAdmin}
+                          onClick={() =>
+                            void adminLifecycle(t.first_tenant_admin_profile_id!, 'disabled')
+                          }
+                        >
+                          Deactivate admin
+                        </Button>
+                      )}
+                      {['suspended', 'disabled'].includes(t.tenant_admin_status) && (
                       <Button
                         className="w-full sm:w-auto"
                         type="button"
                         size="sm"
                         variant="secondary"
-                        disabled={t.tenant_status !== 'active'}
+                        disabled={t.tenant_status !== 'active' || deletingAdmin}
                         onClick={() =>
                           void adminLifecycle(t.first_tenant_admin_profile_id!, 'active')
                         }
                       >
                         Reactivate admin
                       </Button>
-                    )}
+                      )}
+                      {t.tenant_admin_status !== 'invited' && (
+                        <Button
+                          className="w-full sm:w-auto"
+                          type="button"
+                          size="sm"
+                          variant="danger"
+                          disabled={deletingAdmin}
+                          onClick={() => setAdminDeleteTarget(t)}
+                        >
+                          Delete admin account
+                        </Button>
+                      )}
+                    </div>
+                  )}
                   {t.tenant_admin_status === 'invited' && (
                     <span className="text-xs font-semibold text-warning-700">
                       Password setup pending
@@ -332,7 +396,12 @@ export function PlatformTenantsPage() {
                           type="button"
                           size="sm"
                           variant="secondary"
-                          onClick={() => void act(i.id, 'resend')}
+                          loading={
+                            invitationAction?.id === i.id &&
+                            invitationAction.action === 'resend'
+                          }
+                          disabled={invitationAction !== null}
+                          onClick={() => void act(i, 'resend')}
                         >
                           Resend
                         </Button>
@@ -341,7 +410,12 @@ export function PlatformTenantsPage() {
                           type="button"
                           size="sm"
                           variant="ghost"
-                          onClick={() => void act(i.id, 'cancel')}
+                          loading={
+                            invitationAction?.id === i.id &&
+                            invitationAction.action === 'cancel'
+                          }
+                          disabled={invitationAction !== null}
+                          onClick={() => void act(i, 'cancel')}
                         >
                           Cancel
                         </Button>
@@ -353,6 +427,22 @@ export function PlatformTenantsPage() {
             </Card>
           );
         })}
+        <ConfirmDialog
+          open={adminDeleteTarget !== null}
+          title={`Delete ${adminDeleteTarget?.first_tenant_admin_name ?? 'tenant administrator'}?`}
+          description={
+            <>
+              This permanently removes the administrator's sign-in account and SafeBus profile.
+              The tenant and its operational records remain, but it may have no administrator.
+              This cannot be undone.
+            </>
+          }
+          confirmLabel="Delete admin account"
+          destructive
+          busy={deletingAdmin}
+          onConfirm={() => void deleteAdmin()}
+          onCancel={() => setAdminDeleteTarget(null)}
+        />
       </div>
     </DashboardLayout>
   );

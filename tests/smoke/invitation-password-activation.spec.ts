@@ -149,6 +149,14 @@ test.describe('invited account password setup', () => {
     await expect(page.getByRole('heading', { name: 'Create your password' })).toBeVisible();
   });
 
+  test('an invited session sent to the site root recovers to password setup', async ({ page }) => {
+    await installInvitedUserMock(page);
+    await page.goto('/');
+
+    await expect(page).toHaveURL('/accept-invitation');
+    await expect(page.getByRole('heading', { name: 'Create your password' })).toBeVisible();
+  });
+
   test('missing or expired invitation session cannot open password setup', async ({ page }) => {
     await page.goto('/accept-invitation');
 

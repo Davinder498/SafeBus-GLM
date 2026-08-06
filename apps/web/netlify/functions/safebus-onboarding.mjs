@@ -14,6 +14,27 @@ const ALBERTA_LICENSE_CLASSES = new Set(['1', '2', '3', '4', '5', '6', '7']);
 const GUARDIAN_RELATIONSHIPS = new Set(['mother', 'father', 'guardian', 'caregiver', 'other']);
 const SUPABASE_REQUEST_TIMEOUT_MS = 12_000;
 
+class OnboardingConfigurationError extends Error {
+  constructor() {
+    super('Server onboarding is not configured.');
+    this.name = 'OnboardingConfigurationError';
+  }
+}
+
+function passwordSetupDeliveryError(error) {
+  const code = clean(error?.code).toLowerCase();
+  const message = clean(error?.message).toLowerCase();
+  if (
+    Number(error?.status) === 429 ||
+    code.includes('rate_limit') ||
+    message.includes('rate limit') ||
+    message.includes('too many requests')
+  ) {
+    return 'Supabase email rate limit reached. Wait before sending another password setup email.';
+  }
+  return 'The password setup email was not accepted by the email provider.';
+}
+
 function invitationRedirectUrl(event) {
   const configured = clean(process.env.SAFEBUS_INVITE_REDIRECT_URL);
   const requestOrigin = clean(event.headers.origin || event.headers.Origin);
@@ -44,7 +65,7 @@ function clients(token) {
     process.env.SUPABASE_ANON_KEY ||
     process.env.VITE_SUPABASE_ANON_KEY;
   const service = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !anon || !service) throw new Error('Server onboarding is not configured.');
+  if (!url || !anon || !service) throw new OnboardingConfigurationError();
   return {
     user: createClient(url, anon, {
       global: {
@@ -206,7 +227,7 @@ async function sendInvitedPasswordSetup(ctx, { userId, email, redirectTo }) {
     redirectTo ? { redirectTo } : undefined,
   );
   if (recovery.error) {
-    return { error: 'The password setup email was not accepted by the email provider.' };
+    return { error: passwordSetupDeliveryError(recovery.error) };
   }
 
   return { error: null };
@@ -618,19 +639,84 @@ async function tenantAdminLifecycle(event, body) {
   return json(200, { status: 'disabled' });
 }
 
+async function deleteTenantAdmin(event, body) {
+  const ctx = await requireCaller(event, ['platform_super_admin']);
+  if (ctx.error) return ctx.error;
+
+  const profileId = clean(body.profileId);
+  if (!profileId) return json(400, { error: 'Tenant admin account is required.' });
+
+  const { data: profile, error: profileError } = await ctx.admin
+    .from('profiles')
+    .select('id, tenant_id, role')
+    .eq('id', profileId)
+    .maybeSingle();
+  if (profileError || !profile || profile.role !== 'tenant_admin' || !profile.tenant_id) {
+    return json(404, { error: 'Tenant admin account not found.' });
+  }
+
+  // profiles.id cascades from auth.users.id. Invitation profile references are
+  // set to null by the database, preserving the onboarding history.
+  const deleted = await ctx.admin.auth.admin.deleteUser(profile.id);
+  if (deleted.error) {
+    return json(409, {
+      error:
+        'The tenant admin account could not be deleted because it is still referenced by retained operational history. Deactivate the account instead.',
+    });
+  }
+
+  return json(200, {
+    status: 'deleted',
+    profileId: profile.id,
+    tenantId: profile.tenant_id,
+  });
+}
+
 async function action(event, body) {
   const ctx = await requireCaller(event, ['platform_super_admin', 'tenant_admin']);
   if (ctx.error) return ctx.error;
   const id = clean(body.invitationId);
   const next = clean(body.action);
-  const { data: inv } = await ctx.admin
+  if (!id || !['resend', 'cancel'].includes(next)) {
+    return json(400, { error: 'Invitation and supported action are required.' });
+  }
+
+  const { data: inv, error: invitationLookupError } = await ctx.admin
     .from('tenant_onboarding_invitations')
     .select('*')
     .eq('id', id)
     .maybeSingle();
+  if (invitationLookupError) {
+    return json(500, { error: 'Unable to load the invitation.' });
+  }
   if (!inv) return json(404, { error: 'Invitation not found.' });
   if (ctx.caller.role !== 'platform_super_admin' && inv.tenant_id !== ctx.caller.tenant_id)
     return json(403, { error: 'Invitation is outside your tenant.' });
+  if (inv.role === 'tenant_admin' && ctx.caller.role !== 'platform_super_admin') {
+    return json(403, { error: 'Only a platform super administrator can manage this invitation.' });
+  }
+  if (!['pending', 'resent', 'failed'].includes(inv.status)) {
+    return json(409, { error: 'Only a pending invitation can be changed.' });
+  }
+
+  let invitedProfile = null;
+  if (inv.invited_profile_id) {
+    const { data, error } = await ctx.admin
+      .from('profiles')
+      .select('id, email, status')
+      .eq('id', inv.invited_profile_id)
+      .maybeSingle();
+    if (error) return json(500, { error: 'Unable to verify the invited profile.' });
+    if (
+      !data ||
+      data.status !== 'invited' ||
+      clean(data.email).toLowerCase() !== clean(inv.email).toLowerCase()
+    ) {
+      return json(409, { error: 'The invited profile is no longer pending.' });
+    }
+    invitedProfile = data;
+  }
+
   if (next === 'cancel') {
     const { error: cancelError } = await ctx.admin
       .from('tenant_onboarding_invitations')
@@ -658,25 +744,8 @@ async function action(event, body) {
     return json(200, { status: 'cancelled' });
   }
   if (next === 'resend') {
-    if (
-      !inv.invited_profile_id ||
-      !['pending', 'resent', 'failed'].includes(inv.status)
-    ) {
+    if (!inv.invited_profile_id || !invitedProfile) {
       return json(409, { error: 'Only a pending invitation can be resent.' });
-    }
-
-    const { data: invitedProfile, error: invitedProfileError } = await ctx.admin
-      .from('profiles')
-      .select('id, email, status')
-      .eq('id', inv.invited_profile_id)
-      .maybeSingle();
-    if (
-      invitedProfileError ||
-      !invitedProfile ||
-      invitedProfile.status !== 'invited' ||
-      clean(invitedProfile.email).toLowerCase() !== clean(inv.email).toLowerCase()
-    ) {
-      return json(409, { error: 'The invited profile is no longer pending.' });
     }
 
     const redirectTo = invitationRedirectUrl(event);
@@ -689,7 +758,11 @@ async function action(event, body) {
 
     const { error: invitationUpdateError } = await ctx.admin
       .from('tenant_onboarding_invitations')
-      .update({ status: 'resent', last_sent_at: new Date().toISOString() })
+      .update({
+        status: 'resent',
+        last_sent_at: new Date().toISOString(),
+        cancelled_at: null,
+      })
       .eq('id', id);
     if (invitationUpdateError) {
       return json(500, {
@@ -707,11 +780,14 @@ export async function handler(event) {
     if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed.' });
     const body = JSON.parse(event.body || '{}');
     requestKind = clean(body.kind) || 'unknown';
-    if (body.kind === 'createTenant') return createTenant(event, body);
-    if (body.kind === 'inviteMember') return inviteMember(event, body);
-    if (body.kind === 'invitationAction') return action(event, body);
-    if (body.kind === 'tenantLifecycle') return tenantLifecycle(event, body);
-    if (body.kind === 'tenantAdminLifecycle') return tenantAdminLifecycle(event, body);
+    // Await every action inside this try/catch so asynchronous failures are
+    // converted into a safe JSON response instead of escaping to the runtime.
+    if (body.kind === 'createTenant') return await createTenant(event, body);
+    if (body.kind === 'inviteMember') return await inviteMember(event, body);
+    if (body.kind === 'invitationAction') return await action(event, body);
+    if (body.kind === 'tenantLifecycle') return await tenantLifecycle(event, body);
+    if (body.kind === 'tenantAdminLifecycle') return await tenantAdminLifecycle(event, body);
+    if (body.kind === 'tenantAdminDelete') return await deleteTenantAdmin(event, body);
     return json(400, { error: 'Unknown onboarding action.' });
   } catch (error) {
     const errorName = error instanceof Error ? error.name : 'UnknownError';
@@ -726,6 +802,12 @@ export async function handler(event) {
       return json(504, {
         error:
           'The invitation service timed out before SafeBus could confirm completion. No new member was confirmed; retry once.',
+      });
+    }
+    if (errorName === 'OnboardingConfigurationError') {
+      return json(503, {
+        error:
+          'Server onboarding is not configured. Add SUPABASE_SECRET_KEY to apps/web/.env and restart the local dev server.',
       });
     }
     return json(500, {

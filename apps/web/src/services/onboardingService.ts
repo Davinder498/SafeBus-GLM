@@ -9,7 +9,9 @@ async function callOnboarding<T>(body: Record<string, unknown>): Promise<T> {
   const token = session.session?.access_token;
   if (!token) throw new Error('Sign in required.');
   const response = await fetch('/.netlify/functions/safebus-onboarding', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
-  const payload = await response.json().catch(() => ({}));
+  const contentType = response.headers.get('content-type') || '';
+  const isJson = contentType.includes('application/json');
+  const payload = isJson ? await response.json().catch(() => ({})) : {};
   if (!response.ok) {
     if (typeof payload.error === 'string') {
       const message = payload.error;
@@ -22,13 +24,21 @@ async function callOnboarding<T>(body: Record<string, unknown>): Promise<T> {
       if (message.includes('phone number')) {
         throw new DuplicateIdentifierError('phone', message);
       }
+      throw new Error(message);
+    }
+    // Detect non-JSON responses (HTML SPA fallback when Netlify Functions are
+    // not served — e.g. running `vite` instead of `netlify dev` locally).
+    if (!isJson || response.status === 404) {
+      throw new Error(
+        `The onboarding service is unreachable (HTTP ${response.status}). ` +
+          'If you are running locally, start the app with "pnpm dev" so the local function middleware is served. ' +
+          'If this persists in production, verify the Netlify function is deployed and required environment variables (SUPABASE_URL, SUPABASE_SECRET_KEY, SUPABASE_ANON_KEY) are set.',
+      );
     }
     throw new Error(
-      typeof payload.error === 'string'
-        ? payload.error
-        : response.status >= 500
-          ? `The onboarding service returned HTTP ${response.status} before confirming completion. No new record was confirmed; retry once.`
-          : 'The onboarding request was rejected. Review the form and try again.',
+      response.status >= 500
+        ? `The onboarding service returned HTTP ${response.status} before confirming completion. No new record was confirmed; retry once.`
+        : 'The onboarding request was rejected. Review the form and try again.',
     );
   }
   return payload as T;
@@ -61,3 +71,4 @@ export async function inviteTenantMember(input: InviteTenantMemberInput) { retur
 export async function updateInvitation(invitationId: string, action: 'resend' | 'cancel') { return callOnboarding<{ status: string }>({ kind: 'invitationAction', invitationId, action }); }
 export async function updateTenantLifecycle(tenantId: string, status: 'active' | 'suspended' | 'disabled') { return callOnboarding<{ status: string }>({ kind: 'tenantLifecycle', tenantId, status }); }
 export async function updateTenantAdminLifecycle(profileId: string, status: 'active' | 'disabled') { return callOnboarding<{ status: string }>({ kind: 'tenantAdminLifecycle', profileId, status }); }
+export async function deleteTenantAdminAccount(profileId: string) { return callOnboarding<{ status: 'deleted'; profileId: string; tenantId: string }>({ kind: 'tenantAdminDelete', profileId }); }
