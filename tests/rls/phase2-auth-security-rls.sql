@@ -29,22 +29,61 @@ declare
 begin
   insert into public.tenants (id, name, type, status)
   values (v_tenant_id, 'Phase2 Auth Security Test Tenant', 'demo', 'active')
-  on conflict (id) do nothing;
+  on conflict (id) do update
+  set name = excluded.name, type = excluded.type, status = excluded.status;
 
   insert into auth.users (id, email, aud, role, email_confirmed_at, instance_id, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, last_sign_in_at)
   values
     (v_admin_user, 'phase2.admin@example.test', 'authenticated','authenticated', now(), '00000000-0000-0000-0000-000000000000', '{"provider":"email","providers":["email"]}', '{}', now(), now(), now()),
     (v_driver_user, 'phase2.driver@example.test', 'authenticated','authenticated', now(), '00000000-0000-0000-0000-000000000000', '{"provider":"email","providers":["email"]}', '{}', now(), now(), now()),
     (v_guardian_user, 'phase2.guardian@example.test', 'authenticated','authenticated', now(), '00000000-0000-0000-0000-000000000000', '{"provider":"email","providers":["email"]}', '{}', now(), now(), now())
-  on conflict (id) do nothing;
+  on conflict (id) do update
+  set email = excluded.email,
+      aud = excluded.aud,
+      role = excluded.role,
+      email_confirmed_at = excluded.email_confirmed_at,
+      raw_app_meta_data = excluded.raw_app_meta_data,
+      raw_user_meta_data = excluded.raw_user_meta_data,
+      last_sign_in_at = now(),
+      updated_at = now();
 
   insert into public.profiles (id, tenant_id, full_name, first_name, last_name, email, role, status)
   values
     (v_admin_user, v_tenant_id, 'Phase2 Admin', 'Phase2', 'Admin', 'phase2.admin@example.test', 'tenant_admin', 'active'),
     (v_driver_user, v_tenant_id, 'Phase2 Driver', 'Phase2', 'Driver', 'phase2.driver@example.test', 'driver', 'active'),
     (v_guardian_user, v_tenant_id, 'Phase2 Guardian', 'Phase2', 'Guardian', 'phase2.guardian@example.test', 'guardian', 'active')
-  on conflict (id) do nothing;
+  on conflict (id) do update
+  set tenant_id = excluded.tenant_id,
+      full_name = excluded.full_name,
+      first_name = excluded.first_name,
+      last_name = excluded.last_name,
+      email = excluded.email,
+      role = excluded.role,
+      status = 'active';
 end $$;
+
+-- Fail once with the complete list if hosted DEV is missing any Phase 2 RPC
+-- used by this regression, instead of surfacing one undefined function at a
+-- time later in the file.
+do $$
+declare
+  v_missing text[];
+begin
+  select array_agg(signature order by signature) into v_missing
+  from (
+    values
+      ('public.record_own_auth_event(text,text,jsonb)'),
+      ('public.validate_password_policy(text)'),
+      ('public.revoke_all_user_sessions(uuid)'),
+      ('public.check_invitation_idempotency(uuid,text,public.user_role)')
+  ) expected(signature)
+  where to_regprocedure(signature) is null;
+
+  if v_missing is not null then
+    raise exception 'Phase2 FAIL: hosted DEV is missing required RPCs: %', v_missing;
+  end if;
+end
+$$;
 
 -- ===========================================================================
 -- Test 1: audit_events is append-only (no UPDATE/DELETE policy)

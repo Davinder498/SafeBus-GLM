@@ -87,10 +87,11 @@ archiving is needed; the collision is documented here and asserted by
 | 0068 | `0068_phase2_password_sessions_idempotency.sql` | Canonical | Password/session/idempotency controls and sensitive-action audit wiring |
 | 0069 | `0069_phase3_retention_foundation.sql` | Canonical | Draft retention policies, deletion/anonymization execution, run evidence |
 | 0070 | `0070_phase0_3_hosted_validation_reconciliation.sql` | Canonical | Hosted-DEV correction: restore platform tenant lifecycle read and reassert internal-only generic audit writer ACL |
+| 0071 | `0071_phase2_auth_rpc_hosted_reconciliation.sql` | Canonical | Hosted-DEV correction: restore the missing narrow self-service authentication audit RPC |
 
 ## 4. Fresh-rebuild proof
 
-A fresh database must be built from `0001` through `0070` in canonical order
+A fresh database must be built from `0001` through `0071` in canonical order
 (with archived files excluded) before these phases can be accepted. The archived
 files in `supabase/legacy/` are excluded from fresh rebuilds because:
 

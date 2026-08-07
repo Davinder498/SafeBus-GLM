@@ -34,7 +34,8 @@ declare
 begin
   insert into public.tenants (id, name, type, status)
   values (v_tenant_id, 'Phase1 Platform Isolation Test Tenant', 'demo', 'active')
-  on conflict (id) do nothing;
+  on conflict (id) do update
+  set name = excluded.name, type = excluded.type, status = excluded.status;
 
   insert into auth.users (id, email, aud, role, email_confirmed_at, instance_id, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
   values (
@@ -49,11 +50,25 @@ begin
     now(),
     now()
   )
-  on conflict (id) do nothing;
+  on conflict (id) do update
+  set email = excluded.email,
+      aud = excluded.aud,
+      role = excluded.role,
+      email_confirmed_at = excluded.email_confirmed_at,
+      raw_app_meta_data = excluded.raw_app_meta_data,
+      raw_user_meta_data = excluded.raw_user_meta_data,
+      updated_at = now();
 
   insert into public.profiles (id, tenant_id, full_name, first_name, last_name, email, role, status)
   values (v_platform_admin_id, null, 'Phase1 Platform Admin', 'Phase1', 'Platform Admin', 'phase1.platform.admin@example.test', 'platform_super_admin', 'active')
-  on conflict (id) do nothing;
+  on conflict (id) do update
+  set tenant_id = null,
+      full_name = excluded.full_name,
+      first_name = excluded.first_name,
+      last_name = excluded.last_name,
+      email = excluded.email,
+      role = 'platform_super_admin',
+      status = 'active';
 end $$;
 
 -- ---------------------------------------------------------------------------
