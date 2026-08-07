@@ -38,7 +38,10 @@ test('fonts are self-hosted and Google font requests are absent', async () => {
     read('apps/mobile/index.html'),
     read('apps/web/src/index.css'),
   ]);
-  assert.doesNotMatch(files.join('\n'), /fonts\.(googleapis|gstatic)\.com/);
+  const combined = files.join('\n');
+  for (const forbiddenHost of ['fonts.googleapis.com', 'fonts.gstatic.com']) {
+    assert.equal(combined.includes(forbiddenHost), false);
+  }
   assert.match(files[2], /@fontsource-variable\/inter/);
 });
 

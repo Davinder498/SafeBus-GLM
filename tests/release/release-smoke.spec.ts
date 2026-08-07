@@ -3,7 +3,8 @@ import { expect, test } from '@playwright/test';
 test('landing page loads without third-party font requests', async ({ page }) => {
   const externalFontRequests: string[] = [];
   page.on('request', (request) => {
-    if (/fonts\.(googleapis|gstatic)\.com/.test(request.url())) {
+    const hostname = new URL(request.url()).hostname;
+    if (hostname === 'fonts.googleapis.com' || hostname === 'fonts.gstatic.com') {
       externalFontRequests.push(request.url());
     }
   });
@@ -18,7 +19,7 @@ test('protected driver route sends an unauthenticated user to sign in', async ({
   await page.goto('/driver');
   await expect(page.getByText('Sign in required')).toBeVisible();
   await page.getByRole('link', { name: 'Go to login' }).click();
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL((url) => url.pathname === '/login');
   await expect(page.getByRole('heading', { name: 'Sign in', level: 1 })).toBeVisible();
 });
 
