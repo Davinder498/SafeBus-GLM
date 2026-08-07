@@ -36,356 +36,356 @@
     {
       "version": "0006",
       "filename": "0006_driver_trips_foundation.sql",
-      "bytes": 14374,
-      "sha256": "af15ec233305e5d198d4372fb16747f20e569823b7cffed213c33135c4ebaa99"
+      "bytes": 14044,
+      "sha256": "e56921bb27864f1aad6f25d0ab685058ad7e3e508044622482b8febf2b8688fe"
     },
     {
       "version": "0007",
       "filename": "0007_driver_location_update_foundation.sql",
-      "bytes": 15044,
-      "sha256": "d57036a4dc27acabd5530d616e139e3533a652e46f4d089706277797dba953bf"
+      "bytes": 14710,
+      "sha256": "33472740ed22a4cdfe44f6139d05054b3b8ad29b1b4c41fa592d6afc25701676"
     },
     {
       "version": "0008",
       "filename": "0008_fix_driver_location_update_rpc.sql",
-      "bytes": 5893,
-      "sha256": "853282f31e63f0893ed98d2c1feacd675c1142a802a0b0001341a735ec5e17ab"
+      "bytes": 5758,
+      "sha256": "0bf929bbce6c9f270fe803b385d7967fd6cfcebed10ceb5aeaca4765a16bea07"
     },
     {
       "version": "0009",
       "filename": "0009_admin_live_trip_monitoring_foundation.sql",
-      "bytes": 4200,
-      "sha256": "37118ba6f7cfbcc206f31493a14aa0326405f35a95978606916cb87ef53a07a8"
+      "bytes": 4097,
+      "sha256": "1e3ff48d6e021683d347594d483f5461be0eeca4e8a6007ac1ba394cd71a4f28"
     },
     {
       "version": "0010",
       "filename": "0010_harden_admin_live_trip_monitoring_rpc.sql",
-      "bytes": 4982,
-      "sha256": "4a5ac41ad9a7ac864b1ade95446116415fb3728f7f1c5ae18fc589fcff193545"
+      "bytes": 4869,
+      "sha256": "619fd74499007ce8b4619a27e6ddce08885de3c6d0dec474a5b7522116701f73"
     },
     {
       "version": "0011",
       "filename": "0011_make_school_optional_for_transportation_operations.sql",
-      "bytes": 2112,
-      "sha256": "049d88864863fd3f148eb1da763e1e146ac16eb9bf8f80ad94640ae2d58d70f9"
+      "bytes": 2073,
+      "sha256": "9232241585a60bf0f19c90f15f3d339860e70b49e64603a2bdcc92a02c3f2963"
     },
     {
       "version": "0012",
       "filename": "0012_align_route_write_policies_optional_school.sql",
-      "bytes": 6554,
-      "sha256": "8d9f71e2b361c1350bfe1f884e20fabf9784cd6506932951a8bec44a1bde896c"
+      "bytes": 6403,
+      "sha256": "b939aa4b8e99366320a541358fc014216efbb00c60e15e86731b69d41324b935"
     },
     {
       "version": "0013",
       "filename": "0013_driver_assignment_foundation.sql",
-      "bytes": 12138,
-      "sha256": "e1aa81c287eb288edab6ad208475395b75da9981061f4f5ae5932627f9f7eb20"
+      "bytes": 11868,
+      "sha256": "e546bee2d24804a55b8b7d19be724c918e22ec7f47e6d6cec204617df7606d45"
     },
     {
       "version": "0014",
       "filename": "0014_enforce_assignment_only_trip_start.sql",
-      "bytes": 2201,
-      "sha256": "afe037426398996b63e7f118510a2b70a3fdcd73e8225baf40aebc0a6fd6aedc"
+      "bytes": 2159,
+      "sha256": "0c44d4b2e7f9bdf47e95ffb7b71b9310a18392a7aecb6f430aa269ddd2ab2bc7"
     },
     {
       "version": "0015",
       "filename": "0015_guardian_student_route_visibility_foundation.sql",
-      "bytes": 5059,
-      "sha256": "50dcdf4702755e47919fb90198215543c245629b72b02e4de9881947f5958730"
+      "bytes": 4938,
+      "sha256": "3c2802d923a02c0fd10a8f4345566d09aee1a5649642486f98438115344c3361"
     },
     {
       "version": "0016",
       "filename": "0016_student_roster_admin_write_foundation.sql",
-      "bytes": 2590,
-      "sha256": "93b943fd770339b1b2107478b08fa7c29e54a229c62f816d80454d831b32bebf"
+      "bytes": 2535,
+      "sha256": "6a29d5c23b50692bdb26d10587d924d917b52f6a0d651776e7c3d817df6117c6"
     },
     {
       "version": "0017",
       "filename": "0017_fix_student_roster_school_scope.sql",
-      "bytes": 4350,
-      "sha256": "8097fa11ee129f8cdbcfe310fda2a7f80e5f6f1b6e2de9778536ed3ac176a536"
+      "bytes": 4243,
+      "sha256": "645fa2d6f5a2f50afa18f0cebac8597e8dabd143cf21167d33d82ff8faf9f29a"
     },
     {
       "version": "0018",
       "filename": "0018_fix_students_rls_update_recursion.sql",
-      "bytes": 2378,
-      "sha256": "d0e2106191fd47424ac100325e40cb4bd571a0c4352f68414792dcf4537b8195"
+      "bytes": 2320,
+      "sha256": "dd48c3f9ce65e94547310b59f5d865042e553e5d239af25f4ff11b28acf74211"
     },
     {
       "version": "0019",
       "filename": "0019_secure_guardian_student_linking_rpc.sql",
-      "bytes": 8219,
-      "sha256": "0a5a2d6b19d3a7c674883d8d787defe40577b447c9a2c6145a4fa919755214f9"
+      "bytes": 8017,
+      "sha256": "a2e982b2cfbbae62f8ccbbee87d24ff0524f06fba542defe0e2c055b9639b7ef"
     },
     {
       "version": "0020",
       "filename": "0020_guardian_live_trip_visibility_foundation.sql",
-      "bytes": 6854,
-      "sha256": "2f9618c87e7a2530e1e5bbe56390c71929c4a40fa2c607d9784e6fa748752d83"
+      "bytes": 6707,
+      "sha256": "0235246b488f9bdc7d0a6f81716cb176e8d7562f4cabf4cb1859630b13566ca8"
     },
     {
       "version": "0021",
       "filename": "0021_harden_guardian_live_trip_visibility_rpc.sql",
-      "bytes": 7868,
-      "sha256": "8578ae58dd6a83e5bcfc47581d7f605cb14344aeb8a3b6513b5b2f17013800f3"
+      "bytes": 7698,
+      "sha256": "9394f0cd7bfd4c52fdcd654321a2980b90a07e8eee5acd230a9827d5ab007e18"
     },
     {
       "version": "0022",
       "filename": "0022_driver_active_trip_student_manifest.sql",
-      "bytes": 4280,
-      "sha256": "621dbd86c74a2c132aa77630994f088c781c1eb54950f6742e77feff185c5986"
+      "bytes": 4163,
+      "sha256": "b2334a996a17bb01c2c0102bc0c47816bd303ae6b7124fa68ca3a3068c31cec4"
     },
     {
       "version": "0023",
       "filename": "0023_driver_student_trip_events_foundation.sql",
-      "bytes": 11979,
-      "sha256": "0a6cdd8b7d5357751a28a68bbebff32c38e5e5534dfb9f065b87ccaa36d64ed4"
+      "bytes": 11637,
+      "sha256": "d017e4a400ca3783fd2ef02b99a69bb1adc5b524574e1434b9418c39067a8a72"
     },
     {
       "version": "0024",
       "filename": "0024_guardian_student_trip_event_visibility.sql",
-      "bytes": 4479,
-      "sha256": "3663db04ec4eb5ddfd3cb75dee6f6069d136e5737b19d7e6940da6c560c55aa9"
+      "bytes": 4363,
+      "sha256": "4f9e43ec67a8e376244ee81e1e3e9abfe327dafd8581371b2bfca9270220e2e7"
     },
     {
       "version": "0025",
       "filename": "0025_guardian_notification_outbox_foundation.sql",
-      "bytes": 8635,
-      "sha256": "6ba8a7fa321149809972d086964d87c7d72519ac86156c293c7b5389ca85e307"
+      "bytes": 8429,
+      "sha256": "23ddc89f7cdcb0a62f7b34867ca4dbbe35f0ae9fccbe47be9cc0afbf6a77524e"
     },
     {
       "version": "0026",
       "filename": "0026_admin_live_fleet_monitoring.sql",
-      "bytes": 3471,
-      "sha256": "5ba7d3f0be4a7e84f18a6bb15f307413a4dda18c6686fa08e3f3e95de7679774"
+      "bytes": 3381,
+      "sha256": "1f0dd89f5c65f3252117f08bc2b4b7ad474d66334902ec5736ed1d33dccb15ce"
     },
     {
       "version": "0027",
       "filename": "0027_guardian_live_bus_location_security_foundation.sql",
-      "bytes": 8724,
-      "sha256": "cdc4b68c0ef2ea24643369402378cb98024765517cf134b4da200d26fed09d92"
+      "bytes": 8509,
+      "sha256": "f0045fea1613e3460d9c6ea6ee7c692aecad64ebdb78cac3fc357039e0694403"
     },
     {
       "version": "0028",
       "filename": "0028_fix_student_route_assignment_optional_school.sql",
-      "bytes": 2346,
-      "sha256": "06d39615dc174fcf4823372c77b1a6583126837ff271b06610f8e341a5e5c3c6"
+      "bytes": 2280,
+      "sha256": "063a1f13d9b1bf61f40273c7c5894da2cd540dd9319658d20a4da1a530a3c518"
     },
     {
       "version": "0029",
       "filename": "0029_align_driver_assignment_platform_admin_write.sql",
-      "bytes": 1802,
-      "sha256": "ab217390d0f312c15d4103def555d2ee15bb51d826fa7409bb3e8f9a78aedf64"
+      "bytes": 1752,
+      "sha256": "ef7399d86282cfc72b04f81d377bd2e8820d8de0e87c430599df893a108f39c7"
     },
     {
       "version": "0030",
       "filename": "0030_secure_trip_tracking_realtime.sql",
-      "bytes": 12710,
-      "sha256": "0316c4042c7ea78f717ae656d9f4d84a4079b76a49bad4ee18ac066a11e20821"
+      "bytes": 12280,
+      "sha256": "817dde5ab2ce68c5648631b0dd9ae8a36ea33f51a4d0a7d6da2e22be283287ca"
     },
     {
       "version": "0031",
       "filename": "0031_admin_list_scalability.sql",
-      "bytes": 11731,
-      "sha256": "cd1380fc49588e7544185f1d696028f992f30e583bf8e9d794196a72d3907d2c"
+      "bytes": 11565,
+      "sha256": "508402078cc029af29114bc4454e3405154f7389628601b4e4fb1844495eb292"
     },
     {
       "version": "0032",
       "filename": "0032_student_bus_service_assignments.sql",
-      "bytes": 20236,
-      "sha256": "ccc169177ca57324d8391fc43d9969b48e03dfb8e54f5ef6a16c01fec735173e"
+      "bytes": 19895,
+      "sha256": "ca1e594a4a8a83cabfdfdffd01d997da541ad5fa662f119f590c90017df3f42c"
     },
     {
       "version": "0033",
       "filename": "0033_student_bus_assignment_in_student_roster.sql",
-      "bytes": 3234,
-      "sha256": "46b2e470910b1cc8fbd28a9d0dac3487236317eff1831ed3a90ff5b07dde72de"
+      "bytes": 3162,
+      "sha256": "55cdbd4ac986e4533ba52133e88d3ea46bbf64a14f24252c16b9f8d1cfab82b2"
     },
     {
       "version": "0034",
       "filename": "0034_safe_eta_foundation.sql",
-      "bytes": 14569,
-      "sha256": "134cbbc1e953e7d88f06e5cc8f6d9bcf6de89953fb32fe621905d5c982ad0099"
+      "bytes": 14274,
+      "sha256": "d53d2ef7698a12c8a8430c16d36ec3658e1782e5fb2992ef4d8f97f362155532"
     },
     {
       "version": "0035",
       "filename": "0035_platform_tenant_onboarding.sql",
-      "bytes": 5094,
-      "sha256": "569c143eff1ce69d3f846f2f0028f482435e0c66a1c6d1f077de727df7b228fa"
+      "bytes": 4976,
+      "sha256": "b58fdd973f454b36c38ca4639fbc65525d71dd141223d00ec0e587e5a507ec00"
     },
     {
       "version": "0036",
       "filename": "0036_platform_tenant_privacy_boundary.sql",
-      "bytes": 12146,
-      "sha256": "23713506869af827d8fb2cdb18f27de7c7731068adefaef0681d85e0bc2ba812"
+      "bytes": 11888,
+      "sha256": "f6e0ab96f1c36f8fca310437c580577a0ad5b6d0ce56b98bc012231f2660bac7"
     },
     {
       "version": "0037",
       "filename": "0037_safe_eta_validation_hardening.sql",
-      "bytes": 9344,
-      "sha256": "cd05f55b8c52d9870d309e1448ca2d8d392d8c2c6b79893f2ebc79be45ddc87f"
+      "bytes": 9219,
+      "sha256": "e4e490093a163d8a37557d85897f0474cec7937fc5afcd51aca9908539093118"
     },
     {
       "version": "0038",
       "filename": "0038_guardian_email_notification_delivery_foundation.sql",
-      "bytes": 10990,
-      "sha256": "95cdf4f84e367fa2949fd033b346e9ffcd505a2563f744b399d26e27fbf608a9"
+      "bytes": 10780,
+      "sha256": "8d87d9916c217b14da1915ef30611fd1d4fed5b5c2541fde4bcc69380cd7285e"
     },
     {
       "version": "0039",
       "filename": "0039_notification_delivery_hardening_tenant_timezone_summary.sql",
-      "bytes": 8477,
-      "sha256": "635f7cb2f91af85191b99bae1291d2f1defd551549041194f5cd6438c7708f5b"
+      "bytes": 8294,
+      "sha256": "9514eb43afb4d8d3479e07efe22026220c05aee995de4d60b9f29e9dae1fa789"
     },
     {
       "version": "0040",
       "filename": "0040_tenant_admin_delete_foundation.sql",
-      "bytes": 3009,
-      "sha256": "bab8c0eff9af78c7e2f3c3bfd091f62c203dda9c9da972a7b4bffd590dc68f21"
+      "bytes": 2929,
+      "sha256": "d13555069091636704c85eb2814ee4a1b3990b7cb83c900e5ac78ed211f2ebb1"
     },
     {
       "version": "0041",
       "filename": "0041_fix_route_delete_assignment_cascades.sql",
-      "bytes": 1813,
-      "sha256": "7a3398df1df9f0d0e0aeb75fd798e638c2c5068ca5eb794a72b6575cd0f5af0f"
+      "bytes": 1780,
+      "sha256": "4310f6f3f6cfdf4d68e1d9314dc4344d636315256a5f103ef2dda4cb09d7b944"
     },
     {
       "version": "0042",
       "filename": "0042_secure_student_onboarding_workflow.sql",
-      "bytes": 17993,
-      "sha256": "8a3a5aea43f8efa9b53b7074bfd5c17487f4cc12b0c6ca3a2c01f925d6eb2c94"
+      "bytes": 17503,
+      "sha256": "e2c9eccbd547ead82c6e36706a44b2261b848fc95b1ab6a0857c419fed17bdae"
     },
     {
       "version": "0043",
       "filename": "0043_people_directory_and_student_identifier_retirement.sql",
-      "bytes": 14266,
-      "sha256": "5c29d45402028ca146ced5ee289b9f854a8cebe568997be9772d04ba5467de1e"
+      "bytes": 13859,
+      "sha256": "7b50e84e65f7b34dcaacd0729558d4031ac16242df01f0f4eba1fd94f1e92f9e"
     },
     {
       "version": "0044",
       "filename": "0044_tenant_admin_student_csv_import.sql",
-      "bytes": 13686,
-      "sha256": "ffc81b8f95d2733cf769994dd17cd2c42104872d464f66eca482472a9e65cead"
+      "bytes": 13226,
+      "sha256": "f69f7c5833136bc8a4676dbe54133318567be2b16352dfa35187bf046455a5bc"
     },
     {
       "version": "0045",
       "filename": "0045_route_trip_pattern_foundation.sql",
-      "bytes": 62870,
-      "sha256": "0b52d814537d3af8cd343b156eed07247dee6cd13dde3039c7e8abe85f422aae"
+      "bytes": 61106,
+      "sha256": "e456a812f5ab9ca03f96b107d0dc243190bb55b4c342db5da84fc600886bf918"
     },
     {
       "version": "0046",
       "filename": "0046_route_trip_pattern_cutover.sql",
-      "bytes": 3370,
-      "sha256": "f3d3dc6fcabc5c79c80460a4bdc5a5cf1949884c0f5220fde7a5c0438ad2fe5d"
+      "bytes": 3290,
+      "sha256": "c418b6c542cfd85d12268c74434ce2e7dde389096fc4e4323d7b94370ed0adb7"
     },
     {
       "version": "0047",
       "filename": "0047_route_definition_rls_and_route_stop_fk_repair.sql",
-      "bytes": 3177,
-      "sha256": "38a2a9d6ed3d5b12c686781e84d46d227d73e007be497b1a29b75b5c4cdffe01"
+      "bytes": 3085,
+      "sha256": "9a1ef8f37db1be9f222f45b214b47170bb14267550b30ae375b9fd02a668d4ab"
     },
     {
       "version": "0048",
       "filename": "0048_invitation_password_activation.sql",
-      "bytes": 6430,
-      "sha256": "b784086a0e0112432d8ce08eb989cb7c2ac305db52760e865df7ad7aef9f7885"
+      "bytes": 6222,
+      "sha256": "a971e5536263b0147ea663a79894d9b3e7b90d0870985451e3faafc5baadcd90"
     },
     {
       "version": "0049",
       "filename": "0049_atomic_platform_tenant_invitation.sql",
-      "bytes": 9764,
-      "sha256": "798149db0cf034390a4dc78d39d206f72982b4b6c238f90139f893bfa815118a"
+      "bytes": 9415,
+      "sha256": "e05c8e37ee0fdb938a362a6667b494e34fe0106a12b6d9c5c6e20e66b78caf45"
     },
     {
       "version": "0050",
       "filename": "0050_atomic_tenant_member_invitation.sql",
-      "bytes": 12628,
-      "sha256": "2cb80c312ba75d5f2d21550a02ebd5ed1d626b3e2ac691cf0332f6b79b8e74dd"
+      "bytes": 12193,
+      "sha256": "dfd9c193531a11daf185c0da202d7c9b795af6257125c1694cc8f3c8bcfc0ee7"
     },
     {
       "version": "0051",
       "filename": "0051_transportation_duplicate_identifier_protection.sql",
-      "bytes": 12654,
-      "sha256": "df90dc70085c73d96f426e2e25472f4179d9ad7173d73249511724e908a2168b"
+      "bytes": 12245,
+      "sha256": "98e45deb02a2f8317c681b9affa939b19fbc584b4139dc8813e21bad60dcef7b"
     },
     {
       "version": "0052",
       "filename": "0052_student_guardian_admin_notes.sql",
-      "bytes": 2765,
-      "sha256": "538c3bae4e89b74dd98c8a4374a7f4703043a3f1446cf05bfebf8c2c4ffeec21"
+      "bytes": 2692,
+      "sha256": "f01828941458ef45f26934ef965049e4961e8ab9549c3528e5aa77b51ee96831"
     },
     {
       "version": "0053",
       "filename": "0053_bus_first_driver_tracking.sql",
-      "bytes": 8459,
-      "sha256": "d943535fc5108580061f9f53d1e3cfaee7ad0f102061cad935d6d48b63a57d2d"
+      "bytes": 8281,
+      "sha256": "0c3630f34150aeff392f0f86602690f85df7edca675f7c8f4bf51a17cea338c6"
     },
     {
       "version": "0054",
       "filename": "0054_assignment_selected_driver_trips.sql",
-      "bytes": 29803,
-      "sha256": "dc76c73f386dac555dfa70c3e584a5683a5c8fb45602e253502f2dde15da5bd4"
+      "bytes": 28961,
+      "sha256": "2ee9cadd1395ae7e985b48ba20a8d6f2f55474c5f5516c37be86096b482ecbc5"
     },
     {
       "version": "0055",
       "filename": "0055_driver_completed_trip_history.sql",
-      "bytes": 2484,
-      "sha256": "a8cf145ede93bf6b447e9b80f20cfe5df49799968e4cebbae06d8123a800f137"
+      "bytes": 2413,
+      "sha256": "ed1bd6bf411419598533d0bf17640e819169314f8e20f0f65006f451ad329635"
     },
     {
       "version": "0056",
       "filename": "0056_postgis_spatial_foundation.sql",
-      "bytes": 14192,
-      "sha256": "e5ce157f9ba97d2f77adb8ceacc96504eb16a053a258db8083dbf6fbce009035"
+      "bytes": 13902,
+      "sha256": "51698a8f6d0620f370cfa41607bbdf6bdccdab1fe9cf1c1f10a090e7cc4d4914"
     },
     {
       "version": "0057",
       "filename": "0057_versioned_route_geometry.sql",
-      "bytes": 24544,
-      "sha256": "63e2b8d6207e0fe20eb285910d32796d81912e39958a7e76bb00b1a9190e3d62"
+      "bytes": 24163,
+      "sha256": "9d93a21493f5fc44ae591349adb3d6a844c7608b7ad6e3b271f932c1b17dd810"
     },
     {
       "version": "0058",
       "filename": "0058_admin_trip_overview.sql",
-      "bytes": 2664,
-      "sha256": "dd65a61ab37c2f5548d65d142dd7e2e69e42011e8ee17b645141280abf48d2c2"
+      "bytes": 2582,
+      "sha256": "bc2dcfb3d143f1cc21bfca6b8ee319c2dcbb423000d5a4924f70a74f3540ff7f"
     },
     {
       "version": "0058",
       "filename": "0058_unified_bus_management_workspace.sql",
-      "bytes": 11655,
-      "sha256": "caa5c17b9f666d99a65d4d35e3f9cb44cce95879fa13c6b57e4e7ebc6eb4edfe"
+      "bytes": 11274,
+      "sha256": "ef6438a88bb43f2dcf2433d80bfd8b3423da754930ef64b4ee759d01d0336f62"
     },
     {
       "version": "0059",
       "filename": "0059_bus_qr_tracking_sessions.sql",
-      "bytes": 28639,
-      "sha256": "c23abf88cab2f998a9c221956f50abfd21f00317a2df1a4cb134c54086695ca1"
+      "bytes": 27930,
+      "sha256": "e55837419dc18c698382710241585e291c74ff6c4313f23f411c06c06f541132"
     },
     {
       "version": "0060",
       "filename": "0060_server_enforced_bus_route_assignment_operations.sql",
-      "bytes": 9230,
-      "sha256": "a3924200af572fe4145fe37616c1f02657efdc51e5c77ca40b3581125bb4c1ad"
+      "bytes": 8953,
+      "sha256": "bca3374c1416e83950ad3c2f0ee444ecfb5cfc00e81818662dda7c29620fe2bf"
     },
     {
       "version": "0061",
       "filename": "0061_guardian_bus_first_visibility.sql",
-      "bytes": 11144,
-      "sha256": "9dfc29fce1587b557fdbb1fbc0a415bd24b6737a155bcae9028e854164feca0f"
+      "bytes": 10829,
+      "sha256": "f834051967b1093fc4022776c3cf7c4e203f40e01f417439ef17dd3a25c674b0"
     },
     {
       "version": "0062",
       "filename": "0062_enforce_qr_only_driver_trip_start.sql",
-      "bytes": 986,
-      "sha256": "e7ac8250a2dec44abd82751bb32fc5e55dc5ecba98a8e056fd830b191508e08a"
+      "bytes": 971,
+      "sha256": "aa040dbfd8b63fa3733a791305db7befc75938db96913b3cc8af709b6ac978ce"
     },
     {
       "version": "0063",
       "filename": "0063_unified_direction_assignments_and_qr_selection.sql",
-      "bytes": 31677,
-      "sha256": "762bf9e71eef7dfd07f2f8f01dda8100eecee268ae0a9c7b03a6ad4bd8fe4588"
+      "bytes": 30870,
+      "sha256": "b534de23be23ba26236338fa157ae56de08023734c7bf2d3c4f99fd36b21ad16"
     },
     {
       "version": "0064",
@@ -396,26 +396,26 @@
     {
       "version": "0065",
       "filename": "0065_phase1_authorization_reconciliation.sql",
-      "bytes": 13475,
-      "sha256": "d57fbd1d0453b165d53519fcc82423a2644b050c5090df6a2dd2d08a8cb1c5a4"
+      "bytes": 13218,
+      "sha256": "bf9bd8908e45ea351ac8d21f68f275103876eb5799a5e07f93d27237113a7439"
     },
     {
       "version": "0066",
       "filename": "0066_phase2_audit_system_foundation.sql",
-      "bytes": 9003,
-      "sha256": "ca82a0f0b28e8c29839ed35acc6fbbdcce2b484b67718d163d15fdc2c4b93e0f"
+      "bytes": 8832,
+      "sha256": "575dd0304b8004d56dd229fe2146868be4ea9e8b24ae79f4c26bc52c90e6ca26"
     },
     {
       "version": "0067",
       "filename": "0067_phase2_mfa_recent_auth_allowlist_ratelimit.sql",
-      "bytes": 14372,
-      "sha256": "59f36becc81db2e51c8bf582931936dd6182b5faf6766f0a57aa8ffccde1379c"
+      "bytes": 14132,
+      "sha256": "66b5e6db545f94536778a0334ee626f22f54e8d8e0333221ba20c4507498fe7d"
     },
     {
       "version": "0068",
       "filename": "0068_phase2_password_sessions_idempotency.sql",
-      "bytes": 25928,
-      "sha256": "763d5b13136e03b14d669314a6ad0a746febccdcc4fb10256a41c735857187a1"
+      "bytes": 25692,
+      "sha256": "9f7c52833825f1910d8b46bd9279b5f068cfa040c7bfbde66c386f9708d317b6"
     },
     {
       "version": "0069",

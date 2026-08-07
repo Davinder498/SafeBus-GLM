@@ -1,5 +1,10 @@
 import { useMemo } from 'react';
-import { divIcon, type LeafletMouseEvent, type Marker as LeafletMarker } from 'leaflet';
+import {
+  divIcon,
+  type DragEndEvent,
+  type LeafletMouseEvent,
+  type Marker as LeafletMarker,
+} from 'leaflet';
 import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from 'react-leaflet';
 import type { MapTileConfig } from '@/config/mapTiles';
 import type { RouteDefinitionStopInput } from '@/types/transportation';
@@ -73,7 +78,7 @@ export function RouteStopMapEditor({
               draggable
               eventHandlers={{
                 click: () => onSelect(stop.clientKey),
-                dragend: (event: LeafletMouseEvent) => {
+                dragend: (event: DragEndEvent) => {
                   const marker = event.target as LeafletMarker;
                   const point = marker.getLatLng();
                   onPlace(stop.clientKey, point.lat, point.lng);

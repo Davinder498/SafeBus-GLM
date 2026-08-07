@@ -33,11 +33,17 @@ export async function buildMigrationManifest(root = process.cwd()) {
     filesForVersion.push(filename);
     byVersion.set(version, filesForVersion);
 
-    const contents = await fs.readFile(path.join(directory, filename));
+    // Git may materialize text files as CRLF on Windows and LF in CI. Hash the
+    // canonical Git representation so the same reviewed migration has one
+    // checksum on every runner.
+    const contents = (await fs.readFile(path.join(directory, filename), 'utf8')).replaceAll(
+      '\r\n',
+      '\n',
+    );
     migrations.push({
       version,
       filename,
-      bytes: contents.byteLength,
+      bytes: Buffer.byteLength(contents, 'utf8'),
       sha256: sha256(contents),
     });
   }
