@@ -14,7 +14,7 @@
 -- SELF-CONTAINED: seeds its own tenant, admin, driver, guardian with
 -- disjoint fixed IDs, then cleans up.
 --
--- Run after applying migrations 0066 through 0070 to hosted Supabase DEV or a
+-- Run after applying migrations through 0072 to hosted Supabase DEV or a
 -- disposable migrated database. Never run against production.
 
 -- ===========================================================================
@@ -72,6 +72,7 @@ begin
   select array_agg(signature order by signature) into v_missing
   from (
     values
+      ('public.sanitize_audit_detail(jsonb)'),
       ('public.record_own_auth_event(text,text,jsonb)'),
       ('public.validate_password_policy(text)'),
       ('public.revoke_all_user_sessions(uuid)'),

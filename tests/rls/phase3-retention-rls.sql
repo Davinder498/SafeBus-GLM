@@ -1,5 +1,5 @@
 -- SafeBus Alberta - Phase 3 retention security regression
--- Run only after migrations 0066-0070 have been applied to hosted Supabase
+-- Run only after migrations through 0072 have been applied to hosted Supabase
 -- DEV or a disposable migrated database. Never run against production.
 
 do $$

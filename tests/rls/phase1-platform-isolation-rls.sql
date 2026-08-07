@@ -20,7 +20,7 @@
 -- tenant operational data; it verifies policy absence/presence and that a
 -- platform-admin JWT context yields zero rows on protected tables.
 --
--- Run after applying migrations 0065 and 0070 to hosted Supabase DEV or a disposable
+-- Run after applying migrations through 0072 to hosted Supabase DEV or a disposable
 -- migrated database. Never run against production.
 
 -- ---------------------------------------------------------------------------
