@@ -31,8 +31,28 @@ const createdTenant = {
   last_onboarding_activity_at: '2026-07-19T00:00:00.000Z',
 };
 
-async function installPlatformMock(page: Page, outcome: 'success' | 'failure') {
-  let tenantCreated = false;
+const pendingInvitation = {
+  id: 'aa000000-0000-0000-0000-000000000012',
+  tenant_id: createdTenant.tenant_id,
+  email: createdTenant.first_tenant_admin_email,
+  full_name: createdTenant.first_tenant_admin_name,
+  role: 'tenant_admin',
+  status: 'pending',
+  invited_profile_id: createdTenant.first_tenant_admin_profile_id,
+  last_sent_at: '2026-07-19T00:00:00.000Z',
+  cancelled_at: null,
+  created_at: '2026-07-19T00:00:00.000Z',
+};
+
+async function installPlatformMock(
+  page: Page,
+  outcome: 'success' | 'failure' | 'resend' | 'delete',
+) {
+  let tenantCreated = outcome === 'resend' || outcome === 'delete';
+  let invitationStatus = pendingInvitation.status;
+  let resendRequests = 0;
+  let deleteRequests = 0;
+  let tenantAdminDeleted = false;
 
   await page.addInitScript(
     ({ user }) => {
@@ -57,6 +77,37 @@ async function installPlatformMock(page: Page, outcome: 'success' | 'failure') {
   );
 
   await page.route('**/.netlify/functions/safebus-onboarding', async (route) => {
+    const body = route.request().postDataJSON() as {
+      kind?: string;
+      action?: string;
+      invitationId?: string;
+      profileId?: string;
+    };
+    if (body.kind === 'invitationAction' && body.action === 'resend') {
+      resendRequests += 1;
+      invitationStatus = 'resent';
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ status: 'resent' }),
+      });
+      return;
+    }
+    if (body.kind === 'tenantAdminDelete') {
+      deleteRequests += 1;
+      tenantAdminDeleted = true;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          status: 'deleted',
+          profileId: body.profileId,
+          tenantId: createdTenant.tenant_id,
+        }),
+      });
+      return;
+    }
+
     if (outcome === 'failure') {
       await route.fulfill({
         status: 409,
@@ -132,10 +183,27 @@ async function installPlatformMock(page: Page, outcome: 'success' | 'failure') {
     }
 
     if (path.includes('/rest/v1/rpc/get_platform_tenant_onboarding_summary')) {
+      const tenantSummary =
+        outcome === 'delete'
+          ? tenantAdminDeleted
+            ? {
+                ...createdTenant,
+                first_tenant_admin_profile_id: null,
+                first_tenant_admin_name: null,
+                first_tenant_admin_email: null,
+                tenant_admin_status: 'missing',
+                active_tenant_admin_count: 0,
+              }
+            : {
+                ...createdTenant,
+                tenant_admin_status: 'active',
+                active_tenant_admin_count: 1,
+              }
+          : createdTenant;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(tenantCreated ? [createdTenant] : []),
+        body: JSON.stringify(tenantCreated ? [tenantSummary] : []),
       });
       return;
     }
@@ -144,7 +212,9 @@ async function installPlatformMock(page: Page, outcome: 'success' | 'failure') {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: '[]',
+        body: JSON.stringify(
+          tenantCreated ? [{ ...pendingInvitation, status: invitationStatus }] : [],
+        ),
       });
       return;
     }
@@ -155,6 +225,11 @@ async function installPlatformMock(page: Page, outcome: 'success' | 'failure') {
       body: path.includes('/rpc/') ? '{}' : '[]',
     });
   });
+
+  return {
+    resendRequestCount: () => resendRequests,
+    deleteRequestCount: () => deleteRequests,
+  };
 }
 
 async function fillTenantForm(page: Page) {
@@ -191,5 +266,36 @@ test.describe('platform tenant invitation atomicity', () => {
     );
     await expect(page.getByRole('heading', { name: 'Successful Transit' })).toBeVisible();
     await expect(page.getByText('Password setup pending')).toBeVisible();
+  });
+
+  test('platform super admin can resend a pending tenant-admin invitation', async ({ page }) => {
+    const state = await installPlatformMock(page, 'resend');
+    await page.goto('/admin/tenants');
+
+    await page.getByRole('button', { name: 'Resend' }).click();
+
+    await expect(page.getByRole('status')).toContainText(
+      `A new password setup email was sent to ${createdTenant.first_tenant_admin_email}`,
+    );
+    expect(state.resendRequestCount()).toBe(1);
+    await expect(page.getByText(/tenant_admin · resent/)).toBeVisible();
+  });
+
+  test('platform super admin can permanently delete a tenant-admin account after confirmation', async ({
+    page,
+  }) => {
+    const state = await installPlatformMock(page, 'delete');
+    await page.goto('/admin/tenants');
+
+    await page.getByRole('button', { name: 'Delete admin account' }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toContainText('This permanently removes');
+    await dialog.getByRole('button', { name: 'Delete admin account' }).click();
+
+    await expect(page.getByRole('status')).toContainText(
+      `Tenant administrator ${createdTenant.first_tenant_admin_email} was deleted`,
+    );
+    expect(state.deleteRequestCount()).toBe(1);
+    await expect(page.getByRole('button', { name: 'Delete admin account' })).toHaveCount(0);
   });
 });

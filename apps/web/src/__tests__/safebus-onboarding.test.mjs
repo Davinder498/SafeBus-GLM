@@ -41,6 +41,7 @@ function query(result = { data: null, error: null }) {
 
 function setupClients({
   profile = null,
+  invitation = null,
   callerProfile = caller,
   rpcResults = [
     {
@@ -54,6 +55,7 @@ function setupClients({
   ],
   adminRpcResults = [{ data: null, error: null }],
   inviteError = null,
+  deleteUserError = null,
   resetPasswordError = null,
   authUser = {
     id: 'guardian-auth-1',
@@ -73,6 +75,7 @@ function setupClients({
   const profileLookup = query({ data: profile, error: null });
   const callerLookup = query({ data: callerProfile, error: null });
   const guardianWrite = query({ data: { id: 'guardian-row-1' }, error: null });
+  const invitationWrite = query({ data: invitation, error: null });
   const defaultWrite = query({ data: null, error: null });
   let profileSelectCount = 0;
   const adminClient = {
@@ -90,7 +93,7 @@ function setupClients({
           data: { user: authUser },
           error: null,
         })),
-        deleteUser: vi.fn(async () => ({ data: { user: authUser }, error: null })),
+        deleteUser: vi.fn(async () => ({ data: { user: authUser }, error: deleteUserError })),
       },
       resend: vi.fn(async () => ({ data: {}, error: null })),
       resetPasswordForEmail: vi.fn(async () => ({
@@ -104,6 +107,7 @@ function setupClients({
         profileSelectCount += 1;
         return profileSelectCount === 1 ? callerLookup : profileLookup;
       }
+      if (table === 'tenant_onboarding_invitations') return invitationWrite;
       if (table === 'guardians') return guardianWrite;
       return defaultWrite;
     }),
@@ -140,6 +144,27 @@ function createTenantEvent(body = {}) {
 describe('SafeBus member onboarding', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('returns a clear server configuration error when the secret key is missing', async () => {
+    const legacyService = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const currentSecret = process.env.SUPABASE_SECRET_KEY;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.SUPABASE_SECRET_KEY;
+
+    try {
+      const response = await handler(createTenantEvent());
+
+      expect(response.statusCode).toBe(503);
+      expect(JSON.parse(response.body).error).toContain(
+        'Add SUPABASE_SECRET_KEY to apps/web/.env',
+      );
+      expect(createClient).not.toHaveBeenCalled();
+    } finally {
+      process.env.SUPABASE_SERVICE_ROLE_KEY = legacyService;
+      if (currentSecret === undefined) delete process.env.SUPABASE_SECRET_KEY;
+      else process.env.SUPABASE_SECRET_KEY = currentSecret;
+    }
   });
 
   it('accepts current Supabase publishable and secret server keys', async () => {
@@ -289,6 +314,12 @@ describe('SafeBus member onboarding', () => {
           error: null,
         },
       ],
+      authUser: {
+        id: 'guardian-auth-1',
+        email: 'guardian@example.test',
+        email_confirmed_at: '2026-01-01T00:00:00Z',
+        last_sign_in_at: null,
+      },
     });
     const response = await handler(
       event({
@@ -308,7 +339,7 @@ describe('SafeBus member onboarding', () => {
     expect(adminClient.auth.admin.listUsers).toBeUndefined();
   });
 
-  it('resends an unconfirmed pending member without deleting its profile', async () => {
+  it('sends password setup for an unconfirmed pending member without deleting its profile', async () => {
     const { adminClient, userClient } = setupClients({
       adminRpcResults: [
         {
@@ -323,6 +354,12 @@ describe('SafeBus member onboarding', () => {
           error: null,
         },
       ],
+      authUser: {
+        id: 'stale-guardian-auth',
+        email: 'guardian@example.test',
+        email_confirmed_at: null,
+        last_sign_in_at: null,
+      },
       rpcResults: [
         {
           data: {
@@ -345,19 +382,192 @@ describe('SafeBus member onboarding', () => {
     );
 
     expect(response.statusCode).toBe(200);
-    expect(JSON.parse(response.body).status).toBe('resent');
-    expect(adminClient.auth.resend).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'signup',
-        email: 'guardian@example.test',
-      }),
+    expect(JSON.parse(response.body).status).toBe('recovery_sent');
+    expect(adminClient.auth.admin.getUserById).toHaveBeenCalledWith('stale-guardian-auth');
+    expect(adminClient.auth.admin.updateUserById).toHaveBeenCalledWith('stale-guardian-auth', {
+      ban_duration: 'none',
+      email_confirm: true,
+    });
+    expect(adminClient.auth.resetPasswordForEmail).toHaveBeenCalledWith(
+      'guardian@example.test',
+      { redirectTo: 'https://app.example.test/accept-invitation' },
     );
+    expect(adminClient.auth.resend).not.toHaveBeenCalled();
     expect(adminClient.auth.admin.deleteUser).not.toHaveBeenCalled();
     expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
     expect(userClient.rpc).toHaveBeenCalledWith(
       'admin_finalize_member_invitation',
       expect.objectContaining({ p_auth_user_id: 'stale-guardian-auth' }),
     );
+  });
+
+  it('resends an expired tenant-admin invitation as a fresh password setup email', async () => {
+    const platformAdmin = {
+      ...caller,
+      id: 'platform-admin-1',
+      tenant_id: null,
+      role: 'platform_super_admin',
+    };
+    const invitedProfile = {
+      id: 'tenant-admin-invited',
+      email: 'tenant.admin@example.test',
+      status: 'invited',
+    };
+    const invitation = {
+      id: 'invitation-1',
+      tenant_id: 'tenant-1',
+      email: invitedProfile.email,
+      full_name: 'Tenant Admin',
+      role: 'tenant_admin',
+      status: 'pending',
+      invited_profile_id: invitedProfile.id,
+    };
+    const { adminClient } = setupClients({
+      callerProfile: platformAdmin,
+      profile: invitedProfile,
+      invitation,
+      authUser: {
+        id: invitedProfile.id,
+        email: invitedProfile.email,
+        email_confirmed_at: null,
+        last_sign_in_at: null,
+      },
+    });
+
+    const response = await handler({
+      httpMethod: 'POST',
+      headers: { authorization: 'Bearer test-token', origin: 'https://app.example.test' },
+      body: JSON.stringify({
+        kind: 'invitationAction',
+        invitationId: invitation.id,
+        action: 'resend',
+      }),
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual({ status: 'resent' });
+    expect(adminClient.auth.admin.updateUserById).toHaveBeenCalledWith(invitedProfile.id, {
+      ban_duration: 'none',
+      email_confirm: true,
+    });
+    expect(adminClient.auth.resetPasswordForEmail).toHaveBeenCalledWith(invitedProfile.email, {
+      redirectTo: 'https://app.example.test/accept-invitation',
+    });
+    expect(adminClient.auth.resend).not.toHaveBeenCalled();
+  });
+
+  it('reports the Supabase email rate limit without changing the invitation', async () => {
+    const platformAdmin = {
+      ...caller,
+      id: 'platform-admin-1',
+      tenant_id: null,
+      role: 'platform_super_admin',
+    };
+    const invitedProfile = {
+      id: 'tenant-admin-rate-limited',
+      email: 'rate.limited@example.test',
+      status: 'invited',
+    };
+    const invitation = {
+      id: 'invitation-rate-limited',
+      tenant_id: 'tenant-1',
+      email: invitedProfile.email,
+      full_name: 'Rate Limited Admin',
+      role: 'tenant_admin',
+      status: 'pending',
+      invited_profile_id: invitedProfile.id,
+    };
+    const { adminClient } = setupClients({
+      callerProfile: platformAdmin,
+      profile: invitedProfile,
+      invitation,
+      resetPasswordError: {
+        status: 429,
+        code: 'over_email_send_rate_limit',
+        message: 'Email rate limit exceeded',
+      },
+      authUser: {
+        id: invitedProfile.id,
+        email: invitedProfile.email,
+        email_confirmed_at: null,
+        last_sign_in_at: null,
+      },
+    });
+
+    const response = await handler({
+      httpMethod: 'POST',
+      headers: { authorization: 'Bearer test-token' },
+      body: JSON.stringify({
+        kind: 'invitationAction',
+        invitationId: invitation.id,
+        action: 'resend',
+      }),
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body).error).toContain('email rate limit');
+    expect(adminClient.auth.resend).not.toHaveBeenCalled();
+  });
+
+  it('does not let a tenant admin manage a tenant-admin invitation', async () => {
+    const invitation = {
+      id: 'platform-invitation-1',
+      tenant_id: caller.tenant_id,
+      email: 'other.tenant.admin@example.test',
+      full_name: 'Other Tenant Admin',
+      role: 'tenant_admin',
+      status: 'pending',
+      invited_profile_id: 'other-tenant-admin',
+    };
+    const { adminClient } = setupClients({ invitation });
+
+    const response = await handler({
+      httpMethod: 'POST',
+      headers: { authorization: 'Bearer test-token' },
+      body: JSON.stringify({
+        kind: 'invitationAction',
+        invitationId: invitation.id,
+        action: 'cancel',
+      }),
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(adminClient.auth.admin.updateUserById).not.toHaveBeenCalled();
+  });
+
+  it('does not cancel or resend an already activated invitation', async () => {
+    const platformAdmin = {
+      ...caller,
+      id: 'platform-admin-1',
+      tenant_id: null,
+      role: 'platform_super_admin',
+    };
+    const invitation = {
+      id: 'activated-invitation-1',
+      tenant_id: 'tenant-1',
+      email: 'active.admin@example.test',
+      full_name: 'Active Admin',
+      role: 'tenant_admin',
+      status: 'activated',
+      invited_profile_id: 'active-admin-1',
+    };
+    const { adminClient } = setupClients({
+      callerProfile: platformAdmin,
+      invitation,
+    });
+
+    const response = await handler({
+      httpMethod: 'POST',
+      headers: { authorization: 'Bearer test-token' },
+      body: JSON.stringify({
+        kind: 'invitationAction',
+        invitationId: invitation.id,
+        action: 'cancel',
+      }),
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(adminClient.auth.admin.updateUserById).not.toHaveBeenCalled();
   });
 
   it('rejects an email already assigned to another tenant', async () => {
@@ -545,6 +755,90 @@ describe('SafeBus member onboarding', () => {
     expect(adminClient.auth.admin.updateUserById).toHaveBeenCalledWith(tenantAdmin.id, {
       ban_duration: '876000h',
     });
+  });
+
+  it('lets a platform super admin permanently delete a tenant admin account', async () => {
+    const platformAdmin = {
+      ...caller,
+      id: 'platform-admin-1',
+      tenant_id: null,
+      role: 'platform_super_admin',
+    };
+    const tenantAdmin = {
+      id: 'tenant-admin-1',
+      tenant_id: 'tenant-1',
+      role: 'tenant_admin',
+      status: 'active',
+    };
+    const { adminClient } = setupClients({
+      callerProfile: platformAdmin,
+      profile: tenantAdmin,
+    });
+
+    const response = await handler({
+      httpMethod: 'POST',
+      headers: { authorization: 'Bearer test-token' },
+      body: JSON.stringify({
+        kind: 'tenantAdminDelete',
+        profileId: tenantAdmin.id,
+      }),
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual({
+      status: 'deleted',
+      profileId: tenantAdmin.id,
+      tenantId: tenantAdmin.tenant_id,
+    });
+    expect(adminClient.auth.admin.deleteUser).toHaveBeenCalledWith(tenantAdmin.id);
+  });
+
+  it('does not let a tenant admin delete another tenant admin account', async () => {
+    const { adminClient } = setupClients();
+
+    const response = await handler({
+      httpMethod: 'POST',
+      headers: { authorization: 'Bearer test-token' },
+      body: JSON.stringify({
+        kind: 'tenantAdminDelete',
+        profileId: 'tenant-admin-2',
+      }),
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(adminClient.auth.admin.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it('preserves a tenant admin account when retained history blocks deletion', async () => {
+    const platformAdmin = {
+      ...caller,
+      id: 'platform-admin-1',
+      tenant_id: null,
+      role: 'platform_super_admin',
+    };
+    const tenantAdmin = {
+      id: 'tenant-admin-1',
+      tenant_id: 'tenant-1',
+      role: 'tenant_admin',
+      status: 'active',
+    };
+    setupClients({
+      callerProfile: platformAdmin,
+      profile: tenantAdmin,
+      deleteUserError: { message: 'foreign key constraint' },
+    });
+
+    const response = await handler({
+      httpMethod: 'POST',
+      headers: { authorization: 'Bearer test-token' },
+      body: JSON.stringify({
+        kind: 'tenantAdminDelete',
+        profileId: tenantAdmin.id,
+      }),
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(JSON.parse(response.body).error).toContain('Deactivate the account instead');
   });
 
   it('does not create a tenant when the initial invitation provider rejects the email', async () => {

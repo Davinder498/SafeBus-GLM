@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const playwrightPort = Number(process.env.PLAYWRIGHT_PORT ?? 5173);
+const playwrightPort = Number(process.env.PLAYWRIGHT_PORT ?? 4173);
 const playwrightBaseUrl = `http://localhost:${playwrightPort}`;
 
 /**
@@ -40,9 +40,14 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `pnpm --filter @safebus/web exec vite --port ${playwrightPort}`,
+    command: `pnpm --filter @safebus/web exec vite --port ${playwrightPort} --strictPort`,
     url: playwrightBaseUrl,
-    reuseExistingServer: !process.env.CI,
+    env: {
+      ...process.env,
+      VITE_SUPABASE_URL: 'https://placeholder.supabase.co',
+      VITE_SUPABASE_ANON_KEY: 'placeholder-anon-key',
+    },
+    reuseExistingServer: false,
     timeout: 60_000,
   },
 });

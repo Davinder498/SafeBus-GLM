@@ -170,7 +170,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return;
       }
 
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+      if (
+        event === 'SIGNED_IN' ||
+        event === 'PASSWORD_RECOVERY' ||
+        event === 'TOKEN_REFRESHED' ||
+        event === 'INITIAL_SESSION'
+      ) {
         setLoading(true);
         void loadProfile(nextSession.user.id)
           .then((nextProfile) => {
