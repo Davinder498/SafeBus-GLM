@@ -66,9 +66,15 @@ function setupClients({
   const userClient = {
     auth: {
       getUser: vi.fn(async () => ({
-        data: { user: { id: callerProfile.id } },
+        data: { user: { id: callerProfile.id, last_sign_in_at: new Date().toISOString() } },
         error: null,
       })),
+      mfa: {
+        getAuthenticatorAssuranceLevel: vi.fn(async () => ({
+          data: { currentLevel: 'aal2', nextLevel: 'aal2' },
+          error: null,
+        })),
+      },
     },
     rpc: vi.fn(async () => rpcResults.shift() ?? { data: null, error: null }),
   };
@@ -112,7 +118,24 @@ function setupClients({
       return defaultWrite;
     }),
   };
-  createClient.mockReturnValueOnce(userClient).mockReturnValueOnce(adminClient);
+  const productionUserClient = {
+    ...userClient,
+    rpc: async (name, args) => {
+      if (name === 'check_rate_limit') return { data: true, error: null };
+      if (name === 'is_allowed_redirect_origin') return { data: true, error: null };
+      return userClient.rpc(name, args);
+    },
+  };
+  const productionAdminClient = {
+    ...adminClient,
+    rpc: async (name, args) => {
+      if (name === 'write_server_audit_event') return { data: null, error: null };
+      return adminClient.rpc(name, args);
+    },
+  };
+  createClient
+    .mockReturnValueOnce(productionUserClient)
+    .mockReturnValueOnce(productionAdminClient);
   return { userClient, adminClient, profileLookup };
 }
 

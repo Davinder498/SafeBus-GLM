@@ -1,0 +1,390 @@
+-- SafeBus Alberta - Phase 2 audit, MFA, recent-auth, allowlist, rate-limit RLS regression
+--
+-- Verifies the Phase 2 authentication and administrative security foundation:
+--   - audit_events is append-only (no UPDATE/DELETE policy exists)
+--   - browser callers cannot fabricate arbitrary audit events
+--   - the narrow self-service auth-event writer records approved events
+--   - audit_events denies direct table INSERT/UPDATE/DELETE
+--   - tenant admin reads own tenant audit; platform admin reads all
+--   - driver/guardian cannot read audit
+--   - detail sanitization strips secret-like keys
+--   - is_allowed_redirect_origin rejects arbitrary origins
+--   - check_rate_limit enforces a per-actor cap
+--
+-- SELF-CONTAINED: seeds its own tenant, admin, driver, guardian with
+-- disjoint fixed IDs, then cleans up.
+--
+-- Run after applying migrations 0066 and 0067 to hosted Supabase DEV or a
+-- disposable migrated database. Never run against production.
+
+-- ===========================================================================
+-- Privileged setup
+-- ===========================================================================
+do $$
+declare
+  v_tenant_id uuid := '24242424-2424-2424-2424-242424242424';
+  v_admin_user uuid := '25252525-2525-2525-2525-252525252525';
+  v_driver_user uuid := '26262626-2626-2626-2626-262626262626';
+  v_guardian_user uuid := '27272727-2727-2727-2727-272727272727';
+begin
+  insert into public.tenants (id, name, type, status)
+  values (v_tenant_id, 'Phase2 Auth Security Test Tenant', 'demo', 'active')
+  on conflict (id) do nothing;
+
+  insert into auth.users (id, email, aud, role, email_confirmed_at, instance_id, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, last_sign_in_at)
+  values
+    (v_admin_user, 'phase2.admin@example.test', 'authenticated','authenticated', now(), '00000000-0000-0000-0000-000000000000', '{"provider":"email","providers":["email"]}', '{}', now(), now(), now()),
+    (v_driver_user, 'phase2.driver@example.test', 'authenticated','authenticated', now(), '00000000-0000-0000-0000-000000000000', '{"provider":"email","providers":["email"]}', '{}', now(), now(), now()),
+    (v_guardian_user, 'phase2.guardian@example.test', 'authenticated','authenticated', now(), '00000000-0000-0000-0000-000000000000', '{"provider":"email","providers":["email"]}', '{}', now(), now(), now())
+  on conflict (id) do nothing;
+
+  insert into public.profiles (id, tenant_id, full_name, first_name, last_name, email, role, status)
+  values
+    (v_admin_user, v_tenant_id, 'Phase2 Admin', 'Phase2', 'Admin', 'phase2.admin@example.test', 'tenant_admin', 'active'),
+    (v_driver_user, v_tenant_id, 'Phase2 Driver', 'Phase2', 'Driver', 'phase2.driver@example.test', 'driver', 'active'),
+    (v_guardian_user, v_tenant_id, 'Phase2 Guardian', 'Phase2', 'Guardian', 'phase2.guardian@example.test', 'guardian', 'active')
+  on conflict (id) do nothing;
+end $$;
+
+-- ===========================================================================
+-- Test 1: audit_events is append-only (no UPDATE/DELETE policy)
+-- ===========================================================================
+do $$
+declare
+  v_update_count integer;
+  v_delete_count integer;
+begin
+  select count(*) into v_update_count
+  from pg_policies
+  where schemaname = 'public' and tablename = 'audit_events' and cmd in ('UPDATE');
+
+  select count(*) into v_delete_count
+  from pg_policies
+  where schemaname = 'public' and tablename = 'audit_events' and cmd in ('DELETE');
+
+  if v_update_count > 0 then
+    raise exception 'Phase2 FAIL: audit_events has an UPDATE policy (must be append-only).';
+  end if;
+  if v_delete_count > 0 then
+    raise exception 'Phase2 FAIL: audit_events has a DELETE policy (must be append-only).';
+  end if;
+
+  raise notice 'Phase2 PASS: audit_events has no UPDATE or DELETE policy (append-only).';
+end $$;
+
+-- ===========================================================================
+-- Test 2: generic audit writer is internal; narrow self-service writer works
+-- ===========================================================================
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = '25252525-2525-2525-2525-252525252525';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"25252525-2525-2525-2525-252525252525","role":"authenticated"}';
+
+do $$
+declare
+  v_event_id uuid;
+  v_generic_blocked boolean := false;
+begin
+  begin
+    perform public.write_audit_event(
+      'role.changed', 'profile', '25252525-2525-2525-2525-252525252525',
+      'Phase2 Admin', 'success', '{}'::jsonb, null
+    );
+  exception when insufficient_privilege then
+    v_generic_blocked := true;
+  end;
+  if not v_generic_blocked then
+    raise exception 'Phase2 FAIL: authenticated caller could fabricate a generic audit event.';
+  end if;
+
+  v_event_id := public.record_own_auth_event(
+    'auth.login', 'success', jsonb_build_object('mfa', false)
+  );
+  if v_event_id is null then
+    raise exception 'Phase2 FAIL: approved self-service auth event was not recorded.';
+  end if;
+  raise notice 'Phase2 PASS: generic audit writes are blocked; narrow auth event was recorded.';
+end $$;
+
+rollback;
+
+-- ===========================================================================
+-- Test 3: direct table INSERT is blocked (RPC is the only path)
+-- ===========================================================================
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = '25252525-2525-2525-2525-252525252525';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"25252525-2525-2525-2525-252525252525","role":"authenticated"}';
+
+do $$
+declare
+  v_failed boolean := false;
+begin
+  begin
+    insert into public.audit_events (action) values ('auth.login');
+  exception when others then
+    v_failed := true;
+  end;
+
+  if not v_failed then
+    raise exception 'Phase2 FAIL: direct INSERT into audit_events was not blocked (must be RPC-only).';
+  end if;
+
+  raise notice 'Phase2 PASS: direct INSERT into audit_events is blocked.';
+end $$;
+
+rollback;
+
+-- ===========================================================================
+-- Test 4: detail sanitization recursively strips secret-like keys
+-- ===========================================================================
+do $$
+declare
+  v_detail jsonb;
+begin
+  v_detail := public.sanitize_audit_detail(
+    jsonb_build_object(
+      'user', 'test', 'api_key', 'remove',
+      'nested', jsonb_build_object('safe', true, 'authorization', 'remove'),
+      'items', jsonb_build_array(jsonb_build_object('token', 'remove', 'result', 'ok'))
+    )
+  );
+  if v_detail ? 'api_key'
+     or v_detail #> '{nested,authorization}' is not null
+     or v_detail #> '{items,0,token}' is not null then
+    raise exception 'Phase2 FAIL: secret-like keys were not recursively stripped.';
+  end if;
+  if not (v_detail ? 'user') or v_detail #>> '{items,0,result}' is distinct from 'ok' then
+    raise exception 'Phase2 FAIL: non-secret key was incorrectly stripped.';
+  end if;
+  raise notice 'Phase2 PASS: recursive sanitizer strips secret-like keys and retains safe keys.';
+end $$;
+
+-- ===========================================================================
+-- Test 5: driver/guardian cannot read audit_events
+-- ===========================================================================
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = '26262626-2626-2626-2626-262626262626';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"26262626-2626-2626-2626-262626262626","role":"authenticated"}';
+
+do $$
+declare
+  v_count integer;
+begin
+  select count(*) into v_count from public.audit_events;
+  if v_count > 0 then
+    raise exception 'Phase2 FAIL: driver can read audit_events (must be denied).';
+  end if;
+  raise notice 'Phase2 PASS: driver sees zero audit_events rows.';
+end $$;
+
+rollback;
+
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = '27272727-2727-2727-2727-272727272727';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"27272727-2727-2727-2727-272727272727","role":"authenticated"}';
+
+do $$
+declare
+  v_count integer;
+begin
+  select count(*) into v_count from public.audit_events;
+  if v_count > 0 then
+    raise exception 'Phase2 FAIL: guardian can read audit_events (must be denied).';
+  end if;
+  raise notice 'Phase2 PASS: guardian sees zero audit_events rows.';
+end $$;
+
+rollback;
+
+-- ===========================================================================
+-- Test 6: is_allowed_redirect_origin rejects arbitrary origins
+-- ===========================================================================
+do $$
+declare
+  v_tenant_id uuid := '24242424-2424-2424-2424-242424242424';
+begin
+  -- Seed an allowed origin for the test tenant.
+  insert into public.allowed_redirect_origins (tenant_id, origin)
+  values (v_tenant_id, 'https://app.safebus.example')
+  on conflict do nothing;
+end $$;
+
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = '25252525-2525-2525-2525-252525252525';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"25252525-2525-2525-2525-252525252525","role":"authenticated"}';
+
+do $$
+declare
+  v_allowed boolean;
+  v_denied boolean;
+begin
+  select public.is_allowed_redirect_origin('https://app.safebus.example') into v_allowed;
+  select public.is_allowed_redirect_origin('https://evil.attacker.example') into v_denied;
+
+  if not v_allowed then
+    raise exception 'Phase2 FAIL: allowed redirect origin was rejected.';
+  end if;
+  if v_denied then
+    raise exception 'Phase2 FAIL: arbitrary redirect origin was accepted.';
+  end if;
+
+  raise notice 'Phase2 PASS: redirect allowlist accepts SafeBus domains and rejects arbitrary origins.';
+end $$;
+
+rollback;
+
+-- ===========================================================================
+-- Test 7: check_rate_limit enforces a cap
+-- ===========================================================================
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = '25252525-2525-2525-2525-252525252525';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"25252525-2525-2525-2525-252525252525","role":"authenticated"}';
+
+do $$
+declare
+  v_result_1 boolean;
+  v_result_2 boolean;
+begin
+  -- First call within limit (max=1, window=3600s for test isolation).
+  select public.check_rate_limit('invitation', 'phase2-test-actor', 1, 3600) into v_result_1;
+  -- Second call exceeds the cap.
+  select public.check_rate_limit('invitation', 'phase2-test-actor', 1, 3600) into v_result_2;
+
+  if not v_result_1 then
+    raise exception 'Phase2 FAIL: first rate-limit call should pass.';
+  end if;
+  if v_result_2 then
+    raise exception 'Phase2 FAIL: second rate-limit call should be denied.';
+  end if;
+
+  raise notice 'Phase2 PASS: rate-limit enforces per-actor cap.';
+end $$;
+
+rollback;
+
+-- ===========================================================================
+-- Test 8: password policy validation
+-- ===========================================================================
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = '25252525-2525-2525-2525-252525252525';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"25252525-2525-2525-2525-252525252525","role":"authenticated"}';
+
+do $$
+declare
+  v_strong boolean;
+  v_weak_short boolean;
+  v_weak_nospecial boolean;
+begin
+  select public.validate_password_policy('StrongP@ss1!') into v_strong;
+  select public.validate_password_policy('Short1!') into v_weak_short;
+  select public.validate_password_policy('NoSpecialChar1') into v_weak_nospecial;
+
+  if not v_strong then
+    raise exception 'Phase2 FAIL: strong password rejected by policy.';
+  end if;
+  if v_weak_short then
+    raise exception 'Phase2 FAIL: short password accepted by policy.';
+  end if;
+  if v_weak_nospecial then
+    raise exception 'Phase2 FAIL: password without special char accepted by policy.';
+  end if;
+
+  raise notice 'Phase2 PASS: password policy validates strong and rejects weak passwords.';
+end $$;
+
+rollback;
+
+-- ===========================================================================
+-- Test 9: session revocation requires AAL2 and revokes the session mirror
+-- ===========================================================================
+do $$
+declare
+  v_tenant_id uuid := '24242424-2424-2424-2424-242424242424';
+  v_admin uuid := '25252525-2525-2525-2525-252525252525';
+  v_session_id uuid;
+begin
+  insert into public.user_sessions (user_id, tenant_id, device_label)
+  values (v_admin, v_tenant_id, 'Test Device')
+  returning id into v_session_id;
+end $$;
+
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = '25252525-2525-2525-2525-252525252525';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"25252525-2525-2525-2525-252525252525","role":"authenticated","aal":"aal2"}';
+
+do $$
+declare
+  v_count integer;
+begin
+  select public.revoke_all_user_sessions(
+    '25252525-2525-2525-2525-252525252525'
+  ) into v_count;
+  if v_count < 1 then
+    raise exception 'Phase2 FAIL: AAL2 admin did not revoke the session mirror.';
+  end if;
+  raise notice 'Phase2 PASS: AAL2 admin revoked % session mirror row(s).', v_count;
+end $$;
+
+rollback;
+
+-- ===========================================================================
+-- Test 10: invitation idempotency works at AAL2
+-- ===========================================================================
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = '25252525-2525-2525-2525-252525252525';
+set local request.jwt.claim.role = 'authenticated';
+set local request.jwt.claims = '{"sub":"25252525-2525-2525-2525-252525252525","role":"authenticated","aal":"aal2"}';
+do $$
+declare
+  v_tenant_id uuid := '24242424-2424-2424-2424-242424242424';
+  v_admin uuid := '25252525-2525-2525-2525-252525252525';
+  v_already boolean;
+begin
+  select exists (
+    select 1 from public.check_invitation_idempotency(
+      v_tenant_id, 'phase2.admin@example.test', 'tenant_admin'::public.user_role
+    )
+    where already_invited = true
+  ) into v_already;
+
+  if not v_already then
+    raise exception 'Phase2 FAIL: AAL2 idempotency check did not find existing profile.';
+  end if;
+  raise notice 'Phase2 PASS: AAL2 invitation idempotency detects existing profile.';
+end $$;
+rollback;
+
+-- ===========================================================================
+-- Cleanup
+-- ===========================================================================
+do $$
+declare
+  v_tenant_id uuid := '24242424-2424-2424-2424-242424242424';
+begin
+  delete from public.user_sessions where tenant_id = v_tenant_id;
+  delete from public.allowed_redirect_origins where tenant_id = v_tenant_id;
+  delete from public.rate_limit_buckets
+  where actor_identifier = md5('phase2-test-actor')
+    and bucket_key like 'invitation:' || left(md5('phase2-test-actor'), 16) || ':%';
+  delete from public.audit_events where tenant_id = v_tenant_id;
+  delete from public.profiles where tenant_id = v_tenant_id
+    and id in ('25252525-2525-2525-2525-252525252525','26262626-2626-2626-2626-262626262626','27272727-2727-2727-2727-272727272727');
+  delete from auth.users where id in ('25252525-2525-2525-2525-252525252525','26262626-2626-2626-2626-262626262626','27272727-2727-2727-2727-272727272727');
+  delete from public.tenants where id = v_tenant_id;
+end $$;

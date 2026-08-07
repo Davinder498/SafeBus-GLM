@@ -215,6 +215,13 @@ export async function fetchAdminStudentDetail(studentId: string): Promise<AdminS
     });
   }
 
+  const { error: auditError } = await client.rpc('record_student_record_access', {
+    p_student_id: student.id,
+  });
+  if (auditError) {
+    throw new Error('The student record was loaded but its required access audit could not be recorded.');
+  }
+
   return {
     student,
     schoolName: (schoolResult.data as { name: string } | null)?.name ?? null,

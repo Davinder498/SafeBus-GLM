@@ -8,7 +8,6 @@ import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { StudentQrScanner } from '@/components/driver/StudentQrScanner';
 import { useDriverTracking } from '@/contexts/DriverTrackingContext';
 import {
   fetchDriverActiveTripStudentManifest,
@@ -214,8 +213,6 @@ export function DriverManifestPage() {
                 compact
               />
             </Card>
-
-            <StudentQrScanner onRecord={updateStudentStatus} busyStudentId={pendingStudentId} />
 
             {students.length === 0 ? (
               <div data-testid="driver-manifest-no-students">

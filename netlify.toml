@@ -12,6 +12,11 @@
 [functions."guardian-notification-email-scheduled"]
   schedule = "@hourly"
 
+# Phase 3: daily retention orchestration. The function defaults to dry-run;
+# SAFEBUS_RETENTION_EXECUTE=true is set only after counsel approves the periods.
+[functions."safebus-retention-scheduled"]
+  schedule = "@daily"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

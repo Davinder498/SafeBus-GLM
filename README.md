@@ -8,13 +8,24 @@ SafeBus is a school transportation operations platform focused on driver trip wo
 
 ## Province
 
-Initially for **Alberta, Canada** only. All privacy practices align with:
+Initially for **Alberta, Canada** only. The privacy-law framework is being
+finalized by Alberta privacy counsel in **Phase 3** against:
 
-- **FOIP** (Freedom of Information and Protection of Privacy Act) — public bodies
+- **POPA** — Protection of Privacy Act principles
+- **ATIA** — Access to Information Act principles
 - **PIPA** (Personal Information Protection Act) — private organizations
 - **Education Act** — student record confidentiality
 
-Data hosted in Canada (ca-central-1).
+> **Note:** Earlier versions of this README referenced *FOIP*. That reference
+> was obsolete for SafeBus's legal-role analysis and is corrected in Phase 3
+> (see `docs/governance/risk-register.md` R-006 and
+> `docs/governance/phase-3/legal-role-analysis.md`). Final statutory mapping
+> is confirmed by counsel, not engineering.
+
+The intended hosted region is Canada (`ca-central-1`). Production processing,
+backup location, and subprocessor terms remain blocked on the Phase 3 vendor
+verification and counsel gates; this repository does not claim those reviews
+are complete.
 
 ## Monorepo Structure
 
@@ -54,12 +65,10 @@ Create `apps/web/.env` with your hosted Supabase project values:
 ```env
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
-# Optional public map tile configuration for admin fleet maps. Do not put secrets here.
-VITE_MAP_TILE_URL=https://tiles.example.com/{z}/{x}/{y}.png
-VITE_MAP_TILE_ATTRIBUTION=Map data and tiles provided under the selected provider terms
 ```
 
-`VITE_MAP_TILE_URL` and `VITE_MAP_TILE_ATTRIBUTION` are public browser configuration values for a future approved XYZ-compatible Leaflet tile provider. Both values must be configured for the interactive admin fleet map tile layer; otherwise the app shows a controlled non-tile fallback and keeps the fleet table available. Netlify must receive these values through its environment configuration when a provider is selected. No production provider is selected by default, and public OpenStreetMap standard tile servers should not be treated as an assumed production-scale commercial tile backend; OpenStreetMap data and the public tile service are separate concerns. Review provider terms, attribution, rate limits, availability, privacy, and commercial-use requirements before pilot production traffic.
+Frontend code may use only these two environment variables. No production
+map provider is approved; map surfaces use a controlled non-tile fallback.
 
 ### Run web app (Phase 1 — mock data)
 

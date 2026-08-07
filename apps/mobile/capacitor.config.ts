@@ -7,7 +7,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  * - appName:         SafeBus Alberta
  * - webDir:          dist (Vite build output → synced into Android assets)
  * - server.androidScheme: hcpp (HTTPS scheme for secure-context APIs:
- *                     geolocation, camera, BarcodeDetector)
+ *                     geolocation)
  *
  * This wraps the existing Vite-built React app (driver + guardian routes)
  * without modifying any web app source.
@@ -19,9 +19,6 @@ const config: CapacitorConfig = {
   backgroundColor: '#1e3a8a',
   server: {
     androidScheme: 'https',
-    // Use a deep-link scheme for Supabase auth redirects (password reset, OAuth).
-    // The web app URL (VITE_APP_ORIGIN) is used for email deep-links so they
-    // always open in a browser where the full admin experience is available.
   },
   android: {
     allowMixedContent: false,

@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { getDashboardPath } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 
-const minimumPasswordLength = 8;
+const minimumPasswordLength = 12;
 
 export function AcceptInvitationPage() {
   const navigate = useNavigate();

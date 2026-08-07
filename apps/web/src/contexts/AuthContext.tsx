@@ -25,6 +25,12 @@ export interface Profile {
   updated_at: string;
 }
 
+export interface MfaStatus {
+  currentLevel: string | null;
+  nextLevel: string | null;
+  verifiedFactors: Array<{ id: string; friendlyName?: string; factorType: string }>;
+}
+
 export interface AuthContextValue {
   session: Session | null;
   user: User | null;
@@ -32,12 +38,15 @@ export interface AuthContextValue {
   loading: boolean;
   authError: string | null;
   configError: string | null;
+  mfaStatus: MfaStatus;
+  mfaLoading: boolean;
   signIn: (email: string, password: string) => Promise<Profile>;
   signOut: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
   completeInvitation: (password: string) => Promise<Profile>;
   updatePassword: (password: string) => Promise<void>;
   refreshProfile: () => Promise<Profile>;
+  refreshMfa: () => Promise<MfaStatus>;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -71,6 +80,52 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [mfaStatus, setMfaStatus] = useState<MfaStatus>({
+    currentLevel: null,
+    nextLevel: null,
+    verifiedFactors: [],
+  });
+  const [mfaLoading, setMfaLoading] = useState(false);
+
+  const refreshMfa = useCallback(async (): Promise<MfaStatus> => {
+    if (!supabase) {
+      throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
+    }
+
+    setMfaLoading(true);
+    try {
+      const [assurance, factors] = await Promise.all([
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+        supabase.auth.mfa.listFactors(),
+      ]);
+      if (assurance.error) throw new Error(assurance.error.message);
+      if (factors.error) throw new Error(factors.error.message);
+
+      const nextStatus: MfaStatus = {
+        currentLevel: assurance.data.currentLevel,
+        nextLevel: assurance.data.nextLevel,
+        verifiedFactors: factors.data.all
+          .filter((factor) => factor.status === 'verified')
+          .map((factor) => ({
+            id: factor.id,
+            friendlyName: factor.friendly_name,
+            factorType: factor.factor_type,
+          })),
+      };
+      setMfaStatus(nextStatus);
+      return nextStatus;
+    } finally {
+      setMfaLoading(false);
+    }
+  }, []);
+
+  const registerSession = useCallback(async () => {
+    if (!supabase) return;
+    await supabase.rpc('register_current_user_session', {
+      p_device_label: 'SafeBus web',
+      p_user_agent: typeof navigator === 'undefined' ? null : navigator.userAgent,
+    });
+  }, []);
 
   const loadProfile = useCallback(async (userId: string): Promise<Profile> => {
     if (!supabase) {
@@ -145,9 +200,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (!active) return;
         setProfile(nextProfile);
         setAuthError(null);
+        await Promise.all([refreshMfa(), registerSession()]);
       } catch (profileError) {
         if (!active) return;
         setProfile(null);
+        setMfaStatus({ currentLevel: null, nextLevel: null, verifiedFactors: [] });
         setAuthError(
           profileError instanceof Error ? profileError.message : getProfileErrorMessage(),
         );
@@ -178,9 +235,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       ) {
         setLoading(true);
         void loadProfile(nextSession.user.id)
-          .then((nextProfile) => {
+          .then(async (nextProfile) => {
             setProfile(nextProfile);
             setAuthError(null);
+            await Promise.all([refreshMfa(), registerSession()]);
           })
           .catch((profileError: unknown) => {
             setProfile(null);
@@ -196,7 +254,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
       active = false;
       subscription.unsubscribe();
     };
-  }, [loadProfile]);
+  }, [loadProfile, refreshMfa, registerSession]);
+
+  useEffect(() => {
+    if (!supabase || !session) return undefined;
+    const client = supabase;
+    let active = true;
+
+    async function verifyCurrentSession() {
+      const { data, error } = await client.rpc('is_current_user_session_active');
+      if (!active || error || data !== false) return;
+
+      await client.auth.signOut({ scope: 'local' }).catch(() => undefined);
+      if (!active) return;
+      setSession(null);
+      setProfile(null);
+      setMfaStatus({ currentLevel: null, nextLevel: null, verifiedFactors: [] });
+      setAuthError('This SafeBus session was revoked by an administrator. Sign in again.');
+    }
+
+    void verifyCurrentSession();
+    const intervalId = window.setInterval(() => void verifyCurrentSession(), 60_000);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [session]);
 
   const signIn = useCallback(
     async (email: string, password: string) => {
@@ -220,9 +303,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSession(data.session);
       const nextProfile = await loadProfile(data.session.user.id);
       setProfile(nextProfile);
+      await Promise.all([refreshMfa(), registerSession()]);
+      void supabase.rpc('record_own_auth_event', {
+        p_action: 'auth.login',
+        p_outcome: 'success',
+        p_detail: {},
+      });
       return nextProfile;
     },
-    [loadProfile],
+    [loadProfile, refreshMfa, registerSession],
   );
 
   const signOut = useCallback(async () => {
@@ -232,11 +321,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return;
     }
 
-    const { error } = await supabase.auth.signOut();
+    void supabase.rpc('record_own_auth_event', {
+      p_action: 'auth.logout',
+      p_outcome: 'success',
+      p_detail: {},
+    });
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
     if (error) throw new Error(error.message);
 
     setSession(null);
     setProfile(null);
+    setMfaStatus({ currentLevel: null, nextLevel: null, verifiedFactors: [] });
     setAuthError(null);
   }, []);
 
@@ -246,7 +341,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${import.meta.env.VITE_APP_ORIGIN ?? window.location.origin}/update-password`,
+      redirectTo: `${window.location.origin}/update-password`,
     });
 
     if (error) throw new Error(error.message);
@@ -256,8 +351,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!supabase) {
       throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
     }
+    const { error: policyError } = await supabase.rpc('enforce_new_password_policy', {
+      p_password: password,
+    });
+    if (policyError) throw new Error(policyError.message);
     const { error } = await supabase.auth.updateUser({ password });
     if (error) throw new Error(error.message);
+    void supabase.rpc('record_own_auth_event', {
+      p_action: 'auth.password_changed',
+      p_outcome: 'success',
+      p_detail: {},
+    });
   }, []);
 
   const completeInvitation = useCallback(
@@ -274,6 +378,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         );
       }
 
+      const { error: policyError } = await supabase.rpc('enforce_new_password_policy', {
+        p_password: password,
+      });
+      if (policyError) throw new Error(policyError.message);
+
       const { error: passwordError } = await supabase.auth.updateUser({ password });
       if (passwordError) throw new Error(passwordError.message);
 
@@ -287,6 +396,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const nextProfile = await loadProfile(currentSession.user.id);
       setProfile(nextProfile);
       setAuthError(null);
+      void supabase.rpc('record_own_auth_event', {
+        p_action: 'auth.password_changed',
+        p_outcome: 'success',
+        p_detail: { invitation: true },
+      });
       return nextProfile;
     },
     [loadProfile],
@@ -300,24 +414,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
       loading,
       authError,
       configError: supabaseConfigError,
+      mfaStatus,
+      mfaLoading,
       signIn,
       signOut,
       requestPasswordReset,
       completeInvitation,
       updatePassword,
       refreshProfile,
+      refreshMfa,
     }),
     [
       session,
       profile,
       loading,
       authError,
+      mfaStatus,
+      mfaLoading,
       signIn,
       signOut,
       requestPasswordReset,
       completeInvitation,
       updatePassword,
       refreshProfile,
+      refreshMfa,
     ],
   );
 

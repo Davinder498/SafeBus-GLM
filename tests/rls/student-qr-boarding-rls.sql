@@ -1,4 +1,6 @@
--- Phase 16A hosted-DEV regression checklist executable through guarded RLS runner.
+-- LEGACY / QUARANTINED. Do not run against the canonical Phase 0-3 schema.
+-- Student QR objects and reachable UI were removed by migration 0065.
+-- Phase 16A hosted-DEV regression checklist executable only with the archived schema.
 -- Covers: admin own-tenant generation, cross-tenant denial, school/transportation
 -- admin allowed policy path, Platform Super Admin/guardian/driver generation denial,
 -- one active credential, rotation revocation, revoked/malformed token failure,

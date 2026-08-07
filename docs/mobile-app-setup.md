@@ -78,7 +78,6 @@ Edit `apps/mobile/.env` and fill in:
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
-VITE_APP_ORIGIN=https://your-safebus-web-url.example.ca
 ```
 
 > Use the **same** Supabase values as `apps/web/.env`.
@@ -118,9 +117,8 @@ The app requests these permissions (configured in `AndroidManifest.xml`):
 | `ACCESS_NETWORK_STATE` | Online/offline detection for driver location retry |
 | `ACCESS_FINE_LOCATION` | Driver live bus location tracking |
 | `ACCESS_COARSE_LOCATION` | Approximate location fallback |
-| `CAMERA` | Student QR badge scanning |
 
-All hardware features (`gps`, `camera`) are marked `required="false"` so the
+The GPS hardware feature is marked `required="false"` so the
 app installs on devices without them.
 
 ## Testing Driver Features
@@ -128,8 +126,8 @@ app installs on devices without them.
 1. Sign in with a **driver** account.
 2. **Location sharing**: Start an active trip → location permission prompt →
    bus location is shared live via `navigator.geolocation.watchPosition`.
-3. **QR scanning**: Open Pickup & drop-off → "Open scanner" → camera activates
-   → scan a student QR badge → confirm pickup/drop-off.
+3. **Pickup/drop-off**: Open the assigned active-trip manifest and confirm the
+   event for the selected student. No student badge or camera scan is used.
 
 ## Testing Guardian Features
 

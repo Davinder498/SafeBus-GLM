@@ -1,4 +1,7 @@
-# Phase 16A — Secure Student QR Boarding Manual Acceptance Guide
+# Phase 16A — Secure Student QR Boarding Manual Acceptance Guide — Archived
+
+> Historical only. Do not execute against the canonical schema. Student QR
+> badges were quarantined by Phase 0 and removed by migration 0065.
 
 Status: implemented for review only. Do not accept or merge until product-owner hosted-DEV testing is complete.
 

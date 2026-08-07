@@ -148,8 +148,7 @@ function RoutesMapCoordinateFallback({
           className="mt-3 rounded-lg bg-warning-50 p-3 text-sm text-warning-700"
           data-testid="admin-routes-map-config-missing"
         >
-          Map tiles are not configured. An administrator must set VITE_MAP_TILE_URL and
-          VITE_MAP_TILE_ATTRIBUTION in deployment environment variables.
+          Map tiles are unavailable because no production map provider is approved.
         </div>
       )}
       {withCoords.length === 0 ? (

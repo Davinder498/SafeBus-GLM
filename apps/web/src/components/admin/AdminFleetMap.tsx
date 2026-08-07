@@ -109,7 +109,7 @@ function CoordinateFallback({ trips, formatters, missingConfig }: { trips: Admin
       <h2 className="text-lg font-bold text-navy-900">Live fleet map</h2>
       {missingConfig && (
         <div className="mt-3 rounded-lg bg-warning-50 p-3 text-sm text-warning-700" data-testid="admin-live-fleet-map-config-missing">
-          Map tiles are not configured. An administrator must set VITE_MAP_TILE_URL and VITE_MAP_TILE_ATTRIBUTION in deployment environment variables. The fleet list remains the primary operational view.
+          Map tiles are unavailable because no production map provider is approved. The fleet list remains the primary operational view.
         </div>
       )}
       {locations.length === 0 ? (

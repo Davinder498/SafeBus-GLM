@@ -32,6 +32,10 @@ const DEFAULT_RLS_FILES = [
   'tests/rls/invitation-password-activation-rls.sql',
   'tests/rls/atomic-platform-tenant-invitation-rls.sql',
   'tests/rls/atomic-tenant-member-invitation-rls.sql',
+  'tests/rls/phase1-platform-isolation-rls.sql',
+  'tests/rls/phase1-driver-authorization-rls.sql',
+  'tests/rls/phase2-auth-security-rls.sql',
+  'tests/rls/phase3-retention-rls.sql',
 ];
 
 function fail(message) {

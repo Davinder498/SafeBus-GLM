@@ -1,4 +1,8 @@
-# Phase 16A — Secure Student QR Boarding Foundation
+# Phase 16A — Secure Student QR Boarding Foundation — Archived
+
+> Historical experiment only. Phase 0 decision D1 quarantined student badges;
+> migration 0065 removes the objects and current UI has no student QR controls.
+> Do not apply the archived migration.
 
 Implemented for review on `phase-16a-secure-student-qr-boarding-foundation`.
 
