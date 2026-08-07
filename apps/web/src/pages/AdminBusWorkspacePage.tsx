@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ArrowLeft, BusFront, Route as RouteIcon, UsersRound } from 'lucide-react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { BusWorkspaceRouteForm } from '@/components/admin/BusWorkspaceForms';
 import { DirectionalStudentBusAssignmentForm } from '@/components/admin/DirectionalStudentBusAssignmentForm';
 import { BusQrCredentialPanel } from '@/components/admin/BusQrCredentialPanel';

@@ -73,7 +73,7 @@ export function RouteStopMapEditor({
               draggable
               eventHandlers={{
                 click: () => onSelect(stop.clientKey),
-                dragend: (event) => {
+                dragend: (event: LeafletMouseEvent) => {
                   const marker = event.target as LeafletMarker;
                   const point = marker.getLatLng();
                   onPlace(stop.clientKey, point.lat, point.lng);

@@ -1,5 +1,5 @@
-import type { RouteObject } from 'react-router-dom';
-import { Navigate } from 'react-router-dom';
+import type { RouteObject } from 'react-router';
+import { Navigate } from 'react-router';
 /*
  * All page components, route guards, and auth helpers are imported from the
  * shared web app source (via the `@` → apps/web/src alias). This guarantees

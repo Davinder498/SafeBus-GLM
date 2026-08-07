@@ -6,13 +6,7 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "build/**", ".expo/**"],
-      "env": [
-        "VITE_SUPABASE_URL",
-        "VITE_SUPABASE_ANON_KEY",
-        "VITE_APP_ORIGIN",
-        "EXPO_PUBLIC_SUPABASE_URL",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY"
-      ]
+      "env": ["VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"]
     },
     "dev": {
       "cache": false,

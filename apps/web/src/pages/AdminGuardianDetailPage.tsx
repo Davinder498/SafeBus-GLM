@@ -9,7 +9,7 @@ import {
   UserRound,
   UsersRound,
 } from 'lucide-react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router';
 import { StudentSearchPicker } from '@/components/admin/StudentSearchPicker';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';

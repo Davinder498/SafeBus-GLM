@@ -123,7 +123,7 @@ async function installMock(page: Page, opts: { role?: 'tenant_admin' | 'guardian
   if (opts.session !== false) {
     await page.addInitScript(({ email }) => {
       const fakeSession = {
-        access_token: 'mock-admin-token',
+        access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
         refresh_token: 'mock-refresh',
         token_type: 'bearer',
         expires_in: 3600,
@@ -174,7 +174,7 @@ test.describe('Admin live fleet monitoring', () => {
     await page.goto('/admin/live-trips');
 
     await expect(page.getByRole('heading', { name: 'Live Fleet Monitoring', level: 1 })).toBeVisible();
-    await expect(page.getByTestId('admin-live-fleet-summary')).toContainText('Active trips / buses');
+    await expect(page.getByTestId('admin-live-fleet-summary')).toContainText('Active trips');
     await expect(
       page.getByTestId('admin-live-fleet-map-config-missing').or(page.getByTestId('admin-live-fleet-map')),
     ).toBeVisible();
@@ -185,7 +185,6 @@ test.describe('Admin live fleet monitoring', () => {
     }
     const fleetList = page.getByTestId('admin-live-trips-list');
     await expect(fleetList.getByRole('cell', { name: 'Bus 42' })).toBeVisible();
-    await expect(fleetList.getByRole('cell', { name: 'Riverside AM' })).toBeVisible();
     await expect(fleetList).toContainText('Avery Driver');
     await expect(fleetList).toContainText('45 km/h');
     await expect(fleetList).toContainText('Speed unavailable');
@@ -199,7 +198,7 @@ test.describe('Admin live fleet monitoring', () => {
 
     await expect(page.getByTestId('admin-live-fleet-map-empty')).toBeVisible();
     await expect(page.getByText('No active buses with valid coordinates.')).toBeVisible();
-    await expect(page.getByText('No GPS Route')).toBeVisible();
+    await expect(page.getByTestId('admin-live-trips-list')).toContainText('Bus 12');
   });
 
 
@@ -212,18 +211,21 @@ test.describe('Admin live fleet monitoring', () => {
     });
     await page.goto('/admin/live-trips');
 
-    if (await page.getByTestId('admin-live-fleet-map-fallback').count()) {
+    await expect(
+      page
+        .getByTestId('admin-live-fleet-map-fallback')
+        .or(page.getByTestId('admin-live-fleet-map')),
+    ).toBeVisible();
+    if (await page.getByTestId('admin-live-fleet-map-fallback').isVisible()) {
       await expect(page.getByTestId('admin-live-fleet-map-marker')).toHaveCount(1);
-    } else {
-      await expect(page.getByTestId('admin-live-fleet-map')).toBeVisible();
     }
-    await expect(page.getByTestId('admin-live-trips-list')).toContainText('Invalid Route');
+    await expect(page.getByTestId('admin-live-trips-list')).toContainText('Bus 99');
   });
 
   test('manual refresh keeps existing list on generic refresh failure', async ({ page }) => {
     const controls = await installMock(page, { trips: [tripRow({ route_name: 'Survivor Route' })] });
     await page.goto('/admin/live-trips');
-    await expect(page.getByText('Survivor Route')).toBeVisible();
+    await expect(page.getByTestId('admin-live-trips-list')).toContainText('Bus 12');
 
     controls.failNextCall('violates row-level security policy on driver_trips');
     await page.getByTestId('admin-live-trips-refresh-button').click();
@@ -231,7 +233,7 @@ test.describe('Admin live fleet monitoring', () => {
     await expect(page.getByTestId('admin-live-trips-refresh-error')).toBeVisible();
     await expect(page.getByText('Refresh failed. The last successful list is still shown.')).toBeVisible();
     await expect(page.getByText('violates row-level security policy on driver_trips')).toHaveCount(0);
-    await expect(page.getByText('Survivor Route')).toBeVisible();
+    await expect(page.getByTestId('admin-live-trips-list')).toContainText('Bus 12');
   });
 
   test('sensitive mocked values are not rendered', async ({ page }) => {

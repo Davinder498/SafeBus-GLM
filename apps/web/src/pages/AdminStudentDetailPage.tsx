@@ -9,7 +9,7 @@ import {
   UserRound,
   UsersRound,
 } from 'lucide-react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router';
 import { StudentBusAssignmentForm } from '@/components/admin/StudentBusAssignmentForm';
 import { StudentGuardianManager } from '@/components/admin/StudentGuardianManager';
 import { StudentForm, type StudentFormInput } from '@/components/admin/StudentForm';

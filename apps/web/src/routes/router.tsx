@@ -1,5 +1,5 @@
-import type { RouteObject } from 'react-router-dom';
-import { Navigate } from 'react-router-dom';
+import type { RouteObject } from 'react-router';
+import { Navigate } from 'react-router';
 import { AdminAssignmentsPage } from '@/pages/AdminAssignmentsPage';
 import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
 import { AdminBusesPage } from '@/pages/AdminBusesPage';

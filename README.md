@@ -50,7 +50,7 @@ safebus-alberta/
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22.22+
 - pnpm 11+ (`npm install -g pnpm`)
 - Hosted Supabase project URL and anon key
 
@@ -98,6 +98,28 @@ pnpm typecheck
   `SAFEBUS_QA_SEED_CONFIRM=DEV_ONLY SAFEBUS_QA_SEED_DATABASE_URL=<DEV_DATABASE_URL> pnpm qa:seed:driver-events`
 
 Never run QA seed scripts against production, and never use real student data.
+
+## Secure release platform
+
+Phase 4 release controls, environment isolation, Canadian-region approval,
+migration integrity, security gates, and recovery procedures are documented in
+[`docs/governance/phase-4/README.md`](docs/governance/phase-4/README.md).
+
+Useful local verification commands:
+
+```bash
+pnpm migrations:verify
+pnpm security:audit
+pnpm typecheck
+pnpm lint
+pnpm build
+pnpm test
+pnpm test:smoke
+```
+
+Real RLS execution requires an explicitly labelled hosted non-production
+database. Staging and production releases run only through protected GitHub
+environments; production credentials are not part of local setup.
 
 ## Build Phases
 

@@ -10,6 +10,7 @@ const { Client } = pg;
 const REQUIRED_CONFIRMATION = 'DEV_ONLY';
 const DATABASE_URL_ENV = 'SAFEBUS_RLS_TEST_DATABASE_URL';
 const CONFIRM_ENV = 'SAFEBUS_RLS_TEST_CONFIRM';
+const TARGET_ENV = 'SAFEBUS_RLS_TARGET';
 
 const DEFAULT_RLS_FILES = [
   'tests/rls/student-roster-rls.sql',
@@ -70,6 +71,7 @@ function shouldUseSsl(rawUrl) {
 function validateEnvironment() {
   const databaseUrl = process.env[DATABASE_URL_ENV];
   const confirmation = process.env[CONFIRM_ENV];
+  const target = process.env[TARGET_ENV];
 
   if (!databaseUrl) {
     fail(`missing ${DATABASE_URL_ENV}.`);
@@ -78,6 +80,11 @@ function validateEnvironment() {
 
   if (confirmation !== REQUIRED_CONFIRMATION) {
     fail(`${CONFIRM_ENV} must be exactly ${REQUIRED_CONFIRMATION}.`);
+    return null;
+  }
+
+  if (!['development', 'staging'].includes(target)) {
+    fail(`${TARGET_ENV} must be development or staging; production is forbidden.`);
     return null;
   }
 
