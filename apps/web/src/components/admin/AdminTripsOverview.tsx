@@ -19,12 +19,20 @@ export function AdminTripsOverview({
   trips,
   failed = false,
   showAllLink = true,
+  showLiveLink = true,
+  title = 'Trips',
+  description = 'Dated operational runs. Routes and their outbound and return patterns remain reusable definitions.',
+  initialFilter = 'all',
 }: {
   trips: AdminTripOverviewItem[];
   failed?: boolean;
   showAllLink?: boolean;
+  showLiveLink?: boolean;
+  title?: string;
+  description?: string;
+  initialFilter?: AdminTripFilter;
 }) {
-  const [filter, setFilter] = useState<AdminTripFilter>('all');
+  const [filter, setFilter] = useState<AdminTripFilter>(initialFilter);
   const filteredTrips = useMemo(() => filterAdminTrips(trips, filter), [filter, trips]);
   const counts = {
     active: trips.filter((trip) => trip.status === 'active').length,
@@ -42,20 +50,19 @@ export function AdminTripsOverview({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 id="trip-overview-heading" className="text-xl font-bold text-navy-900">
-            Trips
+            {title}
           </h2>
-          <p className="mt-1 text-sm text-gray-600">
-            Dated operational runs. Routes and their outbound and return patterns remain reusable
-            definitions.
-          </p>
+          <p className="mt-1 text-sm text-gray-600">{description}</p>
         </div>
         <div className="flex gap-2">
-          <Link
-            className="rounded-lg border border-cyan-200 px-3 py-2 text-sm font-semibold text-cyan-800 hover:bg-cyan-50"
-            to="/admin/live-trips"
-          >
-            Live GPS
-          </Link>
+          {showLiveLink && (
+            <Link
+              className="rounded-lg border border-cyan-200 px-3 py-2 text-sm font-semibold text-cyan-800 hover:bg-cyan-50"
+              to="/admin/live-trips"
+            >
+              Live GPS
+            </Link>
+          )}
           {showAllLink && (
             <Link
               className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-navy-700 hover:bg-gray-50"

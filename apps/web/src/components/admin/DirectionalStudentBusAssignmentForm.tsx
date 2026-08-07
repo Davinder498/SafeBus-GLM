@@ -293,7 +293,7 @@ export function DirectionalStudentBusAssignmentForm({
       </div>
       <div className="flex gap-2">
         <Button type="submit" loading={saving}>
-          Save bus service
+          {assignments.length > 0 ? 'Update assignment' : 'Assign student'}
         </Button>
         <Button type="button" variant="secondary" disabled={saving} onClick={onCancel}>
           Cancel

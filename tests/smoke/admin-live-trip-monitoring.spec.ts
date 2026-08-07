@@ -37,6 +37,20 @@ interface AdminLiveTripRpcRow {
   issue_label: 'OK' | 'Stale GPS' | 'Missing GPS' | 'Speed unavailable' | 'Needs attention';
 }
 
+interface AdminTripOverviewRpcRow {
+  trip_id: string;
+  service_date: string;
+  status: 'active' | 'completed' | 'cancelled';
+  started_at: string;
+  ended_at: string | null;
+  route_name: string;
+  route_code: string;
+  trip_pattern_name: string;
+  direction: 'forward' | 'reverse';
+  bus_label: string;
+  driver_label: string;
+}
+
 function tripRow(opts: Partial<AdminLiveTripRpcRow> = {}): AdminLiveTripRpcRow {
   return {
     bus_label: '12',
@@ -55,7 +69,7 @@ function tripRow(opts: Partial<AdminLiveTripRpcRow> = {}): AdminLiveTripRpcRow {
   };
 }
 
-async function installMock(page: Page, opts: { role?: 'tenant_admin' | 'guardian' | 'driver'; trips?: AdminLiveTripRpcRow[]; session?: boolean } = {}) {
+async function installMock(page: Page, opts: { role?: 'tenant_admin' | 'guardian' | 'driver'; trips?: AdminLiveTripRpcRow[]; historyTrips?: AdminTripOverviewRpcRow[]; session?: boolean } = {}) {
   const currentProfile = profile(opts.role ?? 'tenant_admin');
   let tripsForRpc = opts.trips ?? [];
   let failNext = false;
@@ -110,6 +124,11 @@ async function installMock(page: Page, opts: { role?: 'tenant_admin' | 'guardian
           return;
         }
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(tripsForRpc) });
+        return;
+      }
+
+      if (method === 'POST' && path.includes('/rpc/get_admin_trip_overview')) {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(opts.historyTrips ?? []) });
         return;
       }
 
@@ -170,10 +189,25 @@ test.describe('Admin live fleet monitoring', () => {
         tripRow({ bus_label: '77', route_name: 'Stale Route', latest_latitude: 51.05, latest_longitude: -114.08, latest_location_at: stale, location_status: 'stale', issue_label: 'Stale GPS' }),
         tripRow({ bus_label: '88', route_name: 'Missing Route', location_status: 'missing', issue_label: 'Missing GPS' }),
       ],
+      historyTrips: [
+        {
+          trip_id: 'history-trip-1',
+          service_date: '2025-01-01',
+          status: 'completed',
+          started_at: '2025-01-01T08:00:00.000Z',
+          ended_at: '2025-01-01T09:00:00.000Z',
+          route_name: 'Completed Riverside Run',
+          route_code: 'RIV-1',
+          trip_pattern_name: 'School bound',
+          direction: 'forward',
+          bus_label: 'Bus 42',
+          driver_label: 'Avery Driver',
+        },
+      ],
     });
     await page.goto('/admin/live-trips');
 
-    await expect(page.getByRole('heading', { name: 'Live Fleet Monitoring', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Live Operations', level: 1 })).toBeVisible();
     await expect(page.getByTestId('admin-live-fleet-summary')).toContainText('Active trips');
     await expect(
       page.getByTestId('admin-live-fleet-map-config-missing').or(page.getByTestId('admin-live-fleet-map')),
@@ -190,6 +224,9 @@ test.describe('Admin live fleet monitoring', () => {
     await expect(fleetList).toContainText('Speed unavailable');
     await expect(fleetList).toContainText('Stale GPS');
     await expect(fleetList).toContainText('Missing GPS');
+    await expect(page.getByRole('heading', { name: 'Recent trip history' })).toBeVisible();
+    await expect(page.getByTestId('admin-trips-table')).toContainText('Completed Riverside Run');
+    await expect(page.locator('nav').getByRole('link', { name: 'Trips', exact: true })).toHaveCount(0);
   });
 
   test('empty map state renders when active buses have no valid coordinates', async ({ page }) => {
