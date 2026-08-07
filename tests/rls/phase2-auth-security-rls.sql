@@ -14,7 +14,7 @@
 -- SELF-CONTAINED: seeds its own tenant, admin, driver, guardian with
 -- disjoint fixed IDs, then cleans up.
 --
--- Run after applying migrations through 0073 to hosted Supabase DEV or a
+-- Run after applying migrations through 0074 to hosted Supabase DEV or a
 -- disposable migrated database. Never run against production.
 
 -- Keep all fixtures and assertions in one transaction when this file is sent
@@ -341,10 +341,17 @@ declare
   v_strong boolean;
   v_weak_short boolean;
   v_weak_nospecial boolean;
+  v_weak_repeating boolean;
+  v_repeat_limit integer;
 begin
   select public.validate_password_policy('StrongP@ss1!') into v_strong;
   select public.validate_password_policy('Short1!') into v_weak_short;
   select public.validate_password_policy('NoSpecialChar1') into v_weak_nospecial;
+  select max_repeating_char into v_repeat_limit
+  from public.password_policy where id = 1;
+  select public.validate_password_policy(
+    'Aa1!Safe' || repeat('x', v_repeat_limit + 1)
+  ) into v_weak_repeating;
 
   if not v_strong then
     raise exception 'Phase2 FAIL: strong password rejected by policy.';
@@ -355,8 +362,11 @@ begin
   if v_weak_nospecial then
     raise exception 'Phase2 FAIL: password without special char accepted by policy.';
   end if;
+  if v_weak_repeating then
+    raise exception 'Phase2 FAIL: password with an excessive repeating-character run was accepted.';
+  end if;
 
-  raise notice 'Phase2 PASS: password policy validates strong and rejects weak passwords.';
+  raise notice 'Phase2 PASS: password policy validates strong and rejects weak/repeating passwords.';
 end $$;
 
 reset role;

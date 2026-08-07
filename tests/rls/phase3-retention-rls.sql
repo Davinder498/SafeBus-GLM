@@ -1,5 +1,5 @@
 -- SafeBus Alberta - Phase 3 retention security regression
--- Run only after migrations through 0073 have been applied to hosted Supabase
+-- Run only after migrations through 0074 have been applied to hosted Supabase
 -- DEV or a disposable migrated database. Never run against production.
 
 -- Keep all fixtures and assertions in one transaction when this file is sent
@@ -58,6 +58,7 @@ end $$;
 do $$
 declare
   v_write_policies integer;
+  v_action_constraint text;
 begin
   select count(*) into v_write_policies
   from pg_policies
@@ -68,6 +69,15 @@ begin
     and cmd in ('INSERT', 'UPDATE', 'DELETE', 'ALL');
   if v_write_policies <> 0 then
     raise exception 'Phase3 FAIL: retention tables expose % write policies.', v_write_policies;
+  end if;
+
+  select pg_get_constraintdef(c.oid) into v_action_constraint
+  from pg_constraint c
+  where c.conrelid = 'public.audit_events'::regclass
+    and c.conname = 'audit_events_action_check';
+  if v_action_constraint is null
+     or position('retention.deletion_run' in v_action_constraint) = 0 then
+    raise exception 'Phase3 FAIL: audit action constraint rejects retention events.';
   end if;
   raise notice 'Phase3 PASS: retention tables expose no browser write policies.';
 end $$;
