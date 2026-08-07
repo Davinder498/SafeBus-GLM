@@ -342,15 +342,13 @@ declare
   v_weak_short boolean;
   v_weak_nospecial boolean;
   v_weak_repeating boolean;
-  v_repeat_limit integer;
 begin
   select public.validate_password_policy('StrongP@ss1!') into v_strong;
   select public.validate_password_policy('Short1!') into v_weak_short;
   select public.validate_password_policy('NoSpecialChar1') into v_weak_nospecial;
-  select max_repeating_char into v_repeat_limit
-  from public.password_policy where id = 1;
   select public.validate_password_policy(
-    'Aa1!Safe' || repeat('x', v_repeat_limit + 1)
+    -- The schema restricts max_repeating_char to 1..20, so 21 always exceeds it.
+    'Aa1!Safe' || repeat('x', 21)
   ) into v_weak_repeating;
 
   if not v_strong then
