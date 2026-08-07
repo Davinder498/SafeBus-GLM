@@ -1,5 +1,5 @@
 -- SafeBus Alberta - Phase 3 retention security regression
--- Run only after migrations 0066-0069 have been applied to hosted Supabase
+-- Run only after migrations 0066-0070 have been applied to hosted Supabase
 -- DEV or a disposable migrated database. Never run against production.
 
 do $$
@@ -79,6 +79,12 @@ do $$
 declare
   v_blocked boolean := false;
 begin
+  if auth.uid() <> '32323232-3232-3232-3232-323232323232'::uuid
+     or public.current_user_role() <> 'platform_super_admin' then
+    raise exception 'Phase3 FAIL: platform AAL1 simulation failed (uid %, role %).',
+      auth.uid(), public.current_user_role();
+  end if;
+
   begin
     perform public.run_retention_deletion('rate_limit_buckets', true);
   exception when sqlstate '55006' then
@@ -100,6 +106,10 @@ do $$
 declare
   v_blocked boolean := false;
 begin
+  if auth.role() <> 'service_role' then
+    raise exception 'Phase3 FAIL: service-role simulation failed (auth.role %).', auth.role();
+  end if;
+
   begin
     perform public.run_retention_deletion('rate_limit_buckets', false);
   exception when sqlstate '55006' then
@@ -132,6 +142,10 @@ declare
   v_count bigint;
   v_remaining integer;
 begin
+  if auth.role() <> 'service_role' then
+    raise exception 'Phase3 FAIL: service-role execution simulation failed (auth.role %).', auth.role();
+  end if;
+
   select affected_rows into v_count
   from public.run_retention_deletion('rate_limit_buckets', true);
   select count(*) into v_remaining

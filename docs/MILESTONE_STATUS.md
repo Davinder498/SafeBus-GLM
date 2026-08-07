@@ -184,7 +184,7 @@ tabletop gates in `docs/governance/phase-3/README.md` are completed.
 - `tests/rls/phase3-retention-rls.sql` covers browser write-policy absence,
   driver denial, AAL1 denial, and transactional service dry-run/deletion.
 
-Pending exit gates: product-owner Phase 0 sign-off; migrations `0065`–`0069`
+Pending exit gates: product-owner Phase 0 sign-off; migrations `0065`–`0070`
 applied to hosted DEV; clean rebuild and RLS evidence; independent security
 review; real MFA/recovery abuse testing; counsel-approved PIA/contracts/notices
 and retention periods; verified Canadian vendor/backup terms; breach tabletop.

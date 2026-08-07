@@ -20,7 +20,7 @@
 -- tenant operational data; it verifies policy absence/presence and that a
 -- platform-admin JWT context yields zero rows on protected tables.
 --
--- Run after applying migration 0065 to hosted Supabase DEV or a disposable
+-- Run after applying migrations 0065 and 0070 to hosted Supabase DEV or a disposable
 -- migrated database. Never run against production.
 
 -- ---------------------------------------------------------------------------
@@ -62,6 +62,7 @@ end $$;
 do $$
 declare
   v_count integer;
+  v_tenant_policy_count integer;
 begin
   select count(*) into v_count
   from pg_policies
@@ -82,10 +83,21 @@ begin
     );
 
   if v_count > 0 then
-    raise exception 'Phase1 FAIL: % platform-admin policies still exist after migration 0065.', v_count;
+    raise exception 'Phase1 FAIL: % retired platform-admin policies still exist after migration 0070.', v_count;
   end if;
 
-  raise notice 'Phase1 PASS: all retired platform-admin policies are absent.';
+  select count(*) into v_tenant_policy_count
+  from pg_policies
+  where schemaname = 'public'
+    and tablename = 'tenants'
+    and policyname = 'tenants select platform admin'
+    and cmd = 'SELECT';
+
+  if v_tenant_policy_count <> 1 then
+    raise exception 'Phase1 FAIL: platform tenant lifecycle policy is missing.';
+  end if;
+
+  raise notice 'Phase1 PASS: retired operational policies are absent and tenant lifecycle policy is present.';
 end $$;
 
 -- ---------------------------------------------------------------------------
@@ -167,6 +179,12 @@ do $$
 declare
   v_tenants_count integer;
 begin
+  if auth.uid() <> '12121212-1212-1212-1212-121212121212'::uuid
+     or public.current_user_role() <> 'platform_super_admin' then
+    raise exception 'Phase1 FAIL: platform JWT simulation failed (uid %, role %).',
+      auth.uid(), public.current_user_role();
+  end if;
+
   select count(*) into v_tenants_count from public.tenants;
   if v_tenants_count = 0 then
     raise exception 'Phase1 FAIL: platform admin cannot read tenants (must retain lifecycle control).';

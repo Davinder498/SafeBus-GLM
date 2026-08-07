@@ -14,7 +14,7 @@
 -- SELF-CONTAINED: seeds its own tenant, admin, driver, guardian with
 -- disjoint fixed IDs, then cleans up.
 --
--- Run after applying migrations 0066 and 0067 to hosted Supabase DEV or a
+-- Run after applying migrations 0066 through 0070 to hosted Supabase DEV or a
 -- disposable migrated database. Never run against production.
 
 -- ===========================================================================
@@ -86,6 +86,18 @@ declare
   v_event_id uuid;
   v_generic_blocked boolean := false;
 begin
+  if has_function_privilege(
+    'authenticated',
+    'public.write_audit_event(text,text,uuid,text,text,jsonb,inet)',
+    'EXECUTE'
+  ) or has_function_privilege(
+    'anon',
+    'public.write_audit_event(text,text,uuid,text,text,jsonb,inet)',
+    'EXECUTE'
+  ) then
+    raise exception 'Phase2 FAIL: generic audit writer has a browser EXECUTE grant.';
+  end if;
+
   begin
     perform public.write_audit_event(
       'role.changed', 'profile', '25252525-2525-2525-2525-252525252525',
