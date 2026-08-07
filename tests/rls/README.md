@@ -249,7 +249,7 @@ direct inserts into `auth.users`.
 
 ## Transaction-Scoped User Simulation
 
-Every simulated role test follows this pattern:
+Most simulated role tests follow this pattern:
 
 ```sql
 begin;
@@ -277,6 +277,12 @@ rollback;
 
 `SET LOCAL` is transaction-scoped. Do not split role/JWT setup and assertions
 into separate SQL Editor runs unless the explicit transaction remains open.
+
+The Phase 1 platform-isolation, Phase 2 auth-security, and Phase 3 retention
+regressions intentionally use one explicit transaction for the complete file.
+They use `RESET ROLE` between simulations and one final `ROLLBACK`, ensuring an
+intermediate rollback cannot remove fixtures needed by later assertions. Run
+each of those three files in full rather than running selected blocks.
 
 Both JWT GUC formats are set intentionally:
 

@@ -2,6 +2,11 @@
 -- Run only after migrations through 0073 have been applied to hosted Supabase
 -- DEV or a disposable migrated database. Never run against production.
 
+-- Keep all fixtures and assertions in one transaction when this file is sent
+-- to Supabase SQL Editor. Reset only the simulated database role between
+-- checks, then roll back the complete test once at the end.
+begin;
+
 do $$
 declare
   v_tenant_id uuid := '31313131-3131-3131-3131-313131313131';
@@ -67,7 +72,6 @@ begin
   raise notice 'Phase3 PASS: retention tables expose no browser write policies.';
 end $$;
 
-begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
 set local request.jwt.claim.role = 'authenticated';
@@ -84,9 +88,8 @@ begin
   end if;
   raise notice 'Phase3 PASS: driver cannot read retention data.';
 end $$;
-rollback;
+reset role;
 
-begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '32323232-3232-3232-3232-323232323232';
 set local request.jwt.claim.role = 'authenticated';
@@ -112,10 +115,9 @@ begin
   end if;
   raise notice 'Phase3 PASS: AAL1 platform administrator is blocked.';
 end $$;
-rollback;
+reset role;
 
 -- A server key cannot bypass the database-side approval latch.
-begin;
 set local role service_role;
 set local request.jwt.claim.role = 'service_role';
 set local request.jwt.claims = '{"role":"service_role"}';
@@ -137,11 +139,10 @@ begin
   end if;
   raise notice 'Phase3 PASS: destructive approval latch blocks service execution.';
 end $$;
-rollback;
+reset role;
 
 -- The server-only execution path supports a count-only dry run and an
--- explicit deletion. This transaction rolls back all fixture changes.
-begin;
+-- explicit deletion. The file-level transaction rolls back all fixture changes.
 insert into public.rate_limit_buckets
   (bucket_key, actor_identifier, action, window_start, count)
 values ('phase3-expired', md5('phase3-actor'), 'login', now() - interval '3 days', 1);
@@ -180,7 +181,7 @@ begin
   end if;
   raise notice 'Phase3 PASS: dry run and explicit deletion behave correctly.';
 end $$;
-rollback;
+reset role;
 
 do $$
 begin
@@ -191,3 +192,5 @@ begin
   delete from public.tenants where id = '31313131-3131-3131-3131-313131313131';
   raise notice 'Phase3 retention RLS regression completed.';
 end $$;
+
+rollback;

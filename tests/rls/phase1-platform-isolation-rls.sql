@@ -23,6 +23,11 @@
 -- Run after applying migrations through 0073 to hosted Supabase DEV or a disposable
 -- migrated database. Never run against production.
 
+-- Keep all fixtures and assertions in one transaction when this file is sent
+-- to Supabase SQL Editor. Reset only the simulated database role between
+-- checks, then roll back the complete test once at the end.
+begin;
+
 -- ---------------------------------------------------------------------------
 -- Privileged setup: create a minimal platform super admin profile if the
 -- test tenant/admin do not already exist. Fixed IDs keep this deterministic.
@@ -118,7 +123,6 @@ end $$;
 -- ---------------------------------------------------------------------------
 -- Test 2: platform admin cannot SELECT from protected operational tables
 -- ---------------------------------------------------------------------------
-begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '12121212-1212-1212-1212-121212121212';
 set local request.jwt.claim.role = 'authenticated';
@@ -179,12 +183,11 @@ begin
   raise notice 'Phase1 PASS: platform admin sees only own profile (1 row) and zero other operational rows.';
 end $$;
 
-rollback;
+reset role;
 
 -- ---------------------------------------------------------------------------
 -- Test 3: platform admin CAN still SELECT tenants (lifecycle control retained)
 -- ---------------------------------------------------------------------------
-begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '12121212-1212-1212-1212-121212121212';
 set local request.jwt.claim.role = 'authenticated';
@@ -208,12 +211,11 @@ begin
   raise notice 'Phase1 PASS: platform admin retains tenant lifecycle read access (% rows).', v_tenants_count;
 end $$;
 
-rollback;
+reset role;
 
 -- ---------------------------------------------------------------------------
 -- Test 4: platform admin CAN execute the narrow control-plane summary RPC
 -- ---------------------------------------------------------------------------
-begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '12121212-1212-1212-1212-121212121212';
 set local request.jwt.claim.role = 'authenticated';
@@ -233,7 +235,7 @@ begin
   raise notice 'Phase1 PASS: platform admin can execute get_platform_tenant_onboarding_summary (% rows).', v_summary_count;
 end $$;
 
-rollback;
+reset role;
 
 -- ---------------------------------------------------------------------------
 -- Cleanup: remove the test platform admin profile and auth user.
@@ -246,3 +248,5 @@ begin
   delete from public.profiles where id = v_platform_admin_id;
   delete from auth.users where id = v_platform_admin_id;
 end $$;
+
+rollback;

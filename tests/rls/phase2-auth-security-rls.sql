@@ -17,6 +17,11 @@
 -- Run after applying migrations through 0073 to hosted Supabase DEV or a
 -- disposable migrated database. Never run against production.
 
+-- Keep all fixtures and assertions in one transaction when this file is sent
+-- to Supabase SQL Editor. Reset only the simulated database role between
+-- checks, then roll back the complete test once at the end.
+begin;
+
 -- ===========================================================================
 -- Privileged setup
 -- ===========================================================================
@@ -119,7 +124,6 @@ end $$;
 -- ===========================================================================
 -- Test 2: generic audit writer is internal; narrow self-service writer works
 -- ===========================================================================
-begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '25252525-2525-2525-2525-252525252525';
 set local request.jwt.claim.role = 'authenticated';
@@ -163,12 +167,11 @@ begin
   raise notice 'Phase2 PASS: generic audit writes are blocked; narrow auth event was recorded.';
 end $$;
 
-rollback;
+reset role;
 
 -- ===========================================================================
 -- Test 3: direct table INSERT is blocked (RPC is the only path)
 -- ===========================================================================
-begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '25252525-2525-2525-2525-252525252525';
 set local request.jwt.claim.role = 'authenticated';
@@ -191,7 +194,7 @@ begin
   raise notice 'Phase2 PASS: direct INSERT into audit_events is blocked.';
 end $$;
 
-rollback;
+reset role;
 
 -- ===========================================================================
 -- Test 4: detail sanitization recursively strips secret-like keys
@@ -221,7 +224,6 @@ end $$;
 -- ===========================================================================
 -- Test 5: driver/guardian cannot read audit_events
 -- ===========================================================================
-begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '26262626-2626-2626-2626-262626262626';
 set local request.jwt.claim.role = 'authenticated';
@@ -238,9 +240,8 @@ begin
   raise notice 'Phase2 PASS: driver sees zero audit_events rows.';
 end $$;
 
-rollback;
+reset role;
 
-begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '27272727-2727-2727-2727-272727272727';
 set local request.jwt.claim.role = 'authenticated';
@@ -257,7 +258,7 @@ begin
   raise notice 'Phase2 PASS: guardian sees zero audit_events rows.';
 end $$;
 
-rollback;
+reset role;
 
 -- ===========================================================================
 -- Test 6: is_allowed_redirect_origin rejects arbitrary origins
@@ -272,7 +273,6 @@ begin
   on conflict do nothing;
 end $$;
 
-begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '25252525-2525-2525-2525-252525252525';
 set local request.jwt.claim.role = 'authenticated';
@@ -296,12 +296,11 @@ begin
   raise notice 'Phase2 PASS: redirect allowlist accepts SafeBus domains and rejects arbitrary origins.';
 end $$;
 
-rollback;
+reset role;
 
 -- ===========================================================================
 -- Test 7: check_rate_limit enforces a cap
 -- ===========================================================================
-begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '25252525-2525-2525-2525-252525252525';
 set local request.jwt.claim.role = 'authenticated';
@@ -327,12 +326,11 @@ begin
   raise notice 'Phase2 PASS: rate-limit enforces per-actor cap.';
 end $$;
 
-rollback;
+reset role;
 
 -- ===========================================================================
 -- Test 8: password policy validation
 -- ===========================================================================
-begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '25252525-2525-2525-2525-252525252525';
 set local request.jwt.claim.role = 'authenticated';
@@ -361,7 +359,7 @@ begin
   raise notice 'Phase2 PASS: password policy validates strong and rejects weak passwords.';
 end $$;
 
-rollback;
+reset role;
 
 -- ===========================================================================
 -- Test 9: session revocation requires AAL2 and revokes the session mirror
@@ -377,7 +375,6 @@ begin
   returning id into v_session_id;
 end $$;
 
-begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '25252525-2525-2525-2525-252525252525';
 set local request.jwt.claim.role = 'authenticated';
@@ -396,12 +393,11 @@ begin
   raise notice 'Phase2 PASS: AAL2 admin revoked % session mirror row(s).', v_count;
 end $$;
 
-rollback;
+reset role;
 
 -- ===========================================================================
 -- Test 10: invitation idempotency works at AAL2
 -- ===========================================================================
-begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '25252525-2525-2525-2525-252525252525';
 set local request.jwt.claim.role = 'authenticated';
@@ -424,7 +420,7 @@ begin
   end if;
   raise notice 'Phase2 PASS: AAL2 invitation idempotency detects existing profile.';
 end $$;
-rollback;
+reset role;
 
 -- ===========================================================================
 -- Cleanup
@@ -444,3 +440,5 @@ begin
   delete from auth.users where id in ('25252525-2525-2525-2525-252525252525','26262626-2626-2626-2626-262626262626','27272727-2727-2727-2727-272727272727');
   delete from public.tenants where id = v_tenant_id;
 end $$;
+
+rollback;
