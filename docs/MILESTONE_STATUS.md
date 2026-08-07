@@ -436,3 +436,33 @@ Status: Implemented on `phase-15b-notification-delivery-hardening` for review; n
 Milestone 16B refreshes the tenant-admin interface as a UI-only operations hub. It adds a persistent desktop tenant-admin shell, grouped left navigation, compact top workspace header, accessible mobile navigation drawer, and a redesigned overview page using only existing dashboard data and actions.
 
 This milestone preserves existing business logic and tenant isolation. It adds no Supabase migration, backend capability, database object, RLS policy, RPC, permission change, protected-route change, or new tenant-admin workflow. Future UI redesign milestones remain unmarked and unimplemented.
+
+## Phase 4 — Secure Development and Deployment Platform
+
+Status: Repository implementation complete for review on
+`phase-4-secure-development-deployment`. Cloud provisioning and the operational
+exit gates require authorized human completion before production approval.
+
+- Added separate protected DEV, staging, and production release contracts and
+  one-click staging, human-approved production, and application rollback
+  workflows.
+- Added immutable SHA-256 migration manifests, transactional deployment ledger,
+  catalog-level schema fingerprinting, and pre-deploy/standalone drift checks.
+- Added pinned authoritative Supabase TypeScript generation and release-time
+  stale-type rejection.
+- Expanded CI into independent typecheck, lint, build, unit, RLS execution,
+  browser smoke, dependency audit, secret scan, CodeQL, and migration gates.
+- Patched the React Router advisory line by migrating to `react-router` 8.3.0
+  with its React 19-compatible mapping stack; the production dependency audit
+  reports no known vulnerabilities.
+- Added CSP, HSTS, frame denial, MIME-sniffing protection, Referrer Policy, and
+  Permissions Policy; disabled public source maps and mobile WebView debugging;
+  and replaced Google-hosted fonts with bundled Inter assets.
+- Added production security approval and forward-only database/application
+  rollback runbooks under `docs/governance/phase-4/`.
+
+Pending operational evidence: provision three isolated Canadian-region cloud
+environments, configure protected-environment reviewers and secrets, generate
+and commit types from the reachable authoritative staging schema, run the first
+staging release and quarterly rollback exercise, verify deployed headers, and
+obtain human security/privacy approval. Never run RLS assertions in production.

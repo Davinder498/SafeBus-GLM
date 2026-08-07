@@ -23,7 +23,8 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
     captureInput: true,
-    webContentsDebuggingEnabled: true,
+    // Never expose the production WebView through Chrome remote debugging.
+    webContentsDebuggingEnabled: false,
   },
   plugins: {
     SplashScreen: {

@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { AdminPagination } from '@/components/admin/AdminPagination';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';

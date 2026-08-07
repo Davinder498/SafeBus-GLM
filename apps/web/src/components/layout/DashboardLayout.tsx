@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate, type NavLinkRenderProps } from 'react-router';
 import {
   LayoutDashboard,
   Users,
@@ -268,7 +268,7 @@ function NavListItem({
       to={to}
       end={to === `/${portal}`}
       onClick={onNavigate}
-      className={({ isActive }) =>
+      className={({ isActive }: NavLinkRenderProps) =>
         cn(
           'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
           isActive
@@ -465,7 +465,7 @@ function BottomTabNav({
               key={item.label}
               to={to}
               end={to === `/${portal}`}
-              className={({ isActive }) =>
+              className={({ isActive }: NavLinkRenderProps) =>
                 cn(
                   'flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-500',
                   isActive

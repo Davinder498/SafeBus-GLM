@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Bus, ClipboardCheck } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { BusQrStartScanner } from '@/components/driver/BusQrStartScanner';
 import { DriverLocationStatus } from '@/components/driver/DriverLocationStatus';
 import { DashboardLayout, driverNavGroups } from '@/components/layout/DashboardLayout';

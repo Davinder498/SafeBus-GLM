@@ -137,17 +137,19 @@ earlier prepared-dispatch start signature is intentionally retired.
 Supabase DEV database or a disposable migrated database. It is the automated
 replacement for copy/paste SQL Editor runs.
 
-This command is intentionally guarded. It refuses to run unless both
+This command is intentionally guarded. It refuses to run unless all three
 environment variables are set:
 
 ```bash
 SAFEBUS_RLS_TEST_DATABASE_URL=postgresql://...
 SAFEBUS_RLS_TEST_CONFIRM=DEV_ONLY
+SAFEBUS_RLS_TARGET=development
 ```
 
 Never point `SAFEBUS_RLS_TEST_DATABASE_URL` at production. Never use frontend
 Supabase anon keys or service-role API keys here. Use a Postgres connection URL
-for hosted Supabase DEV or a disposable migrated database only.
+for hosted Supabase DEV or a disposable migrated database only. Staging CI may
+use `SAFEBUS_RLS_TARGET=staging`; any other target label is rejected.
 
 Hosted Supabase connections use SSL by default. For a local disposable database
 only, set `SAFEBUS_RLS_TEST_SSL=disable`.

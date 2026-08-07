@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router';
 import { Bus, AlertCircle, ShieldCheck } from 'lucide-react';
 import { getDashboardPath } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';

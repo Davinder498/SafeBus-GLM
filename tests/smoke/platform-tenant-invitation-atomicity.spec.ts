@@ -57,7 +57,7 @@ async function installPlatformMock(
   await page.addInitScript(
     ({ user }) => {
       const session = {
-        access_token: 'platform-access-token',
+        access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
         refresh_token: 'platform-refresh-token',
         token_type: 'bearer',
         expires_in: 3600,

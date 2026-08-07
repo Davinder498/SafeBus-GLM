@@ -1,0 +1,62 @@
+name: Roll back release
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Protected target environment
+        type: choice
+        options: [staging, production]
+        required: true
+      known_good_ref:
+        description: Previously approved commit SHA or immutable tag
+        required: true
+      confirmation:
+        description: Type ROLLBACK_STAGING or ROLLBACK_PRODUCTION
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ inputs.environment }}-release
+  cancel-in-progress: false
+
+jobs:
+  rollback-app:
+    name: Restore known-good application
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      CI: true
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
+    steps:
+      - name: Validate explicit rollback confirmation
+        env:
+          ACTUAL_CONFIRMATION: ${{ inputs.confirmation }}
+          TARGET_ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          expected="ROLLBACK_$(printf '%s' "$TARGET_ENVIRONMENT" | tr '[:lower:]' '[:upper:]')"
+          test "$ACTUAL_CONFIRMATION" = "$expected"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.known_good_ref }}
+      - name: Require immutable commit reference
+        run: |
+          test "$(git rev-parse HEAD)" = "$(git rev-parse '${{ inputs.known_good_ref }}^{commit}')"
+          git rev-parse HEAD
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck && pnpm lint && pnpm test && pnpm security:audit
+      - run: pnpm build
+      - name: Reject public source maps
+        run: test -z "$(find apps -path '*/dist/*' -name '*.map' -print -quit)"
+      - name: Restore known-good application artifact
+        run: pnpm exec netlify deploy --prod --dir apps/web/dist --message "rollback-to-$(git rev-parse HEAD)"

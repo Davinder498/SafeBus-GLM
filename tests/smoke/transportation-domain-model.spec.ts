@@ -131,7 +131,7 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            access_token: 'mock-transport-token',
+            access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
             refresh_token: 'mock-refresh',
             token_type: 'bearer',
             expires_in: 3600,
@@ -394,7 +394,7 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
   // Seed session in localStorage (same keys as the proven 4C mock).
   await page.addInitScript(() => {
     const fakeSession = {
-      access_token: 'mock-transport-token',
+      access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
       refresh_token: 'mock-refresh',
       token_type: 'bearer',
       expires_in: 3600,
@@ -516,7 +516,7 @@ test.describe('Milestone 4E — driver trip start with no-school bus + route', (
     // Override the seeded session user id to match the driver profile.
     await page.addInitScript(() => {
       const fakeSession = {
-        access_token: 'mock-driver-token',
+        access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
         refresh_token: 'mock-refresh',
         token_type: 'bearer',
         expires_in: 3600,
