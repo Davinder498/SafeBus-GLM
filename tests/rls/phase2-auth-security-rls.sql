@@ -14,7 +14,7 @@
 -- SELF-CONTAINED: seeds its own tenant, admin, driver, guardian with
 -- disjoint fixed IDs, then cleans up.
 --
--- Run after applying migrations through 0072 to hosted Supabase DEV or a
+-- Run after applying migrations through 0073 to hosted Supabase DEV or a
 -- disposable migrated database. Never run against production.
 
 -- ===========================================================================
@@ -94,6 +94,10 @@ declare
   v_update_count integer;
   v_delete_count integer;
 begin
+  if not has_table_privilege('authenticated', 'public.audit_events', 'SELECT') then
+    raise exception 'Phase2 FAIL: authenticated lacks audit_events SELECT required for RLS.';
+  end if;
+
   select count(*) into v_update_count
   from pg_policies
   where schemaname = 'public' and tablename = 'audit_events' and cmd in ('UPDATE');

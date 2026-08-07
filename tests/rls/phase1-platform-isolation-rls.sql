@@ -20,7 +20,7 @@
 -- tenant operational data; it verifies policy absence/presence and that a
 -- platform-admin JWT context yields zero rows on protected tables.
 --
--- Run after applying migrations through 0072 to hosted Supabase DEV or a disposable
+-- Run after applying migrations through 0073 to hosted Supabase DEV or a disposable
 -- migrated database. Never run against production.
 
 -- ---------------------------------------------------------------------------
@@ -195,9 +195,10 @@ declare
   v_tenants_count integer;
 begin
   if auth.uid() <> '12121212-1212-1212-1212-121212121212'::uuid
-     or public.current_user_role() <> 'platform_super_admin' then
-    raise exception 'Phase1 FAIL: platform JWT simulation failed (uid %, role %).',
-      auth.uid(), public.current_user_role();
+     or public.current_user_role() <> 'platform_super_admin'
+     or not public.is_platform_super_admin() then
+    raise exception 'Phase1 FAIL: platform JWT simulation failed (uid %, role %, predicate %).',
+      auth.uid(), public.current_user_role(), public.is_platform_super_admin();
   end if;
 
   select count(*) into v_tenants_count from public.tenants;

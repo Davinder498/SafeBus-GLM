@@ -1,5 +1,5 @@
 -- SafeBus Alberta - Phase 3 retention security regression
--- Run only after migrations through 0072 have been applied to hosted Supabase
+-- Run only after migrations through 0073 have been applied to hosted Supabase
 -- DEV or a disposable migrated database. Never run against production.
 
 do $$
@@ -96,9 +96,10 @@ declare
   v_blocked boolean := false;
 begin
   if auth.uid() <> '32323232-3232-3232-3232-323232323232'::uuid
-     or public.current_user_role() <> 'platform_super_admin' then
-    raise exception 'Phase3 FAIL: platform AAL1 simulation failed (uid %, role %).',
-      auth.uid(), public.current_user_role();
+     or public.current_user_role() <> 'platform_super_admin'
+     or not public.is_platform_super_admin() then
+    raise exception 'Phase3 FAIL: platform AAL1 simulation failed (uid %, role %, predicate %).',
+      auth.uid(), public.current_user_role(), public.is_platform_super_admin();
   end if;
 
   begin
