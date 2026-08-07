@@ -32,6 +32,13 @@ const authValue: AuthContextValue = {
   loading: false,
   authError: null,
   configError: null,
+  mfaStatus: { currentLevel: null, nextLevel: null, verifiedFactors: [] },
+  mfaLoading: false,
+  refreshMfa: vi.fn(async () => ({
+    currentLevel: null,
+    nextLevel: null,
+    verifiedFactors: [],
+  })),
   signIn: vi.fn(async () => driverProfile),
   signOut: vi.fn(async () => undefined),
   requestPasswordReset: vi.fn(async () => undefined),

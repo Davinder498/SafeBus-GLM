@@ -99,16 +99,17 @@ insert into auth.users (
   instance_id,
   raw_app_meta_data,
   raw_user_meta_data,
+  last_sign_in_at,
   created_at,
   updated_at
 )
 values
-  ('c3000000-0000-0000-0000-000000000001', 'rls_test_tenant_admin@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now()),
-  ('c3000000-0000-0000-0000-000000000002', 'rls_test_transportation_admin@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now()),
-  ('c3000000-0000-0000-0000-000000000003', 'rls_test_school_admin@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now()),
-  ('c3000000-0000-0000-0000-000000000004', 'rls_test_guardian_a@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now()),
-  ('c3000000-0000-0000-0000-000000000005', 'rls_test_driver@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now()),
-  ('c3000000-0000-0000-0000-000000000006', 'rls_test_guardian_b@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now());
+  ('c3000000-0000-0000-0000-000000000001', 'rls_test_tenant_admin@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now(), now()),
+  ('c3000000-0000-0000-0000-000000000002', 'rls_test_transportation_admin@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now(), now()),
+  ('c3000000-0000-0000-0000-000000000003', 'rls_test_school_admin@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now(), now()),
+  ('c3000000-0000-0000-0000-000000000004', 'rls_test_guardian_a@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now(), now()),
+  ('c3000000-0000-0000-0000-000000000005', 'rls_test_driver@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now(), now()),
+  ('c3000000-0000-0000-0000-000000000006', 'rls_test_guardian_b@test.local', crypt('testpassword', gen_salt('bf')), now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', '{}'::jsonb, '{}'::jsonb, now(), now(), now());
 
 insert into public.profiles (id, tenant_id, school_id, full_name, email, role, status)
 values

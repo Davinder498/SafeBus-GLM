@@ -28,7 +28,8 @@ select set_config(
   'request.jwt.claims',
   json_build_object(
     'sub', 'c3000000-0000-0000-0000-000000000001',
-    'role', 'authenticated'
+    'role', 'authenticated',
+    'aal', 'aal2'
   )::text,
   true
 );
@@ -68,7 +69,7 @@ begin;
 set local role authenticated;
 select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000001', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
-select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated', 'aal', 'aal2')::text, true);
 do $$
 begin
   if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
@@ -103,7 +104,7 @@ begin;
 set local role authenticated;
 select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000001', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
-select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated', 'aal', 'aal2')::text, true);
 do $$
 begin
   if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
@@ -202,7 +203,7 @@ begin;
 set local role authenticated;
 select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000001', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
-select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated', 'aal', 'aal2')::text, true);
 do $$
 begin
   if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
@@ -235,7 +236,7 @@ begin;
 set local role authenticated;
 select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000001', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
-select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated', 'aal', 'aal2')::text, true);
 do $$
 begin
   if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
@@ -267,7 +268,7 @@ begin;
 set local role authenticated;
 select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000001', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
-select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated', 'aal', 'aal2')::text, true);
 do $$
 begin
   if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
@@ -299,7 +300,7 @@ begin;
 set local role authenticated;
 select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000001', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
-select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated', 'aal', 'aal2')::text, true);
 do $$
 declare
   v_link public.student_guardians;
@@ -369,7 +370,7 @@ begin;
 set local role authenticated;
 select set_config('request.jwt.claim.sub', 'c3000000-0000-0000-0000-000000000001', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
-select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated', 'aal', 'aal2')::text, true);
 do $$
 begin
   if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then

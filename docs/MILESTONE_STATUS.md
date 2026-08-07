@@ -12,7 +12,7 @@
 
 ## Current Checkout State
 
-- Current working branch: `phase-15b-notification-delivery-hardening`.
+- Current working branch: `phase-3-alberta-privacy-legal-readiness`.
 - Phase 15A was merged through PR #52 and is on `main`.
 - Hosted Supabase DEV is used for database smoke/RLS execution. Do not run RLS
   SQL against production.
@@ -28,6 +28,166 @@
 - pnpm workspaces + Turborepo
 - Playwright smoke tests
 - Netlify deployment target
+
+## Phase 0 — Product and Governance Baseline
+
+Status: Drafted on `phase-0-product-and-governance-baseline` for product-owner sign-off. Governance-only: no code, no migration, no RLS, no RPC, no dependency, and no environment change.
+
+Phase 0 freezes the product boundary and establishes how every future milestone is approved. It is grounded in the actual repo state, including the migration identifier collisions (`0042`, `0043`, `0058`) and the scope-drift findings (student QR badges, bus QR sessions, Safe ETA, notifications).
+
+Added `docs/governance/`:
+
+- `README.md` — index and precedence rule.
+- `product-scope.md` — transportation platform, not an SIS; "track the bus, not the child"; prohibited data; platform-isolation rule.
+- `data-classification.md` — Restricted/Confidential/Internal/Public tiers mapped to real tables.
+- `feature-inventory.md` — current vs. future functionality; scope-drift reconciliation table (D1–D7).
+- `first-customer-profile.md` — first customer is an Alberta public school authority.
+- `capacity-assumptions.md` — precise "500,000 users" definition; 20,000-bus worst case; Phase 12 staging ceilings.
+- `role-responsibility-matrix.md` — product and delivery roles; data and system owners; separation of duties.
+- `risk-register.md` — R-001 through R-015, including migration collisions and scope drift.
+- `decision-log.md` — DL-001 through DL-007, including the no-rename migration rule.
+- `development-workflow.md` — feature branches only; one milestone at a time; GLM builds, Codex reviews, human merges.
+
+Exit gate: all six Phase 0 deliverables are drafted and await product-owner sign-off; "no future milestones mixed into current work" is reconciled through `feature-inventory.md` D1–D7.
+
+## Phase 1 — Critical Database and Authorization Repair
+
+Status: Implemented on `phase-1-database-authorization-repair` for review. Applies to hosted Supabase DEV after manual SQL Editor application of `0065_phase1_authorization_reconciliation.sql`. Not merged and not accepted.
+
+Phase 1 eliminates confirmed privacy-leak risks and establishes a trustworthy database foundation. It is grounded in the migration collision and scope-drift findings recorded in Phase 0.
+
+### Migration integrity
+
+- Created the authoritative migration ledger at `docs/migration-ledger.md`, reconciling the duplicate `0042`, `0043`, and `0058` identifiers.
+- Archived the losing duplicates to `supabase/legacy/` with `_archived` suffixes and a `README.md`:
+  - `0042_fix_guardian_live_bus_location_uuid_aggregate.sql` → archived (RPC redefined by `0053`/`0054`, revoked by `0061`).
+  - `0043_secure_student_qr_boarding_foundation.sql` → archived (scope-drift D1 student badges).
+- `0058` pair kept as canonical (independent non-conflicting objects).
+- Added corrective migration `0065_phase1_authorization_reconciliation.sql` with a collision-assertion block so drift is detectable on any environment.
+- Per `decision-log.md` DL-005, no applied migration was renamed in-place.
+
+### Platform isolation
+
+- `0065` drops the platform-admin SELECT policy on `profiles` and `route_shapes` and any remaining platform-admin read policies on operational tables.
+- Platform admins retain only: `tenants` lifecycle read, `get_platform_tenant_onboarding_summary()` control-plane RPC.
+- Verified by `tests/rls/phase1-platform-isolation-rls.sql`.
+
+### Driver authorization tightening
+
+- `0065` drops the over-broad `buses select driver tenant active` and `routes select driver tenant active` policies that let any active driver read ALL active tenant buses/routes.
+- Replaced with assignment-derived `buses select assigned driver` and `routes select assigned driver` that require an active `driver_route_assignment` or active `driver_trip`.
+- Assignment-derived access expires automatically when the assignment ends (status/effective-window gate).
+- Verified by `tests/rls/phase1-driver-authorization-rls.sql`.
+
+### Obsolete location-ingestion quarantine
+
+- `0065` retires `update_driver_trip_location()` into an always-raising stub; the authoritative path is the session-bound `update_bus_tracking_location()` from migration `0059`.
+
+### RLS test coverage
+
+- `tests/rls/phase1-platform-isolation-rls.sql`: retired-policy absence, zero-row enforcement on protected tables, retained tenant/summary access.
+- `tests/rls/phase1-driver-authorization-rls.sql`: retired over-broad policy absence, new assignment-derived policies present, assigned-driver sees only assigned bus/route, unassigned driver sees zero, retired RPC raises.
+- Registered both in `pnpm test:rls` structural check.
+
+### Exit gate (pending hosted-DEV execution)
+
+- No critical/high authorization findings: code-complete pending hosted-DEV RLS execution.
+- Clean database rebuild: documented in `docs/migration-ledger.md` §4.
+- All RLS tests execute against approved non-production DB: run `pnpm test:rls:dev -- tests/rls/phase1-platform-isolation-rls.sql tests/rls/phase1-driver-authorization-rls.sql` after applying `0065`.
+- Hosted DEV matches canonical schema: `0065` assertion block enforces this.
+- Independent security review of tenant boundary: pending.
+
+## Phase 2 — Authentication and Administrative Security
+
+Status: Repository implementation complete for review on the current feature branch. Applies to hosted Supabase DEV after manual SQL Editor application of migrations `0066` through `0068`. Not merged or accepted; hosted-DEV and operational exit gates remain.
+
+Phase 2 protects high-value accounts and makes security-relevant actions traceable. It delivers the append-only audit system, MFA enforcement helpers, recent-authentication gates, the invitation redirect allowlist, and the rate-limit foundation.
+
+### Append-only audit system (`0066`)
+
+- `audit_events` table with who/what/when/tenant/target/outcome; no secrets, message bodies, or health data.
+- Write path is a SECURITY DEFINER RPC `write_audit_event()` that derives actor identity from `auth.uid()`. No INSERT policy on the table itself means direct REST/database INSERT is blocked.
+- No UPDATE or DELETE policy exists, ever — the table is append-only for all callers.
+- Detail JSONB is sanitized: secret-like keys (`password`, `secret`, `api_key`, `service_role`, `token`, `authorization`) are stripped by the RPC and blocked by a CHECK constraint.
+- SELECT: tenant-scoped for tenant/school/transportation admins (own audit); platform super admin reads all (security investigation). Drivers and guardians see nothing.
+- Action enum covers: auth events, invitations, role changes, guardian/student links, driver assignments, student record access, data exports, tenant suspension/revocation, security config changes, rate-limit denials.
+
+### MFA enforcement (`0067`)
+
+- `has_verified_mfa()` requires the server-signed AAL2 claim proving the current session completed MFA; enrollment state is managed by Supabase Auth.
+- `requires_mfa_for_admin_action()` identifies admin roles subject to MFA (platform_super_admin, tenant_admin, school_admin, transportation_admin).
+- `enforce_mfa_if_required()` gate raises if MFA is required and absent. Sensitive RPCs call this before proceeding.
+
+### Recent-authentication gate (`0067`)
+
+- `has_recent_authentication()` checks `auth.users.last_sign_in_at` against a 15-minute window.
+- `enforce_recent_auth_for_sensitive_action()` gate raises if the caller has not authenticated recently. Gates: role changes, tenant suspension, data exports, account revocation, guardian access assignment.
+
+### Invitation redirect allowlist (`0067`)
+
+- `allowed_redirect_origins` table stores platform defaults (tenant_id NULL) and tenant-specific origins.
+- `is_allowed_redirect_origin()` validates a redirect target against the allowlist. Arbitrary origins are rejected. Stops open-redirect abuse of invitation/password-reset links.
+- RLS: platform and tenant admins can manage/read; all others denied.
+
+### Rate-limit foundation (`0067`)
+
+- `rate_limit_buckets` per-actor, per-action, time-windowed counter.
+- `check_rate_limit()` returns true/false and records rate-limit denials in the audit trail.
+- Covers: login, invitation, password_reset, onboarding, audit_write. Supabase Auth/Netlify edge rate-limiting can supplement this database-level foundation.
+
+### Password rules + compromised-password protection (`0068`)
+
+- `password_policy` singleton table (min 12 chars, uppercase, lowercase, digit, special, max repeating char).
+- `validate_password_policy()` server-side gate for password changes.
+- `compromised_password_hashes` denylist table (SHA-256 of breached passwords; populated operationally from a breached-password list).
+- `is_compromised_password()` checks a candidate password against the denylist.
+
+### Session management + admin revocation (`0068`)
+
+- `user_sessions` table tracks active sessions per user (device label, IP, user agent, timestamps).
+- RLS: users read their own session mirror; tenant/platform admins read within investigative scope. Revocation is RPC-only and deletes real `auth.sessions` refresh sessions.
+- `revoke_all_user_sessions()` — admin-only, requires recent authentication, enforces tenant scope, records an audit event, and revokes all active sessions for a target user.
+
+### Invitation idempotency (`0068`)
+
+- `check_invitation_idempotency()` returns whether an invitation or profile already exists for a given tenant/email/role, so retries collapse instead of creating duplicate users. Complements the existing atomic invitation RPCs (0049/0050).
+
+### RLS test coverage
+
+- `tests/rls/phase2-auth-security-rls.sql`: 10 tests covering append-only verification, RPC write/read, direct INSERT blocked, secret sanitization, driver/guardian denied, allowlist acceptance/rejection, rate-limit cap enforcement, password policy validation, session revocation, and invitation idempotency. Registered in `pnpm test:rls` (38 files).
+
+### Exit gate (pending hosted-DEV execution)
+
+- MFA technically enforced: code-complete (helpers ready for gated RPCs; Supabase Auth MFA enrollment is an operational step).
+- Account recovery tested: pending (operational test).
+- Rate-limit and abuse tests pass: RLS regression ready for hosted-DEV execution.
+- Sensitive tenant/profile/link/assignment/invitation/security-config mutations are covered by database triggers; supported server account/invitation actions use the service-only audit writer; student detail access uses a scoped audit RPC.
+- Security admins can investigate without impersonating: audit SELECT + platform summary RPC provide read-only investigation.
+
+## Phase 3 — Alberta Privacy and Legal Readiness
+
+Status: Engineering and draft governance artifacts are complete for review.
+The phase is **not accepted** until counsel, customer, vendor, hosted-DEV, and
+tabletop gates in `docs/governance/phase-3/README.md` are completed.
+
+- Draft statutory/legal-role analysis uses the current POPA/ATIA/PIPA framing
+  and authoritative Alberta/OIPC starting sources; legal conclusions remain
+  counsel-owned.
+- PIA, data inventory/flow, access/correction, student/guardian authority,
+  breach, privacy program, subprocessor, contract, and guardian/driver notice
+  artifacts are present under `docs/governance/phase-3/`.
+- Migration `0069` materializes 12 draft retention policies, protected
+  deletion/anonymization functions, dependency ordering, run evidence, and
+  success/failure audit events.
+- A daily Netlify scheduled function defaults to dry-run. Destructive execution
+  requires the server-only `SAFEBUS_RETENTION_EXECUTE=true` flag after approval.
+- `tests/rls/phase3-retention-rls.sql` covers browser write-policy absence,
+  driver denial, AAL1 denial, and transactional service dry-run/deletion.
+
+Pending exit gates: product-owner Phase 0 sign-off; migrations `0065`–`0074`
+applied to hosted DEV; clean rebuild and RLS evidence; independent security
+review; real MFA/recovery abuse testing; counsel-approved PIA/contracts/notices
+and retention periods; verified Canadian vendor/backup terms; breach tabletop.
 
 ## Completed Milestones
 
@@ -55,7 +215,7 @@
 
 ## Current Milestone
 
-Phase 15B (Notification Delivery Validation & Operational Hardening) is implemented on `phase-15b-notification-delivery-hardening` for review. It adds the smallest reliable production-compatible scheduler, tenant IANA time-zone email formatting, privacy-safe diagnostics on every dispatcher result path, a minimal tenant-admin notification-delivery summary RPC/UI, expanded RLS and unit/dispatcher/scheduled-function tests, a notification QA fixture, and a manual acceptance guide. Phase 15A was merged through PR #52 and is on `main`. Hosted-DEV migration application of 0038/0039, Resend sandbox testing, Netlify deploy-preview verification, and product-owner manual acceptance are pending. Do not merge Phase 15B until it is approved.
+Phase 0–3 remediation is implemented on `phase-3-alberta-privacy-legal-readiness` for review. Repository validation and review are required before a draft PR; hosted-DEV migration/RLS execution and all human/legal gates remain pending. Do not merge without human approval.
 
 ## Tenant Admin Student CSV Import
 
@@ -125,9 +285,10 @@ a production dummy-data UI.
 - Track the bus, not the child.
 - No Alberta Student Number, `asn`, or `alberta_student_number` fields are part
   of the approved data model.
-- QR codes, student badges, pickup/drop-off scan events, notifications, SMS,
-  maps APIs, and external SIS integrations remain future scope unless a future
-  milestone explicitly approves them.
+- Student QR badges and pickup/drop-off scans are quarantined. Previously
+  approved bus-session QR and guardian email MVP milestones remain current;
+  SMS, push, broader notifications, production map providers, and external SIS
+  integrations remain future scope.
 - CSV import is limited to the approved tenant-admin student-only workflow; it
   does not import guardian, transportation, or external SIS data.
 - Future-scope Edge Function/API scaffolds for QR scan, badge generation, and

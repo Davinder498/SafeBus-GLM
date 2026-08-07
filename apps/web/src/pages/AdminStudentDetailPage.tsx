@@ -13,7 +13,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { StudentBusAssignmentForm } from '@/components/admin/StudentBusAssignmentForm';
 import { StudentGuardianManager } from '@/components/admin/StudentGuardianManager';
 import { StudentForm, type StudentFormInput } from '@/components/admin/StudentForm';
-import { StudentQrCredentialPanel } from '@/components/admin/StudentQrCredentialPanel';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -438,12 +437,6 @@ export function AdminStudentDetailPage() {
                 </dl>
               )}
             </Card>
-
-            <StudentQrCredentialPanel
-              studentId={detail.student.id}
-              studentName={studentName(detail)}
-              disabled={!canWrite || !rosterActive}
-            />
 
             <Card className="p-5" data-testid="student-status-section">
               <div className="flex items-center gap-2">

@@ -2,12 +2,13 @@ import type { ReactNode } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { PublicLayout } from '@/components/layout/PublicLayout';
-import { getDashboardPath, type ProfileRole } from '@/contexts/AuthContext';
+import { adminRoles, getDashboardPath, type ProfileRole } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 
 interface ProtectedRouteProps {
   allowedRoles: ProfileRole[];
   children: ReactNode;
+  requireMfa?: boolean;
 }
 
 function LoadingScreen() {
@@ -42,8 +43,8 @@ function AuthMessage({ title, message }: { title: string; message: string }) {
   );
 }
 
-export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) {
-  const { session, profile, loading, authError } = useAuth();
+export function ProtectedRoute({ allowedRoles, children, requireMfa = true }: ProtectedRouteProps) {
+  const { session, profile, loading, authError, mfaStatus, mfaLoading } = useAuth();
 
   if (loading) return <LoadingScreen />;
 
@@ -101,6 +102,22 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
         </main>
       </PublicLayout>
     );
+  }
+
+  if (
+    requireMfa &&
+    adminRoles.includes(profile.role as (typeof adminRoles)[number]) &&
+    (mfaLoading || mfaStatus.currentLevel === null)
+  ) {
+    return <LoadingScreen />;
+  }
+
+  if (
+    requireMfa &&
+    adminRoles.includes(profile.role as (typeof adminRoles)[number]) &&
+    mfaStatus.currentLevel !== 'aal2'
+  ) {
+    return <Navigate to="/mfa" replace />;
   }
 
   return children;

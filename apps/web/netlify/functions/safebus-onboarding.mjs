@@ -35,14 +35,18 @@ function passwordSetupDeliveryError(error) {
   return 'The password setup email was not accepted by the email provider.';
 }
 
-function invitationRedirectUrl(event) {
+async function invitationRedirectUrl(ctx) {
   const configured = clean(process.env.SAFEBUS_INVITE_REDIRECT_URL);
-  const requestOrigin = clean(event.headers.origin || event.headers.Origin);
-  const candidate = configured || requestOrigin;
-  if (!candidate) return null;
+  if (!configured) return null;
 
   try {
-    const redirect = new URL(candidate);
+    const redirect = new URL(configured);
+    const { data: allowed, error } = await ctx.user.rpc('is_allowed_redirect_origin', {
+      p_origin: redirect.origin.toLowerCase(),
+    });
+    if (error || !allowed) {
+      throw new Error('Server invitation redirect is not in the approved origin allowlist.');
+    }
     redirect.pathname = '/accept-invitation';
     redirect.search = '';
     redirect.hash = '';
@@ -102,7 +106,59 @@ async function requireCaller(event, allowedRoles) {
       error: json(403, { error: 'You are not allowed to perform this onboarding action.' }),
     };
   }
+  const assurance = await c.user.auth.mfa.getAuthenticatorAssuranceLevel(token);
+  if (assurance.error || assurance.data.currentLevel !== 'aal2') {
+    return {
+      error: json(403, {
+        error: 'Complete multi-factor authentication before performing this administrative action.',
+      }),
+    };
+  }
+
+  const signedInAt = userData.user.last_sign_in_at
+    ? Date.parse(userData.user.last_sign_in_at)
+    : Number.NaN;
+  if (!Number.isFinite(signedInAt) || Date.now() - signedInAt > 15 * 60 * 1000) {
+    return {
+      error: json(403, {
+        error: 'Sign in again before performing this sensitive administrative action.',
+      }),
+    };
+  }
+
+  const rateLimit = await c.user.rpc('check_rate_limit', {
+    p_action: 'onboarding',
+    p_actor_identifier: profile.id,
+    p_max: 30,
+    p_window_seconds: 60,
+  });
+  if (rateLimit.error || !rateLimit.data) {
+    return { error: json(429, { error: 'Too many administrative requests. Try again shortly.' }) };
+  }
+
   return { ...c, caller: profile };
+}
+
+async function auditServerAction(ctx, action, targetType, targetId, detail = {}) {
+  const { error } = await ctx.admin.rpc('write_server_audit_event', {
+    p_actor_profile_id: ctx.caller.id,
+    p_action: action,
+    p_target_type: targetType,
+    p_target_id: targetId || null,
+    p_outcome: 'success',
+    p_detail: detail,
+  });
+  if (error) throw new Error('The administrative action completed but could not be audited.');
+}
+
+async function requireInvitationRateLimit(ctx) {
+  const result = await ctx.user.rpc('check_rate_limit', {
+    p_action: 'invitation',
+    p_actor_identifier: ctx.caller.id,
+    p_max: 10,
+    p_window_seconds: 60,
+  });
+  return !result.error && Boolean(result.data);
 }
 
 async function sendInitialTenantAdminInvitation(ctx, email, fullName, redirectTo) {
@@ -365,7 +421,10 @@ async function createTenant(event, body) {
     });
   }
 
-  const redirectTo = invitationRedirectUrl(event);
+  if (!(await requireInvitationRateLimit(ctx))) {
+    return json(429, { error: 'Too many invitation requests. Try again shortly.' });
+  }
+  const redirectTo = await invitationRedirectUrl(ctx);
   const invitation = await sendInitialTenantAdminInvitation(ctx, email, adminName, redirectTo);
   if (invitation.error) return invitation.error;
 
@@ -492,10 +551,13 @@ async function inviteMember(event, body) {
     });
   }
 
+  if (!(await requireInvitationRateLimit(ctx))) {
+    return json(429, { error: 'Too many invitation requests. Try again shortly.' });
+  }
   const invitation = await sendTenantMemberInvitation(ctx, {
     email,
     fullName,
-    redirectTo: invitationRedirectUrl(event),
+    redirectTo: await invitationRedirectUrl(ctx),
     role,
     tenantId,
   });
@@ -569,6 +631,13 @@ async function tenantLifecycle(event, body) {
       .eq('tenant_id', tenantId)
       .eq('status', 'active');
   }
+  await auditServerAction(
+    ctx,
+    status === 'active' ? 'tenant.reactivated' : 'tenant.suspended',
+    'tenant',
+    tenantId,
+    { status },
+  );
   return json(200, { status });
 }
 
@@ -620,6 +689,7 @@ async function tenantAdminLifecycle(event, body) {
       .in('status', ['suspended', 'disabled']);
     if (activateError)
       return json(400, { error: 'Unable to reactivate the tenant admin profile.' });
+    await auditServerAction(ctx, 'account.restored', 'profile', profile.id);
     return json(200, { status: 'active' });
   }
 
@@ -636,6 +706,7 @@ async function tenantAdminLifecycle(event, body) {
     return json(400, {
       error: 'The profile was deactivated, but sign-in blocking must be retried.',
     });
+  await auditServerAction(ctx, 'account.suspended', 'profile', profile.id);
   return json(200, { status: 'disabled' });
 }
 
@@ -664,6 +735,8 @@ async function deleteTenantAdmin(event, body) {
         'The tenant admin account could not be deleted because it is still referenced by retained operational history. Deactivate the account instead.',
     });
   }
+
+  await auditServerAction(ctx, 'account.revoked', 'profile', profile.id);
 
   return json(200, {
     status: 'deleted',
@@ -741,6 +814,7 @@ async function action(event, body) {
           error: 'The invitation was cancelled, but its sign-in link could not be disabled.',
         });
     }
+    await auditServerAction(ctx, 'invitation.cancelled', 'invitation', inv.id);
     return json(200, { status: 'cancelled' });
   }
   if (next === 'resend') {
@@ -748,7 +822,10 @@ async function action(event, body) {
       return json(409, { error: 'Only a pending invitation can be resent.' });
     }
 
-    const redirectTo = invitationRedirectUrl(event);
+    if (!(await requireInvitationRateLimit(ctx))) {
+      return json(429, { error: 'Too many invitation requests. Try again shortly.' });
+    }
+    const redirectTo = await invitationRedirectUrl(ctx);
     const passwordSetup = await sendInvitedPasswordSetup(ctx, {
       userId: inv.invited_profile_id,
       email: inv.email,
@@ -769,6 +846,7 @@ async function action(event, body) {
         error: 'The password setup email was sent, but its invitation status was not updated.',
       });
     }
+    await auditServerAction(ctx, 'invitation.resent', 'invitation', inv.id);
     return json(200, { status: 'resent' });
   }
   return json(400, { error: 'Unsupported action.' });

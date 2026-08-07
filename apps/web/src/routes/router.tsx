@@ -36,6 +36,7 @@ import { GuardianTripEventsPage } from '@/pages/GuardianTripEventsPage';
 import { ParentDashboardPage } from '@/pages/ParentDashboardPage';
 import { PlatformTenantsPage } from '@/pages/PlatformTenantsPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
+import { MfaPage } from '@/pages/MfaPage';
 import { ProtectedRoute } from './ProtectedRoute';
 import { PublicOnlyRoute } from './PublicOnlyRoute';
 import { InvitationEntryRoute } from './InvitationEntryRoute';
@@ -61,6 +62,14 @@ export const appRoutes: RouteObject[] = [
   { path: '/accept-invitation', element: <AcceptInvitationPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/update-password', element: <UpdatePasswordPage /> },
+  {
+    path: '/mfa',
+    element: (
+      <ProtectedRoute allowedRoles={[...adminRoles]} requireMfa={false}>
+        <MfaPage />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: '/admin',
     element: (

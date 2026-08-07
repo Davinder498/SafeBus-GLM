@@ -8,7 +8,6 @@ declare
   v_start_def text;
   v_manifest_def text;
   v_event_def text;
-  v_qr_def text;
   v_guardian_location_def text;
   v_guardian_trip_def text;
 begin
@@ -87,8 +86,6 @@ begin
     into v_manifest_def;
   select lower(pg_get_functiondef('public.record_student_trip_event_for_active_trip(uuid,text)'::regprocedure))
     into v_event_def;
-  select lower(pg_get_functiondef('public.resolve_student_qr_for_active_trip(text)'::regprocedure))
-    into v_qr_def;
   select lower(pg_get_functiondef('public.get_guardian_student_live_bus_location_state()'::regprocedure))
     into v_guardian_location_def;
   select lower(pg_get_functiondef('public.get_guardian_live_trip_visibility()'::regprocedure))
@@ -100,9 +97,6 @@ begin
     or position('student_bus_assignments' in v_event_def) = 0
     or position('route_trip_pattern_id' in v_event_def) = 0
     or position('student_route_assignments' in v_event_def) > 0
-    or position('student_bus_assignments' in v_qr_def) = 0
-    or position('route_trip_pattern_id' in v_qr_def) = 0
-    or position('student_route_assignments' in v_qr_def) > 0
     or position('student_bus_assignments' in v_guardian_location_def) = 0
     or position('dt.route_trip_pattern_id = bra.route_trip_pattern_id' in v_guardian_location_def) = 0
     or position('student_route_assignments' in v_guardian_location_def) > 0

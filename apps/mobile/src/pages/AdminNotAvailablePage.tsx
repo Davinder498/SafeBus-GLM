@@ -1,4 +1,4 @@
-import { Bus, Monitor } from 'lucide-react';
+import { Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/useAuth';
@@ -26,15 +26,6 @@ export function AdminNotAvailablePage() {
           computer or tablet browser.
         </p>
         <div className="mt-6 flex flex-col gap-3">
-          <a
-            href={import.meta.env.VITE_APP_ORIGIN ?? '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-navy-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-navy-800"
-          >
-            <Bus className="h-4 w-4" />
-            Open SafeBus web app
-          </a>
           <Button variant="ghost" onClick={() => void signOut()}>
             Sign out
           </Button>
