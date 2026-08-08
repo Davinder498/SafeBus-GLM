@@ -16,9 +16,9 @@
 --   * driver_trips.status now accepts 'paused'
 --
 -- The assertions are written as a sequence of DO blocks that RAISE EXCEPTION
--- when an expectation is violated. A trailing SELECT prints the PASS banner.
-
-\set ON_ERROR_STOP on
+-- when an expectation is violated. This is intentionally plain PostgreSQL so
+-- it can run in both psql and the hosted Supabase SQL Editor. A trailing SELECT
+-- prints the PASS banner.
 
 -- ---------------------------------------------------------------------------
 -- 0. Sanity: new tables exist and have RLS enabled.
