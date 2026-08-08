@@ -22,6 +22,12 @@
 -- PRIVILEGED CLEANUP BEFORE SEED
 -- ===========================================================================
 
+do $$
+begin
+  raise notice 'STAGE: privileged cleanup before student-roster seed';
+end
+$$;
+
 delete from public.student_guardians where id in (
   'f6000000-0000-0000-0000-000000000001',
   'f6000000-0000-0000-0000-000000000002',
@@ -73,6 +79,12 @@ delete from public.tenants where id in (
   'a1000000-0000-0000-0000-000000000001',
   'a1000000-0000-0000-0000-000000000002'
 );
+
+do $$
+begin
+  raise notice 'STAGE: privileged cleanup complete; starting student-roster seed';
+end
+$$;
 
 -- ===========================================================================
 -- PRIVILEGED SEED
@@ -143,6 +155,12 @@ values
   ('f6000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'e5000000-0000-0000-0000-000000000001', 'd4000000-0000-0000-0000-000000000001', 'guardian', 'active'),
   ('f6000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000001', 'e5000000-0000-0000-0000-000000000002', 'd4000000-0000-0000-0000-000000000001', 'guardian', 'inactive'),
   ('f6000000-0000-0000-0000-000000000003', 'a1000000-0000-0000-0000-000000000001', 'e5000000-0000-0000-0000-000000000005', 'd4000000-0000-0000-0000-000000000003', 'guardian', 'active');
+
+do $$
+begin
+  raise notice 'STAGE: privileged student-roster seed complete; starting policy assertions';
+end
+$$;
 
 -- ===========================================================================
 -- TEST 1: Tenant admin CAN create student with school_id IS NULL

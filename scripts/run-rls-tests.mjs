@@ -161,6 +161,46 @@ async function runSqlFile(client, file) {
   console.log(`[rls] PASS ${file.displayPath} (${elapsedMs} ms)`);
 }
 
+async function logExecutionContext(client) {
+  const { rows } = await client.query(`
+    select
+      current_user as current_role,
+      session_user as session_role,
+      (select rolsuper from pg_roles where rolname = current_user) as is_superuser,
+      (select rolbypassrls from pg_roles where rolname = current_user) as bypasses_rls,
+      (
+        select pg_get_userbyid(c.relowner)
+        from pg_class c
+        join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname = 'public' and c.relname = 'students'
+      ) as students_owner,
+      (
+        select c.relrowsecurity
+        from pg_class c
+        join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname = 'public' and c.relname = 'students'
+      ) as students_rls_enabled,
+      (
+        select c.relforcerowsecurity
+        from pg_class c
+        join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname = 'public' and c.relname = 'students'
+      ) as students_rls_forced
+  `);
+  const context = rows[0];
+
+  console.log(
+    '[rls] Execution context: ' +
+      `current_role=${context.current_role}, ` +
+      `session_role=${context.session_role}, ` +
+      `superuser=${context.is_superuser}, ` +
+      `bypassrls=${context.bypasses_rls}, ` +
+      `students_owner=${context.students_owner}, ` +
+      `students_rls_enabled=${context.students_rls_enabled}, ` +
+      `students_rls_forced=${context.students_rls_forced}`,
+  );
+}
+
 async function main() {
   const databaseUrl = validateEnvironment();
   if (!databaseUrl) return;
@@ -185,8 +225,14 @@ async function main() {
     ssl: shouldUseSsl(databaseUrl) ? { rejectUnauthorized: false } : false,
   });
 
+  client.on('notice', (notice) => {
+    const message = notice?.message?.trim();
+    if (message) console.log(`[rls][notice] ${message}`);
+  });
+
   try {
     await client.connect();
+    await logExecutionContext(client);
 
     for (const file of files) {
       await runSqlFile(client, file);
