@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppSurfaceProvider, type AppSurface } from '@/contexts/AppSurfaceContext';
 import {
@@ -82,10 +82,7 @@ async function renderDriverLayout(surface?: AppSurface) {
 
   await act(async () => {
     root?.render(
-      <MemoryRouter
-        initialEntries={['/driver/history']}
-        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-      >
+      <MemoryRouter initialEntries={['/driver/history']}>
         {surface ? <AppSurfaceProvider surface={surface}>{layout}</AppSurfaceProvider> : layout}
       </MemoryRouter>,
     );

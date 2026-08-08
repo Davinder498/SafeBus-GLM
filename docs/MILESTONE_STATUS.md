@@ -431,8 +431,88 @@ Status: Implemented on `phase-15b-notification-delivery-hardening` for review; n
 - Manual acceptance guide: `docs/qa/phase-15b-notification-delivery-hardening-acceptance.md`.
 - Known limitations before acceptance: hosted-DEV migration application of `0038`/`0039`, Resend sandbox/provider test, Netlify deploy-preview status, and product-owner manual acceptance remain pending. The PR is not merged.
 
+## Phase 6 — Complete Transportation Operations
+
+Status: Implemented on `phase-6-transportation-operations-completion` for review. Applies to hosted Supabase DEV after manual SQL Editor application of `0079_phase6_transportation_operations_completion.sql`. Not merged and not accepted; hosted-DEV and operational exit gates remain.
+
+Phase 6 completes the non-ETA transportation operations workflow while preserving existing school, fleet, route, assignment, GPS, guardian, and history features. Migration `0079` extends the existing trip state contract and reconciles affected school-scope policies/RPCs for paused-trip support.
+
+### What already existed (unchanged)
+
+- School, bus, vehicle, driver, route, and stop management (admin CRUD pages + RLS).
+- Student-to-stop and route assignment (`student_route_assignments`, `student_bus_assignments`).
+- Driver-to-bus/route assignment (`driver_route_assignments`, `bus_route_assignments`).
+- Trip start (QR/session contract), completion (`end_driver_trip`), active trip dashboard, live fleet monitoring.
+- Driver completed trip history and the append-only audit system.
+- Tenant vs. school scoping via RLS helpers (`can_write_tenant`/`can_write_school`).
+
+### What Phase 6 adds (`0079`)
+
+- **Route schedules and service days:** `route_service_days` table (0=Sun..6=Sat) with tenant/school/driver-scoped RLS and admin CRUD.
+- **Trip pause, resume, cancellation, and exception handling:** widens `driver_trips.status` to include `paused`; adds `pause_driver_trip`, `resume_driver_trip`, `cancel_driver_trip`, and `record_trip_exception` SECURITY DEFINER RPCs. New open-trip unique indexes prevent a QR start from creating a second trip while the first is paused. Completion and cancellation close the server-side bus tracking session and dispatch record.
+- **Pre-trip confirmation:** `pre_trip_confirmations` table + `confirm_pre_trip()` idempotent driver RPC.
+- **Operational notes with controlled formats:** `operational_notes` table restricted to routes/buses/drivers/trips and a controlled `note_type` enum. `validate_operational_note()` plus a table CHECK constraint reject free-text entry of ASN, health, address, custody, or other prohibited student information at the database layer.
+- **Substitute driver and replacement bus workflows:** `substitute_driver()` and `replace_bus()` admin RPCs that end the original assignment and create a new one while preserving bus/route/trip-type/effective window; both refuse when an active/paused trip exists and record audit events.
+- **Guardian-access revocation:** `revoke_guardian_access()` sets an authorized guardian link to `inactive`, accepts only controlled reason codes, enforces the linked student's school boundary, and records an audit event.
+- **Late/missing bus operational status:** `trip_operational_statuses` plus controlled admin RPCs provide normal/late/missing dispatch status and controlled reason codes. These values perform no ETA calculation.
+- **History and evidence:** trip review includes paused/completed/cancelled runs, pre-trip confirmation, controlled exceptions, and operational notes.
+- **Privacy and authorization guardrails:** no ASN, home address, health, custody, contact, or other prohibited student data is accepted by new free-text fields. Phase 6 policies explicitly exclude Platform Super Admin, tenant/transportation administrators remain tenant-wide, and school administrators are route-school scoped (including the existing PostGIS viewport RPC reconciliation). No public policies or browser service-role logic were added.
+
+### Frontend
+
+- Driver dashboard gains pre-trip confirmation, pause/resume, cancel, and record-exception controls (`apps/web/src/pages/DriverDashboardPage.tsx`).
+- Route management gains service-day selection alongside existing directional stop schedules.
+- Driver assignments is now a routed navigation destination and gains substitute-driver and replace-bus inline workflows (`apps/web/src/pages/AdminDriverAssignmentsPage.tsx`).
+- Live Operations gains dispatcher-controlled late/missing status without deriving an ETA.
+- Route, bus, driver, and trip history surfaces gain controlled operational notes; trip history also shows pre-trip and exception evidence.
+- Guardian detail gains audited revocation with controlled reason choices (`apps/web/src/pages/AdminGuardianDetailPage.tsx`).
+- New `apps/web/src/services/phase6OperationsService.ts` wraps all new RPCs browser-safely; pause/resume/cancel were added to the existing `driverTripService.ts`.
+
+### Tests
+
+- `tests/rls/phase6-transportation-operations-rls.sql`: assertions for every new RLS table, Platform Admin exclusion, open-trip uniqueness, the widened status CHECK, prohibited-text validation, and RPC existence.
+- `tests/smoke/phase6-driver-operations.spec.ts`: driver pre-trip confirmation, pause/resume, record-exception, and cancel flows.
+- `tests/smoke/phase6-admin-operations.spec.ts`: substitute-driver, replace-bus, guardian revocation, and browser portal boundaries for tenant, school, transportation, platform, driver, and guardian roles.
+- `tests/smoke/route-trip-pattern-model.spec.ts`: route service-day persistence with existing stop schedules.
+- Manual hosted-DEV exit gate: `docs/qa/phase6-transportation-operations-acceptance.md`.
+
+### Exit gate (pending hosted-DEV execution)
+
+- A tenant can complete an end-to-end synthetic operational day: add schools, vehicles, routes, and stops; add drivers, guardians, and students; establish authorized guardian links; make assignments; start and complete trips; handle driver or bus substitution; review history and audit evidence. No ETA is included in this phase.
+- `0079` applied to hosted DEV; clean rebuild through `0079`; RLS execution of the Phase 6 SQL; manual acceptance of the driver/admin/guardian flows.
+
 ## Milestone 16B — Tenant Admin Application Shell and Operations Hub UI Refresh
 
 Milestone 16B refreshes the tenant-admin interface as a UI-only operations hub. It adds a persistent desktop tenant-admin shell, grouped left navigation, compact top workspace header, accessible mobile navigation drawer, and a redesigned overview page using only existing dashboard data and actions.
 
 This milestone preserves existing business logic and tenant isolation. It adds no Supabase migration, backend capability, database object, RLS policy, RPC, permission change, protected-route change, or new tenant-admin workflow. Future UI redesign milestones remain unmarked and unimplemented.
+
+## Phase 4 — Secure Development and Deployment Platform
+
+Status: Repository implementation complete for review on
+`phase-4-secure-development-deployment`. Cloud provisioning and the operational
+exit gates require authorized human completion before production approval.
+
+- Added separate protected DEV, staging, and production release contracts and
+  one-click staging, human-approved production, and application rollback
+  workflows.
+- Added immutable SHA-256 migration manifests, transactional deployment ledger,
+  catalog-level schema fingerprinting, and pre-deploy/standalone drift checks.
+- Added pinned authoritative Supabase TypeScript generation and release-time
+  stale-type rejection.
+- Expanded CI into independent typecheck, lint, build, unit, RLS execution,
+  browser smoke, dependency audit, secret scan, CodeQL, and migration gates.
+- Patched the React Router advisory line by migrating to `react-router` 8.3.0
+  with its React 19-compatible mapping stack; the production dependency audit
+  reports no known vulnerabilities.
+- Added CSP, HSTS, frame denial, MIME-sniffing protection, Referrer Policy, and
+  Permissions Policy; disabled public source maps and mobile WebView debugging;
+  and replaced Google-hosted fonts with bundled Inter assets.
+- Added production security approval and forward-only database/application
+  rollback runbooks under `docs/governance/phase-4/`.
+
+Pending operational evidence: provision three isolated Canadian-region cloud
+environments, configure protected-environment reviewers and secrets, generate
+and commit types from the reachable authoritative staging schema, run the first
+staging release and quarterly rollback exercise, verify deployed headers, and
+obtain human security/privacy approval. Never run RLS assertions in production.

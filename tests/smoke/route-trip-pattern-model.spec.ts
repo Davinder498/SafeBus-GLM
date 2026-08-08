@@ -14,33 +14,41 @@ const profile = {
 
 async function mockRoutes(page: Page, role = 'tenant_admin') {
   let savedPayload: Record<string, unknown> | null = null;
+  let savedServiceDays: Array<Record<string, unknown>> | null = null;
   const currentProfile = { ...profile, role };
-  await page.addInitScript(({ user }) => {
-    const session = {
-      access_token: 'test',
-      refresh_token: 'test',
-      token_type: 'bearer',
-      expires_in: 3600,
-      expires_at: Math.floor(Date.now() / 1000) + 3600,
-      user: {
-        id: user.id,
-        email: user.email,
-        aud: 'authenticated',
-        role: 'authenticated',
-        app_metadata: { provider: 'email' },
-        user_metadata: {},
-        created_at: user.created_at,
-      },
-    };
-    for (const key of [
-      'supabase.auth.token',
-      'sb-placeholder-auth-token',
-      'sb-bppmqykkbhrmotcybxrh-auth-token',
-      'sb-localhost-auth-token',
-    ]) {
-      window.localStorage.setItem(key, JSON.stringify(session));
-    }
-  }, { user: currentProfile });
+  await page.addInitScript(
+    ({ user }) => {
+      const session = {
+        access_token: [
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+          'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ',
+          'smoke-test-signature',
+        ].join('.'),
+        refresh_token: 'test',
+        token_type: 'bearer',
+        expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        user: {
+          id: user.id,
+          email: user.email,
+          aud: 'authenticated',
+          role: 'authenticated',
+          app_metadata: { provider: 'email' },
+          user_metadata: {},
+          created_at: user.created_at,
+        },
+      };
+      for (const key of [
+        'supabase.auth.token',
+        'sb-placeholder-auth-token',
+        'sb-bppmqykkbhrmotcybxrh-auth-token',
+        'sb-localhost-auth-token',
+      ]) {
+        window.localStorage.setItem(key, JSON.stringify(session));
+      }
+    },
+    { user: currentProfile },
+  );
 
   await page.route('**/*', async (route: Route) => {
     const url = new URL(route.request().url());
@@ -51,9 +59,16 @@ async function mockRoutes(page: Page, role = 'tenant_admin') {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(path.endsWith('/user')
-          ? { id: currentProfile.id, email: currentProfile.email, role: 'authenticated', aud: 'authenticated' }
-          : {}),
+        body: JSON.stringify(
+          path.endsWith('/user')
+            ? {
+                id: currentProfile.id,
+                email: currentProfile.email,
+                role: 'authenticated',
+                aud: 'authenticated',
+              }
+            : {},
+        ),
       });
     }
     if (path.includes('/profiles')) {
@@ -83,16 +98,25 @@ async function mockRoutes(page: Page, role = 'tenant_admin') {
         }),
       });
     }
+    if (path.includes('/route_service_days') && method === 'POST') {
+      savedServiceDays = route.request().postDataJSON() as Array<Record<string, unknown>>;
+      return route.fulfill({ status: 201, contentType: 'application/json', body: '[]' });
+    }
     if (path.startsWith('/rest/v1/') && method === 'GET') {
       return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
     }
     return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
   });
-  return { savedPayload: () => savedPayload };
+  return {
+    savedPayload: () => savedPayload,
+    savedServiceDays: () => savedServiceDays,
+  };
 }
 
 test.describe('route corridor and named trips', () => {
-  test('tenant admin atomically saves two directions and coordinate-complete terminals', async ({ page }) => {
+  test('tenant admin atomically saves two directions and coordinate-complete terminals', async ({
+    page,
+  }) => {
     const mock = await mockRoutes(page);
     await page.goto('/admin/routes');
     await expect(page.getByRole('heading', { name: 'Route corridors and trips' })).toBeVisible();
@@ -116,6 +140,8 @@ test.describe('route corridor and named trips', () => {
     await page.getByLabel('Longitude').fill('-114.05');
     await page.getByRole('button', { name: 'Save stop details' }).click();
     await page.getByLabel('Status').first().selectOption('active');
+    await page.getByLabel('Sunday').check();
+    await page.getByLabel('Friday').uncheck();
     await page.getByRole('button', { name: 'Save route definition' }).click();
 
     await expect(page.getByText('Route corridor and trips created.')).toBeVisible();
@@ -123,13 +149,26 @@ test.describe('route corridor and named trips', () => {
       p_stops: Array<{ stopName: string; stopOrder: number }>;
       p_trip_patterns: Array<{ direction: string; displayName: string }>;
     };
-    expect(payload.p_stops.map((stop) => [stop.stopName, stop.stopOrder]))
-      .toEqual([['Point A', 1], ['Point B', 2]]);
-    expect(payload.p_trip_patterns.map((trip) => [trip.direction, trip.displayName]))
-      .toEqual([['forward', 'Up'], ['reverse', 'Down']]);
+    expect(payload.p_stops.map((stop) => [stop.stopName, stop.stopOrder])).toEqual([
+      ['Point A', 1],
+      ['Point B', 2],
+    ]);
+    expect(payload.p_trip_patterns.map((trip) => [trip.direction, trip.displayName])).toEqual([
+      ['forward', 'Up'],
+      ['reverse', 'Down'],
+    ]);
+    const serviceDays = mock.savedServiceDays() as Array<{
+      day_of_week: number;
+      status: string;
+    }>;
+    expect(
+      serviceDays.filter((day) => day.status === 'active').map((day) => day.day_of_week),
+    ).toEqual([0, 1, 2, 3, 4]);
   });
 
-  test('field-trip corridor preserves canonical order after accessible reordering', async ({ page }) => {
+  test('field-trip corridor preserves canonical order after accessible reordering', async ({
+    page,
+  }) => {
     const mock = await mockRoutes(page);
     await page.goto('/admin/routes');
     await page.getByRole('button', { name: 'Add route' }).click();
@@ -160,8 +199,11 @@ test.describe('route corridor and named trips', () => {
       p_stops: Array<{ stopName: string; stopOrder: number }>;
     };
     expect(payload.p_route.routeKind).toBe('field_trip');
-    expect(payload.p_stops.map((stop) => [stop.stopName, stop.stopOrder]))
-      .toEqual([['Museum', 1], ['School', 2], ['Lunch stop', 3]]);
+    expect(payload.p_stops.map((stop) => [stop.stopName, stop.stopOrder])).toEqual([
+      ['Museum', 1],
+      ['School', 2],
+      ['Lunch stop', 3],
+    ]);
   });
 
   test('non-tenant admin cannot see route mutation controls', async ({ page }) => {

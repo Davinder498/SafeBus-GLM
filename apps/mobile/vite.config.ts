@@ -23,7 +23,9 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    // Capacitor bundles ship to end-user devices, so source maps are excluded
+    // from the packaged web assets.
+    sourcemap: false,
   },
   test: {
     globals: true,

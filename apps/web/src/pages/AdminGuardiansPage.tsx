@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { CheckCircle2, CircleDashed, Eye, Mail, Phone, UserRound } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { AdminPagination } from '@/components/admin/AdminPagination';
 import { StudentSearchPicker } from '@/components/admin/StudentSearchPicker';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';

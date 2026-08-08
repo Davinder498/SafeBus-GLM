@@ -18,6 +18,10 @@ import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
 import { getVisibleProfiles, getVisibleSchools } from '@/services/adminOrganizationService';
 import { fetchAdminAssignments } from '@/services/driverAssignmentService';
 import {
+  getVisibleRouteServiceDays,
+  saveRouteServiceDays,
+} from '@/services/phase6OperationsService';
+import {
   fetchAdminBusServices,
   setBusRouteService,
   type BusServiceOption,
@@ -40,6 +44,7 @@ import type {
   Driver,
   Route,
   RouteStop,
+  RouteServiceDay,
   RouteTripPattern,
   RouteTripStopSchedule,
   SaveRouteDefinitionInput,
@@ -60,6 +65,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
   const [stops, setStops] = useState<RouteStop[]>([]);
   const [tripPatterns, setTripPatterns] = useState<RouteTripPattern[]>([]);
   const [tripSchedules, setTripSchedules] = useState<RouteTripStopSchedule[]>([]);
+  const [serviceDays, setServiceDays] = useState<RouteServiceDay[]>([]);
   const [buses, setBuses] = useState<Bus[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [profiles, setProfiles] = useState<OrganizationProfile[]>([]);
@@ -98,6 +104,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
       getVisibleRouteTripPatterns(),
       getVisibleRouteTripStopSchedules(),
       fetchAdminBusServices(),
+      getVisibleRouteServiceDays(),
     ]);
 
     const [
@@ -111,6 +118,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
       tripPatternsResult,
       tripSchedulesResult,
       busServicesResult,
+      serviceDaysResult,
     ] = settled;
 
     if (routesResult.status === 'rejected') {
@@ -133,6 +141,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
         'route trip patterns',
         'route trip schedules',
         'bus route assignments',
+        'route service days',
       ];
       settled.slice(1).forEach((result, index) => {
         if (result.status === 'rejected') {
@@ -154,6 +163,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
     setTripPatterns(tripPatternsResult.status === 'fulfilled' ? tripPatternsResult.value : []);
     setTripSchedules(tripSchedulesResult.status === 'fulfilled' ? tripSchedulesResult.value : []);
     setBusServices(busServicesResult.status === 'fulfilled' ? busServicesResult.value : []);
+    setServiceDays(serviceDaysResult.status === 'fulfilled' ? serviceDaysResult.value : []);
     setLoading(false);
   }, []);
 
@@ -267,7 +277,13 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
 
     try {
       const isUpdate = !!editingRoute;
-      await saveRouteDefinition(payload);
+      const result = await saveRouteDefinition(payload);
+      if (!profile?.tenant_id) throw new Error('An active tenant is required.');
+      await saveRouteServiceDays({
+        tenantId: profile.tenant_id,
+        routeId: result.routeId,
+        activeDays: payload.serviceDays,
+      });
 
       setSuccessMessage(
         isUpdate ? 'Route definition updated.' : 'Route corridor and trips created.',
@@ -313,6 +329,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
               existingStops={[]}
               existingTripPatterns={[]}
               existingSchedules={[]}
+              existingServiceDays={[]}
               existingRoutes={routes}
               schools={schools}
               onSubmit={handleSubmit}
@@ -332,6 +349,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
               existingSchedules={tripSchedules.filter(
                 (schedule) => schedule.route_id === editingRoute.id,
               )}
+              existingServiceDays={serviceDays.filter((day) => day.route_id === editingRoute.id)}
               existingRoutes={routes}
               schools={schools}
               onSubmit={handleSubmit}

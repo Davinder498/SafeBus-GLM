@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router';
 import { Card } from '@/components/ui/Card';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { adminRoles, getDashboardPath, type ProfileRole } from '@/contexts/AuthContext';

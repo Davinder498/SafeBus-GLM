@@ -1,0 +1,487 @@
+{
+  "format": 1,
+  "algorithm": "sha256",
+  "migrationDirectory": "supabase/migrations",
+  "migrations": [
+    {
+      "version": "0001",
+      "filename": "0001_auth_profile_foundation.sql",
+      "bytes": 6292,
+      "sha256": "7b9756d73d218baf5c42560db1c1d9c59dfe698b59eabaff15dc5d7493968e2d"
+    },
+    {
+      "version": "0002",
+      "filename": "0002_foundation_read_grants.sql",
+      "bytes": 418,
+      "sha256": "e63087873d6b1c0b5e02e2947c09cb5fd754f6e4b7a12dcdd845aaea2e0a2742"
+    },
+    {
+      "version": "0003",
+      "filename": "0003_students_guardians_foundation.sql",
+      "bytes": 7235,
+      "sha256": "030ea0f434b0450489f2f2046130aecacbef352d856622965e869ec01112bf95"
+    },
+    {
+      "version": "0004",
+      "filename": "0004_transportation_structure_foundation.sql",
+      "bytes": 10581,
+      "sha256": "10a98918b98d4cf1933458dcb08ef3f6c1bc37828c91b3a67dad98bd8a210c0e"
+    },
+    {
+      "version": "0005",
+      "filename": "0005_transportation_admin_write_foundation.sql",
+      "bytes": 8590,
+      "sha256": "49f724923747412cd44ed93fa4bc75636e07ef37c8ced86e0e8392fd1f0b0bdd"
+    },
+    {
+      "version": "0006",
+      "filename": "0006_driver_trips_foundation.sql",
+      "bytes": 14044,
+      "sha256": "e56921bb27864f1aad6f25d0ab685058ad7e3e508044622482b8febf2b8688fe"
+    },
+    {
+      "version": "0007",
+      "filename": "0007_driver_location_update_foundation.sql",
+      "bytes": 14710,
+      "sha256": "33472740ed22a4cdfe44f6139d05054b3b8ad29b1b4c41fa592d6afc25701676"
+    },
+    {
+      "version": "0008",
+      "filename": "0008_fix_driver_location_update_rpc.sql",
+      "bytes": 5758,
+      "sha256": "0bf929bbce6c9f270fe803b385d7967fd6cfcebed10ceb5aeaca4765a16bea07"
+    },
+    {
+      "version": "0009",
+      "filename": "0009_admin_live_trip_monitoring_foundation.sql",
+      "bytes": 4097,
+      "sha256": "1e3ff48d6e021683d347594d483f5461be0eeca4e8a6007ac1ba394cd71a4f28"
+    },
+    {
+      "version": "0010",
+      "filename": "0010_harden_admin_live_trip_monitoring_rpc.sql",
+      "bytes": 4869,
+      "sha256": "619fd74499007ce8b4619a27e6ddce08885de3c6d0dec474a5b7522116701f73"
+    },
+    {
+      "version": "0011",
+      "filename": "0011_make_school_optional_for_transportation_operations.sql",
+      "bytes": 2073,
+      "sha256": "9232241585a60bf0f19c90f15f3d339860e70b49e64603a2bdcc92a02c3f2963"
+    },
+    {
+      "version": "0012",
+      "filename": "0012_align_route_write_policies_optional_school.sql",
+      "bytes": 6403,
+      "sha256": "b939aa4b8e99366320a541358fc014216efbb00c60e15e86731b69d41324b935"
+    },
+    {
+      "version": "0013",
+      "filename": "0013_driver_assignment_foundation.sql",
+      "bytes": 11868,
+      "sha256": "e546bee2d24804a55b8b7d19be724c918e22ec7f47e6d6cec204617df7606d45"
+    },
+    {
+      "version": "0014",
+      "filename": "0014_enforce_assignment_only_trip_start.sql",
+      "bytes": 2159,
+      "sha256": "0c44d4b2e7f9bdf47e95ffb7b71b9310a18392a7aecb6f430aa269ddd2ab2bc7"
+    },
+    {
+      "version": "0015",
+      "filename": "0015_guardian_student_route_visibility_foundation.sql",
+      "bytes": 4938,
+      "sha256": "3c2802d923a02c0fd10a8f4345566d09aee1a5649642486f98438115344c3361"
+    },
+    {
+      "version": "0016",
+      "filename": "0016_student_roster_admin_write_foundation.sql",
+      "bytes": 2535,
+      "sha256": "6a29d5c23b50692bdb26d10587d924d917b52f6a0d651776e7c3d817df6117c6"
+    },
+    {
+      "version": "0017",
+      "filename": "0017_fix_student_roster_school_scope.sql",
+      "bytes": 4243,
+      "sha256": "645fa2d6f5a2f50afa18f0cebac8597e8dabd143cf21167d33d82ff8faf9f29a"
+    },
+    {
+      "version": "0018",
+      "filename": "0018_fix_students_rls_update_recursion.sql",
+      "bytes": 2320,
+      "sha256": "dd48c3f9ce65e94547310b59f5d865042e553e5d239af25f4ff11b28acf74211"
+    },
+    {
+      "version": "0019",
+      "filename": "0019_secure_guardian_student_linking_rpc.sql",
+      "bytes": 8017,
+      "sha256": "a2e982b2cfbbae62f8ccbbee87d24ff0524f06fba542defe0e2c055b9639b7ef"
+    },
+    {
+      "version": "0020",
+      "filename": "0020_guardian_live_trip_visibility_foundation.sql",
+      "bytes": 6707,
+      "sha256": "0235246b488f9bdc7d0a6f81716cb176e8d7562f4cabf4cb1859630b13566ca8"
+    },
+    {
+      "version": "0021",
+      "filename": "0021_harden_guardian_live_trip_visibility_rpc.sql",
+      "bytes": 7698,
+      "sha256": "9394f0cd7bfd4c52fdcd654321a2980b90a07e8eee5acd230a9827d5ab007e18"
+    },
+    {
+      "version": "0022",
+      "filename": "0022_driver_active_trip_student_manifest.sql",
+      "bytes": 4163,
+      "sha256": "b2334a996a17bb01c2c0102bc0c47816bd303ae6b7124fa68ca3a3068c31cec4"
+    },
+    {
+      "version": "0023",
+      "filename": "0023_driver_student_trip_events_foundation.sql",
+      "bytes": 11637,
+      "sha256": "d017e4a400ca3783fd2ef02b99a69bb1adc5b524574e1434b9418c39067a8a72"
+    },
+    {
+      "version": "0024",
+      "filename": "0024_guardian_student_trip_event_visibility.sql",
+      "bytes": 4363,
+      "sha256": "4f9e43ec67a8e376244ee81e1e3e9abfe327dafd8581371b2bfca9270220e2e7"
+    },
+    {
+      "version": "0025",
+      "filename": "0025_guardian_notification_outbox_foundation.sql",
+      "bytes": 8429,
+      "sha256": "23ddc89f7cdcb0a62f7b34867ca4dbbe35f0ae9fccbe47be9cc0afbf6a77524e"
+    },
+    {
+      "version": "0026",
+      "filename": "0026_admin_live_fleet_monitoring.sql",
+      "bytes": 3381,
+      "sha256": "1f0dd89f5c65f3252117f08bc2b4b7ad474d66334902ec5736ed1d33dccb15ce"
+    },
+    {
+      "version": "0027",
+      "filename": "0027_guardian_live_bus_location_security_foundation.sql",
+      "bytes": 8509,
+      "sha256": "f0045fea1613e3460d9c6ea6ee7c692aecad64ebdb78cac3fc357039e0694403"
+    },
+    {
+      "version": "0028",
+      "filename": "0028_fix_student_route_assignment_optional_school.sql",
+      "bytes": 2280,
+      "sha256": "063a1f13d9b1bf61f40273c7c5894da2cd540dd9319658d20a4da1a530a3c518"
+    },
+    {
+      "version": "0029",
+      "filename": "0029_align_driver_assignment_platform_admin_write.sql",
+      "bytes": 1752,
+      "sha256": "ef7399d86282cfc72b04f81d377bd2e8820d8de0e87c430599df893a108f39c7"
+    },
+    {
+      "version": "0030",
+      "filename": "0030_secure_trip_tracking_realtime.sql",
+      "bytes": 12280,
+      "sha256": "817dde5ab2ce68c5648631b0dd9ae8a36ea33f51a4d0a7d6da2e22be283287ca"
+    },
+    {
+      "version": "0031",
+      "filename": "0031_admin_list_scalability.sql",
+      "bytes": 11565,
+      "sha256": "508402078cc029af29114bc4454e3405154f7389628601b4e4fb1844495eb292"
+    },
+    {
+      "version": "0032",
+      "filename": "0032_student_bus_service_assignments.sql",
+      "bytes": 19895,
+      "sha256": "ca1e594a4a8a83cabfdfdffd01d997da541ad5fa662f119f590c90017df3f42c"
+    },
+    {
+      "version": "0033",
+      "filename": "0033_student_bus_assignment_in_student_roster.sql",
+      "bytes": 3162,
+      "sha256": "55cdbd4ac986e4533ba52133e88d3ea46bbf64a14f24252c16b9f8d1cfab82b2"
+    },
+    {
+      "version": "0034",
+      "filename": "0034_safe_eta_foundation.sql",
+      "bytes": 14274,
+      "sha256": "d53d2ef7698a12c8a8430c16d36ec3658e1782e5fb2992ef4d8f97f362155532"
+    },
+    {
+      "version": "0035",
+      "filename": "0035_platform_tenant_onboarding.sql",
+      "bytes": 4976,
+      "sha256": "b58fdd973f454b36c38ca4639fbc65525d71dd141223d00ec0e587e5a507ec00"
+    },
+    {
+      "version": "0036",
+      "filename": "0036_platform_tenant_privacy_boundary.sql",
+      "bytes": 11888,
+      "sha256": "f6e0ab96f1c36f8fca310437c580577a0ad5b6d0ce56b98bc012231f2660bac7"
+    },
+    {
+      "version": "0037",
+      "filename": "0037_safe_eta_validation_hardening.sql",
+      "bytes": 9219,
+      "sha256": "e4e490093a163d8a37557d85897f0474cec7937fc5afcd51aca9908539093118"
+    },
+    {
+      "version": "0038",
+      "filename": "0038_guardian_email_notification_delivery_foundation.sql",
+      "bytes": 10780,
+      "sha256": "8d87d9916c217b14da1915ef30611fd1d4fed5b5c2541fde4bcc69380cd7285e"
+    },
+    {
+      "version": "0039",
+      "filename": "0039_notification_delivery_hardening_tenant_timezone_summary.sql",
+      "bytes": 8294,
+      "sha256": "9514eb43afb4d8d3479e07efe22026220c05aee995de4d60b9f29e9dae1fa789"
+    },
+    {
+      "version": "0040",
+      "filename": "0040_tenant_admin_delete_foundation.sql",
+      "bytes": 2929,
+      "sha256": "d13555069091636704c85eb2814ee4a1b3990b7cb83c900e5ac78ed211f2ebb1"
+    },
+    {
+      "version": "0041",
+      "filename": "0041_fix_route_delete_assignment_cascades.sql",
+      "bytes": 1780,
+      "sha256": "4310f6f3f6cfdf4d68e1d9314dc4344d636315256a5f103ef2dda4cb09d7b944"
+    },
+    {
+      "version": "0042",
+      "filename": "0042_secure_student_onboarding_workflow.sql",
+      "bytes": 17503,
+      "sha256": "e2c9eccbd547ead82c6e36706a44b2261b848fc95b1ab6a0857c419fed17bdae"
+    },
+    {
+      "version": "0043",
+      "filename": "0043_people_directory_and_student_identifier_retirement.sql",
+      "bytes": 13859,
+      "sha256": "7b50e84e65f7b34dcaacd0729558d4031ac16242df01f0f4eba1fd94f1e92f9e"
+    },
+    {
+      "version": "0044",
+      "filename": "0044_tenant_admin_student_csv_import.sql",
+      "bytes": 13226,
+      "sha256": "f69f7c5833136bc8a4676dbe54133318567be2b16352dfa35187bf046455a5bc"
+    },
+    {
+      "version": "0045",
+      "filename": "0045_route_trip_pattern_foundation.sql",
+      "bytes": 61106,
+      "sha256": "e456a812f5ab9ca03f96b107d0dc243190bb55b4c342db5da84fc600886bf918"
+    },
+    {
+      "version": "0046",
+      "filename": "0046_route_trip_pattern_cutover.sql",
+      "bytes": 3290,
+      "sha256": "c418b6c542cfd85d12268c74434ce2e7dde389096fc4e4323d7b94370ed0adb7"
+    },
+    {
+      "version": "0047",
+      "filename": "0047_route_definition_rls_and_route_stop_fk_repair.sql",
+      "bytes": 3085,
+      "sha256": "9a1ef8f37db1be9f222f45b214b47170bb14267550b30ae375b9fd02a668d4ab"
+    },
+    {
+      "version": "0048",
+      "filename": "0048_invitation_password_activation.sql",
+      "bytes": 6222,
+      "sha256": "a971e5536263b0147ea663a79894d9b3e7b90d0870985451e3faafc5baadcd90"
+    },
+    {
+      "version": "0049",
+      "filename": "0049_atomic_platform_tenant_invitation.sql",
+      "bytes": 9415,
+      "sha256": "e05c8e37ee0fdb938a362a6667b494e34fe0106a12b6d9c5c6e20e66b78caf45"
+    },
+    {
+      "version": "0050",
+      "filename": "0050_atomic_tenant_member_invitation.sql",
+      "bytes": 12193,
+      "sha256": "dfd9c193531a11daf185c0da202d7c9b795af6257125c1694cc8f3c8bcfc0ee7"
+    },
+    {
+      "version": "0051",
+      "filename": "0051_transportation_duplicate_identifier_protection.sql",
+      "bytes": 12245,
+      "sha256": "98e45deb02a2f8317c681b9affa939b19fbc584b4139dc8813e21bad60dcef7b"
+    },
+    {
+      "version": "0052",
+      "filename": "0052_student_guardian_admin_notes.sql",
+      "bytes": 2692,
+      "sha256": "f01828941458ef45f26934ef965049e4961e8ab9549c3528e5aa77b51ee96831"
+    },
+    {
+      "version": "0053",
+      "filename": "0053_bus_first_driver_tracking.sql",
+      "bytes": 8281,
+      "sha256": "0c3630f34150aeff392f0f86602690f85df7edca675f7c8f4bf51a17cea338c6"
+    },
+    {
+      "version": "0054",
+      "filename": "0054_assignment_selected_driver_trips.sql",
+      "bytes": 28961,
+      "sha256": "2ee9cadd1395ae7e985b48ba20a8d6f2f55474c5f5516c37be86096b482ecbc5"
+    },
+    {
+      "version": "0055",
+      "filename": "0055_driver_completed_trip_history.sql",
+      "bytes": 2413,
+      "sha256": "ed1bd6bf411419598533d0bf17640e819169314f8e20f0f65006f451ad329635"
+    },
+    {
+      "version": "0056",
+      "filename": "0056_postgis_spatial_foundation.sql",
+      "bytes": 13902,
+      "sha256": "51698a8f6d0620f370cfa41607bbdf6bdccdab1fe9cf1c1f10a090e7cc4d4914"
+    },
+    {
+      "version": "0057",
+      "filename": "0057_versioned_route_geometry.sql",
+      "bytes": 24163,
+      "sha256": "9d93a21493f5fc44ae591349adb3d6a844c7608b7ad6e3b271f932c1b17dd810"
+    },
+    {
+      "version": "0058",
+      "filename": "0058_admin_trip_overview.sql",
+      "bytes": 2582,
+      "sha256": "bc2dcfb3d143f1cc21bfca6b8ee319c2dcbb423000d5a4924f70a74f3540ff7f"
+    },
+    {
+      "version": "0058",
+      "filename": "0058_unified_bus_management_workspace.sql",
+      "bytes": 11274,
+      "sha256": "ef6438a88bb43f2dcf2433d80bfd8b3423da754930ef64b4ee759d01d0336f62"
+    },
+    {
+      "version": "0059",
+      "filename": "0059_bus_qr_tracking_sessions.sql",
+      "bytes": 27930,
+      "sha256": "e55837419dc18c698382710241585e291c74ff6c4313f23f411c06c06f541132"
+    },
+    {
+      "version": "0060",
+      "filename": "0060_server_enforced_bus_route_assignment_operations.sql",
+      "bytes": 8953,
+      "sha256": "bca3374c1416e83950ad3c2f0ee444ecfb5cfc00e81818662dda7c29620fe2bf"
+    },
+    {
+      "version": "0061",
+      "filename": "0061_guardian_bus_first_visibility.sql",
+      "bytes": 10829,
+      "sha256": "f834051967b1093fc4022776c3cf7c4e203f40e01f417439ef17dd3a25c674b0"
+    },
+    {
+      "version": "0062",
+      "filename": "0062_enforce_qr_only_driver_trip_start.sql",
+      "bytes": 971,
+      "sha256": "aa040dbfd8b63fa3733a791305db7befc75938db96913b3cc8af709b6ac978ce"
+    },
+    {
+      "version": "0063",
+      "filename": "0063_unified_direction_assignments_and_qr_selection.sql",
+      "bytes": 30870,
+      "sha256": "b534de23be23ba26236338fa157ae56de08023734c7bf2d3c4f99fd36b21ad16"
+    },
+    {
+      "version": "0064",
+      "filename": "0064_platform_tenant_admin_account_deletion.sql",
+      "bytes": 4475,
+      "sha256": "3d4b7e6b5369905bea2556e62c413ae37efd1a31035ee4886617243271105ae3"
+    },
+    {
+      "version": "0065",
+      "filename": "0065_phase1_authorization_reconciliation.sql",
+      "bytes": 13218,
+      "sha256": "bf9bd8908e45ea351ac8d21f68f275103876eb5799a5e07f93d27237113a7439"
+    },
+    {
+      "version": "0066",
+      "filename": "0066_phase2_audit_system_foundation.sql",
+      "bytes": 8832,
+      "sha256": "575dd0304b8004d56dd229fe2146868be4ea9e8b24ae79f4c26bc52c90e6ca26"
+    },
+    {
+      "version": "0067",
+      "filename": "0067_phase2_mfa_recent_auth_allowlist_ratelimit.sql",
+      "bytes": 14132,
+      "sha256": "66b5e6db545f94536778a0334ee626f22f54e8d8e0333221ba20c4507498fe7d"
+    },
+    {
+      "version": "0068",
+      "filename": "0068_phase2_password_sessions_idempotency.sql",
+      "bytes": 25692,
+      "sha256": "9f7c52833825f1910d8b46bd9279b5f068cfa040c7bfbde66c386f9708d317b6"
+    },
+    {
+      "version": "0069",
+      "filename": "0069_phase3_retention_foundation.sql",
+      "bytes": 19090,
+      "sha256": "b43e18292ff50f32bce6048da6c7d689d54ae3ae925f3d13fa3a954988f3400b"
+    },
+    {
+      "version": "0070",
+      "filename": "0070_phase0_3_hosted_validation_reconciliation.sql",
+      "bytes": 2314,
+      "sha256": "8f95700f0cbc1a7abea02ca191b3a7806cbb478d9cd256a2937f115008302ea4"
+    },
+    {
+      "version": "0071",
+      "filename": "0071_phase2_auth_rpc_hosted_reconciliation.sql",
+      "bytes": 2830,
+      "sha256": "772ebd92c88baa1972b282fad988dfe8efe245c9e46377951c94602a685cf87f"
+    },
+    {
+      "version": "0072",
+      "filename": "0072_hosted_platform_helper_and_audit_sanitizer.sql",
+      "bytes": 3410,
+      "sha256": "d50f119740675e40239661ff7cef35020df072477972eb260666ca5efb892982"
+    },
+    {
+      "version": "0073",
+      "filename": "0073_hosted_rls_execution_context_reconciliation.sql",
+      "bytes": 3007,
+      "sha256": "cf4d4f7c83c93f4d397d747f53a87d9db96eaeeffefb9ba867da48de1882ea93"
+    },
+    {
+      "version": "0074",
+      "filename": "0074_phase2_3_hosted_constraint_password_reconciliation.sql",
+      "bytes": 3722,
+      "sha256": "fe328f6fe949dd181712385183cb6765d31539f2fd30c45788321090c8ab19f8"
+    },
+    {
+      "version": "0075",
+      "filename": "0075_phase5_tenant_administration_foundation.sql",
+      "bytes": 42590,
+      "sha256": "835f92d9c65a708d7ce3fd5f392f97e8bb204dc39e52685ee629db51d0ac9d1e"
+    },
+    {
+      "version": "0076",
+      "filename": "0076_phase5_bulk_onboarding_foundation.sql",
+      "bytes": 32920,
+      "sha256": "e2de06e74cabcb68725eaf3a49e2ceb6a6c67752deddc30bc2e8551157b9b072"
+    },
+    {
+      "version": "0077",
+      "filename": "0077_phase5_invitation_lifecycle.sql",
+      "bytes": 22216,
+      "sha256": "30401d57de1d9605e6e4e3b07843c29c8c3db3db4da5fb7018747752da53aa3a"
+    },
+    {
+      "version": "0078",
+      "filename": "0078_phase5_account_restoration_bulk_invitations.sql",
+      "bytes": 5816,
+      "sha256": "5da2be24aa889e081a0d7cb8ca69754203382c458362c63172f8ef0edd65c36f"
+    },
+    {
+      "version": "0079",
+      "filename": "0079_phase6_transportation_operations_completion.sql",
+      "bytes": 55124,
+      "sha256": "0467315e699066f2f37aba9bf8fb8683da5017c1de0319b6751b8b148b93995a"
+    }
+  ]
+}

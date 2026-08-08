@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';

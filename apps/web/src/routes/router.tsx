@@ -1,5 +1,5 @@
-import type { RouteObject } from 'react-router-dom';
-import { Navigate } from 'react-router-dom';
+import type { RouteObject } from 'react-router';
+import { Navigate } from 'react-router';
 import { AdminAssignmentsPage } from '@/pages/AdminAssignmentsPage';
 import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
 import { AdminBusesPage } from '@/pages/AdminBusesPage';
@@ -10,6 +10,7 @@ import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { UpdatePasswordPage } from '@/pages/UpdatePasswordPage';
 import { AdminDriversPage } from '@/pages/AdminDriversPage';
 import { AdminDriverDetailPage } from '@/pages/AdminDriverDetailPage';
+import { AdminDriverAssignmentsPage } from '@/pages/AdminDriverAssignmentsPage';
 import { AdminDashboardPage } from '@/pages/AdminDashboardPage';
 import { AdminGuardiansPage } from '@/pages/AdminGuardiansPage';
 import { AdminGuardianDetailPage } from '@/pages/AdminGuardianDetailPage';
@@ -24,6 +25,9 @@ import { AdminStudentDetailPage } from '@/pages/AdminStudentDetailPage';
 import { AdminStudentsPage } from '@/pages/AdminStudentsPage';
 import { AdminTripsPage } from '@/pages/AdminTripsPage';
 import { AdminUsersPage } from '@/pages/AdminUsersPage';
+import { AdminAdministratorsPage } from '@/pages/AdminAdministratorsPage';
+import { AdminBulkImportPage } from '@/pages/AdminBulkImportPage';
+import { AdminAuditSearchPage } from '@/pages/AdminAuditSearchPage';
 import { DriverDashboardPage } from '@/pages/DriverDashboardPage';
 import { DriverManifestPage } from '@/pages/DriverManifestPage';
 import { DriverProfilePage } from '@/pages/DriverProfilePage';
@@ -125,6 +129,30 @@ export const appRoutes: RouteObject[] = [
     ),
   },
   {
+    path: '/admin/administrators',
+    element: (
+      <ProtectedRoute allowedRoles={['tenant_admin']}>
+        <AdminAdministratorsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/bulk-import',
+    element: (
+      <ProtectedRoute allowedRoles={['tenant_admin']}>
+        <AdminBulkImportPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/audit-search',
+    element: (
+      <ProtectedRoute allowedRoles={['tenant_admin']}>
+        <AdminAuditSearchPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/admin/students/:studentId',
     element: (
       <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
@@ -217,6 +245,14 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminRoutesPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/driver-assignments',
+    element: (
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
+        <AdminDriverAssignmentsPage />
       </ProtectedRoute>
     ),
   },

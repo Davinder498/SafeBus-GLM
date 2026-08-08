@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Bus, ClipboardCheck } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Bus, ClipboardCheck, Pause, Play, Square, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { BusQrStartScanner } from '@/components/driver/BusQrStartScanner';
 import { DriverLocationStatus } from '@/components/driver/DriverLocationStatus';
 import { DashboardLayout, driverNavGroups } from '@/components/layout/DashboardLayout';
@@ -8,10 +8,25 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DataState } from '@/components/ui/DataState';
+import { Field } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Select } from '@/components/ui/Select';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { Textarea } from '@/components/ui/Textarea';
 import { useDriverTracking } from '@/contexts/DriverTrackingContext';
-import { endDriverTrip, fetchActiveDriverTrip } from '@/services/driverTripService';
+import {
+  cancelDriverTrip,
+  endDriverTrip,
+  fetchActiveDriverTrip,
+  pauseDriverTrip,
+  resumeDriverTrip,
+} from '@/services/driverTripService';
+import {
+  confirmPreTrip,
+  getPreTripConfirmation,
+  recordTripException,
+  type TripExceptionType,
+} from '@/services/phase6OperationsService';
 import type { BusTrackingStartResult } from '@/services/busTrackingService';
 import type { DriverTrip } from '@/types/trips';
 
@@ -19,6 +34,18 @@ type LoadState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
   | { kind: 'ready'; activeTrip: DriverTrip | null };
+
+const EXCEPTION_TYPES: { value: TripExceptionType; label: string }[] = [
+  { value: 'traffic_delay', label: 'Traffic delay' },
+  { value: 'weather_delay', label: 'Weather delay' },
+  { value: 'mechanical_issue', label: 'Mechanical issue' },
+  { value: 'road_closure', label: 'Road closure' },
+  { value: 'missed_stop', label: 'Missed stop' },
+  { value: 'late_arrival', label: 'Late arrival' },
+  { value: 'early_arrival', label: 'Early arrival' },
+  { value: 'student_issue', label: 'Student boarding issue' },
+  { value: 'other_operational', label: 'Other operational note' },
+];
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
@@ -35,10 +62,26 @@ export function DriverDashboardPage() {
   const [ending, setEnding] = useState(false);
   const [confirmEndOpen, setConfirmEndOpen] = useState(false);
 
+  // Phase 6 operational state
+  const [pausing, setPausing] = useState(false);
+  const [resuming, setResuming] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [preTripConfirmed, setPreTripConfirmed] = useState(false);
+  const [confirmingPreTrip, setConfirmingPreTrip] = useState(false);
+  const [showExceptionForm, setShowExceptionForm] = useState(false);
+  const [exceptionType, setExceptionType] = useState<TripExceptionType>('traffic_delay');
+  const [exceptionDetail, setExceptionDetail] = useState('');
+  const [recordingException, setRecordingException] = useState(false);
+
   const load = useCallback(async () => {
     setState({ kind: 'loading' });
     try {
-      setState({ kind: 'ready', activeTrip: await fetchActiveDriverTrip() });
+      const trip = await fetchActiveDriverTrip();
+      const confirmation = trip ? await getPreTripConfirmation(trip.id).catch(() => null) : null;
+      setPreTripConfirmed(confirmation !== null);
+      setState({ kind: 'ready', activeTrip: trip });
     } catch (cause) {
       setState({
         kind: 'error',
@@ -54,6 +97,7 @@ export function DriverDashboardPage() {
   async function handleStarted(result: BusTrackingStartResult) {
     tracking.activateTracking(result.trackingToken);
     setState({ kind: 'ready', activeTrip: result.trip });
+    setPreTripConfirmed(false);
     setActionError(null);
     setMessage(
       result.resumed
@@ -71,6 +115,7 @@ export function DriverDashboardPage() {
       tracking.clearTracking();
       setConfirmEndOpen(false);
       setMessage('Trip ended. Location sharing stopped.');
+      setPreTripConfirmed(false);
       setState({ kind: 'ready', activeTrip: null });
     } catch (cause) {
       setActionError(cause instanceof Error ? cause.message : 'Could not end this trip.');
@@ -79,7 +124,97 @@ export function DriverDashboardPage() {
     }
   }
 
+  // Phase 6 handlers ----------------------------------------------------
+  async function handlePauseTrip() {
+    if (state.kind !== 'ready' || !state.activeTrip) return;
+    setPausing(true);
+    setActionError(null);
+    try {
+      const updated = await pauseDriverTrip(state.activeTrip.id);
+      setState({ kind: 'ready', activeTrip: updated });
+      setMessage('Trip paused. Location sharing continues if available.');
+    } catch (cause) {
+      setActionError(cause instanceof Error ? cause.message : 'Could not pause this trip.');
+    } finally {
+      setPausing(false);
+    }
+  }
+
+  async function handleResumeTrip() {
+    if (state.kind !== 'ready' || !state.activeTrip) return;
+    setResuming(true);
+    setActionError(null);
+    try {
+      const updated = await resumeDriverTrip(state.activeTrip.id);
+      setState({ kind: 'ready', activeTrip: updated });
+      setMessage('Trip resumed.');
+    } catch (cause) {
+      setActionError(cause instanceof Error ? cause.message : 'Could not resume this trip.');
+    } finally {
+      setResuming(false);
+    }
+  }
+
+  async function handleCancelTrip() {
+    if (state.kind !== 'ready' || !state.activeTrip) return;
+    setCancelling(true);
+    setActionError(null);
+    try {
+      await cancelDriverTrip(state.activeTrip.id, cancelReason.trim() || null);
+      tracking.clearTracking();
+      setConfirmCancelOpen(false);
+      setCancelReason('');
+      setPreTripConfirmed(false);
+      setMessage('Trip cancelled and recorded in the audit trail.');
+      setState({ kind: 'ready', activeTrip: null });
+    } catch (cause) {
+      setActionError(cause instanceof Error ? cause.message : 'Could not cancel this trip.');
+    } finally {
+      setCancelling(false);
+    }
+  }
+
+  async function handleConfirmPreTrip() {
+    if (state.kind !== 'ready' || !state.activeTrip) return;
+    setConfirmingPreTrip(true);
+    setActionError(null);
+    try {
+      await confirmPreTrip(state.activeTrip.id);
+      setPreTripConfirmed(true);
+      setMessage('Pre-trip inspection confirmed and recorded.');
+    } catch (cause) {
+      setActionError(
+        cause instanceof Error ? cause.message : 'Could not confirm the pre-trip inspection.',
+      );
+    } finally {
+      setConfirmingPreTrip(false);
+    }
+  }
+
+  async function handleRecordException(event: React.FormEvent) {
+    event.preventDefault();
+    if (state.kind !== 'ready' || !state.activeTrip) return;
+    setRecordingException(true);
+    setActionError(null);
+    try {
+      await recordTripException({
+        tripId: state.activeTrip.id,
+        exceptionType,
+        exceptionDetail: exceptionDetail.trim() || null,
+      });
+      setShowExceptionForm(false);
+      setExceptionDetail('');
+      setMessage('Operational exception recorded.');
+    } catch (cause) {
+      setActionError(cause instanceof Error ? cause.message : 'Could not record the exception.');
+    } finally {
+      setRecordingException(false);
+    }
+  }
+
   const activeTrip = state.kind === 'ready' ? state.activeTrip : null;
+  const isPaused = activeTrip?.status === 'paused';
+  const isActive = activeTrip?.status === 'active';
 
   return (
     <DashboardLayout
@@ -150,8 +285,19 @@ export function DriverDashboardPage() {
                     Started {formatTimestamp(activeTrip.started_at)}
                   </p>
                 </div>
-                <StatusPill tone="success">active</StatusPill>
+                <StatusPill tone={isPaused ? 'neutral' : 'success'}>{activeTrip.status}</StatusPill>
               </div>
+
+              {preTripConfirmed && (
+                <div
+                  className="mt-4 flex items-center gap-2 rounded-lg bg-success-50 p-3 text-sm font-semibold text-success-700"
+                  data-testid="pre-trip-confirmed-badge"
+                >
+                  <ShieldCheck className="h-4 w-4" aria-hidden />
+                  Pre-trip inspection confirmed
+                </div>
+              )}
+
               <div className="mt-4 border-t border-slate-100 pt-4">
                 <DriverLocationStatus
                   supported={tracking.location.supported}
@@ -159,6 +305,81 @@ export function DriverDashboardPage() {
                   compact
                 />
               </div>
+
+              {/* Phase 6: pre-trip confirmation + record exception */}
+              {(isActive || isPaused) && (
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <Button
+                    type="button"
+                    variant={preTripConfirmed ? 'secondary' : 'primary'}
+                    loading={confirmingPreTrip}
+                    disabled={preTripConfirmed}
+                    leftIcon={<ShieldCheck className="h-5 w-5" />}
+                    onClick={() => void handleConfirmPreTrip()}
+                    data-testid="driver-confirm-pre-trip"
+                  >
+                    {preTripConfirmed ? 'Pre-trip confirmed' : 'Confirm pre-trip inspection'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    leftIcon={<AlertTriangle className="h-5 w-5" />}
+                    onClick={() => setShowExceptionForm((v) => !v)}
+                    data-testid="driver-record-exception-toggle"
+                  >
+                    {showExceptionForm ? 'Hide exception form' : 'Record exception'}
+                  </Button>
+                </div>
+              )}
+
+              {showExceptionForm && (isActive || isPaused) && (
+                <form
+                  onSubmit={(e) => void handleRecordException(e)}
+                  className="mt-4 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4"
+                  data-testid="driver-exception-form"
+                >
+                  <Field label="Exception type" htmlFor="exception-type">
+                    <Select
+                      id="exception-type"
+                      value={exceptionType}
+                      onChange={(e) => setExceptionType(e.target.value as TripExceptionType)}
+                    >
+                      {EXCEPTION_TYPES.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field
+                    label="Short detail (optional, max 280 chars, no student information)"
+                    htmlFor="exception-detail"
+                  >
+                    <Textarea
+                      id="exception-detail"
+                      rows={3}
+                      maxLength={280}
+                      value={exceptionDetail}
+                      onChange={(e) => setExceptionDetail(e.target.value)}
+                      placeholder="e.g. held at railway crossing for 6 minutes"
+                    />
+                  </Field>
+                  <div className="flex gap-2">
+                    <Button type="submit" size="sm" loading={recordingException}>
+                      Record exception
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowExceptionForm(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              )}
+
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <Button
                   type="button"
@@ -176,6 +397,44 @@ export function DriverDashboardPage() {
                   onClick={() => setConfirmEndOpen(true)}
                 >
                   End trip
+                </Button>
+              </div>
+
+              {/* Phase 6: pause / resume / cancel */}
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                {isActive && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    loading={pausing}
+                    leftIcon={<Pause className="h-5 w-5" />}
+                    onClick={() => void handlePauseTrip()}
+                    data-testid="driver-pause-trip"
+                  >
+                    Pause trip
+                  </Button>
+                )}
+                {isPaused && (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    loading={resuming}
+                    leftIcon={<Play className="h-5 w-5" />}
+                    onClick={() => void handleResumeTrip()}
+                    data-testid="driver-resume-trip"
+                  >
+                    Resume trip
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  loading={cancelling}
+                  leftIcon={<Square className="h-5 w-5" />}
+                  onClick={() => setConfirmCancelOpen(true)}
+                  data-testid="driver-cancel-trip"
+                >
+                  Cancel trip
                 </Button>
               </div>
             </Card>
@@ -198,6 +457,17 @@ export function DriverDashboardPage() {
         busy={ending}
         onConfirm={() => void handleEndTrip()}
         onCancel={() => setConfirmEndOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={confirmCancelOpen}
+        title="Cancel this trip?"
+        description="The trip will be marked cancelled and the reason will be recorded in the audit trail. This cannot be undone."
+        confirmLabel="Cancel trip"
+        destructive
+        busy={cancelling}
+        onConfirm={() => void handleCancelTrip()}
+        onCancel={() => setConfirmCancelOpen(false)}
       />
     </DashboardLayout>
   );

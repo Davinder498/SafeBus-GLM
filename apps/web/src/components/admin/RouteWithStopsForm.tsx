@@ -9,6 +9,7 @@ import type {
   RouteDefinitionTripInput,
   RouteKind,
   RouteStatus,
+  RouteServiceDay,
   RouteStop,
   RouteTripPattern,
   RouteTripStopSchedule,
@@ -32,6 +33,7 @@ interface RouteWithStopsFormProps {
   existingStops: RouteStop[];
   existingTripPatterns: RouteTripPattern[];
   existingSchedules: RouteTripStopSchedule[];
+  existingServiceDays: RouteServiceDay[];
   existingRoutes: Route[];
   schools: School[];
   onSubmit(payload: SaveRouteDefinitionInput): Promise<void>;
@@ -52,8 +54,7 @@ function initialTrip(
   const stopTimes: Record<string, string | null> = {};
   for (const stop of existingStops) {
     const schedule = existingSchedules.find(
-      (item) =>
-        item.route_trip_pattern_id === pattern?.id && item.route_stop_id === stop.id,
+      (item) => item.route_trip_pattern_id === pattern?.id && item.route_stop_id === stop.id,
     );
     stopTimes[stopClientKey(stop)] = schedule?.planned_arrival_time?.slice(0, 5) ?? null;
   }
@@ -71,6 +72,7 @@ export function RouteWithStopsForm({
   existingStops,
   existingTripPatterns,
   existingSchedules,
+  existingServiceDays,
   existingRoutes,
   schools,
   onSubmit,
@@ -84,6 +86,12 @@ export function RouteWithStopsForm({
   );
   const [schoolId, setSchoolId] = useState(route?.school_id ?? '');
   const [status, setStatus] = useState<RouteStatus>(route?.status ?? 'inactive');
+  const [serviceDays, setServiceDays] = useState<number[]>(() => {
+    const activeDays = existingServiceDays
+      .filter((day) => day.status === 'active')
+      .map((day) => day.day_of_week);
+    return activeDays.length > 0 || route ? activeDays : [1, 2, 3, 4, 5];
+  });
   const [stops, setStops] = useState<RouteDefinitionStopInput[]>(() =>
     existingStops
       .filter((stop) => stop.status !== 'archived')
@@ -99,22 +107,16 @@ export function RouteWithStopsForm({
         status: stop.status === 'inactive' ? 'inactive' : 'active',
       })),
   );
-  const [trips, setTrips] = useState<[RouteDefinitionTripInput, RouteDefinitionTripInput]>(
-    () => [
-      initialTrip('forward', existingTripPatterns, existingStops, existingSchedules),
-      initialTrip('reverse', existingTripPatterns, existingStops, existingSchedules),
-    ],
-  );
+  const [trips, setTrips] = useState<[RouteDefinitionTripInput, RouteDefinitionTripInput]>(() => [
+    initialTrip('forward', existingTripPatterns, existingStops, existingSchedules),
+    initialTrip('reverse', existingTripPatterns, existingStops, existingSchedules),
+  ]);
   const [selectedStopKey, setSelectedStopKey] = useState<string | null>(
     stops[0]?.clientKey ?? null,
   );
   const [completedStopKeys, setCompletedStopKeys] = useState<Set<string>>(
     () =>
-      new Set(
-        stops
-          .filter((stop) => stopDraftIssue(stop) === null)
-          .map((stop) => stop.clientKey),
-      ),
+      new Set(stops.filter((stop) => stopDraftIssue(stop) === null).map((stop) => stop.clientKey)),
   );
   const [formError, setFormError] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
@@ -126,14 +128,13 @@ export function RouteWithStopsForm({
   );
   const incompleteStop = stops.find((stop) => !completedStopKeys.has(stop.clientKey));
 
-  function updateTrip(
-    direction: 'forward' | 'reverse',
-    patch: Partial<RouteDefinitionTripInput>,
-  ) {
-    setTrips((previous) =>
-      previous.map((trip) =>
-        trip.direction === direction ? { ...trip, ...patch } : trip,
-      ) as [RouteDefinitionTripInput, RouteDefinitionTripInput],
+  function updateTrip(direction: 'forward' | 'reverse', patch: Partial<RouteDefinitionTripInput>) {
+    setTrips(
+      (previous) =>
+        previous.map((trip) => (trip.direction === direction ? { ...trip, ...patch } : trip)) as [
+          RouteDefinitionTripInput,
+          RouteDefinitionTripInput,
+        ],
     );
   }
 
@@ -173,12 +174,13 @@ export function RouteWithStopsForm({
 
   function removeStop(clientKey: string) {
     setStops((previous) => normalizeStopOrders(previous.filter((s) => s.clientKey !== clientKey)));
-    setTrips((previous) =>
-      previous.map((trip) => {
-        const stopTimes = { ...trip.stopTimes };
-        delete stopTimes[clientKey];
-        return { ...trip, stopTimes };
-      }) as [RouteDefinitionTripInput, RouteDefinitionTripInput],
+    setTrips(
+      (previous) =>
+        previous.map((trip) => {
+          const stopTimes = { ...trip.stopTimes };
+          delete stopTimes[clientKey];
+          return { ...trip, stopTimes };
+        }) as [RouteDefinitionTripInput, RouteDefinitionTripInput],
     );
     setCompletedStopKeys((previous) => {
       const next = new Set(previous);
@@ -281,6 +283,7 @@ export function RouteWithStopsForm({
             stops.map((stop) => [stop.clientKey, trip.stopTimes[stop.clientKey] ?? null]),
           ),
         })),
+        serviceDays,
       });
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Unable to save route.');
@@ -292,7 +295,10 @@ export function RouteWithStopsForm({
   return (
     <form className="grid gap-6" onSubmit={handleSubmit}>
       {formError && (
-        <p role="alert" className="rounded-lg bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-700">
+        <p
+          role="alert"
+          className="rounded-lg bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-700"
+        >
           {formError}
         </p>
       )}
@@ -305,26 +311,48 @@ export function RouteWithStopsForm({
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label className={labelClassName}>
             Route name
-            <input className={fieldClassName} value={routeName} onChange={(e) => setRouteName(e.target.value)} placeholder="Route 1" />
+            <input
+              className={fieldClassName}
+              value={routeName}
+              onChange={(e) => setRouteName(e.target.value)}
+              placeholder="Route 1"
+            />
           </label>
           <label className={labelClassName}>
             Route code
-            <input className={fieldClassName} value={routeCode} onChange={(e) => setRouteCode(e.target.value)} placeholder="R-1" />
+            <input
+              className={fieldClassName}
+              value={routeCode}
+              onChange={(e) => setRouteCode(e.target.value)}
+              placeholder="R-1"
+            />
           </label>
           <label className={labelClassName}>
             Route kind
-            <select className={fieldClassName} value={routeKind} onChange={(e) => setRouteKind(e.target.value as RouteKind)}>
+            <select
+              className={fieldClassName}
+              value={routeKind}
+              onChange={(e) => setRouteKind(e.target.value as RouteKind)}
+            >
               <option value="regular">Regular service</option>
               <option value="field_trip">Field trip</option>
             </select>
           </label>
           <label className={labelClassName}>
             Primary school (optional)
-            <select className={fieldClassName} value={schoolId} onChange={(e) => setSchoolId(e.target.value)}>
+            <select
+              className={fieldClassName}
+              value={schoolId}
+              onChange={(e) => setSchoolId(e.target.value)}
+            >
               <option value="">No school selected</option>
-              {schools.filter((school) => school.status === 'active').map((school) => (
-                <option key={school.id} value={school.id}>{school.name}</option>
-              ))}
+              {schools
+                .filter((school) => school.status === 'active')
+                .map((school) => (
+                  <option key={school.id} value={school.id}>
+                    {school.name}
+                  </option>
+                ))}
             </select>
           </label>
           <fieldset>
@@ -346,7 +374,11 @@ export function RouteWithStopsForm({
           </fieldset>
           <label className={labelClassName}>
             Status
-            <select className={fieldClassName} value={status} onChange={(e) => setStatus(e.target.value as RouteStatus)}>
+            <select
+              className={fieldClassName}
+              value={status}
+              onChange={(e) => setStatus(e.target.value as RouteStatus)}
+            >
               <option value="inactive">Draft / inactive</option>
               <option value="active">Active</option>
               <option value="archived">Archived</option>
@@ -356,10 +388,42 @@ export function RouteWithStopsForm({
       </section>
 
       <section className="rounded-lg border border-gray-200 bg-white p-5">
+        <h3 className="text-base font-bold text-navy-900">Service days</h3>
+        <p className="mt-1 text-sm text-gray-600">
+          Select the regular days this route is scheduled to operate.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(
+            (label, dayOfWeek) => (
+              <label
+                key={label}
+                className="flex min-h-11 items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700"
+              >
+                <input
+                  type="checkbox"
+                  checked={serviceDays.includes(dayOfWeek)}
+                  onChange={(event) =>
+                    setServiceDays((current) =>
+                      event.target.checked
+                        ? [...current, dayOfWeek].sort((a, b) => a - b)
+                        : current.filter((day) => day !== dayOfWeek),
+                    )
+                  }
+                />
+                {label}
+              </label>
+            ),
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-gray-200 bg-white p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className="text-base font-bold text-navy-900">Directional trips</h3>
-            <p className="mt-1 text-sm text-gray-600">Names are editable; direction remains tied to the corridor.</p>
+            <p className="mt-1 text-sm text-gray-600">
+              Names are editable; direction remains tied to the corridor.
+            </p>
           </div>
         </div>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -370,11 +434,21 @@ export function RouteWithStopsForm({
               </p>
               <label className={`${labelClassName} mt-3`}>
                 Trip name
-                <input className={fieldClassName} value={trip.displayName} onChange={(e) => updateTrip(trip.direction, { displayName: e.target.value })} />
+                <input
+                  className={fieldClassName}
+                  value={trip.displayName}
+                  onChange={(e) => updateTrip(trip.direction, { displayName: e.target.value })}
+                />
               </label>
               <label className={`${labelClassName} mt-3`}>
                 Status
-                <select className={fieldClassName} value={trip.status} onChange={(e) => updateTrip(trip.direction, { status: e.target.value as 'active' | 'inactive' })}>
+                <select
+                  className={fieldClassName}
+                  value={trip.status}
+                  onChange={(e) =>
+                    updateTrip(trip.direction, { status: e.target.value as 'active' | 'inactive' })
+                  }
+                >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                 </select>
@@ -388,7 +462,9 @@ export function RouteWithStopsForm({
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className="text-base font-bold text-navy-900">Stops ({stops.length})</h3>
-            <p className="mt-1 text-sm text-gray-600">The first and last active stops are always the route terminals.</p>
+            <p className="mt-1 text-sm text-gray-600">
+              The first and last active stops are always the route terminals.
+            </p>
           </div>
           <Button
             type="button"
@@ -438,9 +514,32 @@ export function RouteWithStopsForm({
                   </span>
                 </button>
                 <div className="flex gap-1">
-                  <Button type="button" size="sm" variant="secondary" onClick={() => moveStop(index, -1)} disabled={index === 0}>Up</Button>
-                  <Button type="button" size="sm" variant="secondary" onClick={() => moveStop(index, 1)} disabled={index === stops.length - 1}>Down</Button>
-                  <Button type="button" size="sm" variant="secondary" onClick={() => removeStop(stop.clientKey)}>Remove</Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => moveStop(index, -1)}
+                    disabled={index === 0}
+                  >
+                    Up
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => moveStop(index, 1)}
+                    disabled={index === stops.length - 1}
+                  >
+                    Down
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => removeStop(stop.clientKey)}
+                  >
+                    Remove
+                  </Button>
                 </div>
               </div>
               {selectedStopKey === stop.clientKey && (
@@ -487,8 +586,7 @@ export function RouteWithStopsForm({
                         value={stop.latitude ?? ''}
                         onChange={(event) =>
                           updateStop(stop.clientKey, {
-                            latitude:
-                              event.target.value === '' ? null : Number(event.target.value),
+                            latitude: event.target.value === '' ? null : Number(event.target.value),
                           })
                         }
                       />
@@ -533,11 +631,7 @@ export function RouteWithStopsForm({
                     ))}
                   </div>
                   <div className="mt-4 flex justify-end">
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => saveStopDetails(stop.clientKey)}
-                    >
+                    <Button type="button" size="sm" onClick={() => saveStopDetails(stop.clientKey)}>
                       Save stop details
                     </Button>
                   </div>
@@ -546,7 +640,9 @@ export function RouteWithStopsForm({
             </div>
           ))}
           {stops.length === 0 && (
-            <p className="rounded-lg bg-gray-50 p-5 text-center text-sm text-gray-600">Add the start stop to begin defining this corridor.</p>
+            <p className="rounded-lg bg-gray-50 p-5 text-center text-sm text-gray-600">
+              Add the start stop to begin defining this corridor.
+            </p>
           )}
         </div>
 
@@ -567,7 +663,9 @@ export function RouteWithStopsForm({
         <Button type="submit" disabled={submitState === 'saving'}>
           {submitState === 'saving' ? 'Saving…' : 'Save route definition'}
         </Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          Cancel
+        </Button>
       </div>
     </form>
   );

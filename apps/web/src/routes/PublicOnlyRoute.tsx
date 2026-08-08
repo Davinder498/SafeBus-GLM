@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { PublicLayout } from '@/components/layout/PublicLayout';

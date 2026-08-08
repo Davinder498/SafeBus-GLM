@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ArrowLeft, BusFront, Route as RouteIcon, UsersRound } from 'lucide-react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { BusWorkspaceRouteForm } from '@/components/admin/BusWorkspaceForms';
+import { OperationalNotesPanel } from '@/components/admin/OperationalNotesPanel';
 import { DirectionalStudentBusAssignmentForm } from '@/components/admin/DirectionalStudentBusAssignmentForm';
 import { BusQrCredentialPanel } from '@/components/admin/BusQrCredentialPanel';
 import {
@@ -459,44 +460,47 @@ export function AdminBusWorkspacePage() {
           aria-labelledby={`bus-tab-${activeTab}`}
         >
           {activeTab === 'details' && (
-            <Card className="p-5">
-              <h2 className="text-lg font-bold text-navy-900">
-                {bus ? 'Bus details' : 'Create bus'}
-              </h2>
-              <div className="mt-5">
-                <BusForm
-                  key={bus?.updated_at ?? 'new-bus'}
-                  bus={bus}
-                  schools={schools}
-                  defaultTenantId={profile?.tenant_id ?? null}
-                  onSubmit={saveBus}
-                  onCancel={backToBuses}
-                  onDirtyChange={setDetailsDirty}
-                />
-                {bus && <BusQrCredentialPanel busId={bus.id} busNumber={bus.bus_number} />}
-                {bus && canDeleteBus && (
-                  <div className="mt-6 border-t border-danger-100 pt-5">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <h3 className="font-bold text-danger-800">Delete bus</h3>
-                        <p className="mt-1 text-sm text-gray-600">
-                          Permanently remove this bus after its active operational records are
-                          cleared.
-                        </p>
+            <div className="space-y-5">
+              <Card className="p-5">
+                <h2 className="text-lg font-bold text-navy-900">
+                  {bus ? 'Bus details' : 'Create bus'}
+                </h2>
+                <div className="mt-5">
+                  <BusForm
+                    key={bus?.updated_at ?? 'new-bus'}
+                    bus={bus}
+                    schools={schools}
+                    defaultTenantId={profile?.tenant_id ?? null}
+                    onSubmit={saveBus}
+                    onCancel={backToBuses}
+                    onDirtyChange={setDetailsDirty}
+                  />
+                  {bus && <BusQrCredentialPanel busId={bus.id} busNumber={bus.bus_number} />}
+                  {bus && canDeleteBus && (
+                    <div className="mt-6 border-t border-danger-100 pt-5">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <h3 className="font-bold text-danger-800">Delete bus</h3>
+                          <p className="mt-1 text-sm text-gray-600">
+                            Permanently remove this bus after its active operational records are
+                            cleared.
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="danger"
+                          onClick={() => setConfirmDeleteOpen(true)}
+                        >
+                          Delete bus
+                        </Button>
                       </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="danger"
-                        onClick={() => setConfirmDeleteOpen(true)}
-                      >
-                        Delete bus
-                      </Button>
                     </div>
-                  </div>
-                )}
-              </div>
-            </Card>
+                  )}
+                </div>
+              </Card>
+              {bus && <OperationalNotesPanel targetEntity="bus" targetId={bus.id} />}
+            </div>
           )}
 
           {activeTab === 'routes' && bus && workspace && (

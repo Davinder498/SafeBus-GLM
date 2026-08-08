@@ -607,142 +607,291 @@ async function tenantLifecycle(event, body) {
   const status = clean(body.status);
   if (!['active', 'suspended', 'disabled'].includes(status))
     return json(400, { error: 'Unsupported tenant status.' });
-  const { error } = await ctx.admin.from('tenants').update({ status }).eq('id', tenantId);
-  if (error) return json(400, { error: 'Unable to update tenant status.' });
-  if (status !== 'active') {
-    await ctx.admin
-      .from('profiles')
-      .update({ status: 'suspended' })
-      .eq('tenant_id', tenantId)
-      .neq('role', 'platform_super_admin');
-    await ctx.admin
-      .from('drivers')
-      .update({ status: 'suspended' })
-      .eq('tenant_id', tenantId)
-      .eq('status', 'active');
-    await ctx.admin
-      .from('guardians')
-      .update({ status: 'suspended' })
-      .eq('tenant_id', tenantId)
-      .eq('status', 'active');
-    await ctx.admin
-      .from('driver_trips')
-      .update({ status: 'cancelled', ended_at: new Date().toISOString() })
-      .eq('tenant_id', tenantId)
-      .eq('status', 'active');
-  }
-  await auditServerAction(
-    ctx,
-    status === 'active' ? 'tenant.reactivated' : 'tenant.suspended',
-    'tenant',
-    tenantId,
-    { status },
-  );
-  return json(200, { status });
-}
-
-async function tenantAdminLifecycle(event, body) {
-  const ctx = await requireCaller(event, ['platform_super_admin']);
-  if (ctx.error) return ctx.error;
-
-  const profileId = clean(body.profileId);
-  const status = clean(body.status);
-  if (!profileId || !['active', 'disabled'].includes(status)) {
-    return json(400, { error: 'Tenant admin and supported account status are required.' });
-  }
-
-  const { data: profile, error: profileError } = await ctx.admin
-    .from('profiles')
-    .select('id, tenant_id, role, status')
-    .eq('id', profileId)
-    .maybeSingle();
-  if (profileError || !profile || profile.role !== 'tenant_admin') {
-    return json(404, { error: 'Tenant admin account not found.' });
-  }
-  if (profile.status === 'invited') {
-    return json(409, {
-      error:
-        status === 'active'
-          ? 'The tenant admin must accept the invitation and create a password first.'
-          : 'Cancel the pending invitation instead of deactivating an account that is not active.',
-    });
-  }
-
-  if (status === 'active') {
-    const { data: tenant, error: tenantError } = await ctx.admin
-      .from('tenants')
-      .select('id, status')
-      .eq('id', profile.tenant_id)
-      .maybeSingle();
-    if (tenantError || !tenant || tenant.status !== 'active') {
-      return json(409, { error: 'Reactivate the tenant before reactivating its administrator.' });
-    }
-    const unbanned = await ctx.admin.auth.admin.updateUserById(profile.id, {
-      ban_duration: 'none',
-    });
-    if (unbanned.error)
-      return json(400, { error: 'Unable to reactivate the tenant admin sign-in.' });
-    const { error: activateError } = await ctx.admin
-      .from('profiles')
-      .update({ status: 'active' })
-      .eq('id', profile.id)
-      .in('status', ['suspended', 'disabled']);
-    if (activateError)
-      return json(400, { error: 'Unable to reactivate the tenant admin profile.' });
-    await auditServerAction(ctx, 'account.restored', 'profile', profile.id);
-    return json(200, { status: 'active' });
-  }
-
-  const { error: disableError } = await ctx.admin
-    .from('profiles')
-    .update({ status: 'disabled' })
-    .eq('id', profile.id)
-    .neq('status', 'invited');
-  if (disableError) return json(400, { error: 'Unable to deactivate the tenant admin profile.' });
-  const banned = await ctx.admin.auth.admin.updateUserById(profile.id, {
-    ban_duration: '876000h',
+  if (!tenantId) return json(400, { error: 'Tenant is required.' });
+  const { data, error } = await ctx.user.rpc('platform_set_tenant_lifecycle', {
+    p_tenant_id: tenantId,
+    p_status: status,
   });
-  if (banned.error)
-    return json(400, {
-      error: 'The profile was deactivated, but sign-in blocking must be retried.',
-    });
-  await auditServerAction(ctx, 'account.suspended', 'profile', profile.id);
-  return json(200, { status: 'disabled' });
+  if (error) return json(400, { error: error.message || 'Unable to update tenant status.' });
+  return json(200, data);
 }
 
-async function deleteTenantAdmin(event, body) {
-  const ctx = await requireCaller(event, ['platform_super_admin']);
+async function inviteAdministrator(event, body) {
+  const ctx = await requireCaller(event, ['tenant_admin']);
   if (ctx.error) return ctx.error;
 
-  const profileId = clean(body.profileId);
-  if (!profileId) return json(400, { error: 'Tenant admin account is required.' });
+  const fullName = clean(body.fullName);
+  const email = clean(body.email).toLowerCase();
+  const role = clean(body.role);
+  const schoolId = clean(body.schoolId) || null;
 
-  const { data: profile, error: profileError } = await ctx.admin
-    .from('profiles')
-    .select('id, tenant_id, role')
-    .eq('id', profileId)
-    .maybeSingle();
-  if (profileError || !profile || profile.role !== 'tenant_admin' || !profile.tenant_id) {
-    return json(404, { error: 'Tenant admin account not found.' });
+  if (!fullName || !email || !role) {
+    return json(400, { error: 'Full name, email, and role are required.' });
+  }
+  if (fullName.length > 200 || email.length > 320 || !EMAIL_PATTERN.test(email)) {
+    return json(400, { error: 'Enter valid administrator details.' });
+  }
+  if (!['tenant_admin', 'school_admin', 'transportation_admin'].includes(role)) {
+    return json(400, { error: 'Only administrative roles are supported.' });
+  }
+  if (role === 'school_admin' && !schoolId) {
+    return json(400, { error: 'A school assignment is required for a school administrator.' });
+  }
+  if (role === 'school_admin') {
+    const { data: school, error: schoolError } = await ctx.admin
+      .from('schools')
+      .select('id')
+      .eq('id', schoolId)
+      .eq('tenant_id', ctx.caller.tenant_id)
+      .eq('status', 'active')
+      .maybeSingle();
+    if (schoolError || !school) {
+      return json(400, { error: 'Select an active school in your tenant.' });
+    }
   }
 
-  // profiles.id cascades from auth.users.id. Invitation profile references are
-  // set to null by the database, preserving the onboarding history.
-  const deleted = await ctx.admin.auth.admin.deleteUser(profile.id);
-  if (deleted.error) {
-    return json(409, {
-      error:
-        'The tenant admin account could not be deleted because it is still referenced by retained operational history. Deactivate the account instead.',
+  if (!(await requireInvitationRateLimit(ctx))) {
+    return json(429, { error: 'Too many invitation requests. Try again shortly.' });
+  }
+
+  const redirectTo = await invitationRedirectUrl(ctx);
+  const invitation = await sendTenantMemberInvitation(ctx, {
+    email,
+    fullName,
+    redirectTo,
+    role,
+    tenantId: ctx.caller.tenant_id,
+  });
+  if (invitation.error) return invitation.error;
+
+  // Call the appropriate RPC based on role.
+  const rpcName = role === 'tenant_admin' ? 'tenant_invite_administrator' : 'tenant_add_sub_administrator';
+  const rpcParams =
+    role === 'tenant_admin'
+      ? {
+          p_tenant_id: ctx.caller.tenant_id,
+          p_auth_user_id: invitation.userId,
+          p_full_name: fullName,
+          p_email: email,
+        }
+      : {
+          p_auth_user_id: invitation.userId,
+          p_role: role,
+          p_full_name: fullName,
+          p_email: email,
+          p_school_id: schoolId,
+        };
+
+  const { data: finalized, error: finalizeError } = await ctx.user.rpc(rpcName, rpcParams);
+  if (finalizeError || !finalized?.profileId) {
+    if (invitation.createdAuthUser) {
+      await ctx.admin.auth.admin.deleteUser(invitation.userId);
+    }
+    return json(400, {
+      error: typeof finalizeError?.message === 'string' ? finalizeError.message : 'The administrator invitation could not be finalized.',
     });
   }
-
-  await auditServerAction(ctx, 'account.revoked', 'profile', profile.id);
 
   return json(200, {
-    status: 'deleted',
-    profileId: profile.id,
-    tenantId: profile.tenant_id,
+    profileId: finalized.profileId,
+    tenantId: finalized.tenantId,
+    status: invitation.status,
+    recipientEmail: email,
   });
+}
+
+async function emergencyRecoveryAction(event, body) {
+  const ctx = await requireCaller(event, ['platform_super_admin']);
+  if (ctx.error) return ctx.error;
+
+  const profileId = clean(body.profileId);
+  const tenantId = clean(body.tenantId);
+  if (!profileId || !tenantId) {
+    return json(400, { error: 'Profile ID and tenant ID are required.' });
+  }
+
+  const { data, error } = await ctx.user.rpc('platform_emergency_admin_recovery', {
+    p_profile_id: profileId,
+    p_tenant_id: tenantId,
+  });
+  if (error) {
+    return json(400, { error: error.message || 'Emergency recovery failed.' });
+  }
+
+  const unbanned = await ctx.admin.auth.admin.updateUserById(profileId, { ban_duration: 'none' });
+  if (unbanned.error) {
+    return json(500, {
+      error: 'The administrator was recovered, but Auth sign-in enabling must be retried.',
+      profileRecovered: true,
+    });
+  }
+
+  return json(200, data);
+}
+
+async function departAdministratorAction(event, body) {
+  const ctx = await requireCaller(event, ['tenant_admin']);
+  if (ctx.error) return ctx.error;
+  const profileId = clean(body.profileId);
+  if (!profileId) return json(400, { error: 'Administrator is required.' });
+
+  const { data, error } = await ctx.user.rpc('tenant_depart_administrator', {
+    p_profile_id: profileId,
+  });
+  if (error) return json(400, { error: error.message || 'Unable to process departure.' });
+  const banned = await ctx.admin.auth.admin.updateUserById(profileId, { ban_duration: '876000h' });
+  if (banned.error) {
+    return json(500, {
+      error: 'The administrator was disabled, but Auth sign-in blocking must be retried.',
+      profileDisabled: true,
+    });
+  }
+  return json(200, data);
+}
+
+async function suspendAdministratorAction(event, body) {
+  const ctx = await requireCaller(event, ['tenant_admin']);
+  if (ctx.error) return ctx.error;
+  const profileId = clean(body.profileId);
+  if (!profileId) return json(400, { error: 'Administrator is required.' });
+  const { data, error } = await ctx.user.rpc('tenant_suspend_administrator', {
+    p_profile_id: profileId,
+  });
+  if (error) return json(400, { error: error.message || 'Unable to suspend administrator.' });
+  const banned = await ctx.admin.auth.admin.updateUserById(profileId, { ban_duration: '876000h' });
+  if (banned.error) {
+    return json(500, {
+      error: 'The administrator was suspended, but Auth sign-in blocking must be retried.',
+      profileSuspended: true,
+    });
+  }
+  return json(200, data);
+}
+
+async function restoreAdministratorAction(event, body) {
+  const ctx = await requireCaller(event, ['tenant_admin']);
+  if (ctx.error) return ctx.error;
+  const profileId = clean(body.profileId);
+  if (!profileId) return json(400, { error: 'Administrator is required.' });
+
+  const { data, error } = await ctx.user.rpc('tenant_restore_administrator', {
+    p_profile_id: profileId,
+  });
+  if (error) return json(400, { error: error.message || 'Unable to restore administrator.' });
+  const unbanned = await ctx.admin.auth.admin.updateUserById(profileId, { ban_duration: 'none' });
+  if (unbanned.error) {
+    return json(500, {
+      error: 'The administrator was restored, but Auth sign-in enabling must be retried.',
+      profileRestored: true,
+    });
+  }
+  return json(200, data);
+}
+
+function responseErrorMessage(response, fallback) {
+  try {
+    const parsed = JSON.parse(response?.body || '{}');
+    return clean(parsed?.error) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+async function bulkInvitationDispatch(event, body) {
+  const ctx = await requireCaller(event, ['tenant_admin']);
+  if (ctx.error) return ctx.error;
+  const batchId = clean(body.batchId);
+  const requestedLimit = Number(body.limit ?? 10);
+  const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 25) : 10;
+  if (!batchId) return json(400, { error: 'Import batch is required.' });
+
+  const { data: claimed, error: claimError } = await ctx.user.rpc('claim_bulk_invitation_rows', {
+    p_batch_id: batchId,
+    p_limit: limit,
+  });
+  if (claimError) return json(400, { error: claimError.message || 'Unable to claim invitations.' });
+
+  let sent = 0;
+  let failed = 0;
+  for (const row of claimed ?? []) {
+    const rowData = row?.row_data ?? {};
+    const role = clean(row?.role);
+    const firstName = clean(rowData.first_name);
+    const lastName = clean(rowData.last_name);
+    const email = clean(row?.email).toLowerCase();
+    const phone = clean(rowData.phone);
+    const invitation = await sendTenantMemberInvitation(ctx, {
+      email,
+      fullName: clean(row?.full_name),
+      redirectTo: await invitationRedirectUrl(ctx),
+      role,
+      tenantId: ctx.caller.tenant_id,
+    });
+
+    if (invitation.error) {
+      failed += 1;
+      await ctx.admin.rpc('reconcile_bulk_invitation_delivery', {
+        p_queue_invitation_id: row.invitation_id,
+        p_profile_id: null,
+        p_error: responseErrorMessage(invitation.error, 'Invitation provider rejected this recipient.'),
+      });
+      continue;
+    }
+
+    const driverDetails = role === 'driver'
+      ? {
+          license_number: clean(rowData.license_number),
+          license_class: clean(rowData.license_class),
+          license_issue_date: clean(rowData.license_issue_date),
+          license_expiry_date: clean(rowData.license_expiry_date),
+          address_line1: clean(rowData.address_line1),
+          address_line2: clean(rowData.address_line2) || null,
+          city: clean(rowData.city),
+          province: clean(rowData.province),
+          postal_code: clean(rowData.postal_code),
+        }
+      : null;
+    const { data: finalized, error: finalizeError } = await ctx.user.rpc(
+      'admin_finalize_member_invitation',
+      {
+        p_auth_user_id: invitation.userId,
+        p_role: role,
+        p_first_name: firstName,
+        p_last_name: lastName,
+        p_email: email,
+        p_phone: phone,
+        p_driver_details: driverDetails,
+        p_student_links: [],
+      },
+    );
+
+    if (finalizeError || !finalized?.profileId) {
+      if (invitation.createdAuthUser) await ctx.admin.auth.admin.deleteUser(invitation.userId);
+      failed += 1;
+      await ctx.admin.rpc('reconcile_bulk_invitation_delivery', {
+        p_queue_invitation_id: row.invitation_id,
+        p_profile_id: null,
+        p_error: 'The invitation was accepted but the member record could not be finalized.',
+      });
+      continue;
+    }
+
+    const reconciled = await ctx.admin.rpc('reconcile_bulk_invitation_delivery', {
+      p_queue_invitation_id: row.invitation_id,
+      p_profile_id: finalized.profileId,
+      p_error: null,
+    });
+    if (reconciled.error) {
+      failed += 1;
+      continue;
+    }
+    sent += 1;
+  }
+
+  const { data: summary } = await ctx.user.rpc('get_bulk_invitation_delivery_summary', {
+    p_batch_id: batchId,
+  });
+  return json(200, { batchId, claimed: claimed?.length ?? 0, sent, failed, summary: summary ?? {} });
 }
 
 async function action(event, body) {
@@ -750,11 +899,25 @@ async function action(event, body) {
   if (ctx.error) return ctx.error;
   const id = clean(body.invitationId);
   const next = clean(body.action);
-  if (!id || !['resend', 'cancel'].includes(next)) {
+  if (!id || !['resend', 'cancel', 'revoke'].includes(next)) {
     return json(400, { error: 'Invitation and supported action are required.' });
   }
 
-  const { data: inv, error: invitationLookupError } = await ctx.admin
+  if (ctx.caller.role === 'platform_super_admin') {
+    const { data: isFirstAdminInvitation, error: boundaryError } = await ctx.user.rpc(
+      'platform_is_first_admin_invitation',
+      { p_invitation_id: id },
+    );
+    if (boundaryError) return json(500, { error: 'Unable to verify the invitation boundary.' });
+    if (isFirstAdminInvitation !== true) {
+      return json(403, {
+        error: 'Platform personnel can manage only the first tenant administrator invitation.',
+      });
+    }
+  }
+
+  const invitationClient = ctx.caller.role === 'platform_super_admin' ? ctx.admin : ctx.user;
+  const { data: inv, error: invitationLookupError } = await invitationClient
     .from('tenant_onboarding_invitations')
     .select('*')
     .eq('id', id)
@@ -763,10 +926,8 @@ async function action(event, body) {
     return json(500, { error: 'Unable to load the invitation.' });
   }
   if (!inv) return json(404, { error: 'Invitation not found.' });
-  if (ctx.caller.role !== 'platform_super_admin' && inv.tenant_id !== ctx.caller.tenant_id)
+  if (ctx.caller.role !== 'platform_super_admin' && inv.tenant_id !== ctx.caller.tenant_id) {
     return json(403, { error: 'Invitation is outside your tenant.' });
-  if (inv.role === 'tenant_admin' && ctx.caller.role !== 'platform_super_admin') {
-    return json(403, { error: 'Only a platform super administrator can manage this invitation.' });
   }
   if (!['pending', 'resent', 'failed'].includes(inv.status)) {
     return json(409, { error: 'Only a pending invitation can be changed.' });
@@ -790,22 +951,37 @@ async function action(event, body) {
     invitedProfile = data;
   }
 
-  if (next === 'cancel') {
-    const { error: cancelError } = await ctx.admin
-      .from('tenant_onboarding_invitations')
-      .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
-      .eq('id', id);
-    if (cancelError) return json(400, { error: 'Unable to cancel the invitation.' });
+  if (next === 'revoke') {
+    if (ctx.caller.role !== 'tenant_admin') {
+      return json(403, { error: 'Only the tenant can revoke this invitation.' });
+    }
+    const { data, error } = await ctx.user.rpc('revoke_invitation', {
+      p_invitation_id: id,
+    });
+    if (error) return json(400, { error: error.message || 'Unable to revoke the invitation.' });
     if (inv.invited_profile_id) {
-      const { error: disableProfileError } = await ctx.admin
-        .from('profiles')
-        .update({ status: 'disabled' })
-        .eq('id', inv.invited_profile_id)
-        .eq('status', 'invited');
-      if (disableProfileError)
-        return json(400, {
-          error: 'The invitation was cancelled, but the invited profile could not be disabled.',
+      const disabledAuth = await ctx.admin.auth.admin.updateUserById(inv.invited_profile_id, {
+        ban_duration: '876000h',
+      });
+      if (disabledAuth.error) {
+        return json(500, {
+          error: 'The invitation was revoked, but Auth sign-in blocking must be retried.',
+          invitationRevoked: true,
         });
+      }
+    }
+    return json(200, data);
+  }
+
+  if (next === 'cancel') {
+    if (ctx.caller.role !== 'platform_super_admin') {
+      return json(403, { error: 'Tenant administrators must use the audited revoke workflow.' });
+    }
+    const { data, error } = await ctx.user.rpc('platform_cancel_first_admin_invitation', {
+      p_invitation_id: id,
+    });
+    if (error) return json(400, { error: error.message || 'Unable to cancel the invitation.' });
+    if (inv.invited_profile_id) {
       const disabledAuth = await ctx.admin.auth.admin.updateUserById(inv.invited_profile_id, {
         ban_duration: '876000h',
       });
@@ -814,8 +990,7 @@ async function action(event, body) {
           error: 'The invitation was cancelled, but its sign-in link could not be disabled.',
         });
     }
-    await auditServerAction(ctx, 'invitation.cancelled', 'invitation', inv.id);
-    return json(200, { status: 'cancelled' });
+    return json(200, data);
   }
   if (next === 'resend') {
     if (!inv.invited_profile_id || !invitedProfile) {
@@ -839,6 +1014,10 @@ async function action(event, body) {
         status: 'resent',
         last_sent_at: new Date().toISOString(),
         cancelled_at: null,
+        revoked_at: null,
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        delivery_status: 'sent',
+        last_delivery_error: null,
       })
       .eq('id', id);
     if (invitationUpdateError) {
@@ -864,8 +1043,12 @@ export async function handler(event) {
     if (body.kind === 'inviteMember') return await inviteMember(event, body);
     if (body.kind === 'invitationAction') return await action(event, body);
     if (body.kind === 'tenantLifecycle') return await tenantLifecycle(event, body);
-    if (body.kind === 'tenantAdminLifecycle') return await tenantAdminLifecycle(event, body);
-    if (body.kind === 'tenantAdminDelete') return await deleteTenantAdmin(event, body);
+    if (body.kind === 'inviteAdministrator') return await inviteAdministrator(event, body);
+    if (body.kind === 'emergencyRecovery') return await emergencyRecoveryAction(event, body);
+    if (body.kind === 'departAdministrator') return await departAdministratorAction(event, body);
+    if (body.kind === 'suspendAdministrator') return await suspendAdministratorAction(event, body);
+    if (body.kind === 'restoreAdministrator') return await restoreAdministratorAction(event, body);
+    if (body.kind === 'bulkInvitationDispatch') return await bulkInvitationDispatch(event, body);
     return json(400, { error: 'Unknown onboarding action.' });
   } catch (error) {
     const errorName = error instanceof Error ? error.name : 'UnknownError';
