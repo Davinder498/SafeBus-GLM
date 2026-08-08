@@ -122,6 +122,13 @@ export const adminNavItems: DashboardNavItem[] = [
     icon: <ClipboardList className="h-4 w-4" />,
   },
   {
+    label: 'Driver assignments',
+    to: '/admin/driver-assignments',
+    group: 'transportation',
+    description: 'Driver, bus, and route coverage',
+    icon: <ClipboardList className="h-4 w-4" />,
+  },
+  {
     label: 'Guardians',
     to: '/admin/guardians',
     group: 'people',

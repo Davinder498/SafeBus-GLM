@@ -3,12 +3,12 @@ import { directionLabel } from '@/services/adminTripOverviewService';
 import type { AdminTripOverviewItem } from '@/types/adminTripOverview';
 import { filterAdminTrips } from './adminTripOverview';
 
-const trips = (['active', 'completed', 'cancelled'] as const).map((status, index) => ({
+const trips = (['active', 'paused', 'completed', 'cancelled'] as const).map((status, index) => ({
   id: String(index),
   serviceDate: '2026-07-25',
   status,
   startedAt: '2026-07-25T08:00:00Z',
-  endedAt: status === 'active' ? null : '2026-07-25T09:00:00Z',
+  endedAt: status === 'active' || status === 'paused' ? null : '2026-07-25T09:00:00Z',
   routeName: 'Route 1',
   routeCode: 'R1',
   tripPatternName: 'Pattern',
@@ -24,6 +24,7 @@ describe('admin trip overview categories', () => {
       'cancelled',
     ]);
     expect(filterAdminTrips(trips, 'active')).toHaveLength(1);
+    expect(filterAdminTrips(trips, 'paused')).toHaveLength(1);
     expect(filterAdminTrips(trips, 'completed')).toHaveLength(1);
     expect(filterAdminTrips(trips, 'cancelled')).toHaveLength(1);
   });

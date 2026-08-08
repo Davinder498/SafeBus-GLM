@@ -95,10 +95,11 @@ archiving is needed; the collision is documented here and asserted by
 | 0076 | `0076_phase5_bulk_onboarding_foundation.sql` | Canonical | Phase 5: private bulk staging, 50k-row validation, atomic confirmation/rollback, set-based duplicate detection, SIS integration boundary |
 | 0077 | `0077_phase5_invitation_lifecycle.sql` | Canonical | Phase 5: enforced invitation expiry/revoke, first-admin platform boundary, rate-limited delivery queue and status reconciliation |
 | 0078 | `0078_phase5_account_restoration_bulk_invitations.sql` | Canonical | Phase 5: tenant account restoration and complete idempotent guardian/driver invitation queueing |
+| 0079 | `0079_phase6_transportation_operations_completion.sql` | Canonical | Phase 6: service days, controlled late/missing status, trip exceptions, pre-trip evidence, operational notes, pause/resume/cancel, substitutions, replacement buses, guardian revocation, open-trip uniqueness, and school-scope reconciliation for affected trip reads/RPCs. Widens `driver_trips.status` to include `paused`. |
 
 ## 4. Fresh-rebuild proof
 
-A fresh database must be built from `0001` through `0078` in canonical order
+A fresh database must be built from `0001` through `0079` in canonical order
 (with archived files excluded) before these phases can be accepted. The archived
 files in `supabase/legacy/` are excluded from fresh rebuilds because:
 

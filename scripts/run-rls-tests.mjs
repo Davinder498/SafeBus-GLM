@@ -38,6 +38,7 @@ const DEFAULT_RLS_FILES = [
   'tests/rls/phase2-auth-security-rls.sql',
   'tests/rls/phase3-retention-rls.sql',
   'tests/rls/phase5-tenant-administration-rls.sql',
+  'tests/rls/phase6-transportation-operations-rls.sql',
 ];
 
 function fail(message) {

@@ -10,6 +10,7 @@ import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { UpdatePasswordPage } from '@/pages/UpdatePasswordPage';
 import { AdminDriversPage } from '@/pages/AdminDriversPage';
 import { AdminDriverDetailPage } from '@/pages/AdminDriverDetailPage';
+import { AdminDriverAssignmentsPage } from '@/pages/AdminDriverAssignmentsPage';
 import { AdminDashboardPage } from '@/pages/AdminDashboardPage';
 import { AdminGuardiansPage } from '@/pages/AdminGuardiansPage';
 import { AdminGuardianDetailPage } from '@/pages/AdminGuardianDetailPage';
@@ -244,6 +245,14 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminRoutesPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/driver-assignments',
+    element: (
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
+        <AdminDriverAssignmentsPage />
       </ProtectedRoute>
     ),
   },

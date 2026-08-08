@@ -2,7 +2,7 @@
 // Field names mirror the public.driver_trips table columns (snake_case).
 
 export type TripType = 'morning' | 'evening';
-export type TripStatus = 'active' | 'completed' | 'cancelled';
+export type TripStatus = 'active' | 'paused' | 'completed' | 'cancelled';
 
 export interface DriverTrip {
   id: string;

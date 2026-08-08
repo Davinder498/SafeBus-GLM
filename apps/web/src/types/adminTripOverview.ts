@@ -1,6 +1,7 @@
-export type AdminTripStatus = 'active' | 'completed' | 'cancelled';
+export type AdminTripStatus = 'active' | 'paused' | 'completed' | 'cancelled';
 export type AdminTripDirection = 'outbound' | 'return';
-export type AdminTripFilter = 'all' | 'active' | 'non-active' | 'completed' | 'cancelled';
+export type AdminTripFilter =
+  'all' | 'active' | 'paused' | 'non-active' | 'completed' | 'cancelled';
 
 export interface AdminTripOverviewItem {
   id: string;

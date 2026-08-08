@@ -476,6 +476,12 @@
       "filename": "0078_phase5_account_restoration_bulk_invitations.sql",
       "bytes": 5816,
       "sha256": "5da2be24aa889e081a0d7cb8ca69754203382c458362c63172f8ef0edd65c36f"
+    },
+    {
+      "version": "0079",
+      "filename": "0079_phase6_transportation_operations_completion.sql",
+      "bytes": 55124,
+      "sha256": "0467315e699066f2f37aba9bf8fb8683da5017c1de0319b6751b8b148b93995a"
     }
   ]
 }

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { Card } from '@/components/ui/Card';
+import { TripOperationalEvidencePanel } from '@/components/admin/TripOperationalEvidencePanel';
 import { DataState } from '@/components/ui/DataState';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { directionLabel } from '@/services/adminTripOverviewService';
@@ -10,6 +11,7 @@ import { filterAdminTrips, isNonActiveTrip } from '@/utils/adminTripOverview';
 const filters: Array<{ value: AdminTripFilter; label: string }> = [
   { value: 'all', label: 'All' },
   { value: 'active', label: 'Active' },
+  { value: 'paused', label: 'Paused' },
   { value: 'non-active', label: 'Non-active' },
   { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' },
@@ -33,9 +35,11 @@ export function AdminTripsOverview({
   initialFilter?: AdminTripFilter;
 }) {
   const [filter, setFilter] = useState<AdminTripFilter>(initialFilter);
+  const [notesTripId, setNotesTripId] = useState<string | null>(null);
   const filteredTrips = useMemo(() => filterAdminTrips(trips, filter), [filter, trips]);
   const counts = {
     active: trips.filter((trip) => trip.status === 'active').length,
+    paused: trips.filter((trip) => trip.status === 'paused').length,
     nonActive: trips.filter((trip) => isNonActiveTrip(trip.status)).length,
     completed: trips.filter((trip) => trip.status === 'completed').length,
     cancelled: trips.filter((trip) => trip.status === 'cancelled').length,
@@ -84,11 +88,12 @@ export function AdminTripsOverview({
       ) : (
         <>
           <div
-            className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4"
+            className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5"
             aria-label="Trip status summary"
           >
             {[
               ['Active', counts.active],
+              ['Paused', counts.paused],
               ['Non-active', counts.nonActive],
               ['Completed', counts.completed],
               ['Cancelled', counts.cancelled],
@@ -139,6 +144,7 @@ export function AdminTripsOverview({
                       'Start',
                       'End',
                       'Status',
+                      'Notes',
                     ].map((heading) => (
                       <th key={heading} scope="col" className="px-3 py-3">
                         {heading}
@@ -168,10 +174,27 @@ export function AdminTripsOverview({
                           {statusLabel(trip.status)}
                         </StatusPill>
                       </td>
+                      <td className="px-3 py-3">
+                        <button
+                          type="button"
+                          className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-navy-700 hover:bg-gray-50"
+                          aria-expanded={notesTripId === trip.id}
+                          onClick={() =>
+                            setNotesTripId((current) => (current === trip.id ? null : trip.id))
+                          }
+                        >
+                          {notesTripId === trip.id ? 'Hide notes' : 'View notes'}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              {notesTripId && (
+                <div className="mt-4">
+                  <TripOperationalEvidencePanel tripId={notesTripId} />
+                </div>
+              )}
             </div>
           )}
         </>

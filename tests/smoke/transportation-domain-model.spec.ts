@@ -228,12 +228,20 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
           ]);
           return;
         }
+        if (path.includes('/route_service_days')) {
+          await fulfillRows([]);
+          return;
+        }
         await blockUnexpectedSupabaseRestAccess(route, method, path);
         return;
       }
 
       // POST (insert a route, bus, or driver_trip)
       if (method === 'POST') {
+        if (path.includes('/route_service_days')) {
+          await route.fulfill({ status: 201, contentType: 'application/json', body: '[]' });
+          return;
+        }
         if (path.includes('/rpc/get_admin_paginated_list')) {
           const body = route.request().postDataJSON() as { p_entity?: string };
           const rows =
@@ -503,7 +511,7 @@ test.describe('Milestone 4E — school optional for transportation', () => {
     await expect(page.getByText('Choose a school')).toHaveCount(0);
 
     await expect(page).toHaveURL(new RegExp(`/admin/buses/${ADMIN.busId}\\?tab=routes`));
-    await expect(page.getByRole('button', { name: 'Assign route trip' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Assign route' })).toBeVisible();
   });
 });
 

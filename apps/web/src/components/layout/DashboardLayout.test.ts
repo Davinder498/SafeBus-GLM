@@ -28,6 +28,7 @@ const tenantAdminRoutes = [
   '/admin/drivers',
   '/admin/students',
   '/admin/assignments',
+  '/admin/driver-assignments',
   '/admin/guardians',
   '/admin/schools',
   '/admin/users',
