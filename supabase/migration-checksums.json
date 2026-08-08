@@ -452,6 +452,30 @@
       "filename": "0074_phase2_3_hosted_constraint_password_reconciliation.sql",
       "bytes": 3722,
       "sha256": "fe328f6fe949dd181712385183cb6765d31539f2fd30c45788321090c8ab19f8"
+    },
+    {
+      "version": "0075",
+      "filename": "0075_phase5_tenant_administration_foundation.sql",
+      "bytes": 42590,
+      "sha256": "835f92d9c65a708d7ce3fd5f392f97e8bb204dc39e52685ee629db51d0ac9d1e"
+    },
+    {
+      "version": "0076",
+      "filename": "0076_phase5_bulk_onboarding_foundation.sql",
+      "bytes": 32920,
+      "sha256": "e2de06e74cabcb68725eaf3a49e2ceb6a6c67752deddc30bc2e8551157b9b072"
+    },
+    {
+      "version": "0077",
+      "filename": "0077_phase5_invitation_lifecycle.sql",
+      "bytes": 22216,
+      "sha256": "30401d57de1d9605e6e4e3b07843c29c8c3db3db4da5fb7018747752da53aa3a"
+    },
+    {
+      "version": "0078",
+      "filename": "0078_phase5_account_restoration_bulk_invitations.sql",
+      "bytes": 5816,
+      "sha256": "5da2be24aa889e081a0d7cb8ca69754203382c458362c63172f8ef0edd65c36f"
     }
   ]
 }

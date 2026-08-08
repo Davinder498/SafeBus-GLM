@@ -32,27 +32,24 @@ const createdTenant = {
 };
 
 const pendingInvitation = {
-  id: 'aa000000-0000-0000-0000-000000000012',
+  invitation_id: 'aa000000-0000-0000-0000-000000000012',
   tenant_id: createdTenant.tenant_id,
-  email: createdTenant.first_tenant_admin_email,
-  full_name: createdTenant.first_tenant_admin_name,
-  role: 'tenant_admin',
   status: 'pending',
   invited_profile_id: createdTenant.first_tenant_admin_profile_id,
   last_sent_at: '2026-07-19T00:00:00.000Z',
-  cancelled_at: null,
-  created_at: '2026-07-19T00:00:00.000Z',
+  expires_at: '2026-07-26T00:00:00.000Z',
+  delivery_status: 'sent',
 };
 
 async function installPlatformMock(
   page: Page,
-  outcome: 'success' | 'failure' | 'resend' | 'delete',
+  outcome: 'success' | 'failure' | 'resend' | 'recovery',
 ) {
-  let tenantCreated = outcome === 'resend' || outcome === 'delete';
+  let tenantCreated = outcome === 'resend' || outcome === 'recovery';
   let invitationStatus = pendingInvitation.status;
   let resendRequests = 0;
-  let deleteRequests = 0;
-  let tenantAdminDeleted = false;
+  let recoveryRequests = 0;
+  let administratorRecovered = false;
 
   await page.addInitScript(
     ({ user }) => {
@@ -93,14 +90,14 @@ async function installPlatformMock(
       });
       return;
     }
-    if (body.kind === 'tenantAdminDelete') {
-      deleteRequests += 1;
-      tenantAdminDeleted = true;
+    if (body.kind === 'emergencyRecovery') {
+      recoveryRequests += 1;
+      administratorRecovered = true;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          status: 'deleted',
+          status: 'active',
           profileId: body.profileId,
           tenantId: createdTenant.tenant_id,
         }),
@@ -182,23 +179,14 @@ async function installPlatformMock(
       return;
     }
 
-    if (path.includes('/rest/v1/rpc/get_platform_tenant_onboarding_summary')) {
+    if (path.includes('/rest/v1/rpc/get_platform_tenant_onboarding_summary_secure')) {
       const tenantSummary =
-        outcome === 'delete'
-          ? tenantAdminDeleted
-            ? {
-                ...createdTenant,
-                first_tenant_admin_profile_id: null,
-                first_tenant_admin_name: null,
-                first_tenant_admin_email: null,
-                tenant_admin_status: 'missing',
-                active_tenant_admin_count: 0,
-              }
-            : {
-                ...createdTenant,
-                tenant_admin_status: 'active',
-                active_tenant_admin_count: 1,
-              }
+        outcome === 'recovery'
+          ? {
+              ...createdTenant,
+              tenant_admin_status: administratorRecovered ? 'active' : 'disabled',
+              active_tenant_admin_count: administratorRecovered ? 1 : 0,
+            }
           : createdTenant;
       await route.fulfill({
         status: 200,
@@ -208,7 +196,7 @@ async function installPlatformMock(
       return;
     }
 
-    if (path.includes('/rest/v1/tenant_onboarding_invitations')) {
+    if (path.includes('/rest/v1/rpc/get_platform_first_admin_invitation_status')) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -228,7 +216,7 @@ async function installPlatformMock(
 
   return {
     resendRequestCount: () => resendRequests,
-    deleteRequestCount: () => deleteRequests,
+    recoveryRequestCount: () => recoveryRequests,
   };
 }
 
@@ -278,24 +266,19 @@ test.describe('platform tenant invitation atomicity', () => {
       `A new password setup email was sent to ${createdTenant.first_tenant_admin_email}`,
     );
     expect(state.resendRequestCount()).toBe(1);
-    await expect(page.getByText(/tenant_admin · resent/)).toBeVisible();
+    await expect(page.getByText(/First administrator · resent/)).toBeVisible();
   });
 
-  test('platform super admin can permanently delete a tenant-admin account after confirmation', async ({
-    page,
-  }) => {
-    const state = await installPlatformMock(page, 'delete');
+  test('platform super admin can perform emergency recovery for the first administrator', async ({ page }) => {
+    const state = await installPlatformMock(page, 'recovery');
     await page.goto('/admin/tenants');
 
-    await page.getByRole('button', { name: 'Delete admin account' }).click();
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toContainText('This permanently removes');
-    await dialog.getByRole('button', { name: 'Delete admin account' }).click();
+    await page.getByRole('button', { name: 'Emergency recovery' }).click();
 
     await expect(page.getByRole('status')).toContainText(
-      `Tenant administrator ${createdTenant.first_tenant_admin_email} was deleted`,
+      `Emergency access restored for ${createdTenant.first_tenant_admin_email}`,
     );
-    expect(state.deleteRequestCount()).toBe(1);
-    await expect(page.getByRole('button', { name: 'Delete admin account' })).toHaveCount(0);
+    expect(state.recoveryRequestCount()).toBe(1);
+    await expect(page.getByRole('button', { name: 'Emergency recovery' })).toHaveCount(0);
   });
 });
