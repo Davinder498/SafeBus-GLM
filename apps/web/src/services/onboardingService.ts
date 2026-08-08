@@ -45,10 +45,10 @@ async function callOnboarding<T>(body: Record<string, unknown>): Promise<T> {
 }
 
 export interface PlatformTenantSummary { tenant_id: string; tenant_name: string; tenant_type: string; tenant_status: string; tenant_created_at: string; first_tenant_admin_profile_id: string | null; first_tenant_admin_name: string | null; first_tenant_admin_email: string | null; tenant_admin_status: 'invited' | 'active' | 'suspended' | 'disabled' | 'missing'; active_tenant_admin_count: number; latest_invitation_status: string; latest_invitation_at: string | null; setup_readiness: 'not_started' | 'in_progress' | 'ready'; has_buses: boolean; has_drivers: boolean; has_routes: boolean; has_students: boolean; last_onboarding_activity_at: string | null; }
-export interface OnboardingInvitation { id: string; tenant_id: string; email: string; full_name: string; role: 'tenant_admin' | 'driver' | 'guardian'; status: string; invited_profile_id: string | null; last_sent_at: string | null; cancelled_at: string | null; created_at: string; }
+export interface PlatformFirstAdminInvitation { invitation_id: string; tenant_id: string; invited_profile_id: string; status: string; last_sent_at: string | null; expires_at: string; delivery_status: string; }
 
-export async function fetchPlatformTenantSummaries(): Promise<PlatformTenantSummary[]> { const { data, error } = await client().rpc('get_platform_tenant_onboarding_summary'); if (error) throw new Error('Unable to load tenant onboarding summary.'); return (data ?? []) as PlatformTenantSummary[]; }
-export async function fetchInvitations(): Promise<OnboardingInvitation[]> { const { data, error } = await client().from('tenant_onboarding_invitations').select('id, tenant_id, email, full_name, role, status, invited_profile_id, last_sent_at, cancelled_at, created_at').order('created_at', { ascending: false }); if (error) throw new Error('Unable to load invitations.'); return (data ?? []) as OnboardingInvitation[]; }
+export async function fetchPlatformTenantSummaries(): Promise<PlatformTenantSummary[]> { const { data, error } = await client().rpc('get_platform_tenant_onboarding_summary_secure'); if (error) throw new Error('Unable to load tenant onboarding summary.'); return (data ?? []) as PlatformTenantSummary[]; }
+export async function fetchPlatformFirstAdminInvitations(): Promise<PlatformFirstAdminInvitation[]> { const { data, error } = await client().rpc('get_platform_first_admin_invitation_status'); if (error) throw new Error('Unable to load first administrator invitation status.'); return (data ?? []) as PlatformFirstAdminInvitation[]; }
 export async function createTenantWithAdmin(input: { tenantName: string; tenantType: string; schoolName: string; city: string; adminName: string; adminEmail: string }) { return callOnboarding<{ tenant: { id: string; name: string }; school: { id: string; name: string } | null; invitationStatus: 'sent' | 'resent' | 'recovery_sent'; recipientEmail: string }>({ kind: 'createTenant', ...input }); }
 export interface InviteTenantMemberInput {
   role: 'driver' | 'guardian';
@@ -68,7 +68,43 @@ export interface InviteTenantMemberInput {
   studentLinks?: Array<{ studentId: string; relationship: string }>;
 }
 export async function inviteTenantMember(input: InviteTenantMemberInput) { return callOnboarding<{ status: 'sent' | 'resent' | 'recovery_sent'; guardianId: string | null; driverId: string | null; recipientEmail: string }>({ kind: 'inviteMember', ...input }); }
-export async function updateInvitation(invitationId: string, action: 'resend' | 'cancel') { return callOnboarding<{ status: string }>({ kind: 'invitationAction', invitationId, action }); }
+export async function updateInvitation(invitationId: string, action: 'resend' | 'cancel' | 'revoke') { return callOnboarding<{ status: string }>({ kind: 'invitationAction', invitationId, action }); }
 export async function updateTenantLifecycle(tenantId: string, status: 'active' | 'suspended' | 'disabled') { return callOnboarding<{ status: string }>({ kind: 'tenantLifecycle', tenantId, status }); }
-export async function updateTenantAdminLifecycle(profileId: string, status: 'active' | 'disabled') { return callOnboarding<{ status: string }>({ kind: 'tenantAdminLifecycle', profileId, status }); }
-export async function deleteTenantAdminAccount(profileId: string) { return callOnboarding<{ status: 'deleted'; profileId: string; tenantId: string }>({ kind: 'tenantAdminDelete', profileId }); }
+
+// Phase 5: Invite an additional tenant administrator or sub-administrator.
+export async function inviteAdministrator(input: {
+  tenantId?: string;
+  fullName: string;
+  email: string;
+  role: 'tenant_admin' | 'school_admin' | 'transportation_admin';
+  schoolId?: string;
+}) {
+  return callOnboarding<{ profileId: string; tenantId: string; status: string }>({ kind: 'inviteAdministrator', ...input });
+}
+
+// Phase 5: Emergency recovery (platform super-admin).
+export async function emergencyRecovery(profileId: string, tenantId: string) {
+  return callOnboarding<{ profileId: string; tenantId: string; status: string }>({ kind: 'emergencyRecovery', profileId, tenantId });
+}
+
+export async function departAdministrator(profileId: string) {
+  return callOnboarding<{ profileId: string; status: string }>({ kind: 'departAdministrator', profileId });
+}
+
+export async function suspendAdministrator(profileId: string) {
+  return callOnboarding<{ profileId: string; status: string }>({ kind: 'suspendAdministrator', profileId });
+}
+
+export async function restoreAdministrator(profileId: string) {
+  return callOnboarding<{ profileId: string; status: string }>({ kind: 'restoreAdministrator', profileId });
+}
+
+export async function dispatchBulkInvitations(batchId: string, limit = 10) {
+  return callOnboarding<{
+    batchId: string;
+    claimed: number;
+    sent: number;
+    failed: number;
+    summary: Record<string, number>;
+  }>({ kind: 'bulkInvitationDispatch', batchId, limit });
+}

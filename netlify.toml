@@ -21,6 +21,11 @@
 [functions."safebus-retention-scheduled"]
   schedule = "@daily"
 
+# Phase 5: Keep invitation lifecycle state current and block stale invited
+# profiles independently of email-provider link expiry.
+[functions."safebus-invitation-expiry-scheduled"]
+  schedule = "@hourly"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

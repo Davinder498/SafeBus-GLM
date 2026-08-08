@@ -11,7 +11,7 @@
     "dev:netlify": "netlify dev --dir apps/web --target-port 5173",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test && node --test tests/release/security-config.test.mjs",
+    "test": "turbo run test && node --test tests/release/security-config.test.mjs tests/phase5/phase5-contract.test.mjs",
     "test:smoke": "playwright test",
     "test:smoke:release": "playwright test tests/release/release-smoke.spec.ts",
     "test:rls": "node scripts/run-rls-tests.mjs",
