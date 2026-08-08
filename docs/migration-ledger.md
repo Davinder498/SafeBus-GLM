@@ -3,7 +3,7 @@
 **Status:** Living document — updated with every migration
 **Owner:** Engineering Lead
 **Phase:** 1 — Critical database and authorization repair
-**Last updated:** 2026-08-06
+**Last updated:** 2026-08-08
 
 ---
 
@@ -91,10 +91,14 @@ archiving is needed; the collision is documented here and asserted by
 | 0072 | `0072_hosted_platform_helper_and_audit_sanitizer.sql` | Canonical | Hosted-DEV correction: restore recursive audit sanitization and deterministic nested platform authorization |
 | 0073 | `0073_hosted_rls_execution_context_reconciliation.sql` | Canonical | Hosted-DEV correction: unify platform authorization with the canonical role lookup and restore audit RLS SELECT privilege |
 | 0074 | `0074_phase2_3_hosted_constraint_password_reconciliation.sql` | Canonical | Hosted-DEV correction: allow retention audit events and restore the canonical repeated-character password validator |
+| 0075 | `0075_phase5_tenant_administration_foundation.sql` | Canonical | Phase 5: multiple admins, sub-admin roles, admin transfer/recovery/departure, final-admin protection trigger, atomic tenant lifecycle, tenant-level audit search |
+| 0076 | `0076_phase5_bulk_onboarding_foundation.sql` | Canonical | Phase 5: private bulk staging, 50k-row validation, atomic confirmation/rollback, set-based duplicate detection, SIS integration boundary |
+| 0077 | `0077_phase5_invitation_lifecycle.sql` | Canonical | Phase 5: enforced invitation expiry/revoke, first-admin platform boundary, rate-limited delivery queue and status reconciliation |
+| 0078 | `0078_phase5_account_restoration_bulk_invitations.sql` | Canonical | Phase 5: tenant account restoration and complete idempotent guardian/driver invitation queueing |
 
 ## 4. Fresh-rebuild proof
 
-A fresh database must be built from `0001` through `0074` in canonical order
+A fresh database must be built from `0001` through `0078` in canonical order
 (with archived files excluded) before these phases can be accepted. The archived
 files in `supabase/legacy/` are excluded from fresh rebuilds because:
 

@@ -24,6 +24,9 @@ import { AdminStudentDetailPage } from '@/pages/AdminStudentDetailPage';
 import { AdminStudentsPage } from '@/pages/AdminStudentsPage';
 import { AdminTripsPage } from '@/pages/AdminTripsPage';
 import { AdminUsersPage } from '@/pages/AdminUsersPage';
+import { AdminAdministratorsPage } from '@/pages/AdminAdministratorsPage';
+import { AdminBulkImportPage } from '@/pages/AdminBulkImportPage';
+import { AdminAuditSearchPage } from '@/pages/AdminAuditSearchPage';
 import { DriverDashboardPage } from '@/pages/DriverDashboardPage';
 import { DriverManifestPage } from '@/pages/DriverManifestPage';
 import { DriverProfilePage } from '@/pages/DriverProfilePage';
@@ -121,6 +124,30 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminUsersPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/administrators',
+    element: (
+      <ProtectedRoute allowedRoles={['tenant_admin']}>
+        <AdminAdministratorsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/bulk-import',
+    element: (
+      <ProtectedRoute allowedRoles={['tenant_admin']}>
+        <AdminBulkImportPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/audit-search',
+    element: (
+      <ProtectedRoute allowedRoles={['tenant_admin']}>
+        <AdminAuditSearchPage />
       </ProtectedRoute>
     ),
   },
