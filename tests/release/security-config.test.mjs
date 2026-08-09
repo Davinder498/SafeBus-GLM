@@ -235,10 +235,11 @@ test('admin fleet RLS contract uses PostgreSQL output metadata', async () => {
   assert.match(fleet, /candidate\.oid = v_function_oid/);
 });
 
-test('browser realtime tracking access remains receive-only through inherited grants', async () => {
-  const migration = await read(
-    'supabase/migrations/0083_reconcile_realtime_receive_only_grants.sql',
-  );
+test('browser realtime tracking access remains receive-only', async () => {
+  const [migration, rlsSuite] = await Promise.all([
+    read('supabase/migrations/0083_reconcile_realtime_receive_only_grants.sql'),
+    read('tests/rls/secure-trip-tracking-realtime-rls.sql'),
+  ]);
 
   assert.match(
     migration,
@@ -246,4 +247,9 @@ test('browser realtime tracking access remains receive-only through inherited gr
   );
   assert.match(migration, /grant select on table realtime\.messages to authenticated/);
   assert.doesNotMatch(migration, /grant insert/i);
+  assert.match(rlsSuite, /c\.relrowsecurity/);
+  assert.match(rlsSuite, /pol\.polcmd in \('a', '\*'\)/);
+  assert.match(rlsSuite, /rolname = 'anon'/);
+  assert.match(rlsSuite, /rolname = 'authenticated'/);
+  assert.doesNotMatch(rlsSuite, /has_table_privilege\('authenticated'.*'INSERT'/);
 });
