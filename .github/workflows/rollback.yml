@@ -48,7 +48,7 @@ jobs:
         run: |
           test "$(git rev-parse HEAD)" = "$(git rev-parse '${{ inputs.known_good_ref }}^{commit}')"
           git rev-parse HEAD
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v4
         with:
           node-version: 24
