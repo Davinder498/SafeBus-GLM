@@ -13,6 +13,15 @@ updates:
     groups:
       safe-minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # TypeScript 7 is not yet supported by the published typescript-eslint
+      # toolchain. Upgrade it only through a reviewed compatibility migration.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      # Capacitor core, CLI, Android, and plugins must remain on one major.
+      # Major upgrades require native sync/build validation as a single change.
+      - dependency-name: '@capacitor/*'
+        update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /
     schedule:
