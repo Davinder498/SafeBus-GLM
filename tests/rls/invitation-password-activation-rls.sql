@@ -1,6 +1,9 @@
 -- Self-contained invitation password activation regression.
 -- Run only against hosted Supabase DEV or a disposable migrated database.
 
+begin;
+alter table public.profiles disable trigger protect_final_tenant_admin_delete;
+
 delete from public.tenant_onboarding_invitations
 where id in (
   'c8000000-0000-0000-0000-000000000101',
@@ -153,6 +156,9 @@ values
   now()
 );
 
+alter table public.profiles enable trigger protect_final_tenant_admin_delete;
+commit;
+
 -- An invited user with a confirmed email and password activates only themself.
 begin;
 set local role authenticated;
@@ -252,6 +258,9 @@ end
 $$;
 rollback;
 
+begin;
+alter table public.profiles disable trigger protect_final_tenant_admin_delete;
+
 delete from public.tenant_onboarding_invitations
 where id in (
   'c8000000-0000-0000-0000-000000000101',
@@ -271,3 +280,6 @@ where id in (
 );
 delete from public.tenants
 where id = 'c8000000-0000-0000-0000-000000000010';
+
+alter table public.profiles enable trigger protect_final_tenant_admin_delete;
+commit;

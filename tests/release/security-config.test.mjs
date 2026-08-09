@@ -280,3 +280,19 @@ test('route pattern anonymous reads are tested at the RLS policy boundary', asyn
     /has_table_privilege\('anon', 'public\.route_trip_patterns', 'SELECT'\)/,
   );
 });
+
+test('invitation activation RLS fixtures survive assertion rollbacks', async () => {
+  const invitation = await read('tests/rls/invitation-password-activation-rls.sql');
+  const firstAssertion = invitation.indexOf('-- An invited user');
+
+  assert.ok(firstAssertion > 0);
+  assert.ok(invitation.indexOf('commit;') < firstAssertion);
+  assert.equal(
+    invitation.match(/disable trigger protect_final_tenant_admin_delete/g)?.length,
+    2,
+  );
+  assert.equal(
+    invitation.match(/enable trigger protect_final_tenant_admin_delete/g)?.length,
+    2,
+  );
+});
