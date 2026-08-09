@@ -48,6 +48,8 @@ test('platform privacy and Phase 5 exit-gate coverage stay wired', async () => {
   assert.match(invitationMigration, /drop policy if exists "tenant onboarding select platform admin"/);
   assert.match(invitationMigration, /platform_is_first_admin_invitation/);
   assert.match(runner, /phase5-tenant-administration-rls\.sql/);
+  assert.match(exitGate, /Keep repeated hosted-DEV runs deterministic/);
+  assert.match(exitGate, /platform MFA test context was not established/);
   assert.match(exitGate, /generate_series\(1, 10000\)/);
   assert.match(exitGate, /failed commit partially inserted/);
   assert.match(exitGate, /platform personnel can inspect imported tenant records/i);

@@ -4,6 +4,16 @@
 
 begin;
 
+-- Keep repeated hosted-DEV runs deterministic. Fixed Phase 5 fixtures may
+-- already exist after an interrupted run, so ON CONFLICT updates can execute
+-- the sensitive-profile triggers during setup. Supply the same verified
+-- platform-admin context used by the lifecycle assertions before seeding.
+select set_config('request.jwt.claim.sub', '55555550-5555-5555-5555-555555555550', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claims', '{"sub":"55555550-5555-5555-5555-555555555550","role":"authenticated","aal":"aal2"}', true);
+
+do $$ begin raise notice 'STAGE: Phase 5 fixture seed'; end $$;
+
 do $$
 declare
   v_tenant_id uuid := '55555555-5555-5555-5555-555555555555';
@@ -47,6 +57,7 @@ begin
 end $$;
 
 -- Final-admin protection covers status, role, and delete paths.
+do $$ begin raise notice 'STAGE: Phase 5 final-admin protection'; end $$;
 do $$
 declare
   v_admin_1 uuid := '55555551-5555-5555-5555-555555555551';
@@ -71,6 +82,16 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub', '55555550-5555-5555-5555-555555555550', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claims', '{"sub":"55555550-5555-5555-5555-555555555550","role":"authenticated","aal":"aal2"}', true);
+
+do $$
+begin
+  if auth.uid() is distinct from '55555550-5555-5555-5555-555555555550'::uuid
+     or not public.has_verified_mfa() then
+    raise exception 'Phase5 FAIL: platform MFA test context was not established (uid %, claims %).',
+      auth.uid(), auth.jwt();
+  end if;
+  raise notice 'STAGE: Phase 5 tenant lifecycle';
+end $$;
 
 select public.platform_set_tenant_lifecycle(
   '55555555-5555-5555-5555-555555555555', 'suspended'
