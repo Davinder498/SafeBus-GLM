@@ -325,7 +325,7 @@ $$;
 rollback;
 
 -- ===========================================================================
--- TEST 10: Guardian visibility RPC still scoped (unchanged)
+-- TEST 10: Current guardian bus-first visibility RPC remains scoped
 -- ===========================================================================
 begin;
 set local role authenticated;
@@ -343,12 +343,12 @@ begin
     raise exception 'TEST 10 FAILED: expected guardian, got %', public.current_user_role();
   end if;
 
-  select count(*) into v_count from public.get_guardian_student_route_visibility();
+  select count(*) into v_count from public.get_guardian_bus_visibility();
   if v_count < 1 then
     raise exception 'TEST 10 FAILED: guardian should see at least 1 linked student';
   end if;
 
-  raise notice 'TEST 10 PASSED: guardian sees % linked student(s)', v_count;
+  raise notice 'TEST 10 PASSED: guardian bus-first RPC sees % linked student(s)', v_count;
 end
 $$;
 rollback;

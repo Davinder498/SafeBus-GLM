@@ -79,14 +79,27 @@ test('hosted RLS runner preserves shared fixtures through dependent suites', asy
   ]);
 
   const rosterIndex = runner.indexOf("'tests/rls/student-roster-rls.sql'");
-  const guardianVisibilityIndex = runner.indexOf("'tests/rls/guardian-visibility-rls.sql'");
   const guardianLinkingIndex = runner.indexOf("'tests/rls/guardian-linking-rls.sql'");
   const cleanupIndex = runner.indexOf("'tests/rls/student-roster-shared-cleanup.sql'");
+  const guardianBusFirstIndex = runner.indexOf(
+    "'tests/rls/guardian-bus-first-visibility-rls.sql'",
+  );
 
   assert.ok(rosterIndex >= 0);
-  assert.ok(rosterIndex < guardianVisibilityIndex);
-  assert.ok(guardianVisibilityIndex < guardianLinkingIndex);
+  assert.ok(rosterIndex < guardianLinkingIndex);
   assert.ok(guardianLinkingIndex < cleanupIndex);
+  assert.ok(cleanupIndex < guardianBusFirstIndex);
+  for (const historicalFile of [
+    'guardian-visibility-rls.sql',
+    'guardian-live-trip-visibility-rls.sql',
+    'guardian-student-trip-event-visibility-rls.sql',
+    'guardian-live-bus-location-rls.sql',
+    'assignment-selected-driver-trips-rls.sql',
+  ]) {
+    assert.equal(runner.includes(`'tests/rls/${historicalFile}'`), false);
+  }
+  assert.match(runner, /'tests\/rls\/qr-only-driver-trip-start-rls\.sql'/);
+  assert.match(runner, /'tests\/rls\/unified-direction-assignment-rls\.sql'/);
   assert.ok(roster.indexOf('commit;') < roster.indexOf('-- TEST 1:'));
   assert.doesNotMatch(roster, /PRIVILEGED CLEANUP AFTER TESTS/);
   assert.match(roster, /disable trigger protect_final_tenant_admin_delete/);
