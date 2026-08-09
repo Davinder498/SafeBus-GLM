@@ -179,17 +179,18 @@ The default execution order is:
 1. `tests/rls/student-roster-rls.sql`
 2. `tests/rls/guardian-visibility-rls.sql`
 3. `tests/rls/guardian-linking-rls.sql`
-4. `tests/rls/guardian-live-trip-visibility-rls.sql`
-5. `tests/rls/driver-active-trip-student-manifest-rls.sql`
-6. `tests/rls/driver-student-trip-events-rls.sql`
-7. `tests/rls/guardian-student-trip-event-visibility-rls.sql`
-8. `tests/rls/guardian-notification-outbox-rls.sql`
-9. `tests/rls/admin-live-fleet-map-rls.sql`
-10. `tests/rls/guardian-live-bus-location-rls.sql`
-11. `tests/rls/student-route-assignment-optional-school-rls.sql`
-12. `tests/rls/driver-assignment-platform-admin-write-rls.sql`
-13. `tests/rls/secure-trip-tracking-realtime-rls.sql`
-14. `tests/rls/student-csv-import-rls.sql`
+4. `tests/rls/student-roster-shared-cleanup.sql`
+5. `tests/rls/guardian-live-trip-visibility-rls.sql`
+6. `tests/rls/driver-active-trip-student-manifest-rls.sql`
+7. `tests/rls/driver-student-trip-events-rls.sql`
+8. `tests/rls/guardian-student-trip-event-visibility-rls.sql`
+9. `tests/rls/guardian-notification-outbox-rls.sql`
+10. `tests/rls/admin-live-fleet-map-rls.sql`
+11. `tests/rls/guardian-live-bus-location-rls.sql`
+12. `tests/rls/student-route-assignment-optional-school-rls.sql`
+13. `tests/rls/driver-assignment-platform-admin-write-rls.sql`
+14. `tests/rls/secure-trip-tracking-realtime-rls.sql`
+15. `tests/rls/student-csv-import-rls.sql`
 
 The database must be safe for fixed-ID seeded test data. The scripts create
 test data and clean up after themselves where designed. If a run fails midway,

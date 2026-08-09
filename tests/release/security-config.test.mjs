@@ -70,3 +70,24 @@ test('CI declares every Phase 4 gate', async () => {
   }
   assert.match(await read('.github/workflows/codeql.yml'), /CodeQL/);
 });
+
+test('hosted RLS runner preserves shared fixtures through dependent suites', async () => {
+  const [runner, roster, cleanup] = await Promise.all([
+    read('scripts/run-rls-tests.mjs'),
+    read('tests/rls/student-roster-rls.sql'),
+    read('tests/rls/student-roster-shared-cleanup.sql'),
+  ]);
+
+  const rosterIndex = runner.indexOf("'tests/rls/student-roster-rls.sql'");
+  const guardianVisibilityIndex = runner.indexOf("'tests/rls/guardian-visibility-rls.sql'");
+  const guardianLinkingIndex = runner.indexOf("'tests/rls/guardian-linking-rls.sql'");
+  const cleanupIndex = runner.indexOf("'tests/rls/student-roster-shared-cleanup.sql'");
+
+  assert.ok(rosterIndex >= 0);
+  assert.ok(rosterIndex < guardianVisibilityIndex);
+  assert.ok(guardianVisibilityIndex < guardianLinkingIndex);
+  assert.ok(guardianLinkingIndex < cleanupIndex);
+  assert.ok(roster.indexOf('commit;') < roster.indexOf('-- TEST 1:'));
+  assert.doesNotMatch(roster, /PRIVILEGED CLEANUP AFTER TESTS/);
+  assert.match(cleanup, /Shared student-roster RLS fixtures cleaned up/);
+});
