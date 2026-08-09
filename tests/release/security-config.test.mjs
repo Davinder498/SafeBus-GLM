@@ -207,3 +207,22 @@ test('guardian notification RLS fixtures use current bus-service assignments', a
   assert.match(notifications, /disable trigger protect_final_tenant_admin_delete/);
   assert.match(notifications, /enable trigger protect_final_tenant_admin_delete/);
 });
+
+test('current driver event authorization preserves guardian outbox enqueueing', async () => {
+  const migration = await read(
+    'supabase/migrations/0082_restore_guardian_outbox_on_current_driver_events.sql',
+  );
+
+  assert.match(migration, /from public\.student_bus_assignments sba/);
+  assert.match(migration, /join public\.bus_route_assignments bra/);
+  assert.doesNotMatch(migration, /student_route_assignments/);
+  assert.match(migration, /route_stop_id/);
+  assert.match(migration, /insert into public\.guardian_notification_outbox/);
+  assert.match(migration, /sg\.status = 'active'/);
+  assert.match(migration, /sg\.can_receive_notifications = true/);
+  assert.match(migration, /g\.status = 'active'/);
+  assert.match(
+    migration,
+    /revoke all on function public\.record_student_trip_event_for_active_trip\(uuid, text\)\s+from public, anon, authenticated/,
+  );
+});

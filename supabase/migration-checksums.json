@@ -494,6 +494,12 @@
       "filename": "0081_reconcile_guardian_bus_first_execute_grants.sql",
       "bytes": 1241,
       "sha256": "dcfaa06f114c85e9d9208eca7b981aaba3dcc256458320bf1f9c52626f861e16"
+    },
+    {
+      "version": "0082",
+      "filename": "0082_restore_guardian_outbox_on_current_driver_events.sql",
+      "bytes": 5558,
+      "sha256": "32dd0b4039ecbbb71241d88eb5f2067420b65e1035201559c8a8d3f3b4484f4e"
     }
   ]
 }
