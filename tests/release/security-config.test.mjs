@@ -253,3 +253,19 @@ test('browser realtime tracking access remains receive-only', async () => {
   assert.match(rlsSuite, /rolname = 'authenticated'/);
   assert.doesNotMatch(rlsSuite, /has_table_privilege\('authenticated'.*'INSERT'/);
 });
+
+test('student CSV RLS fixtures survive preview rollback and clean up safely', async () => {
+  const csvImport = await read('tests/rls/student-csv-import-rls.sql');
+  const previewIndex = csvImport.indexOf('-- Preview validates');
+
+  assert.ok(previewIndex > 0);
+  assert.ok(csvImport.indexOf('commit;') < previewIndex);
+  assert.equal(
+    csvImport.match(/disable trigger protect_final_tenant_admin_delete/g)?.length,
+    2,
+  );
+  assert.equal(
+    csvImport.match(/enable trigger protect_final_tenant_admin_delete/g)?.length,
+    2,
+  );
+});

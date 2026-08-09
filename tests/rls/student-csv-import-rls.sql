@@ -3,6 +3,9 @@
 -- SELF-CONTAINED. DEV/STAGING ONLY. Requires migrations through 0044.
 -- Fixed fixtures are cleaned before and after the assertions.
 
+begin;
+alter table public.profiles disable trigger protect_final_tenant_admin_delete;
+
 delete from public.students
 where tenant_id in (
   'a4400000-0000-0000-0000-000000000001',
@@ -70,6 +73,9 @@ values (
   '4',
   'active'
 );
+
+alter table public.profiles enable trigger protect_final_tenant_admin_delete;
+commit;
 
 -- Preview validates case-insensitive school names, returns duplicate warnings,
 -- and never inserts rows.
@@ -366,6 +372,9 @@ $$;
 rollback;
 
 reset role;
+begin;
+alter table public.profiles disable trigger protect_final_tenant_admin_delete;
+
 delete from public.students
 where tenant_id in (
   'a4400000-0000-0000-0000-000000000001',
@@ -393,3 +402,6 @@ where id in (
   'a4400000-0000-0000-0000-000000000001',
   'a4400000-0000-0000-0000-000000000002'
 );
+
+alter table public.profiles enable trigger protect_final_tenant_admin_delete;
+commit;
