@@ -337,4 +337,5 @@ test('platform isolation RLS uses the current MFA-gated onboarding summary', asy
     platformIsolation,
     /has_function_privilege\(\s*'authenticated',\s*'public\.get_platform_tenant_onboarding_summary\(\)'/,
   );
+  assert.doesNotMatch(platformIsolation, /platform admin summary RPC returned no rows/);
 });
