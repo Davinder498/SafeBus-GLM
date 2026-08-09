@@ -37,25 +37,25 @@ importers:
     dependencies:
       '@capacitor/android':
         specifier: ^6.1.2
-        version: 6.2.1(@capacitor/core@6.2.1)
+        version: 6.2.1(@capacitor/core@8.5.0)
       '@capacitor/app':
         specifier: ^6.0.1
-        version: 6.0.3(@capacitor/core@6.2.1)
+        version: 6.0.3(@capacitor/core@8.5.0)
       '@capacitor/core':
-        specifier: ^6.1.2
-        version: 6.2.1
+        specifier: ^8.5.0
+        version: 8.5.0
       '@capacitor/geolocation':
         specifier: ^8.2.0
-        version: 8.2.0(@capacitor/core@6.2.1)
+        version: 8.2.0(@capacitor/core@8.5.0)
       '@capacitor/haptics':
         specifier: ^6.0.1
-        version: 6.0.3(@capacitor/core@6.2.1)
+        version: 6.0.3(@capacitor/core@8.5.0)
       '@capacitor/keyboard':
         specifier: ^6.0.2
-        version: 6.0.4(@capacitor/core@6.2.1)
+        version: 6.0.4(@capacitor/core@8.5.0)
       '@capacitor/status-bar':
         specifier: ^6.0.1
-        version: 6.0.3(@capacitor/core@6.2.1)
+        version: 6.0.3(@capacitor/core@8.5.0)
       '@fontsource-variable/inter':
         specifier: 5.2.8
         version: 5.2.8
@@ -447,8 +447,8 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
-  '@capacitor/core@6.2.1':
-    resolution: {integrity: sha512-urZwxa7hVE/BnA18oCFAdizXPse6fCKanQyEqpmz6cBJ2vObwMpyJDG5jBeoSsgocS9+Ax+9vb4ducWJn0y2qQ==}
+  '@capacitor/core@8.5.0':
+    resolution: {integrity: sha512-Ca4krtqH1hothjtBIwf2J2TW7IhYq1ujp8QeItTiJohNsqij8ja2DYYH3DU0l8RmxCWaBAFTGA2TgOgOMCSNsQ==}
 
   '@capacitor/geolocation@8.2.0':
     resolution: {integrity: sha512-N29QcoIPmme0xSxRkm7+3hjoHp6mBAOarxecvtCCZKyOBeKiJsFUq981cezg2XWBa6fhCXJMCCjQPngKK/dIag==}
@@ -7023,13 +7023,13 @@ snapshots:
 
   '@bugsnag/safe-json-stringify@6.1.0': {}
 
-  '@capacitor/android@6.2.1(@capacitor/core@6.2.1)':
+  '@capacitor/android@6.2.1(@capacitor/core@8.5.0)':
     dependencies:
-      '@capacitor/core': 6.2.1
+      '@capacitor/core': 8.5.0
 
-  '@capacitor/app@6.0.3(@capacitor/core@6.2.1)':
+  '@capacitor/app@6.0.3(@capacitor/core@8.5.0)':
     dependencies:
-      '@capacitor/core': 6.2.1
+      '@capacitor/core': 8.5.0
 
   '@capacitor/cli@6.2.1(supports-color@9.4.0)':
     dependencies:
@@ -7053,26 +7053,26 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@capacitor/core@6.2.1':
+  '@capacitor/core@8.5.0':
     dependencies:
       tslib: 2.8.1
 
-  '@capacitor/geolocation@8.2.0(@capacitor/core@6.2.1)':
+  '@capacitor/geolocation@8.2.0(@capacitor/core@8.5.0)':
     dependencies:
-      '@capacitor/core': 6.2.1
+      '@capacitor/core': 8.5.0
       '@capacitor/synapse': 1.0.4
 
-  '@capacitor/haptics@6.0.3(@capacitor/core@6.2.1)':
+  '@capacitor/haptics@6.0.3(@capacitor/core@8.5.0)':
     dependencies:
-      '@capacitor/core': 6.2.1
+      '@capacitor/core': 8.5.0
 
-  '@capacitor/keyboard@6.0.4(@capacitor/core@6.2.1)':
+  '@capacitor/keyboard@6.0.4(@capacitor/core@8.5.0)':
     dependencies:
-      '@capacitor/core': 6.2.1
+      '@capacitor/core': 8.5.0
 
-  '@capacitor/status-bar@6.0.3(@capacitor/core@6.2.1)':
+  '@capacitor/status-bar@6.0.3(@capacitor/core@8.5.0)':
     dependencies:
-      '@capacitor/core': 6.2.1
+      '@capacitor/core': 8.5.0
 
   '@capacitor/synapse@1.0.4': {}
 
