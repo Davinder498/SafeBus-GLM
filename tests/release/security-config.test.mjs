@@ -171,3 +171,21 @@ test('driver manifest RLS fixtures isolate legacy seed setup from production gua
     /route_id, route_trip_pattern_id,\s+trip_name_snapshot, trip_type/,
   );
 });
+
+test('driver event RLS fixtures use current bus-service assignments', async () => {
+  const events = await read('tests/rls/driver-student-trip-events-rls.sql');
+  const firstTest = events.indexOf('-- TEST 1:');
+
+  assert.ok(firstTest > 0);
+  assert.ok(events.indexOf('commit;') < firstTest);
+  assert.match(events, /insert into public\.route_trip_patterns/);
+  assert.match(events, /insert into public\.bus_route_assignments/);
+  assert.match(events, /insert into public\.student_bus_assignments/);
+  assert.doesNotMatch(events, /insert into public\.student_route_assignments/);
+  assert.match(events, /disable trigger enforce_ready_route_trip_start/);
+  assert.match(events, /enable trigger enforce_ready_route_trip_start/);
+  assert.match(events, /disable trigger validate_new_bus_trip_assignment_readiness/);
+  assert.match(events, /enable trigger validate_new_bus_trip_assignment_readiness/);
+  assert.match(events, /disable trigger protect_final_tenant_admin_delete/);
+  assert.match(events, /enable trigger protect_final_tenant_admin_delete/);
+});

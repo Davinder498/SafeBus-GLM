@@ -7,6 +7,18 @@
 -- PRIVILEGED CLEANUP BEFORE SEED
 -- ===========================================================================
 
+begin;
+
+-- These deterministic active-trip fixtures test event authorization, not
+-- route-definition readiness. Production guards remain disabled only during
+-- this privileged seed transaction.
+alter table public.driver_trips
+  disable trigger enforce_ready_route_trip_start;
+alter table public.bus_route_assignments
+  disable trigger validate_new_bus_trip_assignment_readiness;
+alter table public.profiles
+  disable trigger protect_final_tenant_admin_delete;
+
 delete from public.student_trip_events where driver_trip_id in (
   '7b200000-0000-0000-0000-000000000001',
   '7b200000-0000-0000-0000-000000000002',
@@ -19,6 +31,19 @@ delete from public.driver_trips where id in (
   '7b200000-0000-0000-0000-000000000003'
 );
 
+delete from public.student_bus_assignments where id in (
+  '7b195000-0000-0000-0000-000000000001',
+  '7b195000-0000-0000-0000-000000000002',
+  '7b195000-0000-0000-0000-000000000003'
+);
+
+delete from public.bus_route_assignments where id in (
+  '7b185000-0000-0000-0000-000000000001',
+  '7b185000-0000-0000-0000-000000000002',
+  '7b185000-0000-0000-0000-000000000003'
+);
+
+-- Remove IDs from the historical route-only fixture if necessary.
 delete from public.student_route_assignments where id in (
   '7b190000-0000-0000-0000-000000000001',
   '7b190000-0000-0000-0000-000000000002',
@@ -139,6 +164,27 @@ values
   ('7b170000-0000-0000-0000-000000000002', '7b100000-0000-0000-0000-000000000001', '7b110000-0000-0000-0000-000000000001', 'M7B Route A Other', 'M7B-A2', 'morning', 'active'),
   ('7b170000-0000-0000-0000-000000000003', '7b100000-0000-0000-0000-000000000002', '7b110000-0000-0000-0000-000000000002', 'M7B Route B CrossTenant', 'M7B-B1', 'morning', 'active');
 
+insert into public.route_trip_patterns (
+  id, tenant_id, route_id, direction, display_name, status,
+  schedule_review_required
+)
+values
+  ('7b175000-0000-0000-0000-000000000001', '7b100000-0000-0000-0000-000000000001', '7b170000-0000-0000-0000-000000000001', 'forward', 'M7B Own Outbound', 'active', false),
+  ('7b175000-0000-0000-0000-000000000002', '7b100000-0000-0000-0000-000000000001', '7b170000-0000-0000-0000-000000000001', 'reverse', 'M7B Own Return', 'active', false),
+  ('7b175000-0000-0000-0000-000000000003', '7b100000-0000-0000-0000-000000000001', '7b170000-0000-0000-0000-000000000002', 'forward', 'M7B Other Outbound', 'active', false),
+  ('7b175000-0000-0000-0000-000000000004', '7b100000-0000-0000-0000-000000000001', '7b170000-0000-0000-0000-000000000002', 'reverse', 'M7B Other Return', 'active', false),
+  ('7b175000-0000-0000-0000-000000000005', '7b100000-0000-0000-0000-000000000002', '7b170000-0000-0000-0000-000000000003', 'forward', 'M7B CrossTenant Outbound', 'active', false),
+  ('7b175000-0000-0000-0000-000000000006', '7b100000-0000-0000-0000-000000000002', '7b170000-0000-0000-0000-000000000003', 'reverse', 'M7B CrossTenant Return', 'active', false);
+
+insert into public.bus_route_assignments (
+  id, tenant_id, bus_id, route_id, route_trip_pattern_id, trip_type,
+  effective_from, status
+)
+values
+  ('7b185000-0000-0000-0000-000000000001', '7b100000-0000-0000-0000-000000000001', '7b160000-0000-0000-0000-000000000001', '7b170000-0000-0000-0000-000000000001', '7b175000-0000-0000-0000-000000000001', 'morning', current_date, 'active'),
+  ('7b185000-0000-0000-0000-000000000002', '7b100000-0000-0000-0000-000000000001', '7b160000-0000-0000-0000-000000000002', '7b170000-0000-0000-0000-000000000002', '7b175000-0000-0000-0000-000000000003', 'morning', current_date, 'active'),
+  ('7b185000-0000-0000-0000-000000000003', '7b100000-0000-0000-0000-000000000002', '7b160000-0000-0000-0000-000000000003', '7b170000-0000-0000-0000-000000000003', '7b175000-0000-0000-0000-000000000005', 'morning', current_date, 'active');
+
 insert into public.route_stops (id, tenant_id, route_id, stop_name, stop_order, status)
 values
   ('7b180000-0000-0000-0000-000000000001', '7b100000-0000-0000-0000-000000000001', '7b170000-0000-0000-0000-000000000001', 'M7B Own Pickup', 1, 'active'),
@@ -152,17 +198,33 @@ values
   ('7b150000-0000-0000-0000-000000000002', '7b100000-0000-0000-0000-000000000001', '7b110000-0000-0000-0000-000000000001', 'M7B', 'OtherDriverStudent', 'active'),
   ('7b150000-0000-0000-0000-000000000003', '7b100000-0000-0000-0000-000000000002', '7b110000-0000-0000-0000-000000000002', 'M7B', 'CrossTenantStudent', 'active');
 
-insert into public.student_route_assignments (id, tenant_id, student_id, route_id, pickup_stop_id, dropoff_stop_id, status)
+insert into public.student_bus_assignments (
+  id, tenant_id, student_id, bus_route_assignment_id,
+  route_trip_pattern_id, pickup_stop_id, dropoff_stop_id,
+  effective_from, status
+)
 values
-  ('7b190000-0000-0000-0000-000000000001', '7b100000-0000-0000-0000-000000000001', '7b150000-0000-0000-0000-000000000001', '7b170000-0000-0000-0000-000000000001', '7b180000-0000-0000-0000-000000000001', '7b180000-0000-0000-0000-000000000002', 'active'),
-  ('7b190000-0000-0000-0000-000000000002', '7b100000-0000-0000-0000-000000000001', '7b150000-0000-0000-0000-000000000002', '7b170000-0000-0000-0000-000000000002', '7b180000-0000-0000-0000-000000000003', null, 'active'),
-  ('7b190000-0000-0000-0000-000000000003', '7b100000-0000-0000-0000-000000000002', '7b150000-0000-0000-0000-000000000003', '7b170000-0000-0000-0000-000000000003', '7b180000-0000-0000-0000-000000000004', null, 'active');
+  ('7b195000-0000-0000-0000-000000000001', '7b100000-0000-0000-0000-000000000001', '7b150000-0000-0000-0000-000000000001', '7b185000-0000-0000-0000-000000000001', '7b175000-0000-0000-0000-000000000001', '7b180000-0000-0000-0000-000000000001', '7b180000-0000-0000-0000-000000000002', current_date, 'active'),
+  ('7b195000-0000-0000-0000-000000000002', '7b100000-0000-0000-0000-000000000001', '7b150000-0000-0000-0000-000000000002', '7b185000-0000-0000-0000-000000000002', '7b175000-0000-0000-0000-000000000003', '7b180000-0000-0000-0000-000000000003', null, current_date, 'active'),
+  ('7b195000-0000-0000-0000-000000000003', '7b100000-0000-0000-0000-000000000002', '7b150000-0000-0000-0000-000000000003', '7b185000-0000-0000-0000-000000000003', '7b175000-0000-0000-0000-000000000005', '7b180000-0000-0000-0000-000000000004', null, current_date, 'active');
 
-insert into public.driver_trips (id, tenant_id, driver_id, bus_id, route_id, trip_type, status, service_date, started_at)
+insert into public.driver_trips (
+  id, tenant_id, driver_id, bus_id, route_id, route_trip_pattern_id,
+  trip_name_snapshot, trip_type, status, service_date, started_at
+)
 values
-  ('7b200000-0000-0000-0000-000000000001', '7b100000-0000-0000-0000-000000000001', '7b130000-0000-0000-0000-000000000001', '7b160000-0000-0000-0000-000000000001', '7b170000-0000-0000-0000-000000000001', 'morning', 'active', current_date, now() - interval '20 minutes'),
-  ('7b200000-0000-0000-0000-000000000002', '7b100000-0000-0000-0000-000000000001', '7b130000-0000-0000-0000-000000000002', '7b160000-0000-0000-0000-000000000002', '7b170000-0000-0000-0000-000000000002', 'morning', 'active', current_date, now() - interval '15 minutes'),
-  ('7b200000-0000-0000-0000-000000000003', '7b100000-0000-0000-0000-000000000002', '7b130000-0000-0000-0000-000000000003', '7b160000-0000-0000-0000-000000000003', '7b170000-0000-0000-0000-000000000003', 'morning', 'active', current_date, now() - interval '10 minutes');
+  ('7b200000-0000-0000-0000-000000000001', '7b100000-0000-0000-0000-000000000001', '7b130000-0000-0000-0000-000000000001', '7b160000-0000-0000-0000-000000000001', '7b170000-0000-0000-0000-000000000001', '7b175000-0000-0000-0000-000000000001', 'M7B Own Outbound', 'morning', 'active', current_date, now() - interval '20 minutes'),
+  ('7b200000-0000-0000-0000-000000000002', '7b100000-0000-0000-0000-000000000001', '7b130000-0000-0000-0000-000000000002', '7b160000-0000-0000-0000-000000000002', '7b170000-0000-0000-0000-000000000002', '7b175000-0000-0000-0000-000000000003', 'M7B Other Outbound', 'morning', 'active', current_date, now() - interval '15 minutes'),
+  ('7b200000-0000-0000-0000-000000000003', '7b100000-0000-0000-0000-000000000002', '7b130000-0000-0000-0000-000000000003', '7b160000-0000-0000-0000-000000000003', '7b170000-0000-0000-0000-000000000003', '7b175000-0000-0000-0000-000000000005', 'M7B CrossTenant Outbound', 'morning', 'active', current_date, now() - interval '10 minutes');
+
+alter table public.driver_trips
+  enable trigger enforce_ready_route_trip_start;
+alter table public.bus_route_assignments
+  enable trigger validate_new_bus_trip_assignment_readiness;
+alter table public.profiles
+  enable trigger protect_final_tenant_admin_delete;
+
+commit;
 
 -- TEST 1: A driver can record pickup for an assigned student on their own active trip.
 begin;
@@ -441,6 +503,11 @@ rollback;
 -- PRIVILEGED CLEANUP AFTER TESTS
 -- ===========================================================================
 
+begin;
+
+alter table public.profiles
+  disable trigger protect_final_tenant_admin_delete;
+
 delete from public.student_trip_events where driver_trip_id in (
   '7b200000-0000-0000-0000-000000000001',
   '7b200000-0000-0000-0000-000000000002',
@@ -451,6 +518,18 @@ delete from public.driver_trips where id in (
   '7b200000-0000-0000-0000-000000000001',
   '7b200000-0000-0000-0000-000000000002',
   '7b200000-0000-0000-0000-000000000003'
+);
+
+delete from public.student_bus_assignments where id in (
+  '7b195000-0000-0000-0000-000000000001',
+  '7b195000-0000-0000-0000-000000000002',
+  '7b195000-0000-0000-0000-000000000003'
+);
+
+delete from public.bus_route_assignments where id in (
+  '7b185000-0000-0000-0000-000000000001',
+  '7b185000-0000-0000-0000-000000000002',
+  '7b185000-0000-0000-0000-000000000003'
 );
 
 delete from public.student_route_assignments where id in (
@@ -517,3 +596,8 @@ delete from public.tenants where id in (
   '7b100000-0000-0000-0000-000000000001',
   '7b100000-0000-0000-0000-000000000002'
 );
+
+alter table public.profiles
+  enable trigger protect_final_tenant_admin_delete;
+
+commit;
