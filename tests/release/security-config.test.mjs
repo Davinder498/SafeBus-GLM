@@ -124,3 +124,28 @@ test('student roster write authorization keeps school administrators school-scop
   assert.doesNotMatch(migration, /select public\.can_write_optional_school/);
   assert.doesNotMatch(migration, /is_platform_super_admin/);
 });
+
+test('guardian browser access stays on the single bus-first RPC contract', async () => {
+  const migration = await read(
+    'supabase/migrations/0081_reconcile_guardian_bus_first_execute_grants.sql',
+  );
+
+  for (const retiredRpc of [
+    'get_guardian_student_route_visibility',
+    'get_guardian_live_trip_visibility',
+    'get_guardian_live_route_overlays',
+    'get_guardian_student_trip_event_visibility',
+    'get_guardian_student_live_bus_location_state',
+  ]) {
+    assert.match(
+      migration,
+      new RegExp(
+        `revoke all on function public\\.${retiredRpc}\\(\\)[\\s\\S]*?from public, anon, authenticated`,
+      ),
+    );
+  }
+  assert.match(
+    migration,
+    /grant execute on function public\.get_guardian_bus_visibility\(\)\s+to authenticated/,
+  );
+});

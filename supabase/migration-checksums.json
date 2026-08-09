@@ -488,6 +488,12 @@
       "filename": "0080_restore_student_roster_school_scope.sql",
       "bytes": 1795,
       "sha256": "ae4628814cf910dce9aab6bc27644469a8decc4d8eada08ba0b54b9c46f387a5"
+    },
+    {
+      "version": "0081",
+      "filename": "0081_reconcile_guardian_bus_first_execute_grants.sql",
+      "bytes": 1241,
+      "sha256": "dcfaa06f114c85e9d9208eca7b981aaba3dcc256458320bf1f9c52626f861e16"
     }
   ]
 }
