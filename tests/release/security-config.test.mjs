@@ -355,3 +355,14 @@ test('Phase 3 RLS cleanup relies on rollback instead of deleting a final admin',
   assert.match(phase3, /rollback;\s*$/);
   assert.doesNotMatch(phase3, /delete from public\.profiles/);
 });
+
+test('verified MFA helper is reconciled from the signed Supabase JWT', async () => {
+  const migration = await read(
+    'supabase/migrations/0085_reconcile_verified_mfa_helper.sql',
+  );
+
+  assert.match(migration, /create or replace function public\.has_verified_mfa\(\)/);
+  assert.match(migration, /auth\.uid\(\) is not null/);
+  assert.match(migration, /auth\.jwt\(\) ->> 'aal'/);
+  assert.match(migration, /= 'aal2'/);
+});

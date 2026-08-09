@@ -512,6 +512,12 @@
       "filename": "0084_break_route_trip_rls_recursion.sql",
       "bytes": 2420,
       "sha256": "3f82efda7a8eda8063bad6596062ff4d1d01e273b7b9fd19f3dd925c110a83ad"
+    },
+    {
+      "version": "0085",
+      "filename": "0085_reconcile_verified_mfa_helper.sql",
+      "bytes": 651,
+      "sha256": "b916e43012a9e9a31d0cf2c3a4a6485c034a8512c112e2314a8f1b1c0b80b2ad"
     }
   ]
 }
