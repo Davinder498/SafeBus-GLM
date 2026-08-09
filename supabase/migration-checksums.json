@@ -518,6 +518,12 @@
       "filename": "0085_reconcile_verified_mfa_helper.sql",
       "bytes": 651,
       "sha256": "b916e43012a9e9a31d0cf2c3a4a6485c034a8512c112e2314a8f1b1c0b80b2ad"
+    },
+    {
+      "version": "0086",
+      "filename": "0086_phase7_production_driver_tracking.sql",
+      "bytes": 20733,
+      "sha256": "a3d1c021cf51176f3f159064ee404a8c1b89c425dd1e5f5c60ae55a88e8d4089"
     }
   ]
 }

@@ -35,7 +35,9 @@ export function useDriverLocationSharing(
   trackingToken: string | null,
   autoStart = false,
 ): UseDriverLocationSharingResult {
-  const supported = typeof navigator !== 'undefined' && 'geolocation' in navigator;
+  const nativeTracking = typeof window !== 'undefined' ? window.SafeBusNativeTracking : undefined;
+  const supported = Boolean(nativeTracking) ||
+    (typeof navigator !== 'undefined' && 'geolocation' in navigator);
   const [state, setState] = useState<LocationSharingState>({ kind: 'inactive' });
   const watchIdRef = useRef<number | null>(null);
   const trackingTokenRef = useRef(trackingToken);
@@ -70,8 +72,9 @@ export function useDriverLocationSharing(
     retryAttemptRef.current = 0;
     clearTimer();
     clearWatcher();
+    if (nativeTracking) void nativeTracking.pause();
     if (mountedRef.current) setState({ kind: 'inactive' });
-  }, [clearTimer, clearWatcher]);
+  }, [clearTimer, clearWatcher, nativeTracking]);
 
   const scheduleFlush = useCallback(
     (delayMs: number) => {
@@ -160,6 +163,32 @@ export function useDriverLocationSharing(
     }
     if (!trackingTokenRef.current) return;
 
+    if (nativeTracking) {
+      sharingRequestedRef.current = true;
+      setState({ kind: 'waiting' });
+      void nativeTracking.resume().then((status) => {
+        if (!mountedRef.current || !sharingRequestedRef.current) return;
+        if (status.collecting && status.lastAcceptedAt) {
+          lastUpdateAtRef.current = status.lastAcceptedAt;
+          setState({
+            kind: 'sharing',
+            lastUpdateAt: status.lastAcceptedAt,
+            delivery: status.queuedEvents === 0 ? 'active' : 'delayed',
+          });
+        } else if (status.collecting) {
+          setState({ kind: 'waiting' });
+        }
+      }).catch((error: unknown) => {
+        if (mountedRef.current) {
+          setState({
+            kind: 'error',
+            message: error instanceof Error ? error.message : 'Native location sharing could not be started.',
+          });
+        }
+      });
+      return;
+    }
+
     clearWatcher();
     clearTimer();
     sharingRequestedRef.current = true;
@@ -197,7 +226,36 @@ export function useDriverLocationSharing(
       },
       { enableHighAccuracy: true, timeout: 15_000, maximumAge: 3_000 },
     );
-  }, [clearTimer, clearWatcher, supported]);
+  }, [clearTimer, clearWatcher, nativeTracking, supported]);
+
+  useEffect(() => {
+    if (!nativeTracking || !trackingToken) return undefined;
+    const updateNativeState = async () => {
+      try {
+        const status = await nativeTracking.getStatus();
+        if (!mountedRef.current) return;
+        if (!status.configured || !status.collecting) {
+          setState({ kind: 'inactive' });
+        } else if (status.lastAcceptedAt) {
+          lastUpdateAtRef.current = status.lastAcceptedAt;
+          setState({
+            kind: 'sharing',
+            lastUpdateAt: status.lastAcceptedAt,
+            delivery: status.queuedEvents === 0 ? 'active' : 'delayed',
+          });
+        } else if (status.queuedEvents > 0) {
+          setState({ kind: 'offline', lastUpdateAt: null });
+        } else {
+          setState({ kind: 'waiting' });
+        }
+      } catch {
+        // The foreground notification remains authoritative while the WebView is suspended.
+      }
+    };
+    void updateNativeState();
+    const timer = window.setInterval(() => void updateNativeState(), 10_000);
+    return () => window.clearInterval(timer);
+  }, [nativeTracking, trackingToken]);
 
   useEffect(() => {
     const handleOffline = () => {

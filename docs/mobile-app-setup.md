@@ -1,5 +1,7 @@
 # SafeBus Mobile App — Setup & Testing Guide
 
+> Phase 7 production driver tracking is Android-only and requires a company-owned managed device. See [phase-7-production-driver-tracking.md](phase-7-production-driver-tracking.md) for provisioning, privacy, and physical road-test gates. The committed Android project contains the native foreground service; do not regenerate or delete it.
+
 The SafeBus mobile app is a **native Android wrapper** around the existing
 SafeBus web app, built with [Capacitor](https://capacitorjs.com/). It provides
 a dedicated native experience for **drivers** and **guardians**, while tenant
