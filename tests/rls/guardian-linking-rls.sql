@@ -6,7 +6,7 @@
 -- HOW TO RUN:
 --   1. First run the SEED block from student-roster-rls.sql to set up test data.
 --   2. Then run this file, or run each test transaction in order.
---   3. Run the CLEANUP block from student-roster-rls.sql when done.
+--   3. Run student-roster-shared-cleanup.sql when done.
 --   4. Do not run against production.
 --
 -- These tests are MANUAL — they require a live Supabase database with all
@@ -37,10 +37,10 @@ do $$
 declare
   v_link public.student_guardians;
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000001'::uuid then
     raise exception 'TEST 1 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'tenant_admin' then
+  if public.current_user_role() is distinct from 'tenant_admin' then
     raise exception 'TEST 1 FAILED: expected tenant_admin, got %', public.current_user_role();
   end if;
 
@@ -72,10 +72,10 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated', 'aal', 'aal2')::text, true);
 do $$
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000001'::uuid then
     raise exception 'TEST 2 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'tenant_admin' then
+  if public.current_user_role() is distinct from 'tenant_admin' then
     raise exception 'TEST 2 FAILED: expected tenant_admin, got %', public.current_user_role();
   end if;
 
@@ -107,10 +107,10 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated', 'aal', 'aal2')::text, true);
 do $$
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000001'::uuid then
     raise exception 'TEST 3 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'tenant_admin' then
+  if public.current_user_role() is distinct from 'tenant_admin' then
     raise exception 'TEST 3 FAILED: expected tenant_admin, got %', public.current_user_role();
   end if;
 
@@ -142,10 +142,10 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000004', 'role', 'authenticated')::text, true);
 do $$
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000004'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000004'::uuid then
     raise exception 'TEST 4 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'guardian' then
+  if public.current_user_role() is distinct from 'guardian' then
     raise exception 'TEST 4 FAILED: expected guardian, got %', public.current_user_role();
   end if;
 
@@ -174,10 +174,10 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000005', 'role', 'authenticated')::text, true);
 do $$
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000005'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000005'::uuid then
     raise exception 'TEST 5 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'driver' then
+  if public.current_user_role() is distinct from 'driver' then
     raise exception 'TEST 5 FAILED: expected driver, got %', public.current_user_role();
   end if;
 
@@ -206,10 +206,10 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated', 'aal', 'aal2')::text, true);
 do $$
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000001'::uuid then
     raise exception 'TEST 6 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'tenant_admin' then
+  if public.current_user_role() is distinct from 'tenant_admin' then
     raise exception 'TEST 6 FAILED: expected tenant_admin, got %', public.current_user_role();
   end if;
 
@@ -239,10 +239,10 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated', 'aal', 'aal2')::text, true);
 do $$
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000001'::uuid then
     raise exception 'TEST 7 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'tenant_admin' then
+  if public.current_user_role() is distinct from 'tenant_admin' then
     raise exception 'TEST 7 FAILED: expected tenant_admin, got %', public.current_user_role();
   end if;
 
@@ -271,10 +271,10 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated', 'aal', 'aal2')::text, true);
 do $$
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000001'::uuid then
     raise exception 'TEST 8 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'tenant_admin' then
+  if public.current_user_role() is distinct from 'tenant_admin' then
     raise exception 'TEST 8 FAILED: expected tenant_admin, got %', public.current_user_role();
   end if;
 
@@ -305,10 +305,10 @@ do $$
 declare
   v_link public.student_guardians;
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000001'::uuid then
     raise exception 'TEST 9 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'tenant_admin' then
+  if public.current_user_role() is distinct from 'tenant_admin' then
     raise exception 'TEST 9 FAILED: expected tenant_admin, got %', public.current_user_role();
   end if;
 
@@ -325,7 +325,7 @@ $$;
 rollback;
 
 -- ===========================================================================
--- TEST 10: Guardian visibility RPC still scoped (unchanged)
+-- TEST 10: Current guardian bus-first visibility RPC remains scoped
 -- ===========================================================================
 begin;
 set local role authenticated;
@@ -336,19 +336,19 @@ do $$
 declare
   v_count int;
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000004'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000004'::uuid then
     raise exception 'TEST 10 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'guardian' then
+  if public.current_user_role() is distinct from 'guardian' then
     raise exception 'TEST 10 FAILED: expected guardian, got %', public.current_user_role();
   end if;
 
-  select count(*) into v_count from public.get_guardian_student_route_visibility();
+  select count(*) into v_count from public.get_guardian_bus_visibility();
   if v_count < 1 then
     raise exception 'TEST 10 FAILED: guardian should see at least 1 linked student';
   end if;
 
-  raise notice 'TEST 10 PASSED: guardian sees % linked student(s)', v_count;
+  raise notice 'TEST 10 PASSED: guardian bus-first RPC sees % linked student(s)', v_count;
 end
 $$;
 rollback;
@@ -373,10 +373,10 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000001', 'role', 'authenticated', 'aal', 'aal2')::text, true);
 do $$
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000001'::uuid then
     raise exception 'TEST 11 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'tenant_admin' then
+  if public.current_user_role() is distinct from 'tenant_admin' then
     raise exception 'TEST 11 FAILED: expected tenant_admin, got %', public.current_user_role();
   end if;
 
@@ -412,10 +412,10 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000004', 'role', 'authenticated')::text, true);
 do $$
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000004'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000004'::uuid then
     raise exception 'TEST 12 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'guardian' then
+  if public.current_user_role() is distinct from 'guardian' then
     raise exception 'TEST 12 FAILED: expected guardian, got %', public.current_user_role();
   end if;
 
@@ -444,10 +444,10 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claims', json_build_object('sub', 'c3000000-0000-0000-0000-000000000005', 'role', 'authenticated')::text, true);
 do $$
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000005'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000005'::uuid then
     raise exception 'TEST 13 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'driver' then
+  if public.current_user_role() is distinct from 'driver' then
     raise exception 'TEST 13 FAILED: expected driver, got %', public.current_user_role();
   end if;
 

@@ -202,7 +202,7 @@ async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean 
   await page.addInitScript(
     ({ user }) => {
       const session = {
-        access_token: 'test',
+        access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
         refresh_token: 'test',
         token_type: 'bearer',
         expires_in: 3600,

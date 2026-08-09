@@ -10,24 +10,24 @@ const { Client } = pg;
 const REQUIRED_CONFIRMATION = 'DEV_ONLY';
 const DATABASE_URL_ENV = 'SAFEBUS_RLS_TEST_DATABASE_URL';
 const CONFIRM_ENV = 'SAFEBUS_RLS_TEST_CONFIRM';
+const TARGET_ENV = 'SAFEBUS_RLS_TARGET';
 
 const DEFAULT_RLS_FILES = [
   'tests/rls/student-roster-rls.sql',
-  'tests/rls/guardian-visibility-rls.sql',
   'tests/rls/guardian-linking-rls.sql',
-  'tests/rls/guardian-live-trip-visibility-rls.sql',
+  'tests/rls/student-roster-shared-cleanup.sql',
+  'tests/rls/guardian-bus-first-visibility-rls.sql',
   'tests/rls/driver-active-trip-student-manifest-rls.sql',
   'tests/rls/driver-student-trip-events-rls.sql',
-  'tests/rls/guardian-student-trip-event-visibility-rls.sql',
   'tests/rls/guardian-notification-outbox-rls.sql',
   'tests/rls/admin-live-fleet-map-rls.sql',
-  'tests/rls/guardian-live-bus-location-rls.sql',
   'tests/rls/student-route-assignment-optional-school-rls.sql',
   'tests/rls/driver-assignment-platform-admin-write-rls.sql',
   'tests/rls/secure-trip-tracking-realtime-rls.sql',
   'tests/rls/student-csv-import-rls.sql',
   'tests/rls/route-trip-pattern-rls.sql',
-  'tests/rls/assignment-selected-driver-trips-rls.sql',
+  'tests/rls/qr-only-driver-trip-start-rls.sql',
+  'tests/rls/unified-direction-assignment-rls.sql',
   'tests/rls/driver-completed-trip-history-rls.sql',
   'tests/rls/invitation-password-activation-rls.sql',
   'tests/rls/atomic-platform-tenant-invitation-rls.sql',
@@ -36,6 +36,8 @@ const DEFAULT_RLS_FILES = [
   'tests/rls/phase1-driver-authorization-rls.sql',
   'tests/rls/phase2-auth-security-rls.sql',
   'tests/rls/phase3-retention-rls.sql',
+  'tests/rls/phase5-tenant-administration-rls.sql',
+  'tests/rls/phase6-transportation-operations-rls.sql',
 ];
 
 function fail(message) {
@@ -70,6 +72,7 @@ function shouldUseSsl(rawUrl) {
 function validateEnvironment() {
   const databaseUrl = process.env[DATABASE_URL_ENV];
   const confirmation = process.env[CONFIRM_ENV];
+  const target = process.env[TARGET_ENV];
 
   if (!databaseUrl) {
     fail(`missing ${DATABASE_URL_ENV}.`);
@@ -78,6 +81,11 @@ function validateEnvironment() {
 
   if (confirmation !== REQUIRED_CONFIRMATION) {
     fail(`${CONFIRM_ENV} must be exactly ${REQUIRED_CONFIRMATION}.`);
+    return null;
+  }
+
+  if (!['development', 'staging'].includes(target)) {
+    fail(`${TARGET_ENV} must be development or staging; production is forbidden.`);
     return null;
   }
 
@@ -152,6 +160,46 @@ async function runSqlFile(client, file) {
   console.log(`[rls] PASS ${file.displayPath} (${elapsedMs} ms)`);
 }
 
+async function logExecutionContext(client) {
+  const { rows } = await client.query(`
+    select
+      current_user as current_role,
+      session_user as session_role,
+      (select rolsuper from pg_roles where rolname = current_user) as is_superuser,
+      (select rolbypassrls from pg_roles where rolname = current_user) as bypasses_rls,
+      (
+        select pg_get_userbyid(c.relowner)
+        from pg_class c
+        join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname = 'public' and c.relname = 'students'
+      ) as students_owner,
+      (
+        select c.relrowsecurity
+        from pg_class c
+        join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname = 'public' and c.relname = 'students'
+      ) as students_rls_enabled,
+      (
+        select c.relforcerowsecurity
+        from pg_class c
+        join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname = 'public' and c.relname = 'students'
+      ) as students_rls_forced
+  `);
+  const context = rows[0];
+
+  console.log(
+    '[rls] Execution context: ' +
+      `current_role=${context.current_role}, ` +
+      `session_role=${context.session_role}, ` +
+      `superuser=${context.is_superuser}, ` +
+      `bypassrls=${context.bypasses_rls}, ` +
+      `students_owner=${context.students_owner}, ` +
+      `students_rls_enabled=${context.students_rls_enabled}, ` +
+      `students_rls_forced=${context.students_rls_forced}`,
+  );
+}
+
 async function main() {
   const databaseUrl = validateEnvironment();
   if (!databaseUrl) return;
@@ -176,8 +224,14 @@ async function main() {
     ssl: shouldUseSsl(databaseUrl) ? { rejectUnauthorized: false } : false,
   });
 
+  client.on('notice', (notice) => {
+    const message = notice?.message?.trim();
+    if (message) console.log(`[rls][notice] ${message}`);
+  });
+
   try {
     await client.connect();
+    await logExecutionContext(client);
 
     for (const file of files) {
       await runSqlFile(client, file);

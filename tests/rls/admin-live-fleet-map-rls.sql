@@ -25,10 +25,12 @@ begin
   end if;
 
   select count(*) into v_forbidden_count
-  from information_schema.routine_columns
-  where specific_schema = 'public'
-    and routine_name = 'get_admin_live_fleet_monitoring'
-    and column_name in (
+  from unnest(
+    (select candidate.proargnames
+     from pg_proc candidate
+     where candidate.oid = v_function_oid)
+  ) as output_column(column_name)
+  where column_name in (
       'tenant_id', 'trip_id', 'bus_id', 'route_id', 'driver_id',
       'student_id', 'guardian_id', 'email', 'phone', 'home_address',
       'student_name', 'guardian_name', 'driver_email', 'driver_phone'

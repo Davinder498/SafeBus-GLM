@@ -34,7 +34,8 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
   `get_guardian_student_route_visibility()` and guardian SELECT policies.
 - `guardian-linking-rls.sql`: tests the `admin_link_student_guardian()` and
   `admin_deactivate_student_guardian()` RPCs — cross-tenant blocking, duplicate
-  prevention, reactivation, direct-write blocking, and guardian/driver denial.
+  prevention, reactivation, direct-write blocking, guardian/driver denial, and
+  compatibility with the current guardian bus-first visibility contract.
 - `guardian-live-trip-visibility-rls.sql`: SELF-CONTAINED tests for
   `get_guardian_live_trip_visibility()` (Milestone 6A) — seeds its own
   buses/routes/stops/trips/locations with disjoint fixed IDs, then verifies
@@ -110,11 +111,10 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
 
 ## `pnpm test:rls`
 
-`pnpm test:rls` is a structural check only. It verifies that the RLS SQL files
-and this README exist, then prints a manual-test notice.
-
-It does not connect to Supabase, does not execute SQL, and must not be reported
-as proof that the RLS assertions passed.
+`pnpm test:rls` executes the current RLS SQL contract against the explicitly
+configured DEV or staging database. It uses the same guarded runner documented
+under `pnpm test:rls:dev` below; both commands require all safety environment
+variables and a Postgres connection URL.
 
 After migration 0062, `assignment-selected-driver-trips-rls.sql` remains a
 historical regression fixture for migration 0054. Its expectation that drivers
@@ -137,17 +137,19 @@ earlier prepared-dispatch start signature is intentionally retired.
 Supabase DEV database or a disposable migrated database. It is the automated
 replacement for copy/paste SQL Editor runs.
 
-This command is intentionally guarded. It refuses to run unless both
+This command is intentionally guarded. It refuses to run unless all three
 environment variables are set:
 
 ```bash
 SAFEBUS_RLS_TEST_DATABASE_URL=postgresql://...
 SAFEBUS_RLS_TEST_CONFIRM=DEV_ONLY
+SAFEBUS_RLS_TARGET=development
 ```
 
 Never point `SAFEBUS_RLS_TEST_DATABASE_URL` at production. Never use frontend
 Supabase anon keys or service-role API keys here. Use a Postgres connection URL
-for hosted Supabase DEV or a disposable migrated database only.
+for hosted Supabase DEV or a disposable migrated database only. Staging CI may
+use `SAFEBUS_RLS_TARGET=staging`; any other target label is rejected.
 
 Hosted Supabase connections use SSL by default. For a local disposable database
 only, set `SAFEBUS_RLS_TEST_SSL=disable`.
@@ -175,19 +177,30 @@ means the SQL scripts completed successfully against the configured database.
 The default execution order is:
 
 1. `tests/rls/student-roster-rls.sql`
-2. `tests/rls/guardian-visibility-rls.sql`
-3. `tests/rls/guardian-linking-rls.sql`
-4. `tests/rls/guardian-live-trip-visibility-rls.sql`
+2. `tests/rls/guardian-linking-rls.sql`
+3. `tests/rls/student-roster-shared-cleanup.sql`
+4. `tests/rls/guardian-bus-first-visibility-rls.sql`
 5. `tests/rls/driver-active-trip-student-manifest-rls.sql`
 6. `tests/rls/driver-student-trip-events-rls.sql`
-7. `tests/rls/guardian-student-trip-event-visibility-rls.sql`
-8. `tests/rls/guardian-notification-outbox-rls.sql`
-9. `tests/rls/admin-live-fleet-map-rls.sql`
-10. `tests/rls/guardian-live-bus-location-rls.sql`
-11. `tests/rls/student-route-assignment-optional-school-rls.sql`
-12. `tests/rls/driver-assignment-platform-admin-write-rls.sql`
-13. `tests/rls/secure-trip-tracking-realtime-rls.sql`
-14. `tests/rls/student-csv-import-rls.sql`
+7. `tests/rls/guardian-notification-outbox-rls.sql`
+8. `tests/rls/admin-live-fleet-map-rls.sql`
+9. `tests/rls/student-route-assignment-optional-school-rls.sql`
+10. `tests/rls/driver-assignment-platform-admin-write-rls.sql`
+11. `tests/rls/secure-trip-tracking-realtime-rls.sql`
+12. `tests/rls/student-csv-import-rls.sql`
+13. `tests/rls/route-trip-pattern-rls.sql`
+14. `tests/rls/qr-only-driver-trip-start-rls.sql`
+15. `tests/rls/unified-direction-assignment-rls.sql`
+16. `tests/rls/driver-completed-trip-history-rls.sql`
+17. `tests/rls/invitation-password-activation-rls.sql`
+18. `tests/rls/atomic-platform-tenant-invitation-rls.sql`
+19. `tests/rls/atomic-tenant-member-invitation-rls.sql`
+20. `tests/rls/phase1-platform-isolation-rls.sql`
+21. `tests/rls/phase1-driver-authorization-rls.sql`
+22. `tests/rls/phase2-auth-security-rls.sql`
+23. `tests/rls/phase3-retention-rls.sql`
+24. `tests/rls/phase5-tenant-administration-rls.sql`
+25. `tests/rls/phase6-transportation-operations-rls.sql`
 
 The database must be safe for fixed-ID seeded test data. The scripts create
 test data and clean up after themselves where designed. If a run fails midway,

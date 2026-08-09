@@ -131,7 +131,7 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            access_token: 'mock-transport-token',
+            access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
             refresh_token: 'mock-refresh',
             token_type: 'bearer',
             expires_in: 3600,
@@ -228,12 +228,20 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
           ]);
           return;
         }
+        if (path.includes('/route_service_days')) {
+          await fulfillRows([]);
+          return;
+        }
         await blockUnexpectedSupabaseRestAccess(route, method, path);
         return;
       }
 
       // POST (insert a route, bus, or driver_trip)
       if (method === 'POST') {
+        if (path.includes('/route_service_days')) {
+          await route.fulfill({ status: 201, contentType: 'application/json', body: '[]' });
+          return;
+        }
         if (path.includes('/rpc/get_admin_paginated_list')) {
           const body = route.request().postDataJSON() as { p_entity?: string };
           const rows =
@@ -394,7 +402,7 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
   // Seed session in localStorage (same keys as the proven 4C mock).
   await page.addInitScript(() => {
     const fakeSession = {
-      access_token: 'mock-transport-token',
+      access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
       refresh_token: 'mock-refresh',
       token_type: 'bearer',
       expires_in: 3600,
@@ -503,7 +511,7 @@ test.describe('Milestone 4E — school optional for transportation', () => {
     await expect(page.getByText('Choose a school')).toHaveCount(0);
 
     await expect(page).toHaveURL(new RegExp(`/admin/buses/${ADMIN.busId}\\?tab=routes`));
-    await expect(page.getByRole('button', { name: 'Assign route trip' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Assign route' })).toBeVisible();
   });
 });
 
@@ -516,7 +524,7 @@ test.describe('Milestone 4E — driver trip start with no-school bus + route', (
     // Override the seeded session user id to match the driver profile.
     await page.addInitScript(() => {
       const fakeSession = {
-        access_token: 'mock-driver-token',
+        access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
         refresh_token: 'mock-refresh',
         token_type: 'bearer',
         expires_in: 3600,

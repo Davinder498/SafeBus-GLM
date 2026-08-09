@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router';
 import { AdminRoutesMap } from '@/components/admin/AdminRoutesMap';
+import { OperationalNotesPanel } from '@/components/admin/OperationalNotesPanel';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
@@ -67,32 +68,45 @@ export function AdminRouteDetailPage() {
       getVisibleRouteTripStopSchedules().catch(() => []),
       fetchAdminBusServices().catch(() => []),
     ])
-      .then(([routes, stops, schools, buses, drivers, assignments, profiles, patterns, schedules, busServices]) => {
-        if (!mounted) return;
-        const route = routes.find((item) => item.id === routeId);
-        if (!route || route.status === 'archived') {
-          setError('This route is not available.');
-          return;
-        }
-        setData({
-          route,
-          stops: stops
-            .filter((stop) => stop.route_id === route.id && stop.status !== 'archived')
-            .sort((a, b) => a.stop_order - b.stop_order),
+      .then(
+        ([
+          routes,
+          stops,
           schools,
           buses,
           drivers,
-          assignments: assignments.filter(
-            (assignment) => assignment.route_id === route.id && assignment.status === 'active',
-          ),
-          busServices: busServices.filter(
-            (service) => service.route_id === route.id && service.status === 'active',
-          ),
+          assignments,
           profiles,
-          tripPatterns: patterns.filter((pattern) => pattern.route_id === route.id),
-          schedules: schedules.filter((schedule) => schedule.route_id === route.id),
-        });
-      })
+          patterns,
+          schedules,
+          busServices,
+        ]) => {
+          if (!mounted) return;
+          const route = routes.find((item) => item.id === routeId);
+          if (!route || route.status === 'archived') {
+            setError('This route is not available.');
+            return;
+          }
+          setData({
+            route,
+            stops: stops
+              .filter((stop) => stop.route_id === route.id && stop.status !== 'archived')
+              .sort((a, b) => a.stop_order - b.stop_order),
+            schools,
+            buses,
+            drivers,
+            assignments: assignments.filter(
+              (assignment) => assignment.route_id === route.id && assignment.status === 'active',
+            ),
+            busServices: busServices.filter(
+              (service) => service.route_id === route.id && service.status === 'active',
+            ),
+            profiles,
+            tripPatterns: patterns.filter((pattern) => pattern.route_id === route.id),
+            schedules: schedules.filter((schedule) => schedule.route_id === route.id),
+          });
+        },
+      )
       .catch(() => {
         if (mounted) setError('We could not load this route. Please try again.');
       });
@@ -121,12 +135,22 @@ export function AdminRouteDetailPage() {
   );
 
   return (
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
+    <DashboardLayout
+      title="Admin Dashboard"
+      portal="admin"
+      navItems={[]}
+      navGroups={adminNavGroups}
+    >
       <div className="space-y-6">
-        <Link to="/admin" className="inline-flex text-sm font-semibold text-navy-700 hover:underline">
+        <Link
+          to="/admin"
+          className="inline-flex text-sm font-semibold text-navy-700 hover:underline"
+        >
           &larr; Back to overview
         </Link>
-        {!data && !error && <DataState title="Loading route" message="Fetching route details and map." />}
+        {!data && !error && (
+          <DataState title="Loading route" message="Fetching route details and map." />
+        )}
         {error && <DataState title="Route unavailable" message={error} />}
         {data && (
           <>
@@ -148,7 +172,8 @@ export function AdminRouteDetailPage() {
                 <p className="text-sm font-semibold text-gray-600">School</p>
                 <p className="mt-2 font-bold text-navy-900">
                   {data.route.school_id
-                    ? data.schools.find((school) => school.id === data.route.school_id)?.name ?? 'School unavailable'
+                    ? (data.schools.find((school) => school.id === data.route.school_id)?.name ??
+                      'School unavailable')
                     : 'No school selected'}
                 </p>
               </Card>
@@ -161,7 +186,10 @@ export function AdminRouteDetailPage() {
               </Card>
             </section>
 
-            <AdminRoutesMap routes={[{ route: data.route, stops: data.stops }]} tileConfig={mapTileConfig} />
+            <AdminRoutesMap
+              routes={[{ route: data.route, stops: data.stops }]}
+              tileConfig={mapTileConfig}
+            />
 
             <section className="grid gap-4 lg:grid-cols-2">
               <Card className="p-5">
@@ -171,17 +199,13 @@ export function AdminRouteDetailPage() {
                 ) : (
                   <ul className="mt-3 space-y-3">
                     {data.busServices.map((service) => {
-                      const assignment = activeDriverForBusService(
-                        service,
-                        data.assignments,
-                      );
-                      const driver = data.drivers.find(
-                        (item) => item.id === assignment?.driver_id,
-                      );
+                      const assignment = activeDriverForBusService(service, data.assignments);
+                      const driver = data.drivers.find((item) => item.id === assignment?.driver_id);
                       return (
                         <li key={service.id} className="rounded-lg bg-gray-50 p-3 text-sm">
                           <p className="font-semibold text-navy-900">
-                            {service.trip_name} · Bus {busNames.get(service.bus_id) ?? service.bus_number}
+                            {service.trip_name} · Bus{' '}
+                            {busNames.get(service.bus_id) ?? service.bus_number}
                           </p>
                           <p className="text-gray-600">
                             Driver: {profileNames.get(driver?.profile_id ?? '') ?? 'Not assigned'}
@@ -196,7 +220,9 @@ export function AdminRouteDetailPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h2 className="text-lg font-bold text-navy-900">Trip stop order</h2>
-                    <p className="text-sm text-gray-600">{selectedPattern?.display_name ?? direction}</p>
+                    <p className="text-sm text-gray-600">
+                      {selectedPattern?.display_name ?? direction}
+                    </p>
                   </div>
                   <div className="flex rounded-lg border border-gray-200 p-1">
                     {(['forward', 'reverse'] as const).map((value) => (
@@ -236,7 +262,9 @@ export function AdminRouteDetailPage() {
                             </p>
                             {stop.school_id && (
                               <p className="text-gray-600">
-                                School stop: {data.schools.find((school) => school.id === stop.school_id)?.name ?? 'School unavailable'}
+                                School stop:{' '}
+                                {data.schools.find((school) => school.id === stop.school_id)
+                                  ?.name ?? 'School unavailable'}
                               </p>
                             )}
                             {planned && (
@@ -250,6 +278,7 @@ export function AdminRouteDetailPage() {
                 )}
               </Card>
             </section>
+            <OperationalNotesPanel targetEntity="route" targetId={data.route.id} />
             <Link
               to={`/admin/routes/${data.route.id}/manage`}
               className="inline-flex rounded-lg bg-navy-700 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-800"

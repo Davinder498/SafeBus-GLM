@@ -27,7 +27,10 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'dist',
-      sourcemap: true,
+      // Public deploy artifacts must never contain source maps. If private
+      // error-monitoring maps are introduced later, generate and upload them
+      // in a protected release job and delete them before deployment.
+      sourcemap: false,
     },
     test: {
       globals: true,

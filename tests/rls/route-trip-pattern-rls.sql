@@ -132,9 +132,23 @@ begin
   ) then
     raise exception 'Internal ETA helpers are exposed for arbitrary route IDs';
   end if;
-  if has_table_privilege('anon', 'public.route_trip_patterns', 'SELECT')
-    or has_table_privilege('anon', 'public.route_trip_stop_schedules', 'SELECT') then
-    raise exception 'Anonymous route/trip table reads are exposed';
+  -- Hosted Supabase may keep table-level SELECT grants for PostgREST while
+  -- RLS remains the authorization boundary. Anonymous reads are exposed only
+  -- if a SELECT/ALL policy applies to anon or PUBLIC.
+  if exists (
+    select 1
+    from pg_policy policy
+    where policy.polrelid in (
+        'public.route_trip_patterns'::regclass,
+        'public.route_trip_stop_schedules'::regclass
+      )
+      and policy.polcmd in ('r', '*')
+      and (
+        0 = any(policy.polroles)
+        or (select oid from pg_roles where rolname = 'anon') = any(policy.polroles)
+      )
+  ) then
+    raise exception 'Anonymous route/trip RLS read policy is exposed';
   end if;
 
   if not exists (

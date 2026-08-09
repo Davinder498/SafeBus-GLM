@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Card } from '@/components/ui/Card';
 
 export function AdminTaskCard({ title, description, to, action }: { title: string; description: string; to: string; action: string }) {

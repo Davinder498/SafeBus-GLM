@@ -5,6 +5,7 @@ declare
   v_policy text;
   v_function text;
   v_trigger_count integer;
+  v_realtime_rls_enabled boolean;
 begin
   select pg_get_expr(pol.polqual, pol.polrelid)
     into v_policy
@@ -21,8 +22,30 @@ begin
     raise exception '0030 regression: private tracking topic policy is incomplete';
   end if;
 
-  if has_table_privilege('authenticated', 'realtime.messages', 'INSERT') then
-    raise exception '0030 regression: browser clients can publish realtime messages';
+  select c.relrowsecurity
+    into v_realtime_rls_enabled
+  from pg_class c
+  where c.oid = 'realtime.messages'::regclass;
+
+  if v_realtime_rls_enabled is not true then
+    raise exception '0030 regression: realtime.messages RLS is disabled';
+  end if;
+
+  -- Supabase owns and maintains the table ACL used by Realtime. Sending is
+  -- authorized by an INSERT policy, so receive-only browser access requires
+  -- RLS to be enabled with no INSERT/ALL policy for browser roles.
+  if exists (
+    select 1
+    from pg_policy pol
+    where pol.polrelid = 'realtime.messages'::regclass
+      and pol.polcmd in ('a', '*')
+      and (
+        0 = any(pol.polroles)
+        or (select oid from pg_roles where rolname = 'anon') = any(pol.polroles)
+        or (select oid from pg_roles where rolname = 'authenticated') = any(pol.polroles)
+      )
+  ) then
+    raise exception '0030 regression: browser realtime publishing policy exists';
   end if;
 
   select pg_get_functiondef(

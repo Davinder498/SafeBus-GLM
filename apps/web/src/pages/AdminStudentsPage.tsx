@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { UserRound } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { AdminPagination } from '@/components/admin/AdminPagination';
 import { StudentCsvImportPanel } from '@/components/admin/StudentCsvImportPanel';
 import { StudentForm, type StudentFormInput } from '@/components/admin/StudentForm';

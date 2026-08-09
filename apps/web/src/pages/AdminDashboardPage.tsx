@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { AdminRouteStatusTile } from '@/components/admin/AdminRouteStatusTile';
 import { AdminTripsOverview } from '@/components/admin/AdminTripsOverview';

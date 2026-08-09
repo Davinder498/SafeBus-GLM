@@ -9,7 +9,7 @@ import {
   UserRound,
   UsersRound,
 } from 'lucide-react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router';
 import { StudentSearchPicker } from '@/components/admin/StudentSearchPicker';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
@@ -24,6 +24,9 @@ import {
   fetchAdminGuardianLinks,
   type GuardianLinkSummary,
 } from '@/services/adminPaginationService';
+import { revokeGuardianAccess } from '@/services/phase6OperationsService';
+import { Field } from '@/components/ui/Field';
+import { Select } from '@/components/ui/Select';
 import {
   createStudentGuardianLink,
   deactivateStudentGuardianLink,
@@ -58,7 +61,17 @@ export function AdminGuardianDetailPage() {
   const [relationship, setRelationship] = useState('guardian');
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Phase 6: audited guardian access revocation state
+  const [revokingLinkForId, setRevokingLinkForId] = useState<string | null>(null);
+  const [revokeReason, setRevokeReason] = useState('');
+  const [revoking, setRevoking] = useState(false);
+
   const canWrite = profile?.role === 'tenant_admin';
+  const canRevoke =
+    profile?.role === 'tenant_admin' ||
+    profile?.role === 'school_admin' ||
+    profile?.role === 'transportation_admin';
 
   const load = useCallback(async () => {
     if (!guardianId) {
@@ -121,6 +134,24 @@ export function AdminGuardianDetailPage() {
       setWriteError(error instanceof Error ? error.message : 'Unable to update the student link.');
     } finally {
       setBusy(false);
+    }
+  }
+
+  // Phase 6: audited guardian access revocation handler
+  async function handleRevokeAccess(linkId: string) {
+    setWriteError(null);
+    setMessage(null);
+    setRevoking(true);
+    try {
+      await revokeGuardianAccess(linkId, revokeReason.trim() || null);
+      setRevokingLinkForId(null);
+      setRevokeReason('');
+      setMessage('Guardian access revoked and recorded in the audit trail.');
+      await load();
+    } catch (error) {
+      setWriteError(error instanceof Error ? error.message : 'Unable to revoke guardian access.');
+    } finally {
+      setRevoking(false);
     }
   }
 
@@ -288,31 +319,101 @@ export function AdminGuardianDetailPage() {
                   <p className="p-5 text-sm text-slate-600">No students are linked.</p>
                 )}
                 {links.map((link) => (
-                  <div
-                    key={link.id}
-                    className="flex min-h-16 flex-col items-stretch gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5"
-                  >
-                    <div className="min-w-0">
-                      <p className="break-words font-semibold text-navy-900">{link.student_name}</p>
-                      <p className="text-xs capitalize text-slate-500">{link.relationship}</p>
+                  <div key={link.id} data-testid={`guardian-link-${link.id}`}>
+                    <div className="flex min-h-16 flex-col items-stretch gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                      <div className="min-w-0">
+                        <p className="break-words font-semibold text-navy-900">
+                          {link.student_name}
+                        </p>
+                        <p className="text-xs capitalize text-slate-500">{link.relationship}</p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+                        <StatusPill tone={link.status === 'active' ? 'success' : 'neutral'}>
+                          {link.status === 'active' ? 'Linked' : 'Not linked'}
+                        </StatusPill>
+                        {link.status === 'active' && (
+                          <>
+                            {canWrite && (
+                              <Button
+                                className="w-full sm:w-auto"
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                disabled={busy}
+                                onClick={() => void deactivateLink(link.id)}
+                              >
+                                Remove link
+                              </Button>
+                            )}
+                            {canRevoke && (
+                              <Button
+                                className="w-full sm:w-auto"
+                                type="button"
+                                size="sm"
+                                variant="danger"
+                                data-testid={`revoke-access-toggle-${link.id}`}
+                                onClick={() => {
+                                  setRevokingLinkForId(
+                                    revokingLinkForId === link.id ? null : link.id,
+                                  );
+                                  setRevokeReason('');
+                                }}
+                              >
+                                Revoke access
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-3 sm:justify-end">
-                      <StatusPill tone={link.status === 'active' ? 'success' : 'neutral'}>
-                        {link.status === 'active' ? 'Linked' : 'Not linked'}
-                      </StatusPill>
-                      {canWrite && link.status === 'active' && (
-                        <Button
-                          className="w-full sm:w-auto"
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          disabled={busy}
-                          onClick={() => void deactivateLink(link.id)}
+
+                    {canRevoke && revokingLinkForId === link.id && (
+                      <div
+                        className="border-t border-slate-100 bg-slate-50 p-4"
+                        data-testid={`revoke-access-form-${link.id}`}
+                      >
+                        <Field
+                          label="Revocation reason (optional)"
+                          htmlFor={`revoke-reason-${link.id}`}
                         >
-                          Remove link
-                        </Button>
-                      )}
-                    </div>
+                          <Select
+                            id={`revoke-reason-${link.id}`}
+                            value={revokeReason}
+                            onChange={(e) => setRevokeReason(e.target.value)}
+                          >
+                            <option value="">No reason selected</option>
+                            <option value="authorization_withdrawn">Authorization withdrawn</option>
+                            <option value="guardian_request">Guardian request</option>
+                            <option value="link_created_in_error">Link created in error</option>
+                            <option value="access_no_longer_required">
+                              Access no longer required
+                            </option>
+                          </Select>
+                        </Field>
+                        <p className="mt-2 text-xs text-slate-500">
+                          Revocation is recorded in the audit trail. The link becomes inactive.
+                        </p>
+                        <div className="mt-3 flex gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="danger"
+                            loading={revoking}
+                            onClick={() => void handleRevokeAccess(link.id)}
+                          >
+                            Confirm revoke access
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setRevokingLinkForId(null)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

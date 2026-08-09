@@ -58,7 +58,11 @@ async function mockAdmin(page: Page, rows: unknown[]) {
   await page.addInitScript(
     ({ userProfile }) => {
       const session = {
-        access_token: 'test',
+        access_token: [
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+          'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ',
+          'smoke-test-signature',
+        ].join('.'),
         refresh_token: 'test',
         token_type: 'bearer',
         expires_in: 3600,
@@ -73,7 +77,12 @@ async function mockAdmin(page: Page, rows: unknown[]) {
           created_at: userProfile.created_at,
         },
       };
-      for (const key of ['supabase.auth.token', 'sb-bppmqykkbhrmotcybxrh-auth-token'])
+      for (const key of [
+        'supabase.auth.token',
+        'sb-placeholder-auth-token',
+        'sb-bppmqykkbhrmotcybxrh-auth-token',
+        'sb-localhost-auth-token',
+      ])
         localStorage.setItem(key, JSON.stringify(session));
     },
     { userProfile: profile },
@@ -129,7 +138,13 @@ test('trip history renders canonical statuses, configured directions, timestamps
   await expect(page.getByTestId('admin-trips-table').locator('tbody tr')).toHaveCount(2);
   await page.getByRole('button', { name: 'Cancelled' }).click();
   await expect(page.getByTestId('admin-trips-table').locator('tbody tr')).toHaveCount(1);
-  await expect(page.getByTestId('admin-trips-table')).toContainText('8:05');
+  const expectedEndTime = await page.evaluate(() =>
+    new Date('2026-07-23T08:05:00Z').toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+    }),
+  );
+  await expect(page.getByTestId('admin-trips-table')).toContainText(expectedEndTime);
 });
 
 test('trip history has an accessible empty state', async ({ page }) => {

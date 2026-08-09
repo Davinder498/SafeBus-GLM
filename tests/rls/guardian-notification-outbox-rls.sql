@@ -7,6 +7,17 @@
 -- PRIVILEGED CLEANUP BEFORE SEED
 -- ===========================================================================
 
+begin;
+
+-- The suite tests notification authorization. Its deterministic active trips
+-- intentionally bypass route-definition readiness only for fixture seeding.
+alter table public.driver_trips
+  disable trigger enforce_ready_route_trip_start;
+alter table public.bus_route_assignments
+  disable trigger validate_new_bus_trip_assignment_readiness;
+alter table public.profiles
+  disable trigger protect_final_tenant_admin_delete;
+
 delete from public.guardian_notification_outbox where student_trip_event_id in (
   select id from public.student_trip_events where driver_trip_id in (
     '9a200000-0000-0000-0000-000000000001',
@@ -27,6 +38,19 @@ delete from public.driver_trips where id in (
   '9a200000-0000-0000-0000-000000000003'
 );
 
+delete from public.student_bus_assignments where id in (
+  '9a195000-0000-0000-0000-000000000001',
+  '9a195000-0000-0000-0000-000000000002',
+  '9a195000-0000-0000-0000-000000000003'
+);
+
+delete from public.bus_route_assignments where id in (
+  '9a185000-0000-0000-0000-000000000001',
+  '9a185000-0000-0000-0000-000000000002',
+  '9a185000-0000-0000-0000-000000000003'
+);
+
+-- Remove IDs from the historical route-only fixture if necessary.
 delete from public.student_route_assignments where id in (
   '9a190000-0000-0000-0000-000000000001',
   '9a190000-0000-0000-0000-000000000002',
@@ -174,6 +198,27 @@ values
   ('9a170000-0000-0000-0000-000000000002', '9a100000-0000-0000-0000-000000000001', '9a110000-0000-0000-0000-000000000001', 'M9A Route A Other', 'M9A-A2', 'morning', 'active'),
   ('9a170000-0000-0000-0000-000000000003', '9a100000-0000-0000-0000-000000000002', '9a110000-0000-0000-0000-000000000002', 'M9A Route B CrossTenant', 'M9A-B1', 'morning', 'active');
 
+insert into public.route_trip_patterns (
+  id, tenant_id, route_id, direction, display_name, status,
+  schedule_review_required
+)
+values
+  ('9a175000-0000-0000-0000-000000000001', '9a100000-0000-0000-0000-000000000001', '9a170000-0000-0000-0000-000000000001', 'forward', 'M9A Own Outbound', 'active', false),
+  ('9a175000-0000-0000-0000-000000000002', '9a100000-0000-0000-0000-000000000001', '9a170000-0000-0000-0000-000000000001', 'reverse', 'M9A Own Return', 'active', false),
+  ('9a175000-0000-0000-0000-000000000003', '9a100000-0000-0000-0000-000000000001', '9a170000-0000-0000-0000-000000000002', 'forward', 'M9A Other Outbound', 'active', false),
+  ('9a175000-0000-0000-0000-000000000004', '9a100000-0000-0000-0000-000000000001', '9a170000-0000-0000-0000-000000000002', 'reverse', 'M9A Other Return', 'active', false),
+  ('9a175000-0000-0000-0000-000000000005', '9a100000-0000-0000-0000-000000000002', '9a170000-0000-0000-0000-000000000003', 'forward', 'M9A CrossTenant Outbound', 'active', false),
+  ('9a175000-0000-0000-0000-000000000006', '9a100000-0000-0000-0000-000000000002', '9a170000-0000-0000-0000-000000000003', 'reverse', 'M9A CrossTenant Return', 'active', false);
+
+insert into public.bus_route_assignments (
+  id, tenant_id, bus_id, route_id, route_trip_pattern_id, trip_type,
+  effective_from, status
+)
+values
+  ('9a185000-0000-0000-0000-000000000001', '9a100000-0000-0000-0000-000000000001', '9a160000-0000-0000-0000-000000000001', '9a170000-0000-0000-0000-000000000001', '9a175000-0000-0000-0000-000000000001', 'morning', current_date, 'active'),
+  ('9a185000-0000-0000-0000-000000000002', '9a100000-0000-0000-0000-000000000001', '9a160000-0000-0000-0000-000000000002', '9a170000-0000-0000-0000-000000000002', '9a175000-0000-0000-0000-000000000003', 'morning', current_date, 'active'),
+  ('9a185000-0000-0000-0000-000000000003', '9a100000-0000-0000-0000-000000000002', '9a160000-0000-0000-0000-000000000003', '9a170000-0000-0000-0000-000000000003', '9a175000-0000-0000-0000-000000000005', 'morning', current_date, 'active');
+
 insert into public.route_stops (id, tenant_id, route_id, stop_name, stop_order, status)
 values
   ('9a180000-0000-0000-0000-000000000001', '9a100000-0000-0000-0000-000000000001', '9a170000-0000-0000-0000-000000000001', 'M9A Own Pickup', 1, 'active'),
@@ -187,17 +232,24 @@ values
   ('9a150000-0000-0000-0000-000000000002', '9a100000-0000-0000-0000-000000000001', '9a110000-0000-0000-0000-000000000001', 'M9A', 'OtherDriverStudent', 'active'),
   ('9a150000-0000-0000-0000-000000000003', '9a100000-0000-0000-0000-000000000002', '9a110000-0000-0000-0000-000000000002', 'M9A', 'CrossTenantStudent', 'active');
 
-insert into public.student_route_assignments (id, tenant_id, student_id, route_id, pickup_stop_id, dropoff_stop_id, status)
+insert into public.student_bus_assignments (
+  id, tenant_id, student_id, bus_route_assignment_id,
+  route_trip_pattern_id, pickup_stop_id, dropoff_stop_id,
+  effective_from, status
+)
 values
-  ('9a190000-0000-0000-0000-000000000001', '9a100000-0000-0000-0000-000000000001', '9a150000-0000-0000-0000-000000000001', '9a170000-0000-0000-0000-000000000001', '9a180000-0000-0000-0000-000000000001', '9a180000-0000-0000-0000-000000000002', 'active'),
-  ('9a190000-0000-0000-0000-000000000002', '9a100000-0000-0000-0000-000000000001', '9a150000-0000-0000-0000-000000000002', '9a170000-0000-0000-0000-000000000002', '9a180000-0000-0000-0000-000000000003', null, 'active'),
-  ('9a190000-0000-0000-0000-000000000003', '9a100000-0000-0000-0000-000000000002', '9a150000-0000-0000-0000-000000000003', '9a170000-0000-0000-0000-000000000003', '9a180000-0000-0000-0000-000000000004', null, 'active');
+  ('9a195000-0000-0000-0000-000000000001', '9a100000-0000-0000-0000-000000000001', '9a150000-0000-0000-0000-000000000001', '9a185000-0000-0000-0000-000000000001', '9a175000-0000-0000-0000-000000000001', '9a180000-0000-0000-0000-000000000001', '9a180000-0000-0000-0000-000000000002', current_date, 'active'),
+  ('9a195000-0000-0000-0000-000000000002', '9a100000-0000-0000-0000-000000000001', '9a150000-0000-0000-0000-000000000002', '9a185000-0000-0000-0000-000000000002', '9a175000-0000-0000-0000-000000000003', '9a180000-0000-0000-0000-000000000003', null, current_date, 'active'),
+  ('9a195000-0000-0000-0000-000000000003', '9a100000-0000-0000-0000-000000000002', '9a150000-0000-0000-0000-000000000003', '9a185000-0000-0000-0000-000000000003', '9a175000-0000-0000-0000-000000000005', '9a180000-0000-0000-0000-000000000004', null, current_date, 'active');
 
-insert into public.driver_trips (id, tenant_id, driver_id, bus_id, route_id, trip_type, status, service_date, started_at)
+insert into public.driver_trips (
+  id, tenant_id, driver_id, bus_id, route_id, route_trip_pattern_id,
+  trip_name_snapshot, trip_type, status, service_date, started_at
+)
 values
-  ('9a200000-0000-0000-0000-000000000001', '9a100000-0000-0000-0000-000000000001', '9a130000-0000-0000-0000-000000000001', '9a160000-0000-0000-0000-000000000001', '9a170000-0000-0000-0000-000000000001', 'morning', 'active', current_date, now() - interval '20 minutes'),
-  ('9a200000-0000-0000-0000-000000000002', '9a100000-0000-0000-0000-000000000001', '9a130000-0000-0000-0000-000000000002', '9a160000-0000-0000-0000-000000000002', '9a170000-0000-0000-0000-000000000002', 'morning', 'active', current_date, now() - interval '15 minutes'),
-  ('9a200000-0000-0000-0000-000000000003', '9a100000-0000-0000-0000-000000000002', '9a130000-0000-0000-0000-000000000003', '9a160000-0000-0000-0000-000000000003', '9a170000-0000-0000-0000-000000000003', 'morning', 'active', current_date, now() - interval '10 minutes');
+  ('9a200000-0000-0000-0000-000000000001', '9a100000-0000-0000-0000-000000000001', '9a130000-0000-0000-0000-000000000001', '9a160000-0000-0000-0000-000000000001', '9a170000-0000-0000-0000-000000000001', '9a175000-0000-0000-0000-000000000001', 'M9A Own Outbound', 'morning', 'active', current_date, now() - interval '20 minutes'),
+  ('9a200000-0000-0000-0000-000000000002', '9a100000-0000-0000-0000-000000000001', '9a130000-0000-0000-0000-000000000002', '9a160000-0000-0000-0000-000000000002', '9a170000-0000-0000-0000-000000000002', '9a175000-0000-0000-0000-000000000003', 'M9A Other Outbound', 'morning', 'active', current_date, now() - interval '15 minutes'),
+  ('9a200000-0000-0000-0000-000000000003', '9a100000-0000-0000-0000-000000000002', '9a130000-0000-0000-0000-000000000003', '9a160000-0000-0000-0000-000000000003', '9a170000-0000-0000-0000-000000000003', '9a175000-0000-0000-0000-000000000005', 'M9A CrossTenant Outbound', 'morning', 'active', current_date, now() - interval '10 minutes');
 
 
 insert into public.student_guardians (id, tenant_id, student_id, guardian_id, relationship, can_receive_notifications, status)
@@ -206,6 +258,15 @@ values
   ('9a145000-0000-0000-0000-000000000002', '9a100000-0000-0000-0000-000000000001', '9a150000-0000-0000-0000-000000000001', '9a140000-0000-0000-0000-000000000002', 'guardian', true, 'active'),
   ('9a145000-0000-0000-0000-000000000003', '9a100000-0000-0000-0000-000000000001', '9a150000-0000-0000-0000-000000000001', '9a140000-0000-0000-0000-000000000003', 'guardian', true, 'inactive'),
   ('9a145000-0000-0000-0000-000000000004', '9a100000-0000-0000-0000-000000000002', '9a150000-0000-0000-0000-000000000003', '9a140000-0000-0000-0000-000000000004', 'guardian', true, 'active');
+
+alter table public.driver_trips
+  enable trigger enforce_ready_route_trip_start;
+alter table public.bus_route_assignments
+  enable trigger validate_new_bus_trip_assignment_readiness;
+alter table public.profiles
+  enable trigger protect_final_tenant_admin_delete;
+
+commit;
 
 -- TEST 1-6: Valid pickup creates one row per active linked same-tenant guardian only.
 begin;
@@ -322,6 +383,11 @@ rollback;
 -- PRIVILEGED CLEANUP AFTER TESTS
 -- ===========================================================================
 
+begin;
+
+alter table public.profiles
+  disable trigger protect_final_tenant_admin_delete;
+
 delete from public.guardian_notification_outbox where student_trip_event_id in (select id from public.student_trip_events where driver_trip_id in ('9a200000-0000-0000-0000-000000000001','9a200000-0000-0000-0000-000000000002','9a200000-0000-0000-0000-000000000003'));
 
 delete from public.student_trip_events where driver_trip_id in (
@@ -334,6 +400,18 @@ delete from public.driver_trips where id in (
   '9a200000-0000-0000-0000-000000000001',
   '9a200000-0000-0000-0000-000000000002',
   '9a200000-0000-0000-0000-000000000003'
+);
+
+delete from public.student_bus_assignments where id in (
+  '9a195000-0000-0000-0000-000000000001',
+  '9a195000-0000-0000-0000-000000000002',
+  '9a195000-0000-0000-0000-000000000003'
+);
+
+delete from public.bus_route_assignments where id in (
+  '9a185000-0000-0000-0000-000000000001',
+  '9a185000-0000-0000-0000-000000000002',
+  '9a185000-0000-0000-0000-000000000003'
 );
 
 delete from public.student_route_assignments where id in (
@@ -402,3 +480,8 @@ delete from public.tenants where id in (
   '9a100000-0000-0000-0000-000000000001',
   '9a100000-0000-0000-0000-000000000002'
 );
+
+alter table public.profiles
+  enable trigger protect_final_tenant_admin_delete;
+
+commit;

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate, type NavLinkRenderProps } from 'react-router';
 import {
   LayoutDashboard,
   Users,
@@ -20,6 +20,8 @@ import {
   MapPinned,
   List,
   History,
+  FileUp,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAppSurface, type AppSurface } from '@/contexts/AppSurfaceContext';
@@ -33,6 +35,7 @@ export interface DashboardNavItem {
   to?: string;
   group?: 'operations' | 'transportation' | 'people' | 'management';
   description?: string;
+  allowedRoles?: string[];
   /** Optional Lucide icon node rendered before the label. */
   icon?: ReactNode;
 }
@@ -119,6 +122,13 @@ export const adminNavItems: DashboardNavItem[] = [
     icon: <ClipboardList className="h-4 w-4" />,
   },
   {
+    label: 'Driver assignments',
+    to: '/admin/driver-assignments',
+    group: 'transportation',
+    description: 'Driver, bus, and route coverage',
+    icon: <ClipboardList className="h-4 w-4" />,
+  },
+  {
     label: 'Guardians',
     to: '/admin/guardians',
     group: 'people',
@@ -138,6 +148,30 @@ export const adminNavItems: DashboardNavItem[] = [
     group: 'management',
     description: 'Access records',
     icon: <Users className="h-4 w-4" />,
+  },
+  {
+    label: 'Administrators',
+    to: '/admin/administrators',
+    group: 'management',
+    description: 'Administrative access and recovery',
+    allowedRoles: ['tenant_admin'],
+    icon: <ShieldCheck className="h-4 w-4" />,
+  },
+  {
+    label: 'Bulk onboarding',
+    to: '/admin/bulk-import',
+    group: 'management',
+    description: 'Validate and import tenant rosters',
+    allowedRoles: ['tenant_admin'],
+    icon: <FileUp className="h-4 w-4" />,
+  },
+  {
+    label: 'Audit search',
+    to: '/admin/audit-search',
+    group: 'management',
+    description: 'Search tenant audit events',
+    allowedRoles: ['tenant_admin'],
+    icon: <ClipboardList className="h-4 w-4" />,
   },
   {
     label: 'Settings',
@@ -268,7 +302,7 @@ function NavListItem({
       to={to}
       end={to === `/${portal}`}
       onClick={onNavigate}
-      className={({ isActive }) =>
+      className={({ isActive }: NavLinkRenderProps) =>
         cn(
           'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
           isActive
@@ -306,8 +340,16 @@ export function DashboardLayout({
   }
 
   const normalizedFlat = navItems.map((item, i) => normalizeItem(item, i, portal));
-  const groups: DashboardNavGroup[] =
+  const unfilteredGroups: DashboardNavGroup[] =
     navGroups ?? (normalizedFlat.length > 0 ? [{ items: normalizedFlat }] : []);
+  const groups = unfilteredGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) => !item.allowedRoles || (profile && item.allowedRoles.includes(profile.role)),
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -465,7 +507,7 @@ function BottomTabNav({
               key={item.label}
               to={to}
               end={to === `/${portal}`}
-              className={({ isActive }) =>
+              className={({ isActive }: NavLinkRenderProps) =>
                 cn(
                   'flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-500',
                   isActive

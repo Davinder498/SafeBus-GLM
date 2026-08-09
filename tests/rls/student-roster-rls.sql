@@ -6,9 +6,12 @@
 -- HOW TO RUN:
 --   1. Open the hosted Supabase DEV project SQL Editor.
 --   2. Run this whole file, or run the sections in order.
---   3. Do not run against production.
+--   3. Run guardian-visibility-rls.sql and guardian-linking-rls.sql.
+--   4. Run student-roster-shared-cleanup.sql.
+--   5. Do not run against production.
 --
--- The seed and cleanup blocks run in the privileged SQL Editor context.
+-- The seed block runs in the privileged SQL Editor context and commits before
+-- the rollback-based assertions. Shared cleanup is intentionally deferred.
 -- Every simulated authenticated/anonymous user assertion runs inside its own
 -- explicit transaction with transaction-local role/JWT settings and rollback.
 --
@@ -21,6 +24,21 @@
 -- ===========================================================================
 -- PRIVILEGED CLEANUP BEFORE SEED
 -- ===========================================================================
+
+begin;
+
+-- The Phase 5 lifecycle guard correctly blocks deleting the final active
+-- tenant administrator. This destructive DEV-only fixture reset must remove
+-- the complete synthetic tenant, so suspend only its DELETE trigger inside
+-- this transaction and restore it before committing the replacement seed.
+alter table public.profiles
+  disable trigger protect_final_tenant_admin_delete;
+
+do $$
+begin
+  raise notice 'STAGE: privileged cleanup before student-roster seed';
+end
+$$;
 
 delete from public.student_guardians where id in (
   'f6000000-0000-0000-0000-000000000001',
@@ -73,6 +91,15 @@ delete from public.tenants where id in (
   'a1000000-0000-0000-0000-000000000001',
   'a1000000-0000-0000-0000-000000000002'
 );
+
+alter table public.profiles
+  enable trigger protect_final_tenant_admin_delete;
+
+do $$
+begin
+  raise notice 'STAGE: privileged cleanup complete; starting student-roster seed';
+end
+$$;
 
 -- ===========================================================================
 -- PRIVILEGED SEED
@@ -144,6 +171,14 @@ values
   ('f6000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000001', 'e5000000-0000-0000-0000-000000000002', 'd4000000-0000-0000-0000-000000000001', 'guardian', 'inactive'),
   ('f6000000-0000-0000-0000-000000000003', 'a1000000-0000-0000-0000-000000000001', 'e5000000-0000-0000-0000-000000000005', 'd4000000-0000-0000-0000-000000000003', 'guardian', 'active');
 
+do $$
+begin
+  raise notice 'STAGE: privileged student-roster seed complete; starting policy assertions';
+end
+$$;
+
+commit;
+
 -- ===========================================================================
 -- TEST 1: Tenant admin CAN create student with school_id IS NULL
 -- ===========================================================================
@@ -154,10 +189,10 @@ set local request.jwt.claim.role = 'authenticated';
 set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000001","role":"authenticated"}';
 do $$
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000001'::uuid then
     raise exception 'TEST 1 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'tenant_admin' then
+  if public.current_user_role() is distinct from 'tenant_admin' then
     raise exception 'TEST 1 FAILED: expected tenant_admin, got %', public.current_user_role();
   end if;
 
@@ -178,10 +213,10 @@ set local request.jwt.claim.role = 'authenticated';
 set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000001","role":"authenticated"}';
 do $$
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000001'::uuid then
     raise exception 'TEST 2 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'tenant_admin' then
+  if public.current_user_role() is distinct from 'tenant_admin' then
     raise exception 'TEST 2 FAILED: expected tenant_admin, got %', public.current_user_role();
   end if;
 
@@ -202,10 +237,10 @@ set local request.jwt.claim.role = 'authenticated';
 set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000001","role":"authenticated"}';
 do $$
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000001'::uuid then
     raise exception 'TEST 3 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'tenant_admin' then
+  if public.current_user_role() is distinct from 'tenant_admin' then
     raise exception 'TEST 3 FAILED: expected tenant_admin, got %', public.current_user_role();
   end if;
 
@@ -233,10 +268,10 @@ do $$
 declare
   v_count int;
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000001'::uuid then
     raise exception 'TEST 4 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'tenant_admin' then
+  if public.current_user_role() is distinct from 'tenant_admin' then
     raise exception 'TEST 4 FAILED: expected tenant_admin, got %', public.current_user_role();
   end if;
 
@@ -264,10 +299,10 @@ do $$
 declare
   v_count int;
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000001'::uuid then
     raise exception 'TEST 5 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'tenant_admin' then
+  if public.current_user_role() is distinct from 'tenant_admin' then
     raise exception 'TEST 5 FAILED: expected tenant_admin, got %', public.current_user_role();
   end if;
 
@@ -295,10 +330,10 @@ do $$
 declare
   v_count int;
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000001'::uuid then
     raise exception 'TEST 6 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'tenant_admin' then
+  if public.current_user_role() is distinct from 'tenant_admin' then
     raise exception 'TEST 6 FAILED: expected tenant_admin, got %', public.current_user_role();
   end if;
 
@@ -324,10 +359,10 @@ set local request.jwt.claim.role = 'authenticated';
 set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000001","role":"authenticated"}';
 do $$
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000001'::uuid then
     raise exception 'TEST 7 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'tenant_admin' then
+  if public.current_user_role() is distinct from 'tenant_admin' then
     raise exception 'TEST 7 FAILED: expected tenant_admin, got %', public.current_user_role();
   end if;
 
@@ -354,10 +389,10 @@ set local request.jwt.claim.role = 'authenticated';
 set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000001","role":"authenticated"}';
 do $$
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000001'::uuid then
     raise exception 'TEST 8 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'tenant_admin' then
+  if public.current_user_role() is distinct from 'tenant_admin' then
     raise exception 'TEST 8 FAILED: expected tenant_admin, got %', public.current_user_role();
   end if;
 
@@ -387,10 +422,10 @@ do $$
 declare
   v_count int;
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000001'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000001'::uuid then
     raise exception 'TEST 9 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'tenant_admin' then
+  if public.current_user_role() is distinct from 'tenant_admin' then
     raise exception 'TEST 9 FAILED: expected tenant_admin, got %', public.current_user_role();
   end if;
 
@@ -418,10 +453,10 @@ do $$
 declare
   v_count int;
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000002'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000002'::uuid then
     raise exception 'TEST 10 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'transportation_admin' then
+  if public.current_user_role() is distinct from 'transportation_admin' then
     raise exception 'TEST 10 FAILED: expected transportation_admin, got %', public.current_user_role();
   end if;
 
@@ -452,10 +487,10 @@ do $$
 declare
   v_count int;
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000002'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000002'::uuid then
     raise exception 'TEST 11 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'transportation_admin' then
+  if public.current_user_role() is distinct from 'transportation_admin' then
     raise exception 'TEST 11 FAILED: expected transportation_admin, got %', public.current_user_role();
   end if;
 
@@ -491,10 +526,10 @@ do $$
 declare
   v_count int;
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000003'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000003'::uuid then
     raise exception 'TEST 12 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'school_admin' then
+  if public.current_user_role() is distinct from 'school_admin' then
     raise exception 'TEST 12 FAILED: expected school_admin, got %', public.current_user_role();
   end if;
 
@@ -523,10 +558,10 @@ set local request.jwt.claim.role = 'authenticated';
 set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000003","role":"authenticated"}';
 do $$
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000003'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000003'::uuid then
     raise exception 'TEST 13 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'school_admin' then
+  if public.current_user_role() is distinct from 'school_admin' then
     raise exception 'TEST 13 FAILED: expected school_admin, got %', public.current_user_role();
   end if;
 
@@ -552,10 +587,10 @@ set local request.jwt.claim.role = 'authenticated';
 set local request.jwt.claims = '{"sub":"c3000000-0000-0000-0000-000000000003","role":"authenticated"}';
 do $$
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000003'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000003'::uuid then
     raise exception 'TEST 14 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'school_admin' then
+  if public.current_user_role() is distinct from 'school_admin' then
     raise exception 'TEST 14 FAILED: expected school_admin, got %', public.current_user_role();
   end if;
 
@@ -584,10 +619,10 @@ do $$
 declare
   v_count int;
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000003'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000003'::uuid then
     raise exception 'TEST 15 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'school_admin' then
+  if public.current_user_role() is distinct from 'school_admin' then
     raise exception 'TEST 15 FAILED: expected school_admin, got %', public.current_user_role();
   end if;
 
@@ -623,10 +658,10 @@ do $$
 declare
   v_count int;
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000003'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000003'::uuid then
     raise exception 'TEST 16 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'school_admin' then
+  if public.current_user_role() is distinct from 'school_admin' then
     raise exception 'TEST 16 FAILED: expected school_admin, got %', public.current_user_role();
   end if;
 
@@ -654,10 +689,10 @@ do $$
 declare
   v_count int;
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000004'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000004'::uuid then
     raise exception 'TEST 17 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'guardian' then
+  if public.current_user_role() is distinct from 'guardian' then
     raise exception 'TEST 17 FAILED: expected guardian, got %', public.current_user_role();
   end if;
 
@@ -693,10 +728,10 @@ do $$
 declare
   v_count int;
 begin
-  if auth.uid() <> 'c3000000-0000-0000-0000-000000000005'::uuid then
+  if auth.uid() is distinct from 'c3000000-0000-0000-0000-000000000005'::uuid then
     raise exception 'TEST 18 FAILED: auth.uid() simulation failed: %', auth.uid();
   end if;
-  if public.current_user_role() <> 'driver' then
+  if public.current_user_role() is distinct from 'driver' then
     raise exception 'TEST 18 FAILED: expected driver, got %', public.current_user_role();
   end if;
 
@@ -726,6 +761,8 @@ rollback;
 begin;
 set local role anon;
 do $$
+declare
+  v_count int;
 begin
   if auth.uid() is not null then
     raise exception 'TEST 19 FAILED: expected anonymous auth.uid() NULL, got %', auth.uid();
@@ -740,90 +777,20 @@ begin
       raise notice 'TEST 19 PASSED: anonymous blocked from insert';
   end;
 
-  begin
-    update public.students
-    set first_name = 'RLS_Hacked'
-    where id = 'e5000000-0000-0000-0000-000000000001';
-    raise exception 'TEST 19 FAILED: anonymous update was allowed';
-  exception
-    when insufficient_privilege then
-      raise notice 'TEST 19 PASSED: anonymous blocked from update';
-  end;
+  update public.students
+  set first_name = 'RLS_Hacked'
+  where id = 'e5000000-0000-0000-0000-000000000001';
+  get diagnostics v_count = row_count;
+  if v_count <> 0 then
+    raise exception 'TEST 19 FAILED: expected 0 anonymous updated rows, got %', v_count;
+  end if;
+  raise notice 'TEST 19 PASSED: anonymous blocked from update';
 
-  begin
-    perform 1 from public.students limit 1;
-    raise exception 'TEST 19 FAILED: anonymous protected roster read was allowed';
-  exception
-    when insufficient_privilege then
-      raise notice 'TEST 19 PASSED: anonymous blocked from protected roster read';
-  end;
+  select count(*) into v_count from public.students;
+  if v_count <> 0 then
+    raise exception 'TEST 19 FAILED: expected 0 anonymous readable rows, got %', v_count;
+  end if;
+  raise notice 'TEST 19 PASSED: anonymous blocked from protected roster read';
 end
 $$;
 rollback;
-
--- ===========================================================================
--- PRIVILEGED CLEANUP AFTER TESTS
--- ===========================================================================
-
-delete from public.student_guardians where id in (
-  'f6000000-0000-0000-0000-000000000001',
-  'f6000000-0000-0000-0000-000000000002',
-  'f6000000-0000-0000-0000-000000000003'
-);
-
-delete from public.students where id in (
-  'e5000000-0000-0000-0000-000000000001',
-  'e5000000-0000-0000-0000-000000000002',
-  'e5000000-0000-0000-0000-000000000003',
-  'e5000000-0000-0000-0000-000000000004',
-  'e5000000-0000-0000-0000-000000000005',
-  'e5000000-0000-0000-0000-000000000006',
-  'e5000000-0000-0000-0000-000000000007',
-  'e5100000-0000-0000-0000-000000000001',
-  'e5100000-0000-0000-0000-000000000002',
-  'e5100000-0000-0000-0000-000000000003',
-  'e5100000-0000-0000-0000-000000000010',
-  'e5100000-0000-0000-0000-000000000011',
-  'e5100000-0000-0000-0000-000000000012',
-  'e5100000-0000-0000-0000-000000000013',
-  'e5100000-0000-0000-0000-000000000015',
-  'e5100000-0000-0000-0000-000000000017',
-  'e5100000-0000-0000-0000-000000000018',
-  'e5100000-0000-0000-0000-000000000019'
-);
-
-delete from public.guardians where id in (
-  'd4000000-0000-0000-0000-000000000001',
-  'd4000000-0000-0000-0000-000000000003'
-);
-
-delete from public.drivers where id = 'd4000000-0000-0000-0000-000000000002';
-
-delete from public.profiles where id in (
-  'c3000000-0000-0000-0000-000000000001',
-  'c3000000-0000-0000-0000-000000000002',
-  'c3000000-0000-0000-0000-000000000003',
-  'c3000000-0000-0000-0000-000000000004',
-  'c3000000-0000-0000-0000-000000000005',
-  'c3000000-0000-0000-0000-000000000006'
-);
-
-delete from auth.users where id in (
-  'c3000000-0000-0000-0000-000000000001',
-  'c3000000-0000-0000-0000-000000000002',
-  'c3000000-0000-0000-0000-000000000003',
-  'c3000000-0000-0000-0000-000000000004',
-  'c3000000-0000-0000-0000-000000000005',
-  'c3000000-0000-0000-0000-000000000006'
-);
-
-delete from public.schools where id in (
-  'b2000000-0000-0000-0000-000000000001',
-  'b2000000-0000-0000-0000-000000000002',
-  'b2000000-0000-0000-0000-000000000003'
-);
-
-delete from public.tenants where id in (
-  'a1000000-0000-0000-0000-000000000001',
-  'a1000000-0000-0000-0000-000000000002'
-);

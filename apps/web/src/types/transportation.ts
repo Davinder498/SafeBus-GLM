@@ -96,6 +96,16 @@ export interface RouteTripStopSchedule {
   updated_at: string;
 }
 
+export interface RouteServiceDay {
+  id: string;
+  tenant_id: string;
+  route_id: string;
+  day_of_week: number;
+  status: 'active' | 'inactive';
+  created_at: string;
+  updated_at: string;
+}
+
 export interface RouteDefinitionStopInput {
   id?: string;
   clientKey: string;
@@ -127,6 +137,7 @@ export interface SaveRouteDefinitionInput {
   };
   stops: RouteDefinitionStopInput[];
   tripPatterns: RouteDefinitionTripInput[];
+  serviceDays: number[];
 }
 
 export interface SaveRouteDefinitionResult {
