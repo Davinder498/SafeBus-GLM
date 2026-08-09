@@ -45,8 +45,8 @@ importers:
         specifier: ^6.1.2
         version: 6.2.1
       '@capacitor/geolocation':
-        specifier: ^8.2.0
-        version: 8.2.0(@capacitor/core@6.2.1)
+        specifier: ^6.0.1
+        version: 6.1.1(@capacitor/core@6.2.1)
       '@capacitor/haptics':
         specifier: ^6.0.1
         version: 6.0.3(@capacitor/core@6.2.1)
@@ -450,10 +450,10 @@ packages:
   '@capacitor/core@6.2.1':
     resolution: {integrity: sha512-urZwxa7hVE/BnA18oCFAdizXPse6fCKanQyEqpmz6cBJ2vObwMpyJDG5jBeoSsgocS9+Ax+9vb4ducWJn0y2qQ==}
 
-  '@capacitor/geolocation@8.2.0':
-    resolution: {integrity: sha512-N29QcoIPmme0xSxRkm7+3hjoHp6mBAOarxecvtCCZKyOBeKiJsFUq981cezg2XWBa6fhCXJMCCjQPngKK/dIag==}
+  '@capacitor/geolocation@6.1.1':
+    resolution: {integrity: sha512-zR24reZqkb9farg+qVqR0+DdDYs05SqkiqxCENoPofk/QWD6AobcHKDZutwifqO66jK2rM0ECo8MvbQv4MUTyA==}
     peerDependencies:
-      '@capacitor/core': '>=8.0.0'
+      '@capacitor/core': ^6.0.0
 
   '@capacitor/haptics@6.0.3':
     resolution: {integrity: sha512-6yKF0+lRUZEEx1GDFWgnKHia974np7o1OgmRl/btL9cSMZh0TSDZTyDMH/qcy4AM39CfuIeLs4N4h5lwixXLuQ==}
@@ -469,9 +469,6 @@ packages:
     resolution: {integrity: sha512-nFlgSmtx6Zwaw0tEvZgQsWHBeOfWWB/AvEoCApopLT4mHkBVoSrwkLvy2PjZs5wxCbsmqvQczr3XCyTwaDZVQg==}
     peerDependencies:
       '@capacitor/core': ^6.0.0
-
-  '@capacitor/synapse@1.0.4':
-    resolution: {integrity: sha512-/C1FUo8/OkKuAT4nCIu/34ny9siNHr9qtFezu4kxm6GY1wNFxrCFWjfYx5C1tUhVGz3fxBABegupkpjXvjCHrw==}
 
   '@colors/colors@1.6.0':
     resolution: {integrity: sha512-Ir+AOibqzrIsL6ajt3Rz3LskB7OiMVHqltZmspbW/TJuTVuyOMirVqAkjfY6JISiLHgyNqicAC8AyHHGzNd/dA==}
@@ -7057,10 +7054,9 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@capacitor/geolocation@8.2.0(@capacitor/core@6.2.1)':
+  '@capacitor/geolocation@6.1.1(@capacitor/core@6.2.1)':
     dependencies:
       '@capacitor/core': 6.2.1
-      '@capacitor/synapse': 1.0.4
 
   '@capacitor/haptics@6.0.3(@capacitor/core@6.2.1)':
     dependencies:
@@ -7073,8 +7069,6 @@ snapshots:
   '@capacitor/status-bar@6.0.3(@capacitor/core@6.2.1)':
     dependencies:
       '@capacitor/core': 6.2.1
-
-  '@capacitor/synapse@1.0.4': {}
 
   '@colors/colors@1.6.0': {}
 

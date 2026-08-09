@@ -71,6 +71,24 @@ test('CI declares every Phase 4 gate', async () => {
   assert.match(await read('.github/workflows/codeql.yml'), /CodeQL/);
 });
 
+test('dependency automation defers incompatible toolchain major upgrades', async () => {
+  const dependabot = await read('.github/dependabot.yml');
+  const mobilePackage = JSON.parse(await read('apps/mobile/package.json'));
+  const lockfile = await read('pnpm-lock.yaml');
+
+  assert.match(
+    dependabot,
+    /dependency-name: typescript\s+update-types:\s*\[version-update:semver-major\]/,
+  );
+  assert.match(
+    dependabot,
+    /dependency-name: '@capacitor\/\*'\s+update-types:\s*\[version-update:semver-major\]/,
+  );
+  assert.equal(mobilePackage.dependencies['@capacitor/geolocation'], '^6.0.1');
+  assert.match(lockfile, /'@capacitor\/geolocation@6\.1\.1'/);
+  assert.doesNotMatch(lockfile, /'@capacitor\/geolocation@8\./);
+});
+
 test('hosted RLS runner preserves shared fixtures through dependent suites', async () => {
   const [runner, roster, cleanup] = await Promise.all([
     read('scripts/run-rls-tests.mjs'),
