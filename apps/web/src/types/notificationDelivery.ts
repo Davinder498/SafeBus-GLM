@@ -25,6 +25,9 @@ export const NOTIFICATION_FAILURE_CATEGORY_LABELS: Record<string, string> = {
   provider_timeout: 'Provider timeout',
   missing_recipient_email: 'Missing recipient email',
   eligibility_revoked: 'Eligibility revoked',
+  access_expired: 'Guardian access expired',
+  preference_disabled: 'Guardian preference disabled',
+  privacy_consent_required: 'Explicit guardian choice required',
   configuration_error: 'Configuration error',
   unknown: 'Unknown',
 };

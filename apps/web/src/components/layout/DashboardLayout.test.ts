@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Bus, Calendar, History, LayoutDashboard, List, MapPinned, Settings } from 'lucide-react';
+import { Bell, Bus, Calendar, History, LayoutDashboard, List, MapPinned, Settings } from 'lucide-react';
 import type { ReactElement } from 'react';
 import {
   adminNavItems,
@@ -101,15 +101,17 @@ describe('guardian shell navigation model', () => {
       ['Bus status', '/guardian/live'],
       ['My buses', '/guardian/routes'],
       ['Pickup & drop-off', '/guardian/events'],
+      ['Email notifications', '/guardian/notifications'],
     ]);
   });
 
-  it('uses four bus-first tabs in the native app', () => {
+  it('keeps notification choices reachable in the native app', () => {
     const expected = [
       { label: 'Home', to: '/parent', icon: LayoutDashboard },
       { label: 'Map', to: '/guardian/live-map', icon: MapPinned },
       { label: 'Buses', to: '/guardian/routes', icon: Bus },
       { label: 'Updates', to: '/guardian/events', icon: Calendar },
+      { label: 'Email', to: '/guardian/notifications', icon: Bell },
     ];
 
     expect(guardianNativeNavItems).toHaveLength(expected.length);

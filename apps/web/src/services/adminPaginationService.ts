@@ -18,7 +18,12 @@ export interface StudentSearchOption {
 }
 
 export interface GuardianLinkSummary {
-  id: string; student_id: string; student_name: string; relationship: string; status: string;
+  id: string;
+  student_id: string;
+  student_name: string;
+  relationship: string;
+  status: string;
+  access_expires_at: string | null;
 }
 
 function requireSupabase() {

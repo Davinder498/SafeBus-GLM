@@ -70,7 +70,7 @@ describe('runDispatcher integration', () => {
     mockSupabase(() => Promise.resolve({ data: [], error: null }));
     const result = await runDispatcher(makeEvent('dispatcher-secret'));
     expect(result.statusCode).toBe(200);
-    expect(JSON.parse(result.body)).toEqual({ claimed: 0, delivered: 0, retry: 0, failed: 0, cancelled: 0 });
+    expect(JSON.parse(result.body)).toEqual({ claimed: 0, delivered: 0, retry: 0, failed: 0, cancelled: 0, error: 0 });
   });
 
   it('delivers a pickup email and completes the outbox row', async () => {

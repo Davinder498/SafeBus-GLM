@@ -35,7 +35,7 @@ const REFRESH_INTERVAL_MS = 15_000;
 
 /**
  * React hook that loads guardian bus-only visibility through the secured
- * get_guardian_bus_visibility() RPC, with safe periodic refresh.
+ * get_guardian_bus_visibility_v2() RPC, with safe periodic refresh.
  *
  * Safety properties (Milestone 11C):
  *   - Conservative 15-second auto-refresh; no user-configurable high-frequency

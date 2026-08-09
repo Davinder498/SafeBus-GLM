@@ -168,3 +168,20 @@ export async function setStudentGuardianLinkStatus(input: {
   }
   return data as StudentGuardian;
 }
+
+export async function setGuardianAccessExpiry(
+  linkId: string,
+  accessExpiresAt: string | null,
+): Promise<void> {
+  const { error } = await requireSupabase().rpc('admin_set_guardian_access_expiry', {
+    p_student_guardian_id: linkId,
+    p_access_expires_at: accessExpiresAt,
+  });
+  if (error) {
+    throw new Error(
+      error.message.includes('future')
+        ? 'Choose a future date and time.'
+        : 'We could not update the guardian access expiry.',
+    );
+  }
+}

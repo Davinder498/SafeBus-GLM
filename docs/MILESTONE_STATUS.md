@@ -516,3 +516,16 @@ environments, configure protected-environment reviewers and secrets, generate
 and commit types from the reachable authoritative staging schema, run the first
 staging release and quarterly rollback exercise, verify deployed headers, and
 obtain human security/privacy approval. Never run RLS assertions in production.
+
+## Phase 8 — Guardian Experience and Notifications
+
+Status: repository implementation complete on `agent/phase-8-guardian-experience-notifications`; hosted-DEV and human exit evidence pending.
+
+- Reconciled and retained the existing guardian bus-first contract, narrow location states, outbox deduplication, claim leases, retry backoff, provider idempotency, and aggregate delivery status.
+- Added migration `0087_phase8_guardian_experience_notifications.sql`: server-time access expiry, explicit per-student guardian email/event choices, immediate queued-work cancellation after revoke/unsubscribe, a fail-closed tenant privacy-approval policy, tenant quotas, provider rate limiting, and a distinct dead-letter state.
+- Added expiry-aware `get_guardian_bus_visibility_v2()` and retired authenticated execution of its unexpired-unaware predecessor. The result remains bus-only and excludes manifests, other students/stops, route geometry, driver identity, and authorization IDs.
+- Added `/guardian/notifications` with plain-language, accessible preference controls. All defaults remain off until the guardian explicitly saves a choice and the tenant privacy review is approved.
+- Changed the durable queue scheduler from hourly to every five minutes and retained stable outbox UUID idempotency.
+- Added Phase 8 RLS/structural regression coverage and the acceptance plan in `docs/phase-8-guardian-experience-notifications.md`.
+
+Pending: apply `0087` to hosted DEV; run cross-guardian/revocation/expiry and notification load/failure tests; approve notification defaults and quotas; complete plain-language testing and a WCAG 2.2 AA audit with no unresolved critical issues.

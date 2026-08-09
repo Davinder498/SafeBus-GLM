@@ -524,6 +524,12 @@
       "filename": "0086_phase7_production_driver_tracking.sql",
       "bytes": 20733,
       "sha256": "a3d1c021cf51176f3f159064ee404a8c1b89c425dd1e5f5c60ae55a88e8d4089"
+    },
+    {
+      "version": "0087",
+      "filename": "0087_phase8_guardian_experience_notifications.sql",
+      "bytes": 35626,
+      "sha256": "e451737f05f556a50c202cc46ef788618629feabfcebeb3acf868cf743b2ca96"
     }
   ]
 }

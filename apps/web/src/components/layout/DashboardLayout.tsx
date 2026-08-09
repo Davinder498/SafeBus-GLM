@@ -234,6 +234,11 @@ export const guardianNavGroups: DashboardNavGroup[] = [
         to: '/guardian/events',
         icon: <Calendar className="h-4 w-4" />,
       },
+      {
+        label: 'Email notifications',
+        to: '/guardian/notifications',
+        icon: <Bell className="h-4 w-4" />,
+      },
     ],
   },
 ];
@@ -254,6 +259,7 @@ export const guardianNativeNavItems: DashboardNavItem[] = [
   { label: 'Map', to: '/guardian/live-map', icon: <MapPinned className="h-5 w-5" /> },
   { label: 'Buses', to: '/guardian/routes', icon: <Bus className="h-5 w-5" /> },
   { label: 'Updates', to: '/guardian/events', icon: <Calendar className="h-5 w-5" /> },
+  { label: 'Email', to: '/guardian/notifications', icon: <Bell className="h-5 w-5" /> },
 ];
 
 /* -------------------------------- helpers --------------------------------- */
@@ -499,7 +505,12 @@ function BottomTabNav({
       data-testid="native-bottom-navigation"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="mx-auto grid min-h-16 max-w-2xl grid-cols-4 px-1">
+      <div
+        className={cn(
+          'mx-auto grid min-h-16 max-w-2xl px-1',
+          items.length === 5 ? 'grid-cols-5' : 'grid-cols-4',
+        )}
+      >
         {items.map((item) => {
           const to = item.to ?? `/${portal}`;
           return (

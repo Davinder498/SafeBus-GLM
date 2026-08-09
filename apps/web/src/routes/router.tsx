@@ -35,6 +35,7 @@ import { DriverSettingsPage } from '@/pages/DriverSettingsPage';
 import { DriverTripHistoryPage } from '@/pages/DriverTripHistoryPage';
 import { GuardianLiveMapPage } from '@/pages/GuardianLiveMapPage';
 import { GuardianLiveTripsPage } from '@/pages/GuardianLiveTripsPage';
+import { GuardianNotificationPreferencesPage } from '@/pages/GuardianNotificationPreferencesPage';
 import { GuardianRoutesPage } from '@/pages/GuardianRoutesPage';
 import { GuardianTripEventsPage } from '@/pages/GuardianTripEventsPage';
 import { ParentDashboardPage } from '@/pages/ParentDashboardPage';
@@ -363,6 +364,14 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={['guardian']}>
         <GuardianLiveTripsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/guardian/notifications',
+    element: (
+      <ProtectedRoute allowedRoles={['guardian']}>
+        <GuardianNotificationPreferencesPage />
       </ProtectedRoute>
     ),
   },
