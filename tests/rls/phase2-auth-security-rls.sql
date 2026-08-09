@@ -430,23 +430,6 @@ begin
 end $$;
 reset role;
 
--- ===========================================================================
--- Cleanup
--- ===========================================================================
-do $$
-declare
-  v_tenant_id uuid := '24242424-2424-2424-2424-242424242424';
-begin
-  delete from public.user_sessions where tenant_id = v_tenant_id;
-  delete from public.allowed_redirect_origins where tenant_id = v_tenant_id;
-  delete from public.rate_limit_buckets
-  where actor_identifier = md5('phase2-test-actor')
-    and bucket_key like 'invitation:' || left(md5('phase2-test-actor'), 16) || ':%';
-  delete from public.audit_events where tenant_id = v_tenant_id;
-  delete from public.profiles where tenant_id = v_tenant_id
-    and id in ('25252525-2525-2525-2525-252525252525','26262626-2626-2626-2626-262626262626','27272727-2727-2727-2727-272727272727');
-  delete from auth.users where id in ('25252525-2525-2525-2525-252525252525','26262626-2626-2626-2626-262626262626','27272727-2727-2727-2727-272727272727');
-  delete from public.tenants where id = v_tenant_id;
-end $$;
-
+-- The enclosing transaction is the cleanup. Do not delete the synthetic final
+-- tenant administrator before rollback; production correctly protects it.
 rollback;

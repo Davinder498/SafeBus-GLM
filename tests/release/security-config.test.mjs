@@ -339,3 +339,11 @@ test('platform isolation RLS uses the current MFA-gated onboarding summary', asy
   );
   assert.doesNotMatch(platformIsolation, /platform admin summary RPC returned no rows/);
 });
+
+test('Phase 2 RLS cleanup relies on rollback instead of deleting a final admin', async () => {
+  const phase2 = await read('tests/rls/phase2-auth-security-rls.sql');
+
+  assert.match(phase2, /The enclosing transaction is the cleanup/);
+  assert.match(phase2, /rollback;\s*$/);
+  assert.doesNotMatch(phase2, /delete from public\.profiles/);
+});
