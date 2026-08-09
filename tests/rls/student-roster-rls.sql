@@ -761,6 +761,8 @@ rollback;
 begin;
 set local role anon;
 do $$
+declare
+  v_count int;
 begin
   if auth.uid() is not null then
     raise exception 'TEST 19 FAILED: expected anonymous auth.uid() NULL, got %', auth.uid();
@@ -775,23 +777,20 @@ begin
       raise notice 'TEST 19 PASSED: anonymous blocked from insert';
   end;
 
-  begin
-    update public.students
-    set first_name = 'RLS_Hacked'
-    where id = 'e5000000-0000-0000-0000-000000000001';
-    raise exception 'TEST 19 FAILED: anonymous update was allowed';
-  exception
-    when insufficient_privilege then
-      raise notice 'TEST 19 PASSED: anonymous blocked from update';
-  end;
+  update public.students
+  set first_name = 'RLS_Hacked'
+  where id = 'e5000000-0000-0000-0000-000000000001';
+  get diagnostics v_count = row_count;
+  if v_count <> 0 then
+    raise exception 'TEST 19 FAILED: expected 0 anonymous updated rows, got %', v_count;
+  end if;
+  raise notice 'TEST 19 PASSED: anonymous blocked from update';
 
-  begin
-    perform 1 from public.students limit 1;
-    raise exception 'TEST 19 FAILED: anonymous protected roster read was allowed';
-  exception
-    when insufficient_privilege then
-      raise notice 'TEST 19 PASSED: anonymous blocked from protected roster read';
-  end;
+  select count(*) into v_count from public.students;
+  if v_count <> 0 then
+    raise exception 'TEST 19 FAILED: expected 0 anonymous readable rows, got %', v_count;
+  end if;
+  raise notice 'TEST 19 PASSED: anonymous blocked from protected roster read';
 end
 $$;
 rollback;
