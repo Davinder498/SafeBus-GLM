@@ -500,6 +500,12 @@
       "filename": "0082_restore_guardian_outbox_on_current_driver_events.sql",
       "bytes": 5558,
       "sha256": "32dd0b4039ecbbb71241d88eb5f2067420b65e1035201559c8a8d3f3b4484f4e"
+    },
+    {
+      "version": "0083",
+      "filename": "0083_reconcile_realtime_receive_only_grants.sql",
+      "bytes": 810,
+      "sha256": "224bbac0b578bc2f772bf842f73cbd9e9f4b1b735563078f16711737f3e45b59"
     }
   ]
 }

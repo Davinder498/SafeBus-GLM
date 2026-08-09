@@ -234,3 +234,16 @@ test('admin fleet RLS contract uses PostgreSQL output metadata', async () => {
   assert.match(fleet, /candidate\.proargnames/);
   assert.match(fleet, /candidate\.oid = v_function_oid/);
 });
+
+test('browser realtime tracking access remains receive-only through inherited grants', async () => {
+  const migration = await read(
+    'supabase/migrations/0083_reconcile_realtime_receive_only_grants.sql',
+  );
+
+  assert.match(
+    migration,
+    /revoke insert on table realtime\.messages from public, anon, authenticated/,
+  );
+  assert.match(migration, /grant select on table realtime\.messages to authenticated/);
+  assert.doesNotMatch(migration, /grant insert/i);
+});
