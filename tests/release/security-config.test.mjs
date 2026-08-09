@@ -296,3 +296,14 @@ test('invitation activation RLS fixtures survive assertion rollbacks', async () 
     2,
   );
 });
+
+test('atomic member invitation fixture supplies school scope for both students', async () => {
+  const memberInvitation = await read(
+    'tests/rls/atomic-tenant-member-invitation-rls.sql',
+  );
+
+  assert.match(
+    memberInvitation,
+    /'ca000000-0000-0000-0000-000000000022',\s*'ca000000-0000-0000-0000-000000000020',\s*'ca000000-0000-0000-0000-000000000021',/,
+  );
+});
