@@ -269,3 +269,14 @@ test('student CSV RLS fixtures survive preview rollback and clean up safely', as
     2,
   );
 });
+
+test('route pattern anonymous reads are tested at the RLS policy boundary', async () => {
+  const routePatterns = await read('tests/rls/route-trip-pattern-rls.sql');
+
+  assert.match(routePatterns, /policy\.polcmd in \('r', '\*'\)/);
+  assert.match(routePatterns, /rolname = 'anon'/);
+  assert.doesNotMatch(
+    routePatterns,
+    /has_table_privilege\('anon', 'public\.route_trip_patterns', 'SELECT'\)/,
+  );
+});
