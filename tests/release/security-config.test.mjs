@@ -347,3 +347,11 @@ test('Phase 2 RLS cleanup relies on rollback instead of deleting a final admin',
   assert.match(phase2, /rollback;\s*$/);
   assert.doesNotMatch(phase2, /delete from public\.profiles/);
 });
+
+test('Phase 3 RLS cleanup relies on rollback instead of deleting a final admin', async () => {
+  const phase3 = await read('tests/rls/phase3-retention-rls.sql');
+
+  assert.match(phase3, /The enclosing transaction is the cleanup/);
+  assert.match(phase3, /rollback;\s*$/);
+  assert.doesNotMatch(phase3, /delete from public\.profiles/);
+});

@@ -193,14 +193,6 @@ begin
 end $$;
 reset role;
 
-do $$
-begin
-  delete from public.profiles
-  where id in ('32323232-3232-3232-3232-323232323232', '33333333-3333-3333-3333-333333333333');
-  delete from auth.users
-  where id in ('32323232-3232-3232-3232-323232323232', '33333333-3333-3333-3333-333333333333');
-  delete from public.tenants where id = '31313131-3131-3131-3131-313131313131';
-  raise notice 'Phase3 retention RLS regression completed.';
-end $$;
-
+-- The enclosing transaction is the cleanup. Preserve the production final
+-- tenant-admin guard and roll back every synthetic retention fixture together.
 rollback;
