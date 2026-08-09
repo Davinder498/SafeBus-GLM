@@ -7,6 +7,20 @@
 -- PRIVILEGED CLEANUP BEFORE SEED
 -- ===========================================================================
 
+begin;
+
+-- This suite tests manifest scoping, not trip-start readiness. Its fixed
+-- active-trip fixtures predate the route-pattern readiness workflow, so keep
+-- that production trigger bypassed only for this privileged seed transaction.
+alter table public.driver_trips
+  disable trigger enforce_ready_route_trip_start;
+
+-- Permit deterministic deletion of the complete synthetic tenants left by an
+-- interrupted prior run. The production lifecycle guard is restored before
+-- the seed transaction commits.
+alter table public.profiles
+  disable trigger protect_final_tenant_admin_delete;
+
 delete from public.driver_trips where id in (
   '7a200000-0000-0000-0000-000000000001',
   '7a200000-0000-0000-0000-000000000002',
@@ -157,6 +171,13 @@ values
   ('7a200000-0000-0000-0000-000000000001', '7a100000-0000-0000-0000-000000000001', '7a130000-0000-0000-0000-000000000001', '7a160000-0000-0000-0000-000000000001', '7a170000-0000-0000-0000-000000000001', 'morning', 'active', current_date, now() - interval '20 minutes'),
   ('7a200000-0000-0000-0000-000000000002', '7a100000-0000-0000-0000-000000000001', '7a130000-0000-0000-0000-000000000002', '7a160000-0000-0000-0000-000000000002', '7a170000-0000-0000-0000-000000000002', 'morning', 'active', current_date, now() - interval '15 minutes'),
   ('7a200000-0000-0000-0000-000000000003', '7a100000-0000-0000-0000-000000000002', '7a130000-0000-0000-0000-000000000003', '7a160000-0000-0000-0000-000000000003', '7a170000-0000-0000-0000-000000000003', 'morning', 'active', current_date, now() - interval '10 minutes');
+
+alter table public.driver_trips
+  enable trigger enforce_ready_route_trip_start;
+alter table public.profiles
+  enable trigger protect_final_tenant_admin_delete;
+
+commit;
 
 -- TEST 1: A driver sees only students assigned to their own active trip route.
 begin;
@@ -321,6 +342,11 @@ rollback;
 -- PRIVILEGED CLEANUP AFTER TESTS
 -- ===========================================================================
 
+begin;
+
+alter table public.profiles
+  disable trigger protect_final_tenant_admin_delete;
+
 delete from public.driver_trips where id in (
   '7a200000-0000-0000-0000-000000000001',
   '7a200000-0000-0000-0000-000000000002',
@@ -391,3 +417,8 @@ delete from public.tenants where id in (
   '7a100000-0000-0000-0000-000000000001',
   '7a100000-0000-0000-0000-000000000002'
 );
+
+alter table public.profiles
+  enable trigger protect_final_tenant_admin_delete;
+
+commit;

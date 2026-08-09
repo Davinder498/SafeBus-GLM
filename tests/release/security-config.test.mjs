@@ -149,3 +149,15 @@ test('guardian browser access stays on the single bus-first RPC contract', async
     /grant execute on function public\.get_guardian_bus_visibility\(\)\s+to authenticated/,
   );
 });
+
+test('driver manifest RLS fixtures isolate legacy seed setup from production guards', async () => {
+  const manifest = await read('tests/rls/driver-active-trip-student-manifest-rls.sql');
+  const firstTest = manifest.indexOf('-- TEST 1:');
+
+  assert.ok(firstTest > 0);
+  assert.ok(manifest.indexOf('commit;') < firstTest);
+  assert.match(manifest, /disable trigger enforce_ready_route_trip_start/);
+  assert.match(manifest, /enable trigger enforce_ready_route_trip_start/);
+  assert.match(manifest, /disable trigger protect_final_tenant_admin_delete/);
+  assert.match(manifest, /enable trigger protect_final_tenant_admin_delete/);
+});
