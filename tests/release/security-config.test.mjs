@@ -89,6 +89,10 @@ test('hosted RLS runner preserves shared fixtures through dependent suites', asy
   assert.ok(guardianLinkingIndex < cleanupIndex);
   assert.ok(roster.indexOf('commit;') < roster.indexOf('-- TEST 1:'));
   assert.doesNotMatch(roster, /PRIVILEGED CLEANUP AFTER TESTS/);
+  assert.match(roster, /disable trigger protect_final_tenant_admin_delete/);
+  assert.match(roster, /enable trigger protect_final_tenant_admin_delete/);
+  assert.match(cleanup, /disable trigger protect_final_tenant_admin_delete/);
+  assert.match(cleanup, /enable trigger protect_final_tenant_admin_delete/);
   assert.match(cleanup, /Shared student-roster RLS fixtures cleaned up/);
 });
 

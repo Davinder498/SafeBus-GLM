@@ -6,6 +6,12 @@
 
 begin;
 
+-- The complete synthetic tenant reset intentionally removes its final active
+-- tenant administrator. Keep this exception scoped to the privileged,
+-- transactional DEV-test cleanup and restore the production guard immediately.
+alter table public.profiles
+  disable trigger protect_final_tenant_admin_delete;
+
 delete from public.student_guardians where id in (
   'f6000000-0000-0000-0000-000000000001',
   'f6000000-0000-0000-0000-000000000002',
@@ -68,6 +74,9 @@ delete from public.tenants where id in (
   'a1000000-0000-0000-0000-000000000001',
   'a1000000-0000-0000-0000-000000000002'
 );
+
+alter table public.profiles
+  enable trigger protect_final_tenant_admin_delete;
 
 commit;
 

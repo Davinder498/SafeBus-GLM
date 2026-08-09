@@ -27,6 +27,13 @@
 
 begin;
 
+-- The Phase 5 lifecycle guard correctly blocks deleting the final active
+-- tenant administrator. This destructive DEV-only fixture reset must remove
+-- the complete synthetic tenant, so suspend only its DELETE trigger inside
+-- this transaction and restore it before committing the replacement seed.
+alter table public.profiles
+  disable trigger protect_final_tenant_admin_delete;
+
 do $$
 begin
   raise notice 'STAGE: privileged cleanup before student-roster seed';
@@ -84,6 +91,9 @@ delete from public.tenants where id in (
   'a1000000-0000-0000-0000-000000000001',
   'a1000000-0000-0000-0000-000000000002'
 );
+
+alter table public.profiles
+  enable trigger protect_final_tenant_admin_delete;
 
 do $$
 begin
