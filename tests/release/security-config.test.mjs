@@ -189,3 +189,21 @@ test('driver event RLS fixtures use current bus-service assignments', async () =
   assert.match(events, /disable trigger protect_final_tenant_admin_delete/);
   assert.match(events, /enable trigger protect_final_tenant_admin_delete/);
 });
+
+test('guardian notification RLS fixtures use current bus-service assignments', async () => {
+  const notifications = await read('tests/rls/guardian-notification-outbox-rls.sql');
+  const firstTest = notifications.indexOf('-- TEST 1-6:');
+
+  assert.ok(firstTest > 0);
+  assert.ok(notifications.indexOf('commit;') < firstTest);
+  assert.match(notifications, /insert into public\.route_trip_patterns/);
+  assert.match(notifications, /insert into public\.bus_route_assignments/);
+  assert.match(notifications, /insert into public\.student_bus_assignments/);
+  assert.doesNotMatch(notifications, /insert into public\.student_route_assignments/);
+  assert.match(notifications, /disable trigger enforce_ready_route_trip_start/);
+  assert.match(notifications, /enable trigger enforce_ready_route_trip_start/);
+  assert.match(notifications, /disable trigger validate_new_bus_trip_assignment_readiness/);
+  assert.match(notifications, /enable trigger validate_new_bus_trip_assignment_readiness/);
+  assert.match(notifications, /disable trigger protect_final_tenant_admin_delete/);
+  assert.match(notifications, /enable trigger protect_final_tenant_admin_delete/);
+});
