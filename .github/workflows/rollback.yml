@@ -41,7 +41,7 @@ jobs:
         run: |
           expected="ROLLBACK_$(printf '%s' "$TARGET_ENVIRONMENT" | tr '[:lower:]' '[:upper:]')"
           test "$ACTUAL_CONFIRMATION" = "$expected"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.known_good_ref }}
       - name: Require immutable commit reference
