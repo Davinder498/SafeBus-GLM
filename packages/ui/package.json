@@ -18,8 +18,8 @@
     "clean": "rimraf dist .turbo storybook-static"
   },
   "peerDependencies": {
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "dependencies": {
     "@safebus/types": "workspace:*",
@@ -28,8 +28,8 @@
   "devDependencies": {
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "rimraf": "^6.0.1",
     "typescript": "^5.6.3"
   }
