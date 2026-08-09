@@ -5,6 +5,8 @@ declare
   v_policy text;
   v_function text;
   v_trigger_count integer;
+  v_table_acl text;
+  v_effective_roles text;
 begin
   select pg_get_expr(pol.polqual, pol.polrelid)
     into v_policy
@@ -22,7 +24,21 @@ begin
   end if;
 
   if has_table_privilege('authenticated', 'realtime.messages', 'INSERT') then
-    raise exception '0030 regression: browser clients can publish realtime messages';
+    select coalesce(c.relacl::text, '<default>')
+      into v_table_acl
+    from pg_class c
+    where c.oid = 'realtime.messages'::regclass;
+
+    select coalesce(string_agg(r.rolname, ',' order by r.rolname), '<none>')
+      into v_effective_roles
+    from pg_roles r
+    where r.rolname <> 'authenticated'
+      and pg_has_role('authenticated', r.oid, 'USAGE');
+
+    raise exception
+      '0030 regression: browser clients can publish realtime messages; table_acl=%; effective_roles=%',
+      v_table_acl,
+      v_effective_roles;
   end if;
 
   select pg_get_functiondef(
