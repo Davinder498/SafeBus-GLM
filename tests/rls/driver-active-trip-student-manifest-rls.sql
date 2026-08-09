@@ -14,6 +14,8 @@ begin;
 -- that production trigger bypassed only for this privileged seed transaction.
 alter table public.driver_trips
   disable trigger enforce_ready_route_trip_start;
+alter table public.bus_route_assignments
+  disable trigger validate_new_bus_trip_assignment_readiness;
 
 -- Permit deterministic deletion of the complete synthetic tenants left by an
 -- interrupted prior run. The production lifecycle guard is restored before
@@ -27,6 +29,20 @@ delete from public.driver_trips where id in (
   '7a200000-0000-0000-0000-000000000003'
 );
 
+delete from public.student_bus_assignments where id in (
+  '7a195000-0000-0000-0000-000000000001',
+  '7a195000-0000-0000-0000-000000000002',
+  '7a195000-0000-0000-0000-000000000003'
+);
+
+delete from public.bus_route_assignments where id in (
+  '7a185000-0000-0000-0000-000000000001',
+  '7a185000-0000-0000-0000-000000000002',
+  '7a185000-0000-0000-0000-000000000003'
+);
+
+-- Clean up IDs from the route-only version of this fixture, if an interrupted
+-- historical run left them behind.
 delete from public.student_route_assignments where id in (
   '7a190000-0000-0000-0000-000000000001',
   '7a190000-0000-0000-0000-000000000002',
@@ -161,6 +177,15 @@ values
   ('7a175000-0000-0000-0000-000000000005', '7a100000-0000-0000-0000-000000000002', '7a170000-0000-0000-0000-000000000003', 'forward', 'M7A CrossTenant Outbound', 'active', false),
   ('7a175000-0000-0000-0000-000000000006', '7a100000-0000-0000-0000-000000000002', '7a170000-0000-0000-0000-000000000003', 'reverse', 'M7A CrossTenant Return', 'active', false);
 
+insert into public.bus_route_assignments (
+  id, tenant_id, bus_id, route_id, route_trip_pattern_id, trip_type,
+  effective_from, status
+)
+values
+  ('7a185000-0000-0000-0000-000000000001', '7a100000-0000-0000-0000-000000000001', '7a160000-0000-0000-0000-000000000001', '7a170000-0000-0000-0000-000000000001', '7a175000-0000-0000-0000-000000000001', 'morning', current_date, 'active'),
+  ('7a185000-0000-0000-0000-000000000002', '7a100000-0000-0000-0000-000000000001', '7a160000-0000-0000-0000-000000000002', '7a170000-0000-0000-0000-000000000002', '7a175000-0000-0000-0000-000000000003', 'morning', current_date, 'active'),
+  ('7a185000-0000-0000-0000-000000000003', '7a100000-0000-0000-0000-000000000002', '7a160000-0000-0000-0000-000000000003', '7a170000-0000-0000-0000-000000000003', '7a175000-0000-0000-0000-000000000005', 'morning', current_date, 'active');
+
 insert into public.route_stops (id, tenant_id, route_id, stop_name, stop_order, status)
 values
   ('7a180000-0000-0000-0000-000000000001', '7a100000-0000-0000-0000-000000000001', '7a170000-0000-0000-0000-000000000001', 'M7A Own Pickup', 1, 'active'),
@@ -174,11 +199,15 @@ values
   ('7a150000-0000-0000-0000-000000000002', '7a100000-0000-0000-0000-000000000001', '7a110000-0000-0000-0000-000000000001', 'M7A', 'OtherDriverStudent', 'active'),
   ('7a150000-0000-0000-0000-000000000003', '7a100000-0000-0000-0000-000000000002', '7a110000-0000-0000-0000-000000000002', 'M7A', 'CrossTenantStudent', 'active');
 
-insert into public.student_route_assignments (id, tenant_id, student_id, route_id, pickup_stop_id, dropoff_stop_id, status)
+insert into public.student_bus_assignments (
+  id, tenant_id, student_id, bus_route_assignment_id,
+  route_trip_pattern_id, pickup_stop_id, dropoff_stop_id,
+  effective_from, status
+)
 values
-  ('7a190000-0000-0000-0000-000000000001', '7a100000-0000-0000-0000-000000000001', '7a150000-0000-0000-0000-000000000001', '7a170000-0000-0000-0000-000000000001', '7a180000-0000-0000-0000-000000000001', '7a180000-0000-0000-0000-000000000002', 'active'),
-  ('7a190000-0000-0000-0000-000000000002', '7a100000-0000-0000-0000-000000000001', '7a150000-0000-0000-0000-000000000002', '7a170000-0000-0000-0000-000000000002', '7a180000-0000-0000-0000-000000000003', null, 'active'),
-  ('7a190000-0000-0000-0000-000000000003', '7a100000-0000-0000-0000-000000000002', '7a150000-0000-0000-0000-000000000003', '7a170000-0000-0000-0000-000000000003', '7a180000-0000-0000-0000-000000000004', null, 'active');
+  ('7a195000-0000-0000-0000-000000000001', '7a100000-0000-0000-0000-000000000001', '7a150000-0000-0000-0000-000000000001', '7a185000-0000-0000-0000-000000000001', '7a175000-0000-0000-0000-000000000001', '7a180000-0000-0000-0000-000000000001', '7a180000-0000-0000-0000-000000000002', current_date, 'active'),
+  ('7a195000-0000-0000-0000-000000000002', '7a100000-0000-0000-0000-000000000001', '7a150000-0000-0000-0000-000000000002', '7a185000-0000-0000-0000-000000000002', '7a175000-0000-0000-0000-000000000003', '7a180000-0000-0000-0000-000000000003', null, current_date, 'active'),
+  ('7a195000-0000-0000-0000-000000000003', '7a100000-0000-0000-0000-000000000002', '7a150000-0000-0000-0000-000000000003', '7a185000-0000-0000-0000-000000000003', '7a175000-0000-0000-0000-000000000005', '7a180000-0000-0000-0000-000000000004', null, current_date, 'active');
 
 insert into public.driver_trips (
   id, tenant_id, driver_id, bus_id, route_id, route_trip_pattern_id,
@@ -191,6 +220,8 @@ values
 
 alter table public.driver_trips
   enable trigger enforce_ready_route_trip_start;
+alter table public.bus_route_assignments
+  enable trigger validate_new_bus_trip_assignment_readiness;
 alter table public.profiles
   enable trigger protect_final_tenant_admin_delete;
 
@@ -368,6 +399,18 @@ delete from public.driver_trips where id in (
   '7a200000-0000-0000-0000-000000000001',
   '7a200000-0000-0000-0000-000000000002',
   '7a200000-0000-0000-0000-000000000003'
+);
+
+delete from public.student_bus_assignments where id in (
+  '7a195000-0000-0000-0000-000000000001',
+  '7a195000-0000-0000-0000-000000000002',
+  '7a195000-0000-0000-0000-000000000003'
+);
+
+delete from public.bus_route_assignments where id in (
+  '7a185000-0000-0000-0000-000000000001',
+  '7a185000-0000-0000-0000-000000000002',
+  '7a185000-0000-0000-0000-000000000003'
 );
 
 delete from public.student_route_assignments where id in (

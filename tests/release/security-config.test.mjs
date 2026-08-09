@@ -161,6 +161,11 @@ test('driver manifest RLS fixtures isolate legacy seed setup from production gua
   assert.match(manifest, /disable trigger protect_final_tenant_admin_delete/);
   assert.match(manifest, /enable trigger protect_final_tenant_admin_delete/);
   assert.match(manifest, /insert into public\.route_trip_patterns/);
+  assert.match(manifest, /insert into public\.bus_route_assignments/);
+  assert.match(manifest, /insert into public\.student_bus_assignments/);
+  assert.doesNotMatch(manifest, /insert into public\.student_route_assignments/);
+  assert.match(manifest, /disable trigger validate_new_bus_trip_assignment_readiness/);
+  assert.match(manifest, /enable trigger validate_new_bus_trip_assignment_readiness/);
   assert.match(
     manifest,
     /route_id, route_trip_pattern_id,\s+trip_name_snapshot, trip_type/,
