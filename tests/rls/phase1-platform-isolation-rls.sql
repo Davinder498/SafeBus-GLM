@@ -1,8 +1,8 @@
 -- SafeBus Alberta - Phase 1 platform isolation RLS regression
 --
 -- Migration 0065 §1 removes platform-admin direct SELECT on tenant personal
--- and operational tables. Platform admins must use the narrow control-plane
--- RPC get_platform_tenant_onboarding_summary() and may not read profiles,
+-- and operational tables. Platform admins must use the narrow, MFA-gated
+-- control-plane RPC get_platform_tenant_onboarding_summary_secure() and may not read profiles,
 -- invitations, route geometry, students, guardians, drivers, trips, or
 -- locations through direct table access.
 --
@@ -13,7 +13,8 @@
 --     guardians, drivers, buses, routes, route_stops, driver_trips,
 --     driver_trip_current_locations, assignments).
 --   - Platform admin CAN still SELECT tenants (lifecycle control).
---   - Platform admin CAN still execute get_platform_tenant_onboarding_summary.
+--   - Platform admin CAN execute the MFA-gated onboarding summary, while the
+--     legacy underlying function remains unavailable to browser roles.
 --   - The retired policies do not exist (drift detection).
 --
 -- This is a structural + privilege regression. It does not require seeded
@@ -126,7 +127,7 @@ end $$;
 set local role authenticated;
 set local request.jwt.claim.sub = '12121212-1212-1212-1212-121212121212';
 set local request.jwt.claim.role = 'authenticated';
-set local request.jwt.claims = '{"sub":"12121212-1212-1212-1212-121212121212","role":"authenticated"}';
+set local request.jwt.claims = '{"sub":"12121212-1212-1212-1212-121212121212","role":"authenticated","aal":"aal2"}';
 
 do $$
 declare
@@ -219,20 +220,29 @@ reset role;
 set local role authenticated;
 set local request.jwt.claim.sub = '12121212-1212-1212-1212-121212121212';
 set local request.jwt.claim.role = 'authenticated';
-set local request.jwt.claims = '{"sub":"12121212-1212-1212-1212-121212121212","role":"authenticated"}';
+set local request.jwt.claims = '{"sub":"12121212-1212-1212-1212-121212121212","role":"authenticated","aal":"aal2"}';
 
 do $$
 declare
   v_summary_count integer;
 begin
+  if has_function_privilege(
+    'authenticated',
+    'public.get_platform_tenant_onboarding_summary()',
+    'EXECUTE'
+  ) then
+    raise exception 'Phase1 FAIL: legacy non-MFA platform summary is browser-executable.';
+  end if;
+
   -- The summary RPC must be executable by a platform super admin and must
   -- return only tenant metadata, first-admin contact, and aggregate readiness
   -- booleans — no operational rows.
-  select count(*) into v_summary_count from public.get_platform_tenant_onboarding_summary();
+  select count(*) into v_summary_count
+  from public.get_platform_tenant_onboarding_summary_secure();
   if v_summary_count = 0 then
     raise exception 'Phase1 FAIL: platform admin summary RPC returned no rows.';
   end if;
-  raise notice 'Phase1 PASS: platform admin can execute get_platform_tenant_onboarding_summary (% rows).', v_summary_count;
+  raise notice 'Phase1 PASS: platform admin can execute MFA-gated onboarding summary (% rows).', v_summary_count;
 end $$;
 
 reset role;

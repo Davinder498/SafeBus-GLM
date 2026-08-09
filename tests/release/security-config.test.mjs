@@ -327,3 +327,14 @@ test('assigned-driver route authorization avoids routes and trips RLS recursion'
     /revoke all on function public\.driver_can_read_assigned_route\(uuid, uuid\)\s+from public, anon, authenticated/,
   );
 });
+
+test('platform isolation RLS uses the current MFA-gated onboarding summary', async () => {
+  const platformIsolation = await read('tests/rls/phase1-platform-isolation-rls.sql');
+
+  assert.match(platformIsolation, /get_platform_tenant_onboarding_summary_secure\(\)/);
+  assert.match(platformIsolation, /"aal":"aal2"/);
+  assert.match(
+    platformIsolation,
+    /has_function_privilege\(\s*'authenticated',\s*'public\.get_platform_tenant_onboarding_summary\(\)'/,
+  );
+});
