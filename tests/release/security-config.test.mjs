@@ -71,6 +71,33 @@ test('CI declares every Phase 4 gate', async () => {
   assert.match(await read('.github/workflows/codeql.yml'), /CodeQL/);
 });
 
+test('GitHub workflows use the Node 24 action generations', async () => {
+  const workflows = await Promise.all([
+    read('.github/workflows/ci.yml'),
+    read('.github/workflows/codeql.yml'),
+    read('.github/workflows/refresh-database-types.yml'),
+    read('.github/workflows/release-production.yml'),
+    read('.github/workflows/release-staging.yml'),
+    read('.github/workflows/rollback.yml'),
+  ]);
+  const combined = workflows.join('\n');
+
+  for (const action of [
+    'actions/checkout@v7',
+    'actions/upload-artifact@v7',
+    'github/codeql-action/init@v4',
+    'github/codeql-action/analyze@v4',
+    'gitleaks/gitleaks-action@v3',
+    'pnpm/action-setup@v6',
+  ]) {
+    assert.match(combined, new RegExp(action.replace('/', '\\/')));
+  }
+  assert.doesNotMatch(
+    combined,
+    /actions\/checkout@v4|actions\/upload-artifact@v4|github\/codeql-action\/(?:init|analyze)@v3|gitleaks\/gitleaks-action@v2|pnpm\/action-setup@v4/,
+  );
+});
+
 test('dependency automation defers incompatible toolchain major upgrades', async () => {
   const dependabot = await read('.github/dependabot.yml');
   const mobilePackage = JSON.parse(await read('apps/mobile/package.json'));
