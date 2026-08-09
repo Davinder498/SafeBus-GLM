@@ -91,3 +91,19 @@ test('hosted RLS runner preserves shared fixtures through dependent suites', asy
   assert.doesNotMatch(roster, /PRIVILEGED CLEANUP AFTER TESTS/);
   assert.match(cleanup, /Shared student-roster RLS fixtures cleaned up/);
 });
+
+test('student roster write authorization keeps school administrators school-scoped', async () => {
+  const migration = await read(
+    'supabase/migrations/0080_restore_student_roster_school_scope.sql',
+  );
+
+  assert.match(
+    migration,
+    /current_user_role\(\) in \('tenant_admin', 'transportation_admin'\)/,
+  );
+  assert.match(migration, /current_user_role\(\) = 'school_admin'/);
+  assert.match(migration, /p_school_id is not null/);
+  assert.match(migration, /p_school_id = public\.current_school_id\(\)/);
+  assert.doesNotMatch(migration, /select public\.can_write_optional_school/);
+  assert.doesNotMatch(migration, /is_platform_super_admin/);
+});

@@ -482,6 +482,12 @@
       "filename": "0079_phase6_transportation_operations_completion.sql",
       "bytes": 55124,
       "sha256": "0467315e699066f2f37aba9bf8fb8683da5017c1de0319b6751b8b148b93995a"
+    },
+    {
+      "version": "0080",
+      "filename": "0080_restore_student_roster_school_scope.sql",
+      "bytes": 1795,
+      "sha256": "ae4628814cf910dce9aab6bc27644469a8decc4d8eada08ba0b54b9c46f387a5"
     }
   ]
 }
