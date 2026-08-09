@@ -160,4 +160,9 @@ test('driver manifest RLS fixtures isolate legacy seed setup from production gua
   assert.match(manifest, /enable trigger enforce_ready_route_trip_start/);
   assert.match(manifest, /disable trigger protect_final_tenant_admin_delete/);
   assert.match(manifest, /enable trigger protect_final_tenant_admin_delete/);
+  assert.match(manifest, /insert into public\.route_trip_patterns/);
+  assert.match(
+    manifest,
+    /route_id, route_trip_pattern_id,\s+trip_name_snapshot, trip_type/,
+  );
 });
