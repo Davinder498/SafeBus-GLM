@@ -506,6 +506,12 @@
       "filename": "0083_reconcile_realtime_receive_only_grants.sql",
       "bytes": 810,
       "sha256": "224bbac0b578bc2f772bf842f73cbd9e9f4b1b735563078f16711737f3e45b59"
+    },
+    {
+      "version": "0084",
+      "filename": "0084_break_route_trip_rls_recursion.sql",
+      "bytes": 2420,
+      "sha256": "3f82efda7a8eda8063bad6596062ff4d1d01e273b7b9fd19f3dd925c110a83ad"
     }
   ]
 }

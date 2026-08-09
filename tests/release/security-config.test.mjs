@@ -307,3 +307,23 @@ test('atomic member invitation fixture supplies school scope for both students',
     /'ca000000-0000-0000-0000-000000000022',\s*'ca000000-0000-0000-0000-000000000020',\s*'ca000000-0000-0000-0000-000000000021',/,
   );
 });
+
+test('assigned-driver route authorization avoids routes and trips RLS recursion', async () => {
+  const migration = await read(
+    'supabase/migrations/0084_break_route_trip_rls_recursion.sql',
+  );
+
+  assert.match(migration, /security definer/i);
+  assert.match(migration, /public\.current_user_role\(\) = 'driver'/);
+  assert.match(migration, /d\.status = 'active'/);
+  assert.match(migration, /from public\.driver_route_assignments dra/);
+  assert.match(migration, /from public\.driver_trips dt/);
+  assert.match(
+    migration,
+    /using \(public\.driver_can_read_assigned_route\(tenant_id, id\)\)/,
+  );
+  assert.match(
+    migration,
+    /revoke all on function public\.driver_can_read_assigned_route\(uuid, uuid\)\s+from public, anon, authenticated/,
+  );
+});
