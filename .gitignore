@@ -46,6 +46,8 @@ supabase/.branches
 supabase/.temp
 
 # Mobile (Capacitor native projects)
-apps/mobile/android/
+# Android is committed because Phase 7 contains the production foreground
+# tracking service. The nested Android .gitignore excludes generated output,
+# copied web assets, local SDK paths, and signing material.
 apps/mobile/ios/
 apps/mobile/.sourcemaps/

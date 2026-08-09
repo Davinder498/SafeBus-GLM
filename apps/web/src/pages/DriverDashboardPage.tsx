@@ -95,7 +95,7 @@ export function DriverDashboardPage() {
   }, [load]);
 
   async function handleStarted(result: BusTrackingStartResult) {
-    tracking.activateTracking(result.trackingToken);
+    await tracking.activateTracking(result.trackingToken);
     setState({ kind: 'ready', activeTrip: result.trip });
     setPreTripConfirmed(false);
     setActionError(null);
@@ -131,8 +131,9 @@ export function DriverDashboardPage() {
     setActionError(null);
     try {
       const updated = await pauseDriverTrip(state.activeTrip.id);
+      tracking.location.stop();
       setState({ kind: 'ready', activeTrip: updated });
-      setMessage('Trip paused. Location sharing continues if available.');
+      setMessage('Trip paused. Location sharing stopped until the trip resumes.');
     } catch (cause) {
       setActionError(cause instanceof Error ? cause.message : 'Could not pause this trip.');
     } finally {
@@ -146,6 +147,7 @@ export function DriverDashboardPage() {
     setActionError(null);
     try {
       const updated = await resumeDriverTrip(state.activeTrip.id);
+      tracking.location.start();
       setState({ kind: 'ready', activeTrip: updated });
       setMessage('Trip resumed.');
     } catch (cause) {

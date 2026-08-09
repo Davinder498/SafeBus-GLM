@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SafeBus Alberta</string>
+    <string name="title_activity_main">SafeBus Alberta</string>
+    <string name="package_name">com.safebusalberta.app</string>
+    <string name="custom_url_scheme">com.safebusalberta.app</string>
+</resources>

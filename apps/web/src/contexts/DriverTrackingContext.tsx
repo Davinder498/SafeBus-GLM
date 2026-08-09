@@ -18,7 +18,7 @@ const STORAGE_KEY = 'safebus.activeBusTrackingToken';
 interface DriverTrackingContextValue {
   trackingToken: string | null;
   location: UseDriverLocationSharingResult;
-  activateTracking: (token: string) => void;
+  activateTracking: (token: string) => Promise<void>;
   clearTracking: () => void;
 }
 
@@ -28,19 +28,33 @@ export function DriverTrackingProvider({ children }: { children: ReactNode }) {
   const { loading, profile } = useAuth();
   const [trackingToken, setTrackingToken] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
+    if (window.SafeBusNativeTracking) return null;
     return window.sessionStorage.getItem(STORAGE_KEY);
   });
   const location = useDriverLocationSharing(trackingToken, true);
 
-  const activateTracking = useCallback((token: string) => {
-    window.sessionStorage.setItem(STORAGE_KEY, token);
+  const activateTracking = useCallback(async (token: string) => {
+    if (window.SafeBusNativeTracking) {
+      await window.SafeBusNativeTracking.activate(token);
+    } else {
+      window.sessionStorage.setItem(STORAGE_KEY, token);
+    }
     setTrackingToken(token);
   }, []);
 
   const clearTracking = useCallback(() => {
     window.sessionStorage.removeItem(STORAGE_KEY);
+    if (window.SafeBusNativeTracking) void window.SafeBusNativeTracking.stop();
     setTrackingToken(null);
   }, []);
+
+  useEffect(() => {
+    const native = window.SafeBusNativeTracking;
+    if (!native || trackingToken) return;
+    void native.getStatus().then((status) => {
+      if (status.collecting) setTrackingToken('native-service-active');
+    });
+  }, [trackingToken]);
 
   useEffect(() => {
     if (location.state.kind === 'error' && location.state.message.includes('session ended')) {
