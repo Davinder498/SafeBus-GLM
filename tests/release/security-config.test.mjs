@@ -226,3 +226,11 @@ test('current driver event authorization preserves guardian outbox enqueueing', 
     /revoke all on function public\.record_student_trip_event_for_active_trip\(uuid, text\)\s+from public, anon, authenticated/,
   );
 });
+
+test('admin fleet RLS contract uses PostgreSQL output metadata', async () => {
+  const fleet = await read('tests/rls/admin-live-fleet-map-rls.sql');
+
+  assert.doesNotMatch(fleet, /information_schema\.routine_columns/);
+  assert.match(fleet, /candidate\.proargnames/);
+  assert.match(fleet, /candidate\.oid = v_function_oid/);
+});
