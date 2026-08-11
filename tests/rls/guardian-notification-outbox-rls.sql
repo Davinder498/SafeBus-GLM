@@ -252,12 +252,33 @@ values
   ('9a200000-0000-0000-0000-000000000003', '9a100000-0000-0000-0000-000000000002', '9a130000-0000-0000-0000-000000000003', '9a160000-0000-0000-0000-000000000003', '9a170000-0000-0000-0000-000000000003', '9a175000-0000-0000-0000-000000000005', 'M9A CrossTenant Outbound', 'morning', 'active', current_date, now() - interval '10 minutes');
 
 
-insert into public.student_guardians (id, tenant_id, student_id, guardian_id, relationship, can_receive_notifications, status)
+insert into public.student_guardians (
+  id, tenant_id, student_id, guardian_id, relationship,
+  can_receive_notifications, notify_pickup, notify_dropoff,
+  notification_preferences_set_at, status
+)
 values
-  ('9a145000-0000-0000-0000-000000000001', '9a100000-0000-0000-0000-000000000001', '9a150000-0000-0000-0000-000000000001', '9a140000-0000-0000-0000-000000000001', 'guardian', true, 'active'),
-  ('9a145000-0000-0000-0000-000000000002', '9a100000-0000-0000-0000-000000000001', '9a150000-0000-0000-0000-000000000001', '9a140000-0000-0000-0000-000000000002', 'guardian', true, 'active'),
-  ('9a145000-0000-0000-0000-000000000003', '9a100000-0000-0000-0000-000000000001', '9a150000-0000-0000-0000-000000000001', '9a140000-0000-0000-0000-000000000003', 'guardian', true, 'inactive'),
-  ('9a145000-0000-0000-0000-000000000004', '9a100000-0000-0000-0000-000000000002', '9a150000-0000-0000-0000-000000000003', '9a140000-0000-0000-0000-000000000004', 'guardian', true, 'active');
+  ('9a145000-0000-0000-0000-000000000001', '9a100000-0000-0000-0000-000000000001', '9a150000-0000-0000-0000-000000000001', '9a140000-0000-0000-0000-000000000001', 'guardian', true, true, true, now(), 'active'),
+  ('9a145000-0000-0000-0000-000000000002', '9a100000-0000-0000-0000-000000000001', '9a150000-0000-0000-0000-000000000001', '9a140000-0000-0000-0000-000000000002', 'guardian', true, true, true, now(), 'active'),
+  ('9a145000-0000-0000-0000-000000000003', '9a100000-0000-0000-0000-000000000001', '9a150000-0000-0000-0000-000000000001', '9a140000-0000-0000-0000-000000000003', 'guardian', true, false, false, null, 'inactive'),
+  ('9a145000-0000-0000-0000-000000000004', '9a100000-0000-0000-0000-000000000002', '9a150000-0000-0000-0000-000000000003', '9a140000-0000-0000-0000-000000000004', 'guardian', true, true, true, now(), 'active');
+
+insert into public.guardian_notification_delivery_policies (
+  tenant_id, notifications_enabled, privacy_review_status,
+  tenant_daily_limit, tenant_per_minute_limit, privacy_approved_at,
+  privacy_approved_by
+)
+values (
+  '9a100000-0000-0000-0000-000000000001', true, 'approved',
+  500, 50, now(), '9a120000-0000-0000-0000-000000000005'
+)
+on conflict (tenant_id) do update
+set notifications_enabled = excluded.notifications_enabled,
+    privacy_review_status = excluded.privacy_review_status,
+    tenant_daily_limit = excluded.tenant_daily_limit,
+    tenant_per_minute_limit = excluded.tenant_per_minute_limit,
+    privacy_approved_at = excluded.privacy_approved_at,
+    privacy_approved_by = excluded.privacy_approved_by;
 
 alter table public.driver_trips
   enable trigger enforce_ready_route_trip_start;

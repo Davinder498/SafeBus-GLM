@@ -96,10 +96,13 @@ archiving is needed; the collision is documented here and asserted by
 | 0077 | `0077_phase5_invitation_lifecycle.sql` | Canonical | Phase 5: enforced invitation expiry/revoke, first-admin platform boundary, rate-limited delivery queue and status reconciliation |
 | 0078 | `0078_phase5_account_restoration_bulk_invitations.sql` | Canonical | Phase 5: tenant account restoration and complete idempotent guardian/driver invitation queueing |
 | 0079 | `0079_phase6_transportation_operations_completion.sql` | Canonical | Phase 6: service days, controlled late/missing status, trip exceptions, pre-trip evidence, operational notes, pause/resume/cancel, substitutions, replacement buses, guardian revocation, open-trip uniqueness, and school-scope reconciliation for affected trip reads/RPCs. Widens `driver_trips.status` to include `paused`. |
+| 0080â€“0085 | Hosted authorization and grant reconciliation | Canonical | Student roster school scope, guardian bus/outbox grants, receive-only realtime, route/trip RLS recursion, and verified MFA helper corrections. |
+| 0086 | `0086_phase7_production_driver_tracking.sql` | Canonical | Phase 7 native Android driver-device and active-trip location ingestion authorization. Physical road-test gate remains pending. |
+| 0087 | `0087_phase8_guardian_experience_notifications.sql` | Canonical | Phase 8 guardian access expiry, explicit notification preferences, privacy-review gate, quotas, provider limits, and dead-letter handling. |
 
 ## 4. Fresh-rebuild proof
 
-A fresh database must be built from `0001` through `0079` in canonical order
+A fresh database must be built from `0001` through `0087` in canonical order
 (with archived files excluded) before these phases can be accepted. The archived
 files in `supabase/legacy/` are excluded from fresh rebuilds because:
 

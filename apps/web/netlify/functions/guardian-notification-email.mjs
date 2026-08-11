@@ -2,7 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 
 const json = (statusCode, body) => ({ statusCode, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 const MAX_ATTEMPTS = 5;
-const DEFAULT_BATCH_SIZE = 10;
+const DEFAULT_BATCH_SIZE = 50;
+const DEFAULT_PROVIDER_LIMIT_PER_MINUTE = 50;
 const DEFAULT_TZ = 'America/Edmonton';
 
 // A small allowlist of fields that are safe to appear in dispatcher logs.
@@ -92,6 +93,12 @@ export function classifyProviderError(status, message = '') {
   return 'unknown';
 }
 
+async function rpcOrThrow(supabase, name, args) {
+  const result = await supabase.rpc(name, args);
+  if (result?.error) throw result.error;
+  return result?.data;
+}
+
 // Retained for backwards compatibility with Phase 15A tests. New code should prefer safeLog().
 export function redactLog(details) {
   const copy = { ...details };
@@ -133,12 +140,12 @@ async function dispatchOne(supabase, cfg, row, sendEmail = sendResendEmail) {
   if (resolveError) throw resolveError;
   const payload = payloads?.[0];
   if (!payload) {
-    await supabase.rpc('cancel_guardian_notification_email', { p_outbox_id: row.id, p_failure_category: 'eligibility_revoked', p_failure_reason: 'eligibility_revoked' });
+    await rpcOrThrow(supabase, 'cancel_guardian_notification_email', { p_outbox_id: row.id, p_failure_category: 'eligibility_revoked', p_failure_reason: 'eligibility_revoked' });
     console.log(JSON.stringify(safeLog({ outboxId: row.id, result: 'cancelled', category: 'eligibility_revoked', attempt: row.attempt_count, notificationType: row.notification_type })));
     return 'cancelled';
   }
   if (!payload.recipient_email || !/^\S+@\S+\.\S+$/.test(payload.recipient_email)) {
-    await supabase.rpc('cancel_guardian_notification_email', { p_outbox_id: row.id, p_failure_category: 'missing_recipient_email', p_failure_reason: 'missing_recipient_email' });
+    await rpcOrThrow(supabase, 'cancel_guardian_notification_email', { p_outbox_id: row.id, p_failure_category: 'missing_recipient_email', p_failure_reason: 'missing_recipient_email' });
     console.log(JSON.stringify(safeLog({ outboxId: row.id, result: 'cancelled', category: 'missing_recipient_email', attempt: row.attempt_count, notificationType: row.notification_type })));
     return 'cancelled';
   }
@@ -147,17 +154,17 @@ async function dispatchOne(supabase, cfg, row, sendEmail = sendResendEmail) {
   if (cfg.devOverride && process.env.CONTEXT !== 'production') console.log(JSON.stringify(safeLog({ outboxId: row.id, result: 'dev_recipient_override', attempt: row.attempt_count, notificationType: row.notification_type })));
   try {
     const result = await sendEmail({ apiKey: cfg.apiKey, from: cfg.from, fromName: cfg.fromName, to, ...email, idempotency: idempotencyKey(row.id) });
-    await supabase.rpc('complete_guardian_notification_email', { p_outbox_id: row.id, p_provider_message_id: result.providerMessageId });
+    await rpcOrThrow(supabase, 'complete_guardian_notification_email', { p_outbox_id: row.id, p_provider_message_id: result.providerMessageId });
     console.log(JSON.stringify(safeLog({ outboxId: row.id, result: 'delivered', attempt: row.attempt_count, notificationType: row.notification_type, durationMs: Date.now() - startedAt })));
     return 'delivered';
   } catch (error) {
     const category = classifyProviderError(error.status || 0, error.providerMessage || error.message);
     if (category === 'temporary_provider_error' || category === 'provider_timeout' || category === 'unknown') {
-      await supabase.rpc('retry_guardian_notification_email', { p_outbox_id: row.id, p_failure_category: category, p_failure_reason: category, p_retry_after_seconds: retryDelaySeconds(row.attempt_count), p_max_attempts: MAX_ATTEMPTS });
+      await rpcOrThrow(supabase, 'retry_guardian_notification_email', { p_outbox_id: row.id, p_failure_category: category, p_failure_reason: category, p_retry_after_seconds: retryDelaySeconds(row.attempt_count), p_max_attempts: MAX_ATTEMPTS });
       console.log(JSON.stringify(safeLog({ outboxId: row.id, result: 'retry', category, attempt: row.attempt_count, notificationType: row.notification_type, durationMs: Date.now() - startedAt })));
       return 'retry';
     }
-    await supabase.rpc('fail_guardian_notification_email', { p_outbox_id: row.id, p_failure_category: category, p_failure_reason: category });
+    await rpcOrThrow(supabase, 'fail_guardian_notification_email', { p_outbox_id: row.id, p_failure_category: category, p_failure_reason: category });
     console.log(JSON.stringify(safeLog({ outboxId: row.id, result: 'failed', category, attempt: row.attempt_count, notificationType: row.notification_type, durationMs: Date.now() - startedAt })));
     return 'failed';
   }
@@ -167,11 +174,42 @@ export async function runDispatcher(event, sendEmail) {
   const cfg = requireConfig();
   if (!authorized(event, cfg.dispatcherSecret)) return json(401, { error: 'Unauthorized.' });
   const supabase = createClient(cfg.url, cfg.service, { auth: { autoRefreshToken: false, persistSession: false } });
-  const batchSize = Math.max(1, Math.min(Number(process.env.SAFEBUS_NOTIFICATION_BATCH_SIZE || DEFAULT_BATCH_SIZE), 50));
-  const { data: rows, error } = await supabase.rpc('claim_guardian_notification_email_batch', { p_batch_size: batchSize, p_lease_seconds: 120, p_max_attempts: MAX_ATTEMPTS });
+  const batchSize = Math.max(1, Math.min(Number(process.env.SAFEBUS_NOTIFICATION_BATCH_SIZE || DEFAULT_BATCH_SIZE), 100));
+  const providerLimit = Math.max(
+    1,
+    Math.min(
+      Number(
+        process.env.SAFEBUS_NOTIFICATION_PROVIDER_LIMIT_PER_MINUTE ||
+          DEFAULT_PROVIDER_LIMIT_PER_MINUTE,
+      ),
+      1000,
+    ),
+  );
+  const { data: rows, error } = await supabase.rpc('claim_guardian_notification_email_batch', {
+    p_batch_size: batchSize,
+    p_lease_seconds: 120,
+    p_max_attempts: MAX_ATTEMPTS,
+    p_provider_limit_per_minute: providerLimit,
+  });
   if (error) throw error;
-  const summary = { claimed: rows?.length || 0, delivered: 0, retry: 0, failed: 0, cancelled: 0 };
-  for (const row of rows || []) { const result = await dispatchOne(supabase, cfg, row, sendEmail); summary[result] = (summary[result] || 0) + 1; }
+  const summary = { claimed: rows?.length || 0, delivered: 0, retry: 0, failed: 0, cancelled: 0, error: 0 };
+  for (const row of rows || []) {
+    try {
+      const result = await dispatchOne(supabase, cfg, row, sendEmail);
+      summary[result] = (summary[result] || 0) + 1;
+    } catch {
+      // Keep draining independent claims. This row remains protected by its
+      // lease and becomes eligible for recovery when the lease expires.
+      summary.error += 1;
+      console.error(JSON.stringify(safeLog({
+        outboxId: row.id,
+        result: 'row_error',
+        category: 'unknown',
+        attempt: row.attempt_count,
+        notificationType: row.notification_type,
+      })));
+    }
+  }
   console.log(JSON.stringify(safeLog({ result: 'batch_complete', claimed: summary.claimed, delivered: summary.delivered, retry: summary.retry, failed: summary.failed, cancelled: summary.cancelled })));
   return json(200, summary);
 }
