@@ -127,7 +127,7 @@ export function GuardianLiveTripsPage() {
                     )}
                   </div>
                   <StatusPill tone={bus.hasActiveTrip ? 'success' : 'neutral'}>
-                    {bus.hasActiveTrip ? 'School run active' : 'Not active right now'}
+                    {bus.hasActiveTrip ? 'School run active' : 'Trip not started'}
                   </StatusPill>
                 </div>
 

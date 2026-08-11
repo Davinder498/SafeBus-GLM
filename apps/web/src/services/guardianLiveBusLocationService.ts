@@ -59,7 +59,7 @@ export function mapGuardianBusVisibilityRow(
 
 /** Load the guardian's linked students and bus-only visibility state. */
 export async function fetchGuardianBusVisibility(): Promise<GuardianBusVisibility[]> {
-  const { data, error } = await requireSupabase().rpc('get_guardian_bus_visibility');
+  const { data, error } = await requireSupabase().rpc('get_guardian_bus_visibility_v2');
   if (error) {
     if (import.meta.env.DEV) console.error('Failed to load guardian bus visibility', error);
     throw new Error('We could not load your bus information. Please try again.');

@@ -411,3 +411,24 @@ test('verified MFA helper is reconciled from the signed Supabase JWT', async () 
   assert.match(migration, /auth\.jwt\(\) ->> 'aal'/);
   assert.match(migration, /= 'aal2'/);
 });
+
+test('Phase 8 guardian student visibility remains expiry-aware without RLS recursion', async () => {
+  const migration = await read(
+    'supabase/migrations/0088_fix_phase8_guardian_student_rls_recursion.sql',
+  );
+
+  assert.match(
+    migration,
+    /create or replace function public\.can_select_linked_student_as_guardian\(/,
+  );
+  assert.match(migration, /security definer/i);
+  assert.match(migration, /sg\.status = 'active'/);
+  assert.match(
+    migration,
+    /sg\.access_expires_at is null or sg\.access_expires_at > now\(\)/,
+  );
+  assert.match(
+    migration,
+    /using \(\s*public\.can_select_linked_student_as_guardian\(id, tenant_id\)\s*\)/,
+  );
+});
