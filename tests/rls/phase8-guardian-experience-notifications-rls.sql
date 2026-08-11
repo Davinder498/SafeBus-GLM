@@ -1,5 +1,5 @@
 -- SafeBus Alberta - Phase 8 guardian privacy and notification queue checks.
--- Run against hosted Supabase DEV after applying migration 0087.
+-- Run against hosted Supabase DEV after applying migrations 0087 and 0088.
 
 begin;
 
@@ -9,6 +9,8 @@ declare
   v_resolve text;
   v_visibility_result text;
   v_status_constraint text;
+  v_guardian_helper text;
+  v_student_policy text;
 begin
   if not exists (
     select 1 from information_schema.columns
@@ -28,6 +30,29 @@ begin
     or to_regprocedure('public.admin_set_guardian_access_expiry(uuid,timestamp with time zone)') is null
     or to_regprocedure('public.requeue_guardian_notification_dead_letter(uuid)') is null then
     raise exception 'TEST FAILED: a Phase 8 guardian authorization RPC is missing';
+  end if;
+
+  if to_regprocedure('public.can_select_linked_student_as_guardian(uuid,uuid)') is null then
+    raise exception 'TEST FAILED: non-recursive guardian student visibility helper is missing';
+  end if;
+
+  select lower(pg_get_functiondef(
+    'public.can_select_linked_student_as_guardian(uuid,uuid)'::regprocedure
+  )) into v_guardian_helper;
+  if position('security definer' in v_guardian_helper) = 0
+    or position('access_expires_at' in v_guardian_helper) = 0
+    or position('sg.status = ''active''' in v_guardian_helper) = 0 then
+    raise exception 'TEST FAILED: guardian student helper is not non-recursive and expiry-aware';
+  end if;
+
+  select lower(qual) into v_student_policy
+  from pg_policies
+  where schemaname = 'public'
+    and tablename = 'students'
+    and policyname = 'students select linked guardian';
+  if position('can_select_linked_student_as_guardian' in coalesce(v_student_policy, '')) = 0
+    or position('student_guardians' in coalesce(v_student_policy, '')) > 0 then
+    raise exception 'TEST FAILED: students guardian policy can recurse through student_guardians RLS';
   end if;
 
   select lower(pg_get_function_result('public.get_guardian_bus_visibility_v2()'::regprocedure))
