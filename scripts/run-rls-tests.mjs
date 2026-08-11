@@ -39,6 +39,7 @@ const DEFAULT_RLS_FILES = [
   'tests/rls/phase5-tenant-administration-rls.sql',
   'tests/rls/phase6-transportation-operations-rls.sql',
   'tests/rls/phase7-production-driver-tracking-rls.sql',
+  'tests/rls/phase8-guardian-experience-notifications-rls.sql',
 ];
 
 function fail(message) {

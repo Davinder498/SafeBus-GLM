@@ -1,5 +1,7 @@
 # Phase 15B — Notification Delivery Validation & Operational Hardening
 
+> Historical baseline: Phase 8 migration `0087` replaces hourly dispatch and the former consent assumptions. Use `docs/phase-8-guardian-experience-notifications.md` for current acceptance.
+
 ## Manual Acceptance Guide
 
 Phase 15B proves that the Phase 15A guardian pickup/drop-off email delivery system works safely and reliably in hosted Supabase DEV and a Netlify deploy preview. It adds the smallest reliable production-compatible scheduler, tenant time-zone formatting, privacy-safe diagnostics, and a minimal tenant-admin operational summary.

@@ -98,6 +98,9 @@ export function ParentDashboardPage() {
                 <Link to="/guardian/events" className={actionLinkClass}>
                   Pickup & drop-off
                 </Link>
+                <Link to="/guardian/notifications" className={actionLinkClass}>
+                  Email choices
+                </Link>
               </div>
             </Card>
           ))}

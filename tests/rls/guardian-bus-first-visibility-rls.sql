@@ -1,5 +1,5 @@
 -- Guardian bus-first visibility structural and privilege regression checks.
--- Apply migration 0061 after 0060 before running against hosted Supabase DEV.
+-- Apply through migration 0087 before running against hosted Supabase DEV.
 begin;
 
 do $$
@@ -8,27 +8,22 @@ declare
   v_result text;
   v_legacy regprocedure;
 begin
-  if to_regprocedure('public.get_guardian_bus_visibility()') is null then
+  if to_regprocedure('public.get_guardian_bus_visibility_v2()') is null then
     raise exception 'TEST FAILED: guardian bus-first RPC is missing';
   end if;
 
-  select lower(pg_get_functiondef('public.get_guardian_bus_visibility()'::regprocedure)) into v_definition;
-  select lower(pg_get_function_result('public.get_guardian_bus_visibility()'::regprocedure)) into v_result;
+  select lower(pg_get_functiondef('public.get_guardian_bus_visibility_v2()'::regprocedure)) into v_definition;
+  select lower(pg_get_function_result('public.get_guardian_bus_visibility_v2()'::regprocedure)) into v_result;
 
   if position('security definer' in v_definition) = 0
-    or position('auth.uid() is null' in v_definition) = 0
+    or position('auth.uid() is not null' in v_definition) = 0
     or position('current_user_role()' in v_definition) = 0
     or position('current_guardian_id()' in v_definition) = 0
     or position('current_tenant_id()' in v_definition) = 0
     or position('student_guardians' in v_definition) = 0
-    or position('student_bus_assignments' in v_definition) = 0
-    or position('bus_route_assignments' in v_definition) = 0
-    or position('dt.bus_id = ss.bus_id' in v_definition) = 0
-    or position('dt.route_id = ss.route_id' in v_definition) = 0
-    or position('dt.route_trip_pattern_id = ss.route_trip_pattern_id' in v_definition) = 0
-    or position('count(distinct sc.bus_id)' in v_definition) = 0
-    or position('count(distinct tc.driver_trip_id)' in v_definition) = 0 then
-    raise exception 'TEST FAILED: guardian bus-first RPC lacks role, tenant, link, exact-service, or ambiguity enforcement';
+    or position('access_expires_at' in v_definition) = 0
+    or position('get_guardian_bus_visibility()' in v_definition) = 0 then
+    raise exception 'TEST FAILED: guardian bus-first RPC lacks role, tenant, link, or expiry enforcement';
   end if;
 
   if position('bus_number text' in v_result) = 0
@@ -55,9 +50,10 @@ begin
     raise exception 'TEST FAILED: guardian bus-first result exposes operational or internal fields: %', v_result;
   end if;
 
-  if has_function_privilege('public', 'public.get_guardian_bus_visibility()', 'EXECUTE')
-    or has_function_privilege('anon', 'public.get_guardian_bus_visibility()', 'EXECUTE')
-    or not has_function_privilege('authenticated', 'public.get_guardian_bus_visibility()', 'EXECUTE') then
+  if has_function_privilege('public', 'public.get_guardian_bus_visibility_v2()', 'EXECUTE')
+    or has_function_privilege('anon', 'public.get_guardian_bus_visibility_v2()', 'EXECUTE')
+    or not has_function_privilege('authenticated', 'public.get_guardian_bus_visibility_v2()', 'EXECUTE')
+    or has_function_privilege('authenticated', 'public.get_guardian_bus_visibility()', 'EXECUTE') then
     raise exception 'TEST FAILED: guardian bus-first RPC execute privileges are incorrect';
   end if;
 
@@ -78,7 +74,7 @@ set local role anon;
 do $$
 begin
   begin
-    perform public.get_guardian_bus_visibility();
+    perform public.get_guardian_bus_visibility_v2();
     raise exception 'TEST FAILED: anonymous guardian bus visibility was not denied';
   exception when insufficient_privilege then
     null;

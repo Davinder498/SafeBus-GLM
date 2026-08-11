@@ -46,7 +46,7 @@ function locationStateMeta(state: GuardianStudentLiveBusLocation['locationState'
       description: 'The bus location is temporarily unavailable.',
     };
   return {
-    label: 'Not active right now',
+    label: 'Trip not started',
     tone: 'neutral',
     description: 'The assigned bus is not currently running this student’s school service.',
   };

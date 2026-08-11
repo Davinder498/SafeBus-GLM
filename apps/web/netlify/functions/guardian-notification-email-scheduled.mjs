@@ -7,7 +7,7 @@
 //
 // Scheduling is configured in netlify.toml under:
 //   [functions."guardian-notification-email-scheduled"]
-//     schedule = "@hourly"
+//     schedule = "*/5 * * * *"
 //
 // Overlapping executions are safe because the database claim RPC uses
 // `for update skip locked`, so two concurrent runs will never claim the

@@ -106,6 +106,8 @@ pnpm test:rls:dev -- tests/rls/phase7-production-driver-tracking-rls.sql
 
 ## Exit-gate checklist
 
+Physical road testing and battery/data-limit approval were explicitly deferred on 2026-08-09 so Phase 8 implementation could begin. Phase 7 remains pending and must be resumed before production driver tracking is approved.
+
 - [ ] Approved battery and mobile-data limits recorded.
 - [ ] Multi-hour road tests completed on every supported device/OS class.
 - [ ] Eight-hour representative operating day passed.
