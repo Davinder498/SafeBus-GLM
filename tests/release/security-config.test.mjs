@@ -111,6 +111,15 @@ test('dependency automation defers incompatible toolchain major upgrades', async
     dependabot,
     /dependency-name: '@capacitor\/\*'\s+update-types:\s*\[version-update:semver-major\]/,
   );
+  for (const dependency of ['vite', '@vitejs/plugin-react', 'vitest']) {
+    assert.match(
+      dependabot,
+      new RegExp(
+        `dependency-name: ['\"]?${dependency.replaceAll('/', '\\/')}['\"]?\\s+` +
+          'update-types:\\s*\\[version-update:semver-major\\]',
+      ),
+    );
+  }
   assert.equal(mobilePackage.dependencies['@capacitor/geolocation'], '^6.0.1');
   assert.match(lockfile, /'@capacitor\/geolocation@6\.1\.1'/);
   assert.doesNotMatch(lockfile, /'@capacitor\/geolocation@8\./);
