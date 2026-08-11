@@ -42,7 +42,7 @@ jobs:
       - name: Resolve reviewed release SHA
         run: echo "SAFEBUS_RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
       - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
