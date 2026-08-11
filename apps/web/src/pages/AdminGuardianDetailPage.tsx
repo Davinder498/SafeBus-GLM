@@ -31,6 +31,7 @@ import {
   createStudentGuardianLink,
   deactivateStudentGuardianLink,
   deleteGuardian,
+  setGuardianAccessExpiry,
 } from '@/services/studentGuardianService';
 
 function displayName(detail: AdminGuardianDetail) {
@@ -66,6 +67,8 @@ export function AdminGuardianDetailPage() {
   const [revokingLinkForId, setRevokingLinkForId] = useState<string | null>(null);
   const [revokeReason, setRevokeReason] = useState('');
   const [revoking, setRevoking] = useState(false);
+  const [expiryLinkId, setExpiryLinkId] = useState<string | null>(null);
+  const [expiryValue, setExpiryValue] = useState('');
 
   const canWrite = profile?.role === 'tenant_admin';
   const canRevoke =
@@ -152,6 +155,26 @@ export function AdminGuardianDetailPage() {
       setWriteError(error instanceof Error ? error.message : 'Unable to revoke guardian access.');
     } finally {
       setRevoking(false);
+    }
+  }
+
+  async function saveAccessExpiry(linkId: string, value = expiryValue) {
+    setBusy(true);
+    setWriteError(null);
+    setMessage(null);
+    try {
+      await setGuardianAccessExpiry(
+        linkId,
+        value ? new Date(value).toISOString() : null,
+      );
+      setExpiryLinkId(null);
+      setExpiryValue('');
+      setMessage(value ? 'Guardian access expiry updated.' : 'Guardian access expiry removed.');
+      await load();
+    } catch (error) {
+      setWriteError(error instanceof Error ? error.message : 'Unable to update access expiry.');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -326,6 +349,11 @@ export function AdminGuardianDetailPage() {
                           {link.student_name}
                         </p>
                         <p className="text-xs capitalize text-slate-500">{link.relationship}</p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {link.access_expires_at
+                            ? `Access ends ${new Date(link.access_expires_at).toLocaleString()}`
+                            : 'Access does not expire automatically'}
+                        </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-3 sm:justify-end">
                         <StatusPill tone={link.status === 'active' ? 'success' : 'neutral'}>
@@ -350,6 +378,20 @@ export function AdminGuardianDetailPage() {
                                 className="w-full sm:w-auto"
                                 type="button"
                                 size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setExpiryLinkId(expiryLinkId === link.id ? null : link.id);
+                                  setExpiryValue('');
+                                }}
+                              >
+                                Set expiry
+                              </Button>
+                            )}
+                            {canRevoke && (
+                              <Button
+                                className="w-full sm:w-auto"
+                                type="button"
+                                size="sm"
                                 variant="danger"
                                 data-testid={`revoke-access-toggle-${link.id}`}
                                 onClick={() => {
@@ -366,6 +408,57 @@ export function AdminGuardianDetailPage() {
                         )}
                       </div>
                     </div>
+
+                    {canRevoke && expiryLinkId === link.id && (
+                      <form
+                        className="border-t border-slate-100 bg-slate-50 p-4"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          void saveAccessExpiry(link.id);
+                        }}
+                      >
+                        <label
+                          className="block text-sm font-semibold text-slate-700"
+                          htmlFor={`access-expiry-${link.id}`}
+                        >
+                          Access expiry (local date and time)
+                        </label>
+                        <input
+                          id={`access-expiry-${link.id}`}
+                          type="datetime-local"
+                          value={expiryValue}
+                          onChange={(event) => setExpiryValue(event.target.value)}
+                          className="mt-2 block min-h-11 w-full max-w-sm rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-500"
+                        />
+                        <p className="mt-2 text-xs text-slate-500">
+                          Access stops automatically at this time. Leave blank to remove an existing expiry.
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button type="submit" size="sm" loading={busy}>Save expiry</Button>
+                          {link.access_expires_at && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={busy}
+                              onClick={() => {
+                                void saveAccessExpiry(link.id, '');
+                              }}
+                            >
+                              Remove expiry
+                            </Button>
+                          )}
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setExpiryLinkId(null)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </form>
+                    )}
 
                     {canRevoke && revokingLinkForId === link.id && (
                       <div

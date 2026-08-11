@@ -72,7 +72,7 @@ export function NotificationDeliverySummaryCard() {
         <SummaryStat label="Pending" value={summary.pendingCount} tone={summary.pendingCount > 0 ? 'warning' : 'neutral'} />
         <SummaryStat label="Processing" value={summary.processingCount} tone={summary.processingCount > 0 ? 'info' : 'neutral'} />
         <SummaryStat label="Delivered (24h)" value={summary.deliveredCountRecent} tone="success" />
-        <SummaryStat label="Failed (24h)" value={summary.failedCountRecent} tone={summary.failedCountRecent > 0 ? 'danger' : 'neutral'} />
+        <SummaryStat label="Dead-lettered / failed (24h)" value={summary.failedCountRecent} tone={summary.failedCountRecent > 0 ? 'danger' : 'neutral'} />
         <SummaryStat label="Cancelled" value={summary.cancelledCountRecent} tone="neutral" />
         <SummaryStat label="Oldest pending" value={formatOldestPendingAge(summary.oldestPendingAgeSeconds)} tone="neutral" />
       </dl>

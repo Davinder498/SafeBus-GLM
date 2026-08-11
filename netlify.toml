@@ -9,12 +9,13 @@
 [functions]
   directory = "apps/web/netlify/functions"
 
-# Phase 15B: Conservative hourly scheduled invocation of the secured guardian notification dispatcher.
+# Phase 8: Frequent durable notification queue drain. Database leases, ordering,
+# tenant quotas, and provider limits keep overlapping executions safe.
 # Overlapping executions are safe because the database claim RPC uses `for update skip locked`.
 # Secrets remain server-side; no browser user is required. Manual secure POST invocation
 # to /.netlify/functions/guardian-notification-email remains available for QA.
 [functions."guardian-notification-email-scheduled"]
-  schedule = "@hourly"
+  schedule = "*/5 * * * *"
 
 # Phase 3: daily retention orchestration. The function defaults to dry-run;
 # SAFEBUS_RETENTION_EXECUTE=true is set only after counsel approves the periods.

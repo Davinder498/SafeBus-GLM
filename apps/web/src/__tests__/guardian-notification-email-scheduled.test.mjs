@@ -38,7 +38,7 @@ describe('scheduled notification dispatcher', () => {
     const result = await handler({ httpMethod: 'POST', headers: {}, body: '' });
 
     expect(result.statusCode).toBe(200);
-    expect(JSON.parse(result.body)).toEqual({ claimed: 0, delivered: 0, retry: 0, failed: 0, cancelled: 0 });
+    expect(JSON.parse(result.body)).toEqual({ claimed: 0, delivered: 0, retry: 0, failed: 0, cancelled: 0, error: 0 });
     // The scheduled handler should inject the secret internally so the claim RPC runs.
     expect(client.rpc).toHaveBeenCalled();
   });

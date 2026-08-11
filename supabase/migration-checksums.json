@@ -524,6 +524,18 @@
       "filename": "0086_phase7_production_driver_tracking.sql",
       "bytes": 20733,
       "sha256": "a3d1c021cf51176f3f159064ee404a8c1b89c425dd1e5f5c60ae55a88e8d4089"
+    },
+    {
+      "version": "0087",
+      "filename": "0087_phase8_guardian_experience_notifications.sql",
+      "bytes": 35626,
+      "sha256": "e451737f05f556a50c202cc46ef788618629feabfcebeb3acf868cf743b2ca96"
+    },
+    {
+      "version": "0088",
+      "filename": "0088_fix_phase8_guardian_student_rls_recursion.sql",
+      "bytes": 2052,
+      "sha256": "d1936e1be4cd0751f43513c9fb40314f3d17d428b5c43f2001a4687d797e07fd"
     }
   ]
 }

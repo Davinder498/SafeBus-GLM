@@ -1,5 +1,7 @@
 # Phase 15A — Guardian Event Email Notification Delivery Foundation
 
+> Historical baseline: Phase 8 migration `0087` supersedes the admin-only eligibility flag with explicit guardian pickup/drop-off choices, a fail-closed privacy gate, quotas, and dead-letter handling. See `phase-8-guardian-experience-notifications.md` for the current contract.
+
 ## Repository findings
 
 - Guardian emails are stored in `public.guardians.email` and mirrored in `public.profiles.email`; guardian domain rows connect to Auth users through `guardians.profile_id -> profiles.id -> auth.users.id`.

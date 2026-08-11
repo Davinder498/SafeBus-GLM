@@ -343,7 +343,7 @@ begin
     raise exception 'TEST 10 FAILED: expected guardian, got %', public.current_user_role();
   end if;
 
-  select count(*) into v_count from public.get_guardian_bus_visibility();
+  select count(*) into v_count from public.get_guardian_bus_visibility_v2();
   if v_count < 1 then
     raise exception 'TEST 10 FAILED: guardian should see at least 1 linked student';
   end if;
