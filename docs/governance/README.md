@@ -11,31 +11,35 @@ every later phase must obey.
 
 ## Documents
 
-| Document | Exit-gate item it satisfies |
-| --- | --- |
-| [`product-scope.md`](./product-scope.md) | Signed product scope |
-| [`role-responsibility-matrix.md`](./role-responsibility-matrix.md) | Signed role and responsibility matrix |
-| [`data-classification.md`](./data-classification.md) | Approved data classification |
-| [`first-customer-profile.md`](./first-customer-profile.md) | Approved first-customer profile |
-| [`capacity-assumptions.md`](./capacity-assumptions.md) | Written capacity assumptions |
-| [`feature-inventory.md`](./feature-inventory.md) | Authoritative feature inventory (current vs. future) |
-| [`risk-register.md`](./risk-register.md) | Formal risk register |
-| [`decision-log.md`](./decision-log.md) | Formal decision log |
-| [`development-workflow.md`](./development-workflow.md) | Confirmed development workflow |
+| Document                                                           | Exit-gate item it satisfies                               |
+| ------------------------------------------------------------------ | --------------------------------------------------------- |
+| [`commercial-release-scope.md`](./commercial-release-scope.md)     | Binding Commercial Release 1 boundary and launch-gate map |
+| [`product-scope.md`](./product-scope.md)                           | Signed product scope                                      |
+| [`role-responsibility-matrix.md`](./role-responsibility-matrix.md) | Signed role and responsibility matrix                     |
+| [`data-classification.md`](./data-classification.md)               | Approved data classification                              |
+| [`first-customer-profile.md`](./first-customer-profile.md)         | Approved first-customer profile                           |
+| [`capacity-assumptions.md`](./capacity-assumptions.md)             | Written capacity assumptions                              |
+| [`feature-inventory.md`](./feature-inventory.md)                   | Authoritative feature inventory (current vs. future)      |
+| [`risk-register.md`](./risk-register.md)                           | Formal risk register                                      |
+| [`decision-log.md`](./decision-log.md)                             | Formal decision log                                       |
+| [`development-workflow.md`](./development-workflow.md)             | Confirmed development workflow                            |
 
 ## Reading order
 
-1. `product-scope.md` — the non-negotiable product boundary.
-2. `data-classification.md` — how every table is classified.
-3. `feature-inventory.md` — what is current vs. future, with decisions on
+1. `commercial-release-scope.md` — the proposed CR1 commitment and release gates.
+2. `product-scope.md` — the permanent non-negotiable product boundary.
+3. `data-classification.md` — how every table is classified.
+4. `feature-inventory.md` — what is current vs. future, with decisions on
    drifted features.
-4. Everything else.
+5. Everything else.
 
 ## Status
 
-Phase 0 is **drafted for product-owner sign-off**. Each document carries a
-`Status:` line that must move from `Draft` to `Approved` with a dated
-sign-off record in `decision-log.md` before Phase 1 exits.
+The Commercial Release 1 product boundary, feature inventory, and first-customer
+profile were approved by the Platform Administrator through DL-010 on
+2026-08-12. Other governance artifacts keep their own status and approval
+requirements; CR1 scope approval does not approve legal, security, privacy,
+capacity, or operational launch gates.
 
 ## Rule of precedence
 

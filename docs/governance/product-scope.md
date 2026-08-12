@@ -1,9 +1,9 @@
 # SafeBus Alberta — Product Scope
 
-**Status:** Draft — awaiting product-owner sign-off
+**Status:** Approved and locked for Commercial Release 1
 **Owner:** Product Owner
 **Phase:** 0 — Product and governance baseline
-**Last updated:** 2026-08-06
+**Last updated:** 2026-08-12
 
 ---
 
@@ -79,6 +79,11 @@ this plan explicitly approves them.
 A feature existing in the codebase does **not** make it current scope. The
 feature inventory reconciles code-state drift against approved scope.
 
+The proposed first commercial commitment and the production gates that must
+be satisfied before it may handle real customer data are defined separately in
+[`commercial-release-scope.md`](./commercial-release-scope.md). This permanent
+product boundary and the CR1 release boundary must both be satisfied.
+
 ## 4. Customer types (definition only — first customer picked separately)
 
 SafeBus is designed to serve these Alberta customer types. The first-customer
@@ -152,7 +157,6 @@ This scope is frozen at Phase 0 sign-off. Any change requires:
 
 **Sign-off**
 
-| Role | Name | Date | Signature |
-| --- | --- | --- | --- |
-| Product Owner | _pending_ | | |
-| Engineering Lead | _pending_ | | |
+| Role                  | Name                   | Date       | Signature               |
+| --------------------- | ---------------------- | ---------- | ----------------------- |
+| Final Decision Holder | Platform Administrator | 2026-08-12 | Approved through DL-010 |

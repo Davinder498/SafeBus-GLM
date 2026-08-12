@@ -135,9 +135,7 @@ test('hosted RLS runner preserves shared fixtures through dependent suites', asy
   const rosterIndex = runner.indexOf("'tests/rls/student-roster-rls.sql'");
   const guardianLinkingIndex = runner.indexOf("'tests/rls/guardian-linking-rls.sql'");
   const cleanupIndex = runner.indexOf("'tests/rls/student-roster-shared-cleanup.sql'");
-  const guardianBusFirstIndex = runner.indexOf(
-    "'tests/rls/guardian-bus-first-visibility-rls.sql'",
-  );
+  const guardianBusFirstIndex = runner.indexOf("'tests/rls/guardian-bus-first-visibility-rls.sql'");
 
   assert.ok(rosterIndex >= 0);
   assert.ok(rosterIndex < guardianLinkingIndex);
@@ -164,14 +162,9 @@ test('hosted RLS runner preserves shared fixtures through dependent suites', asy
 });
 
 test('student roster write authorization keeps school administrators school-scoped', async () => {
-  const migration = await read(
-    'supabase/migrations/0080_restore_student_roster_school_scope.sql',
-  );
+  const migration = await read('supabase/migrations/0080_restore_student_roster_school_scope.sql');
 
-  assert.match(
-    migration,
-    /current_user_role\(\) in \('tenant_admin', 'transportation_admin'\)/,
-  );
+  assert.match(migration, /current_user_role\(\) in \('tenant_admin', 'transportation_admin'\)/);
   assert.match(migration, /current_user_role\(\) = 'school_admin'/);
   assert.match(migration, /p_school_id is not null/);
   assert.match(migration, /p_school_id = public\.current_school_id\(\)/);
@@ -220,10 +213,7 @@ test('driver manifest RLS fixtures isolate legacy seed setup from production gua
   assert.doesNotMatch(manifest, /insert into public\.student_route_assignments/);
   assert.match(manifest, /disable trigger validate_new_bus_trip_assignment_readiness/);
   assert.match(manifest, /enable trigger validate_new_bus_trip_assignment_readiness/);
-  assert.match(
-    manifest,
-    /route_id, route_trip_pattern_id,\s+trip_name_snapshot, trip_type/,
-  );
+  assert.match(manifest, /route_id, route_trip_pattern_id,\s+trip_name_snapshot, trip_type/);
 });
 
 test('driver event RLS fixtures use current bus-service assignments', async () => {
@@ -314,14 +304,8 @@ test('student CSV RLS fixtures survive preview rollback and clean up safely', as
 
   assert.ok(previewIndex > 0);
   assert.ok(csvImport.indexOf('commit;') < previewIndex);
-  assert.equal(
-    csvImport.match(/disable trigger protect_final_tenant_admin_delete/g)?.length,
-    2,
-  );
-  assert.equal(
-    csvImport.match(/enable trigger protect_final_tenant_admin_delete/g)?.length,
-    2,
-  );
+  assert.equal(csvImport.match(/disable trigger protect_final_tenant_admin_delete/g)?.length, 2);
+  assert.equal(csvImport.match(/enable trigger protect_final_tenant_admin_delete/g)?.length, 2);
 });
 
 test('route pattern anonymous reads are tested at the RLS policy boundary', async () => {
@@ -341,20 +325,12 @@ test('invitation activation RLS fixtures survive assertion rollbacks', async () 
 
   assert.ok(firstAssertion > 0);
   assert.ok(invitation.indexOf('commit;') < firstAssertion);
-  assert.equal(
-    invitation.match(/disable trigger protect_final_tenant_admin_delete/g)?.length,
-    2,
-  );
-  assert.equal(
-    invitation.match(/enable trigger protect_final_tenant_admin_delete/g)?.length,
-    2,
-  );
+  assert.equal(invitation.match(/disable trigger protect_final_tenant_admin_delete/g)?.length, 2);
+  assert.equal(invitation.match(/enable trigger protect_final_tenant_admin_delete/g)?.length, 2);
 });
 
 test('atomic member invitation fixture supplies school scope for both students', async () => {
-  const memberInvitation = await read(
-    'tests/rls/atomic-tenant-member-invitation-rls.sql',
-  );
+  const memberInvitation = await read('tests/rls/atomic-tenant-member-invitation-rls.sql');
 
   assert.match(
     memberInvitation,
@@ -363,19 +339,14 @@ test('atomic member invitation fixture supplies school scope for both students',
 });
 
 test('assigned-driver route authorization avoids routes and trips RLS recursion', async () => {
-  const migration = await read(
-    'supabase/migrations/0084_break_route_trip_rls_recursion.sql',
-  );
+  const migration = await read('supabase/migrations/0084_break_route_trip_rls_recursion.sql');
 
   assert.match(migration, /security definer/i);
   assert.match(migration, /public\.current_user_role\(\) = 'driver'/);
   assert.match(migration, /d\.status = 'active'/);
   assert.match(migration, /from public\.driver_route_assignments dra/);
   assert.match(migration, /from public\.driver_trips dt/);
-  assert.match(
-    migration,
-    /using \(public\.driver_can_read_assigned_route\(tenant_id, id\)\)/,
-  );
+  assert.match(migration, /using \(public\.driver_can_read_assigned_route\(tenant_id, id\)\)/);
   assert.match(
     migration,
     /revoke all on function public\.driver_can_read_assigned_route\(uuid, uuid\)\s+from public, anon, authenticated/,
@@ -411,14 +382,46 @@ test('Phase 3 RLS cleanup relies on rollback instead of deleting a final admin',
 });
 
 test('verified MFA helper is reconciled from the signed Supabase JWT', async () => {
-  const migration = await read(
-    'supabase/migrations/0085_reconcile_verified_mfa_helper.sql',
-  );
+  const migration = await read('supabase/migrations/0085_reconcile_verified_mfa_helper.sql');
 
   assert.match(migration, /create or replace function public\.has_verified_mfa\(\)/);
   assert.match(migration, /auth\.uid\(\) is not null/);
   assert.match(migration, /auth\.jwt\(\) ->> 'aal'/);
   assert.match(migration, /= 'aal2'/);
+});
+
+test('Commercial Release 1 scope is approved, signed, and excludes placeholder products', async () => {
+  const [scope, decisions, router, milestoneStatus] = await Promise.all([
+    read('docs/governance/commercial-release-scope.md'),
+    read('docs/governance/decision-log.md'),
+    read('apps/web/src/routes/router.tsx'),
+    read('docs/MILESTONE_STATUS.md'),
+  ]);
+
+  assert.match(scope, /\*\*Status:\*\* Approved and locked/);
+  assert.match(
+    scope,
+    /\| Final Decision Holder \| Platform Administrator \| 2026-08-12 \| Approved as written \|/,
+  );
+  assert.match(scope, /The pilot ceiling is 100 buses/);
+  assert.match(scope, /Student QR badges or student boarding scans/);
+  assert.match(decisions, /### DL-010 — Freeze Commercial Release 1 scope/);
+  assert.match(decisions, /- Status: Accepted on 2026-08-12/);
+  assert.match(milestoneStatus, /Commercial Release 1 scope was approved/);
+
+  for (const excludedPath of [
+    '/admin/live-map',
+    '/admin/imports',
+    '/admin/alerts',
+    '/admin/reports',
+  ]) {
+    assert.equal(router.includes(excludedPath), false);
+  }
+
+  await assert.rejects(read('apps/web/src/pages/AdminPlaceholderPage.tsx'), { code: 'ENOENT' });
+  await assert.rejects(read('apps/web/src/components/ui/PlaceholderCard.tsx'), {
+    code: 'ENOENT',
+  });
 });
 
 test('Phase 8 guardian student visibility remains expiry-aware without RLS recursion', async () => {
@@ -432,10 +435,7 @@ test('Phase 8 guardian student visibility remains expiry-aware without RLS recur
   );
   assert.match(migration, /security definer/i);
   assert.match(migration, /sg\.status = 'active'/);
-  assert.match(
-    migration,
-    /sg\.access_expires_at is null or sg\.access_expires_at > now\(\)/,
-  );
+  assert.match(migration, /sg\.access_expires_at is null or sg\.access_expires_at > now\(\)/);
   assert.match(
     migration,
     /using \(\s*public\.can_select_linked_student_as_guardian\(id, tenant_id\)\s*\)/,
