@@ -15,7 +15,6 @@ import { AdminDashboardPage } from '@/pages/AdminDashboardPage';
 import { AdminGuardiansPage } from '@/pages/AdminGuardiansPage';
 import { AdminGuardianDetailPage } from '@/pages/AdminGuardianDetailPage';
 import { AdminLiveTripsPage } from '@/pages/AdminLiveTripsPage';
-import { AdminPlaceholderPage } from '@/pages/AdminPlaceholderPage';
 import { AdminRoutesPage } from '@/pages/AdminRoutesPage';
 import { AdminRouteDetailPage } from '@/pages/AdminRouteDetailPage';
 import { AdminRouteManagePage } from '@/pages/AdminRouteManagePage';
@@ -281,19 +280,6 @@ export const appRoutes: RouteObject[] = [
       </ProtectedRoute>
     ),
   },
-  ...[
-    ['live-map', 'Live Map'],
-    ['imports', 'Imports'],
-    ['alerts', 'Alerts'],
-    ['reports', 'Reports'],
-  ].map(([path, title]) => ({
-    path: `/admin/${path}`,
-    element: (
-      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
-        <AdminPlaceholderPage title={title} />
-      </ProtectedRoute>
-    ),
-  })),
   {
     path: '/driver',
     element: (

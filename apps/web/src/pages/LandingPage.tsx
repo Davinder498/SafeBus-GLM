@@ -30,7 +30,7 @@ const sections: FeatureSection[] = [
   {
     id: 'drivers',
     title: 'A parked-bus friendly driver app',
-    body: 'Drivers get a focused trip screen with large actions, assigned stops, GPS status placeholders, and delay reporting.',
+    body: 'Drivers get a focused trip screen with large actions, assigned stops, bus-location sharing status, and delay reporting.',
     icon: <Navigation className="h-6 w-6" />,
   },
   {
@@ -79,7 +79,8 @@ export function LandingPage() {
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-8 text-navy-100">
                 A transportation operations platform that helps Alberta schools reduce parent
-                uncertainty, confirm bus events, and give administrators live operational visibility.
+                uncertainty, confirm bus events, and give administrators live operational
+                visibility.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
@@ -103,7 +104,9 @@ export function LandingPage() {
                 <div className="rounded-xl bg-white p-5 text-slate-900 shadow-xl">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                     <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Live trip</p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                        Live trip
+                      </p>
                       <p className="text-2xl font-bold text-slate-900">Bus 12</p>
                     </div>
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-success-50 px-3 py-1 text-xs font-semibold text-success-700 ring-1 ring-inset ring-success-200">
@@ -132,13 +135,16 @@ export function LandingPage() {
         {/* Problem statement */}
         <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.1em] text-navy-600">The problem</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.1em] text-navy-600">
+              The problem
+            </p>
             <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
               Transportation teams need a calmer source of truth
             </h2>
             <p className="mt-4 text-base leading-7 text-slate-500">
-              SafeBus Alberta focuses on bus operations, parent confidence, and confirmation events. It is
-              not a full school management system and does not replace existing student information workflows.
+              SafeBus Alberta focuses on bus operations, parent confidence, and confirmation events.
+              It is not a full school management system and does not replace existing student
+              information workflows.
             </p>
           </div>
         </section>
@@ -177,8 +183,8 @@ export function LandingPage() {
                 Pilot the transportation visibility workflow
               </h2>
               <p className="mt-3 max-w-2xl text-navy-100">
-                Use this demo foundation to evaluate the admin, driver, and parent experience before adding
-                real authentication, GPS, scanning, notifications, or integrations in later milestones.
+                Evaluate the admin, driver, and parent experience. Commercial operation remains
+                gated by security, privacy, reliability, and pilot approval.
               </p>
               <Link
                 to="/login"

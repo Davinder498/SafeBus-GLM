@@ -3,7 +3,7 @@
 **Status:** Living document — reviewed at every milestone exit gate
 **Owner:** Security Lead
 **Phase:** 0 — Product and governance baseline
-**Last updated:** 2026-08-06
+**Last updated:** 2026-08-12
 
 ---
 
@@ -15,37 +15,37 @@ only "Closed" when its mitigation has been verified at a phase exit gate.
 
 ## 2. Severity scale
 
-| Level | Likelihood × Impact | Meaning |
-| --- | --- | --- |
-| Critical | High × High | Privacy leak or platform-blocking defect; stops work until mitigated. |
-| High | Either dimension High | Must be resolved before the relevant phase exit gate. |
-| Medium | Moderate on one or both | Tracked; mitigated within the phase or next. |
-| Low | Low on both | Accepted with monitoring. |
+| Level    | Likelihood × Impact     | Meaning                                                               |
+| -------- | ----------------------- | --------------------------------------------------------------------- |
+| Critical | High × High             | Privacy leak or platform-blocking defect; stops work until mitigated. |
+| High     | Either dimension High   | Must be resolved before the relevant phase exit gate.                 |
+| Medium   | Moderate on one or both | Tracked; mitigated within the phase or next.                          |
+| Low      | Low on both             | Accepted with monitoring.                                             |
 
 ## 3. Current risks
 
-| ID | Risk | Severity | Owner | Status | Mitigation / next action |
-| --- | --- | --- | --- | --- | --- |
-| R-001 | **Migration identifier collisions** (`0042`, `0043`, `0058`). | High | Engineering Lead | Mitigated in repo; verification pending | Ledger, archive, `0054` cleanup, and `0065` assertions implemented. Hosted-DEV clean rebuild still required. |
-| R-002 | **Scope drift** required explicit disposition. | High | Product Owner | Mitigated in repo; sign-off pending | D1 physically quarantined; D2-D4 mapped to previously merged named milestones. Product owner must sign the inventory. |
-| R-003 | **Platform isolation not fully verified.** | High | Security Lead | Mitigated in repo; DEV review pending | `0065` removes operational reads and Phase 1 RLS regression covers the narrow control plane. |
-| R-004 | **Driver over-authorization risk.** | High | Security Lead | Mitigated in repo; DEV review pending | `0065` replaces tenant-wide bus/route reads with assignment-derived policies and expiry gates. |
-| R-005 | **Obsolete location-ingestion path** may be re-enabled by mistake. | Medium | Engineering Lead | Mitigated in repo; DEV test pending | `0065` retires the legacy function and Phase 1 regression covers the authoritative session path. |
-| R-006 | **FOIP references are obsolete;** legal-role mapping requires counsel. | High | Privacy Lead | Draft remediation; counsel pending | README corrected and sourced POPA/ATIA/PIPA analysis drafted; conclusions remain unapproved. |
-| R-007 | **Admin MFA and recent-auth enforcement.** | High | Security Lead | Mitigated in repo; operational test pending | AAL2 route/RPC/function gates and recent-auth checks implemented; enrollment/recovery testing remains. |
-| R-008 | **Sensitive administrative actions require append-only audit evidence.** | High | Security Lead | Mitigated in repo; DEV review pending | Sanitized events, narrow writers, mutation triggers, and server action wiring implemented. |
-| R-009 | **React Router vulnerability** referenced in Phase 4 not yet patched. | Medium | Engineering Lead | Open — Phase 4 | Patch; add dependency-audit CI gate. |
-| R-010 | **20,000-bus scale not demonstrated;** prototype-scale realtime/location design would fan out per guardian per bus update. | High | Engineering Lead | Open — Phase 9 | Separate ingestion path; durable stream; aggregate realtime by authorized channel; load-test 100/1k/5k/10k/20k buses. |
-| R-011 | **Retention/deletion automation** for personal and operational records. | High | Privacy Lead | Mitigated in repo; counsel/DEV pending | `0069`, daily dry-run scheduler, failure evidence, and Phase 3 regression implemented; periods and destructive flag await approval. |
-| R-012 | **Production secrets could reach developer machines or frontend.** | Medium | Security Lead | Open — Phase 4 | Separate DEV/staging/prod; secret scanning CI; frontend limited to `VITE_SUPABASE_URL` + anon key. |
-| R-013 | **"500,000 users" ambiguity** could lead to under- or over-design. | Medium | Engineering Lead | Mitigated — Phase 0 | Disambiguated in `capacity-assumptions.md` (registered vs DAU vs concurrent vs emergency peak). |
-| R-014 | **A pilot success being misread as launch authorization.** | Medium | Product Owner | Mitigated — Phase 0 | `capacity-assumptions.md` §4 states pilot does not authorize 20k launch; Phase 12 staging governs expansion. |
-| R-015 | **Guardian cross-tenant or cross-student visibility leak.** | Critical | Security Lead | Monitored — Phase 1 | Existing RLS tests in `tests/rls/guardian-*.sql`; extend to every sensitive table for the Phase 1 exit gate. |
+| ID    | Risk                                                                                                                       | Severity | Owner            | Status                                      | Mitigation / next action                                                                                                            |
+| ----- | -------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| R-001 | **Migration identifier collisions** (`0042`, `0043`, `0058`).                                                              | High     | Engineering Lead | Mitigated in repo; verification pending     | Ledger, archive, `0054` cleanup, and `0065` assertions implemented. Hosted-DEV clean rebuild still required.                        |
+| R-003 | **Platform isolation not fully verified.**                                                                                 | High     | Security Lead    | Mitigated in repo; DEV review pending       | `0065` removes operational reads and Phase 1 RLS regression covers the narrow control plane.                                        |
+| R-004 | **Driver over-authorization risk.**                                                                                        | High     | Security Lead    | Mitigated in repo; DEV review pending       | `0065` replaces tenant-wide bus/route reads with assignment-derived policies and expiry gates.                                      |
+| R-005 | **Obsolete location-ingestion path** may be re-enabled by mistake.                                                         | Medium   | Engineering Lead | Mitigated in repo; DEV test pending         | `0065` retires the legacy function and Phase 1 regression covers the authoritative session path.                                    |
+| R-006 | **FOIP references are obsolete;** legal-role mapping requires counsel.                                                     | High     | Privacy Lead     | Draft remediation; counsel pending          | README corrected and sourced POPA/ATIA/PIPA analysis drafted; conclusions remain unapproved.                                        |
+| R-007 | **Admin MFA and recent-auth enforcement.**                                                                                 | High     | Security Lead    | Mitigated in repo; operational test pending | AAL2 route/RPC/function gates and recent-auth checks implemented; enrollment/recovery testing remains.                              |
+| R-008 | **Sensitive administrative actions require append-only audit evidence.**                                                   | High     | Security Lead    | Mitigated in repo; DEV review pending       | Sanitized events, narrow writers, mutation triggers, and server action wiring implemented.                                          |
+| R-009 | **React Router vulnerability** referenced in Phase 4 not yet patched.                                                      | Medium   | Engineering Lead | Open — Phase 4                              | Patch; add dependency-audit CI gate.                                                                                                |
+| R-010 | **20,000-bus scale not demonstrated;** prototype-scale realtime/location design would fan out per guardian per bus update. | High     | Engineering Lead | Open — Phase 9                              | Separate ingestion path; durable stream; aggregate realtime by authorized channel; load-test 100/1k/5k/10k/20k buses.               |
+| R-011 | **Retention/deletion automation** for personal and operational records.                                                    | High     | Privacy Lead     | Mitigated in repo; counsel/DEV pending      | `0069`, daily dry-run scheduler, failure evidence, and Phase 3 regression implemented; periods and destructive flag await approval. |
+| R-012 | **Production secrets could reach developer machines or frontend.**                                                         | Medium   | Security Lead    | Open — Phase 4                              | Separate DEV/staging/prod; secret scanning CI; frontend limited to `VITE_SUPABASE_URL` + anon key.                                  |
+| R-013 | **"500,000 users" ambiguity** could lead to under- or over-design.                                                         | Medium   | Engineering Lead | Mitigated — Phase 0                         | Disambiguated in `capacity-assumptions.md` (registered vs DAU vs concurrent vs emergency peak).                                     |
+| R-014 | **A pilot success being misread as launch authorization.**                                                                 | Medium   | Product Owner    | Mitigated — Phase 0                         | `capacity-assumptions.md` §4 states pilot does not authorize 20k launch; Phase 12 staging governs expansion.                        |
+| R-015 | **Guardian cross-tenant or cross-student visibility leak.**                                                                | Critical | Security Lead    | Monitored — Phase 1                         | Existing RLS tests in `tests/rls/guardian-*.sql`; extend to every sensitive table for the Phase 1 exit gate.                        |
 
 ## 4. Closed risks
 
-_None yet._ Risks moved here must record the exit gate that verified the
-mitigation.
+| ID    | Risk                                           | Severity | Owner         | Status          | Closure evidence                                                                                                                                                                                                           |
+| ----- | ---------------------------------------------- | -------- | ------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R-002 | **Scope drift** required explicit disposition. | High     | Product Owner | Closed — DL-010 | Student QR is quarantined; other drifted features have explicit CR1 dispositions; `commercial-release-scope.md`, `product-scope.md`, and `feature-inventory.md` were approved by the Platform Administrator on 2026-08-12. |
 
 ## 5. Review cadence
 

@@ -1,9 +1,9 @@
 # SafeBus Alberta — First-Customer Profile
 
-**Status:** Draft — awaiting product-owner sign-off
+**Status:** Approved and locked for Commercial Release 1
 **Owner:** Product Owner
 **Phase:** 0 — Product and governance baseline
-**Last updated:** 2026-08-06
+**Last updated:** 2026-08-12
 
 ---
 
@@ -43,14 +43,14 @@ transportation under the School Act / Education Act).
 
 ## 4. First-customer pilot envelope (refined in Phase 11)
 
-| Attribute | Target |
-| --- | --- |
-| Customer type | Public school authority |
-| Tenants in pilot | 1–3 |
-| Buses in pilot | 25–100 |
-| Schools | Limited |
-| Guardians/drivers | Explicitly selected, written pilot agreement |
-| Duration | Defined start and end with immediate rollback capability |
+| Attribute         | Target                                                   |
+| ----------------- | -------------------------------------------------------- |
+| Customer type     | Public school authority                                  |
+| Tenants in pilot  | 1–3                                                      |
+| Buses in pilot    | 25–100                                                   |
+| Schools           | Limited                                                  |
+| Guardians/drivers | Explicitly selected, written pilot agreement             |
+| Duration          | Defined start and end with immediate rollback capability |
 
 > This profile is the input to Phase 11 (Controlled Alberta Pilot). It is
 > **not** authorization for 20,000-bus launch. Stage A–D commercial ceilings
@@ -61,7 +61,7 @@ transportation under the School Act / Education Act).
 - **Charter / Private school:** smaller fleets, different legal posture
   (PIPA for private organizations). Valid customers, but they under-exercise
   the scale architecture in pilot.
-- **Transportation contractor:** a contractor runs buses *on behalf of* a
+- **Transportation contractor:** a contractor runs buses _on behalf of_ a
   public authority, so the public-authority relationship must be solved
   first; the contractor role flows from it (Phase 3 legal-role analysis).
 
@@ -81,7 +81,6 @@ the capacity assumptions and Phase 3 privacy analysis.
 
 **Sign-off**
 
-| Role | Name | Date | Signature |
-| --- | --- | --- | --- |
-| Product Owner | _pending_ | | |
-| Engineering Lead | _pending_ | | |
+| Role                  | Name                   | Date       | Signature               |
+| --------------------- | ---------------------- | ---------- | ----------------------- |
+| Final Decision Holder | Platform Administrator | 2026-08-12 | Approved through DL-010 |

@@ -12,7 +12,10 @@
 
 ## Current Checkout State
 
-- Current working branch: `phase-3-alberta-privacy-legal-readiness`.
+- Commercial-readiness work proceeds one approved point at a time on dedicated
+  feature branches.
+- Commercial Release 1 scope was approved by the Platform Administrator on
+  2026-08-12 through `DL-010`.
 - Phase 15A was merged through PR #52 and is on `main`.
 - Hosted Supabase DEV is used for database smoke/RLS execution. Do not run RLS
   SQL against production.
@@ -31,13 +34,18 @@
 
 ## Phase 0 — Product and Governance Baseline
 
-Status: Drafted on `phase-0-product-and-governance-baseline` for product-owner sign-off. Governance-only: no code, no migration, no RLS, no RPC, no dependency, and no environment change.
+Status: The CR1 product boundary, feature inventory, and first-customer profile
+were approved and locked by the Platform Administrator on 2026-08-12 through
+`DL-010`. Capacity, role-responsibility, data-classification, legal, privacy,
+security, and operational approvals remain separate gates.
 
 Phase 0 freezes the product boundary and establishes how every future milestone is approved. It is grounded in the actual repo state, including the migration identifier collisions (`0042`, `0043`, `0058`) and the scope-drift findings (student QR badges, bus QR sessions, Safe ETA, notifications).
 
 Added `docs/governance/`:
 
 - `README.md` — index and precedence rule.
+- `commercial-release-scope.md` — binding CR1 commitment, exclusions, pilot
+  ceiling, and launch-gate map.
 - `product-scope.md` — transportation platform, not an SIS; "track the bus, not the child"; prohibited data; platform-isolation rule.
 - `data-classification.md` — Restricted/Confidential/Internal/Public tiers mapped to real tables.
 - `feature-inventory.md` — current vs. future functionality; scope-drift reconciliation table (D1–D7).
@@ -48,7 +56,9 @@ Added `docs/governance/`:
 - `decision-log.md` — DL-001 through DL-007, including the no-rename migration rule.
 - `development-workflow.md` — feature branches only; one milestone at a time; GLM builds, Codex reviews, human merges.
 
-Exit gate: all six Phase 0 deliverables are drafted and await product-owner sign-off; "no future milestones mixed into current work" is reconciled through `feature-inventory.md` D1–D7.
+Scope exit gate: complete through `DL-010`. Other Phase 0 governance artifacts
+retain their own sign-off requirements. Scope approval does not authorize a
+real-data launch.
 
 ## Phase 1 — Critical Database and Authorization Repair
 
@@ -184,7 +194,7 @@ tabletop gates in `docs/governance/phase-3/README.md` are completed.
 - `tests/rls/phase3-retention-rls.sql` covers browser write-policy absence,
   driver denial, AAL1 denial, and transactional service dry-run/deletion.
 
-Pending exit gates: product-owner Phase 0 sign-off; migrations `0065`–`0074`
+Pending exit gates: remaining non-scope governance sign-offs; migrations `0065`–`0074`
 applied to hosted DEV; clean rebuild and RLS evidence; independent security
 review; real MFA/recovery abuse testing; counsel-approved PIA/contracts/notices
 and retention periods; verified Canadian vendor/backup terms; breach tabletop.
