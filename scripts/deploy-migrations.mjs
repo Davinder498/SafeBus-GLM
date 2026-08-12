@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import pg from 'pg';
 import { calculateSchemaFingerprint } from './lib/schema-fingerprint.mjs';
 import { MIGRATION_DIRECTORY, readCommittedManifest } from './lib/migrations.mjs';
+import { DEFAULT_ATTESTATION_PATH, verifyReleaseAttestation } from './lib/release-attestation.mjs';
+import { inspectSchemaDeployment } from './lib/schema-deployment-preflight.mjs';
 
 const { Client } = pg;
 const databaseUrl = process.env.SAFEBUS_DATABASE_URL;
@@ -20,8 +23,8 @@ if (!['staging', 'production'].includes(environment)) {
 if (confirmation !== `DEPLOY_${environment.toUpperCase()}`) {
   throw new Error(`SAFEBUS_DEPLOY_CONFIRM must be DEPLOY_${environment.toUpperCase()}.`);
 }
-if (!releaseSha || !/^[0-9a-f]{7,40}$/i.test(releaseSha)) {
-  throw new Error('SAFEBUS_RELEASE_SHA must be the reviewed Git commit SHA.');
+if (!releaseSha || !/^[0-9a-f]{40}$/i.test(releaseSha)) {
+  throw new Error('SAFEBUS_RELEASE_SHA must be the full reviewed Git commit SHA.');
 }
 if (process.env.GITHUB_ACTIONS !== 'true') {
   throw new Error(
@@ -30,6 +33,26 @@ if (process.env.GITHUB_ACTIONS !== 'true') {
 }
 
 const manifest = await readCommittedManifest();
+const commitSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+if (commitSha !== releaseSha) {
+  throw new Error('The checked-out commit does not match SAFEBUS_RELEASE_SHA.');
+}
+const trackedChanges = execFileSync('git', ['status', '--porcelain', '--untracked-files=no'], {
+  encoding: 'utf8',
+}).trim();
+if (trackedChanges) {
+  throw new Error('Tracked files changed after checkout; refusing schema deployment.');
+}
+const attestationPath = path.join(process.cwd(), DEFAULT_ATTESTATION_PATH);
+const attestation = JSON.parse(await fs.readFile(attestationPath, 'utf8'));
+await verifyReleaseAttestation({
+  attestation,
+  environment,
+  releaseSha,
+  commitSha,
+  databaseUrl,
+});
+
 const client = new Client({
   connectionString: databaseUrl,
   application_name: 'safebus-schema-deploy',
@@ -37,77 +60,64 @@ const client = new Client({
 
 try {
   await client.connect();
-  await client.query(`
-    create schema if not exists safebus_release;
-    revoke all on schema safebus_release from public, anon, authenticated;
-    create table if not exists safebus_release.migration_checksums (
-      filename text primary key,
-      version text not null,
-      checksum text not null check (checksum ~ '^[0-9a-f]{64}$'),
-      bytes bigint not null check (bytes > 0),
-      release_sha text not null,
-      applied_at timestamptz not null default clock_timestamp()
-    );
-    create table if not exists safebus_release.releases (
-      release_sha text primary key,
-      environment text not null check (environment in ('staging', 'production')),
-      schema_fingerprint text check (schema_fingerprint ~ '^[0-9a-f]{64}$'),
-      status text not null check (status in ('deploying', 'deployed', 'failed')),
-      deployed_at timestamptz not null default clock_timestamp()
-    );
-    revoke all on all tables in schema safebus_release from public, anon, authenticated;
-  `);
-
-  const existingResult = await client.query(
-    `select filename, checksum from safebus_release.migration_checksums`,
+  const deploymentLock = await client.query(
+    "select pg_try_advisory_lock(hashtextextended('safebus-schema-deploy', 0)) as acquired",
   );
-  const existing = new Map(existingResult.rows.map((row) => [row.filename, row.checksum]));
-  const expectedNames = new Set(manifest.migrations.map((migration) => migration.filename));
-
-  for (const [filename, checksum] of existing) {
-    const local = manifest.migrations.find((migration) => migration.filename === filename);
-    if (!local) throw new Error(`Refusing deploy: database has unknown migration ${filename}.`);
-    if (local.sha256 !== checksum)
-      throw new Error(`Refusing deploy: checksum drift in ${filename}.`);
+  if (deploymentLock.rows[0]?.acquired !== true) {
+    throw new Error('Another schema deployment is already running for this database.');
   }
-  for (const filename of existing.keys()) {
-    if (!expectedNames.has(filename)) throw new Error(`Unknown migration ${filename}.`);
-  }
-
-  const lastRelease = await client.query(
-    `select schema_fingerprint from safebus_release.releases
-      where status = 'deployed' order by deployed_at desc limit 1`,
-  );
-  if (existing.size > 0 && lastRelease.rowCount !== 1) {
-    throw new Error('Refusing deploy: tracked migrations exist without a release fingerprint.');
-  }
-  if (lastRelease.rowCount === 1) {
-    const currentFingerprint = await calculateSchemaFingerprint(client);
-    if (currentFingerprint !== lastRelease.rows[0].schema_fingerprint) {
-      throw new Error('Refusing deploy: out-of-band public schema drift was detected.');
-    }
+  // Complete every read-only drift/ledger check before the first DDL or DML
+  // statement. A populated untracked database is never initialized implicitly.
+  await client.query('begin transaction read only');
+  let preflight;
+  try {
+    preflight = await inspectSchemaDeployment(client, manifest);
+    await client.query('rollback');
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
   }
 
-  await client.query(
-    `insert into safebus_release.releases (release_sha, environment, status)
-     values ($1, $2, 'deploying')
-     on conflict (release_sha) do update set environment = excluded.environment,
-       status = 'deploying', schema_fingerprint = null, deployed_at = clock_timestamp()`,
-    [releaseSha, environment],
-  );
-
-  for (const migration of manifest.migrations) {
-    if (existing.has(migration.filename)) continue;
-
-    const sql = await fs.readFile(
-      path.join(process.cwd(), MIGRATION_DIRECTORY, migration.filename),
-      'utf8',
+  // One transaction covers ledger initialization, every pending migration,
+  // fingerprinting, and the deployed release record. Any error rolls it all back.
+  await client.query('begin');
+  try {
+    await client.query(`set local lock_timeout = '10s'`);
+    await client.query(`set local statement_timeout = '5min'`);
+    await client.query(`
+      create schema if not exists safebus_release;
+      revoke all on schema safebus_release from public, anon, authenticated;
+      create table if not exists safebus_release.migration_checksums (
+        filename text primary key,
+        version text not null,
+        checksum text not null check (checksum ~ '^[0-9a-f]{64}$'),
+        bytes bigint not null check (bytes > 0),
+        release_sha text not null,
+        applied_at timestamptz not null default clock_timestamp()
+      );
+      create table if not exists safebus_release.releases (
+        release_sha text primary key,
+        environment text not null check (environment in ('staging', 'production')),
+        schema_fingerprint text check (schema_fingerprint ~ '^[0-9a-f]{64}$'),
+        status text not null check (status in ('deploying', 'deployed', 'failed')),
+        deployed_at timestamptz not null default clock_timestamp()
+      );
+      revoke all on all tables in schema safebus_release from public, anon, authenticated;
+    `);
+    await client.query(
+      `insert into safebus_release.releases (release_sha, environment, status)
+       values ($1, $2, 'deploying')
+       on conflict (release_sha) do update set environment = excluded.environment,
+         status = 'deploying', schema_fingerprint = null, deployed_at = clock_timestamp()`,
+      [releaseSha, environment],
     );
-    console.log(`Applying ${migration.filename}`);
-    await client.query('begin');
-    try {
-      await client.query(`set local lock_timeout = '10s'`);
-      await client.query(`set local statement_timeout = '5min'`);
+
+    for (const migration of preflight.pending) {
+      const sql = await fs.readFile(
+        path.join(process.cwd(), MIGRATION_DIRECTORY, migration.filename),
+        'utf8',
+      );
+      console.log(`Applying ${migration.filename}`);
       await client.query(sql);
       await client.query(
         `insert into safebus_release.migration_checksums
@@ -115,24 +125,20 @@ try {
          values ($1, $2, $3, $4, $5)`,
         [migration.filename, migration.version, migration.sha256, migration.bytes, releaseSha],
       );
-      await client.query('commit');
-    } catch (error) {
-      await client.query('rollback');
-      await client.query(
-        `update safebus_release.releases set status = 'failed' where release_sha = $1`,
-        [releaseSha],
-      );
-      throw error;
     }
-  }
 
-  const fingerprint = await calculateSchemaFingerprint(client);
-  await client.query(
-    `update safebus_release.releases
+    const fingerprint = await calculateSchemaFingerprint(client);
+    await client.query(
+      `update safebus_release.releases
         set schema_fingerprint = $2, status = 'deployed', deployed_at = clock_timestamp()
       where release_sha = $1`,
-    [releaseSha, fingerprint],
-  );
+      [releaseSha, fingerprint],
+    );
+    await client.query('commit');
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
+  }
   console.log(`Schema deployment complete for ${environment}.`);
 } finally {
   await client.end().catch(() => {});

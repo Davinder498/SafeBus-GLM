@@ -29,10 +29,20 @@ subprocessor outside the approved region.
   canonical migration. `pnpm migrations:verify` rejects edits, gaps, unexpected
   collisions, or missing manifest updates. The documented immutable `0058`
   collision is the only exception.
-- `pnpm migrations:deploy` applies reviewed migrations transactionally and
-  records filename checksums plus the reviewed Git SHA in the protected
-  `safebus_release` schema. It runs only in GitHub Actions for staging or
-  production and requires an environment-specific confirmation value.
+- `pnpm release:preflight` performs every release check against the exact
+  40-character reviewed commit before schema deployment. It verifies migration
+  checksums, inspects database drift without writing, checks generated database
+  types, runs typecheck, lint, unit/contract tests, dependency audit, production
+  build, source-map rejection, and browser smoke tests.
+- A successful preflight creates a two-hour attestation bound to the commit,
+  database target, migrations, lockfile, generated database types, and built web artifact.
+  `pnpm migrations:deploy` refuses to connect to the database when this evidence
+  is missing, stale, targets another environment, or no longer matches the files.
+- `pnpm migrations:deploy` applies the release ledger and every pending migration
+  in one transaction. If any migration or fingerprint step fails, PostgreSQL
+  rolls back the whole release rather than leaving a partially applied schema.
+  The command runs only in GitHub Actions for staging or production and requires
+  an environment-specific confirmation value.
 - A deterministic public-schema fingerprint covers relations, columns,
   constraints, indexes, RLS settings and policies, functions, triggers, and
   grants. `pnpm migrations:drift` rejects out-of-band changes.
@@ -42,8 +52,23 @@ subprocessor outside the approved region.
   a release when the committed
   `packages/types/src/database.generated.ts` differs from staging or
   production.
-- Staging and production artifacts are rebuilt from an explicit reviewed Git
-  ref. Build output containing `.map` files is rejected before deployment.
+- Staging and production accept only an explicit full reviewed Git SHA. The web
+  artifact is built and tested once during preflight; that same attested artifact
+  is deployed. Build output containing `.map` files is rejected.
+
+### Fail-closed database rules
+
+Release preflight opens a read-only transaction. It cannot create the release
+ledger or alter application data. A deployment is rejected before persistent
+database changes when it finds a changed migration, an unknown or missing
+migration, schema drift, incomplete release tracking, or invalid preflight
+evidence.
+
+A populated database without a `safebus_release` ledger is also rejected. This
+protects the existing hosted SafeBus database from accidentally replaying all
+historical migrations. The explicit one-time adoption of that existing database
+belongs to the environment-conversion decision; the release command never
+guesses that historical migrations were applied.
 
 ## Required GitHub environments
 
@@ -74,14 +99,15 @@ production.
 
 1. Confirm the commit passed all pull-request checks and was reviewed.
 2. Run **Actions → Release staging → Run workflow**.
-3. Enter the reviewed commit SHA or immutable tag.
+3. Enter the full 40-character reviewed commit SHA.
 4. The protected environment approval pauses the job for its human reviewer.
-5. The job repeats quality/security gates, deploys schema, executes real RLS
-   assertions, verifies generated types, builds without source maps, deploys
-   the separate staging site, and retains release evidence for 30 days.
+5. The job completes read-only and application preflight, writes evidence tied
+   to the tested artifact, atomically deploys schema, executes real staging RLS
+   assertions, deploys that same artifact, and retains evidence for 30 days.
 
-No operator runs migration SQL from a laptop. A failed migration stops the
-release before the application is deployed.
+No operator runs migration SQL from a laptop. A failed preflight makes no
+persistent schema change. A failed migration rolls back all schema changes from
+that release and stops before the application is deployed.
 
 ## Required branch protection
 

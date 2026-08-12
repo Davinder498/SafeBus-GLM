@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       git_ref:
-        description: Staging-approved immutable commit SHA or tag
+        description: Full 40-character staging-approved commit SHA
         required: true
       confirmation:
         description: Type DEPLOY_PRODUCTION
@@ -28,7 +28,6 @@ jobs:
       SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
       SAFEBUS_DEPLOY_ENV: production
       SAFEBUS_DEPLOY_CONFIRM: DEPLOY_PRODUCTION
-      SAFEBUS_RELEASE_SHA: ${{ github.sha }}
       SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
@@ -40,21 +39,32 @@ jobs:
         with:
           ref: ${{ inputs.git_ref }}
       - name: Resolve approved release SHA
-        run: echo "SAFEBUS_RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+        env:
+          REQUESTED_SHA: ${{ inputs.git_ref }}
+        run: |
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          test "$REQUESTED_SHA" = "$ACTUAL_SHA"
+          echo "SAFEBUS_RELEASE_SHA=$ACTUAL_SHA" >> "$GITHUB_ENV"
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm migrations:verify
-      - run: pnpm typecheck && pnpm lint && pnpm test && pnpm security:audit
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Preflight exact commit without changing the database
+        run: pnpm release:preflight
       - name: Deploy forward-only schema changes
         run: pnpm migrations:deploy
-      - name: Verify production types
-        run: pnpm types:check
-      - run: pnpm build
-      - name: Reject public source maps
-        run: test -z "$(find apps -path '*/dist/*' -name '*.map' -print -quit)"
-      - name: Deploy production application
+      - name: Deploy the preflighted production artifact
         run: pnpm exec netlify deploy --prod --dir apps/web/dist --message "$SAFEBUS_RELEASE_SHA"
+      - name: Store release evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: production-release-${{ env.SAFEBUS_RELEASE_SHA }}
+          path: |
+            apps/web/dist
+            .safebus-release/preflight.json
+            supabase/migration-checksums.json
+            packages/types/src/database.generated.ts
+          retention-days: 90
