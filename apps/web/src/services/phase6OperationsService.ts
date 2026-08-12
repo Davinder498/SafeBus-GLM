@@ -217,6 +217,8 @@ export async function createOperationalNote(input: {
     );
   }
   const client = requireSupabase();
+  const userId = (await client.auth.getUser()).data.user?.id;
+  if (!userId) throw new Error('Sign in again before saving an operational note.');
   const { data, error } = await client
     .from('operational_notes')
     .insert({
@@ -225,7 +227,7 @@ export async function createOperationalNote(input: {
       target_id: input.targetId,
       note_type: input.noteType,
       note_text: input.noteText,
-      created_by: (await client.auth.getUser()).data.user?.id,
+      created_by: userId,
     })
     .select(
       'id, tenant_id, target_entity, target_id, note_type, note_text, created_by, created_at, updated_at',

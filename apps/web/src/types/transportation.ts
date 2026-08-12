@@ -254,7 +254,7 @@ export interface BusRouteAssignment {
   tenant_id: string;
   bus_id: string;
   route_id: string;
-  route_trip_pattern_id: string | null;
+  route_trip_pattern_id: string;
   trip_type: 'morning' | 'evening';
   effective_from: string | null;
   effective_to: string | null;
@@ -268,7 +268,7 @@ export interface StudentBusAssignment {
   tenant_id: string;
   student_id: string;
   bus_route_assignment_id: string;
-  route_trip_pattern_id: string | null;
+  route_trip_pattern_id: string;
   pickup_stop_id: string | null;
   dropoff_stop_id: string | null;
   effective_from: string;

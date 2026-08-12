@@ -19,6 +19,7 @@ export async function runInvitationExpiry() {
     return json(503, { error: 'Invitation expiry runner is not configured.' });
   }
 
+  /** @type {import('@supabase/supabase-js').SupabaseClient<import('@safebus/types/database').Database>} */
   const client = createClient(url, service, {
     auth: { autoRefreshToken: false, persistSession: false },
   });

@@ -5,8 +5,8 @@
  * Includes offline queue support for the driver app.
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { LocationPingRequest, LocationPingResponse } from '@safebus/types';
+import type { SafeBusSupabaseClient } from './supabase-client.ts';
 import { locationPingSchema } from './validation.ts';
 import { NetworkError, ValidationError, toSafeBusError } from './errors.ts';
 
@@ -15,7 +15,7 @@ import { NetworkError, ValidationError, toSafeBusError } from './errors.ts';
  * Throws NetworkError if offline — caller should enqueue for retry.
  */
 export async function submitLocationPing(
-  supabase: SupabaseClient,
+  supabase: SafeBusSupabaseClient,
   ping: LocationPingRequest,
 ): Promise<LocationPingResponse> {
   const parsed = locationPingSchema.safeParse(ping);
@@ -44,7 +44,7 @@ export async function submitLocationPing(
  * Returns the count of accepted vs rejected pings.
  */
 export async function flushLocationQueue(
-  supabase: SupabaseClient,
+  supabase: SafeBusSupabaseClient,
   pings: LocationPingRequest[],
 ): Promise<{ accepted: number; rejected: number }> {
   let accepted = 0;

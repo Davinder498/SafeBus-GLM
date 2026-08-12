@@ -6,6 +6,9 @@
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@safebus/types/database';
+
+export type SafeBusSupabaseClient = SupabaseClient<Database>;
 
 export interface CreateSupabaseClientOptions {
   url: string;
@@ -19,8 +22,7 @@ export interface CreateSupabaseClientOptions {
     removeItem: (key: string) => Promise<void>;
   };
 }
-
-export function createSupabaseClient(options: CreateSupabaseClientOptions): SupabaseClient {
+export function createSupabaseClient(options: CreateSupabaseClientOptions): SafeBusSupabaseClient {
   const { url, anonKey, fetch: customFetch, storage } = options;
 
   if (!url || !anonKey) {
@@ -30,7 +32,7 @@ export function createSupabaseClient(options: CreateSupabaseClientOptions): Supa
     );
   }
 
-  return createClient(url, anonKey, {
+  return createClient<Database>(url, anonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
@@ -47,5 +49,3 @@ export function createSupabaseClient(options: CreateSupabaseClientOptions): Supa
     },
   });
 }
-
-export type { SupabaseClient };

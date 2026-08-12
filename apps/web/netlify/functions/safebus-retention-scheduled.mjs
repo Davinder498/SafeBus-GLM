@@ -21,6 +21,7 @@ export async function runRetention() {
   }
 
   const dryRun = process.env.SAFEBUS_RETENTION_EXECUTE !== 'true';
+  /** @type {import('@supabase/supabase-js').SupabaseClient<import('@safebus/types/database').Database>} */
   const client = createClient(url, service, {
     auth: { autoRefreshToken: false, persistSession: false },
   });

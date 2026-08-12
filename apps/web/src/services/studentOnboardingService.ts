@@ -104,7 +104,12 @@ function client() {
   return supabase;
 }
 
-async function search<T>(rpcName: string, query: string): Promise<T[]> {
+type SearchRpcName =
+  | 'search_admin_guardians'
+  | 'search_admin_routes'
+  | 'search_admin_buses';
+
+async function search<T>(rpcName: SearchRpcName, query: string): Promise<T[]> {
   const normalized = query.trim();
   if (normalized.length < 2) return [];
   const { data, error } = await client().rpc(rpcName, {

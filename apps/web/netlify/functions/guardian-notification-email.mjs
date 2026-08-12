@@ -173,6 +173,7 @@ async function dispatchOne(supabase, cfg, row, sendEmail = sendResendEmail) {
 export async function runDispatcher(event, sendEmail) {
   const cfg = requireConfig();
   if (!authorized(event, cfg.dispatcherSecret)) return json(401, { error: 'Unauthorized.' });
+  /** @type {import('@supabase/supabase-js').SupabaseClient<import('@safebus/types/database').Database>} */
   const supabase = createClient(cfg.url, cfg.service, { auth: { autoRefreshToken: false, persistSession: false } });
   const batchSize = Math.max(1, Math.min(Number(process.env.SAFEBUS_NOTIFICATION_BATCH_SIZE || DEFAULT_BATCH_SIZE), 100));
   const providerLimit = Math.max(

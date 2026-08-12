@@ -1,4 +1,5 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
+import type { Json } from '@safebus/types/database';
 import type {
   CreateRouteShapeVersionInput,
   CurrentRouteShape,
@@ -114,7 +115,7 @@ export async function adminCreateRouteShapeVersion(
   const client = requireSupabase();
   const { data, error } = await client.rpc('admin_create_route_shape_version', {
     p_route_id: input.routeId,
-    p_geojson: input.geojson,
+    p_geojson: input.geojson as unknown as Json,
     p_status: input.status ?? 'draft',
     p_source: input.source ?? 'admin_geojson',
   });

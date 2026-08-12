@@ -2,12 +2,15 @@
  * SafeBus Alberta — Auth helpers.
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AcceptInvitationRequest, AuthSession, LoginRequest } from '@safebus/types';
+import type { SafeBusSupabaseClient } from './supabase-client.ts';
 import { loginSchema, acceptInvitationSchema } from './validation.ts';
 import { NotAuthenticatedError, ValidationError, toSafeBusError } from './errors.ts';
 
-export async function login(supabase: SupabaseClient, request: LoginRequest): Promise<AuthSession> {
+export async function login(
+  supabase: SafeBusSupabaseClient,
+  request: LoginRequest,
+): Promise<AuthSession> {
   const parsed = loginSchema.safeParse(request);
   if (!parsed.success) {
     throw new ValidationError('Invalid login details', parsed.error.flatten().fieldErrors as never);
@@ -22,7 +25,7 @@ export async function login(supabase: SupabaseClient, request: LoginRequest): Pr
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role, tenant_id, full_name')
-    .eq('auth_user_id', data.user.id)
+    .eq('id', data.user.id)
     .single();
 
   if (profileError) throw toSafeBusError(profileError);
@@ -41,13 +44,13 @@ export async function login(supabase: SupabaseClient, request: LoginRequest): Pr
   };
 }
 
-export async function logout(supabase: SupabaseClient): Promise<void> {
+export async function logout(supabase: SafeBusSupabaseClient): Promise<void> {
   const { error } = await supabase.auth.signOut();
   if (error) throw toSafeBusError(error);
 }
 
 export async function requestPasswordReset(
-  supabase: SupabaseClient,
+  supabase: SafeBusSupabaseClient,
   email: string,
   redirectTo: string,
 ): Promise<void> {
@@ -56,7 +59,7 @@ export async function requestPasswordReset(
 }
 
 export async function acceptInvitation(
-  _supabase: SupabaseClient,
+  _supabase: SafeBusSupabaseClient,
   request: AcceptInvitationRequest,
 ): Promise<AuthSession> {
   const parsed = acceptInvitationSchema.safeParse(request);
@@ -71,7 +74,9 @@ export async function acceptInvitation(
   throw new Error('acceptInvitation not yet implemented — see Phase 2');
 }
 
-export async function getCurrentSession(supabase: SupabaseClient): Promise<AuthSession | null> {
+export async function getCurrentSession(
+  supabase: SafeBusSupabaseClient,
+): Promise<AuthSession | null> {
   const { data, error } = await supabase.auth.getSession();
   if (error) throw toSafeBusError(error);
   if (!data.session) return null;
@@ -79,7 +84,7 @@ export async function getCurrentSession(supabase: SupabaseClient): Promise<AuthS
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role, tenant_id, full_name')
-    .eq('auth_user_id', data.session.user.id)
+    .eq('id', data.session.user.id)
     .single();
 
   if (profileError) throw toSafeBusError(profileError);

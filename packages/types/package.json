@@ -11,7 +11,8 @@
     "./domain": "./src/domain.ts",
     "./roles": "./src/roles.ts",
     "./status": "./src/status.ts",
-    "./api-contracts": "./src/api-contracts.ts"
+    "./api-contracts": "./src/api-contracts.ts",
+    "./database": "./src/database.generated.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
