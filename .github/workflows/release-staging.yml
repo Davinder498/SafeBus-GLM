@@ -4,9 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       git_ref:
-        description: Reviewed commit SHA or tag to release
+        description: Full 40-character reviewed commit SHA
         required: true
-        default: main
 
 permissions:
   contents: read
@@ -25,7 +24,6 @@ jobs:
       SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
       SAFEBUS_DEPLOY_ENV: staging
       SAFEBUS_DEPLOY_CONFIRM: DEPLOY_STAGING
-      SAFEBUS_RELEASE_SHA: ${{ github.sha }}
       SAFEBUS_RLS_TEST_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
       SAFEBUS_RLS_TEST_CONFIRM: DEV_ONLY
       SAFEBUS_RLS_TARGET: staging
@@ -40,33 +38,26 @@ jobs:
         with:
           ref: ${{ inputs.git_ref }}
       - name: Resolve reviewed release SHA
-        run: echo "SAFEBUS_RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+        env:
+          REQUESTED_SHA: ${{ inputs.git_ref }}
+        run: |
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          test "$REQUESTED_SHA" = "$ACTUAL_SHA"
+          echo "SAFEBUS_RELEASE_SHA=$ACTUAL_SHA" >> "$GITHUB_ENV"
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Verify release gates
-        run: |
-          pnpm migrations:verify
-          pnpm typecheck
-          pnpm lint
-          pnpm test
-          pnpm security:audit
       - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm test:smoke:release
+      - name: Preflight exact commit without changing the database
+        run: pnpm release:preflight
       - name: Deploy reviewed schema migrations
         run: pnpm migrations:deploy
       - name: Execute RLS assertions on staging
         run: pnpm test:rls
-      - name: Verify generated types against staging
-        run: pnpm types:check
-      - name: Build immutable application artifact
-        run: pnpm build
-      - name: Reject public source maps
-        run: test -z "$(find apps -path '*/dist/*' -name '*.map' -print -quit)"
-      - name: Deploy separate staging site
+      - name: Deploy the preflighted staging artifact
         run: pnpm exec netlify deploy --prod --dir apps/web/dist --message "$SAFEBUS_RELEASE_SHA"
       - name: Store release evidence
         uses: actions/upload-artifact@v7
@@ -74,6 +65,7 @@ jobs:
           name: staging-release-${{ env.SAFEBUS_RELEASE_SHA }}
           path: |
             apps/web/dist
+            .safebus-release/preflight.json
             supabase/migration-checksums.json
             packages/types/src/database.generated.ts
           retention-days: 30

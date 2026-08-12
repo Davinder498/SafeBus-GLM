@@ -15,7 +15,10 @@ Release SHA: __________ Reviewer: __________ Date: __________
 
 - [ ] `main` branch protection and required human review are enabled.
 - [ ] The release commit is immutable, reviewed, and passed every required check.
+- [ ] The exact 40-character release SHA has a current, matching preflight attestation.
+- [ ] Preflight completed before the first persistent database change.
 - [ ] Migration checksums, drift detection, and generated database types pass.
+- [ ] The database release ledger is complete; a populated untracked database was not auto-initialized.
 - [ ] The staging one-click release succeeded for the same commit.
 - [ ] A current staging rollback exercise has approved evidence.
 - [ ] Database backups/PITR are enabled and a recovery exercise is current.

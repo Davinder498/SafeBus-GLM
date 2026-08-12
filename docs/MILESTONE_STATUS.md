@@ -16,6 +16,10 @@
   feature branches.
 - Commercial Release 1 scope was approved by the Platform Administrator on
   2026-08-12 through `DL-010`.
+- The hosted database contract was approved by the Platform Administrator on
+  2026-08-12 through `DL-011`.
+- Fail-closed, attested releases were approved by the Platform Administrator on
+  2026-08-12 through `DL-012`.
 - Phase 15A was merged through PR #52 and is on `main`.
 - Hosted Supabase DEV is used for database smoke/RLS execution. Do not run RLS
   SQL against production.

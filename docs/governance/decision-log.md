@@ -234,6 +234,34 @@ get a `Superseded by DL-XXX` line and remain for history.
 - Approved by: Platform Administrator
 - Status: Accepted on 2026-08-12
 
+### DL-012 — Enforce fail-closed, attested releases
+
+- Date: 2026-08-12
+- Decision: SafeBus releases are fail-closed. Every release check must pass for
+  the exact reviewed 40-character commit before persistent production schema
+  mutation. The resulting two-hour attestation is bound to the commit,
+  database target, migrations, generated types, dependency inputs, and built
+  application artifact. Every pending migration in a release is applied in one
+  transaction. A populated database without an approved SafeBus release ledger
+  is never initialized automatically.
+- Context: The previous staging and production workflows could change the
+  database before generated-type verification and the production build. The
+  migration deployer also created release-ledger objects before validating
+  drift and applied each migration in a separate transaction.
+- Rationale: A release rejection must leave the database unchanged, tested
+  evidence must describe exactly what is deployed, and a migration failure
+  must not leave a partially applied release.
+- Consequences: Protected staging and production releases accept only full Git
+  SHAs; complete preflight before schema deployment; reject missing, stale,
+  changed, cross-environment, or cross-database evidence; serialize database
+  deployment attempts; deploy the already-tested artifact; and retain release
+  evidence. The existing populated hosted Supabase database remains untouched
+  until the separately approved Point 4 adoption process establishes its
+  release ledger.
+- Owner: Platform Administrator
+- Approved by: Platform Administrator
+- Status: Accepted on 2026-08-12
+
 ## 5. Sign-off entries
 
 When a Phase 0 document is signed off, add an entry here:
