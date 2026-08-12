@@ -209,6 +209,31 @@ get a `Superseded by DL-XXX` line and remain for history.
 - Approved by: Platform Administrator
 - Status: Accepted on 2026-08-12
 
+### DL-011 — Adopt the hosted database contract
+
+- Date: 2026-08-12
+- Decision: Use the existing hosted Supabase project as the authoritative
+  database for Commercial Release 1. Generate and commit its public-schema
+  TypeScript contract, use that contract in every Supabase client, and reject
+  releases when the committed contract is stale.
+- Context: The commercial-readiness review found that application clients were
+  untyped and the previously planned schema-generation automation had no
+  committed generated contract. The Platform Administrator confirmed that the
+  existing DEV project will become the production project and that the
+  database does not need to be recreated.
+- Rationale: One generated contract makes schema mismatches visible during
+  development and before release while preserving the existing hosted
+  database. Generation and comparison are read-only operations.
+- Consequences: Browser, managed Android, shared API, and Netlify Supabase
+  clients use `Database`; the committed contract covers the currently visible
+  48 tables and 188 functions; authenticated-only RPC signatures are completed
+  from canonical migrations; and protected workflows require a server-only
+  schema credential. No database reset, migration, or data change is part of
+  this decision.
+- Owner: Platform Administrator
+- Approved by: Platform Administrator
+- Status: Accepted on 2026-08-12
+
 ## 5. Sign-off entries
 
 When a Phase 0 document is signed off, add an entry here:

@@ -10,7 +10,6 @@
     ".": "./src/index.ts",
     "./supabase-client": "./src/supabase-client.ts",
     "./auth": "./src/auth.ts",
-    "./trips": "./src/trips.ts",
     "./location": "./src/location.ts",
     "./validation": "./src/validation.ts",
     "./errors": "./src/errors.ts",

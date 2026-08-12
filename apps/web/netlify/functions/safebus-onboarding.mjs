@@ -70,18 +70,19 @@ function clients(token) {
     process.env.VITE_SUPABASE_ANON_KEY;
   const service = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !anon || !service) throw new OnboardingConfigurationError();
-  return {
-    user: createClient(url, anon, {
+  /** @type {import('@supabase/supabase-js').SupabaseClient<import('@safebus/types/database').Database>} */
+  const user = createClient(url, anon, {
       global: {
         fetch: fetchWithTimeout,
         headers: { Authorization: `Bearer ${token}` },
       },
-    }),
-    admin: createClient(url, service, {
+    });
+  /** @type {import('@supabase/supabase-js').SupabaseClient<import('@safebus/types/database').Database>} */
+  const admin = createClient(url, service, {
       auth: { autoRefreshToken: false, persistSession: false },
       global: { fetch: fetchWithTimeout },
-    }),
-  };
+    });
+  return { user, admin };
 }
 
 async function requireCaller(event, allowedRoles) {

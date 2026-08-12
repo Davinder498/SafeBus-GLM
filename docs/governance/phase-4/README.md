@@ -36,8 +36,10 @@ subprocessor outside the approved region.
 - A deterministic public-schema fingerprint covers relations, columns,
   constraints, indexes, RLS settings and policies, functions, triggers, and
   grants. `pnpm migrations:drift` rejects out-of-band changes.
-- `pnpm types:generate` uses the pinned Supabase CLI against an authoritative
-  hosted project. `pnpm types:check` fails a release when the committed
+- `pnpm types:generate` reads the authoritative hosted public-schema metadata
+  through a protected server-only key (with the pinned Supabase CLI available
+  as a direct-database or management-token fallback). `pnpm types:check` fails
+  a release when the committed
   `packages/types/src/database.generated.ts` differs from staging or
   production.
 - Staging and production artifacts are rebuilt from an explicit reviewed Git
@@ -56,7 +58,7 @@ Each environment uses these names:
 | Name                     | Kind     | Notes                                                                    |
 | ------------------------ | -------- | ------------------------------------------------------------------------ |
 | `SAFEBUS_DATABASE_URL`   | Secret   | Direct Postgres credential for that environment only                     |
-| `SUPABASE_ACCESS_TOKEN`  | Secret   | Least-privilege schema type generation token                             |
+| `SUPABASE_SECRET_KEY`    | Secret   | Server-only key used for read-only hosted schema type generation         |
 | `VITE_SUPABASE_ANON_KEY` | Secret   | Public client key, separated to prevent accidental cross-environment use |
 | `NETLIFY_AUTH_TOKEN`     | Secret   | Deployment token scoped to the target site/team                          |
 | `SUPABASE_PROJECT_ID`    | Variable | Environment-specific project reference                                   |

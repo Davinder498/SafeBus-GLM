@@ -1,4 +1,5 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
+import type { Database } from '@safebus/types/database';
 import type { Guardian, Student, StudentGuardian, StudentStatus } from '@/types/studentGuardian';
 import type {
   Bus,
@@ -286,7 +287,7 @@ export async function updateStudent(
 ): Promise<Student> {
   const client = requireSupabase();
 
-  const update: Record<string, unknown> = {};
+  const update: Database['public']['Tables']['students']['Update'] = {};
   if (input.firstName !== undefined) update.first_name = input.firstName.trim();
   if (input.lastName !== undefined) update.last_name = input.lastName.trim();
   if (input.preferredName !== undefined) update.preferred_name = cleanText(input.preferredName);

@@ -1,4 +1,5 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
+import type { Json } from '@safebus/types/database';
 import type {
   Bus,
   CreateBusInput,
@@ -335,8 +336,8 @@ export async function saveRouteDefinition(
   const client = requireSupabase();
   const { data, error } = await client.rpc('admin_save_route_definition', {
     p_route: input.route,
-    p_stops: input.stops,
-    p_trip_patterns: input.tripPatterns,
+    p_stops: input.stops as unknown as Json,
+    p_trip_patterns: input.tripPatterns as unknown as Json,
   });
 
   if (error) {
@@ -350,7 +351,8 @@ export async function getAdminLiveRouteOverlays(): Promise<RouteOverlay[]> {
   const client = requireSupabase();
   const { data, error } = await client.rpc('get_admin_live_route_overlays');
   if (error) throw new Error(error.message);
-  return (data ?? []).map((row: Record<string, unknown>) => ({
+  const rows = Array.isArray(data) ? (data as Record<string, unknown>[]) : [];
+  return rows.map((row) => ({
     routeId: row.route_id as string | undefined,
     routeCode: row.route_code as string,
     routeName: row.route_name as string,

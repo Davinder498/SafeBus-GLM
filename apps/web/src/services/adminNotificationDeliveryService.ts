@@ -48,7 +48,8 @@ export async function fetchTenantNotificationDeliverySummary(
     throw new Error('Unable to load notification delivery summary');
   }
 
-  const row = (data?.[0] ?? {
+  const rows = Array.isArray(data) ? (data as SummaryRpcRow[]) : [];
+  const row = (rows[0] ?? {
     pending_count: 0,
     processing_count: 0,
     delivered_count_recent: 0,

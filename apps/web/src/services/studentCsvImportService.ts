@@ -1,4 +1,5 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
+import type { Json } from '@safebus/types/database';
 import type {
   StudentCsvImportIssue,
   StudentCsvImportRow,
@@ -32,7 +33,7 @@ async function processStudentCsvImport(
   acknowledgeWarnings: boolean,
 ): Promise<StudentCsvImportResult> {
   const { data, error } = await client().rpc('admin_process_student_csv_import', {
-    p_rows: rows,
+    p_rows: rows as unknown as Json,
     p_commit: commit,
     p_acknowledge_warnings: acknowledgeWarnings,
   });

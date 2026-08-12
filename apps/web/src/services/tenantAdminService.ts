@@ -1,4 +1,5 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
+import type { Json } from '@safebus/types/database';
 
 function client() {
   if (!supabase) throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
@@ -186,7 +187,7 @@ export async function stageBulkImport(
 ): Promise<BulkImportStageResult> {
   const { data, error } = await client().rpc('bulk_import_stage_rows', {
     p_record_type: recordType,
-    p_rows: rows,
+    p_rows: rows as unknown as Json,
     p_file_name: fileName ?? null,
     p_dry_run: dryRun,
   });
@@ -194,13 +195,19 @@ export async function stageBulkImport(
   return data as BulkImportStageResult;
 }
 
-export async function commitBulkImport(batchId: string) {
+export async function commitBulkImport(
+  batchId: string,
+): Promise<{ requiresInvitations: boolean; committed: number }> {
   const { data, error } = await client().rpc('bulk_import_commit', {
     p_batch_id: batchId,
     p_confirm: true,
   });
   if (error) throw new Error(error.message);
-  return data;
+  const result = (data ?? {}) as Partial<{ requiresInvitations: boolean; committed: number }>;
+  return {
+    requiresInvitations: result.requiresInvitations === true,
+    committed: typeof result.committed === 'number' ? result.committed : 0,
+  };
 }
 
 export async function rollbackBulkImport(batchId: string) {

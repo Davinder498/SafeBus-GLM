@@ -167,10 +167,13 @@ export async function ensureBusRouteAssignment(
 
 export async function updateBusRouteAssignment(
   id: string,
-  input: Pick<
-    CreateBusRouteAssignmentInput,
-    'route_id' | 'route_trip_pattern_id' | 'trip_type' | 'effective_from' | 'effective_to'
-  >,
+  input: {
+    route_id: string;
+    route_trip_pattern_id: string;
+    trip_type: 'morning' | 'evening';
+    effective_from: string;
+    effective_to: string | null;
+  },
 ): Promise<BusRouteAssignment> {
   const { data, error } = await client().rpc('admin_update_bus_route_assignment', {
     p_bus_route_assignment_id: id,
