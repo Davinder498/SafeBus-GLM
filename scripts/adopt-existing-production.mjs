@@ -10,7 +10,11 @@ import {
   createEnvironmentBinding,
   registerEnvironmentIdentity,
 } from './lib/environment-identity.mjs';
-import { readCommittedManifest } from './lib/migrations.mjs';
+import {
+  readCommittedManifest,
+  readProductionAdoptionBaseline,
+  resolveProductionAdoptionMigrations,
+} from './lib/migrations.mjs';
 import { calculateSchemaFingerprint } from './lib/schema-fingerprint.mjs';
 
 const { Client } = pg;
@@ -64,6 +68,8 @@ if (
 
 const environment = 'production';
 const manifest = await readCommittedManifest();
+const adoptionBaseline = await readProductionAdoptionBaseline();
+const adoptedMigrations = resolveProductionAdoptionMigrations(manifest, adoptionBaseline);
 const binding = createEnvironmentBinding({ environment, databaseUrl, supabaseUrl });
 const client = new Client({
   connectionString: databaseUrl,
@@ -157,7 +163,7 @@ try {
       );
       revoke all on all tables in schema safebus_release from public, anon, authenticated;
     `);
-    for (const migration of manifest.migrations) {
+    for (const migration of adoptedMigrations) {
       await client.query(
         `insert into safebus_release.migration_checksums
            (filename, version, checksum, bytes, release_sha)
@@ -189,10 +195,11 @@ const evidence = {
   projectRefHash: binding.projectRefHash,
   publicApiOriginHash: binding.publicApiOriginHash,
   schemaFingerprint: fingerprint,
-  backupEvidenceReferenceHash: createHash('sha256')
-    .update(backupEvidenceReference)
-    .digest('hex'),
-  adoptedMigrationCount: manifest.migrations.length,
+  backupEvidenceReferenceHash: createHash('sha256').update(backupEvidenceReference).digest('hex'),
+  adoptedMigrationCount: adoptedMigrations.length,
+  adoptionBaselineLastMigration: adoptionBaseline.lastMigration,
+  adoptionBaselineMigrationsSha256: adoptionBaseline.migrationsSha256,
+  pendingMigrationCount: manifest.migrations.length - adoptedMigrations.length,
   createdAt: new Date().toISOString(),
 };
 const output = path.join(process.cwd(), '.safebus-release/adoption.json');
@@ -200,5 +207,6 @@ await fs.mkdir(path.dirname(output), { recursive: true });
 await fs.writeFile(output, `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 });
 console.log(
   `Existing production schema adopted without changing public tables or data; ` +
-    `${manifest.migrations.length} migration checksums recorded.`,
+    `${adoptedMigrations.length} baseline migration checksums recorded; ` +
+    `${manifest.migrations.length - adoptedMigrations.length} newer migrations remain pending.`,
 );

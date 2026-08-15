@@ -29,11 +29,38 @@
 - The manual backup and one-time production adoption were deferred through
   `DL-015` to the final prelaunch sequence. Point 4 remains open, its workflow
   gates remain mandatory, and independent readiness work may continue.
+- Point 5 authorization hardening was approved through `DL-016`. Its migration,
+  exact RPC manifest, private helper schema, read-only database/API audit, and
+  protected release gate are implemented for review. Point 5 remains open
+  until isolated hosted RLS execution and independent boundary review pass.
 - Phase 15A was merged through PR #52 and is on `main`.
 - Hosted RLS execution and destructive QA are disabled because the only
   Supabase database is production.
 - SQL migrations remain in `supabase/migrations`; a pending migration blocks
   release until an isolated test target is explicitly approved.
+
+## Commercial Readiness Point 5 — Authorization Proof
+
+Status: Repository implementation complete for review; production unchanged;
+hosted execution and independent approval pending.
+
+- Added the generated authorization-hardening migration, which keeps only the
+  reviewed app/server RPC surface public and moves internal routines to the
+  non-exposed `safebus_private` schema.
+- Removed anonymous execution/data privileges, rebuilt authenticated table
+  grants from matching RLS commands, hardened default privileges and search
+  paths, and auto-enables RLS on future public tables.
+- Added the exact version-controlled authorization surface, read-only catalog
+  and Data API audit, manual protected audit workflow, release-preflight gate,
+  and structural regression coverage.
+- Baseline evidence and the final isolated-branch exit procedure are recorded
+  in `docs/governance/point-5-authorization-evidence.md`.
+
+Pending: final prelaunch backup/adoption, cost-approved temporary Supabase
+branch, migration execution, all hosted RLS suites, Security Advisor review,
+independent tenant/privacy-boundary sign-off, production application, generated
+type refresh, and deletion of the temporary branch. No destructive test may
+run against production.
 
 ## Stack
 
