@@ -1,7 +1,8 @@
 # Phase 4 — Secure development and deployment platform
 
 **Status:** Repository controls implement the single-production-database
-decisions in DL-013 and DL-014. Production adoption, backup evidence, credential rotation,
+decisions in DL-013 through DL-015. Production adoption and its current backup
+evidence are deferred to the final prelaunch sequence. Credential rotation,
 rollback evidence, and final security approval remain operator gates.
 
 ## Locked environment model
@@ -16,6 +17,12 @@ unused non-production site must have no production database credentials.
 The conversion preserves the existing public schema and data. It does not reset
 the database or replay historical migrations. Follow
 [`environment-conversion-runbook.md`](./environment-conversion-runbook.md).
+
+DL-015 changes only the order of work. Point 4 remains open, production release
+remains blocked, and the adoption workflow must not run until every existing
+backup and confirmation gate is truthfully satisfied. Other readiness work may
+continue only where it does not mutate production or depend on an adopted
+release ledger.
 
 The Supabase project, backups, and material processors must remain in the
 approved Canadian region (`ca-central-1`). Retain dashboard and recovery
@@ -74,14 +81,14 @@ future authorization changes trigger the schema-change stop condition.
 Only the `production` environment may hold database and deployment values. It
 must require a human reviewer, prevent self-review, and contain:
 
-| Name                     | Kind     | Purpose                                         |
-| ------------------------ | -------- | ----------------------------------------------- |
-| `SAFEBUS_DATABASE_URL`   | Secret   | Direct production Postgres connection           |
-| `SUPABASE_SECRET_KEY`    | Secret   | Server-only read credential for type checks     |
-| `VITE_SUPABASE_ANON_KEY` | Secret   | Public browser client key                       |
+| Name                     | Kind     | Purpose                                        |
+| ------------------------ | -------- | ---------------------------------------------- |
+| `SAFEBUS_DATABASE_URL`   | Secret   | Direct production Postgres connection          |
+| `SUPABASE_SECRET_KEY`    | Secret   | Server-only read credential for type checks    |
+| `VITE_SUPABASE_ANON_KEY` | Secret   | Public browser client key                      |
 | `NETLIFY_AUTH_TOKEN`     | Secret   | Deployment token scoped to the production site |
-| `VITE_SUPABASE_URL`      | Variable | Production Supabase API URL                     |
-| `NETLIFY_SITE_ID`        | Variable | Production `bussafe` site ID                    |
+| `VITE_SUPABASE_URL`      | Variable | Production Supabase API URL                    |
+| `NETLIFY_SITE_ID`        | Variable | Production `bussafe` site ID                   |
 
 Server-only credentials must never enter frontend settings, local files,
 repository variables, logs, screenshots, or documentation. The `development`

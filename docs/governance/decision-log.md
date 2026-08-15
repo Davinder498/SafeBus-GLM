@@ -314,6 +314,32 @@ get a `Superseded by DL-XXX` line and remain for history.
 - Approved by: Platform Administrator
 - Status: Accepted on 2026-08-15
 
+### DL-015 — Defer backup and database adoption to final prelaunch
+
+- Date: 2026-08-15
+- Decision: Defer the manual logical backup and the protected one-time
+  production-adoption workflow until the final prelaunch sequence. Continue
+  other commercial-readiness work that does not require production database
+  mutation, destructive testing, or a completed adoption ledger. Do not bypass
+  any adoption input or launch gate.
+- Context: The protected production secrets are configured, but the Platform
+  Administrator chose to complete the remaining independent readiness work
+  before creating the cutover backup and registering the existing database.
+- Rationale: Taking the backup closer to cutover produces fresher recovery
+  evidence while allowing application, privacy, mobile, map, operational, and
+  product-verification work to continue safely.
+- Consequences: Point 4 remains open. The `Adopt existing database as
+production` workflow must not run until a current encrypted backup is
+  verified and a non-secret evidence reference exists. The existing database
+  is still treated as production for credentials, privacy, residency, and
+  change control, but its private `safebus_release` identity and ledger remain
+  unregistered. Production release remains blocked, no real school operation
+  or commercial launch is authorized, and hosted RLS execution remains an
+  unresolved Point 5 gate while no approved isolated test database exists.
+- Owner: Platform Administrator
+- Approved by: Platform Administrator
+- Status: Accepted on 2026-08-15
+
 ## 5. Sign-off entries
 
 When a Phase 0 document is signed off, add an entry here:

@@ -76,18 +76,18 @@ These items are part of the commercial product promise but are not considered
 production-ready until their named commercial-readiness point is completed and
 approved:
 
-| Gate                  | Required outcome                                                                           | Readiness point |
-| --------------------- | ------------------------------------------------------------------------------------------ | --------------- |
-| Database contract     | Generated database types are current and used by application clients                       | Point 2         |
-| Safe release          | All preflight checks pass before production schema mutation                                | Point 3         |
-| Environment isolation | Separate approved DEV, staging, and production systems                                     | Point 4         |
-| Authorization proof   | Hosted RLS execution and independent tenant/privacy-boundary review                        | Point 5         |
-| Privacy and legal     | Approved PIA, legal role, retention, vendor, residency, and contractual controls           | Point 6         |
-| Android reliability   | Signed build pipeline and real-device background-tracking evidence                         | Point 7         |
-| Interactive maps      | Approved production map provider and safe degraded fallback                                | Point 8         |
-| Operations            | Production monitoring, alerting, incident response, support, backup, and recovery evidence | Point 9         |
-| Product verification  | Authenticated end-to-end, accessibility, resilience, and load evidence                     | Point 10        |
-| Pilot authorization   | Signed pilot plan, entry/exit criteria, and rollback authority                             | Point 11        |
+| Gate                  | Required outcome                                                                                  | Readiness point |
+| --------------------- | ------------------------------------------------------------------------------------------------- | --------------- |
+| Database contract     | Generated database types are current and used by application clients                              | Point 2         |
+| Safe release          | All preflight checks pass before production schema mutation                                       | Point 3         |
+| Environment isolation | Sole hosted database registered and protected as production; no credentials in unapproved targets | Point 4         |
+| Authorization proof   | Hosted RLS execution and independent tenant/privacy-boundary review                               | Point 5         |
+| Privacy and legal     | Approved PIA, legal role, retention, vendor, residency, and contractual controls                  | Point 6         |
+| Android reliability   | Signed build pipeline and real-device background-tracking evidence                                | Point 7         |
+| Interactive maps      | Approved production map provider and safe degraded fallback                                       | Point 8         |
+| Operations            | Production monitoring, alerting, incident response, support, backup, and recovery evidence        | Point 9         |
+| Product verification  | Authenticated end-to-end, accessibility, resilience, and load evidence                            | Point 10        |
+| Pilot authorization   | Signed pilot plan, entry/exit criteria, and rollback authority                                    | Point 11        |
 
 No real-data commercial launch is authorized merely because the capability
 exists in source code.

@@ -1,6 +1,12 @@
 # Adopt the existing Supabase project as production
 
-**Decisions:** DL-013 and DL-014. **Authority:** Platform Administrator.
+**Decisions:** DL-013 through DL-015. **Authority:** Platform Administrator.
+
+**Sequencing:** DL-015 defers sections 2.1–2.2 and section 4 to the final
+prelaunch sequence. Do not run the adoption workflow or claim Point 4 complete
+before a current encrypted backup and all existing confirmations are verified.
+The deferral does not authorize production mutation, real school operations,
+or a commercial launch. Independent readiness work may continue.
 
 The existing `BusSafe` Supabase project is the sole database and production
 system of record. Do not create DEV or staging databases. Do not reset it,
