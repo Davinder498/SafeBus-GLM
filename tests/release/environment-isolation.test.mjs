@@ -98,6 +98,8 @@ test('production adoption gates precede the only database metadata write', async
   assert.match(workflow, /environment: production/);
   assert.match(workflow, /ADOPT_EXISTING_PRODUCTION/);
   assert.match(workflow, /BACKUP_VERIFIED/);
+  assert.match(workflow, /FREE_PRELAUNCH_ONLY/);
+  assert.match(workflow, /backup_evidence_reference/);
   assert.match(workflow, /CA_CENTRAL_1_VERIFIED/);
 });
 
@@ -109,6 +111,8 @@ test('adoption records the existing schema without writing public application ob
   assert.match(adoption, /calculateSchemaFingerprint/);
   assert.doesNotMatch(adoption, /contractClient|contractBinding|promoted staging/);
   assert.match(adoption, /Production adoption found @example\.test QA identities/);
+  assert.match(adoption, /backupEvidenceReferenceHash/);
+  assert.match(adoption, /free-prelaunch-only/);
   assert.doesNotMatch(adoption, /(?:insert into|update|delete from|alter table)\s+public\./i);
   assert.doesNotMatch(adoption, /MIGRATION_DIRECTORY|fs\.readFile\([^)]*migration/i);
 });
@@ -170,4 +174,6 @@ test('Point 4 conversion decision is approved and recorded', async () => {
   assert.match(decisions, /- Approved by: Platform Administrator/);
   assert.match(decisions, /- Status: Accepted and revised on 2026-08-15/);
   assert.match(decisions, /sole\s+Supabase database\s+and production system of record/);
+  assert.match(decisions, /### DL-014 — Defer the paid Supabase tier during construction/);
+  assert.match(decisions, /FREE_PRELAUNCH_ONLY/);
 });

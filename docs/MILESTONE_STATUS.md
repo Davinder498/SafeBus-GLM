@@ -23,6 +23,9 @@
 - The existing `BusSafe` Supabase project was approved as the sole database and
   production system of record by the Platform Administrator on 2026-08-15
   through the revised `DL-013`. No DEV/staging database is approved.
+- Supabase Free was approved for active construction and labelled prelaunch/beta
+  operation through `DL-014`; a paid tier or approved equivalent remains a gate
+  before real school operations or commercial availability/recovery promises.
 - Phase 15A was merged through PR #52 and is on `main`.
 - Hosted RLS execution and destructive QA are disabled because the only
   Supabase database is production.

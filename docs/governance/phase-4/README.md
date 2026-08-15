@@ -1,7 +1,7 @@
 # Phase 4 — Secure development and deployment platform
 
 **Status:** Repository controls implement the single-production-database
-decision in DL-013. Production adoption, backup evidence, credential rotation,
+decisions in DL-013 and DL-014. Production adoption, backup evidence, credential rotation,
 rollback evidence, and final security approval remain operator gates.
 
 ## Locked environment model
@@ -20,6 +20,16 @@ the database or replay historical migrations. Follow
 The Supabase project, backups, and material processors must remain in the
 approved Canadian region (`ca-central-1`). Retain dashboard and recovery
 evidence with the release record.
+
+### Free-plan construction posture
+
+The Platform Administrator approved Supabase Free while SafeBus is being built.
+This permits engineering, demonstrations, and a labelled prelaunch/beta site.
+It does not authorize a commercial uptime or recovery promise. Because the Free
+plan does not supply the approved automatic backup posture, adoption requires a
+current manual logical backup, integrity evidence, and the explicit
+`FREE_PRELAUNCH_ONLY` acknowledgement. Upgrade becomes a launch gate before a
+school's real operational use or a paid availability/recovery commitment.
 
 ## Safe release model
 

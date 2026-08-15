@@ -12,6 +12,12 @@ on:
       backup_confirmation:
         description: Type BACKUP_VERIFIED
         required: true
+      backup_evidence_reference:
+        description: Non-secret reference for the verified manual backup evidence
+        required: true
+      service_tier_confirmation:
+        description: Type FREE_PRELAUNCH_ONLY
+        required: true
       region_confirmation:
         description: Type CA_CENTRAL_1_VERIFIED
         required: true
@@ -28,6 +34,7 @@ jobs:
     if: >-
       inputs.confirmation == 'ADOPT_EXISTING_PRODUCTION' &&
       inputs.backup_confirmation == 'BACKUP_VERIFIED' &&
+      inputs.service_tier_confirmation == 'FREE_PRELAUNCH_ONLY' &&
       inputs.region_confirmation == 'CA_CENTRAL_1_VERIFIED'
     name: Preserve and register existing production schema
     runs-on: ubuntu-latest
@@ -38,6 +45,8 @@ jobs:
       SAFEBUS_DEPLOY_ENV: production
       SAFEBUS_ADOPTION_CONFIRM: ${{ inputs.confirmation }}
       SAFEBUS_BACKUP_CONFIRM: ${{ inputs.backup_confirmation }}
+      SAFEBUS_BACKUP_EVIDENCE_REFERENCE: ${{ inputs.backup_evidence_reference }}
+      SAFEBUS_SERVICE_TIER_CONFIRM: ${{ inputs.service_tier_confirmation }}
       SAFEBUS_REGION_CONFIRM: ${{ inputs.region_confirmation }}
       SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}

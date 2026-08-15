@@ -1,6 +1,6 @@
 # Adopt the existing Supabase project as production
 
-**Decision:** DL-013. **Authority:** Platform Administrator.
+**Decisions:** DL-013 and DL-014. **Authority:** Platform Administrator.
 
 The existing `BusSafe` Supabase project is the sole database and production
 system of record. Do not create DEV or staging databases. Do not reset it,
@@ -17,14 +17,22 @@ replay historical migrations, run hosted RLS tests against it, or seed QA data.
 
 ## 2. Protect the production data
 
-1. Enable the approved backup/PITR plan and complete a recovery exercise.
-2. Inventory approved QA identities/fixtures. The adoption workflow refuses any
+1. While the project remains on Supabase Free, create the Supabase-recommended
+   roles, schema, and data logical dumps from a trusted operator machine. Do not
+   place the connection string in shell history, logs, or files. Encrypt the
+   dump set, store it outside the repository, record SHA-256 checksums, and
+   retain a non-secret 12–160 character evidence reference. Storage objects, if
+   later introduced, require a separate backup because database dumps contain
+   only their metadata.
+2. Verify that every dump exists, is non-empty, and matches its recorded hash.
+   A full recovery exercise remains a commercial-launch gate.
+3. Inventory approved QA identities/fixtures. The adoption workflow refuses any
    `@example.test` Auth or profile identity. Remove only data that the Platform
    Administrator confirms is test data; never infer that operational data is
    disposable.
-3. Rotate the database password and server credentials previously used on
+4. Rotate the database password and server credentials previously used on
    developer machines or in a development environment. Remove obsolete copies.
-4. Record the exact reviewed Git SHA whose generated database contract matches
+5. Record the exact reviewed Git SHA whose generated database contract matches
    the hosted schema.
 
 ## 3. Configure protected production
@@ -42,7 +50,8 @@ replay historical migrations, run hosted RLS tests against it, or seed QA data.
 ## 4. Adopt without rebuilding
 
 1. Run **Adopt existing database as production** for the exact reviewed SHA.
-2. Enter `ADOPT_EXISTING_PRODUCTION`, `BACKUP_VERIFIED`, and
+2. Enter `ADOPT_EXISTING_PRODUCTION`, `BACKUP_VERIFIED`,
+   `FREE_PRELAUNCH_ONLY`, the non-secret backup evidence reference, and
    `CA_CENTRAL_1_VERIFIED`.
 3. Approve the protected production environment prompt.
 4. Retain the adoption artifact. The workflow performs read-only checks first,
@@ -55,6 +64,8 @@ replay historical migrations, run hosted RLS tests against it, or seed QA data.
 ## 5. Ongoing operating rule
 
 - Application-only releases may use the protected production workflow.
+- Supabase Free is limited to construction and explicitly labelled prelaunch or
+  beta operation. Do not promise commercial uptime or recovery on this tier.
 - Any pending database migration blocks release.
 - Hosted RLS and QA fixture writers remain unavailable because there is no
   approved non-production database.
@@ -63,6 +74,8 @@ replay historical migrations, run hosted RLS tests against it, or seed QA data.
 
 ## Exit gate
 
-Point 4 conversion is operationally complete only when production region,
-backup/recovery, QA cleanup, credential rotation, protected-secret, adoption,
-read-only preflight, and signed security-checklist evidence are retained.
+Point 4 database adoption is complete when production region, current manual
+backup integrity, QA cleanup, credential rotation, protected-secret, adoption,
+and read-only preflight evidence are retained. Commercial launch additionally
+requires a tested recovery path and a service tier capable of the approved
+availability and backup commitment.
