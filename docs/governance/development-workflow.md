@@ -70,15 +70,19 @@ pnpm test:rls:dev
 - `pnpm test:rls` is **structural only** (checks files exist); it is not
   proof that SQL assertions passed. Never report it as execution evidence.
 - Never run RLS SQL or QA seed scripts against production.
+- Under DL-013 no non-production database exists, so this hosted runner is not
+  currently available. Do not set its URL to the sole production database.
 
 ## 6. Database change rules (from `AGENTS.md`)
 
-- Hosted Supabase DEV is for smoke testing.
+- The existing hosted Supabase project is production. No hosted DEV database is
+  currently approved.
 - Do **not** run Docker commands. Do **not** run `supabase start`. Do **not**
   run `supabase db reset`.
 - Keep migrations in `supabase/migrations`.
-- Apply migrations **manually** to hosted Supabase DEV through the SQL Editor.
-- Do **not** modify production.
+- Do not apply a migration until an isolated validation target is separately
+  approved; pending migrations fail the production release closed.
+- Do **not** modify production outside the protected adoption/release workflow.
 - Do **not** rename migrations already applied to a database (see
   `decision-log.md` DL-005).
 
@@ -112,8 +116,8 @@ A milestone is done when **all** of the following are true:
 
 1. Code is on a feature branch and a PR is open.
 2. `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test` all pass.
-3. Any RLS/SQL change has executed against hosted DEV (not production) with
-   evidence, where applicable.
+3. Any RLS/SQL change remains blocked until an isolated validation target is
+   explicitly approved; production is never used as that target.
 4. The relevant phase exit-gate items are satisfied and recorded.
 5. Codex/human review is complete.
 6. A human approves and merges to `main`.

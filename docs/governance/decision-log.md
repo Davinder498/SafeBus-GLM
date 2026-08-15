@@ -3,7 +3,7 @@
 **Status:** Living document — append-only
 **Owner:** Product Owner
 **Phase:** 0 — Product and governance baseline
-**Last updated:** 2026-08-12
+**Last updated:** 2026-08-15
 
 ---
 
@@ -262,37 +262,33 @@ get a `Superseded by DL-XXX` line and remain for history.
 - Approved by: Platform Administrator
 - Status: Accepted on 2026-08-12
 
-### DL-013 — Convert the existing hosted project to production safely
+### DL-013 — Adopt the sole hosted database as production
 
 - Date: 2026-08-15
-- Decision: Preserve the existing hosted DEV Supabase project and convert it
-  into production without resetting it, replaying migrations, or rebuilding
-  its public schema. Create separate Canadian-region DEV and staging projects
-  containing synthetic data only. Bind each database to a permanent
-  environment identity and make migration, RLS, and QA writers reject a target
-  whose identity does not match the requested environment.
-- Context: The Platform Administrator confirmed that the existing hosted
-  project will become production. The repository expected three isolated
-  environments, but staging and production had no configured GitHub values,
-  development retained the existing credential without approval protection,
-  and destructive test protection trusted operator-provided labels.
-- Rationale: Preserving the authoritative database avoids a risky rebuild,
-  while database-side identity and separate non-production projects prevent
-  future development or synthetic testing from reaching production.
+- Decision: The existing BusSafe Supabase project is the sole Supabase database
+  and production system of record. Preserve it without resetting it, replaying
+  migrations, or rebuilding its public schema. Do not create DEV or staging
+  databases. Bind it permanently to the `production` environment identity.
+- Context: The Platform Administrator confirmed that no other production
+  database exists and explicitly chose a one-database operating model.
+- Rationale: This preserves the authoritative database and matches the approved
+  operating model. Because production is the only database, destructive testing
+  and untested schema changes require stronger fail-closed controls.
 - Consequences: A protected one-time adoption workflow performs all checks,
   requires backup and `ca-central-1` confirmation, fingerprints and locks the
   existing schema, and atomically adds only private `safebus_release` identity
-  and ledger metadata. It records the committed migration set as an explicitly
-  adopted baseline and never executes historical migration SQL. The existing
-  `bussafe` Netlify site becomes production and a separate staging site is
-  required. Previously used production-bound credentials are rotated at
-  cutover. The accidental GitHub environment and unused unencrypted database
-  variable were removed on 2026-08-15. Commercial release remains blocked
-  until the new DEV/staging projects, protected secrets, region evidence,
-  backup evidence, registration, and adoption workflow are complete.
+  and ledger metadata. It records canonical migrations as an adopted baseline
+  and never executes historical migration SQL. Hosted RLS/QA fixture execution
+  is disabled because those tools accept only a registered non-production
+  target. Production releases may deploy application-only changes; any pending
+  database migration blocks release until the Platform Administrator separately
+  approves an isolated test database or Supabase branch. The existing `bussafe`
+  Netlify site is production. Any unused staging site receives no production
+  database credentials. Previously exposed production credentials must be
+  rotated at cutover.
 - Owner: Platform Administrator
 - Approved by: Platform Administrator
-- Status: Accepted on 2026-08-15
+- Status: Accepted and revised on 2026-08-15
 
 ## 5. Sign-off entries
 

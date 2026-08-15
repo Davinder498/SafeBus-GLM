@@ -6,7 +6,6 @@ import path from 'node:path';
 import process from 'node:process';
 import pg from 'pg';
 import {
-  assertEnvironmentIdentity,
   createEnvironmentBinding,
   registerEnvironmentIdentity,
 } from './lib/environment-identity.mjs';
@@ -16,8 +15,6 @@ import { calculateSchemaFingerprint } from './lib/schema-fingerprint.mjs';
 const { Client } = pg;
 const databaseUrl = process.env.SAFEBUS_DATABASE_URL;
 const supabaseUrl = process.env.SUPABASE_URL;
-const contractDatabaseUrl = process.env.SAFEBUS_CONTRACT_DATABASE_URL;
-const contractSupabaseUrl = process.env.SAFEBUS_CONTRACT_SUPABASE_URL;
 const releaseSha = process.env.SAFEBUS_RELEASE_SHA;
 
 if (process.env.GITHUB_ACTIONS !== 'true') {
@@ -35,8 +32,8 @@ if (process.env.SAFEBUS_BACKUP_CONFIRM !== 'BACKUP_VERIFIED') {
 if (process.env.SAFEBUS_REGION_CONFIRM !== 'CA_CENTRAL_1_VERIFIED') {
   throw new Error('The approved Canadian Supabase region must be verified before adoption.');
 }
-if (!databaseUrl || !supabaseUrl || !contractDatabaseUrl || !contractSupabaseUrl) {
-  throw new Error('Production and promoted staging database/API targets are required.');
+if (!databaseUrl || !supabaseUrl) {
+  throw new Error('Production database and API targets are required.');
 }
 if (!releaseSha || !/^[0-9a-f]{40}$/i.test(releaseSha)) {
   throw new Error('SAFEBUS_RELEASE_SHA must be the full reviewed Git commit SHA.');
@@ -55,38 +52,14 @@ if (
 const environment = 'production';
 const manifest = await readCommittedManifest();
 const binding = createEnvironmentBinding({ environment, databaseUrl, supabaseUrl });
-const contractBinding = createEnvironmentBinding({
-  environment: 'staging',
-  databaseUrl: contractDatabaseUrl,
-  supabaseUrl: contractSupabaseUrl,
-});
-if (binding.projectRefHash === contractBinding.projectRefHash) {
-  throw new Error('Production and promoted staging must be different Supabase projects.');
-}
 const client = new Client({
   connectionString: databaseUrl,
   application_name: 'safebus-production-adoption',
-});
-const contractClient = new Client({
-  connectionString: contractDatabaseUrl,
-  application_name: 'safebus-production-adoption-contract',
 });
 
 let fingerprint;
 try {
   await client.connect();
-  await contractClient.connect();
-  await assertEnvironmentIdentity(contractClient, contractBinding);
-  await contractClient.query('begin transaction isolation level repeatable read read only');
-  let contractFingerprint;
-  try {
-    contractFingerprint = await calculateSchemaFingerprint(contractClient);
-    await contractClient.query('commit');
-  } catch (error) {
-    await contractClient.query('rollback');
-    throw error;
-  }
-
   const deploymentLock = await client.query(
     "select pg_try_advisory_lock(hashtextextended('safebus-schema-deploy', 0)) as acquired",
   );
@@ -126,11 +99,6 @@ try {
       );
     }
     fingerprint = await calculateSchemaFingerprint(client);
-    if (fingerprint !== contractFingerprint) {
-      throw new Error(
-        'Existing production schema does not exactly match the promoted staging schema.',
-      );
-    }
     await client.query('rollback');
   } catch (error) {
     await client.query('rollback');
@@ -169,7 +137,7 @@ try {
       );
       create table safebus_release.releases (
         release_sha text primary key,
-        environment text not null check (environment in ('staging', 'production')),
+        environment text not null check (environment = 'production'),
         schema_fingerprint text check (schema_fingerprint ~ '^[0-9a-f]{64}$'),
         status text not null check (status in ('deploying', 'deployed', 'failed')),
         deployed_at timestamptz not null default clock_timestamp()
@@ -196,7 +164,6 @@ try {
     throw error;
   }
 } finally {
-  await contractClient.end().catch(() => {});
   await client.end().catch(() => {});
 }
 
@@ -207,8 +174,6 @@ const evidence = {
   databaseTarget: binding.databaseTarget,
   projectRefHash: binding.projectRefHash,
   publicApiOriginHash: binding.publicApiOriginHash,
-  contractProjectRefHash: contractBinding.projectRefHash,
-  contractSchemaFingerprint: fingerprint,
   schemaFingerprint: fingerprint,
   adoptedMigrationCount: manifest.migrations.length,
   createdAt: new Date().toISOString(),

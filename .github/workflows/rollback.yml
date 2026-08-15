@@ -6,13 +6,13 @@ on:
       environment:
         description: Protected target environment
         type: choice
-        options: [staging, production]
+        options: [production]
         required: true
       known_good_ref:
         description: Previously approved commit SHA or immutable tag
         required: true
       confirmation:
-        description: Type ROLLBACK_STAGING or ROLLBACK_PRODUCTION
+        description: Type ROLLBACK_PRODUCTION
         required: true
 
 permissions:

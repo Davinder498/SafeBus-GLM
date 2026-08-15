@@ -1,88 +1,68 @@
-# Existing hosted project to production conversion
+# Adopt the existing Supabase project as production
 
 **Decision:** DL-013. **Authority:** Platform Administrator.
 
-This runbook preserves the existing hosted Supabase public schema and data. Do
-not reset it, replay historical migrations, run RLS tests against it, or copy
-its real data into DEV/staging.
+The existing `BusSafe` Supabase project is the sole database and production
+system of record. Do not create DEV or staging databases. Do not reset it,
+replay historical migrations, run hosted RLS tests against it, or seed QA data.
 
-## 1. Freeze and evidence the existing project
+## 1. Freeze and classify
 
-1. Stop manual migrations, QA seeds, and destructive RLS execution against the
-   existing project.
-2. Confirm its Supabase region is the approved Canadian region
-   (`ca-central-1`) and retain dashboard evidence.
-3. Enable the approved backup/PITR plan and complete a recovery exercise before
-   adoption. Retain the evidence.
+1. Stop manual migrations, QA seeds, and destructive RLS execution.
+2. Remove its database URL and server secret from development/staging CI,
+   developer machines, and unused deployment targets.
+3. Confirm the project reference and `ca-central-1` region in the Supabase
+   dashboard and retain evidence.
+4. Treat all data and credentials from this point forward as production.
+
+## 2. Protect the production data
+
+1. Enable the approved backup/PITR plan and complete a recovery exercise.
+2. Inventory approved QA identities/fixtures. The adoption workflow refuses any
+   `@example.test` Auth or profile identity. Remove only data that the Platform
+   Administrator confirms is test data; never infer that operational data is
+   disposable.
+3. Rotate the database password and server credentials previously used on
+   developer machines or in a development environment. Remove obsolete copies.
 4. Record the exact reviewed Git SHA whose generated database contract matches
    the hosted schema.
-5. Inventory and remove approved DEV-only QA accounts/fixtures from the existing
-   project. The adoption workflow refuses any `@example.test` Auth/profile
-   identity. Retain the cleanup approval and result; do not remove real users or
-   operational records.
 
-## 2. Create replacement non-production systems
+## 3. Configure protected production
 
-1. Create new DEV and staging Supabase projects in `ca-central-1`.
-2. Use synthetic identities and transportation records only.
-3. Apply canonical migrations manually to hosted DEV through SQL Editor, then
-   run **Register development database identity** with the full approved SHA and
-   `REGISTER_DEVELOPMENT`.
-4. Replace the GitHub `development` environment's encrypted
-   `SAFEBUS_DATABASE_URL` with the new DEV credential and add
-   `VITE_SUPABASE_URL`. Confirm the RLS job passes against the registered DEV
-   identity.
-5. Create a separate staging Netlify site. Configure the protected `staging`
-   GitHub environment with staging target values and DEV as its
-   `CONTRACT_SUPABASE_URL`/`CONTRACT_SUPABASE_SECRET_KEY` source.
-6. Run **Release staging** for the same reviewed SHA. An empty staging database
-   is initialized atomically from canonical migrations, registered as staging,
-   checked against DEV's generated contract, exercised with RLS tests, and
-   deployed to the staging site.
-
-## 3. Configure the preserved project as production
-
-1. Treat the existing `bussafe` Netlify site as production and do not reuse its
-   site ID for staging.
-2. Rotate the existing project's database password and every server credential
-   previously stored or used in development. Remove obsolete local copies after
-   rotation. Do not put replacements in repository variables or local files.
-3. Enter replacement values directly in the protected GitHub `production`
-   environment: `SAFEBUS_DATABASE_URL`, `SUPABASE_SECRET_KEY`,
-   `VITE_SUPABASE_ANON_KEY`, `VITE_SUPABASE_URL`, `NETLIFY_AUTH_TOKEN`, and
-   `NETLIFY_SITE_ID`.
-4. Set production `CONTRACT_SUPABASE_URL`, `CONTRACT_SUPABASE_SECRET_KEY`, and
-   `CONTRACT_DATABASE_URL` to the isolated staging project so production checks
-   the already-promoted schema before mutation. The database credential is used
-   by the one-time adoption workflow to compare the complete schema, including
-   RLS, functions, triggers, and grants.
-5. Configure the production Netlify runtime with matching Supabase values and
-   approved server-only secrets. Confirm preview/staging contexts do not inherit
-   production secrets.
+1. Configure the GitHub `production` environment with a required reviewer and
+   prevent self-review.
+2. Enter `SAFEBUS_DATABASE_URL`, `SUPABASE_SECRET_KEY`,
+   `VITE_SUPABASE_ANON_KEY`, and `NETLIFY_AUTH_TOKEN` directly as protected
+   secrets. Set `VITE_SUPABASE_URL` and the production `NETLIFY_SITE_ID` as
+   protected variables.
+3. Configure the existing `bussafe` Netlify site with the matching public
+   Supabase URL/key. Never place database or server-secret credentials there.
+4. Confirm unused preview/staging targets have no production credentials.
 
 ## 4. Adopt without rebuilding
 
 1. Run **Adopt existing database as production** for the exact reviewed SHA.
-2. Type all three confirmations:
-   `ADOPT_EXISTING_PRODUCTION`, `BACKUP_VERIFIED`, and
+2. Enter `ADOPT_EXISTING_PRODUCTION`, `BACKUP_VERIFIED`, and
    `CA_CENTRAL_1_VERIFIED`.
 3. Approve the protected production environment prompt.
-4. Retain the 90-day adoption artifact. The workflow verifies checks first,
-   locks and fingerprints the public schema, requires an exact match with the
-   promoted staging fingerprint, rejects known QA identities, and adds only private
-   `safebus_release` identity/ledger records in one transaction. It does not
-   execute migration files or write public application tables.
-5. Run read-only schema preflight and drift verification. Confirm every
-   canonical migration checksum is recorded as the explicitly adopted baseline.
+4. Retain the adoption artifact. The workflow performs read-only checks first,
+   rejects known QA identities, locks and fingerprints the public schema, then
+   adds only private `safebus_release` identity and ledger records atomically.
+   It does not execute migration SQL or write public application tables.
+5. Run normal read-only production preflight and confirm the adopted migration
+   ledger and schema fingerprint match.
 
-## 5. Exit gate
+## 5. Ongoing operating rule
 
-Point 4 operational conversion is complete only when:
+- Application-only releases may use the protected production workflow.
+- Any pending database migration blocks release.
+- Hosted RLS and QA fixture writers remain unavailable because there is no
+  approved non-production database.
+- A schema-changing release requires a new explicit Platform Administrator
+  decision approving an isolated test database or Supabase branch first.
 
-- DEV, staging, and production project/site identifiers are distinct;
-- all three Supabase projects have matching environment identities;
-- DEV and staging contain synthetic data only;
-- staging release and rollback evidence pass for the production SHA;
-- production backup/region and credential-rotation evidence is retained;
-- adoption evidence is retained and normal production preflight passes; and
-- the production security checklist is signed.
+## Exit gate
+
+Point 4 conversion is operationally complete only when production region,
+backup/recovery, QA cleanup, credential rotation, protected-secret, adoption,
+read-only preflight, and signed security-checklist evidence are retained.

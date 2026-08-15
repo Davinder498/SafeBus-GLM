@@ -51,6 +51,20 @@ test('rollback requires protected environment confirmation and immutable ref', a
   assert.match(workflow, /ROLLBACK_/);
   assert.match(workflow, /git rev-parse/);
   assert.match(workflow, /netlify deploy --prod/);
+  assert.match(workflow, /options: \[production\]/);
+  assert.doesNotMatch(workflow, /ROLLBACK_STAGING/);
+});
+
+test('database-bearing workflows target the protected production environment only', async () => {
+  const workflows = await Promise.all([
+    read('.github/workflows/adopt-existing-production.yml'),
+    read('.github/workflows/release-production.yml'),
+    read('.github/workflows/refresh-database-types.yml'),
+  ]);
+  for (const workflow of workflows) {
+    assert.match(workflow, /environment: production/);
+    assert.doesNotMatch(workflow, /environment: (?:development|staging)/);
+  }
 });
 
 test('CI declares every Phase 4 gate', async () => {
@@ -60,7 +74,6 @@ test('CI declares every Phase 4 gate', async () => {
     'Lint',
     'Production build',
     'Unit tests',
-    'RLS execution',
     'Browser smoke tests',
     'Dependency audit',
     'Secret scanning',
@@ -77,9 +90,7 @@ test('GitHub workflows use the Node 24 action generations', async () => {
     read('.github/workflows/codeql.yml'),
     read('.github/workflows/refresh-database-types.yml'),
     read('.github/workflows/release-production.yml'),
-    read('.github/workflows/release-staging.yml'),
     read('.github/workflows/adopt-existing-production.yml'),
-    read('.github/workflows/register-development-environment.yml'),
     read('.github/workflows/rollback.yml'),
   ]);
   const combined = workflows.join('\n');

@@ -20,14 +20,14 @@
   2026-08-12 through `DL-011`.
 - Fail-closed, attested releases were approved by the Platform Administrator on
   2026-08-12 through `DL-012`.
-- Conversion of the existing hosted project into production, with separate new
-  DEV/staging systems, was approved by the Platform Administrator on 2026-08-15
-  through `DL-013`.
+- The existing `BusSafe` Supabase project was approved as the sole database and
+  production system of record by the Platform Administrator on 2026-08-15
+  through the revised `DL-013`. No DEV/staging database is approved.
 - Phase 15A was merged through PR #52 and is on `main`.
-- Hosted Supabase DEV is used for database smoke/RLS execution. Do not run RLS
-  SQL against production.
-- SQL migrations are kept in `supabase/migrations` and are applied manually to
-  hosted Supabase DEV through the SQL Editor.
+- Hosted RLS execution and destructive QA are disabled because the only
+  Supabase database is production.
+- SQL migrations remain in `supabase/migrations`; a pending migration blocks
+  release until an isolated test target is explicitly approved.
 
 ## Stack
 
@@ -508,19 +508,19 @@ This milestone preserves existing business logic and tenant isolation. It adds n
 
 ## Phase 4 — Secure Development and Deployment Platform
 
-Status: Repository implementation complete for review on
-`phase-4-secure-development-deployment`. Cloud provisioning and the operational
-exit gates require authorized human completion before production approval.
+Status: Repository implementation updated for review under revised DL-013.
+Production adoption and the operational exit gates require authorized human
+completion.
 
-- Added separate protected DEV, staging, and production release contracts and
-  one-click staging, human-approved production, and application rollback
-  workflows.
+- Added a protected, human-approved production release and application rollback
+  workflow for the sole database model.
 - Added immutable SHA-256 migration manifests, transactional deployment ledger,
   catalog-level schema fingerprinting, and pre-deploy/standalone drift checks.
 - Added pinned authoritative Supabase TypeScript generation and release-time
   stale-type rejection.
-- Expanded CI into independent typecheck, lint, build, unit, RLS execution,
-  browser smoke, dependency audit, secret scan, CodeQL, and migration gates.
+- Expanded CI into independent typecheck, lint, build, unit, browser smoke,
+  dependency audit, secret scan, CodeQL, and migration gates without a
+  production database credential.
 - Patched the React Router advisory line by migrating to `react-router` 8.3.0
   with its React 19-compatible mapping stack; the production dependency audit
   reports no known vulnerabilities.
@@ -530,11 +530,11 @@ exit gates require authorized human completion before production approval.
 - Added production security approval and forward-only database/application
   rollback runbooks under `docs/governance/phase-4/`.
 
-Pending operational evidence: provision three isolated Canadian-region cloud
-environments, configure protected-environment reviewers and secrets, generate
-and commit types from the reachable authoritative staging schema, run the first
-staging release and quarterly rollback exercise, verify deployed headers, and
-obtain human security/privacy approval. Never run RLS assertions in production.
+Pending operational evidence: configure the protected production reviewer and
+secrets, verify backup/recovery and Canadian region, rotate previously used
+credentials, adopt the existing database, run application rollback, verify
+deployed headers, and obtain human security/privacy approval. Never run hosted
+RLS assertions or QA fixture writers against the sole production database.
 
 ## Phase 8 — Guardian Experience and Notifications
 

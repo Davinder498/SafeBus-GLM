@@ -14,9 +14,9 @@ permissions:
 
 jobs:
   generate:
-    name: Generate types from staging
+    name: Generate types read-only from production
     runs-on: ubuntu-latest
-    environment: staging
+    environment: production
     env:
       SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}

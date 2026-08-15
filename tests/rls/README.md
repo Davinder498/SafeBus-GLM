@@ -111,10 +111,11 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
 
 ## `pnpm test:rls`
 
-`pnpm test:rls` executes the current RLS SQL contract against the explicitly
-configured DEV or staging database. It uses the same guarded runner documented
-under `pnpm test:rls:dev` below; both commands require all safety environment
-variables and a Postgres connection URL.
+`pnpm test:rls` executes the current RLS SQL contract only against an explicitly
+configured, database-registered DEV or staging target. Under DL-013 no such
+target exists, so this command must not be run against the sole production
+database. Structural repository tests still validate the presence and ordering
+of the SQL fixtures.
 
 After migration 0062, `assignment-selected-driver-trips-rls.sql` remains a
 historical regression fixture for migration 0054. Its expectation that drivers
@@ -133,9 +134,9 @@ earlier prepared-dispatch start signature is intentionally retired.
 
 ## `pnpm test:rls:dev`
 
-`pnpm test:rls:dev` executes the RLS SQL scripts against a configured hosted
-Supabase DEV database. It is the automated replacement for copy/paste SQL
-Editor runs.
+`pnpm test:rls:dev` executes the RLS SQL scripts only if a hosted Supabase DEV
+database is separately approved and configured. It is currently unavailable
+because the sole hosted project is production.
 
 This command is intentionally guarded. It refuses to run unless all three
 environment variables are set:

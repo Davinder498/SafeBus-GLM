@@ -23,13 +23,15 @@ Core product principle:
 
 ## Current Development Setup
 
-- Hosted Supabase DEV is used for smoke testing.
+- The existing hosted `BusSafe` Supabase project is the sole database and is production.
+- No DEV or staging database is currently approved.
 - Do not run Docker commands.
 - Do not run `supabase start`.
 - Do not run `supabase db reset`.
 - Keep SQL migrations in `supabase/migrations`.
-- Apply migrations manually to hosted Supabase DEV through SQL Editor.
-- Do not modify production.
+- Do not apply pending migrations until an isolated test database or branch is explicitly approved.
+- Do not run RLS tests or QA seed/fixture writers against production.
+- Modify production only through the protected, approved adoption/release workflow.
 
 ## Frontend Environment
 
@@ -64,7 +66,7 @@ Never expose service role or secret keys in frontend code, `.env`, docs, logs, o
 - Supabase Auth
 - Supabase Postgres
 - Supabase RLS
-- Hosted Supabase DEV for smoke testing
+- Sole hosted Supabase production project; no non-production database
 
 ## Current Active Migrations
 

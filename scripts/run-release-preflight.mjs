@@ -4,38 +4,29 @@ import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import { createEnvironmentBinding, supabaseTargetIdentity } from './lib/environment-identity.mjs';
+import { createEnvironmentBinding } from './lib/environment-identity.mjs';
 import { DEFAULT_ATTESTATION_PATH, createReleaseAttestation } from './lib/release-attestation.mjs';
 
 const environment = process.env.SAFEBUS_DEPLOY_ENV;
 const releaseSha = process.env.SAFEBUS_RELEASE_SHA;
 const databaseUrl = process.env.SAFEBUS_DATABASE_URL;
 const supabaseUrl = process.env.SUPABASE_URL;
-const contractSupabaseUrl = process.env.SAFEBUS_CONTRACT_SUPABASE_URL;
-const contractSupabaseSecretKey = process.env.SAFEBUS_CONTRACT_SUPABASE_SECRET_KEY;
 const pnpmCli = process.env.npm_execpath;
 
 if (process.env.GITHUB_ACTIONS !== 'true') {
   throw new Error('Release preflight runs only in a protected GitHub Actions environment.');
 }
-if (!['staging', 'production'].includes(environment)) {
-  throw new Error('SAFEBUS_DEPLOY_ENV must be staging or production.');
+if (environment !== 'production') {
+  throw new Error('SAFEBUS_DEPLOY_ENV must be production.');
 }
 if (!releaseSha || !/^[0-9a-f]{40}$/i.test(releaseSha)) {
   throw new Error('SAFEBUS_RELEASE_SHA must be the full reviewed Git commit SHA.');
 }
 if (!databaseUrl) throw new Error('SAFEBUS_DATABASE_URL is required.');
 if (!supabaseUrl) throw new Error('SUPABASE_URL is required.');
-if (!contractSupabaseUrl || !contractSupabaseSecretKey) {
-  throw new Error('Protected schema-contract Supabase URL and secret key are required.');
-}
 if (!pnpmCli) throw new Error('Run release preflight through `pnpm release:preflight`.');
 
-const targetBinding = createEnvironmentBinding({ environment, databaseUrl, supabaseUrl });
-const contractBinding = supabaseTargetIdentity(contractSupabaseUrl);
-if (targetBinding.projectRefHash === contractBinding.projectRefHash) {
-  throw new Error('Release target and upstream schema-contract project must be different.');
-}
+createEnvironmentBinding({ environment, databaseUrl, supabaseUrl });
 
 const commitSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 if (commitSha !== releaseSha) {
@@ -81,10 +72,7 @@ async function rejectSourceMaps(directory) {
 
 await run('migrations:verify');
 await run('migrations:preflight');
-await run('types:check', {
-  SUPABASE_URL: contractSupabaseUrl,
-  SUPABASE_SECRET_KEY: contractSupabaseSecretKey,
-});
+await run('types:check');
 await run('typecheck');
 await run('lint');
 await run('test');
@@ -101,7 +89,6 @@ const attestation = await createReleaseAttestation({
   commitSha,
   databaseUrl,
   supabaseUrl,
-  contractSupabaseUrl,
   root,
 });
 const output = path.join(root, DEFAULT_ATTESTATION_PATH);

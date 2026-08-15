@@ -2,46 +2,43 @@
 
 Release SHA: __________ Reviewer: __________ Date: __________
 
-## Environment and data residency
+## Production identity and residency
 
-- [ ] DEV, staging, and production use distinct Supabase projects and Netlify sites.
-- [ ] The existing hosted project was frozen, backed up, and adopted without replaying migrations.
-- [ ] Each database has a matching `safebus_release.environment_identity` record.
-- [ ] DEV/staging contain synthetic data only and destructive jobs reject production identity.
-- [ ] Supabase project region evidence confirms approved Canadian processing (`ca-central-1`).
-- [ ] All material subprocessors and backups are approved for Canadian processing.
-- [ ] Staging contains synthetic data only.
-- [ ] Production secrets exist only in the protected production environment.
-- [ ] Credentials previously used from DEV machines were rotated at production cutover.
-- [ ] Approved QA cleanup is recorded and no `@example.test` identities remain.
-- [ ] No service-role key or database URL appears in frontend settings or build output.
+- [ ] The existing `BusSafe` project is recorded as the sole database and production system of record.
+- [ ] It was frozen, backed up, and adopted without resetting or replaying migrations.
+- [ ] Its private `safebus_release.environment_identity` is `production`.
+- [ ] Supabase region evidence confirms `ca-central-1`.
+- [ ] Material subprocessors and backups are approved for Canadian processing.
+- [ ] No production database URL or server secret exists in development, staging, preview, or local configuration.
+- [ ] Credentials previously used from developer machines were rotated.
+- [ ] Approved QA cleanup is recorded and no `@example.test` identity remains.
+- [ ] No server key or database URL appears in frontend settings or build output.
 
 ## Review and release
 
-- [ ] `main` branch protection and required human review are enabled.
-- [ ] The release commit is immutable, reviewed, and passed every required check.
-- [ ] The exact 40-character release SHA has a current, matching preflight attestation.
-- [ ] Preflight completed before the first persistent database change.
+- [ ] `main` protection and required human review are enabled.
+- [ ] The commit is immutable, reviewed, and passed every required check.
+- [ ] Production preflight is read-only and its attestation matches the exact SHA and project.
 - [ ] Migration checksums, drift detection, and generated database types pass.
-- [ ] The database release ledger is complete; a populated untracked database was not auto-initialized.
-- [ ] The staging one-click release succeeded for the same commit.
-- [ ] A current staging rollback exercise has approved evidence.
-- [ ] Database backups/PITR are enabled and a recovery exercise is current.
+- [ ] The adopted migration ledger is complete.
+- [ ] No migration is pending; schema-changing release is blocked without a separately approved isolated test target.
+- [ ] Backups/PITR are enabled and a recovery exercise is current.
+- [ ] An application rollback exercise has approved evidence.
 
 ## Application hardening
 
 - [ ] Production output contains no `.map` files.
-- [ ] Mobile release has WebView debugging and mixed content disabled.
+- [ ] Mobile WebView debugging and mixed content are disabled.
 - [ ] Fonts are self-hosted and unexpected third-party requests were reviewed.
 - [ ] CSP is tested without violations in supported workflows.
 - [ ] HSTS, frame restrictions, MIME-sniffing protection, Referrer Policy, and Permissions Policy are present.
-- [ ] TLS, custom domain, redirect, and authentication callback settings are approved.
+- [ ] TLS, custom domain, redirects, and authentication callbacks are approved.
 
 ## Vulnerability acceptance
 
 - [ ] Dependency audit has no critical, high, or exploitable moderate finding.
 - [ ] Secret scanning and CodeQL pass.
 - [ ] React Router is at the patched approved version.
-- [ ] Any non-exploitable moderate finding has documented Security Lead rationale, owner, and expiry.
+- [ ] Any accepted finding has Security Lead rationale, owner, and expiry.
 
 Security approval: __________ Privacy approval: __________ Release approval: __________

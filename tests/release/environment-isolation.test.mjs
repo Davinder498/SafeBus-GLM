@@ -107,8 +107,7 @@ test('adoption records the existing schema without writing public application ob
   assert.match(adoption, /registerEnvironmentIdentity/);
   assert.match(adoption, /for \(const migration of manifest\.migrations\)/);
   assert.match(adoption, /calculateSchemaFingerprint/);
-  assert.match(adoption, /assertEnvironmentIdentity\(contractClient, contractBinding\)/);
-  assert.match(adoption, /does not exactly match the promoted staging schema/);
+  assert.doesNotMatch(adoption, /contractClient|contractBinding|promoted staging/);
   assert.match(adoption, /Production adoption found @example\.test QA identities/);
   assert.doesNotMatch(adoption, /(?:insert into|update|delete from|alter table)\s+public\./i);
   assert.doesNotMatch(adoption, /MIGRATION_DIRECTORY|fs\.readFile\([^)]*migration/i);
@@ -124,6 +123,10 @@ test('every destructive database QA runner requires registered environment ident
   ]) {
     assert.match(await read(file), /assertDatabaseEnvironmentIdentity/);
   }
+  assert.match(
+    await read('scripts/seed-student-qr-qa-fixture.mjs'),
+    /sole hosted database is production/,
+  );
 });
 
 test('database drift inspection requires registered environment identity', async () => {
@@ -131,6 +134,22 @@ test('database drift inspection requires registered environment identity', async
     await read('scripts/check-migration-drift.mjs'),
     /assertDatabaseEnvironmentIdentity/,
   );
+});
+
+test('single production database mode blocks schema-changing releases', async () => {
+  const [preflight, deploy, ci] = await Promise.all([
+    read('scripts/preflight-migrations.mjs'),
+    read('scripts/deploy-migrations.mjs'),
+    read('.github/workflows/ci.yml'),
+  ]);
+
+  assert.match(preflight, /Schema-changing releases are blocked/);
+  assert.match(deploy, /Schema-changing releases are blocked/);
+  assert.doesNotMatch(ci, /SAFEBUS_RLS_TEST_DATABASE_URL|RLS execution/);
+  await assert.rejects(read('.github/workflows/release-staging.yml'), { code: 'ENOENT' });
+  await assert.rejects(read('.github/workflows/register-development-environment.yml'), {
+    code: 'ENOENT',
+  });
 });
 
 test('schema fingerprints include authorization and SafeBus realtime controls', async () => {
@@ -146,8 +165,9 @@ test('schema fingerprints include authorization and SafeBus realtime controls', 
 test('Point 4 conversion decision is approved and recorded', async () => {
   const decisions = await read('docs/governance/decision-log.md');
 
-  assert.match(decisions, /### DL-013 — Convert the existing hosted project to production safely/);
+  assert.match(decisions, /### DL-013 — Adopt the sole hosted database as production/);
   assert.match(decisions, /- Owner: Platform Administrator/);
   assert.match(decisions, /- Approved by: Platform Administrator/);
-  assert.match(decisions, /- Status: Accepted on 2026-08-15/);
+  assert.match(decisions, /- Status: Accepted and revised on 2026-08-15/);
+  assert.match(decisions, /sole\s+Supabase database\s+and production system of record/);
 });
