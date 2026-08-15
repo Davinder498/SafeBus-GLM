@@ -290,6 +290,30 @@ get a `Superseded by DL-XXX` line and remain for history.
 - Approved by: Platform Administrator
 - Status: Accepted and revised on 2026-08-15
 
+### DL-014 — Defer the paid Supabase tier during construction
+
+- Date: 2026-08-15
+- Decision: Keep the sole `BusSafe` production project on the Supabase Free
+  plan while the application is under active construction. Do not create a
+  second database and do not upgrade solely to continue development. Before
+  adoption, create and verify a manual logical backup and record a non-secret
+  evidence reference. Treat the live Free deployment as prelaunch/beta, without
+  a commercial uptime or recovery promise.
+- Context: The Platform Administrator declined a paid-plan upgrade during the
+  build stage and will upgrade only when a paid capability becomes mandatory.
+- Rationale: The Free plan supports continued engineering and demonstrations,
+  while explicit backup and release gates prevent its limitations from being
+  mistaken for completed commercial operations.
+- Consequences: Production adoption requires `FREE_PRELAUNCH_ONLY`,
+  `BACKUP_VERIFIED`, and a hashed backup-evidence reference. A paid tier or an
+  approved equivalent becomes mandatory before the first school's real
+  operational use, any paid-customer availability/recovery commitment, or a
+  Free-plan capacity/availability limit. The plan decision does not weaken RLS,
+  credential, migration, or production-identity controls.
+- Owner: Platform Administrator
+- Approved by: Platform Administrator
+- Status: Accepted on 2026-08-15
+
 ## 5. Sign-off entries
 
 When a Phase 0 document is signed off, add an entry here:

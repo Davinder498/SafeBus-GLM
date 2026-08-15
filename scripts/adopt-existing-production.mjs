@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
@@ -16,6 +17,7 @@ const { Client } = pg;
 const databaseUrl = process.env.SAFEBUS_DATABASE_URL;
 const supabaseUrl = process.env.SUPABASE_URL;
 const releaseSha = process.env.SAFEBUS_RELEASE_SHA;
+const backupEvidenceReference = process.env.SAFEBUS_BACKUP_EVIDENCE_REFERENCE;
 
 if (process.env.GITHUB_ACTIONS !== 'true') {
   throw new Error('Production adoption runs only in protected GitHub Actions.');
@@ -28,6 +30,17 @@ if (process.env.SAFEBUS_ADOPTION_CONFIRM !== 'ADOPT_EXISTING_PRODUCTION') {
 }
 if (process.env.SAFEBUS_BACKUP_CONFIRM !== 'BACKUP_VERIFIED') {
   throw new Error('A current backup must be verified before adoption.');
+}
+if (process.env.SAFEBUS_SERVICE_TIER_CONFIRM !== 'FREE_PRELAUNCH_ONLY') {
+  throw new Error('SAFEBUS_SERVICE_TIER_CONFIRM must be FREE_PRELAUNCH_ONLY.');
+}
+if (
+  !backupEvidenceReference ||
+  !/^[A-Za-z0-9][A-Za-z0-9._:-]{11,159}$/.test(backupEvidenceReference)
+) {
+  throw new Error(
+    'SAFEBUS_BACKUP_EVIDENCE_REFERENCE must be a 12-160 character non-secret reference.',
+  );
 }
 if (process.env.SAFEBUS_REGION_CONFIRM !== 'CA_CENTRAL_1_VERIFIED') {
   throw new Error('The approved Canadian Supabase region must be verified before adoption.');
@@ -168,13 +181,17 @@ try {
 }
 
 const evidence = {
-  format: 1,
+  format: 2,
   environment,
+  serviceTierPosture: 'free-prelaunch-only',
   releaseSha,
   databaseTarget: binding.databaseTarget,
   projectRefHash: binding.projectRefHash,
   publicApiOriginHash: binding.publicApiOriginHash,
   schemaFingerprint: fingerprint,
+  backupEvidenceReferenceHash: createHash('sha256')
+    .update(backupEvidenceReference)
+    .digest('hex'),
   adoptedMigrationCount: manifest.migrations.length,
   createdAt: new Date().toISOString(),
 };

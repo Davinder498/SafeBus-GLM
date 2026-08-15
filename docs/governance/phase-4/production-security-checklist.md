@@ -6,6 +6,8 @@ Release SHA: __________ Reviewer: __________ Date: __________
 
 - [ ] The existing `BusSafe` project is recorded as the sole database and production system of record.
 - [ ] It was frozen, backed up, and adopted without resetting or replaying migrations.
+- [ ] The current manual backup is encrypted, stored outside the repository, and has verified SHA-256 evidence.
+- [ ] `FREE_PRELAUNCH_ONLY` is recorded; no commercial uptime or recovery promise is made on the Free tier.
 - [ ] Its private `safebus_release.environment_identity` is `production`.
 - [ ] Supabase region evidence confirms `ca-central-1`.
 - [ ] Material subprocessors and backups are approved for Canadian processing.
@@ -22,7 +24,7 @@ Release SHA: __________ Reviewer: __________ Date: __________
 - [ ] Migration checksums, drift detection, and generated database types pass.
 - [ ] The adopted migration ledger is complete.
 - [ ] No migration is pending; schema-changing release is blocked without a separately approved isolated test target.
-- [ ] Backups/PITR are enabled and a recovery exercise is current.
+- [ ] Before commercial launch, automatic backups or an approved equivalent and a recovery exercise are current.
 - [ ] An application rollback exercise has approved evidence.
 
 ## Application hardening
