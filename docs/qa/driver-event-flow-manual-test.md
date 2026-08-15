@@ -8,7 +8,7 @@ production. The fixture is a QA/developer helper, not a product feature.
 
 ## Preconditions
 
-- Use hosted Supabase DEV or a disposable migrated database only.
+- Use the registered hosted Supabase DEV database only.
 - Apply repository migrations through the latest migration in
   `supabase/migrations`.
 - Configure the web app with only:
@@ -38,22 +38,16 @@ data, Alberta Student Numbers, QR codes, notifications, map data, or event rows.
 Pickup/drop-off events must be created through the existing driver RPCs by using
 the `/driver/manifest` UI.
 
-Run only with a DEV/disposable Postgres connection URL:
+Run only with the registered hosted DEV Postgres connection URL:
 
 ```bash
-SAFEBUS_QA_SEED_CONFIRM=DEV_ONLY SAFEBUS_QA_SEED_DATABASE_URL=<DEV_DATABASE_URL> pnpm qa:seed:driver-events
-```
-
-Hosted Supabase usually requires SSL, which the script enables by default. For a
-local disposable database only, use:
-
-```bash
-SAFEBUS_QA_SEED_SSL=disable SAFEBUS_QA_SEED_CONFIRM=DEV_ONLY SAFEBUS_QA_SEED_DATABASE_URL=<LOCAL_DATABASE_URL> pnpm qa:seed:driver-events
+SAFEBUS_QA_TARGET=development SAFEBUS_QA_SEED_CONFIRM=DEV_ONLY SAFEBUS_QA_SEED_DATABASE_URL=<DEV_DATABASE_URL> pnpm qa:seed:driver-events
 ```
 
 The script refuses to run without `SAFEBUS_QA_SEED_CONFIRM=DEV_ONLY` and
-`SAFEBUS_QA_SEED_DATABASE_URL`. It never reads `VITE_SUPABASE_URL` or
-`VITE_SUPABASE_ANON_KEY` as mutation authority.
+`SAFEBUS_QA_SEED_DATABASE_URL`, and it verifies `SAFEBUS_QA_TARGET=development`
+against the database's registered identity. It never reads `VITE_SUPABASE_URL`
+or `VITE_SUPABASE_ANON_KEY` as mutation authority.
 
 The script uses deterministic fixture IDs and deletes/recreates only the
 fixture rows on rerun. Rerunning should not create unlimited duplicate fake
@@ -71,7 +65,7 @@ fake Auth user manually in Supabase Dashboard with an `@example.test` email, the
 rerun the script with:
 
 ```bash
-SAFEBUS_QA_DRIVER_AUTH_USER_ID=<AUTH_USER_UUID> SAFEBUS_QA_DRIVER_EMAIL=<fake-driver@example.test> SAFEBUS_QA_SEED_CONFIRM=DEV_ONLY SAFEBUS_QA_SEED_DATABASE_URL=<DEV_DATABASE_URL> pnpm qa:seed:driver-events
+SAFEBUS_QA_DRIVER_AUTH_USER_ID=<AUTH_USER_UUID> SAFEBUS_QA_DRIVER_EMAIL=<fake-driver@example.test> SAFEBUS_QA_TARGET=development SAFEBUS_QA_SEED_CONFIRM=DEV_ONLY SAFEBUS_QA_SEED_DATABASE_URL=<DEV_DATABASE_URL> pnpm qa:seed:driver-events
 ```
 
 ## Manual Setup Without The Script
@@ -138,7 +132,7 @@ appears after pickup. The backend RPC also enforces that ordering.
 
 ## Acceptance Checklist
 
-- The QA seed was run only against hosted Supabase DEV or a disposable database,
+- The QA seed was run only against registered hosted Supabase DEV,
   or it was skipped because no safe database URL was available.
 - All fixture data is fake and uses reserved-domain email only.
 - `/driver/manifest` shows the fake students assigned to the active trip.

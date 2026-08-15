@@ -2,6 +2,7 @@
 
 import process from 'node:process';
 import pg from 'pg';
+import { assertDatabaseEnvironmentIdentity } from './lib/environment-identity.mjs';
 import { calculateSchemaFingerprint } from './lib/schema-fingerprint.mjs';
 import { readCommittedManifest } from './lib/migrations.mjs';
 
@@ -26,6 +27,10 @@ const client = new Client({
 
 try {
   await client.connect();
+  await assertDatabaseEnvironmentIdentity(client, {
+    environment,
+    databaseUrl,
+  });
   const ledger = await client.query(
     `select filename, checksum from safebus_release.migration_checksums order by filename`,
   );

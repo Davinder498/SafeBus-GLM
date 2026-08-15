@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       git_ref:
-        description: Full 40-character staging-approved commit SHA
+        description: Full 40-character reviewed commit SHA
         required: true
       confirmation:
         description: Type DEPLOY_PRODUCTION
@@ -54,7 +54,7 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - name: Preflight exact commit without changing the database
         run: pnpm release:preflight
-      - name: Deploy forward-only schema changes
+      - name: Verify no schema change is pending and record the release
         run: pnpm migrations:deploy
       - name: Deploy the preflighted production artifact
         run: pnpm exec netlify deploy --prod --dir apps/web/dist --message "$SAFEBUS_RELEASE_SHA"

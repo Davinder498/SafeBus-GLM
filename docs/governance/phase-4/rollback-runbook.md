@@ -1,56 +1,47 @@
-# Application and database rollback runbook
+# Application and database recovery runbook
 
 ## Decision rule
 
-Stop rollout immediately for authorization leakage, failed login, corrupt
-writes, incompatible schema, missing security headers, or a critical/high
-vulnerability. Assign an incident lead and preserve the failed release SHA and
-workflow logs. Do not improvise destructive SQL.
+Stop rollout for authorization leakage, failed login, corrupt writes,
+incompatible schema, missing security headers, or a critical/high vulnerability.
+Assign an incident lead and preserve the release SHA and workflow logs. Do not
+improvise destructive SQL.
 
 ## Application rollback
 
-1. Identify the last known-good immutable Git SHA that was approved in the
-   target environment.
-2. Run **Actions → Roll back release** and choose staging or production.
-3. Enter the known-good SHA and the exact confirmation value.
-4. Approve the protected environment prompt. The workflow rebuilds, retests,
-   checks for source maps, and redeploys that source. It does not alter the
-   database.
-5. Verify login, one guardian boundary, one driver boundary, response security
-   headers, and error monitoring. Record timestamps and deploy IDs.
+1. Identify the last known-good immutable production Git SHA.
+2. Run **Actions → Roll back release**, enter the SHA and
+   `ROLLBACK_PRODUCTION`, then approve the protected environment prompt.
+3. The workflow rebuilds, retests, checks for source maps, and redeploys that
+   source. It does not alter the database.
+4. Verify login, one guardian boundary, one driver boundary, response headers,
+   and error monitoring. Record timestamps and deploy IDs.
 
-Netlify's prior-deploy restore may be used only as an emergency fallback by an
-authorized operator. Rebuilding the immutable SHA is preferred because it
-re-executes validation and produces reviewable evidence.
+Netlify prior-deploy restore is an authorized emergency fallback. Rebuilding the
+immutable SHA is preferred because it repeats validation and produces evidence.
 
 ## Database recovery
 
-Database migrations are forward-only. Never edit an applied migration and
-never run a down migration against production.
+No automated production schema deployment is allowed in the current
+single-database model. Never edit an adopted migration, run a down migration, or
+test a corrective migration directly against production.
 
-- For a compatible defect, deploy a reviewed corrective migration through the
-  normal protected release workflow, then roll the application forward.
-- For destructive corruption, freeze writes and invoke the approved Supabase
-  point-in-time recovery/backup procedure. Restore into an isolated Canadian
-  recovery project first, validate RLS and row counts, then obtain incident
-  lead and privacy/security approval before cutover.
-- If application rollback is incompatible with the current schema, deploy a
-  forward compatibility migration first. Prefer additive columns/functions
-  and delayed removals so the previous application remains operable.
+For suspected corruption, freeze writes and invoke the approved Supabase
+backup/PITR process. Restore into a temporary isolated Canadian recovery target,
+validate authorization and row counts there, and obtain incident-lead plus
+privacy/security approval before any cutover. Creating that recovery target is
+an incident-recovery action, not approval for routine development or staging.
 
-## Quarterly rollback exercise
+## Recovery exercise
 
-Use staging and synthetic data only:
+At least quarterly:
 
-1. Record current schema fingerprint and application SHA.
-2. Deploy a harmless reviewed release through `Release staging`.
-3. Run `Roll back release` to restore the recorded application SHA.
-4. Confirm the schema remains forward-compatible and `pnpm migrations:drift`
-   passes against staging.
-5. Restore the latest staging backup into an isolated Canadian recovery
-   project; run migration verification, RLS execution, and browser smoke tests.
-6. Record recovery point objective, recovery time, tester, workflow URLs,
-   restored project deletion, and all discrepancies.
+1. Record the production schema fingerprint and application SHA.
+2. Roll the application from a harmless reviewed version to the recorded SHA.
+3. Confirm the schema is unchanged and read-only drift verification passes.
+4. Restore the latest backup into an isolated Canadian recovery target and run
+   read-only integrity checks plus approved authorization tests there.
+5. Record recovery point, recovery time, tester, workflow evidence, and secure
+   deletion of the temporary restore.
 
-A rollback is not considered tested until this evidence is reviewed and the
-restored project is securely removed.
+The exercise is incomplete until its evidence and cleanup are reviewed.

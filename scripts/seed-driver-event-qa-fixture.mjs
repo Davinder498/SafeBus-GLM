@@ -2,6 +2,7 @@
 
 import process from 'node:process';
 import pg from 'pg';
+import { assertDatabaseEnvironmentIdentity } from './lib/environment-identity.mjs';
 
 const { Client } = pg;
 
@@ -10,6 +11,7 @@ const DATABASE_URL_ENV = 'SAFEBUS_QA_SEED_DATABASE_URL';
 const CONFIRM_ENV = 'SAFEBUS_QA_SEED_CONFIRM';
 const DRIVER_AUTH_USER_ID_ENV = 'SAFEBUS_QA_DRIVER_AUTH_USER_ID';
 const DRIVER_EMAIL_ENV = 'SAFEBUS_QA_DRIVER_EMAIL';
+const TARGET_ENV = 'SAFEBUS_QA_TARGET';
 const DEFAULT_DRIVER_EMAIL = 'qa-test-driver@example.test';
 const DEFAULT_DRIVER_PASSWORD = 'SafeBusQaDriver7C!';
 
@@ -70,6 +72,7 @@ function validateEnvironment() {
   const confirmation = process.env[CONFIRM_ENV];
   const driverAuthUserId = process.env[DRIVER_AUTH_USER_ID_ENV] ?? IDS.driverUser;
   const driverEmail = process.env[DRIVER_EMAIL_ENV] ?? DEFAULT_DRIVER_EMAIL;
+  const target = process.env[TARGET_ENV];
 
   if (!databaseUrl) {
     fail(`missing ${DATABASE_URL_ENV}.`);
@@ -78,6 +81,10 @@ function validateEnvironment() {
 
   if (confirmation !== REQUIRED_CONFIRMATION) {
     fail(`${CONFIRM_ENV} must be exactly ${REQUIRED_CONFIRMATION}.`);
+    return null;
+  }
+  if (!['development', 'staging'].includes(target)) {
+    fail(`${TARGET_ENV} must be development or staging.`);
     return null;
   }
 
@@ -106,7 +113,7 @@ function validateEnvironment() {
     return null;
   }
 
-  return { databaseUrl, driverAuthUserId, driverEmail };
+  return { databaseUrl, driverAuthUserId, driverEmail, target };
 }
 
 async function assertExpectedSchema(client) {
@@ -359,7 +366,7 @@ async function main() {
   if (!config) return;
 
   console.warn('\nWARNING: This command creates fake SafeBus QA data.');
-  console.warn('Run it only against hosted Supabase DEV or a disposable migrated database.');
+  console.warn('Run it only against a registered hosted Supabase DEV/staging database.');
   console.warn('Never run it against production.');
   console.warn('It uses a direct Postgres URL, not VITE_SUPABASE_URL or anon keys.');
   console.warn(`Database: ${redactDatabaseUrl(config.databaseUrl)}`);
@@ -373,6 +380,10 @@ async function main() {
 
   try {
     await client.connect();
+    await assertDatabaseEnvironmentIdentity(client, {
+      environment: config.target,
+      databaseUrl: config.databaseUrl,
+    });
     await assertExpectedSchema(client);
 
     await client.query('begin');

@@ -3,7 +3,7 @@
 **Status:** Living document — append-only
 **Owner:** Product Owner
 **Phase:** 0 — Product and governance baseline
-**Last updated:** 2026-08-12
+**Last updated:** 2026-08-15
 
 ---
 
@@ -261,6 +261,34 @@ get a `Superseded by DL-XXX` line and remain for history.
 - Owner: Platform Administrator
 - Approved by: Platform Administrator
 - Status: Accepted on 2026-08-12
+
+### DL-013 — Adopt the sole hosted database as production
+
+- Date: 2026-08-15
+- Decision: The existing BusSafe Supabase project is the sole Supabase database
+  and production system of record. Preserve it without resetting it, replaying
+  migrations, or rebuilding its public schema. Do not create DEV or staging
+  databases. Bind it permanently to the `production` environment identity.
+- Context: The Platform Administrator confirmed that no other production
+  database exists and explicitly chose a one-database operating model.
+- Rationale: This preserves the authoritative database and matches the approved
+  operating model. Because production is the only database, destructive testing
+  and untested schema changes require stronger fail-closed controls.
+- Consequences: A protected one-time adoption workflow performs all checks,
+  requires backup and `ca-central-1` confirmation, fingerprints and locks the
+  existing schema, and atomically adds only private `safebus_release` identity
+  and ledger metadata. It records canonical migrations as an adopted baseline
+  and never executes historical migration SQL. Hosted RLS/QA fixture execution
+  is disabled because those tools accept only a registered non-production
+  target. Production releases may deploy application-only changes; any pending
+  database migration blocks release until the Platform Administrator separately
+  approves an isolated test database or Supabase branch. The existing `bussafe`
+  Netlify site is production. Any unused staging site receives no production
+  database credentials. Previously exposed production credentials must be
+  rotated at cutover.
+- Owner: Platform Administrator
+- Approved by: Platform Administrator
+- Status: Accepted and revised on 2026-08-15
 
 ## 5. Sign-off entries
 

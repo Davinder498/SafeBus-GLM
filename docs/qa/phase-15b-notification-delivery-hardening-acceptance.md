@@ -55,16 +55,16 @@ where n.nspname = 'public' and proname in (
 
 Set these server-side variables in Netlify (no `VITE_` secrets):
 
-| Variable | Purpose |
-|---|---|
-| `SUPABASE_URL` | Hosted DEV Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (server-only) |
-| `SAFEBUS_NOTIFICATION_DISPATCHER_SECRET` | Shared secret for manual POST invocation |
-| `SAFEBUS_EMAIL_PROVIDER_API_KEY` | Resend API key |
-| `SAFEBUS_EMAIL_FROM` | Verified sender address |
-| `SAFEBUS_EMAIL_FROM_NAME` | Display name (optional, default `SafeBus Alberta`) |
-| `SAFEBUS_DEV_EMAIL_RECIPIENT_OVERRIDE` | Controlled QA inbox for deploy previews |
-| `SAFEBUS_NOTIFICATION_BATCH_SIZE` | Optional, default 10, max 50 |
+| Variable                                 | Purpose                                            |
+| ---------------------------------------- | -------------------------------------------------- |
+| `SUPABASE_URL`                           | Hosted DEV Supabase project URL                    |
+| `SUPABASE_SERVICE_ROLE_KEY`              | Service role key (server-only)                     |
+| `SAFEBUS_NOTIFICATION_DISPATCHER_SECRET` | Shared secret for manual POST invocation           |
+| `SAFEBUS_EMAIL_PROVIDER_API_KEY`         | Resend API key                                     |
+| `SAFEBUS_EMAIL_FROM`                     | Verified sender address                            |
+| `SAFEBUS_EMAIL_FROM_NAME`                | Display name (optional, default `SafeBus Alberta`) |
+| `SAFEBUS_DEV_EMAIL_RECIPIENT_OVERRIDE`   | Controlled QA inbox for deploy previews            |
+| `SAFEBUS_NOTIFICATION_BATCH_SIZE`        | Optional, default 10, max 50                       |
 
 ### 1.4 Schedule configuration
 
@@ -82,6 +82,7 @@ This runs conservatively once per hour. Overlapping executions are safe because 
 ```bash
 SAFEBUS_QA_SEED_DATABASE_URL=postgresql://... \
 SAFEBUS_QA_SEED_CONFIRM=DEV_ONLY \
+SAFEBUS_QA_TARGET=development \
 pnpm qa:seed:notifications
 ```
 
@@ -89,12 +90,12 @@ This creates a fake tenant (`7c100000-...000002`), guardian, driver, student, ro
 
 ### 1.6 Test accounts
 
-| Role | Email | Purpose |
-|---|---|---|
-| Driver | `qa-driver-15b@example.test` | Records pickup/drop-off events |
-| Guardian | `qa-guardian-15b@example.test` | Eligible recipient |
-| Tenant Admin | (your tenant admin account) | Views operational summary |
-| Platform Super Admin | (your platform account) | Must be denied tenant summary |
+| Role                 | Email                          | Purpose                        |
+| -------------------- | ------------------------------ | ------------------------------ |
+| Driver               | `qa-driver-15b@example.test`   | Records pickup/drop-off events |
+| Guardian             | `qa-guardian-15b@example.test` | Eligible recipient             |
+| Tenant Admin         | (your tenant admin account)    | Views operational summary      |
+| Platform Super Admin | (your platform account)        | Must be denied tenant summary  |
 
 ---
 
@@ -257,28 +258,28 @@ Confirm a guardian, driver, or Platform Super Admin cannot access `/admin/trips`
 
 ## 8. Acceptance record
 
-| Scenario | Expected result | Actual result | Pass/Fail | Notes |
-|---|---|---|---|---|
-| Migration 0039 applies cleanly | All columns/functions exist |  |  |  |
-| Pickup email | One QA email; outbox delivered |  |  |  |
-| Drop-off email | One QA email; correct wording; Alberta time zone |  |  |  |
-| Duplicate dispatcher | No duplicate email |  |  |  |
-| Temporary failure | Pending with delayed retry |  |  |  |
-| Permanent failure | Failed with normalized category |  |  |  |
-| Maximum attempts | Failed after 5 attempts |  |  |  |
-| Consent disabled | Cancelled before send |  |  |  |
-| Link removed | Cancelled before send |  |  |  |
-| Guardian deactivated | Cancelled before send |  |  |  |
-| Missing recipient email | Cancelled, no retry |  |  |  |
-| Cross-tenant mismatch | Cancelled, no send |  |  |  |
-| Concurrent claims | No row processed twice |  |  |  |
-| Expired lease recovery | Row re-claimed after lease expiry |  |  |  |
-| Scheduled invocation | Rows processed without browser user |  |  |  |
-| Email content privacy | No surname, coordinates, route, stop, bus, driver, IDs |  |  |  |
-| Logs privacy | No emails, bodies, keys |  |  |  |
-| Tenant-admin summary | Safe counts only; no personal info |  |  |  |
-| Guardian/driver denial | Cannot access admin trips |  |  |  |
-| Platform Super Admin denial | Cannot access tenant summary |  |  |  |
-| Mobile layout | No horizontal overflow |  |  |  |
+| Scenario                       | Expected result                                        | Actual result | Pass/Fail | Notes |
+| ------------------------------ | ------------------------------------------------------ | ------------- | --------- | ----- |
+| Migration 0039 applies cleanly | All columns/functions exist                            |               |           |       |
+| Pickup email                   | One QA email; outbox delivered                         |               |           |       |
+| Drop-off email                 | One QA email; correct wording; Alberta time zone       |               |           |       |
+| Duplicate dispatcher           | No duplicate email                                     |               |           |       |
+| Temporary failure              | Pending with delayed retry                             |               |           |       |
+| Permanent failure              | Failed with normalized category                        |               |           |       |
+| Maximum attempts               | Failed after 5 attempts                                |               |           |       |
+| Consent disabled               | Cancelled before send                                  |               |           |       |
+| Link removed                   | Cancelled before send                                  |               |           |       |
+| Guardian deactivated           | Cancelled before send                                  |               |           |       |
+| Missing recipient email        | Cancelled, no retry                                    |               |           |       |
+| Cross-tenant mismatch          | Cancelled, no send                                     |               |           |       |
+| Concurrent claims              | No row processed twice                                 |               |           |       |
+| Expired lease recovery         | Row re-claimed after lease expiry                      |               |           |       |
+| Scheduled invocation           | Rows processed without browser user                    |               |           |       |
+| Email content privacy          | No surname, coordinates, route, stop, bus, driver, IDs |               |           |       |
+| Logs privacy                   | No emails, bodies, keys                                |               |           |       |
+| Tenant-admin summary           | Safe counts only; no personal info                     |               |           |       |
+| Guardian/driver denial         | Cannot access admin trips                              |               |           |       |
+| Platform Super Admin denial    | Cannot access tenant summary                           |               |           |       |
+| Mobile layout                  | No horizontal overflow                                 |               |           |       |
 
 Phase 15B is **not accepted** until product-owner manual testing is recorded. Do not merge before approval.

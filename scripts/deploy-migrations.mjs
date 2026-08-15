@@ -6,7 +6,11 @@ import path from 'node:path';
 import process from 'node:process';
 import pg from 'pg';
 import { calculateSchemaFingerprint } from './lib/schema-fingerprint.mjs';
-import { MIGRATION_DIRECTORY, readCommittedManifest } from './lib/migrations.mjs';
+import {
+  createEnvironmentBinding,
+  registerEnvironmentIdentity,
+} from './lib/environment-identity.mjs';
+import { readCommittedManifest } from './lib/migrations.mjs';
 import { DEFAULT_ATTESTATION_PATH, verifyReleaseAttestation } from './lib/release-attestation.mjs';
 import { inspectSchemaDeployment } from './lib/schema-deployment-preflight.mjs';
 
@@ -15,10 +19,12 @@ const databaseUrl = process.env.SAFEBUS_DATABASE_URL;
 const environment = process.env.SAFEBUS_DEPLOY_ENV;
 const releaseSha = process.env.SAFEBUS_RELEASE_SHA;
 const confirmation = process.env.SAFEBUS_DEPLOY_CONFIRM;
+const supabaseUrl = process.env.SUPABASE_URL;
 
 if (!databaseUrl) throw new Error('SAFEBUS_DATABASE_URL is required.');
-if (!['staging', 'production'].includes(environment)) {
-  throw new Error('Automated schema deployment is limited to staging or production.');
+if (!supabaseUrl) throw new Error('SUPABASE_URL is required.');
+if (environment !== 'production') {
+  throw new Error('Automated schema deployment is limited to production.');
 }
 if (confirmation !== `DEPLOY_${environment.toUpperCase()}`) {
   throw new Error(`SAFEBUS_DEPLOY_CONFIRM must be DEPLOY_${environment.toUpperCase()}.`);
@@ -28,11 +34,12 @@ if (!releaseSha || !/^[0-9a-f]{40}$/i.test(releaseSha)) {
 }
 if (process.env.GITHUB_ACTIONS !== 'true') {
   throw new Error(
-    'Staging and production schema deployments run only in protected GitHub Actions.',
+    'Production schema deployments run only in protected GitHub Actions.',
   );
 }
 
 const manifest = await readCommittedManifest();
+const binding = createEnvironmentBinding({ environment, databaseUrl, supabaseUrl });
 const commitSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 if (commitSha !== releaseSha) {
   throw new Error('The checked-out commit does not match SAFEBUS_RELEASE_SHA.');
@@ -51,6 +58,7 @@ await verifyReleaseAttestation({
   releaseSha,
   commitSha,
   databaseUrl,
+  supabaseUrl,
 });
 
 const client = new Client({
@@ -71,19 +79,28 @@ try {
   await client.query('begin transaction read only');
   let preflight;
   try {
-    preflight = await inspectSchemaDeployment(client, manifest);
+    preflight = await inspectSchemaDeployment(client, manifest, binding);
+    if (preflight.pending.length > 0) {
+      throw new Error(
+        'Schema-changing releases are blocked in single-production-database mode. ' +
+          'Approve an isolated test database or branch before adding migrations.',
+      );
+    }
     await client.query('rollback');
   } catch (error) {
     await client.query('rollback');
     throw error;
   }
 
-  // One transaction covers ledger initialization, every pending migration,
-  // fingerprinting, and the deployed release record. Any error rolls it all back.
+  // Single-production-database mode records an application release only after
+  // proving that no schema migration is pending. Any error rolls it all back.
   await client.query('begin');
   try {
     await client.query(`set local lock_timeout = '10s'`);
     await client.query(`set local statement_timeout = '5min'`);
+    if (!preflight.initialized) {
+      await registerEnvironmentIdentity(client, binding, releaseSha);
+    }
     await client.query(`
       create schema if not exists safebus_release;
       revoke all on schema safebus_release from public, anon, authenticated;
@@ -97,7 +114,7 @@ try {
       );
       create table if not exists safebus_release.releases (
         release_sha text primary key,
-        environment text not null check (environment in ('staging', 'production')),
+        environment text not null check (environment = 'production'),
         schema_fingerprint text check (schema_fingerprint ~ '^[0-9a-f]{64}$'),
         status text not null check (status in ('deploying', 'deployed', 'failed')),
         deployed_at timestamptz not null default clock_timestamp()
@@ -111,21 +128,6 @@ try {
          status = 'deploying', schema_fingerprint = null, deployed_at = clock_timestamp()`,
       [releaseSha, environment],
     );
-
-    for (const migration of preflight.pending) {
-      const sql = await fs.readFile(
-        path.join(process.cwd(), MIGRATION_DIRECTORY, migration.filename),
-        'utf8',
-      );
-      console.log(`Applying ${migration.filename}`);
-      await client.query(sql);
-      await client.query(
-        `insert into safebus_release.migration_checksums
-           (filename, version, checksum, bytes, release_sha)
-         values ($1, $2, $3, $4, $5)`,
-        [migration.filename, migration.version, migration.sha256, migration.bytes, releaseSha],
-      );
-    }
 
     const fingerprint = await calculateSchemaFingerprint(client);
     await client.query(

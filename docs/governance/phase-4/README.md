@@ -1,136 +1,114 @@
 # Phase 4 — Secure development and deployment platform
 
-**Status:** Repository controls implemented; cloud provisioning, protected
-environment approval, staging deployment, rollback exercise, and final security
-approval require authorized operators.
+**Status:** Repository controls implement the single-production-database
+decision in DL-013. Production adoption, backup evidence, credential rotation,
+rollback evidence, and final security approval remain operator gates.
 
-## Release model
+## Locked environment model
 
-SafeBus uses three isolated Supabase projects and three isolated Netlify sites.
-No database, key, site ID, or deploy credential is shared between environments.
+The existing Supabase project `BusSafe` is the sole database and production
+system of record. It is not DEV or staging. SafeBus will not create another
+database under the current approved decision.
 
-| Environment | Purpose                                    | Data                  | Deployment authority                                            |
-| ----------- | ------------------------------------------ | --------------------- | --------------------------------------------------------------- |
-| DEV         | Engineering and destructive RLS regression | Synthetic only        | Developers; migrations remain manually applied to hosted DEV    |
-| Staging     | Release candidate and rollback validation  | Synthetic only        | `Release staging` workflow after protected-environment approval |
-| Production  | Approved customer workload                 | Real operational data | `Release production` workflow after mandatory human approval    |
+The existing `bussafe` Netlify site is the production application target. Any
+unused non-production site must have no production database credentials.
 
-Supabase projects and any storage/processing subprocessor used by SafeBus must
-be provisioned in the approved Canadian region (`ca-central-1`). An operator
-must record region evidence in the release checklist before the environment can
-be approved. A Canadian application host does not compensate for a database or
-subprocessor outside the approved region.
+The conversion preserves the existing public schema and data. It does not reset
+the database or replay historical migrations. Follow
+[`environment-conversion-runbook.md`](./environment-conversion-runbook.md).
 
-## Reproducible release controls
+The Supabase project, backups, and material processors must remain in the
+approved Canadian region (`ca-central-1`). Retain dashboard and recovery
+evidence with the release record.
 
-- `pnpm install --frozen-lockfile` and the pinned pnpm, Node, and Supabase CLI
-  versions make dependency and schema tooling repeatable.
-- `supabase/migration-checksums.json` records SHA-256 and byte length for every
-  canonical migration. `pnpm migrations:verify` rejects edits, gaps, unexpected
-  collisions, or missing manifest updates. The documented immutable `0058`
-  collision is the only exception.
-- `pnpm release:preflight` performs every release check against the exact
-  40-character reviewed commit before schema deployment. It verifies migration
-  checksums, inspects database drift without writing, checks generated database
-  types, runs typecheck, lint, unit/contract tests, dependency audit, production
-  build, source-map rejection, and browser smoke tests.
-- A successful preflight creates a two-hour attestation bound to the commit,
-  database target, migrations, lockfile, generated database types, and built web artifact.
-  `pnpm migrations:deploy` refuses to connect to the database when this evidence
-  is missing, stale, targets another environment, or no longer matches the files.
-- `pnpm migrations:deploy` applies the release ledger and every pending migration
-  in one transaction. If any migration or fingerprint step fails, PostgreSQL
-  rolls back the whole release rather than leaving a partially applied schema.
-  The command runs only in GitHub Actions for staging or production and requires
-  an environment-specific confirmation value.
-- A deterministic public-schema fingerprint covers relations, columns,
-  constraints, indexes, RLS settings and policies, functions, triggers, and
-  grants. `pnpm migrations:drift` rejects out-of-band changes.
-- `pnpm types:generate` reads the authoritative hosted public-schema metadata
-  through a protected server-only key (with the pinned Supabase CLI available
-  as a direct-database or management-token fallback). `pnpm types:check` fails
-  a release when the committed
-  `packages/types/src/database.generated.ts` differs from staging or
-  production.
-- Staging and production accept only an explicit full reviewed Git SHA. The web
-  artifact is built and tested once during preflight; that same attested artifact
-  is deployed. Build output containing `.map` files is rejected.
+## Safe release model
 
-### Fail-closed database rules
+- Pull requests run typecheck, lint, build, unit/contract tests, browser smoke
+  tests, migration-manifest verification, dependency audit, secret scanning,
+  and CodeQL without connecting to production.
+- `pnpm release:preflight` uses a read-only production transaction. It verifies
+  the exact reviewed 40-character commit, migration ledger and schema drift,
+  generated database types, dependencies, build output, and browser tests.
+- A successful preflight produces a two-hour attestation bound to the commit,
+  exact database/API project, migration manifest, generated types, dependency
+  inputs, and built application artifact.
+- `pnpm migrations:deploy` verifies the attestation and records an
+  application-only production release. It refuses to continue if any schema
+  migration is pending.
+- A populated database without private `safebus_release` metadata is never
+  initialized automatically. The protected one-time adoption workflow is the
+  only approved baseline path.
+- The schema fingerprint covers relations, columns, constraints, indexes, RLS,
+  policies, functions, triggers, grants, schema grants, enums, and Realtime
+  publication controls.
 
-Release preflight opens a read-only transaction. It cannot create the release
-ledger or alter application data. A deployment is rejected before persistent
-database changes when it finds a changed migration, an unknown or missing
-migration, schema drift, incomplete release tracking, or invalid preflight
-evidence.
+### Schema-change stop condition
 
-A populated database without a `safebus_release` ledger is also rejected. This
-protects the existing hosted SafeBus database from accidentally replaying all
-historical migrations. The explicit one-time adoption of that existing database
-belongs to the environment-conversion decision; the release command never
-guesses that historical migrations were applied.
+There is no isolated database on which to prove a migration safely. Therefore,
+any new migration blocks production release before database mutation. Work on a
+schema-changing release may resume only after the Platform Administrator
+explicitly approves an isolated test database or Supabase branch and its
+validation process. This does not create such an environment automatically.
 
-## Required GitHub environments
+### Destructive-test stop condition
 
-Create `development`, `staging`, and `production` environments. Configure
-staging and production with required reviewers and prevent self-review.
-Production secrets must be entered directly into the protected environment by
-an authorized operator; they must not be copied into developer machines,
-repository variables, logs, screenshots, or frontend configuration.
+RLS and QA fixture runners accept only a database permanently registered as
+`development` or `staging`. Once the sole database is registered as
+`production`, they reject it even if an operator supplies a misleading label.
+CI has no production database credential and does not execute hosted RLS SQL.
+Historical hosted RLS evidence remains evidence for the schema already adopted;
+future authorization changes trigger the schema-change stop condition.
 
-Each environment uses these names:
+## Protected GitHub production environment
 
-| Name                     | Kind     | Notes                                                                    |
-| ------------------------ | -------- | ------------------------------------------------------------------------ |
-| `SAFEBUS_DATABASE_URL`   | Secret   | Direct Postgres credential for that environment only                     |
-| `SUPABASE_SECRET_KEY`    | Secret   | Server-only key used for read-only hosted schema type generation         |
-| `VITE_SUPABASE_ANON_KEY` | Secret   | Public client key, separated to prevent accidental cross-environment use |
-| `NETLIFY_AUTH_TOKEN`     | Secret   | Deployment token scoped to the target site/team                          |
-| `SUPABASE_PROJECT_ID`    | Variable | Environment-specific project reference                                   |
-| `VITE_SUPABASE_URL`      | Variable | Environment-specific public API URL                                      |
-| `NETLIFY_SITE_ID`        | Variable | Environment-specific site                                                |
+Only the `production` environment may hold database and deployment values. It
+must require a human reviewer, prevent self-review, and contain:
 
-DEV additionally supplies `SAFEBUS_DATABASE_URL` to the `RLS execution` CI
-job. The runner also requires `SAFEBUS_RLS_TARGET=development` or `staging` and
-rejects any other label. RLS scripts are destructive and must never target
-production.
+| Name                     | Kind     | Purpose                                         |
+| ------------------------ | -------- | ----------------------------------------------- |
+| `SAFEBUS_DATABASE_URL`   | Secret   | Direct production Postgres connection           |
+| `SUPABASE_SECRET_KEY`    | Secret   | Server-only read credential for type checks     |
+| `VITE_SUPABASE_ANON_KEY` | Secret   | Public browser client key                       |
+| `NETLIFY_AUTH_TOKEN`     | Secret   | Deployment token scoped to the production site |
+| `VITE_SUPABASE_URL`      | Variable | Production Supabase API URL                     |
+| `NETLIFY_SITE_ID`        | Variable | Production `bussafe` site ID                    |
 
-## One-click staging release
+Server-only credentials must never enter frontend settings, local files,
+repository variables, logs, screenshots, or documentation. The `development`
+and `staging` GitHub environments must not contain a database URL or Supabase
+server secret for the sole production project.
 
-1. Confirm the commit passed all pull-request checks and was reviewed.
-2. Run **Actions → Release staging → Run workflow**.
-3. Enter the full 40-character reviewed commit SHA.
-4. The protected environment approval pauses the job for its human reviewer.
-5. The job completes read-only and application preflight, writes evidence tied
-   to the tested artifact, atomically deploys schema, executes real staging RLS
-   assertions, deploys that same artifact, and retains evidence for 30 days.
+## Production release
 
-No operator runs migration SQL from a laptop. A failed preflight makes no
-persistent schema change. A failed migration rolls back all schema changes from
-that release and stops before the application is deployed.
+1. Confirm the exact commit passed required pull-request checks and was reviewed.
+2. Run **Actions → Release production → Run workflow**.
+3. Enter the full 40-character reviewed SHA and `DEPLOY_PRODUCTION`.
+4. Approve the protected production environment prompt.
+5. The workflow performs read-only preflight, rejects pending schema changes,
+   records the release, deploys the attested artifact, and retains evidence.
+
+No operator runs migration SQL from a laptop. A failed preflight leaves the
+database unchanged.
 
 ## Required branch protection
 
 Protect `main` with pull requests, at least one approving review, dismissal of
-stale approvals, resolved conversations, enforcement for administrators, and
-these required checks:
+stale approvals, resolved conversations, enforcement for administrators, and:
 
 - Typecheck, lint, and build
 - Unit tests
 - Browser smoke tests
 - Migration verification
-- RLS execution
 - Dependency audit
 - Secret scanning
 - CodeQL JavaScript and TypeScript
 
-Disable force pushes and branch deletion. Do not enable automatic merge for a
-Phase 4 release. Human approval remains the final merge gate.
+Disable force pushes and branch deletion. Human approval remains the final
+merge and production-release gate.
 
-## Evidence and unresolved operational gates
+## Evidence still requiring an operator
 
-Repository checks prove configuration and code behavior. They cannot prove a
-cloud project was created in Canada, an environment reviewer was assigned, a
-backup can be restored, or a deployed response has the intended headers. Keep
-the completed security checklist, staging workflow URL, rollback workflow URL,
-Supabase region evidence, and recovery evidence with the release record.
+Repository checks cannot prove backups, recovery, reviewer configuration,
+credential rotation, deployed headers, or cloud residency. Keep the completed
+security checklist, production workflow URL, rollback workflow URL, Supabase
+region/backup evidence, and recovery evidence with the release record.

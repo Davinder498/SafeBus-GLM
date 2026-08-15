@@ -1,0 +1,85 @@
+name: Adopt existing database as production
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: Full 40-character approved commit SHA
+        required: true
+      confirmation:
+        description: Type ADOPT_EXISTING_PRODUCTION
+        required: true
+      backup_confirmation:
+        description: Type BACKUP_VERIFIED
+        required: true
+      region_confirmation:
+        description: Type CA_CENTRAL_1_VERIFIED
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+
+jobs:
+  adopt:
+    if: >-
+      inputs.confirmation == 'ADOPT_EXISTING_PRODUCTION' &&
+      inputs.backup_confirmation == 'BACKUP_VERIFIED' &&
+      inputs.region_confirmation == 'CA_CENTRAL_1_VERIFIED'
+    name: Preserve and register existing production schema
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      CI: true
+      SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
+      SAFEBUS_DEPLOY_ENV: production
+      SAFEBUS_ADOPTION_CONFIRM: ${{ inputs.confirmation }}
+      SAFEBUS_BACKUP_CONFIRM: ${{ inputs.backup_confirmation }}
+      SAFEBUS_REGION_CONFIRM: ${{ inputs.region_confirmation }}
+      SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.git_ref }}
+      - name: Require exact approved commit
+        env:
+          REQUESTED_SHA: ${{ inputs.git_ref }}
+        run: |
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          test "$REQUESTED_SHA" = "$ACTUAL_SHA"
+          echo "SAFEBUS_RELEASE_SHA=$ACTUAL_SHA" >> "$GITHUB_ENV"
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Complete all adoption gates before database metadata changes
+        run: |
+          pnpm migrations:verify
+          pnpm types:check
+          pnpm typecheck
+          pnpm lint
+          pnpm test
+          pnpm security:audit
+          pnpm build
+          test -z "$(find apps -path '*/dist/*' -name '*.map' -print -quit)"
+          pnpm test:smoke:release
+      - name: Add production identity and release ledger only
+        run: pnpm environment:adopt-production
+      - name: Store immutable adoption evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: production-adoption-${{ env.SAFEBUS_RELEASE_SHA }}
+          path: |
+            .safebus-release/adoption.json
+            supabase/migration-checksums.json
+            packages/types/src/database.generated.ts
+          retention-days: 90

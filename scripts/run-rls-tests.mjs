@@ -4,6 +4,7 @@ import process from 'node:process';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import pg from 'pg';
+import { assertDatabaseEnvironmentIdentity } from './lib/environment-identity.mjs';
 
 const { Client } = pg;
 
@@ -215,7 +216,7 @@ async function main() {
   }
 
   console.warn('\nWARNING: This command executes destructive RLS test SQL.');
-  console.warn('Run it only against hosted Supabase DEV or a disposable migrated database.');
+  console.warn('Run it only against a registered hosted Supabase DEV/staging database.');
   console.warn('Never run it against production.');
   console.warn(`Database: ${redactDatabaseUrl(databaseUrl)}`);
   console.warn(`Files: ${files.map((file) => file.displayPath).join(', ')}`);
@@ -233,6 +234,10 @@ async function main() {
 
   try {
     await client.connect();
+    await assertDatabaseEnvironmentIdentity(client, {
+      environment: process.env[TARGET_ENV],
+      databaseUrl,
+    });
     await logExecutionContext(client);
 
     for (const file of files) {

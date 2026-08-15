@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { createEnvironmentBinding } from './environment-identity.mjs';
 
-export const ATTESTATION_FORMAT = 1;
+export const ATTESTATION_FORMAT = 3;
 export const DEFAULT_ATTESTATION_PATH = '.safebus-release/preflight.json';
 export const REQUIRED_PREFLIGHT_GATES = [
   'migration_manifest',
@@ -26,21 +27,6 @@ const EVIDENCE_FILES = [
 
 function digest(value) {
   return createHash('sha256').update(value).digest('hex');
-}
-
-function databaseTarget(databaseUrl) {
-  const target = new URL(databaseUrl);
-  if (!['postgres:', 'postgresql:'].includes(target.protocol)) {
-    throw new Error('Release database target must use PostgreSQL.');
-  }
-  const identity = [
-    target.protocol,
-    target.username,
-    target.hostname.toLowerCase(),
-    target.port || '5432',
-    target.pathname,
-  ].join('|');
-  return digest(identity);
 }
 
 async function hashFile(file) {
@@ -84,14 +70,18 @@ export async function createReleaseAttestation({
   releaseSha,
   commitSha,
   databaseUrl,
+  supabaseUrl,
   root,
 }) {
+  const binding = createEnvironmentBinding({ environment, databaseUrl, supabaseUrl });
   return {
     format: ATTESTATION_FORMAT,
     environment,
     releaseSha,
     commitSha,
-    databaseTarget: databaseTarget(databaseUrl),
+    databaseTarget: binding.databaseTarget,
+    projectRefHash: binding.projectRefHash,
+    publicApiOriginHash: binding.publicApiOriginHash,
     createdAt: new Date().toISOString(),
     gates: Object.fromEntries(REQUIRED_PREFLIGHT_GATES.map((gate) => [gate, 'passed'])),
     evidence: await collectReleaseEvidence(root),
@@ -104,6 +94,7 @@ export async function verifyReleaseAttestation({
   releaseSha,
   commitSha,
   databaseUrl,
+  supabaseUrl,
   root = process.cwd(),
   now = Date.now(),
 }) {
@@ -116,8 +107,13 @@ export async function verifyReleaseAttestation({
   if (attestation.releaseSha !== releaseSha || attestation.commitSha !== commitSha) {
     throw new Error('Release preflight attestation does not match the checked-out commit.');
   }
-  if (attestation.databaseTarget !== databaseTarget(databaseUrl)) {
-    throw new Error('Release preflight attestation targets a different database.');
+  const binding = createEnvironmentBinding({ environment, databaseUrl, supabaseUrl });
+  if (
+    attestation.databaseTarget !== binding.databaseTarget ||
+    attestation.projectRefHash !== binding.projectRefHash ||
+    attestation.publicApiOriginHash !== binding.publicApiOriginHash
+  ) {
+    throw new Error('Release preflight attestation targets a different Supabase environment.');
   }
   const createdAt = Date.parse(attestation.createdAt);
   if (!Number.isFinite(createdAt) || createdAt > now || now - createdAt > 2 * 60 * 60 * 1000) {

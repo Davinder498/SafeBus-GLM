@@ -7,12 +7,14 @@
 
 import process from 'node:process';
 import pg from 'pg';
+import { assertDatabaseEnvironmentIdentity } from './lib/environment-identity.mjs';
 
 const { Client } = pg;
 
 const REQUIRED_CONFIRMATION = 'DEV_ONLY';
 const DATABASE_URL_ENV = 'SAFEBUS_QA_SEED_DATABASE_URL';
 const CONFIRM_ENV = 'SAFEBUS_QA_SEED_CONFIRM';
+const TARGET_ENV = 'SAFEBUS_QA_TARGET';
 
 const IDS = {
   tenant: '7c100000-0000-0000-0000-000000000002',
@@ -63,15 +65,34 @@ function shouldUseSsl(rawUrl) {
 function validateEnvironment() {
   const databaseUrl = process.env[DATABASE_URL_ENV];
   const confirmation = process.env[CONFIRM_ENV];
+  const target = process.env[TARGET_ENV];
 
-  if (!databaseUrl) { fail(`missing ${DATABASE_URL_ENV}.`); return null; }
-  if (confirmation !== REQUIRED_CONFIRMATION) { fail(`${CONFIRM_ENV} must be exactly ${REQUIRED_CONFIRMATION}.`); return null; }
+  if (!databaseUrl) {
+    fail(`missing ${DATABASE_URL_ENV}.`);
+    return null;
+  }
+  if (confirmation !== REQUIRED_CONFIRMATION) {
+    fail(`${CONFIRM_ENV} must be exactly ${REQUIRED_CONFIRMATION}.`);
+    return null;
+  }
+  if (!['development', 'staging'].includes(target)) {
+    fail(`${TARGET_ENV} must be development or staging.`);
+    return null;
+  }
 
   let parsed;
-  try { parsed = new URL(databaseUrl); } catch { fail(`${DATABASE_URL_ENV} is not a valid URL.`); return null; }
-  if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) { fail(`${DATABASE_URL_ENV} must use postgres:// or postgresql://.`); return null; }
+  try {
+    parsed = new URL(databaseUrl);
+  } catch {
+    fail(`${DATABASE_URL_ENV} is not a valid URL.`);
+    return null;
+  }
+  if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) {
+    fail(`${DATABASE_URL_ENV} must use postgres:// or postgresql://.`);
+    return null;
+  }
 
-  return databaseUrl;
+  return { databaseUrl, target };
 }
 
 async function cleanupFixture(client) {
@@ -96,9 +117,20 @@ async function cleanupFixture(client) {
       delete from public.tenants where id = $1;
     `,
     [
-      IDS.tenant, IDS.trip, IDS.driverAssignment, IDS.assignment,
-      IDS.pickupStop, IDS.dropoffStop, IDS.route, IDS.bus,
-      IDS.guardian, IDS.student, IDS.driver, IDS.guardianUser, IDS.driverUser, IDS.school,
+      IDS.tenant,
+      IDS.trip,
+      IDS.driverAssignment,
+      IDS.assignment,
+      IDS.pickupStop,
+      IDS.dropoffStop,
+      IDS.route,
+      IDS.bus,
+      IDS.guardian,
+      IDS.student,
+      IDS.driver,
+      IDS.guardianUser,
+      IDS.driverUser,
+      IDS.school,
     ],
   );
 }
@@ -172,9 +204,21 @@ async function seedFixture(client) {
       values ($15, $1, $6, $7, $8, 'morning', 'active', current_date, now() - interval '10 minutes');
     `,
     [
-      IDS.tenant, IDS.school, IDS.guardianUser, IDS.driverUser, IDS.guardian,
-      IDS.driver, IDS.bus, IDS.route, IDS.pickupStop, IDS.dropoffStop,
-      IDS.student, IDS.guardianLink, IDS.assignment, IDS.driverAssignment, IDS.trip,
+      IDS.tenant,
+      IDS.school,
+      IDS.guardianUser,
+      IDS.driverUser,
+      IDS.guardian,
+      IDS.driver,
+      IDS.bus,
+      IDS.route,
+      IDS.pickupStop,
+      IDS.dropoffStop,
+      IDS.student,
+      IDS.guardianLink,
+      IDS.assignment,
+      IDS.driverAssignment,
+      IDS.trip,
     ],
   );
 
@@ -183,16 +227,21 @@ async function seedFixture(client) {
   console.log(`Guardian: QA Notification Guardian <qa-guardian-15b@example.test>`);
   console.log(`Driver: QA Notification Driver <qa-driver-15b@example.test>`);
   console.log(`Student: QA Student (${IDS.student})`);
-  console.log('Active trip is ready. Record pickup/drop-off events from the driver manifest to create outbox rows.');
-  console.log('Use the dispatcher to deliver, then inspect guardian_notification_outbox for lifecycle state.');
+  console.log(
+    'Active trip is ready. Record pickup/drop-off events from the driver manifest to create outbox rows.',
+  );
+  console.log(
+    'Use the dispatcher to deliver, then inspect guardian_notification_outbox for lifecycle state.',
+  );
 }
 
 async function main() {
-  const databaseUrl = validateEnvironment();
-  if (!databaseUrl) return;
+  const config = validateEnvironment();
+  if (!config) return;
+  const { databaseUrl } = config;
 
   console.warn('\nWARNING: This command creates fake SafeBus QA notification data.');
-  console.warn('Run it only against hosted Supabase DEV or a disposable migrated database.');
+  console.warn('Run it only against a registered hosted Supabase DEV/staging database.');
   console.warn('Never run it against production.');
   console.warn(`Database: ${redactDatabaseUrl(databaseUrl)}`);
 
@@ -204,6 +253,10 @@ async function main() {
 
   try {
     await client.connect();
+    await assertDatabaseEnvironmentIdentity(client, {
+      environment: config.target,
+      databaseUrl,
+    });
     await client.query('begin');
     await cleanupFixture(client);
     await seedFixture(client);

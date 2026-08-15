@@ -11,7 +11,9 @@ import {
 import { inspectSchemaDeployment } from '../../scripts/lib/schema-deployment-preflight.mjs';
 
 const read = (file) => fs.readFile(file, 'utf8');
-const databaseUrl = 'postgresql://postgres.test:password@db.test.supabase.co:5432/postgres';
+const projectRef = 'abcdefghijklmnopqrst';
+const databaseUrl = `postgresql://postgres:password@db.${projectRef}.supabase.co:5432/postgres`;
+const supabaseUrl = `https://${projectRef}.supabase.co`;
 
 async function fixtureRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'safebus-attestation-'));
@@ -40,6 +42,7 @@ test('release attestation is bound to every gate, migration, input, and web arti
     releaseSha,
     commitSha: releaseSha,
     databaseUrl,
+    supabaseUrl,
     root,
   });
 
@@ -50,6 +53,7 @@ test('release attestation is bound to every gate, migration, input, and web arti
     releaseSha,
     commitSha: releaseSha,
     databaseUrl,
+    supabaseUrl,
     root,
   });
 
@@ -61,6 +65,7 @@ test('release attestation is bound to every gate, migration, input, and web arti
       releaseSha,
       commitSha: releaseSha,
       databaseUrl,
+      supabaseUrl,
       root,
     }),
     /changed after preflight/,
@@ -72,20 +77,22 @@ test('release attestation rejects stale evidence and a different commit', async 
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const releaseSha = 'b'.repeat(40);
   const attestation = await createReleaseAttestation({
-    environment: 'staging',
+    environment: 'production',
     releaseSha,
     commitSha: releaseSha,
     databaseUrl,
+    supabaseUrl,
     root,
   });
 
   await assert.rejects(
     verifyReleaseAttestation({
       attestation,
-      environment: 'staging',
+      environment: 'production',
       releaseSha,
       commitSha: 'c'.repeat(40),
       databaseUrl,
+      supabaseUrl,
       root,
     }),
     /does not match/,
@@ -93,10 +100,11 @@ test('release attestation rejects stale evidence and a different commit', async 
   await assert.rejects(
     verifyReleaseAttestation({
       attestation,
-      environment: 'staging',
+      environment: 'production',
       releaseSha,
       commitSha: releaseSha,
       databaseUrl,
+      supabaseUrl,
       root,
       now: Date.parse(attestation.createdAt) + 2 * 60 * 60 * 1000 + 1,
     }),
@@ -105,13 +113,15 @@ test('release attestation rejects stale evidence and a different commit', async 
   await assert.rejects(
     verifyReleaseAttestation({
       attestation,
-      environment: 'staging',
+      environment: 'production',
       releaseSha,
       commitSha: releaseSha,
-      databaseUrl: 'postgresql://postgres.other:password@pooler.example.test:5432/postgres',
+      databaseUrl:
+        'postgresql://postgres.zyxwvutsrqponmlkjihg:password@aws-0-ca-central-1.pooler.supabase.com:5432/postgres',
+      supabaseUrl: 'https://zyxwvutsrqponmlkjihg.supabase.co',
       root,
     }),
-    /different database/,
+    /different Supabase environment/,
   );
 });
 
@@ -121,7 +131,14 @@ test('database preflight refuses to initialize a populated untracked database', 
     async query(sql) {
       queries.push(sql);
       return {
-        rows: [{ has_checksums: false, has_releases: false, public_table_count: 48 }],
+        rows: [
+          {
+            has_checksums: false,
+            has_releases: false,
+            has_identity: false,
+            public_table_count: 48,
+          },
+        ],
       };
     },
   };
@@ -135,7 +152,16 @@ test('database preflight permits initialization only when public schema is empty
   const migrations = [{ filename: '0001_test.sql' }];
   const client = {
     async query() {
-      return { rows: [{ has_checksums: false, has_releases: false, public_table_count: 0 }] };
+      return {
+        rows: [
+          {
+            has_checksums: false,
+            has_releases: false,
+            has_identity: false,
+            public_table_count: 0,
+          },
+        ],
+      };
     },
   };
 
@@ -144,24 +170,19 @@ test('database preflight permits initialization only when public schema is empty
   assert.deepEqual(result.pending, migrations);
 });
 
-test('protected workflows complete preflight before the first schema mutation', async () => {
-  for (const file of [
-    '.github/workflows/release-staging.yml',
-    '.github/workflows/release-production.yml',
-  ]) {
-    const workflow = await read(file);
-    const preflight = workflow.indexOf('pnpm release:preflight');
-    const migration = workflow.indexOf('pnpm migrations:deploy');
-    const application = workflow.indexOf('netlify deploy --prod');
+test('protected production workflow completes preflight before deployment', async () => {
+  const workflow = await read('.github/workflows/release-production.yml');
+  const preflight = workflow.indexOf('pnpm release:preflight');
+  const migration = workflow.indexOf('pnpm migrations:deploy');
+  const application = workflow.indexOf('netlify deploy --prod');
 
-    assert.ok(preflight >= 0, `${file} must run release preflight`);
-    assert.ok(preflight < migration, `${file} must preflight before migrations`);
-    assert.ok(migration < application, `${file} must deploy schema before the application`);
-    assert.match(workflow, /test "\$REQUESTED_SHA" = "\$ACTUAL_SHA"/);
-  }
+  assert.ok(preflight >= 0);
+  assert.ok(preflight < migration);
+  assert.ok(migration < application);
+  assert.match(workflow, /test "\$REQUESTED_SHA" = "\$ACTUAL_SHA"/);
 });
 
-test('schema deploy verifies evidence before connecting and applies one atomic release', async () => {
+test('schema deploy verifies evidence before connecting and records one atomic app release', async () => {
   const deploy = await read('scripts/deploy-migrations.mjs');
   const verify = deploy.indexOf('await verifyReleaseAttestation');
   const connect = deploy.indexOf('await client.connect()');
@@ -171,7 +192,8 @@ test('schema deploy verifies evidence before connecting and applies one atomic r
   assert.ok(verify >= 0 && verify < connect);
   assert.ok(connect < inspect && inspect < mutation);
   assert.equal(deploy.match(/await client\.query\('begin'\)/g)?.length, 1);
-  assert.match(deploy, /for \(const migration of preflight\.pending\)/);
+  assert.doesNotMatch(deploy, /for \(const migration of preflight\.pending\)/);
+  assert.match(deploy, /Schema-changing releases are blocked/);
   assert.match(deploy, /Any error rolls it all back/);
 });
 

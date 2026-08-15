@@ -16,7 +16,7 @@ finalized by Alberta privacy counsel in **Phase 3** against:
 - **PIPA** (Personal Information Protection Act) — private organizations
 - **Education Act** — student record confidentiality
 
-> **Note:** Earlier versions of this README referenced *FOIP*. That reference
+> **Note:** Earlier versions of this README referenced _FOIP_. That reference
 > was obsolete for SafeBus's legal-role analysis and is corrected in Phase 3
 > (see `docs/governance/risk-register.md` R-006 and
 > `docs/governance/phase-3/legal-role-analysis.md`). Final statutory mapping
@@ -94,8 +94,8 @@ pnpm typecheck
 
 - Driver manifest and pickup/drop-off manual QA playbook:
   `docs/qa/driver-event-flow-manual-test.md`
-- Guarded DEV-only fixture script:
-  `SAFEBUS_QA_SEED_CONFIRM=DEV_ONLY SAFEBUS_QA_SEED_DATABASE_URL=<DEV_DATABASE_URL> pnpm qa:seed:driver-events`
+- Guarded non-production fixture tooling exists, but it is not currently
+  runnable because the only database is production.
 
 Never run QA seed scripts against production, and never use real student data.
 
@@ -117,9 +117,10 @@ pnpm test
 pnpm test:smoke
 ```
 
-Real RLS execution requires an explicitly labelled hosted non-production
-database. Staging and production releases run only through protected GitHub
-environments; production credentials are not part of local setup.
+Real RLS execution requires a separately approved, database-registered
+non-production target. None currently exists, so hosted RLS and QA writers are
+disabled. Production releases run only through the protected GitHub production
+environment; production credentials are not part of local setup.
 
 ## Build Phases
 

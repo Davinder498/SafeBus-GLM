@@ -85,26 +85,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm migrations:verify
 
-  rls-execution:
-    name: RLS execution
-    runs-on: ubuntu-latest
-    environment: development
-    env:
-      SAFEBUS_RLS_TEST_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
-      SAFEBUS_RLS_TEST_CONFIRM: DEV_ONLY
-      SAFEBUS_RLS_TARGET: development
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: Require protected DEV database secret
-        run: test -n "$SAFEBUS_RLS_TEST_DATABASE_URL"
-      - run: pnpm test:rls
-
   dependency-audit:
     name: Dependency audit
     runs-on: ubuntu-latest

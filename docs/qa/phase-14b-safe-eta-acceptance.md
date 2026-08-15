@@ -11,18 +11,19 @@ Phase 14B validates the existing conservative Safe ETA foundation for pilot read
 
 ```bash
 SAFEBUS_QA_SEED_CONFIRM=DEV_ONLY \
+SAFEBUS_QA_TARGET=development \
 SAFEBUS_QA_SEED_DATABASE_URL='postgresql://...' \
 pnpm qa:seed:safe-eta
 ```
 
 The fixture creates fake `@example.test` accounts only. Password for all fixture users is `SafeBusPhase14B!`.
 
-| Role | Email |
-| --- | --- |
-| Transportation admin | `qa-safe-eta-admin@example.test` |
-| Driver | `qa-safe-eta-driver@example.test` |
-| Linked guardian | `qa-safe-eta-guardian@example.test` |
-| Unlinked guardian | `qa-safe-eta-unlinked@example.test` |
+| Role                 | Email                               |
+| -------------------- | ----------------------------------- |
+| Transportation admin | `qa-safe-eta-admin@example.test`    |
+| Driver               | `qa-safe-eta-driver@example.test`   |
+| Linked guardian      | `qa-safe-eta-guardian@example.test` |
+| Unlinked guardian    | `qa-safe-eta-unlinked@example.test` |
 
 Map tiles use the existing preview environment configuration. If map tiles are not configured, complete ETA text acceptance from the status/fleet pages and record the tile limitation.
 
@@ -32,6 +33,7 @@ Use the guarded scenario helper after seeding:
 
 ```bash
 SAFEBUS_QA_SEED_CONFIRM=DEV_ONLY \
+SAFEBUS_QA_TARGET=development \
 SAFEBUS_QA_SEED_DATABASE_URL='postgresql://...' \
 pnpm qa:safe-eta:scenario between_stops morning
 ```
@@ -58,38 +60,38 @@ Use `morning` or `evening` as the second argument.
 
 For each scenario, refresh guardian and admin views and confirm previous ETA text is not presented as current:
 
-| Scenario | Expected result |
-| --- | --- |
-| `no_location` | ETA temporarily unavailable; no coordinates shown to guardian. |
-| `stale_location` | delayed/stale wording; no usable ETA. |
-| `future_timestamp` | ETA unavailable / needs attention. |
-| End trip in DEV SQL or reseed | active ETA disappears. |
-| Deactivate linked guardian row | linked guardian loses ETA access after refresh. |
-| Disable browser network/Realtimes | polling/manual refresh still fetches server RPC state. |
+| Scenario                          | Expected result                                                |
+| --------------------------------- | -------------------------------------------------------------- |
+| `no_location`                     | ETA temporarily unavailable; no coordinates shown to guardian. |
+| `stale_location`                  | delayed/stale wording; no usable ETA.                          |
+| `future_timestamp`                | ETA unavailable / needs attention.                             |
+| End trip in DEV SQL or reseed     | active ETA disappears.                                         |
+| Deactivate linked guardian row    | linked guardian loses ETA access after refresh.                |
+| Disable browser network/Realtimes | polling/manual refresh still fetches server RPC state.         |
 
 ## Privacy checks
 
-| Actor | Expected result |
-| --- | --- |
-| Linked guardian | Sees only the linked fixture student and safe ETA text. |
-| Unlinked guardian | Sees no fixture student ETA. |
-| Another tenant account | Sees no fixture trip. |
-| Transportation admin | Sees fleet ETA without student or guardian personal information. |
-| Platform Super Admin | Does not receive tenant operational fleet ETA visibility. |
+| Actor                  | Expected result                                                  |
+| ---------------------- | ---------------------------------------------------------------- |
+| Linked guardian        | Sees only the linked fixture student and safe ETA text.          |
+| Unlinked guardian      | Sees no fixture student ETA.                                     |
+| Another tenant account | Sees no fixture trip.                                            |
+| Transportation admin   | Sees fleet ETA without student or guardian personal information. |
+| Platform Super Admin   | Does not receive tenant operational fleet ETA visibility.        |
 
 ## Acceptance record
 
-| Scenario | Expected result | Actual result | Pass/Fail | Notes |
-| --- | --- | --- | --- | --- |
-| Morning no location | ETA unavailable | | | |
-| Morning between stops | Approximate ETA appears | | | |
-| Morning passed stop | ETA removed | | | |
-| Evening between stops | Drop-off stop is relevant | | | |
-| Evening passed stop | ETA removed | | | |
-| Stale/future location | ETA unavailable | | | |
-| Linked guardian privacy | Only linked student visible | | | |
-| Unlinked guardian privacy | No ETA rows visible | | | |
-| Admin fleet | Tenant-only safe operational ETA | | | |
-| Platform admin | No operational ETA access | | | |
+| Scenario                  | Expected result                  | Actual result | Pass/Fail | Notes |
+| ------------------------- | -------------------------------- | ------------- | --------- | ----- |
+| Morning no location       | ETA unavailable                  |               |           |       |
+| Morning between stops     | Approximate ETA appears          |               |           |       |
+| Morning passed stop       | ETA removed                      |               |           |       |
+| Evening between stops     | Drop-off stop is relevant        |               |           |       |
+| Evening passed stop       | ETA removed                      |               |           |       |
+| Stale/future location     | ETA unavailable                  |               |           |       |
+| Linked guardian privacy   | Only linked student visible      |               |           |       |
+| Unlinked guardian privacy | No ETA rows visible              |               |           |       |
+| Admin fleet               | Tenant-only safe operational ETA |               |           |       |
+| Platform admin            | No operational ETA access        |               |           |       |
 
 Manual product-owner approval is required before merge.

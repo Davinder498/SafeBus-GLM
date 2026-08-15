@@ -4,24 +4,29 @@ import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { createEnvironmentBinding } from './lib/environment-identity.mjs';
 import { DEFAULT_ATTESTATION_PATH, createReleaseAttestation } from './lib/release-attestation.mjs';
 
 const environment = process.env.SAFEBUS_DEPLOY_ENV;
 const releaseSha = process.env.SAFEBUS_RELEASE_SHA;
 const databaseUrl = process.env.SAFEBUS_DATABASE_URL;
+const supabaseUrl = process.env.SUPABASE_URL;
 const pnpmCli = process.env.npm_execpath;
 
 if (process.env.GITHUB_ACTIONS !== 'true') {
   throw new Error('Release preflight runs only in a protected GitHub Actions environment.');
 }
-if (!['staging', 'production'].includes(environment)) {
-  throw new Error('SAFEBUS_DEPLOY_ENV must be staging or production.');
+if (environment !== 'production') {
+  throw new Error('SAFEBUS_DEPLOY_ENV must be production.');
 }
 if (!releaseSha || !/^[0-9a-f]{40}$/i.test(releaseSha)) {
   throw new Error('SAFEBUS_RELEASE_SHA must be the full reviewed Git commit SHA.');
 }
 if (!databaseUrl) throw new Error('SAFEBUS_DATABASE_URL is required.');
+if (!supabaseUrl) throw new Error('SUPABASE_URL is required.');
 if (!pnpmCli) throw new Error('Run release preflight through `pnpm release:preflight`.');
+
+createEnvironmentBinding({ environment, databaseUrl, supabaseUrl });
 
 const commitSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 if (commitSha !== releaseSha) {
@@ -39,11 +44,11 @@ function assertTrackedWorktreeClean() {
 
 assertTrackedWorktreeClean();
 
-function run(script) {
+function run(script, environmentOverrides = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [pnpmCli, script], {
       cwd: process.cwd(),
-      env: process.env,
+      env: { ...process.env, ...environmentOverrides },
       stdio: 'inherit',
     });
     child.on('error', reject);
@@ -83,6 +88,7 @@ const attestation = await createReleaseAttestation({
   releaseSha,
   commitSha,
   databaseUrl,
+  supabaseUrl,
   root,
 });
 const output = path.join(root, DEFAULT_ATTESTATION_PATH);

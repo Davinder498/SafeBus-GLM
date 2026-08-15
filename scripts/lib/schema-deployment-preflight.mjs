@@ -1,10 +1,12 @@
 import { calculateSchemaFingerprint } from './schema-fingerprint.mjs';
+import { assertEnvironmentIdentity } from './environment-identity.mjs';
 
-export async function inspectSchemaDeployment(client, manifest) {
+export async function inspectSchemaDeployment(client, manifest, binding) {
   const ledgerState = await client.query(`
     select
       to_regclass('safebus_release.migration_checksums') is not null as has_checksums,
       to_regclass('safebus_release.releases') is not null as has_releases,
+      to_regclass('safebus_release.environment_identity') is not null as has_identity,
       (select count(*)::integer
          from pg_class c
          join pg_namespace n on n.oid = c.relnamespace
@@ -15,6 +17,11 @@ export async function inspectSchemaDeployment(client, manifest) {
     throw new Error('Release ledger is incomplete. Repair it through an approved forward process.');
   }
   if (!state.has_checksums) {
+    if (state.has_identity) {
+      throw new Error(
+        'Release ledger is incomplete: environment identity exists without a ledger.',
+      );
+    }
     if (Number(state.public_table_count) > 0) {
       throw new Error(
         'Refusing deploy: the populated database has no SafeBus release ledger. ' +
@@ -23,6 +30,11 @@ export async function inspectSchemaDeployment(client, manifest) {
     }
     return { initialized: false, applied: new Map(), pending: manifest.migrations };
   }
+
+  if (!state.has_identity) {
+    throw new Error('Release ledger is incomplete: database environment identity is missing.');
+  }
+  await assertEnvironmentIdentity(client, binding);
 
   const existingResult = await client.query(
     `select filename, checksum from safebus_release.migration_checksums order by filename`,
