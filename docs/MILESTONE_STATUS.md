@@ -26,6 +26,9 @@
 - Supabase Free was approved for active construction and labelled prelaunch/beta
   operation through `DL-014`; a paid tier or approved equivalent remains a gate
   before real school operations or commercial availability/recovery promises.
+- The manual backup and one-time production adoption were deferred through
+  `DL-015` to the final prelaunch sequence. Point 4 remains open, its workflow
+  gates remain mandatory, and independent readiness work may continue.
 - Phase 15A was merged through PR #52 and is on `main`.
 - Hosted RLS execution and destructive QA are disabled because the only
   Supabase database is production.
