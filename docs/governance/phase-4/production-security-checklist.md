@@ -5,10 +5,15 @@ Release SHA: __________ Reviewer: __________ Date: __________
 ## Environment and data residency
 
 - [ ] DEV, staging, and production use distinct Supabase projects and Netlify sites.
+- [ ] The existing hosted project was frozen, backed up, and adopted without replaying migrations.
+- [ ] Each database has a matching `safebus_release.environment_identity` record.
+- [ ] DEV/staging contain synthetic data only and destructive jobs reject production identity.
 - [ ] Supabase project region evidence confirms approved Canadian processing (`ca-central-1`).
 - [ ] All material subprocessors and backups are approved for Canadian processing.
 - [ ] Staging contains synthetic data only.
 - [ ] Production secrets exist only in the protected production environment.
+- [ ] Credentials previously used from DEV machines were rotated at production cutover.
+- [ ] Approved QA cleanup is recorded and no `@example.test` identities remain.
 - [ ] No service-role key or database URL appears in frontend settings or build output.
 
 ## Review and release

@@ -1,19 +1,28 @@
 # Phase 4 — Secure development and deployment platform
 
-**Status:** Repository controls implemented; cloud provisioning, protected
-environment approval, staging deployment, rollback exercise, and final security
-approval require authorized operators.
+**Status:** Repository controls implemented through DL-013. The existing hosted
+project is approved for conversion to production without a rebuild. New DEV and
+staging provisioning, protected configuration, registration/adoption workflow
+execution, rollback exercise, and final security approval require authorized
+operators.
 
 ## Release model
 
-SafeBus uses three isolated Supabase projects and three isolated Netlify sites.
-No database, key, site ID, or deploy credential is shared between environments.
+SafeBus uses three isolated Supabase projects and three isolated Netlify targets.
+The existing hosted DEV Supabase project and `bussafe` Netlify site become
+production. New DEV and staging projects/sites are provisioned separately. No
+database, key, site ID, or deploy credential is shared between environments.
 
 | Environment | Purpose                                    | Data                  | Deployment authority                                            |
 | ----------- | ------------------------------------------ | --------------------- | --------------------------------------------------------------- |
 | DEV         | Engineering and destructive RLS regression | Synthetic only        | Developers; migrations remain manually applied to hosted DEV    |
 | Staging     | Release candidate and rollback validation  | Synthetic only        | `Release staging` workflow after protected-environment approval |
 | Production  | Approved customer workload                 | Real operational data | `Release production` workflow after mandatory human approval    |
+
+The conversion preserves the existing production candidate's public schema and
+data. It does not reset the database or replay historical migrations. Follow
+[`environment-conversion-runbook.md`](./environment-conversion-runbook.md) for
+the required order.
 
 Supabase projects and any storage/processing subprocessor used by SafeBus must
 be provisioned in the approved Canadian region (`ca-central-1`). An operator
@@ -35,7 +44,8 @@ subprocessor outside the approved region.
   types, runs typecheck, lint, unit/contract tests, dependency audit, production
   build, source-map rejection, and browser smoke tests.
 - A successful preflight creates a two-hour attestation bound to the commit,
-  database target, migrations, lockfile, generated database types, and built web artifact.
+  database target, upstream schema-contract project, migrations, lockfile,
+  generated database types, and built web artifact.
   `pnpm migrations:deploy` refuses to connect to the database when this evidence
   is missing, stale, targets another environment, or no longer matches the files.
 - `pnpm migrations:deploy` applies the release ledger and every pending migration
@@ -46,12 +56,13 @@ subprocessor outside the approved region.
 - A deterministic public-schema fingerprint covers relations, columns,
   constraints, indexes, RLS settings and policies, functions, triggers, and
   grants. `pnpm migrations:drift` rejects out-of-band changes.
-- `pnpm types:generate` reads the authoritative hosted public-schema metadata
+- `pnpm types:generate` reads authoritative hosted public-schema metadata
   through a protected server-only key (with the pinned Supabase CLI available
   as a direct-database or management-token fallback). `pnpm types:check` fails
   a release when the committed
-  `packages/types/src/database.generated.ts` differs from staging or
-  production.
+  `packages/types/src/database.generated.ts` differs from the upstream promoted
+  schema. Staging checks DEV; production checks staging. This validates a new
+  schema before changing the downstream database.
 - Staging and production accept only an explicit full reviewed Git SHA. The web
   artifact is built and tested once during preflight; that same attested artifact
   is deployed. Build output containing `.map` files is rejected.
@@ -70,6 +81,12 @@ historical migrations. The explicit one-time adoption of that existing database
 belongs to the environment-conversion decision; the release command never
 guesses that historical migrations were applied.
 
+Every registered database contains a private
+`safebus_release.environment_identity` row bound to its environment, PostgreSQL
+target, and Supabase API origin. Releases reject crossed database/API projects.
+Destructive RLS and QA tools require a matching development or staging identity
+and cannot run against a database registered as production.
+
 ## Required GitHub environments
 
 Create `development`, `staging`, and `production` environments. Configure
@@ -80,20 +97,23 @@ repository variables, logs, screenshots, or frontend configuration.
 
 Each environment uses these names:
 
-| Name                     | Kind     | Notes                                                                    |
-| ------------------------ | -------- | ------------------------------------------------------------------------ |
-| `SAFEBUS_DATABASE_URL`   | Secret   | Direct Postgres credential for that environment only                     |
-| `SUPABASE_SECRET_KEY`    | Secret   | Server-only key used for read-only hosted schema type generation         |
-| `VITE_SUPABASE_ANON_KEY` | Secret   | Public client key, separated to prevent accidental cross-environment use |
-| `NETLIFY_AUTH_TOKEN`     | Secret   | Deployment token scoped to the target site/team                          |
-| `SUPABASE_PROJECT_ID`    | Variable | Environment-specific project reference                                   |
-| `VITE_SUPABASE_URL`      | Variable | Environment-specific public API URL                                      |
-| `NETLIFY_SITE_ID`        | Variable | Environment-specific site                                                |
+| Name                           | Kind     | Notes                                                             |
+| ------------------------------ | -------- | ----------------------------------------------------------------- |
+| `SAFEBUS_DATABASE_URL`         | Secret   | Direct Postgres credential for that environment only              |
+| `SUPABASE_SECRET_KEY`          | Secret   | Target project's server-only key                                  |
+| `VITE_SUPABASE_ANON_KEY`       | Secret   | Target project's public client key                                |
+| `CONTRACT_SUPABASE_SECRET_KEY` | Secret   | Read-only schema check credential for upstream DEV/staging        |
+| `CONTRACT_DATABASE_URL`        | Secret   | Staging database URL used only for production adoption comparison |
+| `NETLIFY_AUTH_TOKEN`           | Secret   | Deployment token scoped to the target site/team                   |
+| `VITE_SUPABASE_URL`            | Variable | Target project's public API URL                                   |
+| `CONTRACT_SUPABASE_URL`        | Variable | DEV for staging releases; staging for production releases         |
+| `NETLIFY_SITE_ID`              | Variable | Environment-specific site                                         |
 
-DEV additionally supplies `SAFEBUS_DATABASE_URL` to the `RLS execution` CI
-job. The runner also requires `SAFEBUS_RLS_TARGET=development` or `staging` and
-rejects any other label. RLS scripts are destructive and must never target
-production.
+DEV supplies `SAFEBUS_DATABASE_URL` to the `RLS execution` CI job. The runner
+requires `SAFEBUS_RLS_TARGET=development` and verifies the database-side
+identity before executing SQL. Manual QA writers also require
+`SAFEBUS_QA_TARGET=development` or `staging`. Labels alone never authorize a
+write.
 
 ## One-click staging release
 

@@ -16,7 +16,7 @@ finalized by Alberta privacy counsel in **Phase 3** against:
 - **PIPA** (Personal Information Protection Act) — private organizations
 - **Education Act** — student record confidentiality
 
-> **Note:** Earlier versions of this README referenced *FOIP*. That reference
+> **Note:** Earlier versions of this README referenced _FOIP_. That reference
 > was obsolete for SafeBus's legal-role analysis and is corrected in Phase 3
 > (see `docs/governance/risk-register.md` R-006 and
 > `docs/governance/phase-3/legal-role-analysis.md`). Final statutory mapping
@@ -95,7 +95,7 @@ pnpm typecheck
 - Driver manifest and pickup/drop-off manual QA playbook:
   `docs/qa/driver-event-flow-manual-test.md`
 - Guarded DEV-only fixture script:
-  `SAFEBUS_QA_SEED_CONFIRM=DEV_ONLY SAFEBUS_QA_SEED_DATABASE_URL=<DEV_DATABASE_URL> pnpm qa:seed:driver-events`
+  `SAFEBUS_QA_TARGET=development SAFEBUS_QA_SEED_CONFIRM=DEV_ONLY SAFEBUS_QA_SEED_DATABASE_URL=<DEV_DATABASE_URL> pnpm qa:seed:driver-events`
 
 Never run QA seed scripts against production, and never use real student data.
 

@@ -262,6 +262,38 @@ get a `Superseded by DL-XXX` line and remain for history.
 - Approved by: Platform Administrator
 - Status: Accepted on 2026-08-12
 
+### DL-013 — Convert the existing hosted project to production safely
+
+- Date: 2026-08-15
+- Decision: Preserve the existing hosted DEV Supabase project and convert it
+  into production without resetting it, replaying migrations, or rebuilding
+  its public schema. Create separate Canadian-region DEV and staging projects
+  containing synthetic data only. Bind each database to a permanent
+  environment identity and make migration, RLS, and QA writers reject a target
+  whose identity does not match the requested environment.
+- Context: The Platform Administrator confirmed that the existing hosted
+  project will become production. The repository expected three isolated
+  environments, but staging and production had no configured GitHub values,
+  development retained the existing credential without approval protection,
+  and destructive test protection trusted operator-provided labels.
+- Rationale: Preserving the authoritative database avoids a risky rebuild,
+  while database-side identity and separate non-production projects prevent
+  future development or synthetic testing from reaching production.
+- Consequences: A protected one-time adoption workflow performs all checks,
+  requires backup and `ca-central-1` confirmation, fingerprints and locks the
+  existing schema, and atomically adds only private `safebus_release` identity
+  and ledger metadata. It records the committed migration set as an explicitly
+  adopted baseline and never executes historical migration SQL. The existing
+  `bussafe` Netlify site becomes production and a separate staging site is
+  required. Previously used production-bound credentials are rotated at
+  cutover. The accidental GitHub environment and unused unencrypted database
+  variable were removed on 2026-08-15. Commercial release remains blocked
+  until the new DEV/staging projects, protected secrets, region evidence,
+  backup evidence, registration, and adoption workflow are complete.
+- Owner: Platform Administrator
+- Approved by: Platform Administrator
+- Status: Accepted on 2026-08-15
+
 ## 5. Sign-off entries
 
 When a Phase 0 document is signed off, add an entry here:

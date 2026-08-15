@@ -20,6 +20,9 @@
   2026-08-12 through `DL-011`.
 - Fail-closed, attested releases were approved by the Platform Administrator on
   2026-08-12 through `DL-012`.
+- Conversion of the existing hosted project into production, with separate new
+  DEV/staging systems, was approved by the Platform Administrator on 2026-08-15
+  through `DL-013`.
 - Phase 15A was merged through PR #52 and is on `main`.
 - Hosted Supabase DEV is used for database smoke/RLS execution. Do not run RLS
   SQL against production.
@@ -252,12 +255,13 @@ Status: Implemented for review; hosted-DEV migration and manual acceptance pendi
 README exist, but it does not connect to Supabase and does not execute SQL.
 Do not report `pnpm test:rls` as proof that SQL assertions passed.
 
-`pnpm test:rls:dev` executes SQL against a configured hosted Supabase DEV or
-disposable migrated database. It requires:
+`pnpm test:rls:dev` executes SQL against the registered hosted Supabase DEV. It
+requires:
 
 ```bash
 SAFEBUS_RLS_TEST_DATABASE_URL=postgresql://...
 SAFEBUS_RLS_TEST_CONFIRM=DEV_ONLY
+SAFEBUS_RLS_TARGET=development
 ```
 
 The automated runner executes the default RLS files in deterministic order:
@@ -289,10 +293,11 @@ manifest and pickup/drop-off event flow:
 - Required guards:
   - `SAFEBUS_QA_SEED_DATABASE_URL=postgresql://...`
   - `SAFEBUS_QA_SEED_CONFIRM=DEV_ONLY`
+  - `SAFEBUS_QA_TARGET=development`
 
-Run the seed only against hosted Supabase DEV or a disposable migrated database,
-never production. The fixture uses fake `@example.test` data and does not create
-a production dummy-data UI.
+Run the seed only against registered hosted Supabase DEV, never production. The
+fixture uses fake `@example.test` data and does not create a production
+dummy-data UI.
 
 ## Scope-Control Notes
 

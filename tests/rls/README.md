@@ -134,8 +134,8 @@ earlier prepared-dispatch start signature is intentionally retired.
 ## `pnpm test:rls:dev`
 
 `pnpm test:rls:dev` executes the RLS SQL scripts against a configured hosted
-Supabase DEV database or a disposable migrated database. It is the automated
-replacement for copy/paste SQL Editor runs.
+Supabase DEV database. It is the automated replacement for copy/paste SQL
+Editor runs.
 
 This command is intentionally guarded. It refuses to run unless all three
 environment variables are set:
@@ -147,12 +147,10 @@ SAFEBUS_RLS_TARGET=development
 ```
 
 Never point `SAFEBUS_RLS_TEST_DATABASE_URL` at production. Never use frontend
-Supabase anon keys or service-role API keys here. Use a Postgres connection URL
-for hosted Supabase DEV or a disposable migrated database only. Staging CI may
-use `SAFEBUS_RLS_TARGET=staging`; any other target label is rejected.
-
-Hosted Supabase connections use SSL by default. For a local disposable database
-only, set `SAFEBUS_RLS_TEST_SSL=disable`.
+Supabase anon keys or service-role API keys here. The database must carry a
+registered `development` identity that matches the URL. Staging CI may use a
+registered staging database with `SAFEBUS_RLS_TARGET=staging`; any other target
+label or an unregistered/mismatched database is rejected.
 
 Run all RLS scripts in deterministic order:
 

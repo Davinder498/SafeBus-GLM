@@ -6,6 +6,10 @@ import path from 'node:path';
 import process from 'node:process';
 import pg from 'pg';
 import { calculateSchemaFingerprint } from './lib/schema-fingerprint.mjs';
+import {
+  createEnvironmentBinding,
+  registerEnvironmentIdentity,
+} from './lib/environment-identity.mjs';
 import { MIGRATION_DIRECTORY, readCommittedManifest } from './lib/migrations.mjs';
 import { DEFAULT_ATTESTATION_PATH, verifyReleaseAttestation } from './lib/release-attestation.mjs';
 import { inspectSchemaDeployment } from './lib/schema-deployment-preflight.mjs';
@@ -15,8 +19,12 @@ const databaseUrl = process.env.SAFEBUS_DATABASE_URL;
 const environment = process.env.SAFEBUS_DEPLOY_ENV;
 const releaseSha = process.env.SAFEBUS_RELEASE_SHA;
 const confirmation = process.env.SAFEBUS_DEPLOY_CONFIRM;
+const supabaseUrl = process.env.SUPABASE_URL;
+const contractSupabaseUrl = process.env.SAFEBUS_CONTRACT_SUPABASE_URL;
 
 if (!databaseUrl) throw new Error('SAFEBUS_DATABASE_URL is required.');
+if (!supabaseUrl) throw new Error('SUPABASE_URL is required.');
+if (!contractSupabaseUrl) throw new Error('SAFEBUS_CONTRACT_SUPABASE_URL is required.');
 if (!['staging', 'production'].includes(environment)) {
   throw new Error('Automated schema deployment is limited to staging or production.');
 }
@@ -33,6 +41,7 @@ if (process.env.GITHUB_ACTIONS !== 'true') {
 }
 
 const manifest = await readCommittedManifest();
+const binding = createEnvironmentBinding({ environment, databaseUrl, supabaseUrl });
 const commitSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 if (commitSha !== releaseSha) {
   throw new Error('The checked-out commit does not match SAFEBUS_RELEASE_SHA.');
@@ -51,6 +60,8 @@ await verifyReleaseAttestation({
   releaseSha,
   commitSha,
   databaseUrl,
+  supabaseUrl,
+  contractSupabaseUrl,
 });
 
 const client = new Client({
@@ -71,7 +82,7 @@ try {
   await client.query('begin transaction read only');
   let preflight;
   try {
-    preflight = await inspectSchemaDeployment(client, manifest);
+    preflight = await inspectSchemaDeployment(client, manifest, binding);
     await client.query('rollback');
   } catch (error) {
     await client.query('rollback');
@@ -84,6 +95,9 @@ try {
   try {
     await client.query(`set local lock_timeout = '10s'`);
     await client.query(`set local statement_timeout = '5min'`);
+    if (!preflight.initialized) {
+      await registerEnvironmentIdentity(client, binding, releaseSha);
+    }
     await client.query(`
       create schema if not exists safebus_release;
       revoke all on schema safebus_release from public, anon, authenticated;

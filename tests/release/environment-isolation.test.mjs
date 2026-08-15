@@ -1,0 +1,153 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import test from 'node:test';
+import {
+  assertDatabaseEnvironmentIdentity,
+  createEnvironmentBinding,
+} from '../../scripts/lib/environment-identity.mjs';
+
+const read = (file) => fs.readFile(file, 'utf8');
+const projectRef = 'abcdefghijklmnopqrst';
+const directDatabaseUrl = `postgresql://postgres:password@db.${projectRef}.supabase.co:5432/postgres`;
+const poolerDatabaseUrl = `postgresql://postgres.${projectRef}:password@aws-0-ca-central-1.pooler.supabase.com:5432/postgres`;
+const supabaseUrl = `https://${projectRef}.supabase.co`;
+
+test('environment binding accepts matching direct and pooler Supabase targets', () => {
+  const direct = createEnvironmentBinding({
+    environment: 'production',
+    databaseUrl: directDatabaseUrl,
+    supabaseUrl,
+  });
+  const pooler = createEnvironmentBinding({
+    environment: 'production',
+    databaseUrl: poolerDatabaseUrl,
+    supabaseUrl,
+  });
+
+  assert.equal(direct.environment, 'production');
+  assert.equal(direct.projectRefHash, pooler.projectRefHash);
+  assert.equal(direct.publicApiOriginHash, pooler.publicApiOriginHash);
+  assert.equal(direct.databaseTarget, pooler.databaseTarget);
+  for (const value of [direct.databaseTarget, direct.projectRefHash, direct.publicApiOriginHash]) {
+    assert.match(value, /^[0-9a-f]{64}$/);
+  }
+});
+
+test('environment binding refuses crossed database and API projects', () => {
+  assert.throws(
+    () =>
+      createEnvironmentBinding({
+        environment: 'production',
+        databaseUrl: directDatabaseUrl,
+        supabaseUrl: 'https://zyxwvutsrqponmlkjihg.supabase.co',
+      }),
+    /different projects/,
+  );
+});
+
+test('database-side identity refuses a production database presented as development', async () => {
+  const production = createEnvironmentBinding({
+    environment: 'production',
+    databaseUrl: directDatabaseUrl,
+    supabaseUrl,
+  });
+  const client = {
+    async query(sql) {
+      if (sql.includes('to_regclass')) {
+        return { rowCount: 1, rows: [{ identity_table: 'safebus_release.environment_identity' }] };
+      }
+      return {
+        rowCount: 1,
+        rows: [
+          {
+            environment: production.environment,
+            database_target: production.databaseTarget,
+          },
+        ],
+      };
+    },
+  };
+
+  await assert.rejects(
+    assertDatabaseEnvironmentIdentity(client, {
+      environment: 'development',
+      databaseUrl: directDatabaseUrl,
+    }),
+    /does not match/,
+  );
+});
+
+test('production adoption gates precede the only database metadata write', async () => {
+  const workflow = await read('.github/workflows/adopt-existing-production.yml');
+  const checks = workflow.indexOf('Complete all adoption gates before database metadata changes');
+  const adoption = workflow.indexOf('pnpm environment:adopt-production');
+
+  assert.ok(checks >= 0 && checks < adoption);
+  for (const gate of [
+    'pnpm migrations:verify',
+    'pnpm types:check',
+    'pnpm typecheck',
+    'pnpm lint',
+    'pnpm test',
+    'pnpm security:audit',
+    'pnpm build',
+    'pnpm test:smoke:release',
+  ]) {
+    assert.ok(workflow.indexOf(gate) > checks && workflow.indexOf(gate) < adoption);
+  }
+  assert.match(workflow, /environment: production/);
+  assert.match(workflow, /ADOPT_EXISTING_PRODUCTION/);
+  assert.match(workflow, /BACKUP_VERIFIED/);
+  assert.match(workflow, /CA_CENTRAL_1_VERIFIED/);
+});
+
+test('adoption records the existing schema without writing public application objects', async () => {
+  const adoption = await read('scripts/adopt-existing-production.mjs');
+
+  assert.match(adoption, /registerEnvironmentIdentity/);
+  assert.match(adoption, /for \(const migration of manifest\.migrations\)/);
+  assert.match(adoption, /calculateSchemaFingerprint/);
+  assert.match(adoption, /assertEnvironmentIdentity\(contractClient, contractBinding\)/);
+  assert.match(adoption, /does not exactly match the promoted staging schema/);
+  assert.match(adoption, /Production adoption found @example\.test QA identities/);
+  assert.doesNotMatch(adoption, /(?:insert into|update|delete from|alter table)\s+public\./i);
+  assert.doesNotMatch(adoption, /MIGRATION_DIRECTORY|fs\.readFile\([^)]*migration/i);
+});
+
+test('every destructive database QA runner requires registered environment identity', async () => {
+  for (const file of [
+    'scripts/run-rls-tests.mjs',
+    'scripts/seed-driver-event-qa-fixture.mjs',
+    'scripts/seed-notification-qa-fixture.mjs',
+    'scripts/seed-safe-eta-qa-fixture.mjs',
+    'scripts/apply-safe-eta-scenario.mjs',
+  ]) {
+    assert.match(await read(file), /assertDatabaseEnvironmentIdentity/);
+  }
+});
+
+test('database drift inspection requires registered environment identity', async () => {
+  assert.match(
+    await read('scripts/check-migration-drift.mjs'),
+    /assertDatabaseEnvironmentIdentity/,
+  );
+});
+
+test('schema fingerprints include authorization and SafeBus realtime controls', async () => {
+  const fingerprint = await read('scripts/lib/schema-fingerprint.mjs');
+
+  assert.match(fingerprint, /aclexplode\(coalesce\(p\.proacl/);
+  assert.match(fingerprint, /aclexplode\(coalesce\(n\.nspacl/);
+  assert.match(fingerprint, /join pg_enum/);
+  assert.match(fingerprint, /safebus tracking broadcast receive/);
+  assert.match(fingerprint, /table_schema = 'realtime'/);
+});
+
+test('Point 4 conversion decision is approved and recorded', async () => {
+  const decisions = await read('docs/governance/decision-log.md');
+
+  assert.match(decisions, /### DL-013 — Convert the existing hosted project to production safely/);
+  assert.match(decisions, /- Owner: Platform Administrator/);
+  assert.match(decisions, /- Approved by: Platform Administrator/);
+  assert.match(decisions, /- Status: Accepted on 2026-08-15/);
+});

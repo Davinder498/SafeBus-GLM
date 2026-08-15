@@ -78,6 +78,8 @@ test('GitHub workflows use the Node 24 action generations', async () => {
     read('.github/workflows/refresh-database-types.yml'),
     read('.github/workflows/release-production.yml'),
     read('.github/workflows/release-staging.yml'),
+    read('.github/workflows/adopt-existing-production.yml'),
+    read('.github/workflows/register-development-environment.yml'),
     read('.github/workflows/rollback.yml'),
   ]);
   const combined = workflows.join('\n');

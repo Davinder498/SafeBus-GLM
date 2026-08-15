@@ -11,7 +11,10 @@ import {
 import { inspectSchemaDeployment } from '../../scripts/lib/schema-deployment-preflight.mjs';
 
 const read = (file) => fs.readFile(file, 'utf8');
-const databaseUrl = 'postgresql://postgres.test:password@db.test.supabase.co:5432/postgres';
+const projectRef = 'abcdefghijklmnopqrst';
+const databaseUrl = `postgresql://postgres:password@db.${projectRef}.supabase.co:5432/postgres`;
+const supabaseUrl = `https://${projectRef}.supabase.co`;
+const contractSupabaseUrl = 'https://bcdefghijklmnopqrstu.supabase.co';
 
 async function fixtureRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'safebus-attestation-'));
@@ -40,6 +43,8 @@ test('release attestation is bound to every gate, migration, input, and web arti
     releaseSha,
     commitSha: releaseSha,
     databaseUrl,
+    supabaseUrl,
+    contractSupabaseUrl,
     root,
   });
 
@@ -50,6 +55,8 @@ test('release attestation is bound to every gate, migration, input, and web arti
     releaseSha,
     commitSha: releaseSha,
     databaseUrl,
+    supabaseUrl,
+    contractSupabaseUrl,
     root,
   });
 
@@ -61,6 +68,8 @@ test('release attestation is bound to every gate, migration, input, and web arti
       releaseSha,
       commitSha: releaseSha,
       databaseUrl,
+      supabaseUrl,
+      contractSupabaseUrl,
       root,
     }),
     /changed after preflight/,
@@ -76,6 +85,8 @@ test('release attestation rejects stale evidence and a different commit', async 
     releaseSha,
     commitSha: releaseSha,
     databaseUrl,
+    supabaseUrl,
+    contractSupabaseUrl,
     root,
   });
 
@@ -86,6 +97,8 @@ test('release attestation rejects stale evidence and a different commit', async 
       releaseSha,
       commitSha: 'c'.repeat(40),
       databaseUrl,
+      supabaseUrl,
+      contractSupabaseUrl,
       root,
     }),
     /does not match/,
@@ -97,6 +110,8 @@ test('release attestation rejects stale evidence and a different commit', async 
       releaseSha,
       commitSha: releaseSha,
       databaseUrl,
+      supabaseUrl,
+      contractSupabaseUrl,
       root,
       now: Date.parse(attestation.createdAt) + 2 * 60 * 60 * 1000 + 1,
     }),
@@ -108,10 +123,13 @@ test('release attestation rejects stale evidence and a different commit', async 
       environment: 'staging',
       releaseSha,
       commitSha: releaseSha,
-      databaseUrl: 'postgresql://postgres.other:password@pooler.example.test:5432/postgres',
+      databaseUrl:
+        'postgresql://postgres.zyxwvutsrqponmlkjihg:password@aws-0-ca-central-1.pooler.supabase.com:5432/postgres',
+      supabaseUrl: 'https://zyxwvutsrqponmlkjihg.supabase.co',
+      contractSupabaseUrl,
       root,
     }),
-    /different database/,
+    /different Supabase environment/,
   );
 });
 
@@ -121,7 +139,14 @@ test('database preflight refuses to initialize a populated untracked database', 
     async query(sql) {
       queries.push(sql);
       return {
-        rows: [{ has_checksums: false, has_releases: false, public_table_count: 48 }],
+        rows: [
+          {
+            has_checksums: false,
+            has_releases: false,
+            has_identity: false,
+            public_table_count: 48,
+          },
+        ],
       };
     },
   };
@@ -135,7 +160,16 @@ test('database preflight permits initialization only when public schema is empty
   const migrations = [{ filename: '0001_test.sql' }];
   const client = {
     async query() {
-      return { rows: [{ has_checksums: false, has_releases: false, public_table_count: 0 }] };
+      return {
+        rows: [
+          {
+            has_checksums: false,
+            has_releases: false,
+            has_identity: false,
+            public_table_count: 0,
+          },
+        ],
+      };
     },
   };
 
@@ -181,7 +215,7 @@ test('the preflight runner executes every required gate before writing evidence'
   const orderedChecks = [
     "await run('migrations:verify')",
     "await run('migrations:preflight')",
-    "await run('types:check')",
+    "await run('types:check',",
     "await run('typecheck')",
     "await run('lint')",
     "await run('test')",
