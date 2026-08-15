@@ -536,6 +536,12 @@
       "filename": "0088_fix_phase8_guardian_student_rls_recursion.sql",
       "bytes": 2052,
       "sha256": "d1936e1be4cd0751f43513c9fb40314f3d17d428b5c43f2001a4687d797e07fd"
+    },
+    {
+      "version": "0089",
+      "filename": "0089_authorization_surface_hardening.sql",
+      "bytes": 19982,
+      "sha256": "eaebb082b90378fe4ed7b005c478b3789fdb6d4d701fe401b94f3c73f17e3c45"
     }
   ]
 }

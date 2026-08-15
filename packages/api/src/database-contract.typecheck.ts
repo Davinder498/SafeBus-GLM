@@ -8,7 +8,6 @@ export async function assertGeneratedDatabaseContract(
   client: SafeBusSupabaseClient,
 ): Promise<void> {
   client.from('students').select('id, tenant_id');
-  await client.rpc('current_user_role');
 
   // @ts-expect-error A table absent from the hosted schema must be rejected.
   client.from('not_a_safebus_table');
