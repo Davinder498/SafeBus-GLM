@@ -1,5 +1,6 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
 import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
+import { installMapProviderOutage } from './fixtures/map-provider';
 
 const IDS = {
   adminProfileId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
@@ -257,6 +258,30 @@ test.describe('Admin live fleet monitoring', () => {
       await expect(page.getByTestId('admin-live-fleet-map-marker')).toHaveCount(1);
     }
     await expect(page.getByTestId('admin-live-trips-list')).toContainText('Bus 99');
+  });
+
+  test('map provider outage preserves the verified fleet list', async ({ page }) => {
+    await installMock(page, {
+      trips: [
+        tripRow({
+          bus_label: '42',
+          route_name: 'Riverside AM',
+          latest_latitude: 51.0447,
+          latest_longitude: -114.0719,
+          latest_location_at: new Date().toISOString(),
+          location_status: 'live',
+          issue_label: 'OK',
+        }),
+      ],
+    });
+    await installMapProviderOutage(page);
+    await page.goto('/admin/live-trips');
+
+    await expect(page.getByTestId('admin-live-fleet-map-tile-error')).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByTestId('admin-live-fleet-map-fallback')).toContainText('Bus 42');
+    await expect(page.getByTestId('admin-live-trips-list')).toContainText('Riverside AM');
   });
 
   test('manual refresh keeps existing list on generic refresh failure', async ({ page }) => {

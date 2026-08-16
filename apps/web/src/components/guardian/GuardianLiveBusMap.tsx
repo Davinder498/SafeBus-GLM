@@ -84,14 +84,23 @@ class GuardianMapBoundary extends Component<{ children: ReactNode }, { hasError:
   }
 }
 
-function GuardianMapUnavailable() {
+function GuardianMapUnavailable({
+  reason = 'The interactive map could not be shown. Bus status remains available.',
+  availableBusCount = 0,
+}: {
+  reason?: string;
+  availableBusCount?: number;
+}) {
   return (
     <Card className="p-5" data-testid="guardian-live-bus-map-unavailable">
       <h2 className="text-lg font-bold text-navy-900">Live bus map</h2>
-      <DataState
-        title="Map unavailable"
-        message="The interactive map could not be shown. Bus status remains available."
-      />
+      <DataState title="Map unavailable" message={reason} />
+      {availableBusCount > 0 && (
+        <p className="mt-3 text-sm font-semibold text-success-700">
+          Current location is still available for {availableBusCount} bus
+          {availableBusCount === 1 ? '' : 'es'} in the status list below.
+        </p>
+      )}
     </Card>
   );
 }
@@ -122,7 +131,6 @@ export function GuardianLiveBusMap({
     [markerEntries],
   );
   const handleTileError = useCallback(() => setTileFailed(true), []);
-  const handleTileLoad = useCallback(() => setTileFailed(false), []);
 
   if (!tileConfig.isConfigured || !tileConfig.tileUrl || !tileConfig.attribution) {
     return (
@@ -144,6 +152,15 @@ export function GuardianLiveBusMap({
     );
   }
 
+  if (tileFailed) {
+    return (
+      <GuardianMapUnavailable
+        reason="The map provider could not load. Verified bus status remains available below."
+        availableBusCount={markerEntries.length}
+      />
+    );
+  }
+
   return (
     <GuardianMapBoundary>
       <Card className="overflow-hidden" data-testid="guardian-live-bus-map">
@@ -153,15 +170,6 @@ export function GuardianLiveBusMap({
             Only the current bus location is shown. Route lines and other operational details are
             not displayed.
           </p>
-          {tileFailed && (
-            <p
-              role="alert"
-              className="mt-3 rounded-md bg-warning-50 px-3 py-2 text-sm font-semibold text-warning-700"
-              data-testid="guardian-live-bus-map-tile-error"
-            >
-              The map could not be loaded. Bus status remains available.
-            </p>
-          )}
           {markerEntries.length === 0 && (
             <p
               className="mt-3 text-sm font-semibold text-gray-700"
@@ -187,7 +195,8 @@ export function GuardianLiveBusMap({
             <TileLayer
               url={tileConfig.tileUrl}
               attribution={tileConfig.attribution}
-              eventHandlers={{ tileerror: handleTileError, tileload: handleTileLoad }}
+              referrerPolicy="strict-origin"
+              eventHandlers={{ tileerror: handleTileError }}
             />
             {markerEntries.map((entry) => (
               <CircleMarker

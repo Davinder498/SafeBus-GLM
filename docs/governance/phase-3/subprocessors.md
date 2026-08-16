@@ -52,7 +52,9 @@ For each vendor, the Privacy Lead and Product Owner complete:
 - No personal data is transferred cross-border except:
 
   - Email content in transit to the email provider (server-side).
-  - Potentially map tile requests, which carry **no** personal identifiers.
+  - Map tile requests, which contain viewport tile coordinates, device IP,
+    HTTP origin/referrer, and normal request metadata but no SafeBus entity or
+    account identifier.
   - Monitoring/support metadata, which must scrub personal data first.
 
 Any change to processing location requires a `decision-log.md` entry and

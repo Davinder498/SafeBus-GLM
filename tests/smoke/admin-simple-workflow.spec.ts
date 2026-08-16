@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
+import { installMapProviderOutage } from './fixtures/map-provider';
 
 const ids = { profile: '11111111-1111-1111-1111-111111111111', tenant: '22222222-2222-2222-2222-222222222222', driver: '33333333-3333-3333-3333-333333333333', bus: '44444444-4444-4444-4444-444444444444', route: '55555555-5555-5555-5555-555555555555', inactiveRoute: '55555555-5555-5555-5555-555555555556', assignment: '66666666-6666-6666-6666-666666666666', trip: '77777777-7777-7777-7777-777777777777' };
 function profile(role: 'tenant_admin' | 'guardian' = 'tenant_admin') { return { id: ids.profile, tenant_id: ids.tenant, school_id: null, full_name: 'Test Admin', email: 'admin@example.test', role, status: 'active', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' }; }
@@ -58,6 +59,21 @@ test.describe('Simplified tenant admin workflow', () => {
     await expect(page.getByRole('heading', { name: 'Edit R1', level: 2 })).toBeVisible();
     await expect(page.getByLabel('Route name')).toHaveValue('Route One');
     await expect(page.getByLabel('Stop name')).toHaveValue('Pickup Stop');
+  });
+  test('map provider outage preserves route coordinates and direct stop editing', async ({ page }) => {
+    await mockAdmin(page);
+    await installMapProviderOutage(page);
+    await page.goto(`/admin/routes/${ids.route}`);
+
+    await expect(page.getByTestId('admin-routes-map-tile-error')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('admin-routes-map-fallback')).toContainText('Route One');
+    await expect(page.getByText('Pickup Stop')).toBeVisible();
+
+    await page.getByRole('link', { name: 'Manage route' }).click();
+    await expect(page.getByTestId('route-stop-map-tile-error')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByLabel('Latitude')).toHaveValue('51.0447');
+    await expect(page.getByLabel('Longitude')).toHaveValue('-114.0719');
+    await expect(page.getByRole('button', { name: 'Retry map' })).toBeVisible();
   });
   test('legacy setup link returns admins to the route overview', async ({ page }) => { await mockAdmin(page); await page.goto('/admin/setup'); await expect(page).toHaveURL('/admin'); await expect(page.getByRole('heading', { name: 'Transportation overview', level: 1 })).toBeVisible(); await expect(page.getByTestId('admin-route-status-tile')).toHaveCount(2); await expect(page.getByRole('link', { name: 'Stops', exact: true })).toHaveCount(0); });
   test('trips page shows driver-created readiness and active trip', async ({ page }) => { await mockAdmin(page); await page.goto('/admin/trips'); await expect(page.getByRole('heading', { name: 'Trips', level: 1 })).toBeVisible(); await expect(page.getByText('Drivers start trips from active assignments')).toBeVisible(); await expect(page.getByText('Ready for driver')).toBeVisible(); await expect(page.getByRole('heading', { name: 'Route One · Bus One' })).toBeVisible(); });

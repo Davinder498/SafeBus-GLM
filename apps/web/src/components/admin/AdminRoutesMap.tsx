@@ -80,18 +80,17 @@ function FitRoutesControl({
 function RoutesTileLayer({
   config,
   onTileError,
-  onTileLoad,
 }: {
   config: MapTileConfig;
   onTileError(): void;
-  onTileLoad(): void;
 }) {
   if (!config.isConfigured || !config.tileUrl || !config.attribution) return null;
   return (
     <TileLayer
       url={config.tileUrl}
       attribution={config.attribution}
-      eventHandlers={{ tileerror: onTileError, tileload: onTileLoad }}
+      referrerPolicy="strict-origin"
+      eventHandlers={{ tileerror: onTileError }}
     />
   );
 }
@@ -148,7 +147,16 @@ function RoutesMapCoordinateFallback({
           className="mt-3 rounded-lg bg-warning-50 p-3 text-sm text-warning-700"
           data-testid="admin-routes-map-config-missing"
         >
-          Map tiles are unavailable because no production map provider is approved.
+          The map provider configuration is temporarily unavailable.
+        </div>
+      )}
+      {!missingConfig && (
+        <div
+          className="mt-3 rounded-lg bg-warning-50 p-3 text-sm text-warning-700"
+          role="alert"
+          data-testid="admin-routes-map-tile-error"
+        >
+          The map provider could not load. Saved route-stop coordinates remain available below.
         </div>
       )}
       {withCoords.length === 0 ? (
@@ -160,7 +168,7 @@ function RoutesMapCoordinateFallback({
         <div className="mt-4">
           <p className="text-sm text-gray-600">
             {withCoords.length} route{withCoords.length === 1 ? '' : 's'} have stops with valid
-            coordinates. Tile configuration is required for the interactive map.
+            coordinates. Their saved coordinates remain authoritative while the map is unavailable.
           </p>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
             {withCoords.map((entry) => (
@@ -209,10 +217,13 @@ export function AdminRoutesMap({ routes, tileConfig }: AdminRoutesMapProps) {
   );
 
   const handleTileError = useCallback(() => setTileFailed(true), []);
-  const handleTileLoad = useCallback(() => setTileFailed(false), []);
 
   if (!tileConfig.isConfigured) {
     return <RoutesMapCoordinateFallback routes={routes} missingConfig />;
+  }
+
+  if (tileFailed) {
+    return <RoutesMapCoordinateFallback routes={routes} missingConfig={false} />;
   }
 
   return (
@@ -224,15 +235,6 @@ export function AdminRoutesMap({ routes, tileConfig }: AdminRoutesMapProps) {
             Numbered route stops plotted at their saved latitude and longitude. Each route uses a
             distinct color; the map does not imply a road path between stops.
           </p>
-          {tileFailed && (
-            <p
-              role="alert"
-              className="mt-3 rounded-md bg-warning-50 px-3 py-2 text-sm font-semibold text-warning-700"
-              data-testid="admin-routes-map-tile-error"
-            >
-              Map tiles could not be loaded. Marker positions remain listed where supported.
-            </p>
-          )}
           {locations.length === 0 && (
             <p
               className="mt-3 text-sm font-semibold text-gray-700"
@@ -257,7 +259,6 @@ export function AdminRoutesMap({ routes, tileConfig }: AdminRoutesMapProps) {
             <RoutesTileLayer
               config={tileConfig}
               onTileError={handleTileError}
-              onTileLoad={handleTileLoad}
             />
             <FitRoutesControl bounds={bounds} disabled={locations.length === 0} />
             <NumberedRouteStopMarkers

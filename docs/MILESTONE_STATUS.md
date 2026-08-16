@@ -33,6 +33,11 @@
   exact RPC manifest, private helper schema, read-only database/API audit, and
   protected release gate are implemented for review. Point 5 remains open
   until isolated hosted RLS execution and independent boundary review pass.
+- Point 8 provider selection was approved through `DL-018`. Geoapify rendering,
+  provider locking, request minimization, attribution, and safe degraded map
+  workflows are implemented. Point 8 remains open until paid-plan/SLA,
+  restricted-key, vendor/privacy, quota-alert, web/Android acceptance, and
+  seven-day observation evidence is approved.
 - Phase 15A was merged through PR #52 and is on `main`.
 - Hosted RLS execution and destructive QA are disabled because the only
   Supabase database is production.
@@ -61,6 +66,29 @@ branch, migration execution, all hosted RLS suites, Security Advisor review,
 independent tenant/privacy-boundary sign-off, production application, generated
 type refresh, and deletion of the temporary branch. No destructive test may
 run against production.
+
+## Commercial Readiness Point 8 — Interactive Maps
+
+Status: Engineering controls complete; deployed rendering confirmed; operating
+evidence and final approval pending.
+
+- Geoapify is selected for Commercial Release 1 through `DL-018`, with the free
+  quota limited to construction and controlled evaluation.
+- Web and Android obtain a provider-locked tile template and required
+  attribution from a server-managed Netlify Function. No map key or new map
+  variable is embedded in frontend environment configuration.
+- All four map surfaces use minimized referrers and abandon a partial map after
+  tile failure while preserving authoritative status/list/direct-coordinate
+  workflows.
+- Browser smoke tests simulate provider HTTP 503 across guardian, fleet, route,
+  and route-editor experiences; a structural release test prevents regression.
+- Exit evidence and the manual production/Android acceptance procedure are in
+  `docs/governance/point-8-map-readiness.md` and
+  `docs/qa/point-8-map-readiness-acceptance.md`.
+
+Pending: paid Geoapify SLA plan, restricted-key evidence, Point 6 vendor/privacy
+approval, Point 9 quota alerts, production web and personal-Android acceptance,
+seven-day operating observation, and Platform Administrator sign-off.
 
 ## Stack
 
