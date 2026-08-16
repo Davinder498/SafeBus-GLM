@@ -3,7 +3,7 @@
 **Status:** Draft — vendors are placeholders until contract review completes
 **Owner:** Privacy Lead + Product Owner
 **Phase:** 3 — Alberta privacy and legal readiness
-**Last updated:** 2026-08-07
+**Last updated:** 2026-08-16
 
 ---
 
@@ -21,7 +21,7 @@ derived from it after counsel approval.
 | **Supabase** | Postgres + Auth | Primary data store: identity, relationships, trips, location, notifications, audit | Intended ca-central-1; verify project and backups | Unverified | Pending | Required by the platform; confirm DPA + processing/backup region in writing |
 | **Netlify** | App hosting + Functions | Ephemeral request processing; no at-rest personal data | To confirm (default global edge) | Possibly (edge nodes) | Pending | Configure Functions region; confirm no at-rest personal data |
 | **Email provider** (Resend or approved alternative) | Transactional email | Recipient email + notification content in transit | To confirm | Possibly (provider infra) | Pending | Server-side only; recipient resolved from `profiles`/`guardians` |
-| **Map provider** (future) | Map tiles | None — tile requests carry no personal identifiers | Provider infra | Possibly (tiles) | Pending | Configure client to send no identifiers; review provider terms |
+| **Geoapify** (pilot selection) | Map tiles | Tile coordinates, IP address, HTTP origin/referrer, and ordinary request metadata; no SafeBus account or student identifier | Provider infrastructure; confirm in writing | Possibly | Pending | Free commercial quota is suitable for evaluation. Paid plans publish a 99.5% monthly SLA. Contract, privacy, residency, and paid-plan decisions remain launch gates. |
 | **Monitoring / error reporting** (future) | Observability | Potential stack traces / metadata | To confirm | Possibly | Pending | Must scrub personal data before transmission; counsel approval required |
 | **Customer support systems** (future) | Support tickets | Support metadata; minimal personal data | To confirm | Possibly | Pending | Configure to exclude direct DB access; tenant-scoped |
 

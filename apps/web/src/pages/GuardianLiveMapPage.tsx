@@ -5,8 +5,8 @@ import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { mapTileConfig } from '@/config/mapTiles';
 import { useGuardianLiveBusLocations } from '@/hooks/useGuardianLiveBusLocations';
+import { useMapTileConfig } from '@/hooks/useMapTileConfig';
 import type { TrackingConnectionState } from '@/hooks/useTrackingInvalidations';
 import type { GuardianStudentLiveBusLocation } from '@/types/guardianLiveBusLocation';
 
@@ -55,6 +55,7 @@ function locationStateMeta(state: GuardianStudentLiveBusLocation['locationState'
 export function GuardianLiveMapPage() {
   const { state, refreshing, lastRefreshedAt, connectionState, refresh } =
     useGuardianLiveBusLocations();
+  const mapTileConfig = useMapTileConfig();
 
   return (
     <DashboardLayout

@@ -39,6 +39,8 @@ apps/
 - `getDashboardPath(role)` post-login redirect — unchanged
 - All pages, services, hooks, components — unchanged
 - Environment variables: still only `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`
+- Map configuration: fetched from the deployed SafeBus Netlify function; the
+  Geoapify key is not a mobile build environment variable
 
 ### Native navigation
 

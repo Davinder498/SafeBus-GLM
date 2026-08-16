@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { AdminFleetMap, type FleetMapFormatters } from '@/components/admin/AdminFleetMap';
 import { AdminTripsOverview } from '@/components/admin/AdminTripsOverview';
-import { mapTileConfig } from '@/config/mapTiles';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -24,6 +23,7 @@ import {
   useTrackingInvalidations,
   type TrackingConnectionState,
 } from '@/hooks/useTrackingInvalidations';
+import { useMapTileConfig } from '@/hooks/useMapTileConfig';
 import {
   UI_STALE_LOCATION_THRESHOLD_LABEL,
   type AdminLiveTrip,
@@ -175,6 +175,7 @@ function DispatchStatusRow({
 
 export function AdminLiveTripsPage() {
   const { profile } = useAuth();
+  const mapTileConfig = useMapTileConfig();
   const [trips, setTrips] = useState<AdminLiveTrip[]>([]);
   const [routeOverlays, setRouteOverlays] = useState<RouteOverlay[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
