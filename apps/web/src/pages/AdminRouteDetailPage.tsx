@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { mapTileConfig } from '@/config/mapTiles';
+import { useMapTileConfig } from '@/hooks/useMapTileConfig';
 import { getVisibleProfiles, getVisibleSchools } from '@/services/adminOrganizationService';
 import { fetchAdminAssignments } from '@/services/driverAssignmentService';
 import {
@@ -50,6 +50,7 @@ interface RouteDetailData {
 
 export function AdminRouteDetailPage() {
   const { routeId } = useParams<{ routeId: string }>();
+  const mapTileConfig = useMapTileConfig();
   const [data, setData] = useState<RouteDetailData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [direction, setDirection] = useState<RouteDirection>('forward');

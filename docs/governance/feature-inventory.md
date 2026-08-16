@@ -103,7 +103,7 @@ remains a product-owner gate.
 | D4 Email notification MVP | **Keep & Current.** Named milestones were merged in PRs #28, #52, and #53. SMS, push, and broader notifications remain future.                                                                                                                                                                 |
 | D5 Student-only CSV       | **Keep & Current.** Broader imports remain future.                                                                                                                                                                                                                                             |
 | D6 Platform onboarding    | **Keep & Current**, subject to Phase 1 control-plane RLS verification.                                                                                                                                                                                                                         |
-| D7 PostGIS                | **Keep & Current (foundation only).** No production map provider is approved; frontend map tiles remain disabled.                                                                                                                                                                              |
+| D7 PostGIS                | **Keep & Current.** Geoapify is selected for the free pilot through a server-managed configuration. Provider contract/privacy review, quota monitoring, and the paid SLA decision remain Point 8 launch gates.                                                                                |
 
 ## 5. Migration integrity findings (handled in Phase 1, recorded here for visibility)
 

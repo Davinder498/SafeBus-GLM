@@ -68,7 +68,8 @@ VITE_SUPABASE_ANON_KEY=
 ```
 
 Frontend code may use only these two environment variables. No production
-map provider is approved; map surfaces use a controlled non-tile fallback.
+secret or service-role value may be exposed. Map tiles use the server-managed
+Geoapify configuration described in [`docs/map-provider.md`](docs/map-provider.md).
 
 ### Run web app (Phase 1 — mock data)
 

@@ -159,8 +159,11 @@ personal data potentially reaches:
   data beyond ephemeral request processing.
 - **Email provider** (Resend or approved alternative) — recipient email and
   notification content only, in transit.
-- **Map provider** (future) — receives map tile requests; receives **no**
-  student/guardian/driver identifiers (tiles are addressless).
+- **Geoapify** (pilot map provider) — receives tile coordinates, the requesting
+  device IP address, HTTP origin/referrer, and ordinary request metadata. SafeBus
+  sends no account, student, guardian, driver, bus, or trip identifier. Tile
+  coordinates necessarily describe the map viewport and must not be described
+  as carrying no information.
 - **Monitoring/error reporting** (future) — must be configured to strip
   personal data before any cross-border transmission; counsel approval
   required.

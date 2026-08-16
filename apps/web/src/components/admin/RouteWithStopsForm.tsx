@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { RouteStopMapEditor } from '@/components/admin/RouteStopMapEditor';
 import { Button } from '@/components/ui/Button';
-import { mapTileConfig } from '@/config/mapTiles';
+import { useMapTileConfig } from '@/hooks/useMapTileConfig';
 import type { School } from '@/types/organization';
 import type {
   Route,
@@ -78,6 +78,7 @@ export function RouteWithStopsForm({
   onSubmit,
   onCancel,
 }: RouteWithStopsFormProps) {
+  const mapTileConfig = useMapTileConfig();
   const [routeName, setRouteName] = useState(route?.route_name ?? '');
   const [routeCode, setRouteCode] = useState(route?.route_code ?? '');
   const [routeKind, setRouteKind] = useState<RouteKind>(route?.route_kind ?? 'regular');
