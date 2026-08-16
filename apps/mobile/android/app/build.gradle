@@ -1,5 +1,14 @@
 apply plugin: 'com.android.application'
 
+def hasReleaseSigning = [
+    'SAFEBUS_ANDROID_KEYSTORE_PATH',
+    'SAFEBUS_ANDROID_KEYSTORE_PASSWORD',
+    'SAFEBUS_ANDROID_KEY_ALIAS',
+    'SAFEBUS_ANDROID_KEY_PASSWORD'
+].every { System.getenv(it) }
+def safeBusVersionCode = (System.getenv('SAFEBUS_ANDROID_VERSION_CODE') ?: '1').toInteger()
+def safeBusVersionName = System.getenv('SAFEBUS_ANDROID_VERSION_NAME') ?: '1.0.0-dev'
+
 android {
     namespace "com.safebusalberta.app"
     compileSdk rootProject.ext.compileSdkVersion
@@ -7,8 +16,8 @@ android {
         applicationId "com.safebusalberta.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode safeBusVersionCode
+        versionName safeBusVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +25,23 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(System.getenv('SAFEBUS_ANDROID_KEYSTORE_PATH'))
+                storePassword System.getenv('SAFEBUS_ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('SAFEBUS_ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('SAFEBUS_ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

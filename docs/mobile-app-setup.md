@@ -1,6 +1,6 @@
 # SafeBus Mobile App — Setup & Testing Guide
 
-> Phase 7 production driver tracking is Android-only and requires a company-owned managed device. See [phase-7-production-driver-tracking.md](phase-7-production-driver-tracking.md) for provisioning, privacy, and physical road-test gates. The committed Android project contains the native foreground service; do not regenerate or delete it.
+> Commercial Release 1 uses one Android app for guardians and drivers. Drivers may use an eligible personal phone; iOS is deferred. See [phase-7-production-driver-tracking.md](phase-7-production-driver-tracking.md) for BYOD, privacy, Play review, and physical road-test gates. The committed Android project contains the native foreground service; do not regenerate or delete it.
 
 The SafeBus mobile app is a **native Android wrapper** around the existing
 SafeBus web app, built with [Capacitor](https://capacitorjs.com/). It provides
@@ -119,6 +119,9 @@ The app requests these permissions (configured in `AndroidManifest.xml`):
 | `ACCESS_NETWORK_STATE` | Online/offline detection for driver location retry |
 | `ACCESS_FINE_LOCATION` | Driver live bus location tracking |
 | `ACCESS_COARSE_LOCATION` | Approximate location fallback |
+| `ACCESS_BACKGROUND_LOCATION` | Continue an authorized active trip while the app is closed or the screen is locked |
+| `POST_NOTIFICATIONS` | Keep active tracking visible through the foreground-service notification |
+| `CAMERA` | Scan the bus-mounted start QR; never a student badge |
 
 The GPS hardware feature is marked `required="false"` so the
 app installs on devices without them.
@@ -126,8 +129,9 @@ app installs on devices without them.
 ## Testing Driver Features
 
 1. Sign in with a **driver** account.
-2. **Location sharing**: Start an active trip → location permission prompt →
-   bus location is shared live via `navigator.geolocation.watchPosition`.
+2. **Location sharing**: Scan the bus QR → review the personal-device
+   background-location disclosure → grant precise location and notifications
+   → the native foreground service shares the active bus location.
 3. **Pickup/drop-off**: Open the assigned active-trip manifest and confirm the
    event for the selected student. No student badge or camera scan is used.
 
@@ -167,7 +171,22 @@ pnpm dev            # Vite dev server at http://localhost:5174
 
 This gives you the mobile route subset in a browser for quick testing.
 
-## Building a Release APK
+## Building a signed release
+
+The protected `Build signed Android release` GitHub workflow builds the reviewed
+40-character commit, reads the keystore only from the `android-production`
+environment, verifies the AAB signature, and retains the signed bundle as a
+90-day artifact. Each workflow run assigns a monotonically increasing Android
+version code from the GitHub run number. Configure these protected secrets:
+
+- `SAFEBUS_ANDROID_KEYSTORE_BASE64`
+- `SAFEBUS_ANDROID_KEYSTORE_PASSWORD`
+- `SAFEBUS_ANDROID_KEY_ALIAS`
+- `SAFEBUS_ANDROID_KEY_PASSWORD`
+- `VITE_SUPABASE_ANON_KEY`
+
+Configure `VITE_SUPABASE_URL` as an environment variable. From Android Studio,
+local signed builds remain available for authorized release-key custodians.
 
 From Android Studio:
 

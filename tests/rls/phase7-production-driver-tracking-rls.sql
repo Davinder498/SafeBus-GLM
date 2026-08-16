@@ -1,5 +1,6 @@
 -- Phase 7 native tracking authorization regression.
--- Run only against hosted Supabase DEV after applying migration 0086.
+-- Run only against an approved isolated Supabase test database after applying
+-- migrations through 0090. Never run this fixture against production.
 begin;
 
 do $$
@@ -28,7 +29,8 @@ begin
   end if;
 
   foreach v_signature in array array[
-    'public.register_android_tracking_device(uuid,text,text,text)',
+    'public.register_android_byod_tracking_device(uuid,text,text,text)',
+    'public.revoke_driver_tracking_devices(uuid)',
     'public.bind_driver_tracking_device(text,uuid,text)',
     'public.ingest_driver_location_event(text,text,uuid,bigint,timestamp with time zone,double precision,double precision,double precision,double precision,double precision,integer,text)'
   ] loop
@@ -41,6 +43,14 @@ begin
       raise exception 'PHASE7 FAIL: unsafe execute grants on %', v_signature;
     end if;
   end loop;
+  if to_regprocedure('public.register_android_tracking_device(uuid,text,text,text)') is not null then
+    raise exception 'PHASE7 FAIL: legacy company-device registration remains in the public API';
+  end if;
+  if to_regprocedure(
+    'safebus_private.register_android_tracking_device(uuid,text,text,text)'
+  ) is null then
+    raise exception 'PHASE7 FAIL: legacy company-device registration was not quarantined';
+  end if;
 end $$;
 
 insert into public.tenants(id, name, type, status)
@@ -70,7 +80,8 @@ values
 
 insert into public.driver_tracking_devices(
   id, tenant_id, driver_id, profile_id, installation_id, credential_hash,
-  platform, ownership, app_version, status
+  platform, ownership, app_version, privacy_notice_version,
+  privacy_notice_acknowledged_at, status
 ) values (
   'a7000000-0000-0000-0000-000000000031',
   'a7000000-0000-0000-0000-000000000001',
@@ -78,7 +89,7 @@ insert into public.driver_tracking_devices(
   'a7000000-0000-0000-0000-000000000011',
   'a7000000-0000-0000-0000-000000000041',
   public.hash_driver_device_credential('sbus_device_v1_' || repeat('A', 43)),
-  'android', 'company_owned', '1.0-test', 'active'
+  'android', 'personal', '1.0-test', 'driver-location-byod-v1', now(), 'active'
 );
 
 set local role authenticated;
@@ -90,8 +101,9 @@ select set_config('request.jwt.claims', json_build_object(
 do $$
 begin
   begin
-    perform public.register_android_tracking_device(
-      'a7000000-0000-0000-0000-000000000041', 'forged device', '1.0-test', 'company_owned'
+    perform public.register_android_byod_tracking_device(
+      'a7000000-0000-0000-0000-000000000041', 'forged device', '1.0-test',
+      'driver-location-byod-v1'
     );
     raise exception 'PHASE7 FAIL: driver B claimed driver A device';
   exception when insufficient_privilege then null;
@@ -116,6 +128,23 @@ select set_config('request.jwt.claims', json_build_object(
 
 do $$
 begin
+  begin
+    perform public.register_android_byod_tracking_device(
+      'a7000000-0000-0000-0000-000000000042', 'test phone', '1.0-test',
+      'outdated-notice'
+    );
+    raise exception 'PHASE7 FAIL: outdated privacy notice was accepted';
+  exception when insufficient_privilege then null;
+  end;
+
+  begin
+    perform public.register_android_byod_tracking_device(
+      'a7000000-0000-0000-0000-000000000042', 'test phone', '1.0-test', null
+    );
+    raise exception 'PHASE7 FAIL: missing privacy notice was accepted';
+  exception when insufficient_privilege then null;
+  end;
+
   begin
     perform public.ingest_driver_location_event(
       'sbus_track_v1_' || repeat('B', 43),

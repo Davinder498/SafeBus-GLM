@@ -9,6 +9,7 @@ import {
   Phone,
   Power,
   ShieldCheck,
+  Smartphone,
   Trash2,
   UserRound,
 } from 'lucide-react';
@@ -25,7 +26,11 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Select } from '@/components/ui/Select';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { useAuth } from '@/contexts/useAuth';
-import { fetchAdminDriverDetail, type AdminDriverDetail } from '@/services/adminPeopleService';
+import {
+  fetchAdminDriverDetail,
+  revokeDriverTrackingDevices,
+  type AdminDriverDetail,
+} from '@/services/adminPeopleService';
 import {
   deleteDriver,
   DuplicateIdentifierError,
@@ -113,6 +118,7 @@ export function AdminDriverDetailPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmRevokeDevices, setConfirmRevokeDevices] = useState(false);
   const canWrite = profile?.role === 'tenant_admin';
 
   const load = useCallback(async () => {
@@ -219,6 +225,28 @@ export function AdminDriverDetailPage() {
     } catch (error) {
       setWriteError(error instanceof Error ? error.message : 'Unable to delete the driver.');
       setConfirmDelete(false);
+      setBusy(false);
+    }
+  }
+
+  async function revokeTrackingDevices() {
+    if (!detail || busy) return;
+    setBusy(true);
+    setWriteError(null);
+    setMessage(null);
+    try {
+      const revoked = await revokeDriverTrackingDevices(detail.profile.id);
+      setConfirmRevokeDevices(false);
+      setMessage(
+        revoked === 1
+          ? 'One driver phone tracking credential and all SafeBus sessions were revoked.'
+          : `${revoked} driver phone tracking credentials and all SafeBus sessions were revoked.`,
+      );
+    } catch (error) {
+      setWriteError(
+        error instanceof Error ? error.message : 'Unable to revoke driver phone tracking.',
+      );
+    } finally {
       setBusy(false);
     }
   }
@@ -522,6 +550,32 @@ export function AdminDriverDetailPage() {
                 </p>
               </Card>
             </div>
+            <Card className="border-warning-200 bg-warning-50 p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex gap-3">
+                  <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-warning-700" aria-hidden />
+                  <div>
+                    <h2 className="font-bold text-navy-900">Personal phone tracking access</h2>
+                    <p className="mt-1 text-sm leading-6 text-gray-700">
+                      Revoke SafeBus tracking credentials and signed-in sessions immediately when
+                      this driver's phone is lost, stolen, replaced, or compromised. This does not
+                      inspect or erase any personal content on the phone.
+                    </p>
+                  </div>
+                </div>
+                {canWrite && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={busy}
+                    onClick={() => setConfirmRevokeDevices(true)}
+                    data-testid="admin-revoke-driver-tracking-devices"
+                  >
+                    Revoke phone tracking
+                  </Button>
+                )}
+              </div>
+            </Card>
             <Card className="p-5">
               <div className="flex items-center gap-3">
                 <MapPin className="h-5 w-5 text-navy-700" aria-hidden />
@@ -552,6 +606,16 @@ export function AdminDriverDetailPage() {
             <OperationalNotesPanel targetEntity="driver" targetId={detail.driver.id} />
           </>
         )}
+        <ConfirmDialog
+          open={confirmRevokeDevices}
+          title={`Revoke phone tracking for ${detail ? displayName(detail) : 'this driver'}?`}
+          description="All active SafeBus tracking credentials and signed-in sessions for this driver will stop working. The driver must sign in again and acknowledge the current location notice to register an eligible phone."
+          confirmLabel="Revoke tracking"
+          destructive
+          busy={busy}
+          onConfirm={() => void revokeTrackingDevices()}
+          onCancel={() => setConfirmRevokeDevices(false)}
+        />
         <ConfirmDialog
           open={confirmDelete}
           title={`Delete ${detail ? displayName(detail) : 'driver'}?`}

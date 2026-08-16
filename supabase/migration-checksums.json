@@ -542,6 +542,12 @@
       "filename": "0089_authorization_surface_hardening.sql",
       "bytes": 19982,
       "sha256": "eaebb082b90378fe4ed7b005c478b3789fdb6d4d701fe401b94f3c73f17e3c45"
+    },
+    {
+      "version": "0090",
+      "filename": "0090_phase7_byod_android_tracking.sql",
+      "bytes": 7146,
+      "sha256": "df8a8e14608bf48632706762052ccd7cc50c195e50c9e010a538643a93d39f52"
     }
   ]
 }

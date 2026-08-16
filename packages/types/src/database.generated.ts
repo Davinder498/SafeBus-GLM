@@ -753,6 +753,8 @@ export interface Database {
           ownership: string
           device_model: string | null
           app_version: string
+          privacy_notice_version: string | null
+          privacy_notice_acknowledged_at: string | null
           status: string
           registered_at: string
           last_seen_at: string | null
@@ -769,6 +771,8 @@ export interface Database {
           ownership: string
           device_model?: string | null
           app_version: string
+          privacy_notice_version?: string | null
+          privacy_notice_acknowledged_at?: string | null
           status?: string
           registered_at?: string
           last_seen_at?: string | null
@@ -785,6 +789,8 @@ export interface Database {
           ownership?: string
           device_model?: string | null
           app_version?: string
+          privacy_notice_version?: string | null
+          privacy_notice_acknowledged_at?: string | null
           status?: string
           registered_at?: string
           last_seen_at?: string | null
@@ -3984,6 +3990,21 @@ export interface Database {
           p_ownership?: string | null
         }
         Returns: unknown
+      }
+      register_android_byod_tracking_device: {
+        Args: {
+          p_app_version: string
+          p_device_model: string
+          p_installation_id: string
+          p_notice_version: string
+        }
+        Returns: unknown
+      }
+      revoke_driver_tracking_devices: {
+        Args: {
+          p_profile_id: string
+        }
+        Returns: number
       }
       register_current_user_session: {
         Args: {

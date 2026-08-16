@@ -569,6 +569,31 @@ credentials, adopt the existing database, run application rollback, verify
 deployed headers, and obtain human security/privacy approval. Never run hosted
 RLS assertions or QA fixture writers against the sole production database.
 
+## Phase 7 — Shared Android app and personal-device driver tracking
+
+Status: BYOD repository implementation updated for review under `DL-017`;
+database, Google Play, physical-device, and human exit evidence pending.
+
+- Retained one Capacitor Android binary with separate role-guarded guardian and
+  driver portals. Guardian accounts cannot access driver tracking controls.
+- Added migration `0090_phase7_byod_android_tracking.sql` for personal-device
+  registration and versioned location-notice acknowledgment. It is unapplied;
+  production was not touched.
+- Added the prominent disclosure before Android location permission, explicit
+  background-location/notification readiness, settings recovery, and native
+  start-time fail-closed checks.
+- Preserved Android Keystore encryption, encrypted offline FIFO recovery,
+  device/session binding, the visible foreground service, and the 18-hour
+  offline authorization ceiling.
+- Targeted Android API 36, added Android CI, and added a protected workflow that
+  builds and verifies a signed AAB for an exact reviewed commit.
+
+Pending: approved isolated database and migration/RLS execution; signed-workflow
+run with protected keys; Google Play background-location/privacy review; device
+matrix and eight-hour battery/data/coverage testing; approved customer BYOD,
+support, reimbursement, and lost-device processes; privacy and operations
+sign-off. iOS remains deferred.
+
 ## Phase 8 — Guardian Experience and Notifications
 
 Status: repository implementation complete on `agent/phase-8-guardian-experience-notifications`; hosted-DEV and human exit evidence pending.

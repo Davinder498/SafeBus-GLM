@@ -25,9 +25,7 @@ export interface AdminDriverDetail {
   profile: OrganizationProfile;
 }
 
-export async function fetchAdminGuardianDetail(
-  guardianId: string,
-): Promise<AdminGuardianDetail> {
+export async function fetchAdminGuardianDetail(guardianId: string): Promise<AdminGuardianDetail> {
   const { data: guardianData, error: guardianError } = await client()
     .from('guardians')
     .select(guardianColumns)
@@ -63,7 +61,16 @@ export async function fetchAdminDriverDetail(driverId: string): Promise<AdminDri
     .select(profileColumns)
     .eq('id', driver.profile_id)
     .maybeSingle();
-  if (profileError || !profileData) throw new Error('The driver account details could not be loaded.');
+  if (profileError || !profileData)
+    throw new Error('The driver account details could not be loaded.');
 
   return { driver, profile: profileData as OrganizationProfile };
+}
+
+export async function revokeDriverTrackingDevices(profileId: string): Promise<number> {
+  const { data, error } = await client().rpc('revoke_driver_tracking_devices', {
+    p_profile_id: profileId,
+  });
+  if (error) throw new Error(error.message);
+  return data ?? 0;
 }

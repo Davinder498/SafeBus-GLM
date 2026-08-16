@@ -101,11 +101,12 @@ archiving is needed; the collision is documented here and asserted by
 | 0087        | `0087_phase8_guardian_experience_notifications.sql`           | Canonical                           | Phase 8 guardian access expiry, explicit notification preferences, privacy-review gate, quotas, provider limits, and dead-letter handling.                                                                                                                                                                                      |
 | 0088        | `0088_fix_phase8_guardian_student_rls_recursion.sql`          | Canonical                           | Phase 8 guardian/student recursion repair.                                                                                                                                                                                                                                                                                      |
 | 0089        | `0089_authorization_surface_hardening.sql`                    | Canonical, pending hosted execution | Point 5 exact RPC allowlist, private internal-function schema, least-privilege grants/defaults, search-path hardening, and future-table RLS enforcement.                                                                                                                                                                        |
+| 0090        | `0090_phase7_byod_android_tracking.sql`                       | Canonical, pending hosted execution | Phase 7 personal Android registration, versioned location-notice acknowledgment, tenant-admin lost-phone revocation, and retirement of new company-device registration.                                                                                                                                                       |
 
 ## 4. Fresh-rebuild proof
 
 A fresh database must be built from `0001` through
-`0089_authorization_surface_hardening.sql` in canonical order
+`0090_phase7_byod_android_tracking.sql` in canonical order
 (with archived files excluded) before these phases can be accepted. The archived
 files in `supabase/legacy/` are excluded from fresh rebuilds because:
 

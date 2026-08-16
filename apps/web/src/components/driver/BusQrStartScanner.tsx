@@ -3,6 +3,12 @@ import { Bus, Camera, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import {
+  DRIVER_LOCATION_DISCLOSURE,
+  DRIVER_LOCATION_NOTICE_STORAGE_KEY,
+  DRIVER_LOCATION_NOTICE_VERSION,
+  needsDriverLocationDisclosure,
+} from '@/lib/driverLocationDisclosure';
+import {
   getBusQrStartOptions,
   startBusTrackingFromQr,
   type BusQrStartOption,
@@ -28,6 +34,8 @@ type ScannerState =
   | 'no-camera'
   | 'unsupported'
   | 'choosing'
+  | 'location-disclosure'
+  | 'location-settings'
   | 'checking-location'
   | 'starting-trip'
   | 'started'
@@ -51,6 +59,8 @@ export function BusQrStartScanner({
   const [manualToken, setManualToken] = useState('');
   const [scannedToken, setScannedToken] = useState('');
   const [startOptions, setStartOptions] = useState<BusQrStartOption[]>([]);
+  const [pendingOption, setPendingOption] = useState<BusQrStartOption | null>(null);
+  const [nativeSettingsTarget, setNativeSettingsTarget] = useState<'app' | 'location'>('app');
 
   const stopCamera = useCallback(() => {
     scanningRef.current = false;
@@ -95,30 +105,68 @@ export function BusQrStartScanner({
   );
 
   const startSelected = useCallback(
-    async (option: BusQrStartOption) => {
+    async (option: BusQrStartOption, disclosureAccepted = false) => {
+      const native = window.SafeBusNativeTracking;
+      if (
+        native &&
+        !disclosureAccepted &&
+        needsDriverLocationDisclosure(
+          window.localStorage.getItem(DRIVER_LOCATION_NOTICE_STORAGE_KEY),
+        )
+      ) {
+        setPendingOption(option);
+        setState('location-disclosure');
+        return;
+      }
       if (processingRef.current || !scannedToken) return;
       processingRef.current = true;
       setMessage(null);
       try {
-        if (!('geolocation' in navigator)) {
-          throw new Error('Location is not available on this phone. The bus was not started.');
-        }
         setState('checking-location');
-        await new Promise<void>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            () => resolve(),
-            (error) => {
-              reject(
-                new Error(
-                  error.code === error.PERMISSION_DENIED
-                    ? 'Location permission is required. The bus was not started.'
-                    : 'A GPS location could not be confirmed. The bus was not started.',
-                ),
-              );
-            },
-            { enableHighAccuracy: true, timeout: 15_000, maximumAge: 5_000 },
-          );
-        });
+        if (native) {
+          const permissions = await native.prepare();
+          if (permissions.locationPermission !== 'always') {
+            setPendingOption(option);
+            setNativeSettingsTarget(
+              permissions.locationPermission === 'disabled' ? 'location' : 'app',
+            );
+            setState('location-settings');
+            setMessage(
+              permissions.locationPermission === 'disabled'
+                ? 'Turn on Android location services, then check access again.'
+                : 'In Android settings, choose Permissions > Location > Allow all the time, then return to SafeBus.',
+            );
+            return;
+          }
+          if (permissions.notificationPermission === 'denied') {
+            setPendingOption(option);
+            setNativeSettingsTarget('app');
+            setState('location-settings');
+            setMessage(
+              'In Android settings, allow SafeBus notifications so active tracking remains visible, then return to SafeBus.',
+            );
+            return;
+          }
+        } else {
+          if (!('geolocation' in navigator)) {
+            throw new Error('Location is not available on this phone. The bus was not started.');
+          }
+          await new Promise<void>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+              () => resolve(),
+              (error) => {
+                reject(
+                  new Error(
+                    error.code === error.PERMISSION_DENIED
+                      ? 'Location permission is required. The bus was not started.'
+                      : 'A GPS location could not be confirmed. The bus was not started.',
+                  ),
+                );
+              },
+              { enableHighAccuracy: true, timeout: 15_000, maximumAge: 5_000 },
+            );
+          });
+        }
         setState('starting-trip');
         const result = await startBusTrackingFromQr(scannedToken, option.busRouteAssignmentId);
         setState('started');
@@ -128,6 +176,7 @@ export function BusQrStartScanner({
             : `Bus ${result.busNumber} started. This phone is now sharing its location.`,
         );
         await onStarted(result);
+        setPendingOption(null);
       } catch (cause) {
         setState('invalid');
         setMessage(cause instanceof Error ? cause.message : 'The bus could not be started.');
@@ -137,6 +186,24 @@ export function BusQrStartScanner({
     },
     [onStarted, scannedToken],
   );
+
+  const acceptLocationDisclosure = useCallback(() => {
+    if (!pendingOption) return;
+    window.localStorage.setItem(DRIVER_LOCATION_NOTICE_STORAGE_KEY, DRIVER_LOCATION_NOTICE_VERSION);
+    void startSelected(pendingOption, true);
+  }, [pendingOption, startSelected]);
+
+  const openNativeSettings = useCallback(async () => {
+    const native = window.SafeBusNativeTracking;
+    if (!native) return;
+    try {
+      if (nativeSettingsTarget === 'location') await native.openLocationServices();
+      else await native.openAppSettings();
+    } catch (cause) {
+      setState('invalid');
+      setMessage(cause instanceof Error ? cause.message : 'Android settings could not be opened.');
+    }
+  }, [nativeSettingsTarget]);
 
   const start = useCallback(async () => {
     stopCamera();
@@ -204,6 +271,8 @@ export function BusQrStartScanner({
     setManualToken('');
     setScannedToken('');
     setStartOptions([]);
+    setPendingOption(null);
+    setNativeSettingsTarget('app');
   }
 
   return (
@@ -286,6 +355,63 @@ export function BusQrStartScanner({
                 ))}
               </div>
             )}
+            {state === 'location-disclosure' && (
+              <div
+                role="dialog"
+                aria-labelledby="driver-location-disclosure-title"
+                aria-describedby="driver-location-disclosure-description"
+                className="space-y-4 rounded-xl border-2 border-blue-300 bg-blue-50 p-4"
+                data-testid="driver-location-disclosure"
+              >
+                <div>
+                  <h3 id="driver-location-disclosure-title" className="font-bold text-navy-900">
+                    Allow active-trip bus location
+                  </h3>
+                  <p
+                    id="driver-location-disclosure-description"
+                    className="mt-2 text-sm font-semibold leading-6 text-gray-800"
+                  >
+                    {DRIVER_LOCATION_DISCLOSURE}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-gray-700">
+                    Collection starts only for a trip you start, a persistent Android notification
+                    stays visible, and collection stops when the trip ends, is cancelled, or the
+                    authorization expires. SafeBus does not use this location for advertising or
+                    off-shift monitoring.
+                  </p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Button
+                    type="button"
+                    onClick={acceptLocationDisclosure}
+                    data-testid="driver-location-disclosure-continue"
+                  >
+                    Continue and allow location
+                  </Button>
+                  <Button type="button" variant="secondary" onClick={close}>
+                    Not now
+                  </Button>
+                </div>
+              </div>
+            )}
+            {state === 'location-settings' && pendingOption && (
+              <div className="space-y-3 rounded-xl border border-warning-300 bg-warning-50 p-4">
+                <h3 className="font-bold text-navy-900">Android access needs attention</h3>
+                <p className="text-sm leading-6 text-gray-700">{message}</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Button type="button" onClick={() => void openNativeSettings()}>
+                    Open Android settings
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => void startSelected(pendingOption, true)}
+                  >
+                    Check access again
+                  </Button>
+                </div>
+              </div>
+            )}
             {state === 'checking-location' && (
               <p className="text-sm font-semibold text-blue-700">
                 Confirming location permission before starting the bus...
@@ -309,7 +435,7 @@ export function BusQrStartScanner({
                 Use the SafeBus Android app or enter the QR token for testing.
               </p>
             )}
-            {message && (
+            {message && state !== 'location-settings' && (
               <p
                 role={state === 'invalid' ? 'alert' : 'status'}
                 className={`text-sm font-semibold ${state === 'invalid' ? 'text-danger-700' : 'text-success-700'}`}

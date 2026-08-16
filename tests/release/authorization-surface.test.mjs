@@ -4,6 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 
 const migrationPath = 'supabase/migrations/0089_authorization_surface_hardening.sql';
+const byodMigrationPath = 'supabase/migrations/0090_phase7_byod_android_tracking.sql';
 
 async function readJson(file) {
   return JSON.parse(await fs.readFile(file, 'utf8'));
@@ -47,10 +48,11 @@ test('authorization surface is exact, unique, and audience-separated', async () 
   }
 });
 
-test('migration audiences match the reviewed authorization manifest', async () => {
-  const [surface, migration] = await Promise.all([
+test('migration chain audiences match the reviewed authorization manifest', async () => {
+  const [surface, migration, byodMigration] = await Promise.all([
     readJson('config/authorization-surface.json'),
     fs.readFile(migrationPath, 'utf8'),
+    fs.readFile(byodMigrationPath, 'utf8'),
   ]);
   const allowlistInsert = migration.match(
     /insert into safebus_rpc_allowlist[\s\S]*?values([\s\S]*?);/i,
@@ -60,6 +62,16 @@ test('migration audiences match the reviewed authorization manifest', async () =
     ...allowlistInsert.matchAll(/\('([a-z0-9_]+)', '(authenticated|service_role)'\)/g),
   ];
   const actual = new Map(entries.map((match) => [match[1], match[2]]));
+  for (const match of byodMigration.matchAll(
+    /alter function public\.([a-z0-9_]+)\([^;]+\)\s+set schema safebus_private/gi,
+  )) {
+    actual.delete(match[1]);
+  }
+  for (const match of byodMigration.matchAll(
+    /grant execute on function public\.([a-z0-9_]+)\([^;]+\)\s+to (authenticated|service_role)/gi,
+  )) {
+    actual.set(match[1], match[2]);
+  }
   const expected = new Map();
   for (const signature of surface.authenticated) {
     expected.set(signature.slice(0, signature.indexOf('(')), 'authenticated');

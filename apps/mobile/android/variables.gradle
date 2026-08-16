@@ -1,9 +1,9 @@
 ext {
-    // Phase 7 production tracking requires Android 10+ for managed
+    // Phase 7 production tracking requires Android 10+ for personal-device
     // background-location controls and Keystore-backed AES-GCM storage.
     minSdkVersion = 29
-    compileSdkVersion = 34
-    targetSdkVersion = 34
+    compileSdkVersion = 36
+    targetSdkVersion = 36
     androidxActivityVersion = '1.8.0'
     androidxAppCompatVersion = '1.6.1'
     androidxCoordinatorLayoutVersion = '1.2.0'
