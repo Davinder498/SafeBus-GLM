@@ -8,11 +8,11 @@ Repository implementation includes the Android BYOD contract, permission flow, a
 
 Commercial Release 1 uses one Android application for drivers and guardians. The authenticated role determines which routes and capabilities are available; guardian accounts cannot reach driver operations or native tracking controls. Drivers use their own compatible Android phone, mounted and powered while operating a bus.
 
-iOS is deferred by `DL-016`. A later iOS milestone requires a separate Core Location background-mode implementation, App Store privacy work, signed delivery pipeline, and full repetition of the road-test matrix. Android evidence must not be represented as iOS-equivalent evidence.
+iOS is deferred by `DL-017`. A later iOS milestone requires a separate Core Location background-mode implementation, App Store privacy work, signed delivery pipeline, and full repetition of the road-test matrix. Android evidence must not be represented as iOS-equivalent evidence.
 
 ## Device policy
 
-Phase 7 permits compatible **personally owned Android phones**. Migration `0089_phase7_byod_android_tracking.sql` replaces new company-device registration with a versioned personal-device location-notice contract. It does not apply itself to the sole production database.
+Phase 7 permits compatible **personally owned Android phones**. Migration `0090_phase7_byod_android_tracking.sql` replaces new company-device registration with a versioned personal-device location-notice contract. It does not apply itself to the sole production database.
 
 Required personal-device controls:
 
@@ -71,7 +71,7 @@ SafeBus tracks the bus operating trip, not the child and not the driver's person
 
 ## Physical-device acceptance plan
 
-Run only against an explicitly approved isolated Supabase test database after manually applying migrations through `0089_phase7_byod_android_tracking.sql`. No such target is currently approved. Do not run these tests or fixtures against the sole production database, and do not use real routes, student records, or production credentials.
+Run only against an explicitly approved isolated Supabase test database after manually applying migrations through `0090_phase7_byod_android_tracking.sql`. No such target is currently approved. Do not run these tests or fixtures against the sole production database, and do not use real routes, student records, or production credentials.
 
 For every scenario, record device model/OS, app version, trip/session IDs, start/end time, battery start/end, mobile bytes sent/received, queue high-water mark, accepted event count, duplicates, rejects by reason, and time to full recovery.
 
@@ -113,7 +113,7 @@ pnpm test:rls:dev -- tests/rls/phase7-production-driver-tracking-rls.sql
 
 ## Exit-gate checklist
 
-The Android BYOD repository work resumed on 2026-08-15 under `DL-016`. Phase 7 remains pending until the following evidence is completed and approved.
+The Android BYOD repository work resumed on 2026-08-15 under `DL-017`. Phase 7 remains pending until the following evidence is completed and approved.
 
 - [ ] Approved battery and mobile-data limits recorded.
 - [ ] Multi-hour road tests completed on every supported device/OS class.

@@ -52,61 +52,6 @@ archiving is needed; the collision is documented here and asserted by
 
 ## 3. Full migration inventory (canonical order)
 
- commercial-readiness/point-7-byod-android
-| # | Filename | Status | Notes |
-| --- | --- | --- | --- |
-| 0001 | `0001_auth_profile_foundation.sql` | Canonical | Auth/profile/tenant/school baseline |
-| 0002 | `0002_foundation_read_grants.sql` | Canonical | Read grants |
-| 0003 | `0003_students_guardians_foundation.sql` | Canonical | Students, guardians, student_guardians |
-| 0004 | `0004_transportation_structure_foundation.sql` | Canonical | Buses, drivers, routes, stops, assignments |
-| 0005 | `0005_transportation_admin_write_foundation.sql` | Canonical | Admin write policies |
-| 0006 | `0006_driver_trips_foundation.sql` | Canonical | Driver trips + end_driver_trip RPC |
-| 0007 | `0007_driver_location_update_foundation.sql` | Canonical | Location update RPC + tables |
-| 0008 | `0008_fix_driver_location_update_rpc.sql` | Canonical | RPC fix |
-| 0009–0014 | Admin live trip monitoring + assignment | Canonical | Progressive hardening |
-| 0015–0021 | Guardian visibility + linking | Canonical | Guardian RPCs |
-| 0022–0024 | Driver manifest + trip events + guardian events | Canonical | |
-| 0025 | Guardian notification outbox | Canonical | Backend outbox (D4 in feature inventory) |
-| 0026–0027 | Admin fleet monitoring + guardian live bus | Canonical | |
-| 0028–0033 | Route assignments, admin list, bus service | Canonical | |
-| 0034 | Safe ETA foundation | Canonical (future-scope D3) | Quarantined from UI per feature inventory |
-| 0035–0036 | Platform tenant onboarding + privacy boundary | Canonical | Platform isolation (hardened by `0065`) |
-| 0037 | Safe ETA validation | Canonical (future-scope D3) | |
-| 0038–0039 | Notification email delivery + hardening | Canonical (D4) | |
-| 0040–0041 | Tenant admin delete + route delete cascade | Canonical | |
-| 0042 | `0042_secure_student_onboarding_workflow.sql` | **Canonical** | WINNER of 0042 collision |
-| ~~0042~~ | ~~`0042_fix_guardian_live_bus_location_uuid_aggregate.sql`~~ | **Archived** | LOSER → `supabase/legacy/` |
-| 0043 | `0043_people_directory_and_student_identifier_retirement.sql` | **Canonical** | WINNER of 0043 collision |
-| ~~0043~~ | ~~`0043_secure_student_qr_boarding_foundation.sql`~~ | **Archived** | LOSER → `supabase/legacy/` (scope drift D1) |
-| 0044–0057 | CSV import, route patterns, PostGIS, versioned geometry | Canonical | |
-| 0058 | `0058_admin_trip_overview.sql` | **Canonical** | Co-winner of 0058 collision |
-| 0058 | `0058_unified_bus_management_workspace.sql` | **Canonical** | Co-winner of 0058 collision (independent objects) |
-| 0059–0064 | Bus QR, unified direction, platform admin delete | Canonical | |
-| 0065 | `0065_phase1_authorization_reconciliation.sql` | Canonical | Phase 1 corrective: collision assertion + platform isolation + driver authorization tightening + obsolete function quarantine |
-| 0066 | `0066_phase2_audit_system_foundation.sql` | Canonical | Append-only audit foundation and recursive detail sanitization |
-| 0067 | `0067_phase2_mfa_recent_auth_allowlist_ratelimit.sql` | Canonical | AAL2/recent-auth gates, redirect allowlist, fixed-window rate limits |
-| 0068 | `0068_phase2_password_sessions_idempotency.sql` | Canonical | Password/session/idempotency controls and sensitive-action audit wiring |
-| 0069 | `0069_phase3_retention_foundation.sql` | Canonical | Draft retention policies, deletion/anonymization execution, run evidence |
-| 0070 | `0070_phase0_3_hosted_validation_reconciliation.sql` | Canonical | Hosted-DEV correction: restore platform tenant lifecycle read and reassert internal-only generic audit writer ACL |
-| 0071 | `0071_phase2_auth_rpc_hosted_reconciliation.sql` | Canonical | Hosted-DEV correction: restore the missing narrow self-service authentication audit RPC |
-| 0072 | `0072_hosted_platform_helper_and_audit_sanitizer.sql` | Canonical | Hosted-DEV correction: restore recursive audit sanitization and deterministic nested platform authorization |
-| 0073 | `0073_hosted_rls_execution_context_reconciliation.sql` | Canonical | Hosted-DEV correction: unify platform authorization with the canonical role lookup and restore audit RLS SELECT privilege |
-| 0074 | `0074_phase2_3_hosted_constraint_password_reconciliation.sql` | Canonical | Hosted-DEV correction: allow retention audit events and restore the canonical repeated-character password validator |
-| 0075 | `0075_phase5_tenant_administration_foundation.sql` | Canonical | Phase 5: multiple admins, sub-admin roles, admin transfer/recovery/departure, final-admin protection trigger, atomic tenant lifecycle, tenant-level audit search |
-| 0076 | `0076_phase5_bulk_onboarding_foundation.sql` | Canonical | Phase 5: private bulk staging, 50k-row validation, atomic confirmation/rollback, set-based duplicate detection, SIS integration boundary |
-| 0077 | `0077_phase5_invitation_lifecycle.sql` | Canonical | Phase 5: enforced invitation expiry/revoke, first-admin platform boundary, rate-limited delivery queue and status reconciliation |
-| 0078 | `0078_phase5_account_restoration_bulk_invitations.sql` | Canonical | Phase 5: tenant account restoration and complete idempotent guardian/driver invitation queueing |
-| 0079 | `0079_phase6_transportation_operations_completion.sql` | Canonical | Phase 6: service days, controlled late/missing status, trip exceptions, pre-trip evidence, operational notes, pause/resume/cancel, substitutions, replacement buses, guardian revocation, open-trip uniqueness, and school-scope reconciliation for affected trip reads/RPCs. Widens `driver_trips.status` to include `paused`. |
-| 0080â€“0085 | Hosted authorization and grant reconciliation | Canonical | Student roster school scope, guardian bus/outbox grants, receive-only realtime, route/trip RLS recursion, and verified MFA helper corrections. |
-| 0086 | `0086_phase7_production_driver_tracking.sql` | Canonical | Phase 7 native Android driver-device and active-trip location ingestion authorization. Physical road-test gate remains pending. |
-| 0087 | `0087_phase8_guardian_experience_notifications.sql` | Canonical | Phase 8 guardian access expiry, explicit notification preferences, privacy-review gate, quotas, provider limits, and dead-letter handling. |
-| 0088 | `0088_fix_phase8_guardian_student_rls_recursion.sql` | Canonical | Phase 8 guardian visibility recursion correction. |
-| 0089 | `0089_phase7_byod_android_tracking.sql` | Canonical, unapplied | Phase 7 personal Android registration, versioned location-notice acknowledgment, and retirement of new company-device registration. Deferred Point 5 must take the next available version when rebased. |
-
-## 4. Fresh-rebuild proof
-
-A fresh database must be built from `0001` through `0089` in canonical order
-
 | #           | Filename                                                      | Status                              | Notes                                                                                                                                                                                                                                                                                                                           |
 | ----------- | ------------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0001        | `0001_auth_profile_foundation.sql`                            | Canonical                           | Auth/profile/tenant/school baseline                                                                                                                                                                                                                                                                                             |
@@ -156,12 +101,12 @@ A fresh database must be built from `0001` through `0089` in canonical order
 | 0087        | `0087_phase8_guardian_experience_notifications.sql`           | Canonical                           | Phase 8 guardian access expiry, explicit notification preferences, privacy-review gate, quotas, provider limits, and dead-letter handling.                                                                                                                                                                                      |
 | 0088        | `0088_fix_phase8_guardian_student_rls_recursion.sql`          | Canonical                           | Phase 8 guardian/student recursion repair.                                                                                                                                                                                                                                                                                      |
 | 0089        | `0089_authorization_surface_hardening.sql`                    | Canonical, pending hosted execution | Point 5 exact RPC allowlist, private internal-function schema, least-privilege grants/defaults, search-path hardening, and future-table RLS enforcement.                                                                                                                                                                        |
+| 0090        | `0090_phase7_byod_android_tracking.sql`                       | Canonical, pending hosted execution | Phase 7 personal Android registration, versioned location-notice acknowledgment, tenant-admin lost-phone revocation, and retirement of new company-device registration.                                                                                                                                                       |
 
 ## 4. Fresh-rebuild proof
 
 A fresh database must be built from `0001` through
-`0089_authorization_surface_hardening.sql` in canonical order
- main
+`0090_phase7_byod_android_tracking.sql` in canonical order
 (with archived files excluded) before these phases can be accepted. The archived
 files in `supabase/legacy/` are excluded from fresh rebuilds because:
 

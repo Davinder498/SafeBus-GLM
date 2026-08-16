@@ -340,8 +340,7 @@ production` workflow must not run until a current encrypted backup is
 - Approved by: Platform Administrator
 - Status: Accepted on 2026-08-15
 
- commercial-readiness/point-7-byod-android
-### DL-016 — Use one Android app and personal driver phones
+### DL-017 — Use one Android app and personal driver phones
 
 - Date: 2026-08-15
 - Decision: Commercial Release 1 uses one SafeBus Android application for
@@ -397,8 +396,6 @@ production` workflow must not run until a current encrypted backup is
 - Owner: Platform Administrator
 - Approved by: Platform Administrator
 - Status: Accepted on 2026-08-15; hosted execution pending
- main
-
 ## 5. Sign-off entries
 
 When a Phase 0 document is signed off, add an entry here:

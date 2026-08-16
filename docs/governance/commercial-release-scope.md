@@ -1,6 +1,6 @@
 # SafeBus Alberta — Commercial Release 1 Scope
 
-**Status:** Approved and locked; revised by `DL-016`
+**Status:** Approved and locked; revised by `DL-017`
 
 **Decision owner:** Platform Administrator
 
@@ -8,7 +8,7 @@
 
 **Approved:** 2026-08-12; mobile scope revised 2026-08-15
 
-**Decision records:** `DL-010`, `DL-016`
+**Decision records:** `DL-010`, `DL-017`
 
 ## 1. Purpose
 
@@ -169,4 +169,4 @@ that any launch gate in section 5 has passed.
 | Role                  | Name                   | Date       | Decision            |
 | --------------------- | ---------------------- | ---------- | ------------------- |
 | Final Decision Holder | Platform Administrator | 2026-08-12 | Approved as written |
-| Final Decision Holder | Platform Administrator | 2026-08-15 | Mobile scope revised through `DL-016` |
+| Final Decision Holder | Platform Administrator | 2026-08-15 | Mobile scope revised through `DL-017` |

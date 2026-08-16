@@ -1,6 +1,6 @@
 -- Phase 7 native tracking authorization regression.
 -- Run only against an approved isolated Supabase test database after applying
--- migrations through 0089. Never run this fixture against production.
+-- migrations through 0090. Never run this fixture against production.
 begin;
 
 do $$
@@ -43,12 +43,13 @@ begin
       raise exception 'PHASE7 FAIL: unsafe execute grants on %', v_signature;
     end if;
   end loop;
-  if has_function_privilege(
-    'authenticated',
-    'public.register_android_tracking_device(uuid,text,text,text)',
-    'EXECUTE'
-  ) then
-    raise exception 'PHASE7 FAIL: legacy company-device registration remains executable';
+  if to_regprocedure('public.register_android_tracking_device(uuid,text,text,text)') is not null then
+    raise exception 'PHASE7 FAIL: legacy company-device registration remains in the public API';
+  end if;
+  if to_regprocedure(
+    'safebus_private.register_android_tracking_device(uuid,text,text,text)'
+  ) is null then
+    raise exception 'PHASE7 FAIL: legacy company-device registration was not quarantined';
   end if;
 end $$;
 

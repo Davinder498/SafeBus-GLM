@@ -571,12 +571,12 @@ RLS assertions or QA fixture writers against the sole production database.
 
 ## Phase 7 — Shared Android app and personal-device driver tracking
 
-Status: BYOD repository implementation updated for review under `DL-016`;
+Status: BYOD repository implementation updated for review under `DL-017`;
 database, Google Play, physical-device, and human exit evidence pending.
 
 - Retained one Capacitor Android binary with separate role-guarded guardian and
   driver portals. Guardian accounts cannot access driver tracking controls.
-- Added migration `0089_phase7_byod_android_tracking.sql` for personal-device
+- Added migration `0090_phase7_byod_android_tracking.sql` for personal-device
   registration and versioned location-notice acknowledgment. It is unapplied;
   production was not touched.
 - Added the prominent disclosure before Android location permission, explicit

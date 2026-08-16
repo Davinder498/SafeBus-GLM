@@ -8,7 +8,7 @@ async function source(path) {
 
 test('Android uses the reviewed personal-device registration contract', async () => {
   const [migration, bridge, types] = await Promise.all([
-    source('supabase/migrations/0089_phase7_byod_android_tracking.sql'),
+    source('supabase/migrations/0090_phase7_byod_android_tracking.sql'),
     source('apps/mobile/src/native/driverTracking.ts'),
     source('packages/types/src/database.generated.ts'),
   ]);
@@ -19,6 +19,10 @@ test('Android uses the reviewed personal-device registration contract', async ()
   assert.match(
     migration,
     /revoke execute on function public\.register_android_tracking_device[\s\S]+from authenticated/,
+  );
+  assert.match(
+    migration,
+    /alter function public\.register_android_tracking_device[\s\S]+set schema safebus_private/,
   );
   assert.match(bridge, /rpc\('register_android_byod_tracking_device'/);
   assert.doesNotMatch(bridge, /p_ownership:\s*'company_owned'/);
@@ -76,7 +80,7 @@ test('tenant administrators have an audited lost-phone revocation path', async (
   const [service, page, migration] = await Promise.all([
     source('apps/web/src/services/adminPeopleService.ts'),
     source('apps/web/src/pages/AdminDriverDetailPage.tsx'),
-    source('supabase/migrations/0089_phase7_byod_android_tracking.sql'),
+    source('supabase/migrations/0090_phase7_byod_android_tracking.sql'),
   ]);
 
   assert.match(service, /rpc\('revoke_driver_tracking_devices'/);

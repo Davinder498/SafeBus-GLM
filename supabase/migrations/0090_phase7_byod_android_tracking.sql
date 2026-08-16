@@ -115,6 +115,8 @@ $$;
 -- path. Existing device credentials are not silently revoked by this migration.
 revoke execute on function public.register_android_tracking_device(uuid, text, text, text)
   from authenticated;
+alter function public.register_android_tracking_device(uuid, text, text, text)
+  set schema safebus_private;
 revoke all on function public.register_android_byod_tracking_device(uuid, text, text, text)
   from public, anon, authenticated;
 grant execute on function public.register_android_byod_tracking_device(uuid, text, text, text)
