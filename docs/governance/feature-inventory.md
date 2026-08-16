@@ -3,7 +3,7 @@
 **Status:** Approved and locked for Commercial Release 1
 **Owner:** Product Owner
 **Phase:** 0 — Product and governance baseline
-**Last updated:** 2026-08-12
+**Last updated:** 2026-08-15
 
 ---
 
@@ -53,6 +53,7 @@ These are the approved operational capabilities of SafeBus.
 | Bus QR tracking sessions               | Driver scan-to-start bound to a bus/session, never a student badge     | `0059`, `0062`, merged PRs #88/#89/#95                                   |
 | Safe ETA server foundation             | Scoped ETA calculation/validation; no road-network or traffic provider | `0034`, `0037`, merged PRs #42/#43/#51                                   |
 | Guardian event email MVP               | Approved pickup/drop-off email outbox, delivery, and hardening         | `0025`, `0038`, `0039`, merged PRs #28/#52/#53                           |
+| Shared Android app                      | Role-scoped guardian and driver portals; personal-phone active-trip GPS | `apps/mobile`, `0089_phase7_byod_android_tracking.sql`, `DL-016`          |
 
 ## 3. Future functionality (out of scope until a milestone explicitly approves)
 
@@ -73,6 +74,7 @@ listed here so the boundary is explicit.
 - Geofencing / route-deviation alerts
 - Speed enforcement (display only is current; enforcement is future)
 - Production deployment beyond DEV/staging
+- iOS application delivery
 
 ## 4. Scope-drift reconciliation
 
@@ -133,3 +135,4 @@ Resolution approach is owned by Phase 1 (see
 | Role                  | Name                   | Date       | Signature               |
 | --------------------- | ---------------------- | ---------- | ----------------------- |
 | Final Decision Holder | Platform Administrator | 2026-08-12 | Approved through DL-010 |
+| Final Decision Holder | Platform Administrator | 2026-08-15 | Mobile scope revised through DL-016 |

@@ -1,14 +1,14 @@
 # SafeBus Alberta — Commercial Release 1 Scope
 
-**Status:** Approved and locked
+**Status:** Approved and locked; revised by `DL-016`
 
 **Decision owner:** Platform Administrator
 
 **Prepared:** 2026-08-12
 
-**Approved:** 2026-08-12
+**Approved:** 2026-08-12; mobile scope revised 2026-08-15
 
-**Decision record:** `DL-010`
+**Decision records:** `DL-010`, `DL-016`
 
 ## 1. Purpose
 
@@ -67,7 +67,7 @@ does not waive the release gates in section 5.
 | Import                  | Student-only CSV import; no general SIS or transportation-data import                                                 |
 | Bus QR                  | Driver scan-to-start using a bus/session credential; never a student credential                                       |
 | Notifications           | Guardian pickup/drop-off email only                                                                                   |
-| Mobile                  | Managed Android driver application                                                                                    |
+| Mobile                  | One role-scoped Android app for guardians and drivers; personally owned Android driver phones                         |
 | Security and governance | Tenant isolation, least privilege, MFA for administrators, audit evidence, retention controls, and protected releases |
 
 ## 5. Required CR1 launch gates
@@ -107,7 +107,7 @@ exists in source code.
 - General school-parent messaging, announcements, or calendars.
 - Placeholder Reports and Alerts products.
 - Production operation outside Alberta.
-- iOS driver support unless separately approved.
+- iOS application support unless separately approved.
 
 Placeholder navigation must not be presented as an available CR1 feature.
 
@@ -169,3 +169,4 @@ that any launch gate in section 5 has passed.
 | Role                  | Name                   | Date       | Decision            |
 | --------------------- | ---------------------- | ---------- | ------------------- |
 | Final Decision Holder | Platform Administrator | 2026-08-12 | Approved as written |
+| Final Decision Holder | Platform Administrator | 2026-08-15 | Mobile scope revised through `DL-016` |

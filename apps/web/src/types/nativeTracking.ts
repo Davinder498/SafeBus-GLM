@@ -5,7 +5,15 @@ export interface NativeTrackingStatus {
   lastAcceptedAt?: string;
 }
 
+export interface NativeTrackingPermissionState {
+  locationPermission: 'always' | 'foreground_only' | 'denied' | 'disabled';
+  notificationPermission: 'granted' | 'denied' | 'not_required';
+}
+
 export interface SafeBusNativeTrackingBridge {
+  prepare: () => Promise<NativeTrackingPermissionState>;
+  openAppSettings: () => Promise<void>;
+  openLocationServices: () => Promise<void>;
   activate: (trackingToken: string) => Promise<void>;
   pause: () => Promise<NativeTrackingStatus>;
   resume: () => Promise<NativeTrackingStatus>;

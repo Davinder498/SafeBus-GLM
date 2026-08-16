@@ -340,6 +340,35 @@ production` workflow must not run until a current encrypted backup is
 - Approved by: Platform Administrator
 - Status: Accepted on 2026-08-15
 
+### DL-016 — Use one Android app and personal driver phones
+
+- Date: 2026-08-15
+- Decision: Commercial Release 1 uses one SafeBus Android application for
+  guardians and drivers. The authenticated account role selects the available
+  portal and permissions. Drivers use a compatible personally owned Android
+  phone as the active bus GPS. Company-owned or mobile-device-managed Android
+  hardware is not a launch dependency. iOS application delivery is deferred to
+  a later approved milestone.
+- Context: The Platform Administrator chose driver-owned phones to reduce the
+  operator's device procurement and management cost and confirmed that drivers
+  and guardians should use the same application.
+- Rationale: One signed application reduces distribution and maintenance
+  overhead while existing role guards and database authorization keep driver
+  operations separate from guardian visibility. Personal phones eliminate the
+  company handset fleet cost.
+- Consequences: Phase 7 must use a BYOD registration contract, a prominent
+  active-trip background-location disclosure before Android permission prompts,
+  encrypted app storage, visible foreground-service notification, device
+  revocation, supported-OS/security requirements, and personal-device road-test
+  coverage. SafeBus cannot rely on MDM, remote wipe, or control of unrelated
+  personal data. The customer remains responsible for an approved BYOD/workplace
+  policy, driver support and reimbursement terms, and legal/privacy review.
+  Guardian accounts never receive driver routes or native tracking controls.
+  iOS availability must not be advertised for CR1.
+- Owner: Platform Administrator
+- Approved by: Platform Administrator
+- Status: Accepted on 2026-08-15
+
 ## 5. Sign-off entries
 
 When a Phase 0 document is signed off, add an entry here:

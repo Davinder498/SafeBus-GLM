@@ -2,7 +2,7 @@
 
 **Status:** Draft for Alberta privacy counsel and customer approval — not legal advice
 **Owner:** Privacy Lead
-**Last updated:** 2026-08-07
+**Last updated:** 2026-08-15
 
 ## What SafeBus is
 
@@ -17,6 +17,14 @@ assigned bus and route, trip actions, device/session metadata, and bus
 location reported during an authorized active trip. It does not require an
 Alberta Student Number, student home address, health data, or location outside
 an authorized trip.
+
+When a driver uses a personal Android phone, SafeBus also uses an app-generated
+installation identifier, device model, app version, permission state, encrypted
+device credential, connectivity category, and battery percentage needed to
+operate and support active-trip tracking. SafeBus does not read personal
+contacts, messages, photos, microphone content, browser history, or information
+from other applications. SafeBus does not provide the employer with remote-wipe
+or general device-management access.
 
 ## Why it is used
 
@@ -38,7 +46,11 @@ role.
 ## Location and retention
 
 Location collection is bound to an authorized bus-tracking session and active
-trip. Raw history is subject to the draft 30-day ceiling in
+trip. It may continue when SafeBus is closed or the screen is locked so the
+active bus remains visible. A persistent Android notification indicates when
+collection or required offline recovery is active. Collection ends when the
+trip ends or is cancelled, the server rejects the session, or the 18-hour
+offline authorization expires. Raw history is subject to the draft 30-day ceiling in
 [`../retention-schedule.md`](../retention-schedule.md). Inactive driver
 operational identity fields are anonymized under the approved schedule;
 deleting the associated Auth account is a separate authorized workflow.
@@ -59,3 +71,5 @@ channel; the breach procedure is in
 - [ ] Customer supplies its legal name, privacy contact, and request channel.
 - [ ] Retention periods and subprocessors are approved.
 - [ ] Notice is made available to drivers before production collection.
+- [ ] Customer approves its personal-device policy, support, data-plan, and reimbursement terms.
+- [ ] Android in-app notice and public privacy-policy wording are confirmed as consistent.

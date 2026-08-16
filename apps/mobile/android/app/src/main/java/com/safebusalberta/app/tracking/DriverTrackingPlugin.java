@@ -3,6 +3,7 @@ package com.safebusalberta.app.tracking;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 
@@ -53,6 +54,7 @@ public class DriverTrackingPlugin extends Plugin {
             result.put("appVersion", getContext().getPackageManager()
                 .getPackageInfo(getContext().getPackageName(), 0).versionName);
             result.put("locationPermission", permissionState());
+            result.put("notificationPermission", notificationPermissionState());
             call.resolve(result);
         } catch (Exception exception) {
             call.reject("Could not initialize the protected device identity.", exception);
@@ -60,10 +62,33 @@ public class DriverTrackingPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void openAppSettings(PluginCall call) {
+        Intent intent = new Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.parse("package:" + getContext().getPackageName())
+        );
+        launchSettings(call, intent);
+    }
+
+    @PluginMethod
+    public void openLocationServices(PluginCall call) {
+        launchSettings(call, new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+    }
+
+    @PluginMethod
     public void start(PluginCall call) {
-        if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED) {
-            call.reject("Precise location permission is required before tracking can start.", "LOCATION_PERMISSION_REQUIRED");
+        if (!"always".equals(permissionState())) {
+            call.reject(
+                "Precise background location permission is required before tracking can start.",
+                "LOCATION_PERMISSION_REQUIRED"
+            );
+            return;
+        }
+        if ("denied".equals(notificationPermissionState())) {
+            call.reject(
+                "Notification permission is required so active trip tracking remains visible.",
+                "NOTIFICATION_PERMISSION_REQUIRED"
+            );
             return;
         }
         String[] required = {
@@ -145,6 +170,16 @@ public class DriverTrackingPlugin extends Plugin {
         }
     }
 
+    private void launchSettings(PluginCall call, Intent intent) {
+        try {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            call.resolve();
+        } catch (Exception exception) {
+            call.reject("Android settings could not be opened.", exception);
+        }
+    }
+
     private JSObject statusObject(TrackingCryptoStore store) {
         TrackingConfig config = TrackingConfig.load(store);
         EncryptedLocationQueue queue = new EncryptedLocationQueue(getContext(), store);
@@ -161,11 +196,16 @@ public class DriverTrackingPlugin extends Plugin {
     private String permissionState() {
         if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION)
             != PackageManager.PERMISSION_GRANTED) return "denied";
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-            && ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_BACKGROUND_LOCATION)
             != PackageManager.PERMISSION_GRANTED) return "foreground_only";
         if (!Settings.Secure.isLocationProviderEnabled(
             getContext().getContentResolver(), android.location.LocationManager.GPS_PROVIDER)) return "disabled";
         return "always";
+    }
+
+    private String notificationPermissionState() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return "not_required";
+        return ContextCompat.checkSelfPermission(getContext(), Manifest.permission.POST_NOTIFICATIONS)
+            == PackageManager.PERMISSION_GRANTED ? "granted" : "denied";
     }
 }

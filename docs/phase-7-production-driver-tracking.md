@@ -2,34 +2,37 @@
 
 ## Delivery status
 
-Repository implementation is ready for hosted-DEV application and physical-device road testing. The Phase 7 exit gate is **not yet passed**: multi-hour road tests, measured battery/data limits, and hosted-DEV security execution require real devices and human approval.
+Repository implementation includes the Android BYOD contract, permission flow, and signed-bundle pipeline. The Phase 7 exit gate is **not yet passed**: the migration is unapplied, no isolated test database is approved, Play background-location review is incomplete, and multi-hour personal-device road tests and measured battery/data limits require real devices and human approval.
 
 ## Platform decision
 
-The initial production driver application is Android-only. An iOS driver application is not required for the first deployment because the operational device standard is a company-owned, managed Android handset assigned to each participating driver and mounted while that driver operates a bus. This avoids two independently validated background-location stacks during the safety-critical pilot.
+Commercial Release 1 uses one Android application for drivers and guardians. The authenticated role determines which routes and capabilities are available; guardian accounts cannot reach driver operations or native tracking controls. Drivers use their own compatible Android phone, mounted and powered while operating a bus.
 
-Revisit iOS before contracting with an operator that cannot issue managed Android devices, requires iPhone support in its device policy, or approves personal-device use. An iOS decision must include a separate Core Location background-mode implementation and full repetition of this phase's road-test matrix; the Android service must not be represented as iOS-equivalent evidence.
+iOS is deferred by `DL-016`. A later iOS milestone requires a separate Core Location background-mode implementation, App Store privacy work, signed delivery pipeline, and full repetition of the road-test matrix. Android evidence must not be represented as iOS-equivalent evidence.
 
 ## Device policy
 
-Phase 7 permits **company-owned Android devices only**. The server refuses registrations marked as personal devices.
+Phase 7 permits compatible **personally owned Android phones**. Migration `0089_phase7_byod_android_tracking.sql` replaces new company-device registration with a versioned personal-device location-notice contract. It does not apply itself to the sole production database.
 
-Required company-device controls:
+Required personal-device controls:
 
-- Android 10 or newer; Android 13+ preferred; current vendor security patches.
-- Mobile-device management enrollment, screen lock, device encryption, remote lock/wipe, automatic time, and automatic application updates.
+- Android 10 is the technical minimum; production eligibility also requires an OS version still receiving vendor security updates and a security patch no more than 90 days old.
+- Secure screen lock, device encryption, automatic time, official Google Play installation, automatic SafeBus updates, and no root or unlocked bootloader.
 - SafeBus precise location set to **Allow all the time**, notifications enabled, background data allowed, and vendor battery “sleep”/optimization disabled for SafeBus.
 - A working GNSS receiver and LTE/5G plan with rural roaming appropriate to the route.
-- One named driver/custodian, inventory identifier, charging mount, and spare charging cable per device.
-- No shared Google account and no sideloaded SafeBus builds. Release signing keys remain outside the repository.
+- A fixed charging mount and cable in the bus. Setup and troubleshooting occur only while parked.
+- No shared SafeBus driver account and no sideloaded builds. Release signing keys remain outside the repository.
+- Immediate reporting of a lost, stolen, replaced, or compromised phone so the account session and app device credential can be revoked.
 
-Personal devices are prohibited for the pilot. A future BYOD policy would require explicit employer/legal approval, reimbursement and data-use terms, minimum OS/security posture, separation of work data, support boundaries, consent that is not relied upon as the sole legal authority, and an iOS decision. It is not enabled by this implementation.
+SafeBus controls only its app storage, session, and device credential. It does not assume MDM enrollment, remote wipe, or access to unrelated personal data. Before a real driver participates, the customer must approve its workplace/BYOD policy, lawful authority, reimbursement or mobile-data terms, minimum security posture, incident reporting, support boundaries, and an alternative for a driver who does not have an eligible phone. Clicking the in-app disclosure is not treated as the customer's sole legal authority.
+
+For a lost, stolen, replaced, or compromised phone, a tenant administrator uses **Revoke phone tracking** on the driver's detail page. The audited action revokes every native tracking credential and SafeBus refresh session for that driver; it does not inspect or erase the personal phone. Operations must also end or reassign any affected active trip. The driver signs in again on an eligible phone and repeats the current disclosure and registration flow.
 
 ## Runtime contract
 
 1. An authenticated active driver scans the bus QR and starts or resumes the assigned trip.
-2. The Android installation registers a rotated device credential. The server binds that device to the QR tracking session and authenticated driver.
-3. Android starts a `location|dataSync` foreground service and shows a non-dismissible “SafeBus trip tracking” operating-system notification.
+2. Before Android requests location permission, SafeBus displays the versioned personal-device disclosure. The installation then registers a rotated device credential and acknowledgment version. The server binds that device to the QR tracking session and authenticated driver.
+3. Android starts a `location` foreground service and shows a non-dismissible “SafeBus trip tracking” operating-system notification. The service deliberately does not declare `dataSync`, which is time-limited on current Android versions and would interrupt an eight-hour operating day.
 4. Every fix is assigned a UUID and monotonic sequence, encrypted with an Android Keystore AES-256-GCM key, and committed to a SQLite FIFO before network transmission.
 5. The service sends FIFO entries one at a time. Accepted and server-confirmed duplicate events are removed. Network/server failures leave ciphertext queued for retry after restart or reboot.
 6. The server derives tenant, driver, trip, bus, and route; the device cannot nominate any of them. It rejects another driver's device/session, revoked credentials, inaccurate or stale fixes, out-of-order events, duplicate identity reuse, and physically impossible jumps.
@@ -62,12 +65,13 @@ SafeBus tracks the bus operating trip, not the child and not the driver's person
 - The persistent Android notification is visible whenever location collection or required offline recovery is operating.
 - Pause, end, cancel, server rejection, or the 18-hour authorization ceiling stops collection. The app has no general background-location mode outside this state.
 - No home address, student address, health data, contacts, photos, microphone data, or location from another application is collected.
+- No device-management profile is installed. SafeBus cannot inspect or erase unrelated personal content.
 - Location history is operational data and follows the approved retention schedule and tenant access controls. Platform administrators and unrelated drivers do not receive it.
 - Drivers must end the trip at the end of service and report a notification that remains after the queue has recovered. Supervisors investigate abnormal active trips; they do not use SafeBus as an off-shift employee-monitoring tool.
 
 ## Physical-device acceptance plan
 
-Run against hosted Supabase DEV only after manually applying `0086_phase7_production_driver_tracking.sql`. Do not use production routes, student records, or production credentials.
+Run only against an explicitly approved isolated Supabase test database after manually applying migrations through `0089_phase7_byod_android_tracking.sql`. No such target is currently approved. Do not run these tests or fixtures against the sole production database, and do not use real routes, student records, or production credentials.
 
 For every scenario, record device model/OS, app version, trip/session IDs, start/end time, battery start/end, mobile bytes sent/received, queue high-water mark, accepted event count, duplicates, rejects by reason, and time to full recovery.
 
@@ -77,7 +81,10 @@ For every scenario, record device model/OS, app version, trip/session IDs, start
 | App backgrounded | Use another app for 60 minutes | No collection gap beyond active cadence plus 30 seconds |
 | Network loss | Disable data for 45 minutes, then restore | Queue grows encrypted; drains FIFO; no required event loss or duplicates |
 | Crash/restart | Force-stop only for crash simulation, reopen; separately kill process without force-stop | Process restart resumes the still-authorized service; force-stop requires user reopen per Android security behaviour |
-| Device reboot | Reboot mid-trip on managed device | Service/queue recover after boot with Always Location permission; notification returns |
+| Device reboot | Reboot mid-trip on a personal device | Service/queue recover after boot with Always Location permission; notification returns |
+| Shared binary / guardian | Sign in as a guardian on the same release build | Guardian portal works; no driver scan, tracking permission prompt, device registration, or driver data is reachable |
+| BYOD security | Test lost-device revocation, sign-out, app update, phone replacement, screen lock, and denied/revoked permissions | Credentials/session can be revoked; denied access fails closed; unrelated personal content is never exposed |
+| Vendor battery controls | Test each supported Samsung/Google/Motorola class with screen locked | Active-trip cadence survives documented vendor optimization settings or the model is removed from support |
 | Low battery | Test at 20% and 10%, including power saver | Cadence changes to policy; queue/order remain correct |
 | Rural connectivity | Drive representative coverage gaps | Offline queue recovers within 15 minutes of validated connectivity returning |
 | Eight-hour day | Two realistic runs plus idle/paused periods | No off-trip fixes; no required loss; measurements remain inside approved limits |
@@ -98,7 +105,7 @@ cd apps/mobile/android
 ./gradlew testDebugUnitTest assembleDebug lintDebug
 ```
 
-Hosted DEV security test after migration application:
+Isolated-test-database security test after migration application (currently blocked by the one-production-database policy):
 
 ```bash
 pnpm test:rls:dev -- tests/rls/phase7-production-driver-tracking-rls.sql
@@ -106,12 +113,16 @@ pnpm test:rls:dev -- tests/rls/phase7-production-driver-tracking-rls.sql
 
 ## Exit-gate checklist
 
-Physical road testing and battery/data-limit approval were explicitly deferred on 2026-08-09 so Phase 8 implementation could begin. Phase 7 remains pending and must be resumed before production driver tracking is approved.
+The Android BYOD repository work resumed on 2026-08-15 under `DL-016`. Phase 7 remains pending until the following evidence is completed and approved.
 
 - [ ] Approved battery and mobile-data limits recorded.
 - [ ] Multi-hour road tests completed on every supported device/OS class.
 - [ ] Eight-hour representative operating day passed.
 - [ ] No off-trip location rows observed.
 - [ ] Offline recovery reconciled by event UUID with zero required loss.
-- [ ] Hosted-DEV forgery/cross-driver security test passed.
+- [ ] Isolated-test-database forgery/cross-driver security test passed.
+- [ ] Google Play background-location declaration, review video, Data safety form, test account, and public privacy-policy URL approved.
+- [ ] Signed AAB workflow executed for an exact reviewed commit and its signature verified.
+- [ ] Customer BYOD policy, driver support/reimbursement terms, and lost-device process approved.
+- [ ] Shared guardian/driver binary verified with no cross-role access.
 - [ ] Product, privacy, operations, and driver representatives approved the evidence.

@@ -536,6 +536,12 @@
       "filename": "0088_fix_phase8_guardian_student_rls_recursion.sql",
       "bytes": 2052,
       "sha256": "d1936e1be4cd0751f43513c9fb40314f3d17d428b5c43f2001a4687d797e07fd"
+    },
+    {
+      "version": "0089",
+      "filename": "0089_phase7_byod_android_tracking.sql",
+      "bytes": 7037,
+      "sha256": "fe5c6d35956ffccd80a4a7cdfcd9814b369a581a6c3368c24ff55d2cd7cd4b7f"
     }
   ]
 }

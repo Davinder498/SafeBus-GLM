@@ -32,8 +32,8 @@ are complete.
 ```
 safebus-alberta/
 ├── apps/
-│   ├── web/              # React/Vite — admin + parent portals + driver demo
-│   └── driver-mobile/    # Expo/React Native — production driver app (Phase 4)
+│   ├── web/              # React/Vite — admin, guardian, and driver web portals
+│   └── mobile/           # Capacitor Android — shared guardian/driver app
 ├── packages/
 │   ├── types/            # Shared TypeScript types (single source of truth)
 │   ├── api/              # Supabase client + typed API helpers + Zod validation

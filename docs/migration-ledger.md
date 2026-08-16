@@ -3,7 +3,7 @@
 **Status:** Living document — updated with every migration
 **Owner:** Engineering Lead
 **Phase:** 1 — Critical database and authorization repair
-**Last updated:** 2026-08-08
+**Last updated:** 2026-08-15
 
 ---
 
@@ -99,10 +99,12 @@ archiving is needed; the collision is documented here and asserted by
 | 0080â€“0085 | Hosted authorization and grant reconciliation | Canonical | Student roster school scope, guardian bus/outbox grants, receive-only realtime, route/trip RLS recursion, and verified MFA helper corrections. |
 | 0086 | `0086_phase7_production_driver_tracking.sql` | Canonical | Phase 7 native Android driver-device and active-trip location ingestion authorization. Physical road-test gate remains pending. |
 | 0087 | `0087_phase8_guardian_experience_notifications.sql` | Canonical | Phase 8 guardian access expiry, explicit notification preferences, privacy-review gate, quotas, provider limits, and dead-letter handling. |
+| 0088 | `0088_fix_phase8_guardian_student_rls_recursion.sql` | Canonical | Phase 8 guardian visibility recursion correction. |
+| 0089 | `0089_phase7_byod_android_tracking.sql` | Canonical, unapplied | Phase 7 personal Android registration, versioned location-notice acknowledgment, and retirement of new company-device registration. Deferred Point 5 must take the next available version when rebased. |
 
 ## 4. Fresh-rebuild proof
 
-A fresh database must be built from `0001` through `0087` in canonical order
+A fresh database must be built from `0001` through `0089` in canonical order
 (with archived files excluded) before these phases can be accepted. The archived
 files in `supabase/legacy/` are excluded from fresh rebuilds because:
 

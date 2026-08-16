@@ -1,15 +1,16 @@
 import { registerPlugin } from '@capacitor/core';
 import { supabase, supabaseEnv } from '@/lib/supabase';
+import { DRIVER_LOCATION_NOTICE_VERSION } from '@/lib/driverLocationDisclosure';
 import type {
+  NativeTrackingPermissionState,
   NativeTrackingStatus,
   SafeBusNativeTrackingBridge,
 } from '@/types/nativeTracking';
 
-interface DeviceInfo {
+interface DeviceInfo extends NativeTrackingPermissionState {
   installationId: string;
   deviceModel: string;
   appVersion: string;
-  locationPermission: 'always' | 'foreground_only' | 'denied' | 'disabled';
 }
 
 interface StartOptions {
@@ -25,6 +26,8 @@ interface StartOptions {
 interface DriverTrackingNativePlugin {
   getDeviceInfo: () => Promise<DeviceInfo>;
   requestTrackingPermissions: () => Promise<DeviceInfo>;
+  openAppSettings: () => Promise<void>;
+  openLocationServices: () => Promise<void>;
   start: (options: StartOptions) => Promise<NativeTrackingStatus>;
   pause: () => Promise<NativeTrackingStatus>;
   resume: () => Promise<NativeTrackingStatus>;
@@ -42,17 +45,26 @@ const nativePlugin = registerPlugin<DriverTrackingNativePlugin>('DriverTracking'
 
 export function installNativeDriverTrackingBridge(): void {
   const bridge: SafeBusNativeTrackingBridge = {
+    async prepare() {
+      let device = await nativePlugin.getDeviceInfo();
+      if (device.locationPermission === 'denied' || device.notificationPermission === 'denied') {
+        device = await nativePlugin.requestTrackingPermissions();
+      }
+      return {
+        locationPermission: device.locationPermission,
+        notificationPermission: device.notificationPermission,
+      };
+    },
+    openAppSettings: () => nativePlugin.openAppSettings(),
+    openLocationServices: () => nativePlugin.openLocationServices(),
     async activate(trackingToken) {
       if (!supabase || !supabaseEnv.url || !supabaseEnv.anonKey) {
         throw new Error('Supabase is not configured for native tracking.');
       }
-      let [device, sessionResult] = await Promise.all([
+      const [device, sessionResult] = await Promise.all([
         nativePlugin.getDeviceInfo(),
         supabase.auth.getSession(),
       ]);
-      if (device.locationPermission === 'denied') {
-        device = await nativePlugin.requestTrackingPermissions();
-      }
       if (device.locationPermission !== 'always') {
         throw new Error(
           device.locationPermission === 'foreground_only'
@@ -60,19 +72,27 @@ export function installNativeDriverTrackingBridge(): void {
             : 'Enable precise location access before starting a trip.',
         );
       }
+      if (device.notificationPermission === 'denied') {
+        throw new Error(
+          'Allow SafeBus notifications so active trip tracking stays visible on this phone.',
+        );
+      }
       if (sessionResult.error || !sessionResult.data.session) {
         throw new Error('Your driver session expired. Sign in again before starting the trip.');
       }
 
-      const { data, error } = await supabase.rpc('register_android_tracking_device', {
+      const { data, error } = await supabase.rpc('register_android_byod_tracking_device', {
         p_installation_id: device.installationId,
         p_device_model: device.deviceModel,
         p_app_version: device.appVersion,
-        p_ownership: 'company_owned',
+        p_notice_version: DRIVER_LOCATION_NOTICE_VERSION,
       });
       if (error) throw new Error(error.message);
       const registration = data as unknown as DeviceRegistrationResult;
-      if (!registration?.deviceCredential || registration.installationId !== device.installationId) {
+      if (
+        !registration?.deviceCredential ||
+        registration.installationId !== device.installationId
+      ) {
         throw new Error('The tracking device could not be registered.');
       }
 
