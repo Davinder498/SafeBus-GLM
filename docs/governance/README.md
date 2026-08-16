@@ -11,18 +11,19 @@ every later phase must obey.
 
 ## Documents
 
-| Document                                                           | Exit-gate item it satisfies                               |
-| ------------------------------------------------------------------ | --------------------------------------------------------- |
-| [`commercial-release-scope.md`](./commercial-release-scope.md)     | Binding Commercial Release 1 boundary and launch-gate map |
-| [`product-scope.md`](./product-scope.md)                           | Signed product scope                                      |
-| [`role-responsibility-matrix.md`](./role-responsibility-matrix.md) | Signed role and responsibility matrix                     |
-| [`data-classification.md`](./data-classification.md)               | Approved data classification                              |
-| [`first-customer-profile.md`](./first-customer-profile.md)         | Approved first-customer profile                           |
-| [`capacity-assumptions.md`](./capacity-assumptions.md)             | Written capacity assumptions                              |
-| [`feature-inventory.md`](./feature-inventory.md)                   | Authoritative feature inventory (current vs. future)      |
-| [`risk-register.md`](./risk-register.md)                           | Formal risk register                                      |
-| [`decision-log.md`](./decision-log.md)                             | Formal decision log                                       |
-| [`development-workflow.md`](./development-workflow.md)             | Confirmed development workflow                            |
+| Document                                                                   | Exit-gate item it satisfies                                    |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| [`commercial-release-scope.md`](./commercial-release-scope.md)             | Binding Commercial Release 1 boundary and launch-gate map      |
+| [`point-5-authorization-evidence.md`](./point-5-authorization-evidence.md) | Point 5 baseline, hardening controls, and hosted exit evidence |
+| [`product-scope.md`](./product-scope.md)                                   | Signed product scope                                           |
+| [`role-responsibility-matrix.md`](./role-responsibility-matrix.md)         | Signed role and responsibility matrix                          |
+| [`data-classification.md`](./data-classification.md)                       | Approved data classification                                   |
+| [`first-customer-profile.md`](./first-customer-profile.md)                 | Approved first-customer profile                                |
+| [`capacity-assumptions.md`](./capacity-assumptions.md)                     | Written capacity assumptions                                   |
+| [`feature-inventory.md`](./feature-inventory.md)                           | Authoritative feature inventory (current vs. future)           |
+| [`risk-register.md`](./risk-register.md)                                   | Formal risk register                                           |
+| [`decision-log.md`](./decision-log.md)                                     | Formal decision log                                            |
+| [`development-workflow.md`](./development-workflow.md)                     | Confirmed development workflow                                 |
 
 ## Reading order
 

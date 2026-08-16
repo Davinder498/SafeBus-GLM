@@ -340,6 +340,7 @@ production` workflow must not run until a current encrypted backup is
 - Approved by: Platform Administrator
 - Status: Accepted on 2026-08-15
 
+ commercial-readiness/point-7-byod-android
 ### DL-016 — Use one Android app and personal driver phones
 
 - Date: 2026-08-15
@@ -368,6 +369,35 @@ production` workflow must not run until a current encrypted backup is
 - Owner: Platform Administrator
 - Approved by: Platform Administrator
 - Status: Accepted on 2026-08-15
+
+### DL-016 — Harden the authorization surface and defer destructive proof
+
+- Date: 2026-08-15
+- Decision: Separate reviewed application RPCs from database-internal policy,
+  trigger, validation, and helper routines; deny anonymous database access;
+  derive authenticated table permissions from actual RLS policy commands; and
+  make future public objects deny-by-default. Implement the migration, exact
+  authorization manifest, read-only audit, release gate, and evidence record
+  now, but do not apply the migration to the sole production database.
+- Context: The read-only production audit found RLS enabled on every public
+  table and no observed anonymous/cross-tenant row leak. It also found 29
+  privileged functions reachable by anonymous callers, broad legacy grants,
+  11 mutable search paths, and insufficient operational data to prove every
+  guardian/driver/student/trip boundary.
+- Rationale: Working row locks do not justify retaining unnecessary spare
+  keys. Destructive role tests require an isolated target and must never run on
+  the only production database.
+- Consequences: A pending generated migration blocks schema-changing releases.
+  Point 5 remains open until a cost-approved temporary Supabase branch runs all
+  hosted RLS suites, the read-only authorization audit, Security Advisor, and
+  an independent tenant/privacy-boundary review. The branch is deleted after
+  evidence retention. Leaked-password protection is enabled with the paid tier
+  at final launch; strong passwords and administrator MFA remain the current
+  controls.
+- Owner: Platform Administrator
+- Approved by: Platform Administrator
+- Status: Accepted on 2026-08-15; hosted execution pending
+ main
 
 ## 5. Sign-off entries
 

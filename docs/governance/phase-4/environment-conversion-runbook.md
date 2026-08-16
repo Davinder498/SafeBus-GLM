@@ -63,7 +63,9 @@ replay historical migrations, run hosted RLS tests against it, or seed QA data.
 4. Retain the adoption artifact. The workflow performs read-only checks first,
    rejects known QA identities, locks and fingerprints the public schema, then
    adds only private `safebus_release` identity and ledger records atomically.
-   It does not execute migration SQL or write public application tables.
+   It records only the immutable adoption baseline ending at migration `0088`.
+   Later migrations remain pending; adoption never marks them applied. It does
+   not execute migration SQL or write public application tables.
 5. Run normal read-only production preflight and confirm the adopted migration
    ledger and schema fingerprint match.
 

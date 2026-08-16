@@ -73,6 +73,7 @@ async function rejectSourceMaps(directory) {
 await run('migrations:verify');
 await run('migrations:preflight');
 await run('types:check');
+await run('authorization:audit');
 await run('typecheck');
 await run('lint');
 await run('test');

@@ -5,6 +5,11 @@ import {
   assertDatabaseEnvironmentIdentity,
   createEnvironmentBinding,
 } from '../../scripts/lib/environment-identity.mjs';
+import {
+  readCommittedManifest,
+  readProductionAdoptionBaseline,
+  resolveProductionAdoptionMigrations,
+} from '../../scripts/lib/migrations.mjs';
 
 const read = (file) => fs.readFile(file, 'utf8');
 const projectRef = 'abcdefghijklmnopqrst';
@@ -107,7 +112,8 @@ test('adoption records the existing schema without writing public application ob
   const adoption = await read('scripts/adopt-existing-production.mjs');
 
   assert.match(adoption, /registerEnvironmentIdentity/);
-  assert.match(adoption, /for \(const migration of manifest\.migrations\)/);
+  assert.match(adoption, /for \(const migration of adoptedMigrations\)/);
+  assert.match(adoption, /resolveProductionAdoptionMigrations/);
   assert.match(adoption, /calculateSchemaFingerprint/);
   assert.doesNotMatch(adoption, /contractClient|contractBinding|promoted staging/);
   assert.match(adoption, /Production adoption found @example\.test QA identities/);
@@ -115,6 +121,34 @@ test('adoption records the existing schema without writing public application ob
   assert.match(adoption, /free-prelaunch-only/);
   assert.doesNotMatch(adoption, /(?:insert into|update|delete from|alter table)\s+public\./i);
   assert.doesNotMatch(adoption, /MIGRATION_DIRECTORY|fs\.readFile\([^)]*migration/i);
+});
+
+test('production adoption records only the immutable historical baseline', async () => {
+  const manifest = await readCommittedManifest();
+  const baseline = await readProductionAdoptionBaseline();
+  const adopted = resolveProductionAdoptionMigrations(manifest, baseline);
+
+  assert.equal(adopted.length, 89);
+  assert.equal(adopted.at(-1)?.filename, '0088_fix_phase8_guardian_student_rls_recursion.sql');
+  assert.equal(
+    manifest.migrations.at(adopted.length)?.filename,
+    '0089_authorization_surface_hardening.sql',
+  );
+  assert.ok(manifest.migrations.length - adopted.length >= 1);
+  assert.ok(
+    manifest.migrations
+      .slice(adopted.length)
+      .some((migration) => migration.filename === '0089_authorization_surface_hardening.sql'),
+  );
+
+  assert.throws(
+    () =>
+      resolveProductionAdoptionMigrations(manifest, {
+        ...baseline,
+        migrationsSha256: '0'.repeat(64),
+      }),
+    /differs from the reviewed migration snapshot/,
+  );
 });
 
 test('every destructive database QA runner requires registered environment identity', async () => {

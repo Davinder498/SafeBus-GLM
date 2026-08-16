@@ -55,6 +55,9 @@ school's real operational use or a paid availability/recovery commitment.
 - A populated database without private `safebus_release` metadata is never
   initialized automatically. The protected one-time adoption workflow is the
   only approved baseline path.
+- The adoption baseline is cryptographically pinned through migration `0088`.
+  Migrations added while adoption is deferred remain pending and cannot be
+  recorded as applied by the adoption workflow.
 - The schema fingerprint covers relations, columns, constraints, indexes, RLS,
   policies, functions, triggers, grants, schema grants, enums, and Realtime
   publication controls.

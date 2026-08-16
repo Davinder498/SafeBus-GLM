@@ -539,9 +539,15 @@
     },
     {
       "version": "0089",
+commercial-readiness/point-7-byod-android
       "filename": "0089_phase7_byod_android_tracking.sql",
       "bytes": 7037,
       "sha256": "fe5c6d35956ffccd80a4a7cdfcd9814b369a581a6c3368c24ff55d2cd7cd4b7f"
+
+      "filename": "0089_authorization_surface_hardening.sql",
+      "bytes": 19982,
+      "sha256": "eaebb082b90378fe4ed7b005c478b3789fdb6d4d701fe401b94f3c73f17e3c45"
+main
     }
   ]
 }

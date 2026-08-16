@@ -1,0 +1,6 @@
+{
+  "format": 1,
+  "migrationCount": 89,
+  "lastMigration": "0088_fix_phase8_guardian_student_rls_recursion.sql",
+  "migrationsSha256": "7d64ad712a82cc198dfe0fe825bda9a3ed48dd3238e064abb461fce7a071996c"
+}
