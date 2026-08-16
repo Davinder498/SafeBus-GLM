@@ -69,9 +69,9 @@ function FitFleetControl({ bounds, disabled }: { bounds: LatLngBoundsExpression 
   );
 }
 
-function FleetTileLayer({ config, onTileError, onTileLoad }: { config: MapTileConfig; onTileError(): void; onTileLoad(): void }) {
+function FleetTileLayer({ config, onTileError }: { config: MapTileConfig; onTileError(): void }) {
   if (!config.isConfigured || !config.tileUrl || !config.attribution) return null;
-  return <TileLayer url={config.tileUrl} attribution={config.attribution} eventHandlers={{ tileerror: onTileError, tileload: onTileLoad }} />;
+  return <TileLayer url={config.tileUrl} attribution={config.attribution} referrerPolicy="strict-origin" eventHandlers={{ tileerror: onTileError }} />;
 }
 
 class FleetMapErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -109,14 +109,19 @@ function CoordinateFallback({ trips, formatters, missingConfig }: { trips: Admin
       <h2 className="text-lg font-bold text-navy-900">Live fleet map</h2>
       {missingConfig && (
         <div className="mt-3 rounded-lg bg-warning-50 p-3 text-sm text-warning-700" data-testid="admin-live-fleet-map-config-missing">
-          Map tiles are unavailable because no production map provider is approved. The fleet list remains the primary operational view.
+          The map provider configuration is temporarily unavailable. The fleet list remains the primary operational view.
+        </div>
+      )}
+      {!missingConfig && (
+        <div className="mt-3 rounded-lg bg-warning-50 p-3 text-sm text-warning-700" role="alert" data-testid="admin-live-fleet-map-tile-error">
+          The map provider could not load. Verified fleet status remains available below.
         </div>
       )}
       {locations.length === 0 ? (
         <DataState title="No active buses with valid coordinates." message="Active trips are listed below. Map markers appear after a current GPS update includes valid coordinates." />
       ) : (
         <div className="mt-4">
-          <p className="text-sm text-gray-600">Valid current locations available for {locations.length} active bus{locations.length === 1 ? '' : 'es'}. Tile configuration is required for the interactive map.</p>
+          <p className="text-sm text-gray-600">Valid current locations remain available for {locations.length} active bus{locations.length === 1 ? '' : 'es'} while the interactive map is unavailable.</p>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2" aria-label="Current fleet locations summary">
             {locations.map(({ key, trip }) => (
               <li key={key} className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-sm" data-testid="admin-live-fleet-map-marker">
@@ -166,10 +171,13 @@ export function AdminFleetMap({ trips, overlays = [], tileConfig, formatters, on
   const center = useMemo<LatLngExpression>(() => locations[0]?.position ?? overlayPositions[0] ?? [51.0447, -114.0719], [locations, overlayPositions]);
 
   const handleTileError = useCallback(() => setTileFailed(true), []);
-  const handleTileLoad = useCallback(() => setTileFailed(false), []);
 
   if (!tileConfig.isConfigured) {
     return <CoordinateFallback trips={trips} formatters={formatters} missingConfig />;
+  }
+
+  if (tileFailed) {
+    return <CoordinateFallback trips={trips} formatters={formatters} missingConfig={false} />;
   }
 
   return (
@@ -179,12 +187,11 @@ export function AdminFleetMap({ trips, overlays = [], tileConfig, formatters, on
           <h2 className="text-lg font-bold text-navy-900">Live fleet map</h2>
           <p className="mt-1 text-sm text-gray-600">Colored numbered dots show the active route stops without implying a road path. Live bus markers show valid current coordinates and remain above the stop markers.</p>
           <RouteOverlayLegend overlays={overlays} />
-          {tileFailed && <p role="alert" className="mt-3 rounded-md bg-warning-50 px-3 py-2 text-sm font-semibold text-warning-700" data-testid="admin-live-fleet-map-tile-error">Map tiles could not be loaded. Markers and the fleet list remain available where supported.</p>}
           {locations.length === 0 && <p className="mt-3 text-sm font-semibold text-gray-700" data-testid="admin-live-fleet-map-empty">No active buses with valid coordinates.</p>}
         </div>
         <section className="h-96" aria-label="Admin live fleet interactive map" data-testid="admin-live-fleet-map-region">
           <MapContainer center={center} zoom={locations.length === 1 ? 14 : 11} scrollWheelZoom className="h-full w-full" data-testid="admin-live-fleet-leaflet-map">
-            <FleetTileLayer config={tileConfig} onTileError={handleTileError} onTileLoad={handleTileLoad} />
+            <FleetTileLayer config={tileConfig} onTileError={handleTileError} />
             <FitInitialBounds bounds={bounds} />
             <FitFleetControl bounds={bounds} disabled={bounds === null} />
             <ViewportChangeReporter onViewportChange={onViewportChange} />

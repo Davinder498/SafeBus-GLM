@@ -10,9 +10,10 @@ path if the pilot volume or launch reliability requirement exceeds the free
 plan.
 
 The free plan is an evaluation/pilot configuration, not final evidence of
-commercial reliability. Before launch, the owner must review actual tile usage,
-execute the required vendor/privacy terms, confirm processing locations, and
-choose a paid plan if the 99.5% SLA is required.
+commercial reliability. A paid plan carrying the published 99.5% SLA must be
+activated before the first real school operation or paid availability
+commitment. Before launch, the owner must also review actual tile usage,
+execute the required vendor/privacy terms, and confirm processing locations.
 
 Rejected production defaults:
 
@@ -68,6 +69,12 @@ HTTP origin/referrer, and normal network metadata.
   for visible map failures.
 - Complete a provider-outage acceptance test and retain evidence before pilot
   authorization.
+- SafeBus deliberately does not fail over to a community or unreviewed tile
+  provider. A provider failure removes the potentially misleading partial map
+  and retains authoritative status/list/direct-coordinate workflows.
+
+Point 8 engineering and operating evidence is tracked in
+[`governance/point-8-map-readiness.md`](governance/point-8-map-readiness.md).
 
 Official references:
 

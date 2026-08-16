@@ -3,7 +3,7 @@
 **Status:** Living document — append-only
 **Owner:** Product Owner
 **Phase:** 0 — Product and governance baseline
-**Last updated:** 2026-08-15
+**Last updated:** 2026-08-16
 
 ---
 
@@ -396,6 +396,37 @@ production` workflow must not run until a current encrypted backup is
 - Owner: Platform Administrator
 - Approved by: Platform Administrator
 - Status: Accepted on 2026-08-15; hosted execution pending
+
+### DL-018 — Select Geoapify for Commercial Release 1 maps
+
+- Date: 2026-08-16
+- Decision: Use Geoapify Map Tiles through the existing Leaflet renderer and a
+  server-managed provider configuration. Use the commercial-capable free quota
+  for construction and controlled evaluation only. Because reliability is
+  paramount, a paid plan carrying Geoapify's published availability SLA must
+  be active before the first real school operation or paid availability
+  commitment.
+- Context: Map components existed but had no approved tile provider. The
+  Platform Administrator requested a free option first, configured Geoapify,
+  and confirmed the deployed map renders.
+- Options considered: OpenStreetMap community tiles, OpenFreeMap public tiles,
+  MapTiler, Stadia Maps, Geoapify, and self-hosting.
+- Rationale: Geoapify permits commercial use within its free quota, works with
+  the existing Leaflet XYZ integration, and provides a no-rewrite upgrade to a
+  paid SLA. Community OSM can block heavy/commercial use and has no SLA;
+  OpenFreeMap currently has no SLA; MapTiler and Stadia free plans do not allow
+  production commercial use. Self-hosting adds an operational platform before
+  the pilot has measured demand.
+- Consequences: The provider key remains outside frontend build variables;
+  client configuration is locked to Geoapify; required attribution and
+  minimized referrer data are enforced; configuration/tile failure degrades to
+  authoritative lists, statuses, and direct coordinates. SafeBus does not
+  silently fail over to an unreviewed provider. Paid-plan evidence,
+  origin-restriction review, vendor/privacy approval, quota alerts, Android
+  acceptance, and a seven-day observation remain Point 8 exit evidence.
+- Owner: Platform Administrator
+- Approved by: Platform Administrator
+- Status: Accepted on 2026-08-16; operating evidence pending
 ## 5. Sign-off entries
 
 When a Phase 0 document is signed off, add an entry here:

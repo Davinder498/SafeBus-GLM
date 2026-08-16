@@ -100,8 +100,11 @@ tabletop exercise is a Phase 3 exit-gate requirement.
 
 Production personal data is processed and stored in **ca-central-1**. No
 cross-border transfer of personal data occurs except as approved by counsel
-and recorded in [`subprocessors.md`](./subprocessors.md). Map tile requests
-carry no personal identifiers.
+and recorded in [`subprocessors.md`](./subprocessors.md). Geoapify map tile
+requests contain viewport tile coordinates, device IP, origin/referrer, and
+normal request metadata but no SafeBus account, student, guardian, driver, bus,
+trip, or tenant identifier. Counsel must determine the legal/privacy treatment
+of this metadata and any cross-border processing before approval.
 
 ## 10. Open items for the approving authority
 

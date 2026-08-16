@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
+import { installMapProviderOutage } from './fixtures/map-provider';
 import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
 
 /**
@@ -7,9 +8,8 @@ import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
  * Uses a mocked Supabase layer (no production credentials, no backdoors). All
  * Supabase traffic is intercepted via page.route. The mock returns a guardian
  * profile so ProtectedRoute admits the caller to /guardian/live-map, and
- * returns a configurable list of rows from
- * get_guardian_student_live_bus_location_state and
- * get_guardian_student_route_visibility.
+ * returns a configurable list of rows from the current consolidated
+ * get_guardian_bus_visibility_v2 contract.
  *
  * The location-state RPC returns only safe fields per the Milestone 11A
  * contract: student_id, location_state, latitude, longitude,
@@ -185,7 +185,35 @@ async function installGuardianLiveMapMock(
   let routeRowsForRpc: GuardianStudentRouteRpcRow[] = opts.routeRows ?? [];
   let failRpc = opts.failRpc ?? false;
   const rawError =
-    opts.rawError ?? 'permission denied for function get_guardian_student_live_bus_location_state';
+    opts.rawError ?? 'permission denied for function get_guardian_bus_visibility_v2';
+
+  const visibilityRows = () =>
+    routeRowsForRpc.map((routeRow) => {
+      const locationRow = rowsForRpc.find((row) => row.student_id === routeRow.student_id);
+      const studentName =
+        routeRow.student_preferred_name?.trim() ||
+        `${routeRow.student_first_name} ${routeRow.student_last_name}`.trim();
+      return {
+        student_id: routeRow.student_id,
+        student_name: studentName,
+        student_grade: routeRow.student_grade,
+        assignment_state: routeRow.route_assignment_id ? 'assigned' : 'unassigned',
+        bus_number: routeRow.route_assignment_id ? '42' : null,
+        license_plate: routeRow.route_assignment_id ? 'TEST-42' : null,
+        has_active_trip: locationRow !== undefined,
+        location_state: locationRow?.location_state ?? 'inactive',
+        latitude: locationRow?.latitude ?? null,
+        longitude: locationRow?.longitude ?? null,
+        location_recorded_at: locationRow?.location_recorded_at ?? null,
+        location_age_seconds: locationRow?.location_age_seconds ?? null,
+        eta_status: null,
+        eta_label: null,
+        student_trip_status: 'not_started',
+        pickup_event_time: null,
+        dropoff_event_time: null,
+        last_event_time: null,
+      };
+    });
 
   const setRows = (rows: GuardianLiveBusLocationRpcRow[]) => {
     rowsForRpc = rows;
@@ -265,7 +293,7 @@ async function installGuardianLiveMapMock(
         return;
       }
 
-      if (method === 'POST' && path.includes('/rpc/get_guardian_student_live_bus_location_state')) {
+      if (method === 'POST' && path.includes('/rpc/get_guardian_bus_visibility_v2')) {
         if (failRpc) {
           await route.fulfill({
             status: 500,
@@ -276,7 +304,7 @@ async function installGuardianLiveMapMock(
           await route.fulfill({
             status: 200,
             contentType: 'application/json',
-            body: JSON.stringify(rowsForRpc),
+            body: JSON.stringify(visibilityRows()),
           });
         }
         return;
@@ -546,6 +574,23 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
     if (tileBlendMode !== null) {
       expect(tileBlendMode).not.toBe('plus-lighter');
     }
+  });
+
+  test('map provider outage fails closed while verified bus status remains usable', async ({ page }) => {
+    await installGuardianLiveMapMock(page, {
+      rows: [freshRow()],
+      routeRows: [studentRouteRow()],
+    });
+    await installMapProviderOutage(page);
+    await page.goto('/guardian/live-map');
+
+    await expect(page.getByTestId('guardian-live-bus-map-unavailable')).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByText('The map provider could not load.')).toBeVisible();
+    await expect(page.getByTestId('guardian-live-map-student-card')).toContainText(
+      'Current location available',
+    );
   });
 
   test('RPC error is safely handled and raw error is hidden', async ({ page }) => {

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   divIcon,
   type DragEndEvent,
@@ -6,6 +6,7 @@ import {
   type Marker as LeafletMarker,
 } from 'leaflet';
 import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from 'react-leaflet';
+import { Button } from '@/components/ui/Button';
 import type { MapTileConfig } from '@/config/mapTiles';
 import type { RouteDefinitionStopInput } from '@/types/transportation';
 import { isValidRouteCoordinate } from '@/utils/routeDefinition';
@@ -45,6 +46,9 @@ export function RouteStopMapEditor({
   onSelect(key: string): void;
   onPlace(key: string, latitude: number, longitude: number): void;
 }) {
+  const [tileFailed, setTileFailed] = useState(false);
+  const [tileAttempt, setTileAttempt] = useState(0);
+  const handleTileError = useCallback(() => setTileFailed(true), []);
   const placedStops = useMemo(
     () => stops.filter((stop) => isValidRouteCoordinate(stop.latitude, stop.longitude)),
     [stops],
@@ -61,14 +65,43 @@ export function RouteStopMapEditor({
     );
   }
 
+  if (tileFailed) {
+    return (
+      <div
+        className="rounded-lg border border-warning-200 bg-warning-50 p-4 text-sm text-warning-800"
+        role="alert"
+        data-testid="route-stop-map-tile-error"
+      >
+        <p>The map provider could not load. Enter latitude and longitude directly for each stop.</p>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          className="mt-3"
+          onClick={() => {
+            setTileFailed(false);
+            setTileAttempt((current) => current + 1);
+          }}
+        >
+          Retry map
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div>
       <p className="mb-2 text-sm text-gray-600">
         Select a stop, then click the map to place it. Drag a marker to refine its position.
       </p>
       <div className="h-80 overflow-hidden rounded-lg border border-gray-200">
-        <MapContainer center={center} zoom={13} scrollWheelZoom className="h-full w-full">
-          <TileLayer url={tileConfig.tileUrl} attribution={tileConfig.attribution} />
+        <MapContainer key={tileAttempt} center={center} zoom={13} scrollWheelZoom className="h-full w-full">
+          <TileLayer
+            url={tileConfig.tileUrl}
+            attribution={tileConfig.attribution}
+            referrerPolicy="strict-origin"
+            eventHandlers={{ tileerror: handleTileError }}
+          />
           <ClickToPlace selectedKey={selectedKey} onPlace={onPlace} />
           {placedStops.map((stop, index) => (
             <Marker

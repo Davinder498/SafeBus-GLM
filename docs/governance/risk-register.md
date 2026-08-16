@@ -3,7 +3,7 @@
 **Status:** Living document — reviewed at every milestone exit gate
 **Owner:** Security Lead
 **Phase:** 0 — Product and governance baseline
-**Last updated:** 2026-08-12
+**Last updated:** 2026-08-16
 
 ---
 
@@ -42,6 +42,7 @@ only "Closed" when its mitigation has been verified at a phase exit gate.
 | R-015 | **Guardian cross-tenant or cross-student visibility leak.**                                                                | Critical | Security Lead    | Monitored — Phase 1                         | Existing RLS tests in `tests/rls/guardian-*.sql`; extend to every sensitive table for the Phase 1 exit gate.                        |
 | R-016 | **Personal driver phones can be lost, shared, rooted, outdated, data-limited, or aggressively battery-optimized.**            | High     | Operations Lead  | Open — Phase 7                              | Enforce app credential revocation, encrypted app storage, screen-lock/current-patch eligibility, visible tracking, battery/data tests, mounted-power requirements, and a documented lost-device/support process. No MDM or remote wipe is assumed. |
 | R-017 | **Google Play may reject or remove the app's background-location access.**                                                    | High     | Product Owner    | Mitigated in repo; Play review pending       | Prominent in-app disclosure precedes permission, collection is limited to driver-started active trips, API 36 is targeted, and the signed-release workflow exists. Publish the approved privacy-policy URL, declaration, review video, Data safety form, and test credentials before launch. |
+| R-018 | **Map-provider outage, quota exhaustion, or key abuse could remove operational map context.**                                  | High     | Operations Lead  | Mitigated in repo; operating evidence pending | Geoapify is provider-locked behind server-managed config; all map surfaces fail to authoritative lists/status/direct coordinates; paid SLA plan, restricted-key evidence, quota alerts, Android acceptance, and seven-day observation remain mandatory before Point 8 approval. |
 
 ## 4. Closed risks
 
