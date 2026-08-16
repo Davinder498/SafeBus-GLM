@@ -64,7 +64,7 @@ Set these server-side variables in Netlify (no `VITE_` secrets):
 | `SAFEBUS_EMAIL_FROM`                     | Verified sender address                            |
 | `SAFEBUS_EMAIL_FROM_NAME`                | Display name (optional, default `SafeBus Alberta`) |
 | `SAFEBUS_DEV_EMAIL_RECIPIENT_OVERRIDE`   | Controlled QA inbox for deploy previews            |
-| `SAFEBUS_NOTIFICATION_BATCH_SIZE`        | Optional, default 10, max 50                       |
+| `SAFEBUS_NOTIFICATION_BATCH_SIZE`        | Optional, default 50, max 100                      |
 
 ### 1.4 Schedule configuration
 
@@ -72,10 +72,13 @@ The scheduled function is configured in `netlify.toml`:
 
 ```toml
 [functions."guardian-notification-email-scheduled"]
-  schedule = "@hourly"
+  schedule = "*/5 * * * *"
 ```
 
-This runs conservatively once per hour. Overlapping executions are safe because the claim RPC uses `for update skip locked`.
+This runs every five minutes. Netlify supplies a JSON body containing the next
+scheduled run time; the scheduled wrapper injects the dispatcher secret from
+the server environment. Overlapping executions are safe because the claim RPC
+uses `for update skip locked`.
 
 ### 1.5 Fixture command
 
@@ -203,7 +206,9 @@ To simulate a temporary provider failure, point `SAFEBUS_EMAIL_PROVIDER_API_KEY`
 
 ### 6.1 Scheduled invocation
 
-1. With pending outbox rows, wait for the hourly schedule (or invoke the scheduled function URL directly).
+1. With pending outbox rows, wait for the five-minute schedule or use **Run now**
+   from the scheduled function's Netlify UI. Scheduled functions cannot be
+   invoked directly by production URL.
 2. Confirm rows transition through the lifecycle.
 
 ### 6.2 Manual secure invocation
