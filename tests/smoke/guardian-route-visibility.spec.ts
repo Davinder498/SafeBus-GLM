@@ -52,45 +52,45 @@ const adminProfile = {
 
 interface GuardianStudentRouteRpcRow {
   student_id: string;
-  student_first_name: string;
-  student_last_name: string;
-  student_preferred_name: string | null;
-  student_grade: string | null;
-  route_assignment_id: string | null;
-  route_id: string | null;
-  route_name: string | null;
-  pickup_stop_name: string | null;
-  dropoff_stop_name: string | null;
-  assignment_status: string | null;
-}
-
-interface GuardianLiveTripRpcRow {
-  student_id: string;
   student_name: string;
-  route_id: string;
-  route_name: string;
-  pickup_stop_name: string | null;
-  dropoff_stop_name: string | null;
-  trip_status: string | null;
+  student_grade: string | null;
+  assignment_state: 'assigned' | 'unassigned' | 'unavailable';
+  bus_number: string | null;
+  license_plate: string | null;
   has_active_trip: boolean;
-  last_location_latitude: number | null;
-  last_location_longitude: number | null;
-  last_location_recorded_at: string | null;
+  location_state: 'inactive' | 'fresh' | 'stale' | 'missing' | 'invalid';
+  latitude: number | null;
+  longitude: number | null;
+  location_recorded_at: string | null;
+  location_age_seconds: number | null;
+  eta_status: string | null;
+  eta_label: string | null;
+  student_trip_status: 'no_active_trip' | 'not_picked_up' | 'picked_up' | 'dropped_off';
+  pickup_event_time: string | null;
+  dropoff_event_time: string | null;
+  last_event_time: string | null;
 }
 
 function linkedStudentRoute(): GuardianStudentRouteRpcRow {
   return {
     student_id: GUARDIAN.studentId,
-    student_first_name: 'Avery',
-    student_last_name: 'Johnson',
-    student_preferred_name: 'Avi',
+    student_name: 'Avery Johnson',
     student_grade: 'Grade 4',
-    route_assignment_id: '55555555-5555-5555-5555-555555555555',
-    route_id: '66666666-6666-6666-6666-666666666666',
-    route_name: 'North Ridge Morning',
-    pickup_stop_name: 'Elm & 4th',
-    dropoff_stop_name: 'Maple Creek School',
-    assignment_status: 'active',
+    assignment_state: 'assigned',
+    bus_number: '42',
+    license_plate: 'TEST-42',
+    has_active_trip: false,
+    location_state: 'inactive',
+    latitude: null,
+    longitude: null,
+    location_recorded_at: null,
+    location_age_seconds: null,
+    eta_status: null,
+    eta_label: null,
+    student_trip_status: 'no_active_trip',
+    pickup_event_time: null,
+    dropoff_event_time: null,
+    last_event_time: null,
   };
 }
 
@@ -154,32 +154,12 @@ async function installGuardianMock(
         await fulfillRows([guardianProfile]);
         return;
       }
-      if (method === 'POST' && path.includes('/rpc/get_guardian_student_route_visibility')) {
+      if (method === 'POST' && path.includes('/rpc/get_guardian_bus_visibility_v2')) {
         if (failRpc) {
           await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ message: rawError }) });
         } else {
           await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(routesForRpc) });
         }
-        return;
-      }
-      if (method === 'POST' && path.includes('/rpc/get_guardian_live_trip_visibility')) {
-        // Milestone 6A: live bus status. Default mock returns no active trip
-        // ("No active trip right now"). This keeps the existing route-visibility
-        // assertions stable while exercising the new safe read path.
-        const liveRows: GuardianLiveTripRpcRow[] = (routesForRpc).map((r) => ({
-          student_id: r.student_id,
-          student_name: `${r.student_first_name} ${r.student_last_name}`,
-          route_id: r.route_id ?? '00000000-0000-0000-0000-000000000000',
-          route_name: r.route_name ?? '',
-          pickup_stop_name: r.pickup_stop_name,
-          dropoff_stop_name: r.dropoff_stop_name,
-          trip_status: null,
-          has_active_trip: false,
-          last_location_latitude: null,
-          last_location_longitude: null,
-          last_location_recorded_at: null,
-        }));
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(liveRows) });
         return;
       }
       if (method === 'GET') {
@@ -283,29 +263,31 @@ async function installAdminLinkMock(page: Page) {
 // ---------------------------------------------------------------------------
 
 test.describe('Milestone 5A — Guardian student route visibility', () => {
-  test('guardian dashboard has link to My Students & Routes', async ({ page }) => {
+  test('guardian navigation has a link to assigned buses', async ({ page }) => {
     await installGuardianMock(page);
-    await page.goto('/parent');
+    await page.goto('/guardian/routes');
 
-    await expect(page.getByRole('heading', { name: 'My Students & Routes' })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole('link', { name: 'View my students' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'My Buses', level: 1 })).toBeVisible({ timeout: 10000 });
+    if ((page.viewportSize()?.width ?? 1280) < 1024) {
+      await page.getByRole('button', { name: 'Open navigation' }).click();
+    }
+    await expect(page.getByRole('link', { name: 'My buses' })).toHaveAttribute('href', '/guardian/routes');
   });
 
   test('guardian sees only linked student route', async ({ page }) => {
     await installGuardianMock(page, { routes: [linkedStudentRoute()] });
     await page.goto('/guardian/routes');
 
-    await expect(page.getByRole('heading', { name: 'My Students & Routes', level: 1 })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByTestId('guardian-student-route-card')).toBeVisible();
-    await expect(page.getByText('Avery Johnson (Avi)')).toBeVisible();
-    await expect(page.getByText('North Ridge Morning')).toBeVisible();
-    await expect(page.getByText('Elm & 4th')).toBeVisible();
-    await expect(page.getByText('Maple Creek School')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'My Buses', level: 1 })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('guardian-student-bus-card')).toBeVisible();
+    await expect(page.getByText('Avery Johnson')).toBeVisible();
+    await expect(page.getByText('42', { exact: true })).toBeVisible();
+    await expect(page.getByText('TEST-42')).toBeVisible();
 
     // No live location/map/ETA appears.
     await expect(page.getByText('latitude', { exact: false })).toHaveCount(0);
     await expect(page.getByText('longitude', { exact: false })).toHaveCount(0);
-    await expect(page.getByText('ETA', { exact: false })).toHaveCount(0);
+    await expect(page.getByText(/\bETA\b/)).toHaveCount(0);
   });
 
   test('empty state renders when no linked students', async ({ page }) => {
@@ -313,7 +295,7 @@ test.describe('Milestone 5A — Guardian student route visibility', () => {
     await page.goto('/guardian/routes');
 
     await expect(page.getByTestId('guardian-routes-empty')).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText('No bus assignment is available yet.')).toBeVisible();
+    await expect(page.getByText('No linked students are available yet.')).toBeVisible();
     await expect(page.getByText('Please contact your school transportation office.')).toBeVisible();
   });
 
@@ -323,7 +305,7 @@ test.describe('Milestone 5A — Guardian student route visibility', () => {
     await page.goto('/guardian/routes');
 
     await expect(page.getByTestId('guardian-routes-error')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('We could not load your student route information.')).toBeVisible();
+    await expect(page.getByText('We could not load your bus information.')).toBeVisible();
     // Raw backend error text does NOT appear.
     await expect(page.getByText(rawError)).toHaveCount(0);
   });
@@ -332,36 +314,27 @@ test.describe('Milestone 5A — Guardian student route visibility', () => {
 test.describe('Milestone 5A/5B — Admin guardian-student link management', () => {
   test('admin can create guardian-student link', async ({ page }) => {
     await installAdminLinkMock(page);
-    await page.goto('/admin/guardians');
+    await page.goto(`/admin/guardians/${GUARDIAN.guardianId}`);
 
-    // Wait for page to load.
-    await expect(page.getByRole('heading', { name: 'Guardians', level: 1 })).toBeVisible({ timeout: 10000 });
-
-    // Click "Add link" on the guardian card.
-    await page.getByRole('button', { name: 'Add link' }).click();
+    await expect(page.getByRole('heading', { name: 'Linked students' })).toBeVisible({ timeout: 10000 });
 
     // Search for a student without downloading the full roster.
     await page.getByRole('searchbox', { name: 'Search students' }).fill('Avery');
     await page.getByRole('button', { name: /Avery Johnson/ }).click();
 
     // Save.
-    await page.getByRole('button', { name: 'Save link' }).click();
+    await page.getByRole('button', { name: 'Link student' }).click();
 
     // Success message appears.
-    await expect(page.getByText('Student linked to guardian.')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Student linked to this guardian.')).toBeVisible({ timeout: 10000 });
   });
 
   test('admin can view linked students by expanding a guardian card', async ({ page }) => {
     await installAdminLinkMock(page);
-    await page.goto('/admin/guardians');
+    await page.goto(`/admin/guardians/${GUARDIAN.guardianId}`);
 
-    await expect(page.getByRole('heading', { name: 'Guardians', level: 1 })).toBeVisible({ timeout: 10000 });
-
-    // Click "View links" to expand.
-    await page.getByRole('button', { name: /View links/ }).click();
-
-    // The "Linked students" section should be visible.
-    await expect(page.getByRole('heading', { name: 'Linked students' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Linked students' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('No students are linked.')).toBeVisible();
   });
 });
 

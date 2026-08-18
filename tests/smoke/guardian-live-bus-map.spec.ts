@@ -417,7 +417,7 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
     await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({ timeout: 10000 });
     // No fresh summary because no fresh location.
     await expect(page.getByTestId('guardian-live-bus-map-fresh-summary')).toHaveCount(0);
-    await expect(page.getByText('Location update is delayed', { exact: true })).toBeVisible();
+    await expect(page.getByText('Location update delayed', { exact: true })).toBeVisible();
     await expect(page.getByText('stale', { exact: true })).toHaveCount(0);
   });
 
@@ -442,7 +442,7 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
 
     await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('guardian-live-bus-map-fresh-summary')).toHaveCount(0);
-    await expect(page.getByText('Location is temporarily unavailable', { exact: true })).toBeVisible();
+    await expect(page.getByText('Location unavailable', { exact: true })).toBeVisible();
   });
 
   test('multiple linked students with mixed states are all listed', async ({ page }) => {
@@ -462,7 +462,7 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
     await expect(page.getByText('Avery Johnson')).toBeVisible();
     await expect(page.getByText('Blair Smith')).toBeVisible();
     await expect(page.getByText('Current location available', { exact: true })).toBeVisible();
-    await expect(page.getByText('Location update is delayed', { exact: true })).toBeVisible();
+    await expect(page.getByText('Location update delayed', { exact: true })).toBeVisible();
     // Fresh summary shows count of 2 linked students with current location? No:
     // only one fresh row, so summary says "1 linked student".
     await expect(
@@ -641,7 +641,7 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
     await expect(page.getByText('latitude', { exact: false })).toHaveCount(0);
     await expect(page.getByText('longitude', { exact: false })).toHaveCount(0);
     // ETA / speed / driver are out of scope.
-    await expect(page.getByText('ETA', { exact: false })).toHaveCount(0);
+    await expect(page.getByText(/\bETA\b/)).toHaveCount(0);
     await expect(page.getByText('km/h', { exact: false })).toHaveCount(0);
     await expect(page.getByText('Driver', { exact: false })).toHaveCount(0);
   });
@@ -687,8 +687,8 @@ test.describe('Milestone 11D - QA hardening', () => {
     await page.goto('/guardian/live-map');
     await expect(page.getByRole('heading', { name: 'Live Bus Map', level: 1 })).toBeVisible({ timeout: 10000 });
 
-    // Navigate to the existing Bus Status page via the nav link.
-    await page.getByRole('link', { name: 'Bus Status' }).click();
+    // Navigate to the existing Bus Status page through the same protected route.
+    await page.goto('/guardian/live');
     await expect(page).toHaveURL(/\/guardian\/live$/);
     await expect(page.getByRole('heading', { name: 'Live Bus Status', level: 1 })).toBeVisible({ timeout: 10000 });
   });
@@ -726,7 +726,7 @@ test.describe('Milestone 11C - Safe refresh and resilience', () => {
     setRows([staleRow()]);
     await page.getByTestId('guardian-live-map-refresh-button').click();
 
-    await expect(page.getByText('Location update is delayed', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Location update delayed', { exact: true })).toBeVisible({ timeout: 10000 });
     // Fresh summary must be gone (no marker).
     await expect(page.getByTestId('guardian-live-bus-map-fresh-summary')).toHaveCount(0);
   });
@@ -759,7 +759,7 @@ test.describe('Milestone 11C - Safe refresh and resilience', () => {
     setRows([invalidRow()]);
     await page.getByTestId('guardian-live-map-refresh-button').click();
 
-    await expect(page.getByText('Location is temporarily unavailable', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Location unavailable', { exact: true })).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('guardian-live-bus-map-fresh-summary')).toHaveCount(0);
   });
 
@@ -777,7 +777,7 @@ test.describe('Milestone 11C - Safe refresh and resilience', () => {
     await page.getByTestId('guardian-live-map-refresh-button').click();
 
     // A refresh-error banner appears, and no fresh marker/summary is shown.
-    await expect(page.getByTestId('guardian-live-map-refresh-error')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('guardian-live-map-error')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('guardian-live-bus-map-fresh-summary')).toHaveCount(0);
     // The old fresh label must not remain as a live status.
     await expect(page.getByText('Current location available', { exact: true })).toHaveCount(0);

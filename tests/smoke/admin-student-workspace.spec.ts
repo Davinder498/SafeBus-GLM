@@ -244,6 +244,10 @@ async function installWorkspaceMock(
       ]);
       return;
     }
+    if (method === 'POST' && path.includes('/rpc/record_student_record_access')) {
+      await requestRoute.fulfill({ status: 200, contentType: 'application/json', body: 'null' });
+      return;
+    }
     if (method === 'POST' && path.includes('/rpc/get_admin_student_qr_credential_status')) {
       await fulfillRows([
         {
@@ -330,7 +334,6 @@ test.describe('Admin student workspace', () => {
       'Student details',
       'Guardians',
       'Transportation',
-      'QR badge',
       'Student status',
       'Danger zone',
     ]) {
@@ -379,14 +382,13 @@ test.describe('Admin student workspace', () => {
     await expect(page.getByTestId('student-transportation-section')).toContainText('Not assigned');
   });
 
-  test('generates a QR badge from the workspace', async ({ page }) => {
+  test('does not expose the quarantined student QR badge workflow', async ({ page }) => {
     await installWorkspaceMock(page);
     await page.goto(`/admin/students/${IDS.student}`);
 
-    await expect(page.getByText('No active credential')).toBeVisible();
-    await page.getByRole('button', { name: 'Generate' }).click();
-    await expect(page.getByTestId('admin-qr-generation-result')).toBeVisible();
-    await expect(page.getByText('Active credential')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Avery Johnson', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'QR badge', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Generate', exact: true })).toHaveCount(0);
   });
 
   test('gates inactive operations and restores them after reactivation', async ({ page }) => {
@@ -396,8 +398,7 @@ test.describe('Admin student workspace', () => {
     await expect(
       page.getByText('Reactivate the student to manage their transportation.'),
     ).toBeVisible();
-    await expect(page.getByText('Reactivate the student to manage their QR badge.')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Generate' })).toBeDisabled();
+    await expect(page.getByRole('heading', { name: 'QR badge', exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Manage transportation' })).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Reactivate student' }).click();

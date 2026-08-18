@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AdminTripsOverview } from '@/components/admin/AdminTripsOverview';
+import { NotificationDeliverySummaryCard } from '@/components/admin/NotificationDeliverySummaryCard';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { DataState } from '@/components/ui/DataState';
@@ -41,6 +42,7 @@ export function AdminTripsPage() {
             </Button>
           }
         />
+        <NotificationDeliverySummaryCard />
         {state.kind === 'loading' && (
           <DataState title="Loading trips" message="Loading recent operational runs." />
         )}
