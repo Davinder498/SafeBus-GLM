@@ -29,31 +29,27 @@ const json = (statusCode, body) => ({
   body: JSON.stringify(body),
 });
 
-export async function handler(event) {
-  // Scheduled triggers from Netlify arrive with an empty body and no auth header.
-  // Manual secure invocation is still possible via a POST that supplies the
-  // x-safebus-dispatcher-secret header; in that case runDispatcher()
-  // validates it normally.
-  const isScheduledTrigger =
-    !event?.body &&
-    (event?.httpMethod === 'POST' || event?.httpMethod === 'GET' || !event?.httpMethod);
-
-  const internalEvent = isScheduledTrigger
-    ? {
-        ...event,
-        httpMethod: 'POST',
-        headers: {
-          ...(event?.headers || {}),
-          'x-safebus-dispatcher-secret': process.env.SAFEBUS_NOTIFICATION_DISPATCHER_SECRET || '',
-        },
-      }
-    : event;
+export async function handler(event = {}) {
+  // Netlify scheduled invocations include a JSON body with `next_run` and do
+  // not include the dispatcher's application secret. This function is marked
+  // as scheduled in netlify.toml and is not addressable by URL in production,
+  // so every invocation of this wrapper is trusted to receive the secret from
+  // the server environment. The separate guardian-notification-email function
+  // remains the secret-protected endpoint for manual QA.
+  const internalEvent = {
+    ...event,
+    httpMethod: 'POST',
+    headers: {
+      ...(event.headers || {}),
+      'x-safebus-dispatcher-secret': process.env.SAFEBUS_NOTIFICATION_DISPATCHER_SECRET || '',
+    },
+  };
 
   try {
     const result = await runDispatcher(internalEvent);
-    if (isScheduledTrigger) {
-      console.log(JSON.stringify({ result: 'scheduled_dispatcher_complete', statusCode: result.statusCode }));
-    }
+    console.log(
+      JSON.stringify({ result: 'scheduled_dispatcher_complete', statusCode: result.statusCode }),
+    );
     return result;
   } catch (e) {
     console.error(JSON.stringify({ result: 'scheduled_dispatcher_error', category: 'unknown' }));
