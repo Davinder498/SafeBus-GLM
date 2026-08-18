@@ -1,6 +1,28 @@
+## Commercial Readiness Remediation 3 — Automated Accessibility Gate
+
+Status: Implemented on `agent/accessibility-gate` for review.
+
+- Added an axe-core WCAG 2.2 A/AA gate for representative public,
+  tenant-admin, driver, and guardian surfaces across desktop and mobile
+  Chromium.
+- Covered the public landing and sign-in flows, tenant-admin overview and trip
+  history, driver bus-scan and active-trip states, and guardian live bus status.
+- Corrected low-contrast small text in the landing page and shared dashboard
+  navigation, restored an accessible name for the mobile brand link, and added
+  a global reduced-motion mode.
+- Added `pnpm test:accessibility` for targeted verification. The complete CI
+  browser job also executes these tests, so new automated A/AA violations fail
+  the pull request.
+- No database, hosted environment, production data, or credentials were
+  accessed or changed.
+
+Pending: keyboard-only review at 200% zoom and 320 CSS pixels, NVDA/Chrome and
+VoiceOver/Safari testing, and human WCAG 2.2 AA conformance review. Automated
+testing does not close the full Point 10 accessibility gate by itself.
+
 ## Commercial Readiness Remediation 2 — Full Smoke-Suite Reconciliation
 
-Status: Implemented on `agent/full-smoke-reconciliation` for review.
+Status: Merged through PR #146 and on `main`.
 
 - Reconciled every Playwright smoke test with the approved Commercial Release
   1 bus-first scope and current secured RPC contracts.

@@ -104,7 +104,7 @@ export function LandingPage() {
                 <div className="rounded-xl bg-white p-5 text-slate-900 shadow-xl">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                     <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                      <p className="text-xs font-medium uppercase tracking-wide text-slate-600">
                         Live trip
                       </p>
                       <p className="text-2xl font-bold text-slate-900">Bus 12</p>

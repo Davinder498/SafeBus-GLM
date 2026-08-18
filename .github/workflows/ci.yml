@@ -53,7 +53,7 @@ jobs:
       - run: pnpm test
 
   browser-smoke:
-    name: Browser smoke tests
+    name: Browser smoke tests and accessibility
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -64,7 +64,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
-      - name: Full commercial smoke suite
+      - name: Full commercial smoke and WCAG suite
         run: pnpm exec playwright test --workers=4
       - uses: actions/upload-artifact@v7
         if: failure()
