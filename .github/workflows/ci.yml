@@ -65,7 +65,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
       - name: Full commercial smoke suite
-        run: pnpm test:smoke -- --workers=4
+        run: pnpm exec playwright test --workers=4
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

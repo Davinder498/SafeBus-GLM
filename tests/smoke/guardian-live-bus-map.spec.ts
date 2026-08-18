@@ -1,5 +1,5 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
-import { installMapProviderOutage } from './fixtures/map-provider';
+import { installMapProviderAvailable, installMapProviderOutage } from './fixtures/map-provider';
 import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
 
 /**
@@ -533,6 +533,7 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
       rows: [freshRow()],
       routeRows: [studentRouteRow()],
     });
+    await installMapProviderAvailable(page);
     await page.goto('/guardian/live-map');
 
     // When tile config IS set (local dev / this test env), the interactive

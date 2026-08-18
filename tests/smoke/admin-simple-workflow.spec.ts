@@ -1,6 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
-import { installMapProviderOutage } from './fixtures/map-provider';
+import { installMapProviderAvailable, installMapProviderOutage } from './fixtures/map-provider';
 
 const ids = { profile: '11111111-1111-1111-1111-111111111111', tenant: '22222222-2222-2222-2222-222222222222', driver: '33333333-3333-3333-3333-333333333333', bus: '44444444-4444-4444-4444-444444444444', route: '55555555-5555-5555-5555-555555555555', inactiveRoute: '55555555-5555-5555-5555-555555555556', assignment: '66666666-6666-6666-6666-666666666666', trip: '77777777-7777-7777-7777-777777777777' };
 function profile(role: 'tenant_admin' | 'guardian' = 'tenant_admin') { return { id: ids.profile, tenant_id: ids.tenant, school_id: null, full_name: 'Test Admin', email: 'admin@example.test', role, status: 'active', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' }; }
@@ -45,6 +45,7 @@ test.describe('Simplified tenant admin workflow', () => {
   test('uses direct sidebar navigation choices', async ({ page }) => { await mockAdmin(page); await page.goto('/admin'); if ((page.viewportSize()?.width ?? 1280) < 1024) await page.getByRole('button', { name: 'Open navigation' }).click(); for (const label of ['Overview', 'Students', 'Guardians', 'Drivers', 'Buses', 'Routes', 'Live Operations']) await expect(page.getByRole('link', { name: label, exact: true })).toBeVisible(); await expect(page.getByRole('link', { name: 'Stops', exact: true })).toHaveCount(0); });
   test('overview shows active and inactive clickable route tiles that open route detail', async ({ page }) => {
     await mockAdmin(page);
+    await installMapProviderAvailable(page);
     await page.goto('/admin');
     const tiles = page.getByTestId('admin-route-status-tile');
     await expect(tiles).toHaveCount(2);
