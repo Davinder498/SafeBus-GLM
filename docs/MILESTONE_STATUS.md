@@ -1,3 +1,17 @@
+## Commercial Readiness Remediation 1 — Notification Scheduler Reliability
+
+Status: Implemented on `agent/notification-scheduler-reliability` for review.
+
+- Corrected the Netlify scheduled wrapper to accept the documented JSON
+  `next_run` payload while injecting the dispatcher secret only from the
+  server environment.
+- Retained bodyless local/legacy invocation compatibility and the separate
+  secret-protected manual dispatcher endpoint.
+- Added regression coverage for the production-shaped scheduled payload and
+  corrected the five-minute scheduler acceptance instructions.
+- No database, RLS, notification eligibility, message content, provider,
+  browser credential, or delivery-state change is included.
+
 ## Milestone 9A — Guardian Pickup/Drop-off Notification Outbox Foundation
 
 - Added a backend-only, tenant-scoped guardian notification outbox foundation for future pickup/drop-off notifications.
@@ -502,7 +516,7 @@ Status: Implemented on `phase-15b-notification-delivery-hardening` for review; n
 
 - Phase 15A inspection findings: lifecycle, claims, leases, batch limits, retry delays, maximum attempts, payload resolution, consent, recipient selection, idempotency, and dispatcher auth were confirmed correct. Gaps identified and addressed in this phase: no automated scheduler, raw UTC email timestamps (poor for an Alberta pilot), missing privacy-safe logging on several result paths, and no tenant-admin operational visibility.
 - Added migration `0039_notification_delivery_hardening_tenant_timezone_summary.sql` (forward-only; does not modify `0038`): adds `tenants.timezone` (IANA, default `America/Edmonton`), replaces `resolve_guardian_notification_email_payload` with a compatible superset that returns `tenant_timezone`, and adds `get_tenant_notification_delivery_summary()` tenant-scoped summary RPC.
-- Scheduler: added `apps/web/netlify/functions/guardian-notification-email-scheduled.mjs` with hourly `schedule` in `netlify.toml`. It reuses the shared `runDispatcher` logic, injects the dispatcher secret internally so it never leaves the server, requires no browser user, and remains safe under overlapping execution via `for update skip locked`.
+- Scheduler: added `apps/web/netlify/functions/guardian-notification-email-scheduled.mjs` with a five-minute schedule in `netlify.toml`. It reuses the shared `runDispatcher` logic, accepts Netlify's documented `next_run` payload, injects the dispatcher secret internally so it never leaves the server, requires no browser user, and remains safe under overlapping execution via `for update skip locked`.
 - Privacy-safe diagnostics: every dispatcher result path now logs through an allowlist-based `safeLog()` helper. Logs contain only outbox correlation ID, attempt, notification type, result, category, and duration. No recipient emails, names, message bodies, API keys, or provider response bodies are logged.
 - Tenant-admin operational visibility: the summary RPC and `NotificationDeliverySummaryCard` on `/admin/trips` show pending/processing/recent-delivered/recent-failed/cancelled counts, oldest pending age, and normalized failure categories for `tenant_admin`/`school_admin`/`transportation_admin` only. No personal information is returned. Platform Super Admin is deliberately denied.
 - Time-zone decision: added `tenants.timezone` (IANA) with a safe Alberta default and tenant-admin configuration path. The dispatcher formats the authoritative server-recorded event timestamp in the tenant's configured IANA zone. Raw UTC is no longer presented to guardians.
