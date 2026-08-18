@@ -28,19 +28,45 @@ describe('scheduled notification dispatcher', () => {
     vi.clearAllMocks();
   });
 
-  it('successfully runs the scheduled dispatcher with an empty body (Netlify schedule trigger)', async () => {
+  it("runs the dispatcher with Netlify's documented next_run schedule payload", async () => {
     const client = { rpc: vi.fn(() => Promise.resolve({ data: [], error: null })) };
     createClient.mockReturnValue(client);
 
-    const { handler } = await import('../../netlify/functions/guardian-notification-email-scheduled.mjs');
+    const { handler } =
+      await import('../../netlify/functions/guardian-notification-email-scheduled.mjs');
 
-    // Netlify scheduled triggers arrive with empty body, no secret header.
+    const result = await handler({
+      httpMethod: 'POST',
+      headers: {},
+      body: JSON.stringify({ next_run: '2026-08-17T00:05:00.000Z' }),
+    });
+
+    expect(result.statusCode).toBe(200);
+    expect(JSON.parse(result.body)).toEqual({
+      claimed: 0,
+      delivered: 0,
+      retry: 0,
+      failed: 0,
+      cancelled: 0,
+      error: 0,
+    });
+    // The scheduled handler should inject the secret internally so the claim RPC runs.
+    expect(client.rpc).toHaveBeenCalled();
+  });
+
+  it('keeps bodyless local and legacy schedule invocations working', async () => {
+    const client = { rpc: vi.fn(() => Promise.resolve({ data: [], error: null })) };
+    createClient.mockReturnValue(client);
+
+    const { handler } =
+      await import('../../netlify/functions/guardian-notification-email-scheduled.mjs');
     const result = await handler({ httpMethod: 'POST', headers: {}, body: '' });
 
     expect(result.statusCode).toBe(200);
-    expect(JSON.parse(result.body)).toEqual({ claimed: 0, delivered: 0, retry: 0, failed: 0, cancelled: 0, error: 0 });
-    // The scheduled handler should inject the secret internally so the claim RPC runs.
-    expect(client.rpc).toHaveBeenCalled();
+    expect(client.rpc).toHaveBeenCalledWith(
+      'claim_guardian_notification_email_batch',
+      expect.objectContaining({ p_batch_size: 50 }),
+    );
   });
 
   it('processes a claimed row through the scheduled path', async () => {
@@ -48,31 +74,46 @@ describe('scheduled notification dispatcher', () => {
       rpc: vi.fn((name) => {
         if (name === 'claim_guardian_notification_email_batch') {
           return Promise.resolve({
-            data: [{
-              id: 's-row-1', tenant_id: 't1', guardian_id: 'g1', student_id: 's1',
-              student_trip_event_id: 'e1', notification_type: 'student_picked_up', attempt_count: 1,
-            }],
+            data: [
+              {
+                id: 's-row-1',
+                tenant_id: 't1',
+                guardian_id: 'g1',
+                student_id: 's1',
+                student_trip_event_id: 'e1',
+                notification_type: 'student_picked_up',
+                attempt_count: 1,
+              },
+            ],
             error: null,
           });
         }
         if (name === 'resolve_guardian_notification_email_payload') {
           return Promise.resolve({
-            data: [{
-              outbox_id: 's-row-1', tenant_id: 't1', guardian_id: 'g1',
-              recipient_email: 'guardian@example.test', student_first_name: 'Avery',
-              notification_type: 'student_picked_up', event_created_at: '2026-07-14T15:30:00Z',
-              tenant_timezone: 'America/Edmonton',
-            }],
+            data: [
+              {
+                outbox_id: 's-row-1',
+                tenant_id: 't1',
+                guardian_id: 'g1',
+                recipient_email: 'guardian@example.test',
+                student_first_name: 'Avery',
+                notification_type: 'student_picked_up',
+                event_created_at: '2026-07-14T15:30:00Z',
+                tenant_timezone: 'America/Edmonton',
+              },
+            ],
             error: null,
           });
         }
-        if (name === 'complete_guardian_notification_email') return Promise.resolve({ data: null, error: null });
+        if (name === 'complete_guardian_notification_email')
+          return Promise.resolve({ data: null, error: null });
         return Promise.resolve({ data: null, error: null });
       }),
     };
     createClient.mockReturnValue(client);
 
-    const { handler } = await import('../../netlify/functions/guardian-notification-email-scheduled.mjs');
+    const { handler } =
+      await import('../../netlify/functions/guardian-notification-email-scheduled.mjs');
 
     // Mock global fetch so the provider call is intercepted.
     const fetchMock = vi.fn().mockResolvedValue({
@@ -81,7 +122,11 @@ describe('scheduled notification dispatcher', () => {
     });
     globalThis.fetch = fetchMock;
 
-    const result = await handler({ httpMethod: 'POST', headers: {}, body: '' });
+    const result = await handler({
+      httpMethod: 'POST',
+      headers: {},
+      body: JSON.stringify({ next_run: '2026-08-17T00:10:00.000Z' }),
+    });
     expect(result.statusCode).toBe(200);
     expect(JSON.parse(result.body)).toMatchObject({ claimed: 1, delivered: 1 });
 
@@ -90,8 +135,13 @@ describe('scheduled notification dispatcher', () => {
 
   it('returns 500 when configuration is missing', async () => {
     delete process.env.SAFEBUS_EMAIL_FROM;
-    const { handler } = await import('../../netlify/functions/guardian-notification-email-scheduled.mjs');
-    const result = await handler({ httpMethod: 'POST', headers: {}, body: '' });
+    const { handler } =
+      await import('../../netlify/functions/guardian-notification-email-scheduled.mjs');
+    const result = await handler({
+      httpMethod: 'POST',
+      headers: {},
+      body: JSON.stringify({ next_run: '2026-08-17T00:15:00.000Z' }),
+    });
     expect(result.statusCode).toBe(500);
   });
 });

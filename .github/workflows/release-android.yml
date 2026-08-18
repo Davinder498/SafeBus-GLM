@@ -52,8 +52,12 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+dependabot/github_actions/gradle/actions-6
       - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v6
+      - uses: android-actions/setup-android@v4
+      - uses: gradle/actions/setup-gradle@v5
+main
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - run: pnpm install --frozen-lockfile
       - name: Materialize protected signing key
