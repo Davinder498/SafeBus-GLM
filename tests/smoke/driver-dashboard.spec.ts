@@ -35,7 +35,7 @@ test.describe('Driver dashboard — protected route', () => {
 
     await expect(page).toHaveURL(/\/login$/);
     await expect(
-      page.getByRole('heading', { name: 'Sign in to SafeBus' }),
+      page.getByRole('heading', { name: 'Sign in', exact: true }),
     ).toBeVisible();
   });
 });

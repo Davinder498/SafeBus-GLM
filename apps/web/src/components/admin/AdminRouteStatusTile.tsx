@@ -42,6 +42,15 @@ export function AdminRouteStatusTile({ route, stopCount, to }: AdminRouteStatusT
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <span
+          className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${
+            route.status === 'active'
+              ? 'bg-success-50 text-success-700'
+              : 'bg-gray-100 text-gray-700'
+          }`}
+        >
+          {route.status}
+        </span>
+        <span
           aria-hidden="true"
           className="text-lg text-navy-400 transition-transform group-hover:translate-x-1"
         >

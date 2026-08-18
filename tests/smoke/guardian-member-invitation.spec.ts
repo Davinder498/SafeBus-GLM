@@ -133,8 +133,10 @@ test.describe('guardian member invitation', () => {
     await fillGuardianForm(page);
     await page.getByRole('button', { name: 'Send invitation' }).click();
 
-    await expect(page.getByRole('alert')).toContainText('HTTP 502');
-    await expect(page.getByRole('alert')).toContainText('retry once');
+    await expect(page.getByRole('alert')).toContainText('We could not reach the onboarding service.');
+    await expect(page.getByRole('alert')).toContainText('try again once');
+    await expect(page.getByRole('alert')).not.toContainText('HTTP 502');
+    await expect(page.getByRole('alert')).not.toContainText('SUPABASE_SECRET_KEY');
     await expect(page.getByLabel('Email address')).toHaveValue('guardian@example.test');
   });
 

@@ -29,15 +29,11 @@ async function callOnboarding<T>(body: Record<string, unknown>): Promise<T> {
     // Detect non-JSON responses (HTML SPA fallback when Netlify Functions are
     // not served — e.g. running `vite` instead of `netlify dev` locally).
     if (!isJson || response.status === 404) {
-      throw new Error(
-        `The onboarding service is unreachable (HTTP ${response.status}). ` +
-          'If you are running locally, start the app with "pnpm dev" so the local function middleware is served. ' +
-          'If this persists in production, verify the Netlify function is deployed and required environment variables (SUPABASE_URL, SUPABASE_SECRET_KEY, SUPABASE_ANON_KEY) are set.',
-      );
+      throw new Error('We could not reach the onboarding service. Nothing was confirmed; please try again once.');
     }
     throw new Error(
       response.status >= 500
-        ? `The onboarding service returned HTTP ${response.status} before confirming completion. No new record was confirmed; retry once.`
+        ? 'The onboarding service did not confirm completion. Nothing was confirmed; please try again once.'
         : 'The onboarding request was rejected. Review the form and try again.',
     );
   }

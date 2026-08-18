@@ -1,6 +1,28 @@
+## Commercial Readiness Remediation 2 — Full Smoke-Suite Reconciliation
+
+Status: Implemented on `agent/full-smoke-reconciliation` for review.
+
+- Reconciled every Playwright smoke test with the approved Commercial Release
+  1 bus-first scope and current secured RPC contracts.
+- Restored missing tenant-admin notification delivery visibility and route
+  active/inactive status on their existing operational surfaces.
+- Replaced guardian tests for retired route/trip/event RPCs with coverage of
+  the single `get_guardian_bus_visibility_v2()` boundary, including role
+  blocking, privacy, refresh, failure, map, bus-status, and pickup/drop-off
+  states.
+- Removed obsolete manual driver-location and student-QR scanner expectations.
+  Current coverage verifies bus-QR session start, automatic bus-location
+  sharing, manual pickup/drop-off controls, and absence of quarantined student
+  badge/scanner controls.
+- Sanitized onboarding gateway failures so deployment commands, HTTP gateway
+  details, and secret environment-variable names are not shown in the UI.
+- CI now runs the complete desktop and mobile commercial smoke suite instead
+  of only the small release subset. No database or hosted environment was
+  accessed or changed.
+
 ## Commercial Readiness Remediation 1 — Notification Scheduler Reliability
 
-Status: Implemented on `agent/notification-scheduler-reliability` for review.
+Status: Merged through PR #142 and on `main`.
 
 - Corrected the Netlify scheduled wrapper to accept the documented JSON
   `next_run` payload while injecting the dispatcher secret only from the

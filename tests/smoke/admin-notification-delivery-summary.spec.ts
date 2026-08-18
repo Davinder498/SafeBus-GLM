@@ -21,6 +21,7 @@ async function mockRole(page: Page, role: 'tenant_admin' | 'guardian' | 'driver'
     if (path.includes('/profiles')) { const single = (route.request().headers().accept ?? '').includes('object+json'); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(single ? currentProfile : [currentProfile]) }); }
     if (method === 'HEAD') return route.fulfill({ status: 200, headers: { 'content-range': '0-0/1' }, body: '' });
     if (path.includes('/rpc/get_admin_live_fleet_monitoring')) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+    if (path.includes('/rpc/get_admin_trip_overview')) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
     if (path.includes('/rpc/get_tenant_notification_delivery_summary')) {
       if (summaryBody === undefined) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ pending_count: 2, processing_count: 0, delivered_count_recent: 8, failed_count_recent: 1, cancelled_count_recent: 3, oldest_pending_age_seconds: 1800, recent_failure_categories: [{ category: 'permanent_provider_error', count: 1 }, { category: 'eligibility_revoked', count: 2 }] }]) });
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(summaryBody) });
@@ -42,7 +43,7 @@ test.describe('Phase 15B tenant admin notification delivery summary', () => {
     await expect(page.getByRole('heading', { name: 'Notification delivery', level: 2 })).toBeVisible();
     await expect(page.getByText('Pending', { exact: true })).toBeVisible();
     await expect(page.getByText('Delivered (24h)')).toBeVisible();
-    await expect(page.getByText('Failed (24h)')).toBeVisible();
+    await expect(page.getByText('Dead-lettered / failed (24h)')).toBeVisible();
     // Failure category labels
     await expect(page.getByText(/Permanent provider error/)).toBeVisible();
     await expect(page.getByText(/Eligibility revoked/)).toBeVisible();
