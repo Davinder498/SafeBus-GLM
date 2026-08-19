@@ -13,6 +13,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test && node --test tests/release/security-config.test.mjs tests/release/database-types-contract.test.mjs tests/release/safe-release.test.mjs tests/release/environment-isolation.test.mjs tests/release/authorization-surface.test.mjs tests/release/android-byod-contract.test.mjs tests/release/map-readiness.test.mjs tests/phase5/phase5-contract.test.mjs",
     "test:smoke": "playwright test",
+    "test:accessibility": "playwright test tests/smoke/commercial-accessibility.spec.ts",
     "test:smoke:release": "playwright test tests/release/release-smoke.spec.ts",
     "test:rls": "node scripts/run-rls-tests.mjs",
     "test:rls:phase3": "node -e \"const fs=require('fs'); const f='tests/rls/phase3-retention-rls.sql'; if(!fs.existsSync(f)) throw new Error('Missing '+f); console.log('Phase 3 retention RLS SQL file exists')\"",
@@ -43,6 +44,7 @@
     "qa:seed:student-qr": "node scripts/seed-student-qr-qa-fixture.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.62.1",
     "netlify-cli": "^27.1.1",
     "pg": "^8.22.0",

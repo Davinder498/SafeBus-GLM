@@ -12,8 +12,8 @@ test.describe('bus-first driver workflow', () => {
       timeout: 10000,
     });
     await expect(page.getByTestId('driver-scan-bus-qr')).toBeVisible();
-    await expect(page.getByLabel('Bus')).toHaveCount(0);
-    await expect(page.getByLabel('Route')).toHaveCount(0);
+    await expect(page.getByLabel('Bus', { exact: true })).toHaveCount(0);
+    await expect(page.getByLabel('Route', { exact: true })).toHaveCount(0);
     await expect(page.getByTestId('driver-assignment-card')).toHaveCount(0);
   });
 

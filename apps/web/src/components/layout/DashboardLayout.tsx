@@ -375,7 +375,11 @@ export function DashboardLayout({
           )}
 
           {/* Brand */}
-          <Link to="/" className="flex min-w-0 items-center gap-2.5">
+          <Link
+            to="/"
+            className="flex min-w-0 items-center gap-2.5"
+            aria-label="SafeBus Alberta home"
+          >
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-navy-700 text-white shadow-sm">
               <Bus className="h-5 w-5" aria-hidden />
             </span>
@@ -551,7 +555,7 @@ function SidebarNav({
       {groups.map((group, gi) => (
         <div key={gi} className="space-y-1">
           {group.label && (
-            <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-600">
               {group.label}
             </p>
           )}
