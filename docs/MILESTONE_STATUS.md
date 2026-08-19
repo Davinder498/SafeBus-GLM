@@ -1,6 +1,21 @@
+## Commercial Readiness Remediation 4 — Immutable GitHub Actions
+
+Status: Implemented on `agent/immutable-actions` for review.
+
+- Pinned every external action used by all eight GitHub Actions workflows to a
+  verified, immutable 40-character upstream commit SHA.
+- Retained the reviewed major-version comment beside every pin so the existing
+  weekly Dependabot GitHub Actions updates can continue proposing upgrades.
+- Added a repository-wide regression gate that discovers every workflow and
+  rejects mutable external action references or pins without a version comment.
+- Preserved all workflow names, job names, triggers, permissions, environments,
+  commands, and required-check contexts.
+- No database, hosted environment, production data, or credentials were
+  accessed or changed.
+
 ## Commercial Readiness Remediation 3 — Automated Accessibility Gate
 
-Status: Implemented on `agent/accessibility-gate` for review.
+Status: Merged through PR #147 and on `main`.
 
 - Added an axe-core WCAG 2.2 A/AA gate for representative public,
   tenant-admin, driver, and guardian surfaces across desktop and mobile

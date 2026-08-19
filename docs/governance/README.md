@@ -16,6 +16,7 @@ every later phase must obey.
 | [`commercial-release-scope.md`](./commercial-release-scope.md)             | Binding Commercial Release 1 boundary and launch-gate map      |
 | [`point-5-authorization-evidence.md`](./point-5-authorization-evidence.md) | Point 5 baseline, hardening controls, and hosted exit evidence |
 | [`point-8-map-readiness.md`](./point-8-map-readiness.md) | Point 8 provider, outage controls, and operating evidence |
+| [`github-actions-supply-chain.md`](./github-actions-supply-chain.md) | Immutable CI dependency controls and update procedure |
 | [`product-scope.md`](./product-scope.md)                                   | Signed product scope                                           |
 | [`role-responsibility-matrix.md`](./role-responsibility-matrix.md)         | Signed role and responsibility matrix                          |
 | [`data-classification.md`](./data-classification.md)                       | Approved data classification                                   |
