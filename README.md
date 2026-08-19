@@ -40,9 +40,9 @@ safebus-alberta/
 │   ├── ui/               # Shared component library (19 components)
 │   └── config/           # Shared tsconfig, eslint config
 ├── supabase/
+│   ├── config.toml       # Fail-closed retired Edge Function denylist
 │   ├── migrations/       # Database schema + RLS policies
-│   ├── functions/        # Edge Functions for approved milestones
-│   └── seed/             # Demo data
+│   └── legacy/           # Archived migrations; never deploy
 └── docs/                 # PRD, Architecture, Security, Pilot Plan
 ```
 

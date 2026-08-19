@@ -1,64 +1,15 @@
 /**
  * SafeBus Alberta — API request/response contracts.
  *
- * These contracts are identical across pilot (Supabase Edge Functions)
- * and full-scale (dedicated ingestion API). Only the endpoint URL changes.
+ * Shared request and response contracts for approved SafeBus operations.
  */
-
-import type { LocationSource } from './status.ts';
-
-// ─── GPS Location Ping ─────────────────────────────────────────────────────
-
-/**
- * Payload sent by the driver app every 5 seconds during an active trip.
- * Validated by the `ingest-location` Edge Function before being stored.
- */
-export interface LocationPingRequest {
-  tripId: string;
-  busId: string;
-  driverId: string;
-  latitude: number;
-  longitude: number;
-  speed?: number | null;
-  heading?: number | null;
-  accuracy?: number | null;
-  batteryLevel?: number | null;
-  /** ISO 8601 timestamp from the device, not the server. */
-  recordedAt: string;
-  locationSource: LocationSource;
-}
-
-export interface LocationPingResponse {
-  accepted: boolean;
-  /** Milliseconds until the next expected ping (allows server to adjust interval). */
-  nextPingInMs?: number;
-  rejectionReason?: LocationPingRejectionReason;
-}
-
-export type LocationPingRejectionReason =
-  | 'not_authenticated'
-  | 'not_a_driver'
-  | 'driver_not_assigned_to_trip'
-  | 'trip_not_active'
-  | 'bus_tenant_mismatch'
-  | 'trip_tenant_mismatch'
-  | 'timestamp_out_of_range'
-  | 'accuracy_too_low'
-  | 'invalid_location_source'
-  | 'rate_limited';
 
 // ─── Driver Issue Report ───────────────────────────────────────────────────
 
 export interface IssueReportRequest {
   tripId: string;
   driverId: string;
-  issueType:
-    | 'delay'
-    | 'breakdown'
-    | 'road_blocked'
-    | 'weather'
-    | 'student_issue'
-    | 'other';
+  issueType: 'delay' | 'breakdown' | 'road_blocked' | 'weather' | 'student_issue' | 'other';
   note?: string;
   latitude?: number | null;
   longitude?: number | null;
