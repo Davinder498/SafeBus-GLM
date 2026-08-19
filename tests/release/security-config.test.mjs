@@ -85,32 +85,56 @@ test('CI declares every Phase 4 gate', async () => {
   assert.match(await read('.github/workflows/codeql.yml'), /CodeQL/);
 });
 
-test('GitHub workflows use the Node 24 action generations', async () => {
-  const workflows = await Promise.all([
-    read('.github/workflows/ci.yml'),
-    read('.github/workflows/codeql.yml'),
-    read('.github/workflows/refresh-database-types.yml'),
-    read('.github/workflows/release-production.yml'),
-    read('.github/workflows/adopt-existing-production.yml'),
-    read('.github/workflows/authorization-audit.yml'),
-    read('.github/workflows/rollback.yml'),
-  ]);
-  const combined = workflows.join('\n');
-
-  for (const action of [
-    'actions/checkout@v7',
-    'actions/upload-artifact@v7',
-    'github/codeql-action/init@v4',
-    'github/codeql-action/analyze@v4',
-    'gitleaks/gitleaks-action@v3',
-    'pnpm/action-setup@v6',
-  ]) {
-    assert.match(combined, new RegExp(action.replace('/', '\\/')));
-  }
-  assert.doesNotMatch(
-    combined,
-    /actions\/checkout@v4|actions\/upload-artifact@v4|github\/codeql-action\/(?:init|analyze)@v3|gitleaks\/gitleaks-action@v2|pnpm\/action-setup@v4/,
+test('every external GitHub Action is pinned to an immutable commit', async () => {
+  const workflowDirectory = '.github/workflows';
+  const workflowFiles = (await fs.readdir(workflowDirectory)).filter((file) =>
+    /\.ya?ml$/.test(file),
   );
+  const workflows = await Promise.all(
+    workflowFiles.map((file) => read(`${workflowDirectory}/${file}`)),
+  );
+  const combined = workflows.join('\n');
+  const actionLines = combined.split('\n').filter((line) => /^\s*(?:-\s+)?uses:/.test(line));
+
+  assert.ok(actionLines.length > 0);
+  for (const line of actionLines) {
+    const parsed = line.match(/^\s*(?:-\s+)?uses:\s+([^\s#]+)(?:\s+#\s+(v\d+))?\s*$/);
+    assert.ok(parsed, `could not parse action reference: ${line.trim()}`);
+
+    const [, actionReference, versionComment] = parsed;
+    if (actionReference.startsWith('./')) continue;
+
+    const separator = actionReference.lastIndexOf('@');
+    assert.ok(separator > 0, `action reference has no revision: ${actionReference}`);
+    assert.match(
+      actionReference.slice(separator + 1),
+      /^[0-9a-f]{40}$/,
+      `external action is not pinned to a full commit SHA: ${actionReference}`,
+    );
+    assert.match(
+      versionComment ?? '',
+      /^v\d+$/,
+      `pinned action is missing its Dependabot version comment: ${line.trim()}`,
+    );
+  }
+
+  for (const [action, version] of Object.entries({
+    'actions/checkout': 'v7',
+    'actions/setup-node': 'v7',
+    'actions/upload-artifact': 'v7',
+    'github/codeql-action/init': 'v4',
+    'github/codeql-action/analyze': 'v4',
+    'gitleaks/gitleaks-action': 'v3',
+    'pnpm/action-setup': 'v6',
+  })) {
+    assert.match(
+      combined,
+      new RegExp(`${action.replaceAll('/', '\\/')}@[0-9a-f]{40} # ${version}`),
+    );
+  }
+
+  const dependabot = await read('.github/dependabot.yml');
+  assert.match(dependabot, /package-ecosystem: github-actions/);
 });
 
 test('dependency automation defers incompatible toolchain major upgrades', async () => {
