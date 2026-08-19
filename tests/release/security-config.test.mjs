@@ -137,6 +137,40 @@ test('every external GitHub Action is pinned to an immutable commit', async () =
   assert.match(dependabot, /package-ecosystem: github-actions/);
 });
 
+test('retired Supabase Edge Function prototypes cannot be deployed', async () => {
+  const [config, apiEntry, apiPackage, contracts, validation, webTracking, androidTracking] =
+    await Promise.all([
+      read('supabase/config.toml'),
+      read('packages/api/src/index.ts'),
+      read('packages/api/package.json'),
+      read('packages/types/src/api-contracts.ts'),
+      read('packages/api/src/validation.ts'),
+      read('apps/web/src/services/driverLocationService.ts'),
+      read(
+        'apps/mobile/android/app/src/main/java/com/safebusalberta/app/tracking/DriverTrackingService.java',
+      ),
+    ]);
+
+  for (const functionName of ['ingest-location', 'gps-stale-check']) {
+    assert.match(
+      config,
+      new RegExp(`\\[functions\\.${functionName}\\][\\s\\S]*?enabled\\s*=\\s*false`),
+    );
+    await assert.rejects(read(`supabase/functions/${functionName}/index.ts`), {
+      code: 'ENOENT',
+    });
+  }
+
+  const retiredClientSurface = [apiEntry, apiPackage, contracts, validation].join('\n');
+  assert.doesNotMatch(retiredClientSurface, /supabase\.functions\.invoke/);
+  assert.doesNotMatch(
+    retiredClientSurface,
+    /LocationPing(?:Request|Response|RejectionReason|Input)|locationPingSchema/,
+  );
+  assert.match(webTracking, /client\.rpc\('update_driver_trip_location'/);
+  assert.match(androidTracking, /\/rest\/v1\/rpc\/ingest_driver_location_event/);
+});
+
 test('dependency automation defers incompatible toolchain major upgrades', async () => {
   const dependabot = await read('.github/dependabot.yml');
   const mobilePackage = JSON.parse(await read('apps/mobile/package.json'));

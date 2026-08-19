@@ -1,41 +1,18 @@
 /**
  * SafeBus Alberta — Zod validation schemas.
  *
- * These mirror the API contracts in @safebus/types/api-contracts.
- * Used by both the client (before sending) and Edge Functions (before processing).
+ * These mirror the API contracts in @safebus/types/api-contracts and validate
+ * client input before approved server operations.
  */
 
 import { z } from 'zod';
-
-// ─── GPS Location Ping ─────────────────────────────────────────────────────
-
-export const locationPingSchema = z.object({
-  tripId: z.string().uuid(),
-  busId: z.string().uuid(),
-  driverId: z.string().uuid(),
-  latitude: z.number().min(-90).max(90),
-  longitude: z.number().min(-180).max(180),
-  speed: z.number().min(0).nullable().optional(),
-  heading: z.number().min(0).max(360).nullable().optional(),
-  accuracy: z.number().min(0).nullable().optional(),
-  batteryLevel: z.number().min(0).max(1).nullable().optional(),
-  recordedAt: z.string().datetime(),
-  locationSource: z.enum(['driver_web', 'driver_mobile', 'hardware_tracker']),
-});
 
 // ─── Issue Report ──────────────────────────────────────────────────────────
 
 export const issueReportSchema = z.object({
   tripId: z.string().uuid(),
   driverId: z.string().uuid(),
-  issueType: z.enum([
-    'delay',
-    'breakdown',
-    'road_blocked',
-    'weather',
-    'student_issue',
-    'other',
-  ]),
+  issueType: z.enum(['delay', 'breakdown', 'road_blocked', 'weather', 'student_issue', 'other']),
   note: z.string().max(1000).optional(),
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
@@ -93,7 +70,6 @@ export const csvImportPreviewSchema = z.object({
   fileContent: z.string().min(1, 'CSV content is required'),
 });
 
-export type LocationPingInput = z.infer<typeof locationPingSchema>;
 export type IssueReportInput = z.infer<typeof issueReportSchema>;
 export type StartTripInput = z.infer<typeof startTripSchema>;
 export type EndTripInput = z.infer<typeof endTripSchema>;

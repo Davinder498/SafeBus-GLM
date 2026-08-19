@@ -1,6 +1,23 @@
+## Commercial Readiness Remediation 5 — Retire Legacy Edge Functions
+
+Status: Implemented on `agent/retire-legacy-edge-functions` for review.
+
+- Removed the obsolete `ingest-location` and `gps-stale-check` Supabase Edge
+  Function handlers and their unused shared client, validation, and type surface.
+- Recorded both retired function names as `enabled = false` in
+  `supabase/config.toml`, so a broad function deployment skips them even if
+  obsolete source is accidentally restored.
+- Added a regression gate proving the handlers and invocation contract remain
+  absent while web and Android tracking continue to use the approved secured
+  Postgres RPC paths.
+- Documented the retirement boundary and the review required before any future
+  Supabase Edge Function can be introduced.
+- No database, hosted Supabase project, production data, function deployment,
+  or credentials were accessed or changed.
+
 ## Commercial Readiness Remediation 4 — Immutable GitHub Actions
 
-Status: Implemented on `agent/immutable-actions` for review.
+Status: Merged through PR #148 and on `main`.
 
 - Pinned every external action used by all eight GitHub Actions workflows to a
   verified, immutable 40-character upstream commit SHA.
