@@ -1,6 +1,6 @@
 ## Commercial Readiness Remediation 5 — Retire Legacy Edge Functions
 
-Status: Implemented on `agent/retire-legacy-edge-functions` for review.
+Status: Merged through PR #149 and on `main`.
 
 - Removed the obsolete `ingest-location` and `gps-stale-check` Supabase Edge
   Function handlers and their unused shared client, validation, and type surface.
@@ -14,6 +14,25 @@ Status: Implemented on `agent/retire-legacy-edge-functions` for review.
   Supabase Edge Function can be introduced.
 - No database, hosted Supabase project, production data, function deployment,
   or credentials were accessed or changed.
+
+## Commercial Readiness Remediation 6 - Guardian Invitation and Link Reliability
+
+Status: Implemented on `agent/guardian-invitation-alignment` for review.
+
+- Excludes inactive guardian records from the existing-guardian connection
+  picker, matching the active-only contract already enforced by the secure
+  guardian search and linking RPCs.
+- Adds migration `0091_fix_sensitive_admin_audit_trigger_record_fields.sql` so
+  the shared audit trigger only reads `profiles.role` after it has narrowed to
+  the `profiles` table. This prevents guardian-link inserts from failing on a
+  field that does not exist on `student_guardians`.
+- Preserves tenant derivation, active-student/guardian checks, MFA/recent-auth
+  enforcement, append-only audit evidence, and browser denial of the internal
+  audit function.
+- Adds repository regression coverage plus an isolated-database RLS assertion
+  that a successful guardian link produces the expected audit event.
+- The hosted `BusSafe` project remains the sole production database. No
+  migration, fixture, RLS test, or other write was run against it.
 
 ## Commercial Readiness Remediation 4 — Immutable GitHub Actions
 

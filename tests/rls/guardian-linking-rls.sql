@@ -57,7 +57,19 @@ begin
     raise exception 'TEST 1 FAILED: unexpected link returned: %', v_link;
   end if;
 
-  raise notice 'TEST 1 PASSED: tenant_admin can link same-tenant student+guardian';
+  if not exists (
+    select 1
+    from public.audit_events ae
+    where ae.actor_profile_id = auth.uid()
+      and ae.action = 'guardian.student_link_created'
+      and ae.target_type = 'student_guardians'
+      and ae.target_id = v_link.id
+      and ae.outcome = 'success'
+  ) then
+    raise exception 'TEST 1 FAILED: guardian link audit event was not recorded';
+  end if;
+
+  raise notice 'TEST 1 PASSED: tenant_admin can link same-tenant student+guardian with audit evidence';
 end
 $$;
 rollback;

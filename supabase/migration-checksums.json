@@ -548,6 +548,12 @@
       "filename": "0090_phase7_byod_android_tracking.sql",
       "bytes": 7146,
       "sha256": "df8a8e14608bf48632706762052ccd7cc50c195e50c9e010a538643a93d39f52"
+    },
+    {
+      "version": "0091",
+      "filename": "0091_fix_sensitive_admin_audit_trigger_record_fields.sql",
+      "bytes": 2981,
+      "sha256": "6ed652b2fc213b9a2f8661bae778612299b131c1a2195750e8efc5a91628479e"
     }
   ]
 }
