@@ -17,7 +17,7 @@ Status: Merged through PR #149 and on `main`.
 
 ## Commercial Readiness Remediation 6 - Guardian Invitation and Link Reliability
 
-Status: Implemented on `agent/guardian-invitation-alignment` for review.
+Status: Merged through PR #150 and on `main`.
 
 - Excludes inactive guardian records from the existing-guardian connection
   picker, matching the active-only contract already enforced by the secure
