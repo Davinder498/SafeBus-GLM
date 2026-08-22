@@ -28,6 +28,7 @@ export async function getVisibleGuardians(): Promise<Guardian[]> {
   const { data, error } = await client
     .from('guardians')
     .select('id, tenant_id, profile_id, first_name, last_name, full_name, email, phone, status, created_at, updated_at')
+    .eq('status', 'active')
     .order('last_name', { ascending: true })
     .order('first_name', { ascending: true });
 

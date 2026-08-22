@@ -514,3 +514,26 @@ test('Phase 8 guardian student visibility remains expiry-aware without RLS recur
     /using \(\s*public\.can_select_linked_student_as_guardian\(id, tenant_id\)\s*\)/,
   );
 });
+
+test('guardian linking only offers active guardians and keeps audit fields table-scoped', async () => {
+  const [service, migration] = await Promise.all([
+    read('apps/web/src/services/studentGuardianService.ts'),
+    read('supabase/migrations/0091_fix_sensitive_admin_audit_trigger_record_fields.sql'),
+  ]);
+
+  assert.match(
+    service,
+    /\.from\('guardians'\)[\s\S]*?\.eq\('status', 'active'\)[\s\S]*?\.order\('last_name'/,
+  );
+  assert.match(migration, /elsif tg_table_name = 'profiles' then\s+if tg_op = 'UPDATE' and new\.role/);
+  assert.doesNotMatch(
+    migration,
+    /elsif tg_table_name = 'profiles' and tg_op = 'UPDATE' and new\.role/,
+  );
+  assert.match(migration, /elsif tg_table_name = 'student_guardians' then/);
+  assert.match(migration, /'guardian\.student_link_created'/);
+  assert.match(
+    migration,
+    /revoke all on function public\.capture_sensitive_admin_audit\(\) from public, anon, authenticated/,
+  );
+});
