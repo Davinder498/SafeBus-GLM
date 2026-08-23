@@ -1,3 +1,26 @@
+## Commercial Readiness Remediation 11 - Point 6 Privacy and Legal Readiness
+
+Status: Repository evidence gate implemented for review; Point 6 remains open
+pending counsel, customer, vendor, residency, retention-test, publication, and
+human approval evidence.
+
+- Adds a source-bound, machine-readable Point 6 record that remains explicitly
+  `not_approved` until every legal/privacy exit condition passes.
+- Requires approved legal roles, PIA, privacy program, seven contract
+  documents, retention evidence, five vendor reviews, residency/cross-border
+  decisions, four notices, and six accountable approvals.
+- Makes Point 6 verification a blocking production step before pilot
+  authorization, release preflight, database work, or application deployment.
+- Preserves executed agreements, legal advice, customer information, contacts,
+  credentials, and vendor secrets outside Git; the repository stores only
+  non-secret evidence references.
+- Point 6 remains open. Engineering does not provide legal advice, execute
+  contracts, approve the PIA, publish an unapproved policy, or replace isolated
+  retention/RLS evidence.
+- No production account, Supabase connection, database query/write, migration,
+  fixture, RLS execution, destructive retention, policy publication, contract,
+  vendor action, or deployment is included.
+
 ## Commercial Readiness Remediation 10 - Point 7 Android Readiness
 
 Status: Repository evidence gate implemented for review; Point 7 remains open

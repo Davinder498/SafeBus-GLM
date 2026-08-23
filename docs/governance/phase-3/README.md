@@ -25,25 +25,25 @@ This phase closes the two Phase-3-tracked risks in
 
 ## 2. Workstreams
 
-| # | Workstream | Lead | Document |
-| --- | --- | --- | --- |
-| 1 | Statutory mapping (FOIP → POPA/ATIA/PIPA) | Counsel | [`legal-role-analysis.md`](./legal-role-analysis.md) |
-| 2 | SafeBus legal role per customer type | Counsel | [`legal-role-analysis.md`](./legal-role-analysis.md) |
-| 3 | Privacy Impact Assessment (PIA) | Privacy Lead | [`privacy-impact-assessment.md`](./privacy-impact-assessment.md) |
-| 4 | Privacy-management program | Privacy Lead | [`privacy-management-program.md`](./privacy-management-program.md) |
-| 5 | Data inventory and data-flow map | Privacy Lead + Engineering | [`data-inventory-and-flow.md`](./data-inventory-and-flow.md) |
-| 6 | Field-level legal authority and business purpose | Privacy Lead + Engineering | [`data-inventory-and-flow.md`](./data-inventory-and-flow.md) |
-| 7 | Field elimination review | Privacy Lead + Engineering | [`data-inventory-and-flow.md`](./data-inventory-and-flow.md) |
-| 8 | Retention schedule | Privacy Lead | [`retention-schedule.md`](./retention-schedule.md) |
-| 9 | Automated deletion / anonymization | Engineering | [`retention-schedule.md`](./retention-schedule.md) + migration `0069` |
-| 10 | Access and correction procedures | Privacy Lead | [`access-and-correction.md`](./access-and-correction.md) |
-| 11 | Guardian and driver privacy notices | Privacy Lead | [`notices/guardian-privacy-notice.md`](./notices/guardian-privacy-notice.md), [`notices/driver-privacy-notice.md`](./notices/driver-privacy-notice.md) |
-| 12 | Student / independent-student processes | Privacy Lead | [`student-processes.md`](./student-processes.md) |
-| 13 | Guardian-authority verification (no custody narratives) | Privacy Lead + Engineering | [`guardian-authority-verification.md`](./guardian-authority-verification.md) |
-| 14 | Privacy-breach assessment and notification | Privacy Lead | [`breach-response.md`](./breach-response.md) |
-| 15 | Vendor / subprocessor reviews and agreements | Privacy Lead + Product Owner | [`subprocessors.md`](./subprocessors.md) + [`contract-checklist.md`](./contract-checklist.md) |
-| 16 | Canadian processing and backup verification | Engineering | [`subprocessors.md`](./subprocessors.md) |
-| 17 | Customer contract pack | Counsel + Product Owner | [`contract-checklist.md`](./contract-checklist.md) |
+| #   | Workstream                                              | Lead                         | Document                                                                                                                                               |
+| --- | ------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Statutory mapping (FOIP → POPA/ATIA/PIPA)               | Counsel                      | [`legal-role-analysis.md`](./legal-role-analysis.md)                                                                                                   |
+| 2   | SafeBus legal role per customer type                    | Counsel                      | [`legal-role-analysis.md`](./legal-role-analysis.md)                                                                                                   |
+| 3   | Privacy Impact Assessment (PIA)                         | Privacy Lead                 | [`privacy-impact-assessment.md`](./privacy-impact-assessment.md)                                                                                       |
+| 4   | Privacy-management program                              | Privacy Lead                 | [`privacy-management-program.md`](./privacy-management-program.md)                                                                                     |
+| 5   | Data inventory and data-flow map                        | Privacy Lead + Engineering   | [`data-inventory-and-flow.md`](./data-inventory-and-flow.md)                                                                                           |
+| 6   | Field-level legal authority and business purpose        | Privacy Lead + Engineering   | [`data-inventory-and-flow.md`](./data-inventory-and-flow.md)                                                                                           |
+| 7   | Field elimination review                                | Privacy Lead + Engineering   | [`data-inventory-and-flow.md`](./data-inventory-and-flow.md)                                                                                           |
+| 8   | Retention schedule                                      | Privacy Lead                 | [`retention-schedule.md`](./retention-schedule.md)                                                                                                     |
+| 9   | Automated deletion / anonymization                      | Engineering                  | [`retention-schedule.md`](./retention-schedule.md) + migration `0069`                                                                                  |
+| 10  | Access and correction procedures                        | Privacy Lead                 | [`access-and-correction.md`](./access-and-correction.md)                                                                                               |
+| 11  | Guardian and driver privacy notices                     | Privacy Lead                 | [`notices/guardian-privacy-notice.md`](./notices/guardian-privacy-notice.md), [`notices/driver-privacy-notice.md`](./notices/driver-privacy-notice.md) |
+| 12  | Student / independent-student processes                 | Privacy Lead                 | [`student-processes.md`](./student-processes.md)                                                                                                       |
+| 13  | Guardian-authority verification (no custody narratives) | Privacy Lead + Engineering   | [`guardian-authority-verification.md`](./guardian-authority-verification.md)                                                                           |
+| 14  | Privacy-breach assessment and notification              | Privacy Lead                 | [`breach-response.md`](./breach-response.md)                                                                                                           |
+| 15  | Vendor / subprocessor reviews and agreements            | Privacy Lead + Product Owner | [`subprocessors.md`](./subprocessors.md) + [`contract-checklist.md`](./contract-checklist.md)                                                          |
+| 16  | Canadian processing and backup verification             | Engineering                  | [`subprocessors.md`](./subprocessors.md)                                                                                                               |
+| 17  | Customer contract pack                                  | Counsel + Product Owner      | [`contract-checklist.md`](./contract-checklist.md)                                                                                                     |
 
 ## 3. Exit gate
 
@@ -98,3 +98,11 @@ arises, those sources win until resolved through a `decision-log.md` entry.
 Legal conclusions in this directory are **drafts for counsel**. Engineering
 words such as "SafeBus acts as a service provider" describe the expected
 analysis only and are not a legal determination.
+
+## 7. Machine-readable exit evidence
+
+The fail-closed Point 6 contract is
+[`../privacy-readiness.json`](../privacy-readiness.json), documented in
+[`../point-6-privacy-readiness.md`](../point-6-privacy-readiness.md). Its
+committed state remains `not_approved`. It does not replace counsel review,
+execute an agreement, publish a policy, or authorize production processing.

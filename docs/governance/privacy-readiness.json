@@ -1,0 +1,66 @@
+{
+  "format": 1,
+  "status": "not_approved",
+  "approvalId": null,
+  "approvedEvidenceDigest": null,
+  "approvedAt": null,
+  "expiresAt": null,
+  "legal": {
+    "statutoryMapping": null,
+    "safeBusRole": null,
+    "customerAuthority": null,
+    "privacyImpactAssessment": null
+  },
+  "privacyProgram": {
+    "namedPrivacyRoles": null,
+    "accessAndCorrection": null,
+    "guardianAuthority": null,
+    "studentProcesses": null,
+    "breachResponse": null,
+    "breachTabletop": null,
+    "legalHoldProcedure": null
+  },
+  "contracts": {
+    "masterServicesAgreement": null,
+    "dataProcessingAgreement": null,
+    "securitySchedule": null,
+    "serviceLevelAgreement": null,
+    "acceptableUseTerms": null,
+    "privacyPolicy": null,
+    "dataReturnAndDestruction": null
+  },
+  "retention": {
+    "approvedSchedule": null,
+    "isolatedEnforcementTest": null,
+    "deletionDryRun": null,
+    "backupRetentionWindow": null
+  },
+  "subprocessors": {
+    "supabaseHostingAndAuth": null,
+    "netlifyHostingAndFunctions": null,
+    "geoapifyMaps": null,
+    "emailDelivery": null,
+    "errorMonitoring": null
+  },
+  "residency": {
+    "productionDatabase": null,
+    "databaseBackups": null,
+    "applicationHosting": null,
+    "supportAccess": null,
+    "crossBorderFlows": null
+  },
+  "notices": {
+    "guardianNotice": null,
+    "driverByodNotice": null,
+    "publicPrivacyPolicy": null,
+    "googlePlayDataSafety": null
+  },
+  "approvals": {
+    "platformAdministrator": null,
+    "productOwner": null,
+    "securityLead": null,
+    "privacyLead": null,
+    "privacyCounsel": null,
+    "customerAuthority": null
+  }
+}
