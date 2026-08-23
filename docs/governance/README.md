@@ -11,23 +11,24 @@ every later phase must obey.
 
 ## Documents
 
-| Document                                                                   | Exit-gate item it satisfies                                    |
-| -------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| [`commercial-release-scope.md`](./commercial-release-scope.md)             | Binding Commercial Release 1 boundary and launch-gate map      |
-| [`point-5-authorization-evidence.md`](./point-5-authorization-evidence.md) | Point 5 baseline, hardening controls, and hosted exit evidence |
-| [`point-8-map-readiness.md`](./point-8-map-readiness.md)                   | Point 8 provider, outage controls, and operating evidence      |
-| [`point-9-operational-readiness.md`](./point-9-operational-readiness.md)   | Point 9 monitoring, incident, support, and recovery evidence   |
-| [`github-actions-supply-chain.md`](./github-actions-supply-chain.md)       | Immutable CI dependency controls and update procedure          |
-| [`edge-function-retirement.md`](./edge-function-retirement.md)             | Retired Supabase function inventory and deployment boundary    |
-| [`product-scope.md`](./product-scope.md)                                   | Signed product scope                                           |
-| [`role-responsibility-matrix.md`](./role-responsibility-matrix.md)         | Signed role and responsibility matrix                          |
-| [`data-classification.md`](./data-classification.md)                       | Approved data classification                                   |
-| [`first-customer-profile.md`](./first-customer-profile.md)                 | Approved first-customer profile                                |
-| [`capacity-assumptions.md`](./capacity-assumptions.md)                     | Written capacity assumptions                                   |
-| [`feature-inventory.md`](./feature-inventory.md)                           | Authoritative feature inventory (current vs. future)           |
-| [`risk-register.md`](./risk-register.md)                                   | Formal risk register                                           |
-| [`decision-log.md`](./decision-log.md)                                     | Formal decision log                                            |
-| [`development-workflow.md`](./development-workflow.md)                     | Confirmed development workflow                                 |
+| Document                                                                   | Exit-gate item it satisfies                                          |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| [`commercial-release-scope.md`](./commercial-release-scope.md)             | Binding Commercial Release 1 boundary and launch-gate map            |
+| [`point-5-authorization-evidence.md`](./point-5-authorization-evidence.md) | Point 5 baseline, hardening controls, and hosted exit evidence       |
+| [`point-8-map-readiness.md`](./point-8-map-readiness.md)                   | Point 8 provider, outage controls, and operating evidence            |
+| [`point-9-operational-readiness.md`](./point-9-operational-readiness.md)   | Point 9 monitoring, incident, support, and recovery evidence         |
+| [`point-10-product-verification.md`](./point-10-product-verification.md)   | Point 10 authenticated, accessibility, resilience, and load evidence |
+| [`github-actions-supply-chain.md`](./github-actions-supply-chain.md)       | Immutable CI dependency controls and update procedure                |
+| [`edge-function-retirement.md`](./edge-function-retirement.md)             | Retired Supabase function inventory and deployment boundary          |
+| [`product-scope.md`](./product-scope.md)                                   | Signed product scope                                                 |
+| [`role-responsibility-matrix.md`](./role-responsibility-matrix.md)         | Signed role and responsibility matrix                                |
+| [`data-classification.md`](./data-classification.md)                       | Approved data classification                                         |
+| [`first-customer-profile.md`](./first-customer-profile.md)                 | Approved first-customer profile                                      |
+| [`capacity-assumptions.md`](./capacity-assumptions.md)                     | Written capacity assumptions                                         |
+| [`feature-inventory.md`](./feature-inventory.md)                           | Authoritative feature inventory (current vs. future)                 |
+| [`risk-register.md`](./risk-register.md)                                   | Formal risk register                                                 |
+| [`decision-log.md`](./decision-log.md)                                     | Formal decision log                                                  |
+| [`development-workflow.md`](./development-workflow.md)                     | Confirmed development workflow                                       |
 
 ## Reading order
 

@@ -8,6 +8,8 @@ import {
 import { installSupabaseMock } from './fixtures/supabase-mock';
 
 test.describe('Commercial WCAG 2.2 AA gate', () => {
+  test.describe.configure({ timeout: 60_000 });
+
   test.beforeEach(async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
   });

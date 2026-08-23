@@ -66,9 +66,12 @@ export function getDashboardPath(
   return '/parent';
 }
 
-function getProfileErrorMessage(errorMessage?: string) {
-  if (errorMessage) return errorMessage;
+function getProfileErrorMessage() {
   return 'Your account is signed in, but no SafeBus profile was found. Ask an administrator to finish your profile setup.';
+}
+
+function getSessionErrorMessage() {
+  return 'SafeBus could not verify your session right now. Please try signing in again.';
 }
 
 interface AuthProviderProps {
@@ -139,7 +142,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       .single();
 
     if (error || !data) {
-      throw new Error(getProfileErrorMessage(error?.message));
+      throw new Error(getProfileErrorMessage());
     }
 
     if (!isProfileRole(data.role)) {
@@ -181,7 +184,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (error) {
         setSession(null);
         setProfile(null);
-        setAuthError(error.message);
+        setAuthError(getSessionErrorMessage());
         setLoading(false);
         return;
       }
