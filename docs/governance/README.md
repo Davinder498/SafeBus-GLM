@@ -15,6 +15,7 @@ every later phase must obey.
 | -------------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | [`commercial-release-scope.md`](./commercial-release-scope.md)             | Binding Commercial Release 1 boundary and launch-gate map            |
 | [`point-5-authorization-evidence.md`](./point-5-authorization-evidence.md) | Point 5 baseline, hardening controls, and hosted exit evidence       |
+| [`point-7-android-readiness.md`](./point-7-android-readiness.md)           | Point 7 signed bundle, field, Play, and BYOD evidence gate           |
 | [`point-8-map-readiness.md`](./point-8-map-readiness.md)                   | Point 8 provider, outage controls, and operating evidence            |
 | [`point-9-operational-readiness.md`](./point-9-operational-readiness.md)   | Point 9 monitoring, incident, support, and recovery evidence         |
 | [`point-10-product-verification.md`](./point-10-product-verification.md)   | Point 10 authenticated, accessibility, resilience, and load evidence |

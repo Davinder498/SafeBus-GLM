@@ -1,0 +1,70 @@
+{
+  "format": 1,
+  "status": "not_approved",
+  "approvalId": null,
+  "approvedEvidenceDigest": null,
+  "approvedAt": null,
+  "expiresAt": null,
+  "signedBundle": {
+    "sourceCommit": null,
+    "sourceEvidenceDigest": null,
+    "aabSha256": null,
+    "signingCertificateSha256": null,
+    "workflowRunReference": null,
+    "applicationId": "com.safebusalberta.app",
+    "versionCode": null,
+    "versionName": null
+  },
+  "approvedLimits": {
+    "batteryPercentagePointsMax": 20,
+    "mobileDataMbMax": 25,
+    "missingRequiredEventsMax": 0,
+    "offlineRecoveryMinutesMax": 15
+  },
+  "measuredResults": {
+    "batteryPercentagePoints": null,
+    "mobileDataMb": null,
+    "missingRequiredEvents": null,
+    "offlineRecoveryMinutes": null,
+    "offTripLocationRows": null,
+    "evidenceReference": null
+  },
+  "supportedDevices": [],
+  "fieldScenarios": {
+    "screenLocked": null,
+    "appBackgrounded": null,
+    "networkLoss": null,
+    "crashRestart": null,
+    "deviceReboot": null,
+    "sharedGuardianDriverBinary": null,
+    "byodSecurity": null,
+    "vendorBatteryControls": null,
+    "lowBattery": null,
+    "ruralConnectivity": null,
+    "eightHourDay": null,
+    "remoteTripEnd": null,
+    "forgeryCrossDriver": null
+  },
+  "googlePlay": {
+    "backgroundLocationDeclaration": null,
+    "reviewVideo": null,
+    "dataSafetyForm": null,
+    "testAccount": null,
+    "publicPrivacyPolicy": null
+  },
+  "customerControls": {
+    "byodPolicy": null,
+    "supportAndReimbursement": null,
+    "lostDeviceProcess": null,
+    "driverConsentNotice": null
+  },
+  "approvals": {
+    "platformAdministrator": null,
+    "productOwner": null,
+    "securityLead": null,
+    "privacyLead": null,
+    "operationsLead": null,
+    "qaLead": null,
+    "driverRepresentative": null
+  }
+}

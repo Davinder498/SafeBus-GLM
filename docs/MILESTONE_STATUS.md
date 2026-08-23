@@ -1,3 +1,27 @@
+## Commercial Readiness Remediation 10 - Point 7 Android Readiness
+
+Status: Repository evidence gate implemented for review; Point 7 remains open
+pending physical-device, Google Play, customer-policy, hosted authorization,
+and human approval evidence.
+
+- Adds a source-bound, machine-readable Android readiness record that remains
+  explicitly `not_approved` until every Point 7 exit condition passes.
+- Requires measured battery, data, recovery, event-loss, and off-trip results;
+  at least three manufacturer/device classes; the full field scenario matrix;
+  Play review; customer BYOD controls; and seven accountable approvals.
+- Enhances the protected signed-AAB workflow to retain an artifact SHA-256,
+  public signing-certificate SHA-256, exact commit, version, workflow run, and
+  release-controlled source digest in a privacy-safe provenance manifest.
+- Adds fail-closed verification and regression tests. Any relevant Android,
+  permission-flow, authorization, release, verifier, or test change invalidates
+  a prior approval.
+- Point 7 remains open. Repository automation does not replace physical road,
+  battery, reboot, offline, Google Play, customer-policy, isolated RLS, or
+  human acceptance evidence.
+- No production account, Supabase connection, database query/write, migration,
+  fixture, RLS execution, signed artifact, Google Play action, or deployment is
+  included.
+
 ## Commercial Readiness Remediation 5 — Retire Legacy Edge Functions
 
 Status: Merged through PR #149 and on `main`.

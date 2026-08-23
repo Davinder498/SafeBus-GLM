@@ -77,15 +77,30 @@ jobs:
           ./gradlew testDebugUnitTest lintRelease bundleRelease
       - name: Verify bundle signature
         run: |
-          SIGNATURE_OUTPUT="$(jarsigner -verify -verbose -certs apps/mobile/android/app/build/outputs/bundle/release/app-release.aab 2>&1)"
-          printf '%s\n' "$SIGNATURE_OUTPUT"
-          printf '%s\n' "$SIGNATURE_OUTPUT" | grep -q "jar verified."
-          if printf '%s\n' "$SIGNATURE_OUTPUT" | grep -qi "jar is unsigned"; then
+          AAB_PATH="apps/mobile/android/app/build/outputs/bundle/release/app-release.aab"
+          SIGNATURE_OUTPUT="$RUNNER_TEMP/aab-signature-verification.txt"
+          jarsigner -verify -verbose -certs "$AAB_PATH" > "$SIGNATURE_OUTPUT" 2>&1
+          grep -q "jar verified." "$SIGNATURE_OUTPUT"
+          if grep -qi "jar is unsigned" "$SIGNATURE_OUTPUT"; then
             exit 1
           fi
+          CERTIFICATE_PEM="$RUNNER_TEMP/aab-signing-certificate.pem"
+          keytool -printcert -jarfile "$AAB_PATH" -rfc |
+            sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' > "$CERTIFICATE_PEM"
+          test -s "$CERTIFICATE_PEM"
+          SIGNING_CERT_SHA256="$(openssl x509 -in "$CERTIFICATE_PEM" -outform DER | sha256sum | cut -d ' ' -f 1)"
+          printf '%s' "$SIGNING_CERT_SHA256" | grep -Eq '^[a-f0-9]{64}$'
+          echo "SAFEBUS_ANDROID_SIGNING_CERT_SHA256=$SIGNING_CERT_SHA256" >> "$GITHUB_ENV"
+      - name: Create source-bound Android provenance
+        run: |
+          node scripts/create-android-release-manifest.mjs \
+            apps/mobile/android/app/build/outputs/bundle/release/app-release.aab \
+            apps/mobile/android/app/build/outputs/bundle/release/safebus-android-provenance.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: safebus-android-${{ env.SAFEBUS_RELEASE_SHA }}
-          path: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          path: |
+            apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+            apps/mobile/android/app/build/outputs/bundle/release/safebus-android-provenance.json
           if-no-files-found: error
           retention-days: 90
