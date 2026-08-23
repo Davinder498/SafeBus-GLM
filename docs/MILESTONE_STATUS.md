@@ -76,7 +76,8 @@ manual, capacity, and approval evidence.
 
 ## Commercial Readiness Remediation 9 - Point 11 Pilot Authorization
 
-Status: Implemented on `agent/point-11-pilot-authorization` for review.
+Status: Implemented through PR #154; Point 11 remains open pending launch-gate,
+customer, and internal approval evidence.
 
 - Adds a machine-readable, source-bound CR1 pilot authorization contract that
   remains explicitly `not_authorized` until all launch gates and approvals pass.
