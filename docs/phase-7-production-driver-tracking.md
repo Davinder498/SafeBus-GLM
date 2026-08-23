@@ -4,6 +4,11 @@
 
 Repository implementation includes the Android BYOD contract, permission flow, and signed-bundle pipeline. The Phase 7 exit gate is **not yet passed**: the migration is unapplied, no isolated test database is approved, Play background-location review is incomplete, and multi-hour personal-device road tests and measured battery/data limits require real devices and human approval.
 
+The machine-readable evidence and approval contract is
+[`governance/android-readiness.json`](governance/android-readiness.json), with
+its fail-closed rules documented in
+[`governance/point-7-android-readiness.md`](governance/point-7-android-readiness.md).
+
 ## Platform decision
 
 Commercial Release 1 uses one Android application for drivers and guardians. The authenticated role determines which routes and capabilities are available; guardian accounts cannot reach driver operations or native tracking controls. Drivers use their own compatible Android phone, mounted and powered while operating a bus.
@@ -44,16 +49,16 @@ Queued fixes recorded during an authorized window may be recovered for 24 hours,
 
 Cadence is the slowest interval required by any active condition:
 
-| Condition | Minimum interval |
-|---|---:|
-| Moving at 2 m/s or faster, connected, healthy battery | 5 seconds |
-| Stationary | 30 seconds |
-| Offline | 30 seconds |
-| Battery at or below 20% | 60 seconds |
-| Battery at or below 10% | 120 seconds |
-| Android power-save mode | 90 seconds |
-| Server-requested backoff | Server interval, at least 3 seconds |
-| Paused/completed/cancelled/expired authorization | No collection |
+| Condition                                             |                    Minimum interval |
+| ----------------------------------------------------- | ----------------------------------: |
+| Moving at 2 m/s or faster, connected, healthy battery |                           5 seconds |
+| Stationary                                            |                          30 seconds |
+| Offline                                               |                          30 seconds |
+| Battery at or below 20%                               |                          60 seconds |
+| Battery at or below 10%                               |                         120 seconds |
+| Android power-save mode                               |                          90 seconds |
+| Server-requested backoff                              | Server interval, at least 3 seconds |
+| Paused/completed/cancelled/expired authorization      |                       No collection |
 
 The service requests a new GNSS cadence after each captured fix instead of keeping a continuous high-frequency watcher.
 
@@ -75,21 +80,21 @@ Run only against an explicitly approved isolated Supabase test database after ma
 
 For every scenario, record device model/OS, app version, trip/session IDs, start/end time, battery start/end, mobile bytes sent/received, queue high-water mark, accepted event count, duplicates, rejects by reason, and time to full recovery.
 
-| Scenario | Procedure | Pass condition |
-|---|---|---|
-| Screen locked | Lock for at least 60 minutes while driving test route | Persistent notification remains; ordered fixes continue |
-| App backgrounded | Use another app for 60 minutes | No collection gap beyond active cadence plus 30 seconds |
-| Network loss | Disable data for 45 minutes, then restore | Queue grows encrypted; drains FIFO; no required event loss or duplicates |
-| Crash/restart | Force-stop only for crash simulation, reopen; separately kill process without force-stop | Process restart resumes the still-authorized service; force-stop requires user reopen per Android security behaviour |
-| Device reboot | Reboot mid-trip on a personal device | Service/queue recover after boot with Always Location permission; notification returns |
-| Shared binary / guardian | Sign in as a guardian on the same release build | Guardian portal works; no driver scan, tracking permission prompt, device registration, or driver data is reachable |
-| BYOD security | Test lost-device revocation, sign-out, app update, phone replacement, screen lock, and denied/revoked permissions | Credentials/session can be revoked; denied access fails closed; unrelated personal content is never exposed |
-| Vendor battery controls | Test each supported Samsung/Google/Motorola class with screen locked | Active-trip cadence survives documented vendor optimization settings or the model is removed from support |
-| Low battery | Test at 20% and 10%, including power saver | Cadence changes to policy; queue/order remain correct |
-| Rural connectivity | Drive representative coverage gaps | Offline queue recovers within 15 minutes of validated connectivity returning |
-| Eight-hour day | Two realistic runs plus idle/paused periods | No off-trip fixes; no required loss; measurements remain inside approved limits |
-| Remote trip end | End/cancel from authorized operations flow while device online | Service stops on next exchange and records no later fix |
-| Forgery/cross-driver | Run Phase 7 RLS test plus API attempts with another driver/device/session | Every forged or cross-driver attempt is rejected and creates no location row |
+| Scenario                 | Procedure                                                                                                         | Pass condition                                                                                                       |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Screen locked            | Lock for at least 60 minutes while driving test route                                                             | Persistent notification remains; ordered fixes continue                                                              |
+| App backgrounded         | Use another app for 60 minutes                                                                                    | No collection gap beyond active cadence plus 30 seconds                                                              |
+| Network loss             | Disable data for 45 minutes, then restore                                                                         | Queue grows encrypted; drains FIFO; no required event loss or duplicates                                             |
+| Crash/restart            | Force-stop only for crash simulation, reopen; separately kill process without force-stop                          | Process restart resumes the still-authorized service; force-stop requires user reopen per Android security behaviour |
+| Device reboot            | Reboot mid-trip on a personal device                                                                              | Service/queue recover after boot with Always Location permission; notification returns                               |
+| Shared binary / guardian | Sign in as a guardian on the same release build                                                                   | Guardian portal works; no driver scan, tracking permission prompt, device registration, or driver data is reachable  |
+| BYOD security            | Test lost-device revocation, sign-out, app update, phone replacement, screen lock, and denied/revoked permissions | Credentials/session can be revoked; denied access fails closed; unrelated personal content is never exposed          |
+| Vendor battery controls  | Test each supported Samsung/Google/Motorola class with screen locked                                              | Active-trip cadence survives documented vendor optimization settings or the model is removed from support            |
+| Low battery              | Test at 20% and 10%, including power saver                                                                        | Cadence changes to policy; queue/order remain correct                                                                |
+| Rural connectivity       | Drive representative coverage gaps                                                                                | Offline queue recovers within 15 minutes of validated connectivity returning                                         |
+| Eight-hour day           | Two realistic runs plus idle/paused periods                                                                       | No off-trip fixes; no required loss; measurements remain inside approved limits                                      |
+| Remote trip end          | End/cancel from authorized operations flow while device online                                                    | Service stops on next exchange and records no later fix                                                              |
+| Forgery/cross-driver     | Run Phase 7 RLS test plus API attempts with another driver/device/session                                         | Every forged or cross-driver attempt is rejected and creates no location row                                         |
 
 Proposed limits for product-owner approval before road testing are no more than 20 percentage points of battery use attributable to SafeBus over an eight-hour screen-locked day, no more than 25 MB mobile data per eight-hour day, and full queue recovery with zero missing required event UUIDs. Record the approved values here before declaring the exit gate passed.
 
@@ -100,6 +105,7 @@ pnpm typecheck
 pnpm lint
 pnpm build
 pnpm test
+pnpm android:readiness:digest
 pnpm --filter @safebus/mobile cap:sync
 cd apps/mobile/android
 ./gradlew testDebugUnitTest assembleDebug lintDebug
@@ -114,6 +120,10 @@ pnpm test:rls:dev -- tests/rls/phase7-production-driver-tracking-rls.sql
 ## Exit-gate checklist
 
 The Android BYOD repository work resumed on 2026-08-15 under `DL-017`. Phase 7 remains pending until the following evidence is completed and approved.
+
+The committed readiness record remains `not_approved`. After all items below
+pass, activate it only through a dedicated reviewed pull request and verify it
+with `pnpm android:readiness:verify`.
 
 - [ ] Approved battery and mobile-data limits recorded.
 - [ ] Multi-hour road tests completed on every supported device/OS class.
