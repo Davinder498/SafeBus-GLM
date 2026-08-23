@@ -1,0 +1,48 @@
+{
+  "format": 1,
+  "status": "not_approved",
+  "approvalId": null,
+  "provider": "geoapify",
+  "approvedEvidenceDigest": null,
+  "approvedAt": null,
+  "expiresAt": null,
+  "providerEvidence": {
+    "providerSelection": null,
+    "paidPlanAndSla": null,
+    "restrictedProductionKey": null,
+    "securityReview": null,
+    "privacyAndCrossBorderApproval": null
+  },
+  "quotaEvidence": {
+    "seventyPercentAlert": null,
+    "ninetyPercentAlert": null,
+    "alertRoutingDrill": null,
+    "pilotCapacityReview": null
+  },
+  "acceptance": {
+    "productionWeb": null,
+    "supportedAndroid": null,
+    "guardianPrivacy": null,
+    "adminFleet": null,
+    "routeAndStopEditor": null,
+    "providerOutage": null,
+    "providerRecovery": null,
+    "attribution": null
+  },
+  "observation": {
+    "result": "pending",
+    "startedAt": null,
+    "endedAt": null,
+    "unexplainedProviderFailures": null,
+    "quotaExhaustions": null,
+    "evidenceReference": null
+  },
+  "approvals": {
+    "platformAdministrator": null,
+    "productOwner": null,
+    "securityLead": null,
+    "privacyLead": null,
+    "operationsLead": null,
+    "qaLead": null
+  }
+}
