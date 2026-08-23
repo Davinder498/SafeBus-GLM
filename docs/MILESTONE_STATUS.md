@@ -34,6 +34,25 @@ Status: Merged through PR #150 and on `main`.
 - The hosted `BusSafe` project remains the sole production database. No
   migration, fixture, RLS test, or other write was run against it.
 
+## Commercial Readiness Remediation 7 - Production Health Monitoring Foundation
+
+Status: Implemented on `agent/production-health-monitoring` for review.
+
+- Adds a least-privileged GitHub Actions monitor that checks the public
+  production application every 15 minutes and supports manual execution.
+- Verifies the application shell, direct login routing, production security
+  headers, and the server-managed Geoapify map configuration contract.
+- Uses HTTPS-only origins, redirect rejection, bounded timeouts and retries,
+  and privacy-safe output that excludes response bodies, provider URLs, keys,
+  account identifiers, and personal information.
+- Adds automated behavioral and structural regression gates plus Point 9
+  incident, alert-routing, support, rollback, restore, and acceptance records.
+- Point 9 remains open until named on-call routing, alert and incident drills,
+  error-monitor redaction, quota alerts, recovery exercises, operating
+  observation, and human approvals are complete.
+- No Supabase connection, database query, migration, fixture, authenticated
+  request, or hosted data change is included.
+
 ## Commercial Readiness Remediation 4 — Immutable GitHub Actions
 
 Status: Merged through PR #148 and on `main`.

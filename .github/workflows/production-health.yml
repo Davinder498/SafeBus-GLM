@@ -1,0 +1,28 @@
+name: Production health monitor
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-health-monitor
+  cancel-in-progress: true
+
+jobs:
+  monitor:
+    name: Public production health
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SAFEBUS_MONITOR_ORIGIN: https://bussafe.netlify.app
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+      - name: Check public production health
+        run: node scripts/check-production-health.mjs
