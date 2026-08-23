@@ -36,7 +36,8 @@ Status: Merged through PR #150 and on `main`.
 
 ## Commercial Readiness Remediation 7 - Production Health Monitoring Foundation
 
-Status: Implemented on `agent/production-health-monitoring` for review.
+Status: Implemented through PR #152; Point 9 remains open pending operational
+evidence.
 
 - Adds a least-privileged GitHub Actions monitor that checks the public
   production application every 15 minutes and supports manual execution.
