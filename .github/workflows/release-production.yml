@@ -9,6 +9,9 @@ on:
       confirmation:
         description: Type DEPLOY_PRODUCTION
         required: true
+      pilot_confirmation:
+        description: Type AUTHORIZE_CR1_PILOT
+        required: true
 
 permissions:
   contents: read
@@ -19,7 +22,7 @@ concurrency:
 
 jobs:
   release:
-    if: inputs.confirmation == 'DEPLOY_PRODUCTION'
+    if: inputs.confirmation == 'DEPLOY_PRODUCTION' && inputs.pilot_confirmation == 'AUTHORIZE_CR1_PILOT'
     name: Human-approved production release
     runs-on: ubuntu-latest
     environment: production
@@ -51,6 +54,8 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Verify active CR1 pilot authorization
+        run: pnpm pilot:verify
       - run: pnpm exec playwright install --with-deps chromium
       - name: Preflight exact commit without changing the database
         run: pnpm release:preflight
@@ -65,6 +70,7 @@ jobs:
           path: |
             apps/web/dist
             .safebus-release/preflight.json
+            docs/governance/pilot-authorization.json
             supabase/migration-checksums.json
             packages/types/src/database.generated.ts
           retention-days: 90

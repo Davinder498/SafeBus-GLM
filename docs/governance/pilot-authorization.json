@@ -1,0 +1,33 @@
+{
+  "format": 1,
+  "status": "not_authorized",
+  "pilotId": null,
+  "approvedEvidenceDigest": null,
+  "approvedAt": null,
+  "expiresAt": null,
+  "scope": {
+    "tenantCount": null,
+    "busFloor": 25,
+    "busCeiling": 100,
+    "supportOperatingDays": 60,
+    "schoolScopeReference": null,
+    "participantSelectionReference": null,
+    "agreementReference": null
+  },
+  "launchGates": {
+    "point4": "open",
+    "point5": "open",
+    "point6": "open",
+    "point7": "open",
+    "point8": "open",
+    "point9": "open",
+    "point10": "open"
+  },
+  "approvals": {},
+  "rollbackAuthority": {
+    "immediateSuspension": true,
+    "immediateApplicationRollback": true,
+    "primaryContactReference": null,
+    "backupContactReference": null
+  }
+}

@@ -74,6 +74,25 @@ manual, capacity, and approval evidence.
 - No production account, Supabase query, database write, migration, fixture,
   RLS execution, or hosted load test is included.
 
+## Commercial Readiness Remediation 9 - Point 11 Pilot Authorization
+
+Status: Implemented on `agent/point-11-pilot-authorization` for review.
+
+- Adds a machine-readable, source-bound CR1 pilot authorization contract that
+  remains explicitly `not_authorized` until all launch gates and approvals pass.
+- Adds a fail-closed verifier for dates, tenant/bus ceilings, evidence
+  references, Points 4 through 10, required approvers, rollback authority, and
+  the release-controlled source digest.
+- Makes the protected production workflow require a second pilot confirmation
+  and verify active authorization before database or application deployment.
+- Adds behavioral and structural regression controls plus the pilot entry,
+  stop, exit, acceptance, and evidence-retention records.
+- Point 11 remains open until Points 4 through 10 close, the customer and
+  internal authorities approve the plan, and the authorization record is
+  activated through a dedicated reviewed PR.
+- No production account, Supabase connection, database query/write, migration,
+  fixture, RLS execution, deployment, or customer-data change is included.
+
 ## Commercial Readiness Remediation 4 — Immutable GitHub Actions
 
 Status: Merged through PR #148 and on `main`.

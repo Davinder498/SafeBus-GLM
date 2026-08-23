@@ -18,6 +18,7 @@ every later phase must obey.
 | [`point-8-map-readiness.md`](./point-8-map-readiness.md)                   | Point 8 provider, outage controls, and operating evidence            |
 | [`point-9-operational-readiness.md`](./point-9-operational-readiness.md)   | Point 9 monitoring, incident, support, and recovery evidence         |
 | [`point-10-product-verification.md`](./point-10-product-verification.md)   | Point 10 authenticated, accessibility, resilience, and load evidence |
+| [`point-11-pilot-authorization.md`](./point-11-pilot-authorization.md)     | Point 11 pilot scope, authorization, stop, and exit evidence         |
 | [`github-actions-supply-chain.md`](./github-actions-supply-chain.md)       | Immutable CI dependency controls and update procedure                |
 | [`edge-function-retirement.md`](./edge-function-retirement.md)             | Retired Supabase function inventory and deployment boundary          |
 | [`product-scope.md`](./product-scope.md)                                   | Signed product scope                                                 |
