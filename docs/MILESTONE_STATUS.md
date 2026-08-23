@@ -56,7 +56,8 @@ evidence.
 
 ## Commercial Readiness Remediation 8 - Point 10 Product Verification
 
-Status: Implemented on `agent/point-10-product-verification` for review.
+Status: Implemented through PR #153; Point 10 remains open pending hosted,
+manual, capacity, and approval evidence.
 
 - Adds one explicit, blocking product-verification command covering synthetic
   authenticated tenant-administrator, driver, and guardian CR1 journeys.
