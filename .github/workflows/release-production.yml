@@ -56,6 +56,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Verify active Point 6 privacy and legal approval
         run: pnpm privacy:verify
+      - name: Verify active Point 8 map readiness
+        run: pnpm map:verify
       - name: Verify active CR1 pilot authorization
         run: pnpm pilot:verify
       - run: pnpm exec playwright install --with-deps chromium
@@ -74,6 +76,7 @@ jobs:
             .safebus-release/preflight.json
             docs/governance/pilot-authorization.json
             docs/governance/privacy-readiness.json
+            docs/governance/map-readiness.json
             supabase/migration-checksums.json
             packages/types/src/database.generated.ts
           retention-days: 90

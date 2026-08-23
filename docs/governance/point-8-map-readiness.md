@@ -15,18 +15,18 @@ Android behavior, and outage experience must all be reviewable.
 
 ## 2. Implemented evidence
 
-| Control | Evidence | State |
-| --- | --- | --- |
-| Provider selection | Geoapify selected through `DL-018`; free commercial pilot quota and paid 99.5% monthly SLA upgrade path reviewed | Implemented |
-| Server-managed configuration | `map-tile-config` Netlify Function reads `GEOAPIFY_API_KEY`; no new frontend environment variable | Implemented |
-| Provider lock | Client accepts only HTTPS XYZ templates from `maps.geoapify.com` | Implemented |
-| Required attribution | Geoapify, OpenMapTiles, and OpenStreetMap attribution returned centrally and rendered by Leaflet | Implemented |
-| Request minimization | Tile requests contain no SafeBus entity/account identifier; `strict-origin` referrer policy prevents route/path disclosure | Implemented |
-| Configuration failure | Guardian, fleet, route, and route-edit screens retain status/list or direct-coordinate workflows | Implemented |
-| Tile outage | Every tile layer treats a tile failure as degraded and removes the potentially misleading partial map | Implemented |
-| Automated outage proof | Playwright scenarios simulate Geoapify HTTP 503 for guardian, fleet, route, and route-stop editing workflows | Implemented |
-| Android integration | Capacitor uses the production config function from its `https://localhost` origin; release build contains no map key | Implemented |
-| Structural release gate | `tests/release/map-readiness.test.mjs` prevents provider drift, direct frontend map variables, missing tile-error handling, or false completion claims | Implemented |
+| Control                      | Evidence                                                                                                                                               | State       |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| Provider selection           | Geoapify selected through `DL-018`; free commercial pilot quota and paid 99.5% monthly SLA upgrade path reviewed                                       | Implemented |
+| Server-managed configuration | `map-tile-config` Netlify Function reads `GEOAPIFY_API_KEY`; no new frontend environment variable                                                      | Implemented |
+| Provider lock                | Client accepts only HTTPS XYZ templates from `maps.geoapify.com`                                                                                       | Implemented |
+| Required attribution         | Geoapify, OpenMapTiles, and OpenStreetMap attribution returned centrally and rendered by Leaflet                                                       | Implemented |
+| Request minimization         | Tile requests contain no SafeBus entity/account identifier; `strict-origin` referrer policy prevents route/path disclosure                             | Implemented |
+| Configuration failure        | Guardian, fleet, route, and route-edit screens retain status/list or direct-coordinate workflows                                                       | Implemented |
+| Tile outage                  | Every tile layer treats a tile failure as degraded and removes the potentially misleading partial map                                                  | Implemented |
+| Automated outage proof       | Playwright scenarios simulate Geoapify HTTP 503 for guardian, fleet, route, and route-stop editing workflows                                           | Implemented |
+| Android integration          | Capacitor uses the production config function from its `https://localhost` origin; release build contains no map key                                   | Implemented |
+| Structural release gate      | `tests/release/map-readiness.test.mjs` prevents provider drift, direct frontend map variables, missing tile-error handling, or false completion claims | Implemented |
 
 The Platform Administrator confirmed on 2026-08-16 that the deployed map is
 configured and rendering. This confirms configuration, not sustained
@@ -52,33 +52,57 @@ authoritative operational record.
 The following actions cannot be completed by source code and remain mandatory:
 
 - [ ] Activate a paid Geoapify plan with the published availability SLA before
-  the first real school operation or paid availability commitment.
+      the first real school operation or paid availability commitment.
 - [ ] Record the plan/subscription evidence reference without recording the API
-  key or billing data in the repository.
+      key or billing data in the repository.
 - [ ] Confirm the production key restrictions include only approved web and
-  Android origins; retain a redacted screenshot or vendor export.
+      Android origins; retain a redacted screenshot or vendor export.
 - [ ] Confirm Geoapify processing locations, subprocessor terms, privacy terms,
-  and any cross-border transfer with the Privacy Lead/counsel under Point 6.
+      and any cross-border transfer with the Privacy Lead/counsel under Point 6.
 - [ ] Configure and evidence quota/usage alerts at 70% and 90% under Point 9.
 - [ ] Execute [`../qa/point-8-map-readiness-acceptance.md`](../qa/point-8-map-readiness-acceptance.md)
-  on production web and a supported personal Android phone.
+      on production web and a supported personal Android phone.
 - [ ] Record seven consecutive operating days without unexplained provider
-  failure or quota exhaustion before pilot authorization.
+      failure or quota exhaustion before pilot authorization.
 - [ ] Obtain final Platform Administrator sign-off after reviewing the above
-  evidence.
+      evidence.
 
 Until these items are recorded, Point 8 must be reported as **engineering
 complete, operating evidence pending**, not complete or commercially ready.
 
-## 5. Point 8 exit record
+## 5. Fail-closed approval record
 
-| Item | Evidence reference | Owner | Date | Result |
-| --- | --- | --- | --- | --- |
-| Paid provider plan/SLA | _pending_ | Platform Administrator | | |
-| Key restriction review | _pending_ | Security Lead | | |
-| Vendor/privacy approval | _pending Point 6_ | Privacy Lead | | |
-| Quota alerts | _pending Point 9_ | Operations Lead | | |
-| Web outage acceptance | _pending_ | QA Lead | | |
-| Android outage acceptance | _pending_ | QA Lead | | |
-| Seven-day observation | _pending_ | Operations Lead | | |
-| Final Point 8 approval | _pending_ | Platform Administrator | | |
+[`map-readiness.json`](./map-readiness.json) is the machine-readable Point 8
+record. Its committed state is `not_approved`. `pnpm map:verify` requires the
+paid plan/SLA, restricted-key, security, privacy/cross-border, 70%/90% quota,
+alert-drill, pilot-capacity, web, Android, privacy, map-workflow, outage,
+recovery, attribution, seven-day observation, and final approval evidence.
+
+The protected production workflow runs this verifier before pilot
+authorization, database work, or application deployment. Evidence must use
+non-secret references: never commit the provider key, billing information,
+customer/user identifiers, live coordinates, screenshots containing personal
+information, or vendor-account credentials.
+
+Generate the release-controlled digest only after the tested map source and
+acceptance records are final:
+
+```bash
+pnpm map:digest
+```
+
+Activation requires a dedicated reviewed pull request. Merging the repository
+gate does not approve Point 8 or authorize a pilot.
+
+## 6. Point 8 exit record
+
+| Item                      | Evidence reference | Owner                  | Date | Result |
+| ------------------------- | ------------------ | ---------------------- | ---- | ------ |
+| Paid provider plan/SLA    | _pending_          | Platform Administrator |      |        |
+| Key restriction review    | _pending_          | Security Lead          |      |        |
+| Vendor/privacy approval   | _pending Point 6_  | Privacy Lead           |      |        |
+| Quota alerts              | _pending Point 9_  | Operations Lead        |      |        |
+| Web outage acceptance     | _pending_          | QA Lead                |      |        |
+| Android outage acceptance | _pending_          | QA Lead                |      |        |
+| Seven-day observation     | _pending_          | Operations Lead        |      |        |
+| Final Point 8 approval    | _pending_          | Platform Administrator |      |        |

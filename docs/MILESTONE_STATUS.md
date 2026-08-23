@@ -1,3 +1,24 @@
+## Commercial Readiness Remediation 12 - Point 8 Map Readiness Gate
+
+Status: Repository evidence gate implemented for review; Point 8 remains open
+pending paid-plan, restricted-key, privacy, quota, real-device, observation,
+and human approval evidence.
+
+- Adds a source-bound, provider-locked map readiness record that remains
+  explicitly `not_approved` until all operating evidence passes.
+- Requires the Geoapify paid plan/SLA, key restriction, security/privacy
+  review, 70%/90% quota alerts, alert drill, capacity review, production web
+  and Android acceptance, outage/recovery proof, attribution, and six approvals.
+- Requires seven full observation days with zero unexplained provider failures
+  and zero quota exhaustions.
+- Makes Point 8 verification block production before pilot authorization,
+  database work, or application deployment.
+- Existing server-managed configuration, provider lock, request minimization,
+  attribution, and degraded workflows remain unchanged.
+- No provider subscription, key change, vendor account access, production
+  account, Supabase connection, database action, device test, deployment, or
+  customer-data change is included.
+
 ## Commercial Readiness Remediation 11 - Point 6 Privacy and Legal Readiness
 
 Status: Repository evidence gate implemented for review; Point 6 remains open

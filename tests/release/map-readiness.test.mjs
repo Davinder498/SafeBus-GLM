@@ -16,10 +16,7 @@ test('map configuration is server-managed and locked to the approved provider', 
     serverConfig,
     /^\s*'https:\/\/maps\.geoapify\.com\/v1\/tile\/osm-bright\/\{z\}\/\{x\}\/\{y\}\.png';\s*$/m,
   );
-  assert.match(
-    clientConfig,
-    /^const GEOAPIFY_TILE_ORIGIN = 'https:\/\/maps\.geoapify\.com';$/m,
-  );
+  assert.match(clientConfig, /^const GEOAPIFY_TILE_ORIGIN = 'https:\/\/maps\.geoapify\.com';$/m);
   assert.doesNotMatch(frontendExample, /VITE_MAP_/);
   assert.match(frontendExample, /GEOAPIFY_API_KEY=.*server-managed config/);
 });
@@ -59,7 +56,7 @@ test('Point 8 records the provider decision without overstating launch readiness
   ]);
 
   assert.match(evidence, /Engineering controls complete/);
-  assert.match(evidence, /Paid provider plan\/SLA \| _pending_/i);
+  assert.match(evidence, /Paid provider plan\/SLA\s*\|\s*_pending_/i);
   assert.match(decisions, /### DL-018 — Select Geoapify for Commercial Release 1 maps/);
   assert.match(decisions, /reliability\s+is\s+paramount/i);
   assert.match(risks, /R-018/);
