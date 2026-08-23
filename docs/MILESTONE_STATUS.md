@@ -54,6 +54,26 @@ evidence.
 - No Supabase connection, database query, migration, fixture, authenticated
   request, or hosted data change is included.
 
+## Commercial Readiness Remediation 8 - Point 10 Product Verification
+
+Status: Implemented through PR #153; Point 10 remains open pending hosted,
+manual, capacity, and approval evidence.
+
+- Adds one explicit, blocking product-verification command covering synthetic
+  authenticated tenant-administrator, driver, and guardian CR1 journeys.
+- Adds safe-degradation coverage for profile-service, guardian-data, map, and
+  unauthenticated failure states and prevents raw profile-service errors from
+  reaching users.
+- Extends the existing automated WCAG gate with a bounded localhost-only load
+  guard covering 60 release-shell requests at concurrency 10.
+- Adds behavioral and structural regression controls plus Point 10 governance
+  and acceptance records.
+- Point 10 remains open until hosted authenticated evidence on an approved
+  isolated target, manual assistive-technology acceptance, an approved
+  production-like capacity exercise, and human approvals are complete.
+- No production account, Supabase query, database write, migration, fixture,
+  RLS execution, or hosted load test is included.
+
 ## Commercial Readiness Remediation 4 — Immutable GitHub Actions
 
 Status: Merged through PR #148 and on `main`.
