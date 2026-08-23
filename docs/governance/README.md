@@ -16,6 +16,7 @@ every later phase must obey.
 | [`commercial-release-scope.md`](./commercial-release-scope.md)             | Binding Commercial Release 1 boundary and launch-gate map      |
 | [`point-5-authorization-evidence.md`](./point-5-authorization-evidence.md) | Point 5 baseline, hardening controls, and hosted exit evidence |
 | [`point-8-map-readiness.md`](./point-8-map-readiness.md)                   | Point 8 provider, outage controls, and operating evidence      |
+| [`point-9-operational-readiness.md`](./point-9-operational-readiness.md)   | Point 9 monitoring, incident, support, and recovery evidence   |
 | [`github-actions-supply-chain.md`](./github-actions-supply-chain.md)       | Immutable CI dependency controls and update procedure          |
 | [`edge-function-retirement.md`](./edge-function-retirement.md)             | Retired Supabase function inventory and deployment boundary    |
 | [`product-scope.md`](./product-scope.md)                                   | Signed product scope                                           |
