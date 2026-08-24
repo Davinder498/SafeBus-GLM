@@ -28,7 +28,12 @@
     "geoapifyNinetyPercentAlert": null
   },
   "exercises": {
-    "applicationRollback": null,
+    "applicationRollback": {
+      "decision": "approved",
+      "approvedAt": "2026-08-24T23:41:31.000Z",
+      "evidenceReference": "OPS/EXERCISE/ROLLBACK-001",
+      "recoveryTimeMinutes": 40
+    },
     "backupRestore": null,
     "p1OutageTabletop": null,
     "privacyIncidentTabletop": null
