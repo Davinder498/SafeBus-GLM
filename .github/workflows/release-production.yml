@@ -68,7 +68,7 @@ jobs:
       - name: Verify no schema change is pending and record the release
         run: pnpm migrations:deploy
       - name: Deploy the preflighted production artifact
-        run: pnpm exec netlify deploy --prod --dir apps/web/dist --message "$SAFEBUS_RELEASE_SHA"
+        run: pnpm exec netlify deploy --prod --filter @safebus/web --dir apps/web/dist --message "$SAFEBUS_RELEASE_SHA"
       - name: Store release evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:

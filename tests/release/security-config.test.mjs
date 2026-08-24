@@ -55,6 +55,20 @@ test('rollback requires protected environment confirmation and immutable ref', a
   assert.doesNotMatch(workflow, /ROLLBACK_STAGING/);
 });
 
+test('Netlify deployment workflows select the web app in the monorepo', async () => {
+  const workflows = await Promise.all([
+    read('.github/workflows/rollback.yml'),
+    read('.github/workflows/release-production.yml'),
+  ]);
+
+  for (const workflow of workflows) {
+    assert.match(
+      workflow,
+      /netlify deploy --prod --filter @safebus\/web --dir apps\/web\/dist/,
+    );
+  }
+});
+
 test('database-bearing workflows target the protected production environment only', async () => {
   const workflows = await Promise.all([
     read('.github/workflows/adopt-existing-production.yml'),
