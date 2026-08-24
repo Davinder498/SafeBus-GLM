@@ -77,6 +77,45 @@ The record stores references, decisions, dates, and measured recovery values;
 it must not contain names, contact details, credentials, personal data, raw
 locations, response bodies, provider secrets, or support-ticket contents.
 
+## Completed application rollback exercise
+
+Evidence reference `OPS/EXERCISE/ROLLBACK-001` records the protected production
+application rollback exercised on 2026-08-24. The exercise used only synthetic,
+public health checks and made no database, migration, fixture, RLS-test, or
+Supabase configuration change.
+
+- The exercise began at `2026-08-24T22:58:48Z`. The first approved run
+  ([run 32787213148](https://github.com/Davinder498/SafeBus-GLM/actions/runs/32787213148))
+  stopped before deployment because Netlify required an explicit application
+  selection for the monorepo. The queued duplicate was cancelled without a
+  deployment.
+- [PR 162](https://github.com/Davinder498/SafeBus-GLM/pull/162) added the
+  explicit `@safebus/web` selection to rollback and normal release deployments
+  and added regression coverage.
+- The corrected protected rollback
+  ([run 32789963139](https://github.com/Davinder498/SafeBus-GLM/actions/runs/32789963139))
+  published deploy `6a8cd58ab19660a6561e3d63` from immutable commit
+  `9c0432ce75159918ccd01089301ee517ca00aaee`. The deploy was ready at
+  `2026-08-24T23:37:34.593Z`.
+- The privacy-safe production monitor reported the landing page, direct login
+  route, and server-managed map configuration healthy on their first attempts
+  at `2026-08-24T23:38:17.856Z`.
+- Measured recovery from the original exercise dispatch to verified rollback
+  health was 39 minutes 30 seconds, conservatively recorded as 40 minutes.
+- The protected restoration
+  ([run 32790241039](https://github.com/Davinder498/SafeBus-GLM/actions/runs/32790241039))
+  published deploy `6a8cd658cb6d4374d0e8d13e` from current main commit
+  `4fa33ebfdb6176d71682e9d80d2e72a5f495d27a`. It was ready at
+  `2026-08-24T23:40:51.982Z`, and all three public health checks again passed on
+  their first attempts at `2026-08-24T23:41:30.909Z`.
+
+Both successful deployments required an independent production-environment
+approval. GitHub retains the reviewer history on each workflow run. The known
+good and restored commits contain no Supabase migration difference. This
+exercise approves only the application-rollback evidence; backup restore,
+alert delivery, error monitoring, quota alerting, seven-day observation, and
+final Point 9 approvals remain open.
+
 ## Point 9 exit gates
 
 - [ ] Name the primary on-call owner, backup, supported hours, and escalation
@@ -88,8 +127,9 @@ locations, response bodies, provider secrets, or support-ticket contents.
 - [ ] Add privacy-reviewed server/application error monitoring and verify its
       redaction rules with synthetic data.
 - [ ] Configure Geoapify 70% and 90% quota alerts and record evidence for Point 8.
-- [ ] Complete application rollback, backup restore, and incident tabletop
-      exercises with measured recovery time and recovery point.
+- [ ] Complete recovery exercises. The protected application rollback passed
+      with a measured 40-minute recovery; backup restore and the remaining
+      evidence are still open.
 - [ ] Approve the customer support intake, severity, communication, and ticket
       retention process.
 - [ ] Observe at least seven consecutive operating days and resolve unexplained
@@ -105,7 +145,7 @@ locations, response bodies, provider secrets, or support-ticket contents.
 | Failure-notification drill    | _pending_                                    | Operations Lead                 |      |        |
 | Error-monitor redaction test  | _pending vendor approval_                    | Security / Privacy              |      |        |
 | Geoapify quota alerts         | _pending_                                    | Operations Lead                 |      |        |
-| Application rollback exercise | _pending_                                    | Engineering / Operations        |      |        |
+| Application rollback exercise | `OPS/EXERCISE/ROLLBACK-001`                  | Engineering / Operations        | 2026-08-24 | Pass   |
 | Backup restore exercise       | _pending paid tier or approved equivalent_   | Operations Lead                 |      |        |
 | Incident tabletop             | _pending_                                    | Security / Privacy / Operations |      |        |
 | Final Point 9 approval        | _pending_                                    | Platform Administrator          |      |        |

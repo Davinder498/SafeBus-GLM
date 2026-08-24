@@ -244,6 +244,6 @@ test('Point 9 governance keeps operating and human evidence open', async () => {
 
   assert.match(governance, /operating and human evidence pending/i);
   assert.match(governance, /operations-readiness\.json/);
-  assert.match(acceptance, /Pending execution/);
+  assert.match(acceptance, /Partially executed/);
   assert.match(milestone, /Commercial Readiness Remediation 13/);
 });

@@ -1,7 +1,8 @@
 # Point 9 Operations Acceptance
 
-**Status: Pending execution.** Repository enforcement is implemented, but this
-checklist is not operating evidence and does not approve Point 9.
+**Status: Partially executed; remaining operating and human evidence pending.**
+Repository enforcement and the protected application rollback are complete,
+but this checklist does not approve Point 9.
 
 Use synthetic, non-personal evidence only. Do not use real student, guardian,
 or driver data, production credentials, raw locations, provider keys, or
@@ -34,8 +35,10 @@ response bodies in screenshots, workflow logs, tickets, or incident records.
 
 - [ ] Walk through one P1 application outage and one suspected privacy incident
       using synthetic facts.
-- [ ] Execute the protected application rollback workflow against an approved
-      release and record time to recovery.
+- [x] Execute the protected application rollback workflow against an approved
+      release and record time to recovery (`OPS/EXERCISE/ROLLBACK-001`: 40
+      minutes from initial dispatch to verified rollback health; current release
+      restored and verified).
 - [ ] Complete the separately authorized backup/restore exercise in an isolated
       Canadian recovery target; never restore over the sole production database.
 - [ ] Verify customer communication ownership, support intake, escalation, and

@@ -51,3 +51,24 @@ test('Point 9 documentation keeps operating and human evidence open', async () =
   assert.match(acceptance, /failure-notification drill/);
   assert.match(milestones, /Commercial Readiness Remediation 13/);
 });
+
+test('application rollback evidence records measured recovery and verified restoration', async () => {
+  const [readiness, operations, acceptance] = await Promise.all([
+    read('docs/governance/operations-readiness.json').then(JSON.parse),
+    read('docs/governance/point-9-operational-readiness.md'),
+    read('docs/qa/point-9-operations-acceptance.md'),
+  ]);
+
+  assert.equal(readiness.status, 'not_approved');
+  assert.deepEqual(readiness.exercises.applicationRollback, {
+    decision: 'approved',
+    approvedAt: '2026-08-24T23:41:31.000Z',
+    evidenceReference: 'OPS/EXERCISE/ROLLBACK-001',
+    recoveryTimeMinutes: 40,
+  });
+  assert.equal(readiness.exercises.backupRestore, null);
+  assert.match(operations, /run 32789963139/);
+  assert.match(operations, /run 32790241039/);
+  assert.match(operations, /made no database, migration, fixture, RLS-test/);
+  assert.match(acceptance, /OPS\/EXERCISE\/ROLLBACK-001/);
+});
