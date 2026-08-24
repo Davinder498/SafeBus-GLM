@@ -1,0 +1,57 @@
+{
+  "format": 1,
+  "status": "not_approved",
+  "approvalId": null,
+  "approvedEvidenceDigest": null,
+  "approvedAt": null,
+  "expiresAt": null,
+  "onCall": {
+    "primaryOwner": null,
+    "backupOwner": null,
+    "supportedHours": null,
+    "escalationPath": null
+  },
+  "thresholds": {
+    "availability": null,
+    "latency": null,
+    "gpsFreshness": null,
+    "notificationQueue": null,
+    "providerQuota": null,
+    "errorRate": null
+  },
+  "alerting": {
+    "publicHealthRouting": null,
+    "failureNotificationDrill": null,
+    "applicationErrorMonitoring": null,
+    "errorRedactionDrill": null,
+    "geoapifySeventyPercentAlert": null,
+    "geoapifyNinetyPercentAlert": null
+  },
+  "exercises": {
+    "applicationRollback": null,
+    "backupRestore": null,
+    "p1OutageTabletop": null,
+    "privacyIncidentTabletop": null
+  },
+  "support": {
+    "intakeProcess": null,
+    "severityAndEscalation": null,
+    "customerCommunication": null,
+    "ticketRetention": null
+  },
+  "observation": {
+    "result": "pending",
+    "startedAt": null,
+    "endedAt": null,
+    "scheduledRunsObserved": null,
+    "unexplainedMonitoringGaps": null,
+    "unresolvedP1OrP2Incidents": null,
+    "evidenceReference": null
+  },
+  "approvals": {
+    "platformAdministrator": null,
+    "securityLead": null,
+    "privacyLead": null,
+    "operationsLead": null
+  }
+}
