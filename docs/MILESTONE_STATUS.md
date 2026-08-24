@@ -1,3 +1,27 @@
+## Commercial Readiness Remediation 13 - Point 9 Operational Readiness Gate
+
+Status: Repository evidence gate implemented for review; Point 9 remains open
+pending on-call, alerting, monitoring, recovery, support, observation, and human
+approval evidence.
+
+- Adds a source-bound, machine-readable operations readiness record that stays
+  explicitly `not_approved` until every operating exit condition passes.
+- Requires named primary/backup coverage by non-secret reference; approved
+  availability, latency, GPS, notification, quota, and error thresholds; routed
+  public-health alerts; privacy-safe error monitoring; and both Geoapify quota
+  alerts.
+- Requires measured application rollback and isolated Canadian backup-restore
+  exercises, P1/privacy table-tops, approved customer support processes, seven
+  observed operating days without unexplained gaps, and Operations, Security,
+  Privacy, and Platform approval.
+- Makes Point 9 verification block production before pilot authorization,
+  database work, or application deployment.
+- Existing public health monitoring remains unchanged and intentionally does
+  not authenticate, query Supabase, or claim an SLA.
+- No monitoring vendor, paging destination, provider account, production
+  account, Supabase connection, database action, restore, incident drill,
+  support system, deployment, or personal data is included.
+
 ## Commercial Readiness Remediation 12 - Point 8 Map Readiness Gate
 
 Status: Repository evidence gate implemented for review; Point 8 remains open

@@ -1,6 +1,6 @@
 # Point 9 — Operational Readiness
 
-**Status: Engineering monitoring foundation implemented; Point 9 remains open.**
+**Status: Repository evidence gate implemented; operating and human evidence pending.**
 
 Commercial Readiness Point 9 requires production monitoring, actionable
 alerting, incident response, customer support, backup, and recovery evidence.
@@ -57,6 +57,26 @@ incidents also follow [`phase-3/breach-response.md`](./phase-3/breach-response.m
 Database recovery remains a separately approved production-recovery action and
 must never use the sole production project as a destructive test target.
 
+## Fail-closed approval record
+
+`operations-readiness.json` is the production-release authorization record for
+Point 9. It is deliberately `not_approved`. `pnpm operations:verify` rejects a
+release until the record contains current, non-secret references for on-call
+coverage, thresholds, alert routing, privacy-safe error monitoring, both map
+quota alerts, support, recovery exercises, seven operating days, and all named
+approvals.
+
+The approval is bound to the release-controlled monitoring, application
+service/function, runbook, workflow, package, and test sources through a SHA-256
+digest. Any change to those sources invalidates an earlier approval. Generate
+the candidate digest with `pnpm operations:digest` only after all changes are
+reviewed. The verifier runs after Points 6 and 8 and before pilot authorization,
+database work, or deployment in the protected production release workflow.
+
+The record stores references, decisions, dates, and measured recovery values;
+it must not contain names, contact details, credentials, personal data, raw
+locations, response bodies, provider secrets, or support-ticket contents.
+
 ## Point 9 exit gates
 
 - [ ] Name the primary on-call owner, backup, supported hours, and escalation
@@ -78,13 +98,14 @@ must never use the sole production project as a destructive test target.
 
 ## Evidence record
 
-| Evidence                      | Reference                                  | Owner                           | Date | Result |
-| ----------------------------- | ------------------------------------------ | ------------------------------- | ---- | ------ |
-| Scheduled health history      | _pending post-merge observation_           | Operations Lead                 |      |        |
-| Failure-notification drill    | _pending_                                  | Operations Lead                 |      |        |
-| Error-monitor redaction test  | _pending vendor approval_                  | Security / Privacy              |      |        |
-| Geoapify quota alerts         | _pending_                                  | Operations Lead                 |      |        |
-| Application rollback exercise | _pending_                                  | Engineering / Operations        |      |        |
-| Backup restore exercise       | _pending paid tier or approved equivalent_ | Operations Lead                 |      |        |
-| Incident tabletop             | _pending_                                  | Security / Privacy / Operations |      |        |
-| Final Point 9 approval        | _pending_                                  | Platform Administrator          |      |        |
+| Evidence                      | Reference                                    | Owner                           | Date | Result |
+| ----------------------------- | -------------------------------------------- | ------------------------------- | ---- | ------ |
+| Scheduled health history      | _pending post-merge observation_             | Operations Lead                 |      |        |
+| Machine approval record       | `operations-readiness.json` (`not_approved`) | Operations / Platform           |      | Open   |
+| Failure-notification drill    | _pending_                                    | Operations Lead                 |      |        |
+| Error-monitor redaction test  | _pending vendor approval_                    | Security / Privacy              |      |        |
+| Geoapify quota alerts         | _pending_                                    | Operations Lead                 |      |        |
+| Application rollback exercise | _pending_                                    | Engineering / Operations        |      |        |
+| Backup restore exercise       | _pending paid tier or approved equivalent_   | Operations Lead                 |      |        |
+| Incident tabletop             | _pending_                                    | Security / Privacy / Operations |      |        |
+| Final Point 9 approval        | _pending_                                    | Platform Administrator          |      |        |

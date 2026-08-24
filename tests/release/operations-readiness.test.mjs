@@ -42,12 +42,12 @@ test('Point 9 documentation keeps operating and human evidence open', async () =
 
   assert.match(
     operations,
-    /Status: Engineering monitoring foundation implemented; Point 9 remains open/,
+    /Status: Repository evidence gate implemented; operating and human evidence pending/,
   );
   assert.match(operations, /does not query Supabase/i);
   assert.match(operations, /does not establish an SLA/i);
   assert.match(operations, /named on-call owner\s+and backup/);
   assert.match(acceptance, /Do not use real student, guardian,\s+or driver data/);
   assert.match(acceptance, /failure-notification drill/);
-  assert.match(milestones, /Commercial Readiness Remediation 7/);
+  assert.match(milestones, /Commercial Readiness Remediation 13/);
 });
