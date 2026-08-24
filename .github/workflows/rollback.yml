@@ -59,4 +59,4 @@ jobs:
       - name: Reject public source maps
         run: test -z "$(find apps -path '*/dist/*' -name '*.map' -print -quit)"
       - name: Restore known-good application artifact
-        run: pnpm exec netlify deploy --prod --dir apps/web/dist --message "rollback-to-$(git rev-parse HEAD)"
+        run: pnpm exec netlify deploy --prod --filter @safebus/web --dir apps/web/dist --message "rollback-to-$(git rev-parse HEAD)"
