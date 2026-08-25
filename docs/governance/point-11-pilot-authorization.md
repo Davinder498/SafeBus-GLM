@@ -38,8 +38,8 @@ The verifier requires:
 - scope within the tenant, bus, participant, and 60-operating-day ceilings;
 - non-secret evidence references for school selection, participant selection,
   the customer agreement, and every required approval;
-- Platform Administrator, Product Owner, Security, Privacy, Operations, and
-  customer-authority approval;
+- Platform Administrator, Product Owner, Security, Privacy, Operations,
+  Accessibility/QA, and customer-authority approval;
 - primary and backup contact references with immediate suspension and
   application-rollback authority; and
 - a SHA-256 digest matching the release-controlled web, mobile, package,
@@ -49,6 +49,26 @@ Any later release-controlled source change invalidates the authorization until
 the digest is recomputed and the revised evidence is approved. Authorization
 expiry, a missing approval, an open gate, or a ceiling violation fails the
 release before it connects to the production database.
+
+## Approval assignments
+
+The sole internal platform owner is assigned to the Platform Administrator,
+Product Owner, Security Lead, Privacy Lead, Operations Lead, and
+Accessibility/QA Lead roles under non-secret reference
+`PILOT/APPROVER/INTERNAL-OWNER-001`. These assignments establish
+accountability; they are not final approval decisions and do not satisfy an open
+launch gate.
+
+Customer Authority remains unassigned. That role must be filled by an
+authorized representative of the participating public school authority and
+cannot be self-approved by SafeBus. Primary and backup immediate-suspension and
+application-rollback authority use `OPS/ONCALL/PRIMARY-001` and
+`OPS/ONCALL/BACKUP-001` respectively.
+
+Final approval objects remain empty until Points 4 through 10, pilot scope,
+participant selection, the customer agreement, and all supporting evidence are
+complete. Each final decision must then use a dated, non-secret evidence
+reference and be reviewed in the dedicated authorization PR.
 
 ## Entry criteria
 
