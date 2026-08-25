@@ -39,6 +39,7 @@ const REQUIRED_APPROVALS = [
   'securityLead',
   'privacyLead',
   'operationsLead',
+  'accessibilityQaLead',
   'customerAuthority',
 ];
 
@@ -127,6 +128,10 @@ export async function verifyPilotAuthorization({ authorization, root, now = Date
   }
 
   for (const role of REQUIRED_APPROVALS) {
+    requireNonSecretReference(
+      authorization.approvalAssignments?.[role],
+      `${role} assignment`,
+    );
     const approval = authorization.approvals?.[role];
     const approvalTime = Date.parse(approval?.approvedAt);
     if (
