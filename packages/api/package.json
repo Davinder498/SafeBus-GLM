@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@safebus/types": "workspace:*",
-    "@supabase/supabase-js": "^2.112.3",
+    "@supabase/supabase-js": "^2.112.4",
     "zod": "^4.4.3"
   },
   "devDependencies": {
