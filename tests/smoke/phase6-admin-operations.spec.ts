@@ -574,53 +574,19 @@ async function installGuardianRevokeMock(page: Page) {
   }, FAKE_ACCESS_TOKEN);
 }
 
-test.describe('Phase 6 — admin substitute driver / replace bus', () => {
-  test('substitute driver form assigns a substitute and shows audited success', async ({
-    page,
-  }) => {
+test.describe('Phase 6 — consolidated assignment workflows', () => {
+  test('legacy driver assignment links open the driver workspace', async ({ page }) => {
     await installAdminAssignmentsMock(page);
     await page.goto('/admin/driver-assignments');
-
-    await expect(page.getByRole('heading', { name: 'Driver assignments', level: 1 })).toBeVisible({
-      timeout: 10000,
-    });
-
-    const toggle = page.getByTestId(`substitute-driver-toggle-${ADMIN.assignmentId}`);
-    await expect(toggle).toBeVisible();
-    await toggle.click();
-
-    const form = page.getByTestId(`substitute-driver-form-${ADMIN.assignmentId}`);
-    await expect(form).toBeVisible();
-
-    await form.getByLabel('Substitute driver').selectOption(ADMIN.driver2Id);
-    await form.getByRole('button', { name: 'Assign substitute' }).click();
-
-    await expect(
-      page.getByText('Substitute driver assigned. The previous assignment was ended and audited.'),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page).toHaveURL('/admin/drivers');
+    await expect(page.getByRole('heading', { name: 'Drivers', level: 1 })).toBeVisible();
   });
 
-  test('replace bus form assigns a replacement and shows audited success', async ({ page }) => {
+  test('legacy student assignment links open the student workspace', async ({ page }) => {
     await installAdminAssignmentsMock(page);
-    await page.goto('/admin/driver-assignments');
-
-    await expect(page.getByRole('heading', { name: 'Driver assignments', level: 1 })).toBeVisible({
-      timeout: 10000,
-    });
-
-    const toggle = page.getByTestId(`replace-bus-toggle-${ADMIN.assignmentId}`);
-    await expect(toggle).toBeVisible();
-    await toggle.click();
-
-    const form = page.getByTestId(`replace-bus-form-${ADMIN.assignmentId}`);
-    await expect(form).toBeVisible();
-
-    await form.getByLabel('Replacement bus').selectOption(ADMIN.bus2Id);
-    await form.getByRole('button', { name: 'Assign replacement bus' }).click();
-
-    await expect(
-      page.getByText('Replacement bus assigned. The previous assignment was ended and audited.'),
-    ).toBeVisible({ timeout: 10000 });
+    await page.goto('/admin/assignments');
+    await expect(page).toHaveURL('/admin/students');
+    await expect(page.getByRole('heading', { name: 'Students', level: 1 })).toBeVisible();
   });
 });
 
@@ -677,12 +643,8 @@ test.describe('Phase 6 — role portal boundaries', () => {
       await installAdminAssignmentsMock(page, role);
       await page.goto('/admin/driver-assignments');
 
-      await expect(
-        page.getByRole('heading', { name: 'Driver assignments', level: 1 }),
-      ).toBeVisible();
-      await expect(
-        page.getByTestId(`substitute-driver-toggle-${ADMIN.assignmentId}`),
-      ).toBeVisible();
+      await expect(page).toHaveURL('/admin/drivers');
+      await expect(page.getByRole('heading', { name: 'Drivers', level: 1 })).toBeVisible();
     });
   }
 
@@ -692,9 +654,7 @@ test.describe('Phase 6 — role portal boundaries', () => {
       await page.goto('/admin/driver-assignments');
 
       await expect(page.getByRole('heading', { name: 'Wrong portal', level: 1 })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Driver assignments', level: 1 })).toHaveCount(
-        0,
-      );
+      await expect(page.getByRole('heading', { name: 'Drivers', level: 1 })).toHaveCount(0);
     });
   }
 });

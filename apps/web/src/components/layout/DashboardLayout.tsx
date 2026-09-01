@@ -115,20 +115,6 @@ export const adminNavItems: DashboardNavItem[] = [
     icon: <IdCard className="h-4 w-4" />,
   },
   {
-    label: 'Student Bus Assignment',
-    to: '/admin/assignments',
-    group: 'transportation',
-    description: 'Student routes',
-    icon: <ClipboardList className="h-4 w-4" />,
-  },
-  {
-    label: 'Driver assignments',
-    to: '/admin/driver-assignments',
-    group: 'transportation',
-    description: 'Driver, bus, and route coverage',
-    icon: <ClipboardList className="h-4 w-4" />,
-  },
-  {
     label: 'Guardians',
     to: '/admin/guardians',
     group: 'people',

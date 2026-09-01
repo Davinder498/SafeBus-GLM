@@ -16,6 +16,7 @@ export function DirectionalStudentBusAssignmentForm({
   fixedStudentId,
   services,
   stops,
+  selectionMode = 'route',
   onSubmit,
   onCancel,
 }: {
@@ -24,6 +25,7 @@ export function DirectionalStudentBusAssignmentForm({
   fixedStudentId?: string;
   services: BusServiceOption[];
   stops: RouteStop[];
+  selectionMode?: 'route' | 'bus-route';
   onSubmit: (input: SetStudentBusServiceInput) => Promise<void>;
   onCancel: () => void;
 }) {
@@ -34,7 +36,11 @@ export function DirectionalStudentBusAssignmentForm({
   const initialServices = assignments
     .map((assignment) => serviceById.get(assignment.bus_route_assignment_id))
     .filter((service): service is BusServiceOption => !!service);
-  const initialRouteId = initialServices[0]?.route_id ?? '';
+  const serviceSelectionKey = (service: BusServiceOption) =>
+    selectionMode === 'bus-route' ? `${service.bus_id}|${service.route_id}` : service.route_id;
+  const initialServiceSelection = initialServices[0]
+    ? serviceSelectionKey(initialServices[0])
+    : '';
   const initialForward = assignments.find(
     (assignment) => serviceById.get(assignment.bus_route_assignment_id)?.direction === 'forward',
   );
@@ -43,7 +49,7 @@ export function DirectionalStudentBusAssignmentForm({
   );
 
   const [studentId, setStudentId] = useState(assignments[0]?.student_id ?? fixedStudentId ?? '');
-  const [routeId, setRouteId] = useState(initialRouteId);
+  const [serviceSelection, setServiceSelection] = useState(initialServiceSelection);
   const [directionScope, setDirectionScope] = useState<DirectionScope>(() =>
     initialServices.length > 0
       ? directionScopeFromDirections(initialServices.map((service) => service.direction))
@@ -76,11 +82,18 @@ export function DirectionalStudentBusAssignmentForm({
   const routeOptions = useMemo(() => {
     const options = new Map<string, BusServiceOption>();
     for (const service of services) {
-      if (!options.has(service.route_id)) options.set(service.route_id, service);
+      const key =
+        selectionMode === 'bus-route'
+          ? `${service.bus_id}|${service.route_id}`
+          : service.route_id;
+      if (!options.has(key)) options.set(key, service);
     }
     return [...options.values()];
-  }, [services]);
-  const routeServices = services.filter((service) => service.route_id === routeId);
+  }, [selectionMode, services]);
+  const routeServices = services.filter(
+    (service) => serviceSelectionKey(service) === serviceSelection,
+  );
+  const routeId = routeServices[0]?.route_id ?? '';
   const availableDirections = new Set(routeServices.map((service) => service.direction));
   const availableStops = useMemo(
     () =>
@@ -196,16 +209,16 @@ export function DirectionalStudentBusAssignmentForm({
           Bus route
           <select
             className={field}
-            value={routeId}
+            value={serviceSelection}
             disabled={assignments.length > 0}
             onChange={(event) => {
-              setRouteId(event.target.value);
+              setServiceSelection(event.target.value);
               clearStops();
             }}
           >
             <option value="">Choose route</option>
             {routeOptions.map((service) => (
-              <option key={service.route_id} value={service.route_id}>
+              <option key={serviceSelectionKey(service)} value={serviceSelectionKey(service)}>
                 Bus {service.bus_number} - {service.route_code} {service.route_name}
               </option>
             ))}
@@ -276,12 +289,13 @@ export function DirectionalStudentBusAssignmentForm({
           <input
             className={field}
             type="date"
+            required
             value={effectiveFrom}
             onChange={(event) => setEffectiveFrom(event.target.value)}
           />
         </label>
         <label className="text-sm font-semibold text-gray-700">
-          Effective to
+          Effective to (optional)
           <input
             className={field}
             type="date"
@@ -289,6 +303,9 @@ export function DirectionalStudentBusAssignmentForm({
             value={effectiveTo}
             onChange={(event) => setEffectiveTo(event.target.value)}
           />
+          <span className="mt-1 block text-xs font-normal text-slate-500">
+            Leave blank for ongoing service.
+          </span>
         </label>
       </div>
       <div className="flex gap-2">

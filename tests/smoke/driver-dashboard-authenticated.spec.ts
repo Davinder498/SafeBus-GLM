@@ -2,7 +2,9 @@ import { expect, test } from '@playwright/test';
 import { installSupabaseMock, MOCK } from './fixtures/supabase-mock';
 
 test.describe('Driver dashboard — authenticated', () => {
-  test('shows one bus-scan action instead of route assignments', async ({ page }) => {
+  test('shows read-only planned guidance and keeps QR scanning as the only start action', async ({
+    page,
+  }) => {
     await installSupabaseMock(page, { withMultipleAssignments: true });
     await page.goto('/driver');
 
@@ -11,9 +13,83 @@ test.describe('Driver dashboard — authenticated', () => {
     ).toBeVisible();
     await expect(page.getByTestId('driver-bus-qr-scanner')).toBeVisible();
     await expect(page.getByTestId('driver-scan-bus-qr')).toHaveText('Scan bus QR to start');
+    const plannedCard = page.getByTestId('driver-planned-assignments');
+    await expect(plannedCard).toBeVisible();
+    await expect(plannedCard.getByText('Bus 12').first()).toBeVisible();
+    await expect(plannedCard.getByText('North Ridge Outbound')).toBeVisible();
+    await expect(plannedCard.getByRole('button')).toHaveCount(0);
     await expect(page.getByTestId('driver-assignment-card')).toHaveCount(0);
     await expect(page.getByTestId('driver-outbound-toggle')).toHaveCount(0);
     await expect(page.getByTestId('driver-return-toggle')).toHaveCount(0);
+  });
+
+  test('accepts a different eligible bus scan and shows a non-blocking plan mismatch', async ({
+    page,
+  }) => {
+    await page.context().grantPermissions(['geolocation']);
+    await page.context().setGeolocation({ latitude: 51.0447, longitude: -114.0719 });
+    await installSupabaseMock(page, { withAssignments: true });
+    const differentBusId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+
+    await page.route('**/rpc/get_bus_qr_start_options', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            bus_route_assignment_id: MOCK.secondAssignmentId,
+            bus_number: '99',
+            route_code: 'ALT',
+            route_name: 'Alternate Route',
+            trip_name: 'Alternate Outbound',
+            direction: 'forward',
+            resumed: false,
+          },
+        ]),
+      });
+    });
+    await page.route('**/rpc/start_bus_tracking_from_qr', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          trip: {
+            id: MOCK.tripId,
+            tenant_id: MOCK.tenantId,
+            driver_id: MOCK.driverId,
+            bus_id: differentBusId,
+            bus_number_snapshot: '99',
+            route_id: MOCK.routeId,
+            route_trip_pattern_id: MOCK.secondTripPatternId,
+            driver_route_assignment_id: null,
+            trip_name_snapshot: 'Alternate Outbound',
+            trip_type: 'morning',
+            status: 'active',
+            service_date: '2026-08-30',
+            started_at: '2026-08-30T12:00:00.000Z',
+            ended_at: null,
+            created_at: '2026-08-30T12:00:00.000Z',
+            updated_at: '2026-08-30T12:00:00.000Z',
+          },
+          trackingToken: MOCK.trackingToken,
+          busNumber: '99',
+          resumed: false,
+        }),
+      });
+    });
+    await page.goto('/driver');
+
+    await page.getByTestId('driver-scan-bus-qr').click();
+    await page.getByLabel('Manual bus QR token for QA').fill(MOCK.busQrToken);
+    await page.getByRole('button', { name: 'Connect' }).click();
+    await page.getByRole('button', { name: /ALT · Alternate Outbound/ }).click();
+
+    await expect(page.getByRole('heading', { name: 'Bus 99', level: 1 })).toBeVisible();
+    await expect(page.getByTestId('driver-plan-mismatch-notice')).toContainText(
+      'Current trip differs from the plan',
+    );
+    await expect(page.getByTestId('driver-active-trip-only')).toBeVisible();
+    await expect(page.getByTestId('driver-planned-assignments')).toContainText('Bus 12');
   });
 
   test('chooses a route direction after scanning and binds this phone to the active bus', async ({

@@ -28,6 +28,23 @@ export interface DriverRouteAssignmentWithDetails extends DriverRouteAssignment 
   routeName: string | null;
 }
 
+export interface PlannedDriverAssignment extends DriverRouteAssignment {
+  bus_number: string;
+  license_plate: string | null;
+  route_name: string;
+  route_code: string;
+  trip_name: string;
+  direction: 'forward' | 'reverse';
+}
+
+export interface SetPlannedDriverAssignmentInput {
+  driverId: string;
+  busRouteAssignmentId: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  existingAssignmentId?: string | null;
+}
+
 /** The tenant is derived from the authenticated admin profile. */
 export interface CreateAssignmentInput {
   driverId: string;

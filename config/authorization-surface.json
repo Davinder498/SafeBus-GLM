@@ -13,6 +13,7 @@
     "admin_replace_bus_trip_driver(uuid,uuid,date,date)",
     "admin_save_route_definition(jsonb,jsonb,jsonb)",
     "admin_set_bus_route_service(uuid,uuid,text,date,date,uuid[])",
+    "admin_set_driver_bus_assignment(uuid,uuid,date,date,uuid)",
     "admin_set_guardian_access_expiry(uuid,timestamp with time zone)",
     "admin_set_student_bus_service(uuid,uuid,uuid,text,uuid,uuid,uuid,uuid,date,date,uuid[])",
     "admin_set_student_bus_service_status(uuid[],text,boolean)",

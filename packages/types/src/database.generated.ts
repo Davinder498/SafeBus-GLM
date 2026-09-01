@@ -3148,6 +3148,16 @@ export interface Database {
         }
         Returns: unknown
       }
+      admin_set_driver_bus_assignment: {
+        Args: {
+          p_driver_id: string
+          p_bus_route_assignment_id: string
+          p_effective_from: string
+          p_effective_to?: string | null
+          p_existing_assignment_id?: string | null
+        }
+        Returns: Json
+      }
       admin_set_guardian_access_expiry: {
         Args: {
           p_access_expires_at?: string | null
