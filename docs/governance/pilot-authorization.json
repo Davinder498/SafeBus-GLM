@@ -23,11 +23,20 @@
     "point9": "open",
     "point10": "open"
   },
+  "approvalAssignments": {
+    "platformAdministrator": "PILOT/APPROVER/INTERNAL-OWNER-001",
+    "productOwner": "PILOT/APPROVER/INTERNAL-OWNER-001",
+    "securityLead": "PILOT/APPROVER/INTERNAL-OWNER-001",
+    "privacyLead": "PILOT/APPROVER/INTERNAL-OWNER-001",
+    "operationsLead": "PILOT/APPROVER/INTERNAL-OWNER-001",
+    "accessibilityQaLead": "PILOT/APPROVER/INTERNAL-OWNER-001",
+    "customerAuthority": null
+  },
   "approvals": {},
   "rollbackAuthority": {
     "immediateSuspension": true,
     "immediateApplicationRollback": true,
-    "primaryContactReference": null,
-    "backupContactReference": null
+    "primaryContactReference": "OPS/ONCALL/PRIMARY-001",
+    "backupContactReference": "OPS/ONCALL/BACKUP-001"
   }
 }

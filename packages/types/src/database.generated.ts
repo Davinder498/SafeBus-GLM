@@ -3037,6 +3037,72 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
+      apply_notification_retention: { Args: { p_dry_run?: boolean }; Returns: { email_deleted: number; inbox_deleted: number; push_deleted: number; devices_staled: number }[] }
+      archive_user_notifications: {
+        Args: { p_ids: string[] }
+        Returns: number
+      }
+      cancel_push_notification_delivery: {
+        Args: { p_outbox_id: string; p_reason: string }
+        Returns: boolean
+      }
+      claim_push_notification_deliveries: {
+        Args: { p_worker_id: string; p_limit?: number; p_lease_seconds?: number }
+        Returns: {
+          outbox_id: string; tenant_id: string; notification_id: string; device_id: string
+          fcm_token: string; event_type: string; category: string; severity: string
+          preview_mode: string; android_channel: string; collapse_key: string
+          title: string; body: string; attempt_count: number
+        }[]
+      }
+      cleanup_stale_android_push_devices: { Args: Record<PropertyKey, never>; Returns: number }
+      complete_push_notification_delivery: {
+        Args: { p_outbox_id: string; p_worker_id: string; p_provider_message_id: string }
+        Returns: boolean
+      }
+      fail_push_notification_delivery: {
+        Args: { p_outbox_id: string; p_worker_id: string; p_failure_category: string; p_failure_code: string; p_invalidate_device?: boolean }
+        Returns: boolean
+      }
+      get_guardian_notification_preferences_v2: {
+        Args: Record<PropertyKey, never>
+        Returns: { student_id: string; student_name: string; email_enabled: boolean; email_pickup: boolean; email_dropoff: boolean; push_pickup_dropoff: boolean; push_trip_status: boolean; push_service_changes: boolean; preferences_set_at: string | null; access_expires_at: string | null }[]
+      }
+      get_notification_delivery_health_v2: { Args: Record<PropertyKey, never>; Returns: Json }
+      get_notification_preferences: { Args: Record<PropertyKey, never>; Returns: Json }
+      get_user_notification_unread_count: { Args: Record<PropertyKey, never>; Returns: number }
+      get_user_notifications: {
+        Args: { p_limit?: number; p_before_created_at?: string; p_before_id?: string; p_unread_only?: boolean; p_category?: string }
+        Returns: { id: string; event_type: string; category: string; severity: string; title: string; body: string; occurred_at: string; created_at: string; read_at: string | null; archived_at: string | null; destination_path: string }[]
+      }
+      list_own_push_devices: {
+        Args: Record<PropertyKey, never>
+        Returns: { id: string; installation_id: string; device_model: string | null; app_version: string | null; permission_state: string; status: string; last_registered_at: string; last_seen_at: string }[]
+      }
+      mark_all_user_notifications_read: { Args: Record<PropertyKey, never>; Returns: number }
+      mark_user_notifications_read: { Args: { p_ids: string[]; p_read?: boolean }; Returns: number }
+      register_android_push_device: {
+        Args: { p_installation_id: string; p_fcm_token: string; p_device_model: string; p_app_version: string; p_permission_state: string }
+        Returns: string
+      }
+      record_notification_delivery_incident: { Args: { p_tenant_id: string | null; p_incident_code: string }; Returns: number }
+      retry_push_notification_delivery: {
+        Args: { p_outbox_id: string; p_worker_id: string; p_failure_category: string; p_failure_code: string; p_available_after: string; p_retry_after_seconds?: number }
+        Returns: boolean
+      }
+      resolve_push_notification_delivery: {
+        Args: { p_outbox_id: string; p_worker_id: string }
+        Returns: { outbox_id: string; tenant_id: string; notification_id: string; device_id: string; fcm_token: string; event_type: string; category: string; severity: string; preview_mode: string; android_channel: string; collapse_key: string; title: string; body: string; attempt_count: number }[]
+      }
+      revoke_own_push_device: { Args: { p_device_id: string }; Returns: boolean }
+      set_guardian_notification_preferences_v2: {
+        Args: { p_student_id: string; p_email_enabled: boolean; p_email_pickup: boolean; p_email_dropoff: boolean; p_push_pickup_dropoff: boolean; p_push_trip_status: boolean; p_push_service_changes: boolean }
+        Returns: undefined
+      }
+      set_notification_preferences: {
+        Args: { p_push_enabled: boolean; p_quiet_hours_enabled: boolean; p_quiet_hours_start: string; p_quiet_hours_end: string; p_timezone_override: string | null; p_urgent_bypass_quiet_hours: boolean; p_preview_mode: string; p_categories: Json }
+        Returns: Json
+      }
       admin_create_route_shape_version: {
         Args: {
           p_geojson: Json

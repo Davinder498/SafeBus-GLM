@@ -96,7 +96,8 @@ exists in source code.
 
 - Student QR badges or student boarding scans.
 - Per-child GPS or any child-carried tracking device.
-- SMS or push notifications.
+- SMS, iOS push, web push, campaign, digest, or general-messaging notifications.
+- Android FCM remains unavailable at runtime until the notification milestone's privacy/security review, FCM subprocessor review, tenant approval, protected secrets, and canary authorization are recorded.
 - Traffic-aware or road-network ETA.
 - PowerSchool, SchoolEngage, or other SIS integrations.
 - CSV import beyond the approved student-only workflow.

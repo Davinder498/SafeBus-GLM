@@ -52,6 +52,9 @@ Phase 0/Phase 1 per [`feature-inventory.md`](./feature-inventory.md).
 | `driver_trips` | Trip lifecycle and snapshots | Tenant-scoped operational record. |
 | `student_trip_events` | Pickup/drop-off events | Treated as Confidential because it links students to trip events; minimal retention. |
 | `guardian_notification_outbox` | Notification work items | Confidential; contains guardian/student/trip references. |
+| `user_notifications` | Authorized operational inbox references | Confidential; stores controlled codes and source IDs, never rendered names or arbitrary text. |
+| `android_push_devices` | FCM tokens and installation metadata | Restricted credential data; service-only token access, immediate invalid-token revocation. |
+| `push_notification_outbox` | Android delivery work and provider outcomes | Confidential; service-only leased processing and 90-day terminal retention. |
 | `bus_run_dispatches` | Prepared bus runs | Operational; tenant-scoped. |
 
 ### 3.3 Internal
@@ -61,6 +64,7 @@ Phase 0/Phase 1 per [`feature-inventory.md`](./feature-inventory.md).
 | `tenants` | Tenant identity, status, timezone, subscription | Platform-admin sees a narrow subset only (name, identifier, status, onboarding state). |
 | `schools` | Organizational units | Tenant-scoped; not platform-admin exposed beyond aggregates. |
 | `profiles` | User accounts and roles | Platform-admin sees only onboarding status, not personal fields. |
+| `user_notification_settings`, `user_notification_category_preferences` | Channel consent, quiet hours and preview choices | Internal preference data; the user controls only their own settings through RPCs. |
 | `buses` | Vehicle records | Tenant-scoped operational data. |
 | `invitations` / onboarding state | Tenant-member onboarding | Platform-admin sees status, not personal data. |
 

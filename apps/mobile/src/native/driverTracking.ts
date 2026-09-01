@@ -43,6 +43,14 @@ interface DeviceRegistrationResult {
 
 const nativePlugin = registerPlugin<DriverTrackingNativePlugin>('DriverTracking');
 
+export function getNativeDeviceInfo(): Promise<DeviceInfo> {
+  return nativePlugin.getDeviceInfo();
+}
+
+export function openNativeAppSettings(): Promise<void> {
+  return nativePlugin.openAppSettings();
+}
+
 export function installNativeDriverTrackingBridge(): void {
   const bridge: SafeBusNativeTrackingBridge = {
     async prepare() {

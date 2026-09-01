@@ -40,7 +40,8 @@
     "netlifyHostingAndFunctions": null,
     "geoapifyMaps": null,
     "emailDelivery": null,
-    "errorMonitoring": null
+    "errorMonitoring": null,
+    "firebaseCloudMessaging": null
   },
   "residency": {
     "productionDatabase": null,

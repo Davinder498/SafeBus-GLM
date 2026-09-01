@@ -32,9 +32,11 @@ import { DriverSettingsPage } from '@/pages/DriverSettingsPage';
 import { DriverTripHistoryPage } from '@/pages/DriverTripHistoryPage';
 import { GuardianLiveMapPage } from '@/pages/GuardianLiveMapPage';
 import { GuardianLiveTripsPage } from '@/pages/GuardianLiveTripsPage';
-import { GuardianNotificationPreferencesPage } from '@/pages/GuardianNotificationPreferencesPage';
+import { NotificationsPage } from '@/pages/NotificationsPage';
+import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
 import { GuardianRoutesPage } from '@/pages/GuardianRoutesPage';
 import { GuardianTripEventsPage } from '@/pages/GuardianTripEventsPage';
+import { GuardianNotificationPreferencesPage } from '@/pages/GuardianNotificationPreferencesPage';
 import { ParentDashboardPage } from '@/pages/ParentDashboardPage';
 import { PlatformTenantsPage } from '@/pages/PlatformTenantsPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
@@ -42,7 +44,7 @@ import { MfaPage } from '@/pages/MfaPage';
 import { ProtectedRoute } from './ProtectedRoute';
 import { PublicOnlyRoute } from './PublicOnlyRoute';
 import { InvitationEntryRoute } from './InvitationEntryRoute';
-import { adminRoles } from '@/contexts/AuthContext';
+import { adminRoles, allowedRoles } from '@/contexts/AuthContext';
 
 export const appRoutes: RouteObject[] = [
   {
@@ -71,6 +73,18 @@ export const appRoutes: RouteObject[] = [
         <MfaPage />
       </ProtectedRoute>
     ),
+  },
+  {
+    path: '/notifications',
+    element: <ProtectedRoute allowedRoles={[...allowedRoles]}><NotificationsPage /></ProtectedRoute>,
+  },
+  {
+    path: '/notifications/settings',
+    element: <ProtectedRoute allowedRoles={[...allowedRoles]}><NotificationSettingsPage /></ProtectedRoute>,
+  },
+  {
+    path: '/notifications/settings/email',
+    element: <ProtectedRoute allowedRoles={['guardian']}><GuardianNotificationPreferencesPage /></ProtectedRoute>,
   },
   {
     path: '/admin',
@@ -339,11 +353,7 @@ export const appRoutes: RouteObject[] = [
   },
   {
     path: '/guardian/notifications',
-    element: (
-      <ProtectedRoute allowedRoles={['guardian']}>
-        <GuardianNotificationPreferencesPage />
-      </ProtectedRoute>
-    ),
+    element: <Navigate to="/notifications/settings" replace />,
   },
   {
     path: '/guardian/events',

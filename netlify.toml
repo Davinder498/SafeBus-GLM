@@ -17,6 +17,11 @@
 [functions."guardian-notification-email-scheduled"]
   schedule = "*/5 * * * *"
 
+# Notification milestone: one-minute Android FCM queue drain. Database leases,
+# immediate authorization rechecks and tenant/provider quotas make overlap safe.
+[functions."push-notification-dispatcher-scheduled"]
+  schedule = "* * * * *"
+
 # Phase 3: daily retention orchestration. The function defaults to dry-run;
 # SAFEBUS_RETENTION_EXECUTE=true is set only after counsel approves the periods.
 [functions."safebus-retention-scheduled"]

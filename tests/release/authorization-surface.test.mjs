@@ -4,6 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 
 const migrationPath = 'supabase/migrations/0089_authorization_surface_hardening.sql';
+const notificationMigrationPath = 'supabase/migrations/0092_end_to_end_notification_system.sql';
 
 async function readJson(file) {
   return JSON.parse(await fs.readFile(file, 'utf8'));
@@ -52,10 +53,11 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
     .filter((name) => name.endsWith('.sql') && name > path.basename(migrationPath))
     .sort()
     .map((name) => path.join('supabase/migrations', name));
-  const [surface, migration, laterMigrations] = await Promise.all([
+  const [surface, migration, laterMigrations, notificationMigration] = await Promise.all([
     readJson('config/authorization-surface.json'),
     fs.readFile(migrationPath, 'utf8'),
     Promise.all(laterMigrationPaths.map((file) => fs.readFile(file, 'utf8'))),
+    fs.readFile(notificationMigrationPath, 'utf8'),
   ]);
   const allowlistInsert = migration.match(
     /insert into safebus_rpc_allowlist[\s\S]*?values([\s\S]*?);/i,
@@ -81,6 +83,13 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
     )) {
       actual.set(match[1], match[2]);
     }
+  }
+  const notificationAllowlist = notificationMigration.match(
+    /insert into safebus_notification_rpc_allowlist[\s\S]*?values([\s\S]*?);/i,
+  )?.[1];
+  assert.ok(notificationAllowlist);
+  for (const match of notificationAllowlist.matchAll(/\('([a-z0-9_]+)',\s*'(authenticated|service_role)'\)/g)) {
+    actual.set(match[1], match[2]);
   }
   const expected = new Map();
   for (const signature of surface.authenticated) {

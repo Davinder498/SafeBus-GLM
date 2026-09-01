@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Bell, Bus, Calendar, History, LayoutDashboard, List, MapPinned, Settings } from 'lucide-react';
+import { Bell, Bus, Calendar, History, LayoutDashboard, List, MapPinned } from 'lucide-react';
 import type { ReactElement } from 'react';
 import {
   adminNavItems,
@@ -88,7 +88,7 @@ describe('driver shell navigation model', () => {
       { label: 'Scan', to: '/driver', icon: Bus },
       { label: 'Riders', to: '/driver/pickup-drop-off', icon: List },
       { label: 'History', to: '/driver/history', icon: History },
-      { label: 'Settings', to: '/driver/settings', icon: Settings },
+      { label: 'Alerts', to: '/notifications', icon: Bell },
     ];
 
     expect(driverNativeNavItems).toHaveLength(expected.length);
@@ -106,7 +106,7 @@ describe('guardian shell navigation model', () => {
       ['Bus status', '/guardian/live'],
       ['My buses', '/guardian/routes'],
       ['Pickup & drop-off', '/guardian/events'],
-      ['Email notifications', '/guardian/notifications'],
+      ['Notifications', '/notifications'],
     ]);
   });
 
@@ -116,7 +116,7 @@ describe('guardian shell navigation model', () => {
       { label: 'Map', to: '/guardian/live-map', icon: MapPinned },
       { label: 'Buses', to: '/guardian/routes', icon: Bus },
       { label: 'Updates', to: '/guardian/events', icon: Calendar },
-      { label: 'Email', to: '/guardian/notifications', icon: Bell },
+      { label: 'Alerts', to: '/notifications', icon: Bell },
     ];
 
     expect(guardianNativeNavItems).toHaveLength(expected.length);

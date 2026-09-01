@@ -4,6 +4,11 @@ Use non-secret evidence references only. Do not place student, guardian, or
 driver data, customer contracts, contact details, credentials, provider keys,
 raw locations, or incident contents in GitHub, workflow logs, or test artifacts.
 
+The same authorized person may hold multiple internal roles, but each role
+still requires an explicit final decision. Customer Authority must be an
+authorized representative of the participating school authority and cannot be
+self-approved by SafeBus.
+
 ## Authorization review
 
 - [ ] Confirm Points 4 through 10 are finally approved with evidence links.

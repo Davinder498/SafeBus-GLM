@@ -27,6 +27,8 @@ const requiredFiles = {
   'scripts/print-privacy-release-digest.mjs': 'export const digest = true;\n',
   'supabase/migrations/0069_phase3_retention_foundation.sql': 'select 69;\n',
   'supabase/migrations/0090_phase7_byod_android_tracking.sql': 'select 90;\n',
+  'supabase/migrations/0092_end_to_end_notification_system.sql': 'select 92;\n',
+  'docs/qa/end-to-end-notification-acceptance.md': '# Notifications\n',
   'tests/release/privacy-readiness.test.mjs': 'export const contract = true;\n',
   'tests/rls/phase3-retention-rls.sql': 'select 1;\n',
 };
@@ -122,6 +124,7 @@ async function approvedFixture(root) {
       geoapifyMaps: processor('GEOAPIFY'),
       emailDelivery: processor('EMAIL'),
       errorMonitoring: processor('MONITORING'),
+      firebaseCloudMessaging: processor('FCM'),
     },
     residency: entries(residencyKeys, 'RESIDENCY'),
     notices: {

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const migration = fs.readFileSync(
-  'supabase/migrations/0092_planned_driver_bus_assignments.sql',
+  'supabase/migrations/0093_planned_driver_bus_assignments.sql',
   'utf8',
 );
 const service = fs.readFileSync('apps/web/src/services/driverAssignmentService.ts', 'utf8');
