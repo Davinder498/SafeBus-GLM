@@ -23,6 +23,24 @@ function assertData<T>(result: { data: unknown; error: { message: string } | nul
   return result.data as T;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isDeliveryChannelHealth(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return ['pending', 'retrying', 'failed'].every((key) => typeof value[key] === 'number')
+    && (value.oldestPendingAt === null || typeof value.oldestPendingAt === 'string');
+}
+
+function isNotificationDeliveryHealth(value: unknown): value is NotificationDeliveryHealthV2 {
+  if (!isRecord(value) || !isDeliveryChannelHealth(value.email) || !isDeliveryChannelHealth(value.push) || !isRecord(value.push)) return false;
+  return typeof value.push.invalidDevices === 'number'
+    && Array.isArray(value.push.recentFailureCategories)
+    && value.push.recentFailureCategories.every((item) => isRecord(item)
+      && typeof item.category === 'string' && typeof item.count === 'number');
+}
+
 interface NotificationRow {
   id: string;
   event_type: UserNotification['eventType'];
@@ -116,5 +134,7 @@ export async function revokeOwnPushDevice(id: string): Promise<boolean> {
 }
 
 export async function fetchNotificationDeliveryHealth(): Promise<NotificationDeliveryHealthV2> {
-  return assertData<NotificationDeliveryHealthV2>(await clientRpc()('get_notification_delivery_health_v2'));
+  const data = assertData<unknown>(await clientRpc()('get_notification_delivery_health_v2'));
+  if (!isNotificationDeliveryHealth(data)) throw new Error('Notification delivery health returned an invalid response.');
+  return data;
 }

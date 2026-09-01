@@ -94,4 +94,10 @@ test.describe('Phase 15B tenant admin notification delivery summary', () => {
     await page.goto('/admin/trips');
     await expect(page.getByText('No recent push failures.')).toBeVisible();
   });
+
+  test('fails closed when the delivery-health response is malformed', async ({ page }) => {
+    await mockRole(page, 'tenant_admin', []);
+    await page.goto('/admin/trips');
+    await expect(page.getByText('Summary unavailable')).toBeVisible();
+  });
 });
