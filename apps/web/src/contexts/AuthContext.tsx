@@ -324,6 +324,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return;
     }
 
+    await window.SafeBusNativePush?.deactivate();
     void supabase.rpc('record_own_auth_event', {
       p_action: 'auth.logout',
       p_outcome: 'success',

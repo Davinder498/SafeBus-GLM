@@ -19,6 +19,9 @@ function PreferenceCard({ preference }: { preference: GuardianNotificationPrefer
   const [emailEnabled, setEmailEnabled] = useState(preference.emailEnabled);
   const [notifyPickup, setNotifyPickup] = useState(preference.notifyPickup);
   const [notifyDropoff, setNotifyDropoff] = useState(preference.notifyDropoff);
+  const [pushPickupDropoff, setPushPickupDropoff] = useState(preference.pushPickupDropoff);
+  const [pushTripStatus, setPushTripStatus] = useState(preference.pushTripStatus);
+  const [pushServiceChanges, setPushServiceChanges] = useState(preference.pushServiceChanges);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
@@ -33,6 +36,9 @@ function PreferenceCard({ preference }: { preference: GuardianNotificationPrefer
         emailEnabled,
         notifyPickup,
         notifyDropoff,
+        pushPickupDropoff,
+        pushTripStatus,
+        pushServiceChanges,
       });
       setMessage(
         emailEnabled
@@ -107,6 +113,16 @@ function PreferenceCard({ preference }: { preference: GuardianNotificationPrefer
               <span className="text-sm font-medium text-gray-800">Email me after drop-off</span>
             </label>
           </div>
+
+          <div className="border-t border-gray-200 pt-4">
+            <h3 className="font-semibold text-navy-900">Android push for this linked student</h3>
+            <p className="mt-1 text-sm text-gray-600">These choices apply only after Android push is enabled in the main notification settings.</p>
+            <div className="mt-2 space-y-2">
+              <label className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2"><input type="checkbox" className="h-5 w-5" checked={pushPickupDropoff} onChange={(event)=>setPushPickupDropoff(event.target.checked)}/><span className="text-sm font-medium">Pickup and drop-off updates</span></label>
+              <label className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2"><input type="checkbox" className="h-5 w-5" checked={pushTripStatus} onChange={(event)=>setPushTripStatus(event.target.checked)}/><span className="text-sm font-medium">Trip status and disruptions</span></label>
+              <label className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2"><input type="checkbox" className="h-5 w-5" checked={pushServiceChanges} onChange={(event)=>setPushServiceChanges(event.target.checked)}/><span className="text-sm font-medium">Bus-service changes</span></label>
+            </div>
+          </div>
         </fieldset>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -147,8 +163,8 @@ export function GuardianNotificationPreferencesPage() {
       <div className="mx-auto max-w-3xl space-y-5">
         <PageHeader
           eyebrow="Notifications"
-          title="Email Notifications"
-          description="Choose pickup and drop-off emails separately for each linked student. New choices start off until you save them."
+          title="Guardian notification choices"
+          description="Choose pickup/drop-off email and Android push categories separately for each linked student. New choices start off until you save them."
         />
 
         <Card className="border-navy-100 bg-navy-50 p-4">

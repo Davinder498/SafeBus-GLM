@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router';
 import App from './App.tsx';
 import { AuthProvider } from './contexts/AuthContext.tsx';
 import { DriverTrackingProvider } from './contexts/DriverTrackingContext.tsx';
+import { NotificationProvider } from './contexts/NotificationContext.tsx';
 import 'leaflet/dist/leaflet.css';
 import './index.css';
 
@@ -11,9 +12,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <DriverTrackingProvider>
-          <App />
-        </DriverTrackingProvider>
+        <NotificationProvider>
+          <DriverTrackingProvider>
+            <App />
+          </DriverTrackingProvider>
+        </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>,

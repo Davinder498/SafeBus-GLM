@@ -13,9 +13,11 @@ import { DriverSettingsPage } from '@/pages/DriverSettingsPage';
 import { DriverTripHistoryPage } from '@/pages/DriverTripHistoryPage';
 import { GuardianLiveMapPage } from '@/pages/GuardianLiveMapPage';
 import { GuardianLiveTripsPage } from '@/pages/GuardianLiveTripsPage';
-import { GuardianNotificationPreferencesPage } from '@/pages/GuardianNotificationPreferencesPage';
+import { NotificationsPage } from '@/pages/NotificationsPage';
+import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
 import { GuardianRoutesPage } from '@/pages/GuardianRoutesPage';
 import { GuardianTripEventsPage } from '@/pages/GuardianTripEventsPage';
+import { GuardianNotificationPreferencesPage } from '@/pages/GuardianNotificationPreferencesPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { ParentDashboardPage } from '@/pages/ParentDashboardPage';
@@ -48,6 +50,18 @@ export const appRoutes: RouteObject[] = [
   { path: '/accept-invitation', element: <AcceptInvitationPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/update-password', element: <UpdatePasswordPage /> },
+  {
+    path: '/notifications',
+    element: <ProtectedRoute allowedRoles={['driver','guardian']}><NotificationsPage /></ProtectedRoute>,
+  },
+  {
+    path: '/notifications/settings',
+    element: <ProtectedRoute allowedRoles={['driver','guardian']}><NotificationSettingsPage /></ProtectedRoute>,
+  },
+  {
+    path: '/notifications/settings/email',
+    element: <ProtectedRoute allowedRoles={['guardian']}><GuardianNotificationPreferencesPage /></ProtectedRoute>,
+  },
 
   /* ----------------------------- Driver routes ----------------------------- */
   {
@@ -127,11 +141,7 @@ export const appRoutes: RouteObject[] = [
   },
   {
     path: '/guardian/notifications',
-    element: (
-      <ProtectedRoute allowedRoles={['guardian']}>
-        <GuardianNotificationPreferencesPage />
-      </ProtectedRoute>
-    ),
+    element: <Navigate to="/notifications/settings" replace />,
   },
   {
     path: '/guardian/events',

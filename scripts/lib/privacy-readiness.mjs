@@ -24,6 +24,8 @@ const EVIDENCE_FILES = [
   'scripts/print-privacy-release-digest.mjs',
   'supabase/migrations/0069_phase3_retention_foundation.sql',
   'supabase/migrations/0090_phase7_byod_android_tracking.sql',
+  'supabase/migrations/0092_end_to_end_notification_system.sql',
+  'docs/qa/end-to-end-notification-acceptance.md',
   'tests/release/privacy-readiness.test.mjs',
   'tests/rls/phase3-retention-rls.sql',
 ];
@@ -68,6 +70,7 @@ const REQUIRED_SUBPROCESSORS = [
   'geoapifyMaps',
   'emailDelivery',
   'errorMonitoring',
+  'firebaseCloudMessaging',
 ];
 
 const REQUIRED_RESIDENCY_EVIDENCE = [

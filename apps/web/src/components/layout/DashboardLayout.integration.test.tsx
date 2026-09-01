@@ -106,7 +106,7 @@ describe('DashboardLayout navigation presentation', () => {
     const tabs = Array.from(navigation?.querySelectorAll('a') ?? []);
 
     expect(navigation).not.toBeNull();
-    expect(tabs.map((tab) => tab.textContent)).toEqual(['Scan', 'Riders', 'History', 'Settings']);
+    expect(tabs.map((tab) => tab.textContent)).toEqual(['Scan', 'Riders', 'History', 'Alerts']);
     expect(tabs.find((tab) => tab.getAttribute('aria-current') === 'page')?.textContent).toBe(
       'History',
     );

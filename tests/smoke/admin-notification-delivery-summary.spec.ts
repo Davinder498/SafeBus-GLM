@@ -22,8 +22,8 @@ async function mockRole(page: Page, role: 'tenant_admin' | 'guardian' | 'driver'
     if (method === 'HEAD') return route.fulfill({ status: 200, headers: { 'content-range': '0-0/1' }, body: '' });
     if (path.includes('/rpc/get_admin_live_fleet_monitoring')) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
     if (path.includes('/rpc/get_admin_trip_overview')) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
-    if (path.includes('/rpc/get_tenant_notification_delivery_summary')) {
-      if (summaryBody === undefined) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ pending_count: 2, processing_count: 0, delivered_count_recent: 8, failed_count_recent: 1, cancelled_count_recent: 3, oldest_pending_age_seconds: 1800, recent_failure_categories: [{ category: 'permanent_provider_error', count: 1 }, { category: 'eligibility_revoked', count: 2 }] }]) });
+    if (path.includes('/rpc/get_notification_delivery_health_v2')) {
+      if (summaryBody === undefined) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ email: { pending: 2, retrying: 1, failed: 1, oldestPendingAt: '2026-01-01T00:00:00Z' }, push: { pending: 3, retrying: 2, failed: 1, oldestPendingAt: '2026-01-01T00:00:00Z', invalidDevices: 4, recentFailureCategories: [{ category: 'temporary_provider_error', count: 1 }] } }) });
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(summaryBody) });
     }
     const rows: Record<string, unknown[]> = {
@@ -41,12 +41,12 @@ test.describe('Phase 15B tenant admin notification delivery summary', () => {
     await mockRole(page, 'tenant_admin');
     await page.goto('/admin/trips');
     await expect(page.getByRole('heading', { name: 'Notification delivery', level: 2 })).toBeVisible();
-    await expect(page.getByText('Pending', { exact: true })).toBeVisible();
-    await expect(page.getByText('Delivered (24h)')).toBeVisible();
-    await expect(page.getByText('Dead-lettered / failed (24h)')).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Guardian email' }).getByText('Pending', { exact: true })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Guardian email' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Android push' })).toBeVisible();
     // Failure category labels
-    await expect(page.getByText(/Permanent provider error/)).toBeVisible();
-    await expect(page.getByText(/Eligibility revoked/)).toBeVisible();
+    await expect(page.getByText(/Temporary provider error/)).toBeVisible();
+    await expect(page.getByText(/Invalid\/stale devices: 4/)).toBeVisible();
   });
 
   test('summary does not expose recipient email or student personal information', async ({ page }) => {
@@ -54,10 +54,11 @@ test.describe('Phase 15B tenant admin notification delivery summary', () => {
     await page.goto('/admin/trips');
     // The summary card must never show emails or names
     await expect(page.getByRole('heading', { name: 'Notification delivery' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Android push' })).toBeVisible();
     const cardText = await page.locator('h2:has-text("Notification delivery")').locator('..').textContent();
     expect(cardText).not.toContain('@');
     expect(cardText).not.toContain('guardian@example');
-    expect(cardText).not.toMatch(/recipient/i);
+    expect(cardText).toContain('no recipient');
   });
 
   test('guardian cannot access admin trips page', async ({ page }) => {
@@ -84,13 +85,13 @@ test.describe('Phase 15B tenant admin notification delivery summary', () => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/admin/trips');
     await expect(page.getByRole('heading', { name: 'Notification delivery', level: 2 })).toBeVisible();
-    await expect(page.getByText('Pending', { exact: true })).toBeVisible();
-    await expect(page.getByText('Delivered (24h)')).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Guardian email' }).getByText('Pending', { exact: true })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Android push' })).toBeVisible();
   });
 
   test('handles empty summary gracefully', async ({ page }) => {
-    await mockRole(page, 'tenant_admin', [{ pending_count: 0, processing_count: 0, delivered_count_recent: 0, failed_count_recent: 0, cancelled_count_recent: 0, oldest_pending_age_seconds: 0, recent_failure_categories: [] }]);
+    await mockRole(page, 'tenant_admin', { email: { pending: 0, retrying: 0, failed: 0, oldestPendingAt: null }, push: { pending: 0, retrying: 0, failed: 0, oldestPendingAt: null, invalidDevices: 0, recentFailureCategories: [] } });
     await page.goto('/admin/trips');
-    await expect(page.getByText('No recent delivery failures')).toBeVisible();
+    await expect(page.getByText('No recent push failures.')).toBeVisible();
   });
 });

@@ -68,6 +68,14 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$SAFEBUS_ANDROID_KEYSTORE_PATH"
           chmod 600 "$SAFEBUS_ANDROID_KEYSTORE_PATH"
           echo "SAFEBUS_ANDROID_KEYSTORE_PATH=$SAFEBUS_ANDROID_KEYSTORE_PATH" >> "$GITHUB_ENV"
+      - name: Materialize protected Firebase Android configuration
+        env:
+          FIREBASE_GOOGLE_SERVICES_BASE64: ${{ secrets.SAFEBUS_FIREBASE_GOOGLE_SERVICES_BASE64 }}
+        run: |
+          test -n "$FIREBASE_GOOGLE_SERVICES_BASE64"
+          printf '%s' "$FIREBASE_GOOGLE_SERVICES_BASE64" | base64 --decode > apps/mobile/android/app/google-services.json
+          chmod 600 apps/mobile/android/app/google-services.json
+          node -e "const c=require('./apps/mobile/android/app/google-services.json');if(!c.project_info?.project_id||!c.client?.length)process.exit(1)"
       - run: pnpm --filter @safebus/mobile build
       - run: pnpm --filter @safebus/mobile cap:sync
       - name: Test and build signed application bundle
@@ -104,3 +112,6 @@ jobs:
             apps/mobile/android/app/build/outputs/bundle/release/safebus-android-provenance.json
           if-no-files-found: error
           retention-days: 90
+      - name: Remove materialized Firebase configuration
+        if: always()
+        run: rm -f apps/mobile/android/app/google-services.json

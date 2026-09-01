@@ -9,4 +9,5 @@ export * from './roles.ts';
 export * from './status.ts';
 export * from './domain.ts';
 export * from './api-contracts.ts';
+export * from './notifications.ts';
 export type { Database, Json } from './database.generated.ts';

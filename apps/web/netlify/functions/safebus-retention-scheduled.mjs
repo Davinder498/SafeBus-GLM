@@ -45,6 +45,15 @@ export async function runRetention() {
     return json(500, { error: 'One or more retention policies failed.', failedPolicies });
   }
 
+  const { data: notificationRetention, error: notificationRetentionError } = await client.rpc(
+    'apply_notification_retention',
+    { p_dry_run: dryRun },
+  );
+  if (notificationRetentionError) {
+    console.error(JSON.stringify({ event: 'retention_run_failed', code: notificationRetentionError.code ?? 'unknown' }));
+    return json(500, { error: 'Notification retention run failed.' });
+  }
+
   const results = Array.isArray(data)
     ? data.map((row) => ({
         policyKey: row.policy_key,
@@ -53,6 +62,7 @@ export async function runRetention() {
         status: row.status ?? 'completed',
       }))
     : [];
+  results.push({ policyKey: 'notification_system', affectedRows: Object.values(notificationRetention?.[0] ?? {}).reduce((sum, value) => sum + Number(value ?? 0), 0), dryRun, status: 'completed' });
   console.log(JSON.stringify({ event: 'retention_run_completed', dryRun, results }));
   return json(200, { dryRun, results });
 }
