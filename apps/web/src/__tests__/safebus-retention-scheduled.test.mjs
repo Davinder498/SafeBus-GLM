@@ -19,10 +19,9 @@ describe('scheduled retention runner', () => {
   });
 
   it('defaults to a non-destructive dry run', async () => {
-    const rpc = vi.fn().mockResolvedValue({
-      data: [{ policy_key: 'raw_location_history', affected_rows: 4, dry_run: true }],
-      error: null,
-    });
+    const rpc = vi.fn()
+      .mockResolvedValueOnce({ data: [{ policy_key: 'raw_location_history', affected_rows: 4, dry_run: true }], error: null })
+      .mockResolvedValueOnce({ data: [{ email_deleted: 1, inbox_deleted: 2, push_deleted: 3, devices_staled: 4 }], error: null });
     createClient.mockReturnValue({ rpc });
     const { handler } = await import('../../netlify/functions/safebus-retention-scheduled.mjs');
 
@@ -30,18 +29,22 @@ describe('scheduled retention runner', () => {
 
     expect(response.statusCode).toBe(200);
     expect(rpc).toHaveBeenCalledWith('run_all_retention_deletions', { p_dry_run: true });
+    expect(rpc).toHaveBeenCalledWith('apply_notification_retention', { p_dry_run: true });
     expect(JSON.parse(response.body)).toMatchObject({ dryRun: true });
   });
 
   it('executes deletion only when explicitly enabled', async () => {
     process.env.SAFEBUS_RETENTION_EXECUTE = 'true';
-    const rpc = vi.fn().mockResolvedValue({ data: [], error: null });
+    const rpc = vi.fn()
+      .mockResolvedValueOnce({ data: [], error: null })
+      .mockResolvedValueOnce({ data: [{ email_deleted: 0, inbox_deleted: 0, push_deleted: 0, devices_staled: 0 }], error: null });
     createClient.mockReturnValue({ rpc });
     const { handler } = await import('../../netlify/functions/safebus-retention-scheduled.mjs');
 
     await handler();
 
     expect(rpc).toHaveBeenCalledWith('run_all_retention_deletions', { p_dry_run: false });
+    expect(rpc).toHaveBeenCalledWith('apply_notification_retention', { p_dry_run: false });
   });
 
   it('fails closed when server configuration is missing', async () => {

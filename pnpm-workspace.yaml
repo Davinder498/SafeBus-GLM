@@ -1,8 +1,13 @@
 packages:
   - "apps/*"
   - "packages/*"
+overrides:
+  "gaxios>uuid": 11.1.1
+  "teeny-request>uuid": 11.1.1
 allowBuilds:
+  "@firebase/util": true
   esbuild: true
   netlify-cli: true
+  protobufjs: true
   sharp: true
   unix-dgram: true

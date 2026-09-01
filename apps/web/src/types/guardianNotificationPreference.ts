@@ -4,6 +4,9 @@ export interface GuardianNotificationPreference {
   emailEnabled: boolean;
   notifyPickup: boolean;
   notifyDropoff: boolean;
+  pushPickupDropoff: boolean;
+  pushTripStatus: boolean;
+  pushServiceChanges: boolean;
   preferencesSetAt: string | null;
   accessExpiresAt: string | null;
 }
@@ -13,4 +16,7 @@ export interface GuardianNotificationPreferenceInput {
   emailEnabled: boolean;
   notifyPickup: boolean;
   notifyDropoff: boolean;
+  pushPickupDropoff: boolean;
+  pushTripStatus: boolean;
+  pushServiceChanges: boolean;
 }

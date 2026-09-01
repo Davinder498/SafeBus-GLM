@@ -895,3 +895,14 @@ Status: repository implementation complete on `agent/phase-8-guardian-experience
 - Added Phase 8 RLS/structural regression coverage and the acceptance plan in `docs/phase-8-guardian-experience-notifications.md`.
 
 Pending: apply `0087` to hosted DEV; run cross-guardian/revocation/expiry and notification load/failure tests; approve notification defaults and quotas; complete plain-language testing and a WCAG 2.2 AA audit with no unresolved critical issues.
+
+## End-to-End Notification System
+
+Status: implemented on `codex/notification-system-end-to-end` for human review; unapplied and undeployed.
+
+- Adds migration `0092_end_to_end_notification_system.sql` with durable role-scoped inboxes, exact-user private Realtime invalidations, channel/category/per-linked-student consent, quiet hours, private FCM registrations, leased delivery queue, five-attempt retry, invalid-token revocation, 90-day retention and email/push health separation.
+- Adds universal inbox/settings pages, unread badge, accessible foreground toast, cursor pagination, read/archive/filter controls, guardian email integration, admin web-only behavior and Android permission/device controls.
+- Adds FCM notification-plus-data dispatch, private lock-screen previews, urgent/trip/assignment channels, tap routing, sign-out/account cleanup, one-minute scheduling, protected Firebase release injection and provider incident notification.
+- Excludes SMS, iOS push, web push, campaigns, localization, digests, GPS pings, coordinate changes, routine CRUD, arbitrary exception text and unrelated-tenant events.
+
+Pending: isolated migration/RLS execution, real-device FCM matrix, privacy/security/FCM-subprocessor/Google Play approval, protected secrets, tenant approval and a human-authorized canary. Push defaults and tenant gate remain off.

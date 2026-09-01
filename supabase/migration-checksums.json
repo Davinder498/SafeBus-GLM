@@ -554,6 +554,12 @@
       "filename": "0091_fix_sensitive_admin_audit_trigger_record_fields.sql",
       "bytes": 2981,
       "sha256": "6ed652b2fc213b9a2f8661bae778612299b131c1a2195750e8efc5a91628479e"
+    },
+    {
+      "version": "0092",
+      "filename": "0092_end_to_end_notification_system.sql",
+      "bytes": 72272,
+      "sha256": "36bbe24178596ec7cada9d6ef0bea21dc21dd712e5dab95a92b9c8bf9d963e6d"
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useContext, useState, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate, type NavLinkRenderProps } from 'react-router';
 import {
   LayoutDashboard,
@@ -26,6 +26,7 @@ import {
 import { cn } from '@/utils/cn';
 import { useAppSurface, type AppSurface } from '@/contexts/AppSurfaceContext';
 import { useAuth } from '@/contexts/useAuth';
+import { NotificationContext } from '@/contexts/NotificationContext';
 import { Avatar } from '@/components/ui/Avatar';
 import { DropdownMenu, DropdownItem, DropdownSeparator } from '@/components/ui/DropdownMenu';
 import { getRoleLabel } from '@/components/ui/RoleBadge';
@@ -235,8 +236,8 @@ export const guardianNavGroups: DashboardNavGroup[] = [
         icon: <Calendar className="h-4 w-4" />,
       },
       {
-        label: 'Email notifications',
-        to: '/guardian/notifications',
+        label: 'Notifications',
+        to: '/notifications',
         icon: <Bell className="h-4 w-4" />,
       },
     ],
@@ -251,7 +252,7 @@ export const driverNativeNavItems: DashboardNavItem[] = [
     icon: <List className="h-5 w-5" />,
   },
   { label: 'History', to: '/driver/history', icon: <History className="h-5 w-5" /> },
-  { label: 'Settings', to: '/driver/settings', icon: <Settings className="h-5 w-5" /> },
+  { label: 'Alerts', to: '/notifications', icon: <Bell className="h-5 w-5" /> },
 ];
 
 export const guardianNativeNavItems: DashboardNavItem[] = [
@@ -259,7 +260,7 @@ export const guardianNativeNavItems: DashboardNavItem[] = [
   { label: 'Map', to: '/guardian/live-map', icon: <MapPinned className="h-5 w-5" /> },
   { label: 'Buses', to: '/guardian/routes', icon: <Bus className="h-5 w-5" /> },
   { label: 'Updates', to: '/guardian/events', icon: <Calendar className="h-5 w-5" /> },
-  { label: 'Email', to: '/guardian/notifications', icon: <Bell className="h-5 w-5" /> },
+  { label: 'Alerts', to: '/notifications', icon: <Bell className="h-5 w-5" /> },
 ];
 
 /* -------------------------------- helpers --------------------------------- */
@@ -333,6 +334,7 @@ export function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
   const { signOut, profile } = useAuth();
+  const unreadCount = useContext(NotificationContext)?.unreadCount ?? 0;
   const appSurface = useAppSurface();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -393,13 +395,14 @@ export function DashboardLayout({
 
           {/* Right side actions */}
           <div className="flex items-center gap-1.5">
-            <button
-              type="button"
+            <Link
+              to="/notifications"
               className="relative hidden rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 min-[360px]:block"
-              aria-label="Notifications"
+              aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : 'Notifications'}
             >
               <Bell className="h-5 w-5" />
-            </button>
+              {unreadCount > 0 ? <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-600 px-1 text-center text-[10px] font-bold leading-5 text-white">{unreadCount > 99 ? '99+' : unreadCount}</span> : null}
+            </Link>
 
             <DropdownMenu
               trigger={

@@ -7,7 +7,9 @@ import App from './App.tsx';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { AppSurfaceProvider } from '@/contexts/AppSurfaceContext';
 import { DriverTrackingProvider } from '@/contexts/DriverTrackingContext';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 import { installNativeDriverTrackingBridge } from './native/driverTracking';
+import { installNativePushBridge } from './native/pushNotifications';
 import 'leaflet/dist/leaflet.css';
 import './index.css';
 
@@ -25,6 +27,7 @@ async function bootstrap() {
   // Style the Android status bar to match the navy brand
   if (Capacitor.isNativePlatform()) {
     installNativeDriverTrackingBridge();
+    await installNativePushBridge();
     try {
       await StatusBar.setStyle({ style: Style.Dark });
       await StatusBar.setBackgroundColor({ color: '#1E3A8A' });
@@ -38,9 +41,11 @@ async function bootstrap() {
       <BrowserRouter>
         <AppSurfaceProvider surface="native-mobile">
           <AuthProvider>
-            <DriverTrackingProvider>
-              <App />
-            </DriverTrackingProvider>
+            <NotificationProvider>
+              <DriverTrackingProvider>
+                <App />
+              </DriverTrackingProvider>
+            </NotificationProvider>
           </AuthProvider>
         </AppSurfaceProvider>
       </BrowserRouter>

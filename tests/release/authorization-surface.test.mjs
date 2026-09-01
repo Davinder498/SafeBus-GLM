@@ -5,6 +5,7 @@ import test from 'node:test';
 
 const migrationPath = 'supabase/migrations/0089_authorization_surface_hardening.sql';
 const byodMigrationPath = 'supabase/migrations/0090_phase7_byod_android_tracking.sql';
+const notificationMigrationPath = 'supabase/migrations/0092_end_to_end_notification_system.sql';
 
 async function readJson(file) {
   return JSON.parse(await fs.readFile(file, 'utf8'));
@@ -49,10 +50,11 @@ test('authorization surface is exact, unique, and audience-separated', async () 
 });
 
 test('migration chain audiences match the reviewed authorization manifest', async () => {
-  const [surface, migration, byodMigration] = await Promise.all([
+  const [surface, migration, byodMigration, notificationMigration] = await Promise.all([
     readJson('config/authorization-surface.json'),
     fs.readFile(migrationPath, 'utf8'),
     fs.readFile(byodMigrationPath, 'utf8'),
+    fs.readFile(notificationMigrationPath, 'utf8'),
   ]);
   const allowlistInsert = migration.match(
     /insert into safebus_rpc_allowlist[\s\S]*?values([\s\S]*?);/i,
@@ -70,6 +72,13 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
   for (const match of byodMigration.matchAll(
     /grant execute on function public\.([a-z0-9_]+)\([^;]+\)\s+to (authenticated|service_role)/gi,
   )) {
+    actual.set(match[1], match[2]);
+  }
+  const notificationAllowlist = notificationMigration.match(
+    /insert into safebus_notification_rpc_allowlist[\s\S]*?values([\s\S]*?);/i,
+  )?.[1];
+  assert.ok(notificationAllowlist);
+  for (const match of notificationAllowlist.matchAll(/\('([a-z0-9_]+)',\s*'(authenticated|service_role)'\)/g)) {
     actual.set(match[1], match[2]);
   }
   const expected = new Map();
