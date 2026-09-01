@@ -62,12 +62,22 @@ async function authorizedFixture(root) {
     launchGates: Object.fromEntries(
       Array.from({ length: 7 }, (_, index) => [`point${index + 4}`, 'approved']),
     ),
+    approvalAssignments: {
+      platformAdministrator: 'PILOT/APPROVER/INTERNAL-OWNER-001',
+      productOwner: 'PILOT/APPROVER/INTERNAL-OWNER-001',
+      securityLead: 'PILOT/APPROVER/INTERNAL-OWNER-001',
+      privacyLead: 'PILOT/APPROVER/INTERNAL-OWNER-001',
+      operationsLead: 'PILOT/APPROVER/INTERNAL-OWNER-001',
+      accessibilityQaLead: 'PILOT/APPROVER/INTERNAL-OWNER-001',
+      customerAuthority: 'PILOT/APPROVER/CUSTOMER-AUTHORITY-001',
+    },
     approvals: {
       platformAdministrator: approval('APPROVAL/PLATFORM/001'),
       productOwner: approval('APPROVAL/PRODUCT/001'),
       securityLead: approval('APPROVAL/SECURITY/001'),
       privacyLead: approval('APPROVAL/PRIVACY/001'),
       operationsLead: approval('APPROVAL/OPERATIONS/001'),
+      accessibilityQaLead: approval('APPROVAL/ACCESSIBILITY-QA/001'),
       customerAuthority: approval('APPROVAL/CUSTOMER/001'),
     },
     rollbackAuthority: {
@@ -134,12 +144,37 @@ test('pilot authorization rejects missing approvals, gates, rollback authority, 
     verifyPilotAuthorization({
       authorization: {
         ...authorization,
+        approvalAssignments: {
+          ...authorization.approvalAssignments,
+          customerAuthority: null,
+        },
+      },
+      root,
+      now,
+    }),
+    /customerAuthority assignment/,
+  );
+  await assert.rejects(
+    verifyPilotAuthorization({
+      authorization: {
+        ...authorization,
         approvals: { ...authorization.approvals, privacyLead: undefined },
       },
       root,
       now,
     }),
     /privacyLead/,
+  );
+  await assert.rejects(
+    verifyPilotAuthorization({
+      authorization: {
+        ...authorization,
+        approvals: { ...authorization.approvals, accessibilityQaLead: undefined },
+      },
+      root,
+      now,
+    }),
+    /accessibilityQaLead/,
   );
   await assert.rejects(
     verifyPilotAuthorization({
@@ -191,6 +226,21 @@ test('production release is gated before database or application deployment', as
   assert.equal(packageJson.scripts['pilot:verify'], 'node scripts/check-pilot-authorization.mjs');
   assert.equal(currentAuthorization.status, 'not_authorized');
   assert.ok(Object.values(currentAuthorization.launchGates).every((status) => status === 'open'));
+  const internalAssignments = Object.entries(currentAuthorization.approvalAssignments)
+    .filter(([role]) => role !== 'customerAuthority')
+    .map(([, reference]) => reference);
+  assert.equal(new Set(internalAssignments).size, 1);
+  assert.equal(internalAssignments[0], 'PILOT/APPROVER/INTERNAL-OWNER-001');
+  assert.equal(currentAuthorization.approvalAssignments.customerAuthority, null);
+  assert.deepEqual(currentAuthorization.approvals, {});
+  assert.equal(
+    currentAuthorization.rollbackAuthority.primaryContactReference,
+    'OPS/ONCALL/PRIMARY-001',
+  );
+  assert.equal(
+    currentAuthorization.rollbackAuthority.backupContactReference,
+    'OPS/ONCALL/BACKUP-001',
+  );
 });
 
 test('Point 11 records preserve human approval and operating evidence as open', async () => {
@@ -209,5 +259,6 @@ test('Point 11 records preserve human approval and operating evidence as open', 
   assert.match(governance, /immediate suspension and rollback authority/);
   assert.match(acceptance, /Do not place student, guardian, or\s+driver data/);
   assert.match(acceptance, /Points 4 through 10/);
+  assert.match(acceptance, /Customer Authority must be an\s+authorized representative/);
   assert.match(milestone, /Commercial Readiness Remediation 9/);
 });
