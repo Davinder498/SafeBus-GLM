@@ -566,6 +566,12 @@
       "filename": "0093_planned_driver_bus_assignments.sql",
       "bytes": 7718,
       "sha256": "23a069bc40af5f9979d64480c530234213f8b39401a99f34ec6fbe7dc2853355"
+    },
+    {
+      "version": "0094",
+      "filename": "0094_schedule_push_notification_dispatcher.sql",
+      "bytes": 1407,
+      "sha256": "90101634dc476b0a8eb37f6a84896722258e5f4cca38c9c0db52e04ebe2495c9"
     }
   ]
 }
