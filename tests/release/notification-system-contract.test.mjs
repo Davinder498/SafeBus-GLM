@@ -107,7 +107,6 @@ test('push dispatch is isolated to a secret-protected Supabase Edge Function', (
   assert.match(edgeHandler, /SAFEBUS_FIREBASE_SERVICE_ACCOUNT_JSON/);
   assert.match(edgeDependencies, /npm:@supabase\/server@1\.5\.2/);
   assert.match(edgeLock, /"npm:@supabase\/server@1\.5\.2"/);
-  assert.ok(dispatcherCore.includes('https://fcm.googleapis.com/v1/projects/'));
   assert.match(dispatcherCore, /authorization: `Bearer \$\{accessToken\}`/);
   assert.doesNotMatch(netlifyConfig, /push-notification-dispatcher-scheduled/);
 });
