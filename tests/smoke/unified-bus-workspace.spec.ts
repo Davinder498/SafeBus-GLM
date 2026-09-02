@@ -41,6 +41,13 @@ async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean 
   let addedStudentStatus: 'active' | 'archived' | null = null;
   let expiredStudentStatus: 'active' | 'inactive' | 'archived' = 'active';
   let expiredStudentEffectiveTo = '2000-01-31';
+  let plannedDriverId = 'driver-1';
+  let plannedServiceId = serviceId;
+  let plannedBusId = busId;
+  let plannedBusNumber = bus.bus_number;
+  let plannedDriverEffectiveFrom = '2026-01-01';
+  let plannedDriverEffectiveTo: string | null = null;
+  let plannedDriverReplaced = false;
   const routeAssignments = [
     {
       id: serviceId,
@@ -202,7 +209,11 @@ async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean 
   await page.addInitScript(
     ({ user }) => {
       const session = {
-        access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
+        access_token: [
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+          'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ',
+          'smoke-test-signature',
+        ].join('.'),
         refresh_token: 'test',
         token_type: 'bearer',
         expires_in: 3600,
@@ -279,23 +290,46 @@ async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean 
           routeAssignments: currentRoutes,
           driverAssignments: [
             {
-              id: 'assignment-1',
+              id: plannedDriverReplaced ? 'assignment-2' : 'assignment-1',
               tenant_id: tenantId,
-              driver_id: 'driver-1',
+              driver_id: plannedDriverId,
               bus_id: busId,
               route_id: 'route-current',
               route_trip_pattern_id: 'pattern-current',
               bus_route_assignment_id: serviceId,
               trip_type: 'morning',
               status: routeEnded ? 'inactive' : 'active',
-              effective_from: '2026-01-01',
-              effective_to: null,
+              effective_from: plannedDriverEffectiveFrom,
+              effective_to: plannedDriverEffectiveTo,
               created_at: '2026-01-01T00:00:00Z',
               updated_at: '2026-01-01T00:00:00Z',
-              driver_name: 'Driver One',
-              driver_email: 'one@example.test',
+              driver_name: plannedDriverId === 'driver-2' ? 'Driver Two' : 'Driver One',
+              driver_email:
+                plannedDriverId === 'driver-2' ? 'two@example.test' : 'one@example.test',
               has_active_trip: false,
             },
+            ...(plannedDriverReplaced
+              ? [
+                  {
+                    id: 'assignment-1',
+                    tenant_id: tenantId,
+                    driver_id: 'driver-1',
+                    bus_id: busId,
+                    route_id: 'route-current',
+                    route_trip_pattern_id: 'pattern-current',
+                    bus_route_assignment_id: serviceId,
+                    trip_type: 'morning',
+                    status: 'inactive' as const,
+                    effective_from: '2026-01-01',
+                    effective_to: null,
+                    created_at: '2026-01-01T00:00:00Z',
+                    updated_at: '2026-08-30T00:00:00Z',
+                    driver_name: 'Driver One',
+                    driver_email: 'one@example.test',
+                    has_active_trip: false,
+                  },
+                ]
+              : []),
           ],
           studentAssignments: [
             {
@@ -435,6 +469,93 @@ async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean 
             effective_to: routeEffectiveTo,
           })),
         ),
+      });
+    }
+    if (path.includes('/rpc/get_admin_bus_services')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          ...routeAssignments.slice(0, 3).map((assignment) => ({
+            ...assignment,
+            bus_number: bus.bus_number,
+          })),
+          {
+            ...routeAssignments[0],
+            id: 'service-alternate-bus',
+            bus_id: 'bus-alternate',
+            bus_number: 'AF03',
+          },
+        ]),
+      });
+    }
+    if (path.includes('/rest/v1/driver_route_assignments') && method === 'GET') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            id: plannedDriverReplaced ? 'assignment-2' : 'assignment-1',
+            tenant_id: tenantId,
+            driver_id: plannedDriverId,
+            bus_id: plannedBusId,
+            route_id: 'route-current',
+            route_trip_pattern_id: 'pattern-current',
+            bus_route_assignment_id: plannedServiceId,
+            trip_type: 'morning',
+            status: 'active',
+            effective_from: plannedDriverEffectiveFrom,
+            effective_to: plannedDriverEffectiveTo,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-08-30T00:00:00Z',
+            bus: { bus_number: plannedBusNumber, license_plate: 'CPK1452' },
+            route: { route_name: 'Downtown', route_code: 'DR02' },
+            trip_pattern: { display_name: 'Outbound', direction: 'forward' },
+          },
+          ...(plannedDriverReplaced
+            ? [
+                {
+                  id: 'assignment-1',
+                  tenant_id: tenantId,
+                  driver_id: 'driver-1',
+                  bus_id: busId,
+                  route_id: 'route-current',
+                  route_trip_pattern_id: 'pattern-current',
+                  bus_route_assignment_id: serviceId,
+                  trip_type: 'morning',
+                  status: 'inactive',
+                  effective_from: '2026-01-01',
+                  effective_to: null,
+                  created_at: '2026-01-01T00:00:00Z',
+                  updated_at: '2026-08-30T00:00:00Z',
+                  bus: { bus_number: bus.bus_number, license_plate: bus.license_plate },
+                  route: { route_name: 'Downtown', route_code: 'DR02' },
+                  trip_pattern: { display_name: 'Outbound', direction: 'forward' },
+                },
+              ]
+            : []),
+        ]),
+      });
+    }
+    if (path.includes('/rpc/admin_set_driver_bus_assignment')) {
+      const body = route.request().postDataJSON() as {
+        p_driver_id: string;
+        p_bus_route_assignment_id: string;
+        p_effective_from: string;
+        p_effective_to?: string | null;
+        p_existing_assignment_id?: string | null;
+      };
+      plannedDriverId = body.p_driver_id;
+      plannedServiceId = body.p_bus_route_assignment_id;
+      plannedBusId = plannedServiceId === 'service-alternate-bus' ? 'bus-alternate' : busId;
+      plannedBusNumber = plannedServiceId === 'service-alternate-bus' ? 'AF03' : bus.bus_number;
+      plannedDriverEffectiveFrom = body.p_effective_from;
+      plannedDriverEffectiveTo = body.p_effective_to ?? null;
+      plannedDriverReplaced = !!body.p_existing_assignment_id;
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ id: 'assignment-2', status: 'active' }),
       });
     }
     if (path.includes('/rpc/admin_end_bus_route_service')) {
@@ -577,7 +698,9 @@ async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean 
       });
     }
     if (path.includes('/profiles')) {
-      const single = (route.request().headers().accept ?? '').includes('object+json');
+      const single =
+        (route.request().headers().accept ?? '').includes('object+json') ||
+        url.searchParams.has('id');
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -625,10 +748,13 @@ async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean 
       });
     }
     if (path.includes('/rest/v1/drivers')) {
+      const single =
+        (route.request().headers().accept ?? '').includes('object+json') ||
+        url.searchParams.has('id');
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(drivers),
+        body: JSON.stringify(single ? drivers[0] : drivers),
       });
     }
     if (path.includes('/rest/v1/routes')) {
@@ -753,7 +879,7 @@ test.describe('unified bus workspace', () => {
     await page.goto('/admin/buses/new');
 
     await expect(page.getByRole('tab', { name: 'Routes' })).toBeDisabled();
-    await expect(page.getByRole('tab', { name: 'Drivers' })).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: 'Drivers' })).toBeDisabled();
     await expect(page.getByRole('tab', { name: 'Students' })).toBeDisabled();
 
     await page.getByLabel('Bus number').fill('AF02');
@@ -764,6 +890,73 @@ test.describe('unified bus workspace', () => {
     await expect(page).toHaveURL(new RegExp(`/admin/buses/${busId}\\?tab=routes`));
     await expect(page.getByRole('tab', { name: 'Routes' })).toBeEnabled();
     await expect(page.getByRole('button', { name: 'Assign route', exact: true })).toBeVisible();
+  });
+
+  test('changes a planned driver, reloads history, and preserves the invite return path', async ({
+    page,
+  }) => {
+    await mockBusWorkspace(page);
+    await page.goto(`/admin/buses/${busId}?tab=drivers`);
+
+    await expect(page.getByRole('heading', { name: 'Planned drivers' })).toBeVisible();
+    const outbound = page.getByTestId(`driver-service-${serviceId}`);
+    await expect(outbound).toContainText('Outbound');
+    await expect(outbound).toContainText('Driver One');
+    await outbound.getByRole('button', { name: 'Change planned driver' }).click();
+
+    await page.getByLabel('Planned driver').selectOption('driver-2');
+    await page.getByRole('button', { name: 'Save planned assignment' }).click();
+
+    await expect(page.getByText('Planned driver assignment updated.')).toBeVisible();
+    await expect(outbound).toContainText('Driver Two');
+    await expect(outbound.getByRole('heading', { name: 'Planning history' })).toBeVisible();
+    await expect(outbound).toContainText('Driver One');
+
+    const returnService = page.getByTestId('driver-service-service-return');
+    await returnService.getByRole('button', { name: 'Assign planned driver' }).click();
+    await page.getByRole('button', { name: 'Invite driver' }).click();
+    await expect(page).toHaveURL(/\/admin\/drivers\?invite=1&returnTo=/);
+    expect(decodeURIComponent(new URL(page.url()).searchParams.get('returnTo') ?? '')).toContain(
+      `/admin/buses/${busId}?tab=drivers&service=service-return`,
+    );
+
+    await page.goto(
+      `/admin/buses/${busId}?tab=drivers&service=service-return&newDriverId=driver-2`,
+    );
+    await expect(page.getByLabel('Planned driver')).toHaveValue('driver-2');
+  });
+
+  test('edits a driver planned bus while retaining the route direction and reloads both records', async ({
+    page,
+  }) => {
+    await mockBusWorkspace(page);
+    await page.goto('/admin/drivers/driver-1');
+
+    const plannedSection = page.getByTestId('driver-planned-assignments');
+    await expect(plannedSection).toContainText('Bus AF02');
+    await expect(plannedSection).toContainText('Outbound');
+    const assignButton = plannedSection.getByRole('button', { name: 'Assign planned bus' });
+    const revokeButton = page.getByTestId('admin-revoke-driver-tracking-devices');
+    await expect(assignButton).toHaveCSS('white-space', 'nowrap');
+    await expect(revokeButton).toHaveCSS('white-space', 'nowrap');
+    expect(await assignButton.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+      true,
+    );
+    expect(await revokeButton.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+      true,
+    );
+    await plannedSection.getByRole('button', { name: 'Edit planned assignment' }).click();
+
+    const serviceSelect = page.getByLabel('Planned bus service');
+    await expect(serviceSelect.locator('option')).toHaveCount(3);
+    await expect(serviceSelect.locator('option').filter({ hasText: 'Return' })).toHaveCount(0);
+    await serviceSelect.selectOption('service-alternate-bus');
+    await page.getByRole('button', { name: 'Save planned assignment' }).click();
+
+    await expect(page.getByText('Planned bus assignment updated.')).toBeVisible();
+    await expect(plannedSection).toContainText('Bus AF03');
+    await expect(plannedSection.getByRole('heading', { name: 'Planning history' })).toBeVisible();
+    await expect(plannedSection).toContainText('Bus AF02');
   });
 
   test('assigns, updates, and removes students through the bus roster', async ({ page }) => {

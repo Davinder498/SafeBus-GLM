@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { AlertTriangle, CheckCircle2, Eye, Mail, Phone, UserRound } from 'lucide-react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { AdminPagination } from '@/components/admin/AdminPagination';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
@@ -414,14 +414,14 @@ export function AdminDriversPage() {
         {!list.loading && !list.error && list.rows.length > 0 && (
           <section className="space-y-3">
             <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-              <table className="w-full min-w-[820px] table-fixed text-left">
+              <table className="w-full min-w-[960px] table-fixed text-left">
                 <thead className="border-b border-slate-200 bg-slate-50/80">
                   <tr className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    <th className="w-[27%] px-5 py-3">Driver</th>
-                    <th className="w-[27%] px-5 py-3">Email</th>
-                    <th className="w-[20%] px-5 py-3">Phone</th>
-                    <th className="w-[18%] px-5 py-3">Licence</th>
-                    <th className="w-[8%] px-5 py-3 text-right">
+                    <th className="w-[25%] px-5 py-3">Driver</th>
+                    <th className="w-[26%] px-5 py-3">Email</th>
+                    <th className="w-[19%] px-5 py-3">Phone</th>
+                    <th className="w-[20%] px-5 py-3">Licence</th>
+                    <th className="w-[10%] px-5 py-3 text-right">
                       <span className="sr-only">Driver actions</span>
                     </th>
                   </tr>
@@ -432,7 +432,18 @@ export function AdminDriversPage() {
                     return (
                       <tr
                         key={driver.id}
-                        className="h-16 whitespace-nowrap transition-colors hover:bg-slate-50/70"
+                        role="link"
+                        tabIndex={0}
+                        aria-label={`View ${driverName(driver)}`}
+                        data-testid="admin-driver-row"
+                        className="h-16 cursor-pointer whitespace-nowrap outline-none transition-colors hover:bg-slate-50/70 focus-visible:bg-navy-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-500"
+                        onClick={() => navigate(`/admin/drivers/${driver.id}`)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            navigate(`/admin/drivers/${driver.id}`);
+                          }
+                        }}
                       >
                         <td className="overflow-hidden px-5 py-3">
                           <div className="flex min-w-0 items-center gap-3">
@@ -482,15 +493,14 @@ export function AdminDriversPage() {
                             </span>
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-right">
-                          <Link
-                            to={`/admin/drivers/${driver.id}`}
-                            aria-label={`View ${driverName(driver)}`}
+                        <td className="border-l border-slate-100 px-5 py-3 text-right">
+                          <span
                             title="View driver"
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-navy-700 transition-colors hover:bg-navy-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 focus-visible:ring-offset-2"
+                            data-testid="admin-driver-row-view-icon"
+                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-navy-700"
                           >
-                            <Eye className="h-4 w-4" aria-hidden />
-                          </Link>
+                            <Eye className="h-4 w-4 shrink-0" aria-hidden />
+                          </span>
                         </td>
                       </tr>
                     );

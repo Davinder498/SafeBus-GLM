@@ -560,6 +560,12 @@
       "filename": "0092_end_to_end_notification_system.sql",
       "bytes": 72272,
       "sha256": "36bbe24178596ec7cada9d6ef0bea21dc21dd712e5dab95a92b9c8bf9d963e6d"
+    },
+    {
+      "version": "0093",
+      "filename": "0093_planned_driver_bus_assignments.sql",
+      "bytes": 7718,
+      "sha256": "23a069bc40af5f9979d64480c530234213f8b39401a99f34ec6fbe7dc2853355"
     }
   ]
 }

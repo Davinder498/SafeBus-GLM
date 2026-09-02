@@ -104,6 +104,10 @@ Supabase DEV or a disposable database with SafeBus migrations applied.
   migration 0062, confirming the QR/session entrypoint is the only
   browser-executable driver trip start path while driver assignments remain
   available to admins for operational planning.
+- `planned-driver-bus-assignments-rls.sql`: structural and privilege regression
+  for the unapplied planned-assignment migration, confirming tenant-admin-only
+  atomic planning writes, preserved history, open-trip safeguards, anonymous
+  denial, and continued retirement of assignment-based trip starts.
 - `driver-completed-trip-history-rls.sql`: structural security regression for
   migration 0055, confirming driver/tenant/completed-run scoping, anonymous
   denial, historical visibility after route deactivation, and exclusion of
@@ -189,17 +193,20 @@ The default execution order is:
 12. `tests/rls/student-csv-import-rls.sql`
 13. `tests/rls/route-trip-pattern-rls.sql`
 14. `tests/rls/qr-only-driver-trip-start-rls.sql`
-15. `tests/rls/unified-direction-assignment-rls.sql`
-16. `tests/rls/driver-completed-trip-history-rls.sql`
-17. `tests/rls/invitation-password-activation-rls.sql`
-18. `tests/rls/atomic-platform-tenant-invitation-rls.sql`
-19. `tests/rls/atomic-tenant-member-invitation-rls.sql`
-20. `tests/rls/phase1-platform-isolation-rls.sql`
-21. `tests/rls/phase1-driver-authorization-rls.sql`
-22. `tests/rls/phase2-auth-security-rls.sql`
-23. `tests/rls/phase3-retention-rls.sql`
-24. `tests/rls/phase5-tenant-administration-rls.sql`
-25. `tests/rls/phase6-transportation-operations-rls.sql`
+15. `tests/rls/planned-driver-bus-assignments-rls.sql`
+16. `tests/rls/unified-direction-assignment-rls.sql`
+17. `tests/rls/driver-completed-trip-history-rls.sql`
+18. `tests/rls/invitation-password-activation-rls.sql`
+19. `tests/rls/atomic-platform-tenant-invitation-rls.sql`
+20. `tests/rls/atomic-tenant-member-invitation-rls.sql`
+21. `tests/rls/phase1-platform-isolation-rls.sql`
+22. `tests/rls/phase1-driver-authorization-rls.sql`
+23. `tests/rls/phase2-auth-security-rls.sql`
+24. `tests/rls/phase3-retention-rls.sql`
+25. `tests/rls/phase5-tenant-administration-rls.sql`
+26. `tests/rls/phase6-transportation-operations-rls.sql`
+27. `tests/rls/phase7-production-driver-tracking-rls.sql`
+28. `tests/rls/phase8-guardian-experience-notifications-rls.sql`
 
 The database must be safe for fixed-ID seeded test data. The scripts create
 test data and clean up after themselves where designed. If a run fails midway,

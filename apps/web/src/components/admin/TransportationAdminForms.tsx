@@ -5,7 +5,7 @@ import type { OrganizationProfile, School } from '@/types/organization';
 import { DuplicateIdentifierError } from '@/services/transportationStructureService';
 import type { Student } from '@/types/studentGuardian';
 import { StudentSearchPicker } from '@/components/admin/StudentSearchPicker';
-import type { AssignmentStatus, CreateAssignmentInput } from '@/types/driverAssignments';
+import type { CreateAssignmentInput } from '@/types/driverAssignments';
 import type {
   Bus,
   BusStatus,
@@ -983,7 +983,6 @@ export function DriverAssignmentForm({
   const [busId, setBusId] = useState('');
   const [routeId, setRouteId] = useState('');
   const [tripPatternId, setTripPatternId] = useState('');
-  const [status, setStatus] = useState<AssignmentStatus>('active');
   const [effectiveFrom, setEffectiveFrom] = useState(new Date().toISOString().slice(0, 10));
   const [effectiveTo, setEffectiveTo] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
@@ -994,7 +993,7 @@ export function DriverAssignmentForm({
     setFormError(null);
 
     if (!defaultTenantId) {
-      setFormError('Use an account with a tenant before saving this assignment.');
+      setFormError('Use an account with a tenant before saving this planned assignment.');
       return;
     }
     const selectedPattern = tripPatterns.find((pattern) => pattern.id === tripPatternId);
@@ -1019,7 +1018,7 @@ export function DriverAssignmentForm({
         routeId,
         tripPatternId,
         tripType: selectedPattern.direction === 'reverse' ? 'evening' : 'morning',
-        status,
+        status: 'active',
         effectiveFrom,
         effectiveTo: effectiveTo || null,
       });
@@ -1101,17 +1100,6 @@ export function DriverAssignmentForm({
           </select>
         </label>
         <label className={labelClassName}>
-          Status
-          <select
-            className={fieldClassName}
-            value={status}
-            onChange={(event) => setStatus(event.target.value as AssignmentStatus)}
-          >
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </label>
-        <label className={labelClassName}>
           Effective from
           <input
             className={fieldClassName}
@@ -1133,7 +1121,7 @@ export function DriverAssignmentForm({
       </div>
       <div className="flex flex-col gap-3 sm:flex-row">
         <Button type="submit" disabled={submitState === 'saving'}>
-          {submitState === 'saving' ? 'Saving' : 'Save assignment'}
+          {submitState === 'saving' ? 'Saving' : 'Save planned assignment'}
         </Button>
         <Button type="button" variant="secondary" onClick={onCancel}>
           Cancel

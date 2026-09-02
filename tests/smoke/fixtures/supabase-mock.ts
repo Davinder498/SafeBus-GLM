@@ -112,6 +112,30 @@ function secondAssignmentRow(): MockDriverAssignmentRpcRow {
   };
 }
 
+function plannedAssignmentRows(assignments: MockDriverAssignmentRpcRow[]) {
+  return assignments.map((assignment) => ({
+    id: assignment.assignment_id,
+    tenant_id: MOCK.tenantId,
+    driver_id: MOCK.driverId,
+    bus_id: assignment.bus_id,
+    route_id: assignment.route_id,
+    route_trip_pattern_id: assignment.route_trip_pattern_id,
+    bus_route_assignment_id: assignment.assignment_id,
+    trip_type: assignment.direction === 'reverse' ? 'evening' : 'morning',
+    status: 'active',
+    effective_from: '2026-01-01',
+    effective_to: null,
+    created_at: '2026-01-01T00:00:00.000Z',
+    updated_at: '2026-01-01T00:00:00.000Z',
+    bus: { bus_number: assignment.bus_number, license_plate: busRow.license_plate },
+    route: { route_name: assignment.route_name, route_code: assignment.route_code },
+    trip_pattern: {
+      display_name: assignment.trip_name,
+      direction: assignment.direction,
+    },
+  }));
+}
+
 function activeTripRow(assignment: MockDriverAssignmentRpcRow = assignmentRow()) {
   return {
     id: MOCK.tripId,
@@ -367,8 +391,8 @@ export async function installSupabaseMock(
           return;
         }
         if (table === 'driver_route_assignments') {
-          // Return the current assignments (or empty if null).
-          await fulfillRows(currentAssignments ?? []);
+          // Direct RLS-scoped read used by the read-only planning card.
+          await fulfillRows(plannedAssignmentRows(currentAssignments ?? []));
           return;
         }
         await blockUnexpectedSupabaseRestAccess(route, method, path);
@@ -566,7 +590,11 @@ export async function installSupabaseMock(
   // returns synchronously without a network round-trip on first paint.
   await page.addInitScript(() => {
     const fakeSession = {
-      access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
+      access_token: [
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+        'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ',
+        'smoke-test-signature',
+      ].join('.'),
       refresh_token: 'mock-refresh',
       token_type: 'bearer',
       expires_in: 3600,

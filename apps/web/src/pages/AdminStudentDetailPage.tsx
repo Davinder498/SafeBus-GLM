@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   BusFront,
@@ -10,7 +10,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { StudentBusAssignmentForm } from '@/components/admin/StudentBusAssignmentForm';
+import { DirectionalStudentBusAssignmentForm } from '@/components/admin/DirectionalStudentBusAssignmentForm';
 import { StudentGuardianManager } from '@/components/admin/StudentGuardianManager';
 import { StudentForm, type StudentFormInput } from '@/components/admin/StudentForm';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
@@ -29,20 +29,25 @@ import {
   setStudentStatus,
   updateStudent,
   type AdminStudentDetail,
+  type AdminStudentTransportationAssignment,
 } from '@/services/adminStudentsService';
 import {
-  createStudentBusAssignment,
   fetchAdminBusServices,
-  updateStudentBusAssignment,
+  setStudentBusService,
+  setStudentBusServiceStatus,
   type BusServiceOption,
+  type SetStudentBusServiceInput,
 } from '@/services/studentBusAssignmentService';
 import { getVisibleRouteStops } from '@/services/transportationStructureService';
 import type { School as SchoolRecord } from '@/types/organization';
-import type {
-  CreateStudentBusAssignmentInput,
-  RouteStop,
-  UpdateStudentBusAssignmentInput,
-} from '@/types/transportation';
+import type { RouteStop } from '@/types/transportation';
+import {
+  groupDirectionalAssignments,
+  type DirectionalAssignmentGroup,
+} from '@/utils/directionalAssignments';
+
+type StudentTransportationGroup =
+  DirectionalAssignmentGroup<AdminStudentTransportationAssignment>;
 
 function studentName(detail: AdminStudentDetail) {
   const { student } = detail;
@@ -85,7 +90,9 @@ export function AdminStudentDetailPage() {
   const [writeError, setWriteError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  const [managingBus, setManagingBus] = useState(false);
+  const [assignmentForm, setAssignmentForm] = useState<
+    StudentTransportationGroup | null | undefined
+  >(undefined);
   const [schools, setSchools] = useState<SchoolRecord[]>([]);
   const [busServices, setBusServices] = useState<BusServiceOption[]>([]);
   const [routeStops, setRouteStops] = useState<RouteStop[]>([]);
@@ -121,14 +128,14 @@ export function AdminStudentDetailPage() {
     setMessage(null);
     try {
       if (schools.length === 0) setSchools(await getVisibleSchools());
-      setManagingBus(false);
+      setAssignmentForm(undefined);
       setEditing(true);
     } catch {
       setWriteError('School options could not be loaded.');
     }
   }
 
-  async function startManagingBus() {
+  async function startManagingBus(group: StudentTransportationGroup | null) {
     setWriteError(null);
     setMessage(null);
     try {
@@ -139,7 +146,7 @@ export function AdminStudentDetailPage() {
       setBusServices(services);
       setRouteStops(stops);
       setEditing(false);
-      setManagingBus(true);
+      setAssignmentForm(group);
     } catch {
       setWriteError('Transportation options could not be loaded.');
     }
@@ -166,21 +173,12 @@ export function AdminStudentDetailPage() {
     }
   }
 
-  async function saveBusAssignment(
-    input: CreateStudentBusAssignmentInput | UpdateStudentBusAssignmentInput,
-  ) {
+  async function saveBusAssignment(input: SetStudentBusServiceInput) {
     if (!detail) return;
     setWriteError(null);
     try {
-      if (detail.busAssignment) {
-        await updateStudentBusAssignment(
-          detail.busAssignment.id,
-          input as UpdateStudentBusAssignmentInput,
-        );
-      } else {
-        await createStudentBusAssignment(input as CreateStudentBusAssignmentInput);
-      }
-      setManagingBus(false);
+      await setStudentBusService(input);
+      setAssignmentForm(undefined);
       setMessage('Student transportation updated.');
       await loadDetail();
     } catch (error) {
@@ -190,14 +188,18 @@ export function AdminStudentDetailPage() {
     }
   }
 
-  async function removeBusAssignment() {
-    if (!detail?.busAssignment || busy) return;
+  async function removeBusAssignment(group: StudentTransportationGroup) {
+    if (busy) return;
     setBusy(true);
     setWriteError(null);
     try {
-      await updateStudentBusAssignment(detail.busAssignment.id, { status: 'inactive' });
-      setManagingBus(false);
-      setMessage('Bus assignment removed.');
+      await setStudentBusServiceStatus(
+        group.assignments.map((assignment) => assignment.id),
+        'archived',
+        true,
+      );
+      setAssignmentForm(undefined);
+      setMessage('Student transportation removed.');
       await loadDetail();
     } catch (error) {
       setWriteError(
@@ -213,7 +215,7 @@ export function AdminStudentDetailPage() {
     setBusy(true);
     setWriteError(null);
     setEditing(false);
-    setManagingBus(false);
+    setAssignmentForm(undefined);
     try {
       const nextStatus = detail.student.status === 'active' ? 'inactive' : 'active';
       await setStudentStatus(detail.student.id, nextStatus);
@@ -246,7 +248,19 @@ export function AdminStudentDetailPage() {
     }
   }
 
-  const assigned = !!detail?.busAssignment && !!detail.bus && !!detail.route;
+  const transportationGroups = useMemo(
+    () =>
+      detail
+        ? groupDirectionalAssignments(
+            detail.transportationAssignments,
+            (assignment) =>
+              `${assignment.bus_service?.bus_id ?? 'unknown-bus'}|${assignment.bus_service?.route_id ?? 'unknown-route'}`,
+            (assignment) => assignment.direction,
+          )
+        : [],
+    [detail],
+  );
+  const assigned = transportationGroups.length > 0;
   const rosterActive = detail?.student.status === 'active';
 
   async function refreshAfterGuardianChange(nextMessage: string) {
@@ -359,15 +373,15 @@ export function AdminStudentDetailPage() {
                   <BusFront className="h-5 w-5 text-navy-700" aria-hidden />
                   <h2 className="text-lg font-bold text-navy-900">Transportation</h2>
                 </div>
-                {canWrite && rosterActive && !managingBus && (
+                {canWrite && rosterActive && assignmentForm === undefined && (
                   <Button
                     className="w-full sm:w-auto"
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => void startManagingBus()}
+                    onClick={() => void startManagingBus(null)}
                   >
-                    {assigned ? 'Manage transportation' : 'Assign transportation'}
+                    {assigned ? 'Add transportation' : 'Assign transportation'}
                   </Button>
                 )}
               </div>
@@ -376,65 +390,124 @@ export function AdminStudentDetailPage() {
                   Reactivate the student to manage their transportation.
                 </p>
               )}
-              {managingBus ? (
+              {assignmentForm !== undefined ? (
                 <div className="mt-5 space-y-4">
-                  <StudentBusAssignmentForm
-                    assignment={detail.busAssignment}
+                  <DirectionalStudentBusAssignmentForm
+                    key={assignmentForm?.id ?? 'new-student-transportation'}
+                    assignments={assignmentForm?.assignments ?? []}
                     fixedStudentId={detail.student.id}
                     studentLabel={studentName(detail)}
                     services={busServices}
                     stops={routeStops}
-                    defaultTenantId={profile?.tenant_id ?? null}
+                    selectionMode="bus-route"
                     onSubmit={saveBusAssignment}
-                    onCancel={() => setManagingBus(false)}
+                    onCancel={() => setAssignmentForm(undefined)}
                   />
-                  {detail.busAssignment && (
-                    <Button
-                      className="w-full sm:w-auto"
-                      type="button"
-                      variant="ghost"
-                      onClick={() => void removeBusAssignment()}
-                      disabled={busy}
-                    >
-                      Remove bus assignment
-                    </Button>
-                  )}
+                </div>
+              ) : transportationGroups.length === 0 ? (
+                <div className="mt-5 rounded-xl border border-dashed border-slate-300 p-5 text-sm text-slate-600">
+                  No transportation is assigned. Add outbound, return, or both directions when
+                  service is confirmed.
                 </div>
               ) : (
-                <dl className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  <DetailItem
-                    label="Bus"
-                    value={detail.bus ? `Bus ${detail.bus.bus_number}` : 'Not assigned'}
-                  />
-                  <DetailItem
-                    label="Route"
-                    value={
-                      detail.route
-                        ? `${detail.route.route_code} · ${detail.route.route_name}`
-                        : 'Not assigned'
-                    }
-                  />
-                  <DetailItem
-                    label="Trip type"
-                    value={readableValue(detail.busService?.trip_type)}
-                  />
-                  <DetailItem
-                    label="Pickup stop"
-                    value={detail.pickupStop?.stop_name ?? 'Not assigned'}
-                  />
-                  <DetailItem
-                    label="Drop-off stop"
-                    value={detail.dropoffStop?.stop_name ?? 'Not assigned'}
-                  />
-                  <DetailItem
-                    label="Effective from"
-                    value={readableDate(detail.busAssignment?.effective_from, 'Not assigned')}
-                  />
-                  <DetailItem
-                    label="Effective to"
-                    value={readableDate(detail.busAssignment?.effective_to, 'No end date')}
-                  />
-                </dl>
+                <div className="mt-5 space-y-5">
+                  {transportationGroups.map((group) => {
+                    const reference = group.forward ?? group.reverse;
+                    const routeLabel = reference?.route
+                      ? `${reference.route.route_code} · ${reference.route.route_name}`
+                      : 'Assigned route';
+                    return (
+                      <section
+                        key={group.id}
+                        className="rounded-xl border border-slate-200 bg-slate-50/60 p-4"
+                        data-testid="student-transportation-group"
+                      >
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <h3 className="font-bold text-navy-900">{routeLabel}</h3>
+                            <p className="mt-1 text-sm text-slate-600">
+                              Outbound and return are shown separately below.
+                            </p>
+                          </div>
+                          {canWrite && rosterActive && (
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                aria-label={`Edit transportation for ${routeLabel}`}
+                                onClick={() => void startManagingBus(group)}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                aria-label={`Remove transportation for ${routeLabel}`}
+                                disabled={busy}
+                                onClick={() => void removeBusAssignment(group)}
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                          {(
+                            [
+                              ['forward', 'Outbound', group.forward],
+                              ['reverse', 'Return', group.reverse],
+                            ] as const
+                          ).map(([direction, label, assignment]) => (
+                            <article
+                              key={direction}
+                              className="rounded-xl border border-slate-200 bg-white p-4"
+                              data-testid={`student-transportation-${direction}`}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <h4 className="font-bold text-navy-900">{label}</h4>
+                                <StatusPill tone={assignment ? 'success' : 'neutral'}>
+                                  {assignment ? 'Assigned' : 'Not assigned'}
+                                </StatusPill>
+                              </div>
+                              <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                                <DetailItem label="Direction" value={label} />
+                                <DetailItem
+                                  label="Bus"
+                                  value={
+                                    assignment?.bus
+                                      ? `Bus ${assignment.bus.bus_number}`
+                                      : 'Not assigned'
+                                  }
+                                />
+                                <DetailItem
+                                  label="Pickup stop"
+                                  value={assignment?.pickup_stop?.stop_name ?? 'Not assigned'}
+                                />
+                                <DetailItem
+                                  label="Drop-off stop"
+                                  value={assignment?.dropoff_stop?.stop_name ?? 'Not assigned'}
+                                />
+                                <DetailItem
+                                  label="Effective from"
+                                  value={readableDate(assignment?.effective_from, 'Not assigned')}
+                                />
+                                <DetailItem
+                                  label="Effective to"
+                                  value={readableDate(
+                                    assignment?.effective_to,
+                                    assignment ? 'Ongoing (no end date)' : 'Not assigned',
+                                  )}
+                                />
+                              </dl>
+                            </article>
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
               )}
             </Card>
 

@@ -1,6 +1,5 @@
 import type { RouteObject } from 'react-router';
 import { Navigate } from 'react-router';
-import { AdminAssignmentsPage } from '@/pages/AdminAssignmentsPage';
 import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
 import { AdminBusesPage } from '@/pages/AdminBusesPage';
 import { AdminBusWorkspacePage } from '@/pages/AdminBusWorkspacePage';
@@ -10,7 +9,6 @@ import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { UpdatePasswordPage } from '@/pages/UpdatePasswordPage';
 import { AdminDriversPage } from '@/pages/AdminDriversPage';
 import { AdminDriverDetailPage } from '@/pages/AdminDriverDetailPage';
-import { AdminDriverAssignmentsPage } from '@/pages/AdminDriverAssignmentsPage';
 import { AdminDashboardPage } from '@/pages/AdminDashboardPage';
 import { AdminGuardiansPage } from '@/pages/AdminGuardiansPage';
 import { AdminGuardianDetailPage } from '@/pages/AdminGuardianDetailPage';
@@ -262,22 +260,8 @@ export const appRoutes: RouteObject[] = [
       </ProtectedRoute>
     ),
   },
-  {
-    path: '/admin/driver-assignments',
-    element: (
-      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
-        <AdminDriverAssignmentsPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/admin/assignments',
-    element: (
-      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
-        <AdminAssignmentsPage />
-      </ProtectedRoute>
-    ),
-  },
+  { path: '/admin/driver-assignments', element: <Navigate to="/admin/drivers" replace /> },
+  { path: '/admin/assignments', element: <Navigate to="/admin/students" replace /> },
   {
     path: '/admin/live-trips',
     element: (

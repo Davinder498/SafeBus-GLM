@@ -119,7 +119,7 @@ export function AdminDriverAssignmentsPage() {
     try {
       await createDriverAssignment(input, profile?.tenant_id ?? null);
       setShowCreateForm(false);
-      setSuccessMessage('Assignment created.');
+      setSuccessMessage('Planned assignment created.');
       await list.reload();
     } catch (createError) {
       setWriteError(
@@ -133,7 +133,7 @@ export function AdminDriverAssignmentsPage() {
     setSuccessMessage(null);
     try {
       await updateAssignmentStatus(assignmentId, 'inactive');
-      setSuccessMessage('Assignment deactivated.');
+      setSuccessMessage('Planned assignment deactivated.');
       await list.reload();
     } catch (deactivateError) {
       setWriteError(
@@ -157,9 +157,7 @@ export function AdminDriverAssignmentsPage() {
       await substituteDriver(assignmentId, substituteDriverId);
       setSubstituteForId(null);
       setSubstituteDriverId('');
-      setSuccessMessage(
-        'Substitute driver assigned. The previous assignment was ended and audited.',
-      );
+      setSuccessMessage('Planned driver changed. The previous plan was ended and audited.');
       await list.reload();
     } catch (err) {
       setWriteError(err instanceof Error ? err.message : 'Unable to assign the substitute driver.');
@@ -180,7 +178,7 @@ export function AdminDriverAssignmentsPage() {
       await replaceBus(assignmentId, replacementBusId);
       setReplacingBusForId(null);
       setReplacementBusId('');
-      setSuccessMessage('Replacement bus assigned. The previous assignment was ended and audited.');
+      setSuccessMessage('Planned bus changed. The previous plan was ended and audited.');
       await list.reload();
     } catch (err) {
       setWriteError(err instanceof Error ? err.message : 'Unable to assign the replacement bus.');
@@ -199,8 +197,8 @@ export function AdminDriverAssignmentsPage() {
       <div className="space-y-6">
         <PageHeader
           eyebrow="Assignments"
-          title="Driver assignments"
-          description="Assign drivers to buses and routes. Drivers start trips from their active assignments."
+          title="Planned driver assignments"
+          description="Plan drivers, buses, and route directions for administration and driver guidance. Only scanning a bus QR confirms and starts the trip actually operated."
         />
 
         {canWrite && (
@@ -213,7 +211,7 @@ export function AdminDriverAssignmentsPage() {
                 setSuccessMessage(null);
               }}
             >
-              Add assignment
+              Add planned assignment
             </Button>
           </div>
         )}
@@ -222,7 +220,7 @@ export function AdminDriverAssignmentsPage() {
         <AdminWriteError message={writeError} />
 
         {canWrite && showCreateForm && (
-          <InlineFormShell title="Add driver assignment">
+          <InlineFormShell title="Add planned driver assignment">
             <DriverAssignmentForm
               drivers={drivers}
               buses={buses}
@@ -241,7 +239,7 @@ export function AdminDriverAssignmentsPage() {
             className="block text-sm font-semibold text-gray-700"
             htmlFor="driver-assignment-search"
           >
-            Search assignments
+            Search planned assignments
           </label>
           <input
             id="driver-assignment-search"
@@ -255,15 +253,17 @@ export function AdminDriverAssignmentsPage() {
 
         {list.loading && (
           <DataState
-            title="Loading assignments"
-            message="Fetching driver assignments visible to you."
+            title="Loading planned assignments"
+            message="Fetching planned driver assignments visible to you."
           />
         )}
-        {list.error && <DataState title="Unable to load assignments" message={list.error} />}
+        {list.error && (
+          <DataState title="Unable to load planned assignments" message={list.error} />
+        )}
         {!list.loading && !list.error && list.rows.length === 0 && (
           <DataState
-            title="No assignments visible"
-            message="No driver assignments are available for this account. Create one to get started."
+            title="No planned assignments visible"
+            message="No planned driver assignments are available for this account. Create one to get started."
           />
         )}
 
@@ -302,7 +302,7 @@ export function AdminDriverAssignmentsPage() {
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
                     <StatusPill tone={assignment.status === 'active' ? 'success' : 'neutral'}>
-                      {assignment.status}
+                      {assignment.status === 'active' ? 'Active plan' : 'Inactive plan'}
                     </StatusPill>
                     {canWrite && assignment.status === 'active' && (
                       <>
@@ -319,7 +319,7 @@ export function AdminDriverAssignmentsPage() {
                             setReplacingBusForId(null);
                           }}
                         >
-                          Substitute driver
+                          Change planned driver
                         </Button>
                         <Button
                           type="button"
@@ -334,7 +334,7 @@ export function AdminDriverAssignmentsPage() {
                             setSubstituteForId(null);
                           }}
                         >
-                          Replace bus
+                          Change planned bus
                         </Button>
                         <Button
                           type="button"
@@ -342,7 +342,7 @@ export function AdminDriverAssignmentsPage() {
                           variant="secondary"
                           onClick={() => void handleDeactivate(assignment.id)}
                         >
-                          Deactivate
+                          Deactivate plan
                         </Button>
                       </>
                     )}
@@ -354,13 +354,13 @@ export function AdminDriverAssignmentsPage() {
                     className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4"
                     data-testid={`substitute-driver-form-${assignment.id}`}
                   >
-                    <Field label="Substitute driver" htmlFor={`substitute-${assignment.id}`}>
+                    <Field label="Planned driver" htmlFor={`substitute-${assignment.id}`}>
                       <Select
                         id={`substitute-${assignment.id}`}
                         value={substituteDriverId}
                         onChange={(e) => setSubstituteDriverId(e.target.value)}
                       >
-                        <option value="">Choose a substitute driver</option>
+                        <option value="">Choose a planned driver</option>
                         {drivers
                           .filter((d) => d.id !== assignment.driver_id && d.status === 'active')
                           .map((d) => (
@@ -377,7 +377,7 @@ export function AdminDriverAssignmentsPage() {
                         loading={substituting}
                         onClick={() => void handleSubstituteDriver(assignment.id)}
                       >
-                        Assign substitute
+                        Save planned driver
                       </Button>
                       <Button
                         type="button"
@@ -396,13 +396,13 @@ export function AdminDriverAssignmentsPage() {
                     className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4"
                     data-testid={`replace-bus-form-${assignment.id}`}
                   >
-                    <Field label="Replacement bus" htmlFor={`replacement-bus-${assignment.id}`}>
+                    <Field label="Planned bus" htmlFor={`replacement-bus-${assignment.id}`}>
                       <Select
                         id={`replacement-bus-${assignment.id}`}
                         value={replacementBusId}
                         onChange={(e) => setReplacementBusId(e.target.value)}
                       >
-                        <option value="">Choose a replacement bus</option>
+                        <option value="">Choose a planned bus</option>
                         {buses
                           .filter((b) => b.id !== assignment.bus_id && b.status === 'active')
                           .map((b) => (
@@ -419,7 +419,7 @@ export function AdminDriverAssignmentsPage() {
                         loading={replacingBus}
                         onClick={() => void handleReplaceBus(assignment.id)}
                       >
-                        Assign replacement bus
+                        Save planned bus
                       </Button>
                       <Button
                         type="button"

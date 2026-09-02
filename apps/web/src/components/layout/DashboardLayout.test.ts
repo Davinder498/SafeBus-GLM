@@ -27,8 +27,6 @@ const tenantAdminRoutes = [
   '/admin/buses',
   '/admin/drivers',
   '/admin/students',
-  '/admin/assignments',
-  '/admin/driver-assignments',
   '/admin/guardians',
   '/admin/schools',
   '/admin/users',
@@ -62,6 +60,13 @@ describe('tenant admin shell navigation model', () => {
       .filter((item) => item.group === 'people')
       .map((item) => item.label);
     expect(peopleItems).toEqual(['Drivers', 'Students', 'Guardians']);
+  });
+
+  it('keeps assignment workflows on their bus, driver, and student records', () => {
+    const transportationItems = adminNavItems
+      .filter((item) => item.group === 'transportation')
+      .map((item) => item.label);
+    expect(transportationItems).toEqual(['Routes', 'Buses']);
   });
 });
 

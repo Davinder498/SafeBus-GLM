@@ -8,7 +8,11 @@ const IDS = {
   school: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
   secondSchool: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
   assignment: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
+  returnAssignment: 'ffffffff-ffff-ffff-ffff-fffffffffffe',
   service: '11111111-1111-1111-1111-111111111111',
+  returnService: '11111111-1111-1111-1111-111111111112',
+  forwardPattern: '11111111-1111-1111-1111-111111111113',
+  reversePattern: '11111111-1111-1111-1111-111111111114',
   bus: '22222222-2222-2222-2222-222222222222',
   route: '33333333-3333-3333-3333-333333333333',
   pickup: '44444444-4444-4444-4444-444444444444',
@@ -112,7 +116,7 @@ async function installWorkspaceMock(
     tenant_id: IDS.tenant,
     bus_id: IDS.bus,
     route_id: IDS.route,
-    route_trip_pattern_id: null,
+    route_trip_pattern_id: IDS.forwardPattern,
     trip_type: 'morning',
     effective_from: '2025-01-01',
     effective_to: null,
@@ -120,12 +124,18 @@ async function installWorkspaceMock(
     created_at: '2025-01-01T00:00:00.000Z',
     updated_at: '2025-01-01T00:00:00.000Z',
   };
+  const returnService = {
+    ...service,
+    id: IDS.returnService,
+    route_trip_pattern_id: IDS.reversePattern,
+    trip_type: 'evening',
+  };
   const assignment = () => ({
     id: IDS.assignment,
     tenant_id: IDS.tenant,
     student_id: IDS.student,
     bus_route_assignment_id: IDS.service,
-    route_trip_pattern_id: null,
+    route_trip_pattern_id: IDS.forwardPattern,
     pickup_stop_id: IDS.pickup,
     dropoff_stop_id: IDS.dropoff,
     effective_from: '2025-01-06',
@@ -133,6 +143,14 @@ async function installWorkspaceMock(
     status: 'active',
     created_at: '2025-01-01T00:00:00.000Z',
     updated_at: '2025-01-01T00:00:00.000Z',
+  });
+  const returnAssignment = () => ({
+    ...assignment(),
+    id: IDS.returnAssignment,
+    bus_route_assignment_id: IDS.returnService,
+    route_trip_pattern_id: IDS.reversePattern,
+    pickup_stop_id: IDS.dropoff,
+    dropoff_stop_id: IDS.pickup,
   });
 
   await page.route('**/*', async (requestRoute: Route) => {
@@ -183,19 +201,56 @@ async function installWorkspaceMock(
     if (method === 'GET') {
       if (path.includes('/profiles')) return void (await fulfillRows([profile]));
       if (path.includes('/student_bus_assignments')) {
-        return void (await fulfillRows(assignmentActive ? [assignment()] : []));
+        return void (
+          await fulfillRows(assignmentActive ? [assignment(), returnAssignment()] : [])
+        );
       }
       if (path.includes('/student_guardians')) return void (await fulfillRows([]));
-      if (path.includes('/bus_route_assignments')) return void (await fulfillRows([service]));
+      if (path.includes('/bus_route_assignments')) {
+        return void (await fulfillRows([service, returnService]));
+      }
+      if (path.includes('/route_trip_patterns')) {
+        return void (
+          await fulfillRows([
+            {
+              id: IDS.forwardPattern,
+              tenant_id: IDS.tenant,
+              route_id: IDS.route,
+              direction: 'forward',
+              display_name: 'Outbound',
+              status: 'active',
+              schedule_review_required: false,
+              created_at: '2025-01-01T00:00:00.000Z',
+              updated_at: '2025-01-01T00:00:00.000Z',
+            },
+            {
+              id: IDS.reversePattern,
+              tenant_id: IDS.tenant,
+              route_id: IDS.route,
+              direction: 'reverse',
+              display_name: 'Return',
+              status: 'active',
+              schedule_review_required: false,
+              created_at: '2025-01-01T00:00:00.000Z',
+              updated_at: '2025-01-01T00:00:00.000Z',
+            },
+          ])
+        );
+      }
       if (path.includes('/buses')) return void (await fulfillRows([bus]));
       if (path.includes('/routes')) return void (await fulfillRows([routeRecord]));
       if (path.includes('/route_stops')) {
         const idFilter = url.searchParams.get('id');
-        const rows = idFilter?.includes(IDS.pickup)
-          ? [stops[0]]
-          : idFilter?.includes(IDS.dropoff)
-            ? [stops[1]]
-            : stops;
+        const includesPickup = idFilter?.includes(IDS.pickup);
+        const includesDropoff = idFilter?.includes(IDS.dropoff);
+        const rows =
+          includesPickup && includesDropoff
+            ? stops
+            : includesPickup
+              ? [stops[0]]
+              : includesDropoff
+                ? [stops[1]]
+                : stops;
         return void (await fulfillRows(rows));
       }
       if (path.includes('/schools')) {
@@ -241,7 +296,25 @@ async function installWorkspaceMock(
           trip_name: 'Morning run',
           direction: 'forward',
         },
+        {
+          ...returnService,
+          bus_number: bus.bus_number,
+          route_name: routeRecord.route_name,
+          route_code: routeRecord.route_code,
+          trip_name: 'Return run',
+          direction: 'reverse',
+        },
       ]);
+      return;
+    }
+    if (method === 'POST' && path.includes('/rpc/admin_set_student_bus_service_status')) {
+      assignmentActive = false;
+      await fulfillRows([]);
+      return;
+    }
+    if (method === 'POST' && path.includes('/rpc/admin_set_student_bus_service')) {
+      assignmentActive = true;
+      await fulfillRows([assignment(), returnAssignment()]);
       return;
     }
     if (method === 'POST' && path.includes('/rpc/record_student_record_access')) {
@@ -344,11 +417,19 @@ test.describe('Admin student workspace', () => {
     await expect(details).toContainText('Prairie School');
     await expect(details).not.toContainText('Bus 42');
     const transportation = page.getByTestId('student-transportation-section');
-    await expect(transportation).toContainText('Bus 42');
     await expect(transportation).toContainText('NL-1 · North Loop');
-    await expect(transportation).toContainText('Morning');
-    await expect(transportation).toContainText('Community Centre');
-    await expect(transportation).toContainText('Prairie School Entrance');
+    const outbound = transportation.getByTestId('student-transportation-forward');
+    const returnTrip = transportation.getByTestId('student-transportation-reverse');
+    await expect(outbound).toContainText('Outbound');
+    await expect(outbound).toContainText('Bus 42');
+    await expect(outbound).toContainText('Community Centre');
+    await expect(outbound).toContainText('Prairie School Entrance');
+    await expect(outbound).toContainText('Jan 6, 2025');
+    await expect(outbound).toContainText('Ongoing (no end date)');
+    await expect(returnTrip).toContainText('Return');
+    await expect(returnTrip).toContainText('Bus 42');
+    await expect(returnTrip).toContainText('Prairie School Entrance');
+    await expect(returnTrip).toContainText('Community Centre');
   });
 
   test('edits student details in the card position', async ({ page }) => {
@@ -370,16 +451,26 @@ test.describe('Admin student workspace', () => {
     await installWorkspaceMock(page);
     await page.goto(`/admin/students/${IDS.student}`);
 
-    await page.getByRole('button', { name: 'Manage transportation' }).click();
+    await page.getByRole('button', { name: 'Edit transportation for NL-1 · North Loop' }).click();
     const transportation = page.getByTestId('student-transportation-section');
-    await expect(transportation.getByLabel('Bus service')).toBeVisible();
-    await transportation.getByRole('button', { name: 'Save assignment' }).click();
+    await expect(transportation.getByLabel('Bus route')).toBeVisible();
+    const effectiveTo = transportation.getByLabel('Effective to (optional)');
+    await expect(effectiveTo).toHaveValue('');
+    await expect(transportation.getByText('Leave blank for ongoing service.')).toBeVisible();
+    await effectiveTo.fill('2025-01-05');
+    await transportation.getByRole('button', { name: 'Update assignment' }).click();
+    expect(
+      await effectiveTo.evaluate((element: HTMLInputElement) => element.validity.rangeUnderflow),
+    ).toBe(true);
+    await effectiveTo.fill('');
+    await transportation.getByRole('button', { name: 'Update assignment' }).click();
     await expect(page.getByText('Student transportation updated.')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Manage transportation' }).click();
-    await page.getByRole('button', { name: 'Remove bus assignment' }).click();
-    await expect(page.getByText('Bus assignment removed.')).toBeVisible();
-    await expect(page.getByTestId('student-transportation-section')).toContainText('Not assigned');
+    await page.getByRole('button', { name: 'Remove transportation for NL-1 · North Loop' }).click();
+    await expect(page.getByText('Student transportation removed.')).toBeVisible();
+    await expect(page.getByTestId('student-transportation-section')).toContainText(
+      'No transportation is assigned.',
+    );
   });
 
   test('does not expose the quarantined student QR badge workflow', async ({ page }) => {
@@ -399,13 +490,13 @@ test.describe('Admin student workspace', () => {
       page.getByText('Reactivate the student to manage their transportation.'),
     ).toBeVisible();
     await expect(page.getByRole('heading', { name: 'QR badge', exact: true })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Manage transportation' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Add transportation' })).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Reactivate student' }).click();
     await expect(
       page.getByText('Student returned to the active transportation roster.'),
     ).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Manage transportation' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Add transportation' })).toBeVisible();
   });
 
   test('confirms deletion and returns to the roster', async ({ page }) => {
