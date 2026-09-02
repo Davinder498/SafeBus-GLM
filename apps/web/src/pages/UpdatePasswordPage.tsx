@@ -18,6 +18,11 @@ export function UpdatePasswordPage() {
   const [confirmation, setConfirmation] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recoveryError] = useState(() => {
+    const message = sessionStorage.getItem('safebus.passwordRecoveryError');
+    sessionStorage.removeItem('safebus.passwordRecoveryError');
+    return message;
+  });
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -58,12 +63,12 @@ export function UpdatePasswordPage() {
             Enter and confirm the new password for your SafeBus account.
           </p>
 
-          {(configError || error) && (
+          {(configError || recoveryError || error) && (
             <div
               className="mt-5 rounded-lg border border-danger-200 bg-danger-50 p-4 text-sm font-medium text-danger-700"
               role="alert"
             >
-              {configError ?? error}
+              {configError ?? recoveryError ?? error}
             </div>
           )}
 

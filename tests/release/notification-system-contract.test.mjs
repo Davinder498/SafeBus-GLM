@@ -6,6 +6,9 @@ const migrationPath = new URL('../../supabase/migrations/0092_end_to_end_notific
 const migration = await readFile(migrationPath, 'utf8');
 const nativePush = await readFile(new URL('../../apps/mobile/src/native/pushNotifications.ts', import.meta.url), 'utf8');
 const androidManifest = await readFile(new URL('../../apps/mobile/android/app/src/main/AndroidManifest.xml', import.meta.url), 'utf8');
+const nativeDevicePlugin = await readFile(new URL('../../apps/mobile/android/app/src/main/java/com/safebusalberta/app/tracking/DriverTrackingPlugin.java', import.meta.url), 'utf8');
+const nativeAuthLinks = await readFile(new URL('../../apps/mobile/src/native/authDeepLinks.ts', import.meta.url), 'utf8');
+const authContext = await readFile(new URL('../../apps/web/src/contexts/AuthContext.tsx', import.meta.url), 'utf8');
 
 test('notification migration keeps device and queue data private', () => {
   assert.match(migration, /revoke all on public\.user_notifications[\s\S]*public\.android_push_devices[\s\S]*from public, anon, authenticated/i);
@@ -47,4 +50,27 @@ test('Android registration handles permission, channels, taps, refresh and clean
   assert.match(nativePush, /revoke_own_push_device/);
   assert.match(nativePush, /PushNotifications\.unregister\(\)/);
   assert.match(androidManifest, /default_notification_icon/);
+});
+
+test('unconfigured Firebase builds cannot invoke token registration or terminate login', () => {
+  assert.match(nativeDevicePlugin, /getIdentifier\([\s\S]*"google_app_id"/);
+  assert.match(nativeDevicePlugin, /result\.put\("pushConfigured", pushConfigured\(\)\)/);
+  assert.ok(
+    nativePush.indexOf('if (!pushConfigured)') < nativePush.indexOf('PushNotifications.register()'),
+  );
+  assert.match(nativePush, /available: false/);
+  assert.match(authContext, /SafeBusNativePush\?\.available/);
+  assert.match(authContext, /deactivate\(\)\.catch\(\(\) => undefined\)/);
+});
+
+test('Android password recovery uses an app-owned deep link and removes auth tokens from navigation', () => {
+  assert.match(androidManifest, /android:scheme="@string\/custom_url_scheme"/);
+  assert.match(androidManifest, /android:host="auth"/);
+  assert.match(androidManifest, /android:pathPrefix="\/update-password"/);
+  assert.match(nativeAuthLinks, /appUrlOpen/);
+  assert.match(nativeAuthLinks, /getLaunchUrl\(\)/);
+  assert.match(nativeAuthLinks, /supabase\.auth\.setSession/);
+  assert.match(nativeAuthLinks, /window\.history\.replaceState\(\{\}, '', path\)/);
+  assert.doesNotMatch(nativeAuthLinks, /console\.(log|error|warn)/);
+  assert.doesNotMatch(nativeAuthLinks, /sessionStorage\.setItem\([\s\S]*error\.message/);
 });

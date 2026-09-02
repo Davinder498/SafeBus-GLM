@@ -1,6 +1,8 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, supabaseConfigError } from '@/lib/supabase';
+import { useAppSurface } from '@/contexts/AppSurfaceContext';
+import { getPasswordResetRedirect, normalizeAuthEmail } from '@/lib/authNavigation';
 
 export const adminRoles = [
   'platform_super_admin',
@@ -79,6 +81,7 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
+  const appSurface = useAppSurface();
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -291,7 +294,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       setAuthError(null);
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: normalizeAuthEmail(email),
+        password,
+      });
 
       if (error) {
         setSession(null);
@@ -324,7 +330,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return;
     }
 
-    await window.SafeBusNativePush?.deactivate();
+    if (window.SafeBusNativePush?.available) {
+      await window.SafeBusNativePush.deactivate().catch(() => undefined);
+    }
     void supabase.rpc('record_own_auth_event', {
       p_action: 'auth.logout',
       p_outcome: 'success',
@@ -344,12 +352,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
     }
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/update-password`,
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizeAuthEmail(email), {
+      redirectTo: getPasswordResetRedirect(appSurface, window.location.origin),
     });
 
     if (error) throw new Error(error.message);
-  }, []);
+  }, [appSurface]);
 
   const updatePassword = useCallback(async (password: string) => {
     if (!supabase) {

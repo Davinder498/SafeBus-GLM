@@ -86,6 +86,24 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 
 > Use the **same** Supabase values as `apps/web/.env`.
 
+### Android authentication and Firebase configuration
+
+Add this exact URI to the Supabase Auth **Redirect URLs** allowlist before testing password
+recovery from Android:
+
+```text
+com.safebusalberta.app://auth/update-password
+```
+
+The Android activity accepts only that recovery host and path. The app exchanges the recovery
+credentials inside the native WebView, removes them from browser history, and then opens the
+existing password-update screen. Web password recovery continues to use the deployed web origin.
+
+Real push testing also requires the protected Firebase configuration at
+`apps/mobile/android/app/google-services.json`. The file is ignored by Git and must never be
+committed. A local build without it remains usable for login, driver, guardian, and in-app inbox
+flows; Android push controls are shown as unavailable and Firebase token APIs are not invoked.
+
 ### 3. Build and sync
 
 ```bash

@@ -9,6 +9,7 @@ import { AppSurfaceProvider } from '@/contexts/AppSurfaceContext';
 import { DriverTrackingProvider } from '@/contexts/DriverTrackingContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { installNativeDriverTrackingBridge } from './native/driverTracking';
+import { installNativeAuthDeepLinks } from './native/authDeepLinks';
 import { installNativePushBridge } from './native/pushNotifications';
 import 'leaflet/dist/leaflet.css';
 import './index.css';
@@ -27,7 +28,8 @@ async function bootstrap() {
   // Style the Android status bar to match the navy brand
   if (Capacitor.isNativePlatform()) {
     installNativeDriverTrackingBridge();
-    await installNativePushBridge();
+    await installNativeAuthDeepLinks().catch(() => undefined);
+    await installNativePushBridge().catch(() => undefined);
     try {
       await StatusBar.setStyle({ style: Style.Dark });
       await StatusBar.setBackgroundColor({ color: '#1E3A8A' });
