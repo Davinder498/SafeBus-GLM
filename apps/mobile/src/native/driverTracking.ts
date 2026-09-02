@@ -11,6 +11,7 @@ interface DeviceInfo extends NativeTrackingPermissionState {
   installationId: string;
   deviceModel: string;
   appVersion: string;
+  pushConfigured: boolean;
 }
 
 interface StartOptions {

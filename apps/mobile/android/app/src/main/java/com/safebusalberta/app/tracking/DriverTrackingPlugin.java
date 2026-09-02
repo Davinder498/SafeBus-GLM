@@ -55,6 +55,7 @@ public class DriverTrackingPlugin extends Plugin {
                 .getPackageInfo(getContext().getPackageName(), 0).versionName);
             result.put("locationPermission", permissionState());
             result.put("notificationPermission", notificationPermissionState());
+            result.put("pushConfigured", pushConfigured());
             call.resolve(result);
         } catch (Exception exception) {
             call.reject("Could not initialize the protected device identity.", exception);
@@ -207,5 +208,16 @@ public class DriverTrackingPlugin extends Plugin {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return "not_required";
         return ContextCompat.checkSelfPermission(getContext(), Manifest.permission.POST_NOTIFICATIONS)
             == PackageManager.PERMISSION_GRANTED ? "granted" : "denied";
+    }
+
+    private boolean pushConfigured() {
+        int resourceId = getContext().getResources().getIdentifier(
+            "google_app_id",
+            "string",
+            getContext().getPackageName()
+        );
+        if (resourceId == 0) return false;
+        String applicationId = getContext().getString(resourceId);
+        return applicationId != null && !applicationId.isBlank();
     }
 }

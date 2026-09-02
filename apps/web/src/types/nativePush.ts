@@ -1,6 +1,7 @@
 import type { PushPermissionState } from '@safebus/types';
 
 export interface SafeBusNativePushBridge {
+  available: boolean;
   enable(): Promise<PushPermissionState>;
   refresh(): Promise<void>;
   deactivate(): Promise<void>;

@@ -8,6 +8,17 @@ type Rpc = (name: string, args?: Record<string, unknown>) => PromiseLike<{ data:
 let activeDeviceId: string | null = null;
 let listenersInstalled = false;
 
+function installUnavailableBridge(): void {
+  window.SafeBusNativePush = {
+    available: false,
+    async enable() { return 'denied'; },
+    async refresh() {},
+    async deactivate() {},
+    openSystemSettings: openNativeAppSettings,
+    async getPermissionState() { return 'denied'; },
+  };
+}
+
 function permissionState(status: PermissionStatus): PushPermissionState {
   if (status.receive === 'granted') return 'granted';
   if (status.receive === 'denied') return 'permanently_denied';
@@ -42,7 +53,11 @@ function openNotification(action: ActionPerformed): void {
 async function installListeners(): Promise<void> {
   if (listenersInstalled) return;
   listenersInstalled = true;
-  await PushNotifications.addListener('registration', (token) => { void registerToken(token); });
+  await PushNotifications.addListener('registration', (token) => {
+    void registerToken(token).catch(() => {
+      activeDeviceId = null;
+    });
+  });
   await PushNotifications.addListener('registrationError', () => { activeDeviceId = null; });
   await PushNotifications.addListener('pushNotificationActionPerformed', openNotification);
   await PushNotifications.addListener('pushNotificationReceived', () => {
@@ -59,9 +74,22 @@ async function createChannels(): Promise<void> {
 }
 
 export async function installNativePushBridge(): Promise<void> {
+  let pushConfigured = false;
+  try {
+    pushConfigured = (await getNativeDeviceInfo()).pushConfigured;
+  } catch {
+    installUnavailableBridge();
+    return;
+  }
+  if (!pushConfigured) {
+    installUnavailableBridge();
+    return;
+  }
+
   await installListeners();
   await createChannels();
   const bridge: SafeBusNativePushBridge = {
+    available: true,
     async enable() {
       let status = await PushNotifications.checkPermissions();
       if (status.receive === 'prompt' || status.receive === 'prompt-with-rationale') status = await PushNotifications.requestPermissions();
