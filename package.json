@@ -59,12 +59,12 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.62.1",
-    "netlify-cli": "^27.1.2",
+    "netlify-cli": "^27.4.1",
     "pg": "^8.23.0",
     "prettier": "^3.9.6",
     "rimraf": "^6.0.1",
-    "supabase": "2.115.0",
-    "turbo": "^2.10.11",
+    "supabase": "2.116.0",
+    "turbo": "^2.10.12",
     "typescript": "^5.6.3"
   },
   "engines": {
