@@ -72,4 +72,5 @@ test('Android password recovery uses an app-owned deep link and removes auth tok
   assert.match(nativeAuthLinks, /supabase\.auth\.setSession/);
   assert.match(nativeAuthLinks, /window\.history\.replaceState\(\{\}, '', path\)/);
   assert.doesNotMatch(nativeAuthLinks, /console\.(log|error|warn)/);
+  assert.doesNotMatch(nativeAuthLinks, /sessionStorage\.setItem\([\s\S]*error\.message/);
 });

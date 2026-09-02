@@ -39,10 +39,10 @@ async function handleNativeAuthUrl(value: string): Promise<void> {
     }
 
     sessionStorage.removeItem('safebus.passwordRecoveryError');
-  } catch (error) {
+  } catch {
     sessionStorage.setItem(
       'safebus.passwordRecoveryError',
-      error instanceof Error ? error.message : 'The password reset link is invalid or expired.',
+      'This password reset link is invalid or expired. Request a new link.',
     );
   } finally {
     navigateWithoutAuthTokens(recovery.destinationPath);
