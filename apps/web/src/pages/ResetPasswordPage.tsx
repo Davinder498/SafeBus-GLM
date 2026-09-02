@@ -57,6 +57,9 @@ export function ResetPasswordPage() {
               id="email"
               type="email"
               autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required

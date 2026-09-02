@@ -38,7 +38,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user || !profile || !supabase) { setUnreadCount(0); setConnectionState('idle'); return; }
     void refreshNotifications();
-    if (window.SafeBusNativePush) {
+    if (window.SafeBusNativePush?.available) {
       void fetchNotificationPreferences().then((preferences) => preferences.pushEnabled
         ? window.SafeBusNativePush?.refresh()
         : window.SafeBusNativePush?.deactivate()).catch(() => undefined);
