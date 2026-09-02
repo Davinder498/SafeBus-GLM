@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { ArrowLeft, BusFront, Route as RouteIcon, UsersRound } from 'lucide-react';
+import { ArrowLeft, BusFront, Route as RouteIcon, UserRound, UsersRound } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
-import { BusWorkspaceRouteForm } from '@/components/admin/BusWorkspaceForms';
+import {
+  BusWorkspaceDriverForm,
+  BusWorkspaceRouteForm,
+} from '@/components/admin/BusWorkspaceForms';
 import { OperationalNotesPanel } from '@/components/admin/OperationalNotesPanel';
 import { DirectionalStudentBusAssignmentForm } from '@/components/admin/DirectionalStudentBusAssignmentForm';
 import { BusQrCredentialPanel } from '@/components/admin/BusQrCredentialPanel';
@@ -29,11 +32,13 @@ import {
 import { useAuth } from '@/contexts/useAuth';
 import {
   fetchAdminBusWorkspace,
+  type AdminBusDriverAssignment,
   type AdminBusRouteAssignment,
   type AdminBusStudentAssignment,
   type AdminBusWorkspace,
 } from '@/services/adminBusWorkspaceService';
-import { getVisibleSchools } from '@/services/adminOrganizationService';
+import { getVisibleDriverProfiles, getVisibleSchools } from '@/services/adminOrganizationService';
+import { setPlannedDriverAssignment } from '@/services/driverAssignmentService';
 import {
   endBusRouteService,
   setBusRouteService,
@@ -46,15 +51,18 @@ import {
 import {
   createBus,
   deleteBus,
+  getVisibleDrivers,
   getVisibleRoutes,
   getVisibleRouteStops,
   getVisibleRouteTripPatterns,
   updateBus,
 } from '@/services/transportationStructureService';
-import type { School } from '@/types/organization';
+import type { OrganizationProfile, School } from '@/types/organization';
+import type { SetPlannedDriverAssignmentInput } from '@/types/driverAssignments';
 import type {
   Bus,
   CreateBusInput,
+  Driver,
   Route,
   RouteStop,
   RouteTripPattern,
@@ -73,13 +81,13 @@ import {
   type DirectionalAssignmentGroup,
 } from '@/utils/directionalAssignments';
 
-type WorkspaceTab = 'details' | 'routes' | 'students';
+type WorkspaceTab = 'details' | 'routes' | 'drivers' | 'students';
 type LifecycleBucket = BusWorkspaceLifecycle;
 type RouteFormMode = 'create' | 'edit' | 'renew';
 type RouteAssignmentGroup = DirectionalAssignmentGroup<AdminBusRouteAssignment>;
 type StudentAssignmentGroup = DirectionalAssignmentGroup<AdminBusStudentAssignment>;
 
-const validTabs = new Set<WorkspaceTab>(['details', 'routes', 'students']);
+const validTabs = new Set<WorkspaceTab>(['details', 'routes', 'drivers', 'students']);
 function formatDate(value: string | null) {
   if (!value) return 'Open ended';
   return new Intl.DateTimeFormat('en-CA', {
@@ -128,6 +136,8 @@ export function AdminBusWorkspacePage() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [tripPatterns, setTripPatterns] = useState<RouteTripPattern[]>([]);
   const [stops, setStops] = useState<RouteStop[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [driverProfiles, setDriverProfiles] = useState<OrganizationProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
@@ -148,6 +158,11 @@ export function AdminBusWorkspacePage() {
     group: StudentAssignmentGroup;
   } | null>(null);
   const [studentActionBusy, setStudentActionBusy] = useState(false);
+  const [driverForm, setDriverForm] = useState<{
+    service: AdminBusRouteAssignment;
+    assignment: AdminBusDriverAssignment | null;
+    initialDriverId?: string;
+  } | null>(null);
 
   const canManageRoutesAndDrivers = profile?.role === 'tenant_admin';
   const canDeleteBus = profile?.role === 'tenant_admin' || profile?.role === 'platform_super_admin';
@@ -160,11 +175,15 @@ export function AdminBusWorkspacePage() {
       getVisibleRoutes(),
       getVisibleRouteTripPatterns(),
       getVisibleRouteStops(),
+      getVisibleDrivers(),
+      getVisibleDriverProfiles(),
     ]);
     setSchools(optionResults[0].status === 'fulfilled' ? optionResults[0].value : []);
     setRoutes(optionResults[1].status === 'fulfilled' ? optionResults[1].value : []);
     setTripPatterns(optionResults[2].status === 'fulfilled' ? optionResults[2].value : []);
     setStops(optionResults[3].status === 'fulfilled' ? optionResults[3].value : []);
+    setDrivers(optionResults[4].status === 'fulfilled' ? optionResults[4].value : []);
+    setDriverProfiles(optionResults[5].status === 'fulfilled' ? optionResults[5].value : []);
 
     if (busId) {
       try {
@@ -186,6 +205,17 @@ export function AdminBusWorkspacePage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (activeTab !== 'drivers' || !workspace || driverForm) return;
+    const serviceId = searchParams.get('service');
+    const newDriverId = searchParams.get('newDriverId');
+    if (!serviceId || !newDriverId) return;
+    const service = workspace.routeAssignments.find((assignment) => assignment.id === serviceId);
+    if (!service || !drivers.some((driver) => driver.id === newDriverId)) return;
+    setDriverForm({ service, assignment: null, initialDriverId: newDriverId });
+    setSearchParams({ tab: 'drivers' }, { replace: true });
+  }, [activeTab, driverForm, drivers, searchParams, setSearchParams, workspace]);
 
   useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => {
@@ -296,6 +326,32 @@ export function AdminBusWorkspacePage() {
     await reloadWorkspace();
   }
 
+  async function saveDriverAssignment(input: SetPlannedDriverAssignmentInput) {
+    setWriteError(null);
+    setMessage(null);
+    await setPlannedDriverAssignment(input);
+    const [nextWorkspace, nextDrivers, nextProfiles] = await Promise.all([
+      busId ? fetchAdminBusWorkspace(busId) : Promise.resolve(null),
+      getVisibleDrivers(),
+      getVisibleDriverProfiles(),
+    ]);
+    if (nextWorkspace) setWorkspace(nextWorkspace);
+    setDrivers(nextDrivers);
+    setDriverProfiles(nextProfiles);
+    setDriverForm(null);
+    setMessage(
+      input.existingAssignmentId
+        ? 'Planned driver assignment updated. Earlier planning remains in history.'
+        : 'Planned driver assigned to this bus service.',
+    );
+  }
+
+  function inviteDriver(service: AdminBusRouteAssignment) {
+    if (!busId) return;
+    const returnTo = `${window.location.origin}/admin/buses/${busId}?tab=drivers&service=${service.id}`;
+    navigate(`/admin/drivers?invite=1&returnTo=${encodeURIComponent(returnTo)}`);
+  }
+
   async function confirmStudentAssignmentAction() {
     if (!studentAction || studentActionBusy) return;
     setStudentActionBusy(true);
@@ -391,6 +447,7 @@ export function AdminBusWorkspacePage() {
   const tabs: Array<{ id: WorkspaceTab; label: string; icon: ReactNode }> = [
     { id: 'details', label: 'Bus details', icon: <BusFront className="h-4 w-4" /> },
     { id: 'routes', label: 'Routes', icon: <RouteIcon className="h-4 w-4" /> },
+    { id: 'drivers', label: 'Drivers', icon: <UserRound className="h-4 w-4" /> },
     { id: 'students', label: 'Students', icon: <UsersRound className="h-4 w-4" /> },
   ];
 
@@ -415,8 +472,8 @@ export function AdminBusWorkspacePage() {
           title={bus ? `Bus ${bus.bus_number}` : 'Add bus'}
           description={
             bus
-              ? 'Manage this bus, its route services, QR credential, and student roster.'
-              : 'Save the bus details first to unlock route and student assignments.'
+              ? 'Manage this bus, route services, planned drivers, QR credential, and student roster.'
+              : 'Save the bus details first to unlock route, driver, and student assignments.'
           }
         />
 
@@ -534,6 +591,24 @@ export function AdminBusWorkspacePage() {
               onCancel={() => setStudentForm(null)}
               onSubmit={saveStudentAssignment}
               onDelete={(group) => setStudentAction({ group })}
+              onGoRoutes={() => goToTab('routes')}
+            />
+          )}
+
+          {activeTab === 'drivers' && bus && workspace && (
+            <DriversPanel
+              bus={bus}
+              services={workspace.routeAssignments}
+              assignments={workspace.driverAssignments}
+              drivers={drivers}
+              profiles={driverProfiles}
+              canManage={canManageRoutesAndDrivers}
+              form={driverForm}
+              onAssign={(service) => setDriverForm({ service, assignment: null })}
+              onEdit={(service, assignment) => setDriverForm({ service, assignment })}
+              onCancel={() => setDriverForm(null)}
+              onSubmit={saveDriverAssignment}
+              onInvite={inviteDriver}
               onGoRoutes={() => goToTab('routes')}
             />
           )}
@@ -751,6 +826,215 @@ function RoutesPanel({
                   })}
                 </div>
               </section>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function assignmentsForService(
+  service: AdminBusRouteAssignment,
+  assignments: AdminBusDriverAssignment[],
+) {
+  return assignments.filter(
+    (assignment) =>
+      assignment.bus_route_assignment_id === service.id ||
+      (!assignment.bus_route_assignment_id &&
+        assignment.bus_id === service.bus_id &&
+        assignment.route_id === service.route_id &&
+        (assignment.route_trip_pattern_id === service.route_trip_pattern_id ||
+          (!assignment.route_trip_pattern_id && assignment.trip_type === service.trip_type))),
+  );
+}
+
+function DriversPanel({
+  bus,
+  services,
+  assignments,
+  drivers,
+  profiles,
+  canManage,
+  form,
+  onAssign,
+  onEdit,
+  onCancel,
+  onSubmit,
+  onInvite,
+  onGoRoutes,
+}: {
+  bus: Bus;
+  services: AdminBusRouteAssignment[];
+  assignments: AdminBusDriverAssignment[];
+  drivers: Driver[];
+  profiles: OrganizationProfile[];
+  canManage: boolean;
+  form: {
+    service: AdminBusRouteAssignment;
+    assignment: AdminBusDriverAssignment | null;
+    initialDriverId?: string;
+  } | null;
+  onAssign: (service: AdminBusRouteAssignment) => void;
+  onEdit: (service: AdminBusRouteAssignment, assignment: AdminBusDriverAssignment) => void;
+  onCancel: () => void;
+  onSubmit: (input: SetPlannedDriverAssignmentInput) => Promise<void>;
+  onInvite: (service: AdminBusRouteAssignment) => void;
+  onGoRoutes: () => void;
+}) {
+  const visibleServices = services.filter(
+    (service) =>
+      busWorkspaceLifecycle(service) !== 'history' ||
+      assignmentsForService(service, assignments).length > 0,
+  );
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-xl font-bold text-navy-900">Planned drivers</h2>
+        <p className="mt-1 text-sm text-gray-600">
+          Plan a driver for each route direction. The plan informs the driver; scanning this bus QR
+          confirms the trip actually operated.
+        </p>
+      </div>
+
+      {form && (
+        <InlineFormShell
+          title={form.assignment ? 'Change planned driver' : 'Assign planned driver'}
+        >
+          <BusWorkspaceDriverForm
+            key={`${form.service.id}-${form.assignment?.id ?? 'new'}-${form.initialDriverId ?? ''}`}
+            service={form.service}
+            assignment={form.assignment}
+            drivers={drivers}
+            profiles={profiles}
+            initialDriverId={form.initialDriverId}
+            canInviteDriver={canManage}
+            onAddDriver={() => onInvite(form.service)}
+            onSubmit={onSubmit}
+            onCancel={onCancel}
+          />
+        </InlineFormShell>
+      )}
+
+      {visibleServices.length === 0 ? (
+        <div className="space-y-4">
+          <DataState
+            title="Assign a route service first"
+            message="A planned driver must be attached to a reviewed route direction for this bus."
+          />
+          {canManage && (
+            <Button type="button" variant="secondary" onClick={onGoRoutes}>
+              Go to routes
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {visibleServices.map((service) => {
+            const serviceAssignments = assignmentsForService(service, assignments);
+            const activePlans = serviceAssignments.filter(
+              (assignment) => busWorkspaceLifecycle(assignment) !== 'history',
+            );
+            const serviceLifecycle = busWorkspaceLifecycle(service);
+            return (
+              <Card key={service.id} className="p-5" data-testid={`driver-service-${service.id}`}>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-bold text-navy-900">
+                        {service.route_code} · {service.route_name}
+                      </h3>
+                      <StatusPill tone="info">
+                        {service.direction === 'forward' ? 'Outbound' : 'Return'}
+                      </StatusPill>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-600">{service.trip_name}</p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Bus {bus.bus_number} ·{' '}
+                      {dateRange(service.effective_from, service.effective_to)}
+                    </p>
+                  </div>
+                  {canManage && serviceLifecycle !== 'history' && activePlans.length === 0 && (
+                    <Button type="button" size="sm" onClick={() => onAssign(service)}>
+                      Assign planned driver
+                    </Button>
+                  )}
+                </div>
+
+                {serviceAssignments.length === 0 ? (
+                  <p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
+                    No driver is planned for this direction.
+                  </p>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    {(['current', 'upcoming', 'history'] as const).map((bucket) => {
+                      const rows = serviceAssignments.filter(
+                        (assignment) => busWorkspaceLifecycle(assignment) === bucket,
+                      );
+                      if (rows.length === 0) return null;
+                      return (
+                        <section key={bucket} className="space-y-2">
+                          <h4 className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                            {bucket === 'current'
+                              ? 'Current plan'
+                              : bucket === 'upcoming'
+                                ? 'Upcoming plan'
+                                : 'Planning history'}
+                          </h4>
+                          {rows.map((assignment) => (
+                            <div
+                              key={assignment.id}
+                              className="flex flex-col gap-3 rounded-lg border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between"
+                            >
+                              <div>
+                                <p className="font-semibold text-navy-900">
+                                  {assignment.driver_name}
+                                </p>
+                                <p className="mt-1 text-sm text-slate-600">
+                                  {assignment.driver_email}
+                                </p>
+                                <p className="mt-1 text-sm text-slate-600">
+                                  {dateRange(assignment.effective_from, assignment.effective_to)}
+                                </p>
+                                {assignment.has_active_trip && (
+                                  <p className="mt-1 text-sm font-semibold text-warning-700">
+                                    Current trip in progress
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <StatusPill
+                                  tone={
+                                    bucket === 'current'
+                                      ? 'success'
+                                      : bucket === 'upcoming'
+                                        ? 'info'
+                                        : 'neutral'
+                                  }
+                                >
+                                  {bucket}
+                                </StatusPill>
+                                {canManage && bucket !== 'history' && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="secondary"
+                                    disabled={assignment.has_active_trip}
+                                    onClick={() => onEdit(service, assignment)}
+                                  >
+                                    Change planned driver
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </section>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
             );
           })}
         </div>

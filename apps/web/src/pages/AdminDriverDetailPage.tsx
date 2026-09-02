@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import {
   ArrowLeft,
+  BusFront,
   CalendarDays,
   IdCard,
   Mail,
@@ -14,8 +15,10 @@ import {
   UserRound,
 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router';
+import { DriverPlannedBusAssignmentForm } from '@/components/admin/BusWorkspaceForms';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { OperationalNotesPanel } from '@/components/admin/OperationalNotesPanel';
+import { InlineFormShell } from '@/components/admin/TransportationAdminForms';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -32,11 +35,24 @@ import {
   type AdminDriverDetail,
 } from '@/services/adminPeopleService';
 import {
+  fetchAdminPlannedDriverAssignments,
+  setPlannedDriverAssignment,
+} from '@/services/driverAssignmentService';
+import {
+  fetchAdminBusServices,
+  type BusServiceOption,
+} from '@/services/studentBusAssignmentService';
+import {
   deleteDriver,
   DuplicateIdentifierError,
   updateDriver,
   type DuplicateField,
 } from '@/services/transportationStructureService';
+import type {
+  PlannedDriverAssignment,
+  SetPlannedDriverAssignmentInput,
+} from '@/types/driverAssignments';
+import { busWorkspaceLifecycle } from '@/utils/busWorkspace';
 
 type DriverDetailFieldErrors = Partial<
   Record<Extract<DuplicateField, 'phone' | 'licenseNumber'>, string>
@@ -119,6 +135,11 @@ export function AdminDriverDetailPage() {
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmRevokeDevices, setConfirmRevokeDevices] = useState(false);
+  const [plannedAssignments, setPlannedAssignments] = useState<PlannedDriverAssignment[]>([]);
+  const [busServices, setBusServices] = useState<BusServiceOption[]>([]);
+  const [assignmentForm, setAssignmentForm] = useState<PlannedDriverAssignment | null | undefined>(
+    undefined,
+  );
   const canWrite = profile?.role === 'tenant_admin';
 
   const load = useCallback(async () => {
@@ -130,15 +151,40 @@ export function AdminDriverDetailPage() {
     setLoading(true);
     setLoadError(null);
     try {
-      const next = await fetchAdminDriverDetail(driverId);
+      const [next, nextAssignments, nextServices] = await Promise.all([
+        fetchAdminDriverDetail(driverId),
+        fetchAdminPlannedDriverAssignments(driverId),
+        canWrite ? fetchAdminBusServices() : Promise.resolve([]),
+      ]);
       setDetail(next);
       setForm(toForm(next));
+      setPlannedAssignments(nextAssignments);
+      setBusServices(nextServices);
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : 'Unable to load this driver.');
     } finally {
       setLoading(false);
     }
-  }, [driverId]);
+  }, [canWrite, driverId]);
+
+  async function savePlannedAssignment(input: SetPlannedDriverAssignmentInput) {
+    if (!driverId) return;
+    setWriteError(null);
+    setMessage(null);
+    await setPlannedDriverAssignment(input);
+    const [nextAssignments, nextServices] = await Promise.all([
+      fetchAdminPlannedDriverAssignments(driverId),
+      fetchAdminBusServices(),
+    ]);
+    setPlannedAssignments(nextAssignments);
+    setBusServices(nextServices);
+    setAssignmentForm(undefined);
+    setMessage(
+      input.existingAssignmentId
+        ? 'Planned bus assignment updated. Earlier planning remains in history.'
+        : 'Planned bus assignment added.',
+    );
+  }
 
   useEffect(() => {
     void load();
@@ -550,9 +596,142 @@ export function AdminDriverDetailPage() {
                 </p>
               </Card>
             </div>
+            <Card className="p-5" data-testid="driver-planned-assignments">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 flex-1 gap-3">
+                  <BusFront className="mt-0.5 h-5 w-5 shrink-0 text-navy-700" aria-hidden />
+                  <div>
+                    <h2 className="font-bold text-navy-900">Planned bus assignments</h2>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Administrative guidance for the driver. Scanning the bus QR confirms the bus
+                      and route actually operated.
+                    </p>
+                  </div>
+                </div>
+                {canWrite && detail.driver.status === 'active' && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="shrink-0 whitespace-nowrap"
+                    onClick={() => setAssignmentForm(null)}
+                  >
+                    Assign planned bus
+                  </Button>
+                )}
+              </div>
+
+              {assignmentForm !== undefined && (
+                <div className="mt-5">
+                  <InlineFormShell
+                    title={assignmentForm ? 'Edit planned bus assignment' : 'Assign planned bus'}
+                  >
+                    <DriverPlannedBusAssignmentForm
+                      key={assignmentForm?.id ?? 'new-planned-assignment'}
+                      driverId={detail.driver.id}
+                      assignment={assignmentForm}
+                      services={busServices}
+                      onSubmit={savePlannedAssignment}
+                      onCancel={() => setAssignmentForm(undefined)}
+                    />
+                  </InlineFormShell>
+                </div>
+              )}
+
+              {plannedAssignments.length === 0 ? (
+                <div className="mt-5 rounded-lg border border-dashed border-slate-300 p-5 text-sm text-slate-600">
+                  No planned bus assignments yet.
+                </div>
+              ) : (
+                <div className="mt-5 space-y-6">
+                  {(['current', 'upcoming', 'history'] as const).map((bucket) => {
+                    const items = plannedAssignments.filter(
+                      (assignment) => busWorkspaceLifecycle(assignment) === bucket,
+                    );
+                    if (items.length === 0) return null;
+                    return (
+                      <section key={bucket} aria-label={`${bucket} planned assignments`}>
+                        <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                          {bucket === 'current'
+                            ? 'Current plan'
+                            : bucket === 'upcoming'
+                              ? 'Upcoming plan'
+                              : 'Planning history'}
+                        </h3>
+                        <div className="mt-2 grid gap-3 lg:grid-cols-2">
+                          {items.map((assignment) => (
+                            <div
+                              key={assignment.id}
+                              className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="font-bold text-navy-900">
+                                    Bus {assignment.bus_number}
+                                  </p>
+                                  <p className="mt-1 text-sm text-slate-600">
+                                    Plate {assignment.license_plate ?? 'not recorded'}
+                                  </p>
+                                </div>
+                                <StatusPill
+                                  tone={
+                                    bucket === 'current'
+                                      ? 'success'
+                                      : bucket === 'upcoming'
+                                        ? 'info'
+                                        : 'neutral'
+                                  }
+                                >
+                                  {bucket}
+                                </StatusPill>
+                              </div>
+                              <p className="mt-3 text-sm font-semibold text-slate-800">
+                                {assignment.route_code} · {assignment.route_name}
+                              </p>
+                              <p className="mt-1 text-sm text-slate-600">
+                                {assignment.trip_name} ·{' '}
+                                {assignment.direction === 'forward' ? 'Outbound' : 'Return'}
+                              </p>
+                              <p className="mt-2 text-sm text-slate-600">
+                                {assignment.effective_from
+                                  ? formatDate(assignment.effective_from)
+                                  : 'No start date'}{' '}
+                                –{' '}
+                                {assignment.effective_to
+                                  ? formatDate(assignment.effective_to)
+                                  : 'Open ended'}
+                              </p>
+                              <div className="mt-4 flex flex-wrap gap-2">
+                                {canWrite && bucket !== 'history' && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() => setAssignmentForm(assignment)}
+                                  >
+                                    Edit planned assignment
+                                  </Button>
+                                )}
+                                {assignment.bus_route_assignment_id && (
+                                  <Link
+                                    to={`/admin/buses/${assignment.bus_id}?tab=drivers&service=${assignment.bus_route_assignment_id}`}
+                                    className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-semibold text-navy-700 hover:bg-navy-50"
+                                  >
+                                    Open bus workspace
+                                  </Link>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
             <Card className="border-warning-200 bg-warning-50 p-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex gap-3">
+                <div className="flex min-w-0 flex-1 gap-3">
                   <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-warning-700" aria-hidden />
                   <div>
                     <h2 className="font-bold text-navy-900">Personal phone tracking access</h2>
@@ -567,6 +746,7 @@ export function AdminDriverDetailPage() {
                   <Button
                     type="button"
                     variant="secondary"
+                    className="shrink-0 whitespace-nowrap"
                     disabled={busy}
                     onClick={() => setConfirmRevokeDevices(true)}
                     data-testid="admin-revoke-driver-tracking-devices"

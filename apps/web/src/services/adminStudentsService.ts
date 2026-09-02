@@ -5,7 +5,9 @@ import type {
   Bus,
   BusRouteAssignment,
   Route,
+  RouteDirection,
   RouteStop,
+  RouteTripPattern,
   StudentBusAssignment,
 } from '@/types/transportation';
 
@@ -44,14 +46,19 @@ export interface UpdateStudentInput {
 export interface AdminStudentDetail {
   student: Student;
   schoolName: string | null;
-  busAssignment: StudentBusAssignment | null;
-  busService: BusRouteAssignment | null;
-  bus: Bus | null;
-  route: Route | null;
-  pickupStop: RouteStop | null;
-  dropoffStop: RouteStop | null;
+  transportationAssignments: AdminStudentTransportationAssignment[];
   guardians: Guardian[];
   guardianLinks: Array<StudentGuardian & { guardian: Guardian; profileStatus: string | null }>;
+}
+
+export interface AdminStudentTransportationAssignment extends StudentBusAssignment {
+  bus_service: BusRouteAssignment | null;
+  bus: Bus | null;
+  route: Route | null;
+  direction: RouteDirection | null;
+  trip_name: string | null;
+  pickup_stop: RouteStop | null;
+  dropoff_stop: RouteStop | null;
 }
 
 function cleanText(value: string | null | undefined): string | null {
@@ -109,9 +116,7 @@ export async function fetchAdminStudentDetail(studentId: string): Promise<AdminS
       )
       .eq('student_id', student.id)
       .eq('status', 'active')
-      .order('effective_from', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+      .order('effective_from', { ascending: true }),
     client
       .from('student_guardians')
       .select('id, tenant_id, student_id, guardian_id, relationship, can_receive_notifications, status, admin_note, status_comment, created_at, updated_at')
@@ -122,67 +127,98 @@ export async function fetchAdminStudentDetail(studentId: string): Promise<AdminS
     throw new Error('Some student details could not be loaded.');
   }
 
-  const busAssignment = (assignmentResult.data as StudentBusAssignment | null) ?? null;
-  let busService: BusRouteAssignment | null = null;
-  let bus: Bus | null = null;
-  let route: Route | null = null;
-  let pickupStop: RouteStop | null = null;
-  let dropoffStop: RouteStop | null = null;
+  const assignments = (assignmentResult.data ?? []) as StudentBusAssignment[];
+  let transportationAssignments: AdminStudentTransportationAssignment[] = [];
 
-  if (busAssignment) {
+  if (assignments.length > 0) {
+    const serviceIds = [...new Set(assignments.map((assignment) => assignment.bus_route_assignment_id))];
     const { data: serviceData, error: serviceError } = await client
       .from('bus_route_assignments')
       .select(
-        'id, tenant_id, bus_id, route_id, trip_type, effective_from, effective_to, status, created_at, updated_at',
+        'id, tenant_id, bus_id, route_id, route_trip_pattern_id, trip_type, effective_from, effective_to, status, created_at, updated_at',
       )
-      .eq('id', busAssignment.bus_route_assignment_id)
-      .maybeSingle();
+      .in('id', serviceIds);
     if (serviceError) throw new Error('The student bus service could not be loaded.');
-    busService = (serviceData as BusRouteAssignment | null) ?? null;
 
-    if (busService) {
-      const [busResult, routeResult, pickupResult, dropoffResult] = await Promise.all([
-        client
-          .from('buses')
-          .select(
-            'id, tenant_id, school_id, bus_number, license_plate, capacity, status, created_at, updated_at',
-          )
-          .eq('id', busService.bus_id)
-          .maybeSingle(),
-        client
-          .from('routes')
-          .select(
-            'id, tenant_id, school_id, route_name, route_code, route_type, status, created_at, updated_at',
-          )
-          .eq('id', busService.route_id)
-          .maybeSingle(),
-        busAssignment.pickup_stop_id
-          ? client
-              .from('route_stops')
-              .select(
-                'id, tenant_id, route_id, school_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at',
-              )
-              .eq('id', busAssignment.pickup_stop_id)
-              .maybeSingle()
-          : Promise.resolve({ data: null, error: null }),
-        busAssignment.dropoff_stop_id
-          ? client
-              .from('route_stops')
-              .select(
-                'id, tenant_id, route_id, school_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at',
-              )
-              .eq('id', busAssignment.dropoff_stop_id)
-              .maybeSingle()
-          : Promise.resolve({ data: null, error: null }),
-      ]);
-      if (busResult.error || routeResult.error || pickupResult.error || dropoffResult.error) {
-        throw new Error('The student transportation details could not be loaded.');
-      }
-      bus = (busResult.data as Bus | null) ?? null;
-      route = (routeResult.data as Route | null) ?? null;
-      pickupStop = (pickupResult.data as RouteStop | null) ?? null;
-      dropoffStop = (dropoffResult.data as RouteStop | null) ?? null;
+    const services = (serviceData ?? []) as BusRouteAssignment[];
+    const busIds = [...new Set(services.map((service) => service.bus_id))];
+    const routeIds = [...new Set(services.map((service) => service.route_id))];
+    const patternIds = [
+      ...new Set(services.map((service) => service.route_trip_pattern_id).filter(Boolean)),
+    ];
+    const stopIds = [
+      ...new Set(
+        assignments
+          .flatMap((assignment) => [assignment.pickup_stop_id, assignment.dropoff_stop_id])
+          .filter((id): id is string => !!id),
+      ),
+    ];
+    const [busResult, routeResult, patternResult, stopResult] = await Promise.all([
+      busIds.length > 0
+        ? client
+            .from('buses')
+            .select(
+              'id, tenant_id, school_id, bus_number, license_plate, capacity, status, created_at, updated_at',
+            )
+            .in('id', busIds)
+        : Promise.resolve({ data: [], error: null }),
+      routeIds.length > 0
+        ? client
+            .from('routes')
+            .select(
+              'id, tenant_id, school_id, route_name, route_code, route_type, status, created_at, updated_at',
+            )
+            .in('id', routeIds)
+        : Promise.resolve({ data: [], error: null }),
+      patternIds.length > 0
+        ? client
+            .from('route_trip_patterns')
+            .select(
+              'id, tenant_id, route_id, direction, display_name, status, schedule_review_required, created_at, updated_at',
+            )
+            .in('id', patternIds)
+        : Promise.resolve({ data: [], error: null }),
+      stopIds.length > 0
+        ? client
+            .from('route_stops')
+            .select(
+              'id, tenant_id, route_id, school_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at',
+            )
+            .in('id', stopIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+    if (busResult.error || routeResult.error || patternResult.error || stopResult.error) {
+      throw new Error('The student transportation details could not be loaded.');
     }
+
+    const serviceById = new Map(services.map((service) => [service.id, service]));
+    const busById = new Map(((busResult.data ?? []) as Bus[]).map((bus) => [bus.id, bus]));
+    const routeById = new Map(((routeResult.data ?? []) as Route[]).map((route) => [route.id, route]));
+    const patternById = new Map(
+      ((patternResult.data ?? []) as RouteTripPattern[]).map((pattern) => [pattern.id, pattern]),
+    );
+    const stopById = new Map(((stopResult.data ?? []) as RouteStop[]).map((stop) => [stop.id, stop]));
+
+    transportationAssignments = assignments.map((assignment) => {
+      const service = serviceById.get(assignment.bus_route_assignment_id) ?? null;
+      const pattern = service ? (patternById.get(service.route_trip_pattern_id) ?? null) : null;
+      return {
+        ...assignment,
+        bus_service: service,
+        bus: service ? (busById.get(service.bus_id) ?? null) : null,
+        route: service ? (routeById.get(service.route_id) ?? null) : null,
+        direction:
+          pattern?.direction ??
+          (service ? (service.trip_type === 'morning' ? 'forward' : 'reverse') : null),
+        trip_name: pattern?.display_name ?? null,
+        pickup_stop: assignment.pickup_stop_id
+          ? (stopById.get(assignment.pickup_stop_id) ?? null)
+          : null,
+        dropoff_stop: assignment.dropoff_stop_id
+          ? (stopById.get(assignment.dropoff_stop_id) ?? null)
+          : null,
+      };
+    });
   }
 
   const guardianIds = (guardianLinksResult.data ?? []).map(
@@ -226,12 +262,7 @@ export async function fetchAdminStudentDetail(studentId: string): Promise<AdminS
   return {
     student,
     schoolName: (schoolResult.data as { name: string } | null)?.name ?? null,
-    busAssignment,
-    busService,
-    bus,
-    route,
-    pickupStop,
-    dropoffStop,
+    transportationAssignments,
     guardians,
     guardianLinks,
   };

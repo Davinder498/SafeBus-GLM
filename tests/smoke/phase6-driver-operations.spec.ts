@@ -177,6 +177,10 @@ async function installPhase6DriverMock(page: Page) {
           await fulfillRows([routeRow]);
           return;
         }
+        if (path.includes('/driver_route_assignments')) {
+          await fulfillRows([]);
+          return;
+        }
         if (path.includes('/driver_trips')) {
           await fulfillRows(currentTrip ? [currentTrip] : []);
           return;

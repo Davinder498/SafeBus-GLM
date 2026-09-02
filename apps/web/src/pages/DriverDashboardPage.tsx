@@ -21,6 +21,7 @@ import {
   pauseDriverTrip,
   resumeDriverTrip,
 } from '@/services/driverTripService';
+import { fetchOwnPlannedDriverAssignments } from '@/services/driverAssignmentService';
 import {
   confirmPreTrip,
   getPreTripConfirmation,
@@ -28,12 +29,17 @@ import {
   type TripExceptionType,
 } from '@/services/phase6OperationsService';
 import type { BusTrackingStartResult } from '@/services/busTrackingService';
+import type { PlannedDriverAssignment } from '@/types/driverAssignments';
 import type { DriverTrip } from '@/types/trips';
 
 type LoadState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; activeTrip: DriverTrip | null };
+  | {
+      kind: 'ready';
+      activeTrip: DriverTrip | null;
+      plannedAssignments: PlannedDriverAssignment[];
+    };
 
 const EXCEPTION_TYPES: { value: TripExceptionType; label: string }[] = [
   { value: 'traffic_delay', label: 'Traffic delay' },
@@ -51,6 +57,72 @@ function formatTimestamp(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function formatPlanDate(value: string | null) {
+  if (!value) return 'Open ended';
+  return new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${value}T00:00:00Z`));
+}
+
+function PlannedAssignmentsCard({ assignments }: { assignments: PlannedDriverAssignment[] }) {
+  return (
+    <Card className="p-5" data-testid="driver-planned-assignments">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-gray-500">Administrative guidance</p>
+          <h2 className="mt-1 text-lg font-bold text-navy-900">Your planned assignments</h2>
+        </div>
+        <StatusPill tone="info">Planned</StatusPill>
+      </div>
+      <p className="mt-3 text-sm leading-6 text-slate-600">
+        These assignments help you prepare. Scan the bus QR to confirm the bus and route direction
+        you are actually operating.
+      </p>
+      {assignments.length === 0 ? (
+        <p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
+          No current or upcoming assignments are planned. You can still scan any eligible tenant bus
+          when directed by operations.
+        </p>
+      ) : (
+        <div className="mt-4 space-y-3">
+          {assignments.map((assignment) => {
+            const today = new Date().toISOString().slice(0, 10);
+            const upcoming = !!assignment.effective_from && assignment.effective_from > today;
+            return (
+              <div key={assignment.id} className="rounded-lg border border-slate-200 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="font-bold text-navy-900">Bus {assignment.bus_number}</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-700">
+                      {assignment.route_code} · {assignment.route_name}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {assignment.trip_name} ·{' '}
+                      {assignment.direction === 'forward' ? 'Outbound' : 'Return'}
+                    </p>
+                  </div>
+                  <StatusPill tone={upcoming ? 'info' : 'success'}>
+                    {upcoming ? 'Upcoming plan' : 'Current plan'}
+                  </StatusPill>
+                </div>
+                <p className="mt-2 text-sm text-slate-600">
+                  {assignment.effective_from
+                    ? formatPlanDate(assignment.effective_from)
+                    : 'No start date'}{' '}
+                  – {formatPlanDate(assignment.effective_to)}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Card>
+  );
 }
 
 export function DriverDashboardPage() {
@@ -78,10 +150,13 @@ export function DriverDashboardPage() {
   const load = useCallback(async () => {
     setState({ kind: 'loading' });
     try {
-      const trip = await fetchActiveDriverTrip();
+      const [trip, plannedAssignments] = await Promise.all([
+        fetchActiveDriverTrip(),
+        fetchOwnPlannedDriverAssignments(),
+      ]);
       const confirmation = trip ? await getPreTripConfirmation(trip.id).catch(() => null) : null;
       setPreTripConfirmed(confirmation !== null);
-      setState({ kind: 'ready', activeTrip: trip });
+      setState({ kind: 'ready', activeTrip: trip, plannedAssignments });
     } catch (cause) {
       setState({
         kind: 'error',
@@ -96,7 +171,11 @@ export function DriverDashboardPage() {
 
   async function handleStarted(result: BusTrackingStartResult) {
     await tracking.activateTracking(result.trackingToken);
-    setState({ kind: 'ready', activeTrip: result.trip });
+    setState((current) => ({
+      kind: 'ready',
+      activeTrip: result.trip,
+      plannedAssignments: current.kind === 'ready' ? current.plannedAssignments : [],
+    }));
     setPreTripConfirmed(false);
     setActionError(null);
     setMessage(
@@ -116,7 +195,11 @@ export function DriverDashboardPage() {
       setConfirmEndOpen(false);
       setMessage('Trip ended. Location sharing stopped.');
       setPreTripConfirmed(false);
-      setState({ kind: 'ready', activeTrip: null });
+      setState((current) => ({
+        kind: 'ready',
+        activeTrip: null,
+        plannedAssignments: current.kind === 'ready' ? current.plannedAssignments : [],
+      }));
     } catch (cause) {
       setActionError(cause instanceof Error ? cause.message : 'Could not end this trip.');
     } finally {
@@ -132,7 +215,11 @@ export function DriverDashboardPage() {
     try {
       const updated = await pauseDriverTrip(state.activeTrip.id);
       tracking.location.stop();
-      setState({ kind: 'ready', activeTrip: updated });
+      setState((current) => ({
+        kind: 'ready',
+        activeTrip: updated,
+        plannedAssignments: current.kind === 'ready' ? current.plannedAssignments : [],
+      }));
       setMessage('Trip paused. Location sharing stopped until the trip resumes.');
     } catch (cause) {
       setActionError(cause instanceof Error ? cause.message : 'Could not pause this trip.');
@@ -148,7 +235,11 @@ export function DriverDashboardPage() {
     try {
       const updated = await resumeDriverTrip(state.activeTrip.id);
       tracking.location.start();
-      setState({ kind: 'ready', activeTrip: updated });
+      setState((current) => ({
+        kind: 'ready',
+        activeTrip: updated,
+        plannedAssignments: current.kind === 'ready' ? current.plannedAssignments : [],
+      }));
       setMessage('Trip resumed.');
     } catch (cause) {
       setActionError(cause instanceof Error ? cause.message : 'Could not resume this trip.');
@@ -168,7 +259,11 @@ export function DriverDashboardPage() {
       setCancelReason('');
       setPreTripConfirmed(false);
       setMessage('Trip cancelled and recorded in the audit trail.');
-      setState({ kind: 'ready', activeTrip: null });
+      setState((current) => ({
+        kind: 'ready',
+        activeTrip: null,
+        plannedAssignments: current.kind === 'ready' ? current.plannedAssignments : [],
+      }));
     } catch (cause) {
       setActionError(cause instanceof Error ? cause.message : 'Could not cancel this trip.');
     } finally {
@@ -215,6 +310,22 @@ export function DriverDashboardPage() {
   }
 
   const activeTrip = state.kind === 'ready' ? state.activeTrip : null;
+  const plannedAssignments = state.kind === 'ready' ? state.plannedAssignments : [];
+  const today = new Date().toISOString().slice(0, 10);
+  const currentPlans = plannedAssignments.filter(
+    (assignment) =>
+      (!assignment.effective_from || assignment.effective_from <= today) &&
+      (!assignment.effective_to || assignment.effective_to >= today),
+  );
+  const currentTripDiffersFromPlan = !!(
+    activeTrip &&
+    currentPlans.length > 0 &&
+    !currentPlans.some(
+      (assignment) =>
+        assignment.bus_id === activeTrip.bus_id &&
+        assignment.route_trip_pattern_id === activeTrip.route_trip_pattern_id,
+    )
+  );
   const isPaused = activeTrip?.status === 'paused';
   const isActive = activeTrip?.status === 'active';
 
@@ -266,7 +377,10 @@ export function DriverDashboardPage() {
         )}
 
         {state.kind === 'ready' && !activeTrip && (
-          <BusQrStartScanner hasActiveTrip={false} onStarted={handleStarted} />
+          <div className="space-y-5">
+            <PlannedAssignmentsCard assignments={plannedAssignments} />
+            <BusQrStartScanner hasActiveTrip={false} onStarted={handleStarted} />
+          </div>
         )}
 
         {state.kind === 'ready' && activeTrip && (
@@ -440,6 +554,28 @@ export function DriverDashboardPage() {
                 </Button>
               </div>
             </Card>
+
+            {currentTripDiffersFromPlan && (
+              <Card
+                className="border-warning-200 bg-warning-50 p-4"
+                role="status"
+                data-testid="driver-plan-mismatch-notice"
+              >
+                <div className="flex gap-3">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning-700" aria-hidden />
+                  <div>
+                    <p className="font-bold text-warning-800">Current trip differs from the plan</p>
+                    <p className="mt-1 text-sm text-warning-800">
+                      The scanned bus and route remain your confirmed active trip. The planned
+                      assignment was not changed; contact operations if the difference is
+                      unexpected.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            <PlannedAssignmentsCard assignments={plannedAssignments} />
 
             {(!tracking.trackingToken ||
               tracking.location.state.kind === 'denied' ||

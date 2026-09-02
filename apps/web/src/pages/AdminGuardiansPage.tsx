@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { CheckCircle2, CircleDashed, Eye, Mail, Phone, UserRound } from 'lucide-react';
-import { Link } from 'react-router';
+import { useNavigate } from 'react-router';
 import { AdminPagination } from '@/components/admin/AdminPagination';
 import { StudentSearchPicker } from '@/components/admin/StudentSearchPicker';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
@@ -33,6 +33,7 @@ function guardianName(guardian: Guardian) {
 
 export function AdminGuardiansPage() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const list = usePaginatedAdminList<GuardianRow>('guardians');
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [inviteForm, setInviteForm] = useState(emptyInvite);
@@ -146,16 +147,30 @@ export function AdminGuardiansPage() {
               <table className="w-full min-w-[760px] table-fixed text-left">
                 <thead className="border-b border-slate-200 bg-slate-50/80">
                   <tr className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    <th className="w-[30%] px-5 py-3">Guardian</th>
-                    <th className="w-[28%] px-5 py-3">Email</th>
+                    <th className="w-[29%] px-5 py-3">Guardian</th>
+                    <th className="w-[27%] px-5 py-3">Email</th>
                     <th className="w-[22%] px-5 py-3">Phone</th>
                     <th className="w-[12%] px-5 py-3">Students</th>
-                    <th className="w-[8%] px-5 py-3 text-right"><span className="sr-only">Guardian actions</span></th>
+                    <th className="w-[10%] px-5 py-3 text-right"><span className="sr-only">Guardian actions</span></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {list.rows.map((guardian) => (
-                    <tr key={guardian.id} className="h-16 whitespace-nowrap transition-colors hover:bg-slate-50/70">
+                    <tr
+                      key={guardian.id}
+                      role="link"
+                      tabIndex={0}
+                      aria-label={`View ${guardianName(guardian)}`}
+                      data-testid="admin-guardian-row"
+                      className="h-16 cursor-pointer whitespace-nowrap outline-none transition-colors hover:bg-slate-50/70 focus-visible:bg-navy-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-500"
+                      onClick={() => navigate(`/admin/guardians/${guardian.id}`)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          navigate(`/admin/guardians/${guardian.id}`);
+                        }
+                      }}
+                    >
                       <td className="overflow-hidden px-5 py-3">
                         <div className="flex min-w-0 items-center gap-3">
                           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-navy-50 text-navy-700"><UserRound className="h-4 w-4" aria-hidden /></span>
@@ -170,8 +185,8 @@ export function AdminGuardiansPage() {
                           {guardian.active_link_count}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-right">
-                        <Link to={`/admin/guardians/${guardian.id}`} aria-label={`View ${guardianName(guardian)}`} title="View guardian" className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-navy-700 transition-colors hover:bg-navy-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 focus-visible:ring-offset-2"><Eye className="h-4 w-4" aria-hidden /></Link>
+                      <td className="border-l border-slate-100 px-5 py-3 text-right">
+                        <span title="View guardian" data-testid="admin-guardian-row-view-icon" className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-navy-700"><Eye className="h-4 w-4 shrink-0" aria-hidden /></span>
                       </td>
                     </tr>
                   ))}

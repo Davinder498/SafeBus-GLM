@@ -3,8 +3,16 @@ import { Button } from '@/components/ui/Button';
 import type { OrganizationProfile } from '@/types/organization';
 import type { Bus, DirectionScope, Driver, Route, RouteTripPattern } from '@/types/transportation';
 import type { AdminBusRouteAssignment } from '@/services/adminBusWorkspaceService';
-import type { ReplaceBusTripDriverInput } from '@/services/adminBusWorkspaceService';
-import type { SetBusRouteServiceInput } from '@/services/studentBusAssignmentService';
+import type {
+  DriverRouteAssignment,
+  PlannedDriverAssignment,
+  SetPlannedDriverAssignmentInput,
+} from '@/types/driverAssignments';
+import type {
+  BusServiceOption,
+  SetBusRouteServiceInput,
+} from '@/services/studentBusAssignmentService';
+import { busWorkspaceLifecycle } from '@/utils/busWorkspace';
 import { directionScopeFromDirections } from '@/utils/directionalAssignments';
 
 const fieldClassName =
@@ -219,6 +227,7 @@ export function BusWorkspaceRouteForm({
 
 export function BusWorkspaceDriverForm({
   service,
+  assignment,
   drivers,
   profiles,
   initialDriverId,
@@ -228,21 +237,26 @@ export function BusWorkspaceDriverForm({
   onCancel,
 }: {
   service: AdminBusRouteAssignment;
+  assignment?: DriverRouteAssignment | null;
   drivers: Driver[];
   profiles: OrganizationProfile[];
   initialDriverId?: string;
   canInviteDriver: boolean;
   onAddDriver: () => void;
-  onSubmit: (input: ReplaceBusTripDriverInput) => Promise<void>;
+  onSubmit: (input: SetPlannedDriverAssignmentInput) => Promise<void>;
   onCancel: () => void;
 }) {
   const profileNames = useMemo(
     () => new Map(profiles.map((profile) => [profile.id, profile.full_name])),
     [profiles],
   );
-  const [driverId, setDriverId] = useState(initialDriverId ?? '');
-  const [effectiveFrom, setEffectiveFrom] = useState(new Date().toISOString().slice(0, 10));
-  const [effectiveTo, setEffectiveTo] = useState('');
+  const today = new Date().toISOString().slice(0, 10);
+  const [driverId, setDriverId] = useState(initialDriverId ?? assignment?.driver_id ?? '');
+  const [effectiveFrom, setEffectiveFrom] = useState(
+    assignment?.effective_from ??
+      (service.effective_from && service.effective_from > today ? service.effective_from : today),
+  );
+  const [effectiveTo, setEffectiveTo] = useState(assignment?.effective_to ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -264,6 +278,7 @@ export function BusWorkspaceDriverForm({
         driverId,
         effectiveFrom,
         effectiveTo: effectiveTo || null,
+        existingAssignmentId: assignment?.id ?? null,
       });
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Unable to save this driver.');
@@ -283,7 +298,7 @@ export function BusWorkspaceDriverForm({
       {error && <p className="text-sm font-semibold text-danger-700">{error}</p>}
       <div className="grid gap-4 md:grid-cols-2">
         <label className={labelClassName}>
-          Driver
+          Planned driver
           <select
             className={fieldClassName}
             value={driverId}
@@ -302,7 +317,7 @@ export function BusWorkspaceDriverForm({
         <div className="flex items-end">
           {canInviteDriver && (
             <Button type="button" variant="outline" onClick={onAddDriver}>
-              Add driver
+              Invite driver
             </Button>
           )}
         </div>
@@ -328,11 +343,160 @@ export function BusWorkspaceDriverForm({
       </div>
       <p className="text-sm text-gray-600">
         Saving deactivates any overlapping driver assignment for this named trip and keeps it in
-        history.
+        history. This plan does not start a trip; the driver confirms the bus and route by scanning
+        its QR code.
       </p>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" loading={saving}>
-          Save driver assignment
+          Save planned assignment
+        </Button>
+        <Button type="button" variant="secondary" disabled={saving} onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+export function DriverPlannedBusAssignmentForm({
+  driverId,
+  assignment,
+  services,
+  onSubmit,
+  onCancel,
+}: {
+  driverId: string;
+  assignment?: PlannedDriverAssignment | null;
+  services: BusServiceOption[];
+  onSubmit: (input: SetPlannedDriverAssignmentInput) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const eligibleServices = useMemo(
+    () =>
+      services.filter(
+        (service) =>
+          busWorkspaceLifecycle(service) !== 'history' &&
+          (!assignment || service.route_trip_pattern_id === assignment.route_trip_pattern_id),
+      ),
+    [assignment, services],
+  );
+  const initialServiceId = assignment?.bus_route_assignment_id ?? eligibleServices[0]?.id ?? '';
+  const [serviceId, setServiceId] = useState(initialServiceId);
+  const selectedService = eligibleServices.find((service) => service.id === serviceId) ?? null;
+  const today = new Date().toISOString().slice(0, 10);
+  const [effectiveFrom, setEffectiveFrom] = useState(
+    assignment?.effective_from ??
+      (selectedService?.effective_from && selectedService.effective_from > today
+        ? selectedService.effective_from
+        : today),
+  );
+  const [effectiveTo, setEffectiveTo] = useState(assignment?.effective_to ?? '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!selectedService || !effectiveFrom) {
+      setError('Select an available bus service and effective-from date.');
+      return;
+    }
+    if (effectiveTo && effectiveTo < effectiveFrom) {
+      setError('Effective-to date must be on or after effective-from date.');
+      return;
+    }
+    if (
+      (selectedService.effective_from && effectiveFrom < selectedService.effective_from) ||
+      (selectedService.effective_to && (!effectiveTo || effectiveTo > selectedService.effective_to))
+    ) {
+      setError('Planned dates must stay within the selected bus service dates.');
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+    try {
+      await onSubmit({
+        driverId,
+        busRouteAssignmentId: selectedService.id,
+        effectiveFrom,
+        effectiveTo: effectiveTo || null,
+        existingAssignmentId: assignment?.id ?? null,
+      });
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : 'Unable to save this planned assignment.',
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form className="grid gap-4" onSubmit={submit}>
+      <p className="text-sm text-gray-600">
+        {assignment ? 'Change the planned bus or dates' : 'Choose a planned bus service'} for this
+        driver. The route direction stays fixed when editing, and only a QR scan confirms the trip
+        actually operated.
+      </p>
+      {error && <p className="text-sm font-semibold text-danger-700">{error}</p>}
+      <label className={labelClassName}>
+        Planned bus service
+        <select
+          className={fieldClassName}
+          value={serviceId}
+          onChange={(event) => {
+            const nextId = event.target.value;
+            const next = eligibleServices.find((service) => service.id === nextId);
+            setServiceId(nextId);
+            if (!assignment && next?.effective_from && next.effective_from > today) {
+              setEffectiveFrom(next.effective_from);
+            }
+            if (!assignment) setEffectiveTo(next?.effective_to ?? '');
+          }}
+        >
+          <option value="">Select a bus service</option>
+          {eligibleServices.map((service) => (
+            <option key={service.id} value={service.id}>
+              Bus {service.bus_number} · {service.route_code} · {service.trip_name} (
+              {service.direction === 'forward' ? 'Outbound' : 'Return'})
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className={labelClassName}>
+          Effective from
+          <input
+            className={fieldClassName}
+            type="date"
+            min={selectedService?.effective_from ?? undefined}
+            max={selectedService?.effective_to ?? undefined}
+            value={effectiveFrom}
+            onChange={(event) => setEffectiveFrom(event.target.value)}
+          />
+        </label>
+        <label className={labelClassName}>
+          Effective to
+          <input
+            className={fieldClassName}
+            type="date"
+            min={effectiveFrom || selectedService?.effective_from || undefined}
+            max={selectedService?.effective_to ?? undefined}
+            value={effectiveTo}
+            onChange={(event) => setEffectiveTo(event.target.value)}
+          />
+        </label>
+      </div>
+      {eligibleServices.length === 0 && (
+        <p className="rounded-lg bg-warning-50 p-3 text-sm font-semibold text-warning-700">
+          No active, ready bus services are available for this planned route direction.
+        </p>
+      )}
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" loading={saving} disabled={!selectedService}>
+          Save planned assignment
         </Button>
         <Button type="button" variant="secondary" disabled={saving} onClick={onCancel}>
           Cancel

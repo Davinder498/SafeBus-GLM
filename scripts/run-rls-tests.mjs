@@ -28,6 +28,7 @@ const DEFAULT_RLS_FILES = [
   'tests/rls/student-csv-import-rls.sql',
   'tests/rls/route-trip-pattern-rls.sql',
   'tests/rls/qr-only-driver-trip-start-rls.sql',
+  'tests/rls/planned-driver-bus-assignments-rls.sql',
   'tests/rls/unified-direction-assignment-rls.sql',
   'tests/rls/driver-completed-trip-history-rls.sql',
   'tests/rls/invitation-password-activation-rls.sql',

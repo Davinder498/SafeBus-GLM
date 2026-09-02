@@ -39,7 +39,7 @@ export function AdminBusesPage() {
         <PageHeader
           eyebrow="Buses"
           title="Visible buses"
-          description="Select a bus to manage its details, QR, route trips, and student roster."
+          description="Select a bus to manage its details, QR, route trips, planned drivers, and student roster."
         />
 
         {canWrite && (
