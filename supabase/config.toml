@@ -1,10 +1,15 @@
-# SafeBus has no approved Supabase Edge Functions. The current driver tracking
-# path uses authenticated, authorization-reviewed Postgres RPCs. Keep the two
-# retired prototype names disabled so a broad `supabase functions deploy`
-# cannot publish them if obsolete source is accidentally restored.
+# Driver tracking continues to use authenticated, authorization-reviewed
+# Postgres RPCs. Keep the retired prototype names disabled so a broad function
+# deployment cannot publish them if obsolete source is accidentally restored.
 
 [functions.ingest-location]
 enabled = false
 
 [functions.gps-stale-check]
 enabled = false
+
+[functions.push-notification-dispatcher]
+enabled = true
+verify_jwt = false
+import_map = "./functions/push-notification-dispatcher/deno.json"
+entrypoint = "./functions/push-notification-dispatcher/index.ts"

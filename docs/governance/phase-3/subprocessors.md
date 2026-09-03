@@ -3,7 +3,7 @@
 **Status:** Draft — vendors are placeholders until contract review completes
 **Owner:** Privacy Lead + Product Owner
 **Phase:** 3 — Alberta privacy and legal readiness
-**Last updated:** 2026-08-16
+**Last updated:** 2026-09-02
 
 ---
 
@@ -16,14 +16,15 @@ derived from it after counsel approval.
 
 ## 2. Subprocessor register
 
-| Vendor | Service | Personal data accessed | Processing location | Cross-border? | DPA status | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| **Supabase** | Postgres + Auth | Primary data store: identity, relationships, trips, location, notifications, audit | Intended ca-central-1; verify project and backups | Unverified | Pending | Required by the platform; confirm DPA + processing/backup region in writing |
-| **Netlify** | App hosting + Functions | Ephemeral request processing; no at-rest personal data | To confirm (default global edge) | Possibly (edge nodes) | Pending | Configure Functions region; confirm no at-rest personal data |
-| **Email provider** (Resend or approved alternative) | Transactional email | Recipient email + notification content in transit | To confirm | Possibly (provider infra) | Pending | Server-side only; recipient resolved from `profiles`/`guardians` |
-| **Geoapify** (pilot selection) | Map tiles | Tile coordinates, IP address, HTTP origin/referrer, and ordinary request metadata; no SafeBus account or student identifier | Provider infrastructure; confirm in writing | Possibly | Pending | Free commercial quota is suitable for evaluation. Paid plans publish a 99.5% monthly SLA. Contract, privacy, residency, and paid-plan decisions remain launch gates. |
-| **Monitoring / error reporting** (future) | Observability | Potential stack traces / metadata | To confirm | Possibly | Pending | Must scrub personal data before transmission; counsel approval required |
-| **Customer support systems** (future) | Support tickets | Support metadata; minimal personal data | To confirm | Possibly | Pending | Configure to exclude direct DB access; tenant-scoped |
+| Vendor                                              | Service                 | Personal data accessed                                                                                                                                                                          | Processing location                               | Cross-border?                | DPA status | Notes                                                                                                                                                                |
+| --------------------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ---------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Supabase**                                        | Postgres + Auth         | Primary data store: identity, relationships, trips, location, notifications, audit                                                                                                              | Intended ca-central-1; verify project and backups | Unverified                   | Pending    | Required by the platform; confirm DPA + processing/backup region in writing                                                                                          |
+| **Netlify**                                         | App hosting + Functions | Ephemeral request processing; no at-rest personal data                                                                                                                                          | To confirm (default global edge)                  | Possibly (edge nodes)        | Pending    | Configure Functions region; confirm no at-rest personal data                                                                                                         |
+| **Email provider** (Resend or approved alternative) | Transactional email     | Recipient email + notification content in transit                                                                                                                                               | To confirm                                        | Possibly (provider infra)    | Pending    | Server-side only; recipient resolved from `profiles`/`guardians`                                                                                                     |
+| **Google LLC (Firebase Cloud Messaging)**           | Android push delivery   | FCM registration token, generic or event-type-only alert, device IP and ordinary delivery metadata; no names, routes, stops, coordinates, driver identity, tenant ID, or internal ID in payload | To confirm (Google infrastructure)                | Likely; counsel must confirm | Pending    | Required only for guardian/driver Android push; opt-in and tenant gate default off; service credential restricted to protected Supabase Edge Function Secrets        |
+| **Geoapify** (pilot selection)                      | Map tiles               | Tile coordinates, IP address, HTTP origin/referrer, and ordinary request metadata; no SafeBus account or student identifier                                                                     | Provider infrastructure; confirm in writing       | Possibly                     | Pending    | Free commercial quota is suitable for evaluation. Paid plans publish a 99.5% monthly SLA. Contract, privacy, residency, and paid-plan decisions remain launch gates. |
+| **Monitoring / error reporting** (future)           | Observability           | Potential stack traces / metadata                                                                                                                                                               | To confirm                                        | Possibly                     | Pending    | Must scrub personal data before transmission; counsel approval required                                                                                              |
+| **Customer support systems** (future)               | Support tickets         | Support metadata; minimal personal data                                                                                                                                                         | To confirm                                        | Possibly                     | Pending    | Configure to exclude direct DB access; tenant-scoped                                                                                                                 |
 
 > "Pending" means the contract/DPA is not yet executed. No subprocessor
 > processes production personal data until its DPA is signed and recorded
@@ -52,6 +53,9 @@ For each vendor, the Privacy Lead and Product Owner complete:
 - No personal data is transferred cross-border except:
 
   - Email content in transit to the email provider (server-side).
+  - FCM registration tokens, privacy-safe push content, device IP addresses,
+    and ordinary delivery metadata sent to Google only after user opt-in and
+    tenant approval.
   - Map tile requests, which contain viewport tile coordinates, device IP,
     HTTP origin/referrer, and normal request metadata but no SafeBus entity or
     account identifier.

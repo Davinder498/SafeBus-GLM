@@ -151,19 +151,28 @@ test('every external GitHub Action is pinned to an immutable commit', async () =
   assert.match(dependabot, /package-ecosystem: github-actions/);
 });
 
-test('retired Supabase Edge Function prototypes cannot be deployed', async () => {
-  const [config, apiEntry, apiPackage, contracts, validation, webTracking, androidTracking] =
-    await Promise.all([
-      read('supabase/config.toml'),
-      read('packages/api/src/index.ts'),
-      read('packages/api/package.json'),
-      read('packages/types/src/api-contracts.ts'),
-      read('packages/api/src/validation.ts'),
-      read('apps/web/src/services/driverLocationService.ts'),
-      read(
-        'apps/mobile/android/app/src/main/java/com/safebusalberta/app/tracking/DriverTrackingService.java',
-      ),
-    ]);
+test('retired tracking functions stay disabled while the reviewed push function is isolated', async () => {
+  const [
+    config,
+    apiEntry,
+    apiPackage,
+    contracts,
+    validation,
+    webTracking,
+    androidTracking,
+    pushHandler,
+  ] = await Promise.all([
+    read('supabase/config.toml'),
+    read('packages/api/src/index.ts'),
+    read('packages/api/package.json'),
+    read('packages/types/src/api-contracts.ts'),
+    read('packages/api/src/validation.ts'),
+    read('apps/web/src/services/driverLocationService.ts'),
+    read(
+      'apps/mobile/android/app/src/main/java/com/safebusalberta/app/tracking/DriverTrackingService.java',
+    ),
+    read('supabase/functions/push-notification-dispatcher/index.ts'),
+  ]);
 
   for (const functionName of ['ingest-location', 'gps-stale-check']) {
     assert.match(
@@ -183,6 +192,8 @@ test('retired Supabase Edge Function prototypes cannot be deployed', async () =>
   );
   assert.match(webTracking, /client\.rpc\('update_driver_trip_location'/);
   assert.match(androidTracking, /\/rest\/v1\/rpc\/ingest_driver_location_event/);
+  assert.match(config, /\[functions\.push-notification-dispatcher\][\s\S]*enabled\s*=\s*true/);
+  assert.doesNotMatch(pushHandler, /location|latitude|longitude|ingest_driver_location_event/i);
 });
 
 test('dependency automation defers incompatible toolchain major upgrades', async () => {
