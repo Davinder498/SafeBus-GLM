@@ -14,6 +14,13 @@ const schedulerMigration = await readFile(
   ),
   'utf8',
 );
+const registrationFixMigration = await readFile(
+  new URL(
+    '../../supabase/migrations/0095_fix_idempotent_push_registration.sql',
+    import.meta.url,
+  ),
+  'utf8',
+);
 const edgeConfig = await readFile(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
 const edgeHandler = await readFile(
   new URL('../../supabase/functions/push-notification-dispatcher/index.ts', import.meta.url),
@@ -155,6 +162,26 @@ test('Android registration handles permission, channels, taps, refresh and clean
   assert.match(nativePush, /revoke_own_push_device/);
   assert.match(nativePush, /PushNotifications\.unregister\(\)/);
   assert.match(androidManifest, /default_notification_icon/);
+});
+
+test('Android token refresh preserves the active device and its queued deliveries', () => {
+  assert.match(registrationFixMigration, /pg_advisory_xact_lock/i);
+  assert.match(
+    registrationFixMigration,
+    /where device\.profile_id = v_auth_id[\s\S]*device\.installation_id = v_installation_id[\s\S]*device\.status = 'active'[\s\S]*for update/i,
+  );
+  assert.match(
+    registrationFixMigration,
+    /if v_id is not null then[\s\S]*update public\.android_push_devices device[\s\S]*where device\.id = v_id/i,
+  );
+  assert.match(
+    registrationFixMigration,
+    /device\.token_hash = v_hash[\s\S]*update public\.push_notification_outbox outbox[\s\S]*failure_category = 'device_reassigned'/i,
+  );
+  assert.doesNotMatch(
+    registrationFixMigration,
+    /where status='active' and \(token_hash=v_hash or \(profile_id=auth\.uid\(\)/i,
+  );
 });
 
 test('unconfigured Firebase builds cannot invoke token registration or terminate login', () => {

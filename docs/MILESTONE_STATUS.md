@@ -898,12 +898,13 @@ Pending: apply `0087` to hosted DEV; run cross-guardian/revocation/expiry and no
 
 ## End-to-End Notification System
 
-Status: notification foundation merged; Supabase push-dispatcher transition implemented on `codex/move-push-dispatcher-supabase` for human review. Unapplied and undeployed.
+Status: notification foundation and Supabase push dispatcher merged and deployed to the approved production canary. Scheduler, tenant/privacy gate, guardian consent, device registration, durable inbox and Realtime delivery are confirmed. Real FCM acceptance exposed active-device churn during native token refresh; forward migration `0095_fix_idempotent_push_registration.sql` repairs the lifecycle and awaits human review/application.
 
 - Adds migration `0092_end_to_end_notification_system.sql` with durable role-scoped inboxes, exact-user private Realtime invalidations, channel/category/per-linked-student consent, quiet hours, private FCM registrations, leased delivery queue, five-attempt retry, invalid-token revocation, 90-day retention and email/push health separation.
 - Adds universal inbox/settings pages, unread badge, accessible foreground toast, cursor pagination, read/archive/filter controls, guardian email integration, admin web-only behavior and Android permission/device controls.
 - Adds FCM notification-plus-data dispatch, private lock-screen previews, urgent/trip/assignment channels, tap routing, sign-out/account cleanup and provider incident notification.
 - Moves the Android push worker from Netlify to the protected `push-notification-dispatcher` Supabase Edge Function. Migration `0094_schedule_push_notification_dispatcher.sql` uses `pg_cron`, `pg_net`, and Vault for a fail-closed one-minute schedule; a separate protected workflow deploys only the reviewed function after merge.
+- Adds forward migration `0095_fix_idempotent_push_registration.sql`: repeated registration for the same guardian/driver installation updates the existing active row so queued deliveries remain eligible; genuine token reassignment revokes conflicts and cancels their unfinished queues.
 - Excludes SMS, iOS push, web push, campaigns, localization, digests, GPS pings, coordinate changes, routine CRUD, arbitrary exception text and unrelated-tenant events.
 
-Pending: isolated migration/RLS execution, real-device FCM matrix, privacy/security/FCM-subprocessor/Google Play approval, protected secrets, tenant approval and a human-authorized canary. Push defaults and tenant gate remain off.
+Pending: human review and protected application of `0095`; background/killed-app FCM retest; the wider permission/channel/tap/account-switch matrix; isolated RLS execution; and remaining Google Play/launch approvals. Push remains limited to the explicitly approved `Demo School admin` canary tenant.

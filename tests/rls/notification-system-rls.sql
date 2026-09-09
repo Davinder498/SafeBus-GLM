@@ -1,10 +1,10 @@
 -- SafeBus Alberta notification authorization acceptance fixture.
 -- Execute only against an explicitly approved isolated Supabase database after
--- migration 0092. Never run this fixture against the sole production project.
+-- migration 0095. Never run this fixture against the sole production project.
 begin;
 
 do $$
-declare v_claim text; v_inbox text;
+declare v_claim text; v_inbox text; v_registration text;
 begin
   if to_regclass('public.user_notifications') is null
     or to_regclass('public.android_push_devices') is null
@@ -30,6 +30,15 @@ begin
   select lower(pg_get_functiondef('public.get_user_notifications(integer,timestamp with time zone,uuid,boolean,text)'::regprocedure)) into v_inbox;
   if position('auth.uid()' in v_inbox)=0 or position('access_expires_at' in v_inbox)=0 then
     raise exception 'TEST FAILED: inbox does not recheck exact recipient and guardian expiry';
+  end if;
+  select lower(pg_get_functiondef(
+    'public.register_android_push_device(text,text,text,text,text)'::regprocedure
+  )) into v_registration;
+  if position('pg_advisory_xact_lock' in v_registration)=0
+    or position('device.id <> v_id' in v_registration)=0
+    or position('if v_id is not null then' in v_registration)=0
+    or position('failure_category = ''device_reassigned''' in v_registration)=0 then
+    raise exception 'TEST FAILED: Android push refresh is not idempotent or does not cancel reassigned-device deliveries';
   end if;
 end $$;
 
