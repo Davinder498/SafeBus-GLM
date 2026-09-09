@@ -23,6 +23,9 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 import { ParentDashboardPage } from '@/pages/ParentDashboardPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { UpdatePasswordPage } from '@/pages/UpdatePasswordPage';
+import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage';
+import { AccountDeletionPage } from '@/pages/AccountDeletionPage';
+import { AccountSettingsPage } from '@/pages/AccountSettingsPage';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { PublicOnlyRoute } from '@/routes/PublicOnlyRoute';
 import { AdminNotAvailablePage } from '../pages/AdminNotAvailablePage';
@@ -50,17 +53,39 @@ export const appRoutes: RouteObject[] = [
   { path: '/accept-invitation', element: <AcceptInvitationPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/update-password', element: <UpdatePasswordPage /> },
+  { path: '/privacy', element: <PrivacyPolicyPage /> },
+  { path: '/account-deletion', element: <AccountDeletionPage /> },
+  {
+    path: '/account',
+    element: (
+      <ProtectedRoute allowedRoles={['driver', 'guardian']}>
+        <AccountSettingsPage />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: '/notifications',
-    element: <ProtectedRoute allowedRoles={['driver','guardian']}><NotificationsPage /></ProtectedRoute>,
+    element: (
+      <ProtectedRoute allowedRoles={['driver', 'guardian']}>
+        <NotificationsPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/notifications/settings',
-    element: <ProtectedRoute allowedRoles={['driver','guardian']}><NotificationSettingsPage /></ProtectedRoute>,
+    element: (
+      <ProtectedRoute allowedRoles={['driver', 'guardian']}>
+        <NotificationSettingsPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/notifications/settings/email',
-    element: <ProtectedRoute allowedRoles={['guardian']}><GuardianNotificationPreferencesPage /></ProtectedRoute>,
+    element: (
+      <ProtectedRoute allowedRoles={['guardian']}>
+        <GuardianNotificationPreferencesPage />
+      </ProtectedRoute>
+    ),
   },
 
   /* ----------------------------- Driver routes ----------------------------- */

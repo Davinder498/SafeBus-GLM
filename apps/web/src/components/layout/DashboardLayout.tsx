@@ -387,7 +387,11 @@ export function DashboardLayout({
               aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : 'Notifications'}
             >
               <Bell className="h-5 w-5" />
-              {unreadCount > 0 ? <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-600 px-1 text-center text-[10px] font-bold leading-5 text-white">{unreadCount > 99 ? '99+' : unreadCount}</span> : null}
+              {unreadCount > 0 ? (
+                <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-600 px-1 text-center text-[10px] font-bold leading-5 text-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              ) : null}
             </Link>
 
             <DropdownMenu
@@ -422,6 +426,14 @@ export function DashboardLayout({
                   </DropdownItem>
                   <DropdownSeparator />
                 </>
+              )}
+              {usesBottomTabs && portal !== 'admin' && (
+                <DropdownItem
+                  icon={<ShieldCheck className="h-4 w-4" />}
+                  onClick={() => navigate('/account')}
+                >
+                  Privacy &amp; account
+                </DropdownItem>
               )}
               <DropdownItem icon={<LogOut className="h-4 w-4" />} onClick={handleLogout}>
                 Sign out

@@ -15,15 +15,24 @@ VITE_SUPABASE_ANON_KEY=
 
 Do not put a Supabase service role key in the frontend app or in `apps/web/.env.example`. The service role key must never be exposed to browser code.
 
-## Apply Migrations
+## Apply migrations
 
-Apply the SQL files in `supabase/migrations/` to the hosted Supabase project. Use the Supabase dashboard SQL editor or another trusted database migration workflow connected to the hosted project.
+The existing hosted Supabase project is production. Never apply migrations from a workstation or the dashboard SQL editor. Validate the canonical migration chain on an explicitly approved isolated branch/database, then use the protected adoption and release workflows with backup evidence and human approval. Do not run QA writers or RLS assertions against production.
 
-This migration set is pre-production and assumes no real database depends on the earlier prototype migrations. Review the SQL before applying it to a shared or production-like project.
+## Production Auth configuration
+
+Before Android publication, an authorized Supabase administrator must set and verify:
+
+- Site URL: `https://bussafe.netlify.app`;
+- Redirect URL: `https://bussafe.netlify.app/update-password`;
+- Redirect URL: `com.safebusalberta.app://auth/update-password`; and
+- public user signup disabled.
+
+After the change, run `pnpm android:publication:verify:online` with the protected production URL and anon key. This performs read-only checks and does not reveal the key. Then execute invitation creation, invitation activation, login, and password-recovery acceptance tests with approved synthetic accounts.
 
 ## Create Test Auth Users
 
-Create users from Supabase Studio or the Supabase dashboard under Authentication. Disable public signup for this project.
+Create users only through the approved administrator invitation workflow. Do not enable public signup or manually create production test identities.
 
 After each auth user exists, copy its `auth.users.id` UUID and insert a matching `public.profiles` row where `profiles.id` equals that auth user ID.
 

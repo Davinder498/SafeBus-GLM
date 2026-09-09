@@ -46,11 +46,18 @@
     "forgeryCrossDriver": null
   },
   "googlePlay": {
+    "storeListing": null,
     "backgroundLocationDeclaration": null,
     "reviewVideo": null,
     "dataSafetyForm": null,
-    "testAccount": null,
-    "publicPrivacyPolicy": null
+    "restrictedAppAccess": null,
+    "publicPrivacyPolicy": null,
+    "publicAccountDeletion": null,
+    "bundleValidation": null,
+    "internalTesting": null,
+    "closedTesting": null,
+    "preLaunchReport": null,
+    "productionEligibility": null
   },
   "customerControls": {
     "byodPolicy": null,

@@ -69,6 +69,39 @@ replay historical migrations, run hosted RLS tests against it, or seed QA data.
 5. Run normal read-only production preflight and confirm the adopted migration
    ledger and schema fingerprint match.
 
+### Reconcile the notification canary without inference
+
+The immutable adoption baseline ends at `0088`. Reports that notification code,
+a dispatcher, or a canary is operating do not prove that migrations `0089`
+through `0095` are recorded or applied in canonical order.
+
+1. Run the protected **Authorization audit** and production preflight without writes.
+2. Export the private release-ledger result, installed migration identifiers,
+   public schema fingerprint, extension state, scheduled-job metadata, and Edge
+   Function deployment metadata to the restricted evidence system.
+3. Compare that evidence with `docs/migration-ledger.md` and the exact reviewed
+   source commit. Record discrepancies; do not repair them during the audit.
+4. Treat every migration after `0088` as pending until the protected adoption or
+   release ledger proves otherwise. Never mark `0089`–`0095` applied from observed
+   notification behavior alone.
+
+### Isolated validation before production adoption
+
+Creating a temporary Supabase branch/database requires an explicit Platform
+Administrator approval. Once approved, build a fresh target from canonical
+`0001` through `0095`, excluding `supabase/legacy`, and retain:
+
+- migration checksum and fresh-build evidence;
+- the full RLS suite, including cross-driver forgery and guardian isolation;
+- notification consent, device refresh/revocation, queue, FCM, and retention tests;
+- Realtime exact-user authorization tests;
+- invitation activation, login, recovery, and public-signup rejection tests; and
+- the final schema, grants, policies, default privileges, and Data API audit.
+
+Use synthetic identities only. Delete the temporary target after the evidence is
+reviewed and retained. Production adoption and migrations may then run only
+through the protected backup/release process with human approval.
+
 ## 5. Ongoing operating rule
 
 - Application-only releases may use the protected production workflow.

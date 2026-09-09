@@ -31,8 +31,8 @@ The record requires:
   Supabase, Netlify, Geoapify, email delivery, and error monitoring;
 - production, backup, application-hosting, support-access, and cross-border
   residency evidence;
-- approved guardian, driver/BYOD, public privacy, and Google Play Data safety
-  notices, including the HTTPS public-policy URL; and
+- approved guardian, driver/BYOD, public privacy, account-deletion, and Google
+  Play Data safety notices, including both HTTPS public URLs; and
 - Platform Administrator, Product, Security, Privacy, privacy-counsel, and
   customer-authority approvals.
 

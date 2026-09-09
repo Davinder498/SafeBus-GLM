@@ -27,6 +27,11 @@ const config: CapacitorConfig = {
     webContentsDebuggingEnabled: false,
   },
   plugins: {
+    SystemBars: {
+      insetsHandling: 'css',
+      style: 'LIGHT',
+      hidden: false,
+    },
     SplashScreen: {
       launchShowDuration: 1000,
       backgroundColor: '#1e3a8a',

@@ -33,8 +33,10 @@ following are current and bound to unchanged release-controlled source:
 - passed evidence for at least three distinct manufacturer/device classes;
 - every field, lifecycle, offline, role, BYOD, and authorization scenario in
   the Phase 7 acceptance plan;
-- Google Play background-location declaration, review video, Data safety form,
-  non-secret test-account reference, and public privacy-policy evidence;
+- Google Play listing, background-location declaration, review video, Data
+  safety form, restricted-access reviewer evidence, public privacy and deletion
+  pages, bundle validation, internal and closed testing, pre-launch report, and
+  production-eligibility evidence;
 - customer BYOD, support/reimbursement, lost-device, and driver-notice
   controls; and
 - Platform Administrator, Product, Security, Privacy, Operations, QA, and

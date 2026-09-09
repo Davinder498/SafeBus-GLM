@@ -6,6 +6,12 @@ on:
       git_ref:
         description: Full 40-character reviewed commit SHA
         required: true
+      version_code:
+        description: Monotonically increasing Play version code (first release is 1)
+        required: true
+      version_name:
+        description: Public semantic version name (first release is 1.0.0)
+        required: true
       confirmation:
         description: Type RELEASE_ANDROID
         required: true
@@ -30,8 +36,9 @@ jobs:
       SAFEBUS_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SAFEBUS_ANDROID_KEYSTORE_PASSWORD }}
       SAFEBUS_ANDROID_KEY_ALIAS: ${{ secrets.SAFEBUS_ANDROID_KEY_ALIAS }}
       SAFEBUS_ANDROID_KEY_PASSWORD: ${{ secrets.SAFEBUS_ANDROID_KEY_PASSWORD }}
-      SAFEBUS_ANDROID_VERSION_CODE: ${{ github.run_number }}
-      SAFEBUS_ANDROID_VERSION_NAME: 1.0.${{ github.run_number }}
+      SAFEBUS_ANDROID_VERSION_CODE: ${{ inputs.version_code }}
+      SAFEBUS_ANDROID_VERSION_NAME: ${{ inputs.version_name }}
+      SAFEBUS_REQUIRE_RELEASE_SIGNING: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -43,6 +50,13 @@ jobs:
           ACTUAL_SHA="$(git rev-parse HEAD)"
           test "$REQUESTED_SHA" = "$ACTUAL_SHA"
           echo "SAFEBUS_RELEASE_SHA=$ACTUAL_SHA" >> "$GITHUB_ENV"
+      - name: Validate explicit release inputs and public configuration
+        run: |
+          printf '%s' "$SAFEBUS_RELEASE_SHA" | grep -Eq '^[a-f0-9]{40}$'
+          printf '%s' "$SAFEBUS_ANDROID_VERSION_CODE" | grep -Eq '^[1-9][0-9]*$'
+          printf '%s' "$SAFEBUS_ANDROID_VERSION_NAME" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$'
+          test -n "$VITE_SUPABASE_URL"
+          test -n "$VITE_SUPABASE_ANON_KEY"
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
@@ -51,11 +65,12 @@ jobs:
       - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
       - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - run: pnpm install --frozen-lockfile
+      - run: pnpm android:publication:verify
       - name: Materialize protected signing key
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.SAFEBUS_ANDROID_KEYSTORE_BASE64 }}
@@ -75,7 +90,7 @@ jobs:
           test -n "$FIREBASE_GOOGLE_SERVICES_BASE64"
           printf '%s' "$FIREBASE_GOOGLE_SERVICES_BASE64" | base64 --decode > apps/mobile/android/app/google-services.json
           chmod 600 apps/mobile/android/app/google-services.json
-          node -e "const c=require('./apps/mobile/android/app/google-services.json');if(!c.project_info?.project_id||!c.client?.length)process.exit(1)"
+          node -e "const c=require('./apps/mobile/android/app/google-services.json');const ok=c.project_info?.project_id&&c.client?.some(x=>x.client_info?.android_client_info?.package_name==='com.safebusalberta.app');if(!ok)process.exit(1)"
       - run: pnpm --filter @safebus/mobile build
       - run: pnpm --filter @safebus/mobile cap:sync
       - name: Test and build signed application bundle

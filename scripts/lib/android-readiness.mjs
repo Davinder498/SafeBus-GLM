@@ -6,23 +6,29 @@ import { hashDirectory } from './release-attestation.mjs';
 export const ANDROID_READINESS_FORMAT = 1;
 export const DEFAULT_ANDROID_READINESS_PATH = 'docs/governance/android-readiness.json';
 
-const EVIDENCE_DIRECTORIES = ['apps/mobile', 'packages/types'];
+const EVIDENCE_DIRECTORIES = ['apps/mobile', 'apps/web/src', 'packages/types'];
 
 const EVIDENCE_FILES = [
   '.github/workflows/ci.yml',
   '.github/workflows/release-android.yml',
   'apps/web/src/components/driver/BusQrStartScanner.tsx',
   'apps/web/src/lib/driverLocationDisclosure.ts',
+  'docs/governance/google-play-data-safety-notifications.md',
+  'docs/governance/google-play-publication.md',
   'package.json',
+  'playwright.android-store.config.ts',
   'pnpm-lock.yaml',
   'scripts/check-android-readiness.mjs',
+  'scripts/check-android-publication-preflight.mjs',
   'scripts/create-android-release-manifest.mjs',
   'scripts/lib/android-readiness.mjs',
   'scripts/print-android-release-digest.mjs',
   'supabase/migrations/0086_phase7_production_driver_tracking.sql',
   'supabase/migrations/0090_phase7_byod_android_tracking.sql',
   'tests/release/android-byod-contract.test.mjs',
+  'tests/release/android-publication.test.mjs',
   'tests/release/android-readiness.test.mjs',
+  'tests/release-assets/android-store.spec.ts',
 ];
 
 const REQUIRED_FIELD_SCENARIOS = [
@@ -42,11 +48,18 @@ const REQUIRED_FIELD_SCENARIOS = [
 ];
 
 const REQUIRED_PLAY_EVIDENCE = [
+  'storeListing',
   'backgroundLocationDeclaration',
   'reviewVideo',
   'dataSafetyForm',
-  'testAccount',
+  'restrictedAppAccess',
   'publicPrivacyPolicy',
+  'publicAccountDeletion',
+  'bundleValidation',
+  'internalTesting',
+  'closedTesting',
+  'preLaunchReport',
+  'productionEligibility',
 ];
 
 const REQUIRED_CUSTOMER_EVIDENCE = [
