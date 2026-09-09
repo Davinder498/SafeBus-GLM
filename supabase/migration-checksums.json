@@ -572,6 +572,12 @@
       "filename": "0094_schedule_push_notification_dispatcher.sql",
       "bytes": 1407,
       "sha256": "90101634dc476b0a8eb37f6a84896722258e5f4cca38c9c0db52e04ebe2495c9"
+    },
+    {
+      "version": "0095",
+      "filename": "0095_fix_idempotent_push_registration.sql",
+      "bytes": 4876,
+      "sha256": "c7fd381bfabc8a956d20f9259f85cb03af3c52e64f0d90635fb405009e9ec87d"
     }
   ]
 }
