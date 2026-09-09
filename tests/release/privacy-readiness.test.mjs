@@ -15,8 +15,15 @@ const requiredFiles = {
   '.github/workflows/release-production.yml': 'name: Release production\n',
   'apps/web/netlify/functions/safebus-retention-scheduled.mjs': 'export const retention = true;\n',
   'apps/web/src/lib/driverLocationDisclosure.ts': 'export const disclosure = true;\n',
+  'apps/web/src/components/layout/DashboardLayout.tsx': 'export const dashboard = true;\n',
+  'apps/web/src/components/layout/PublicLayout.tsx': 'export const publicLayout = true;\n',
+  'apps/web/src/pages/AccountDeletionPage.tsx': 'export const deletion = true;\n',
+  'apps/web/src/pages/AccountSettingsPage.tsx': 'export const settings = true;\n',
+  'apps/web/src/pages/PrivacyPolicyPage.tsx': 'export const policy = true;\n',
+  'apps/web/src/routes/router.tsx': 'export const router = true;\n',
   'docs/governance/commercial-release-scope.md': '# CR1\n',
   'docs/governance/data-classification.md': '# Classification\n',
+  'docs/governance/google-play-data-safety-notifications.md': '# Data safety\n',
   'docs/governance/risk-register.md': '# Risks\n',
   'docs/governance/role-responsibility-matrix.md': '# Roles\n',
   'netlify.toml': '[build]\n',
@@ -74,6 +81,7 @@ const noticeKeys = [
   'guardianNotice',
   'driverByodNotice',
   'publicPrivacyPolicy',
+  'publicAccountDeletion',
   'googlePlayDataSafety',
 ];
 

@@ -60,7 +60,7 @@ preview, which allows fast layout testing without rebuilding the Android wrapper
 ## Prerequisites
 
 - **Android Studio** installed (with Android SDK)
-- **Java JDK 17+** (bundled with Android Studio)
+- **Java JDK 21** (required by Capacitor 8; available through current Android Studio)
 - **Android phone** with USB debugging enabled, or an Android emulator
 
 ## Setup
@@ -133,15 +133,15 @@ The app will install and launch on your phone.
 
 The app requests these permissions (configured in `AndroidManifest.xml`):
 
-| Permission | Purpose |
-|---|---|
-| `INTERNET` | Supabase API, map tiles |
-| `ACCESS_NETWORK_STATE` | Online/offline detection for driver location retry |
-| `ACCESS_FINE_LOCATION` | Driver live bus location tracking |
-| `ACCESS_COARSE_LOCATION` | Approximate location fallback |
+| Permission                   | Purpose                                                                            |
+| ---------------------------- | ---------------------------------------------------------------------------------- |
+| `INTERNET`                   | Supabase API, map tiles                                                            |
+| `ACCESS_NETWORK_STATE`       | Online/offline detection for driver location retry                                 |
+| `ACCESS_FINE_LOCATION`       | Driver live bus location tracking                                                  |
+| `ACCESS_COARSE_LOCATION`     | Approximate location fallback                                                      |
 | `ACCESS_BACKGROUND_LOCATION` | Continue an authorized active trip while the app is closed or the screen is locked |
-| `POST_NOTIFICATIONS` | Keep active tracking visible through the foreground-service notification |
-| `CAMERA` | Scan the bus-mounted start QR; never a student badge |
+| `POST_NOTIFICATIONS`         | Keep active tracking visible through the foreground-service notification           |
+| `CAMERA`                     | Scan the bus-mounted start QR; never a student badge                               |
 
 The GPS hardware feature is marked `required="false"` so the
 app installs on devices without them.
@@ -196,8 +196,9 @@ This gives you the mobile route subset in a browser for quick testing.
 The protected `Build signed Android release` GitHub workflow builds the reviewed
 40-character commit, reads the keystore only from the `android-production`
 environment, verifies the AAB signature, and retains the signed bundle as a
-90-day artifact. Each workflow run assigns a monotonically increasing Android
-version code from the GitHub run number. Configure these protected secrets:
+90-day artifact. The release owner supplies the explicit, monotonically increasing
+`versionCode` and public `versionName`; the first accepted Play artifact uses `1`
+and `1.0.0`. Configure these protected secrets:
 
 - `SAFEBUS_ANDROID_KEYSTORE_BASE64`
 - `SAFEBUS_ANDROID_KEYSTORE_PASSWORD`
@@ -208,11 +209,15 @@ version code from the GitHub run number. Configure these protected secrets:
 Configure `VITE_SUPABASE_URL` as an environment variable. From Android Studio,
 local signed builds remain available for authorized release-key custodians.
 
-From Android Studio:
+Enrol the Play app in Google Play App Signing with a Google-managed app-signing
+key. The configured SafeBus keystore is a separate upload key; retain encrypted
+and offline backups. Do not upload locally produced or unsigned bundles.
+
+For non-Play local testing from Android Studio:
 
 1. **Build** → **Generate Signed Bundle / APK**
 2. Follow the wizard to create a keystore (first time) or use existing.
-3. Choose **APK** for testing or **Android App Bundle** for Play Store.
+3. Choose **APK** for local testing. Play candidates must come from the protected workflow.
 
 ## Validation
 

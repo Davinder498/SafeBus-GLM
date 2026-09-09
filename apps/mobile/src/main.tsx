@@ -1,8 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
-import { Capacitor } from '@capacitor/core';
-import { StatusBar, Style } from '@capacitor/status-bar';
+import { Capacitor, SystemBars, SystemBarsStyle } from '@capacitor/core';
 import App from './App.tsx';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { AppSurfaceProvider } from '@/contexts/AppSurfaceContext';
@@ -22,19 +21,18 @@ import './index.css';
  *
  * The only mobile-specific additions are:
  * 1. Capacitor platform detection for deep-link handling.
- * 2. Status bar styling on native Android.
+ * 2. Edge-to-edge system-bar styling on native Android.
  */
 async function bootstrap() {
-  // Style the Android status bar to match the navy brand
+  // Android 16 enforces edge-to-edge. Keep system controls visible against the light app shell.
   if (Capacitor.isNativePlatform()) {
     installNativeDriverTrackingBridge();
     await installNativeAuthDeepLinks().catch(() => undefined);
     await installNativePushBridge().catch(() => undefined);
     try {
-      await StatusBar.setStyle({ style: Style.Dark });
-      await StatusBar.setBackgroundColor({ color: '#1E3A8A' });
+      await SystemBars.setStyle({ style: SystemBarsStyle.Light });
     } catch {
-      // StatusBar plugin may not be available on web preview — safe to ignore.
+      // The native system-bars bridge may not be available in a web preview.
     }
   }
 

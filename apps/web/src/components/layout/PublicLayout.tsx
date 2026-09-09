@@ -41,8 +41,18 @@ export function PublicLayout({ children }: PublicLayoutProps) {
       {children}
       <footer className="border-t border-slate-200 bg-slate-50">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 text-sm text-slate-500 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
-          <p>SafeBus Alberta. Frontend MVP foundation.</p>
-          <p>Works alongside existing student information systems.</p>
+          <p>SafeBus Alberta. Track the bus, not the child.</p>
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            <Link className="font-medium text-slate-700 hover:text-slate-950" to="/privacy">
+              Privacy
+            </Link>
+            <Link
+              className="font-medium text-slate-700 hover:text-slate-950"
+              to="/account-deletion"
+            >
+              Account deletion
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

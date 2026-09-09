@@ -62,10 +62,7 @@ test('Netlify deployment workflows select the web app in the monorepo', async ()
   ]);
 
   for (const workflow of workflows) {
-    assert.match(
-      workflow,
-      /netlify deploy --prod --filter @safebus\/web --dir apps\/web\/dist/,
-    );
+    assert.match(workflow, /netlify deploy --prod --filter @safebus\/web --dir apps\/web\/dist/);
   }
 });
 
@@ -218,9 +215,9 @@ test('dependency automation defers incompatible toolchain major upgrades', async
       ),
     );
   }
-  assert.equal(mobilePackage.dependencies['@capacitor/geolocation'], '^6.0.1');
-  assert.match(lockfile, /'@capacitor\/geolocation@6\.1\.1'/);
-  assert.doesNotMatch(lockfile, /'@capacitor\/geolocation@8\./);
+  assert.equal(mobilePackage.dependencies['@capacitor/geolocation'], '8.2.2');
+  assert.match(lockfile, /'@capacitor\/geolocation@8\.2\.2'/);
+  assert.doesNotMatch(lockfile, /'@capacitor\/geolocation@6\./);
 });
 
 test('hosted RLS runner preserves shared fixtures through dependent suites', async () => {
@@ -550,7 +547,10 @@ test('guardian linking only offers active guardians and keeps audit fields table
     service,
     /\.from\('guardians'\)[\s\S]*?\.eq\('status', 'active'\)[\s\S]*?\.order\('last_name'/,
   );
-  assert.match(migration, /elsif tg_table_name = 'profiles' then\s+if tg_op = 'UPDATE' and new\.role/);
+  assert.match(
+    migration,
+    /elsif tg_table_name = 'profiles' then\s+if tg_op = 'UPDATE' and new\.role/,
+  );
   assert.doesNotMatch(
     migration,
     /elsif tg_table_name = 'profiles' and tg_op = 'UPDATE' and new\.role/,

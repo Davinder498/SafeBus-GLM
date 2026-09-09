@@ -68,7 +68,11 @@ test('one Android binary remains role-scoped for guardians and drivers', async (
   assert.match(manifest, /android:allowBackup="false"/);
   assert.match(manifest, /android:dataExtractionRules="@xml\/data_extraction_rules"/);
   assert.match(gradle, /SAFEBUS_ANDROID_VERSION_CODE/);
-  assert.match(workflow, /SAFEBUS_ANDROID_VERSION_CODE: \$\{\{ github\.run_number \}\}/);
+  assert.match(workflow, /version_code:[\s\S]*required: true/);
+  assert.match(workflow, /version_name:[\s\S]*required: true/);
+  assert.match(workflow, /SAFEBUS_ANDROID_VERSION_CODE: \$\{\{ inputs\.version_code \}\}/);
+  assert.match(workflow, /SAFEBUS_ANDROID_VERSION_NAME: \$\{\{ inputs\.version_name \}\}/);
+  assert.match(workflow, /SAFEBUS_REQUIRE_RELEASE_SIGNING: true/);
   assert.match(workflow, /bundleRelease/);
   assert.match(workflow, /jarsigner -verify -verbose -certs/);
   assert.match(workflow, /grep -q "jar verified\."/);

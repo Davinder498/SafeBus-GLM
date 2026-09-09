@@ -37,6 +37,23 @@ test('unknown route renders a controlled not-found page', async ({ page }) => {
   await expect(page.getByRole('link', { name: /return home/i })).toBeVisible();
 });
 
+test('public privacy and account-deletion pages are available without a session', async ({
+  page,
+}) => {
+  await page.goto('/privacy');
+  await expect(
+    page.getByRole('heading', { name: 'SafeBus Alberta privacy policy', level: 1 }),
+  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Contact', level: 2 })).toBeVisible();
+
+  await page.goto('/account-deletion');
+  await expect(
+    page.getByRole('heading', { name: 'Request SafeBus account deletion', level: 1 }),
+  ).toBeVisible();
+  await expect(page.getByText(/even if you no longer have the app/i)).toBeVisible();
+  await expect(page.getByText('Sign in required')).toHaveCount(0);
+});
+
 test('release shell has no horizontal overflow', async ({ page }) => {
   await page.goto('/login');
   const dimensions = await page.evaluate(() => ({

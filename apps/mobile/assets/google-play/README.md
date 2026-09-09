@@ -1,0 +1,32 @@
+# Google Play artwork
+
+All screenshots in this directory are generated from the real SafeBus mobile UI with local request interception and synthetic records. They contain no production credentials, student records, customer identifiers, or real location data.
+
+| Asset                                      | Dimensions | Source                             |
+| ------------------------------------------ | ---------: | ---------------------------------- |
+| `app-icon-512.png`                         |    512×512 | `../brand/safebus-master-mark.png` |
+| `feature-graphic-1024x500.png`             |   1024×500 | `feature-graphic-source.png`       |
+| `screenshots/01-guardian-live-status.png`  |  1080×1920 | Synthetic Playwright fixture       |
+| `screenshots/02-guardian-trip-updates.png` |  1080×1920 | Synthetic Playwright fixture       |
+| `screenshots/03-driver-active-trip.png`    |  1080×1920 | Synthetic Playwright fixture       |
+| `screenshots/04-driver-trip-history.png`   |  1080×1920 | Synthetic Playwright fixture       |
+
+Regenerate the master-derived artwork with:
+
+```bash
+pnpm --filter @safebus/mobile assets:store
+```
+
+Regenerate the screenshots with:
+
+```bash
+pnpm android:store:capture
+```
+
+Verify dimensions, Android identity, API level, explicit release versioning, and required routes with:
+
+```bash
+pnpm android:publication:verify
+```
+
+Do not replace the synthetic screenshots with production captures. Any artwork or UI change invalidates the Android source digest and requires re-review.

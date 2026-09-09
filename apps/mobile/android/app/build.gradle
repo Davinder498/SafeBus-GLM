@@ -6,8 +6,13 @@ def hasReleaseSigning = [
     'SAFEBUS_ANDROID_KEY_ALIAS',
     'SAFEBUS_ANDROID_KEY_PASSWORD'
 ].every { System.getenv(it) }
+def requireReleaseSigning = System.getenv('SAFEBUS_REQUIRE_RELEASE_SIGNING') == 'true'
 def safeBusVersionCode = (System.getenv('SAFEBUS_ANDROID_VERSION_CODE') ?: '1').toInteger()
 def safeBusVersionName = System.getenv('SAFEBUS_ANDROID_VERSION_NAME') ?: '1.0.0-dev'
+
+if (requireReleaseSigning && !hasReleaseSigning) {
+    throw new GradleException('Android release signing is required, but one or more signing variables are missing.')
+}
 
 android {
     namespace "com.safebusalberta.app"

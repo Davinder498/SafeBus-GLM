@@ -41,6 +41,9 @@ import { ParentDashboardPage } from '@/pages/ParentDashboardPage';
 import { PlatformTenantsPage } from '@/pages/PlatformTenantsPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { MfaPage } from '@/pages/MfaPage';
+import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage';
+import { AccountDeletionPage } from '@/pages/AccountDeletionPage';
+import { AccountSettingsPage } from '@/pages/AccountSettingsPage';
 import { ProtectedRoute } from './ProtectedRoute';
 import { PublicOnlyRoute } from './PublicOnlyRoute';
 import { InvitationEntryRoute } from './InvitationEntryRoute';
@@ -66,6 +69,16 @@ export const appRoutes: RouteObject[] = [
   { path: '/accept-invitation', element: <AcceptInvitationPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/update-password', element: <UpdatePasswordPage /> },
+  { path: '/privacy', element: <PrivacyPolicyPage /> },
+  { path: '/account-deletion', element: <AccountDeletionPage /> },
+  {
+    path: '/account',
+    element: (
+      <ProtectedRoute allowedRoles={['driver', 'guardian']}>
+        <AccountSettingsPage />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: '/mfa',
     element: (
@@ -76,15 +89,27 @@ export const appRoutes: RouteObject[] = [
   },
   {
     path: '/notifications',
-    element: <ProtectedRoute allowedRoles={[...allowedRoles]}><NotificationsPage /></ProtectedRoute>,
+    element: (
+      <ProtectedRoute allowedRoles={[...allowedRoles]}>
+        <NotificationsPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/notifications/settings',
-    element: <ProtectedRoute allowedRoles={[...allowedRoles]}><NotificationSettingsPage /></ProtectedRoute>,
+    element: (
+      <ProtectedRoute allowedRoles={[...allowedRoles]}>
+        <NotificationSettingsPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/notifications/settings/email',
-    element: <ProtectedRoute allowedRoles={['guardian']}><GuardianNotificationPreferencesPage /></ProtectedRoute>,
+    element: (
+      <ProtectedRoute allowedRoles={['guardian']}>
+        <GuardianNotificationPreferencesPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/admin',

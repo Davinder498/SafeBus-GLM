@@ -12,8 +12,15 @@ const EVIDENCE_FILES = [
   '.github/workflows/release-production.yml',
   'apps/web/netlify/functions/safebus-retention-scheduled.mjs',
   'apps/web/src/lib/driverLocationDisclosure.ts',
+  'apps/web/src/components/layout/DashboardLayout.tsx',
+  'apps/web/src/components/layout/PublicLayout.tsx',
+  'apps/web/src/pages/AccountDeletionPage.tsx',
+  'apps/web/src/pages/AccountSettingsPage.tsx',
+  'apps/web/src/pages/PrivacyPolicyPage.tsx',
+  'apps/web/src/routes/router.tsx',
   'docs/governance/commercial-release-scope.md',
   'docs/governance/data-classification.md',
+  'docs/governance/google-play-data-safety-notifications.md',
   'docs/governance/risk-register.md',
   'docs/governance/role-responsibility-matrix.md',
   'netlify.toml',
@@ -85,6 +92,7 @@ const REQUIRED_NOTICES = [
   'guardianNotice',
   'driverByodNotice',
   'publicPrivacyPolicy',
+  'publicAccountDeletion',
   'googlePlayDataSafety',
 ];
 
