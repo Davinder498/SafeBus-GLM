@@ -1,13 +1,9 @@
 import { App as CapacitorApp } from '@capacitor/app';
 import { supabase } from '@/lib/supabase';
+import { navigateToPasswordUpdate } from '@/lib/authNavigation';
 import { parseNativePasswordRecoveryLink } from './authDeepLinkParsing';
 
 let lastHandledUrl: string | null = null;
-
-function navigateWithoutAuthTokens(path: string): void {
-  window.history.replaceState({}, '', path);
-  window.dispatchEvent(new PopStateEvent('popstate'));
-}
 
 async function handleNativeAuthUrl(value: string): Promise<void> {
   if (value === lastHandledUrl) return;
@@ -45,7 +41,7 @@ async function handleNativeAuthUrl(value: string): Promise<void> {
       'This password reset link is invalid or expired. Request a new link.',
     );
   } finally {
-    navigateWithoutAuthTokens(recovery.destinationPath);
+    navigateToPasswordUpdate();
   }
 }
 

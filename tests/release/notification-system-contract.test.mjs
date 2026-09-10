@@ -66,6 +66,10 @@ const authContext = await readFile(
   new URL('../../apps/web/src/contexts/AuthContext.tsx', import.meta.url),
   'utf8',
 );
+const authNavigation = await readFile(
+  new URL('../../apps/web/src/lib/authNavigation.ts', import.meta.url),
+  'utf8',
+);
 
 test('notification migration keeps device and queue data private', () => {
   assert.match(
@@ -211,7 +215,9 @@ test('Android password recovery uses an app-owned deep link and removes auth tok
   assert.match(nativeAuthLinks, /appUrlOpen/);
   assert.match(nativeAuthLinks, /getLaunchUrl\(\)/);
   assert.match(nativeAuthLinks, /supabase\.auth\.setSession/);
-  assert.match(nativeAuthLinks, /window\.history\.replaceState\(\{\}, '', path\)/);
+  assert.match(nativeAuthLinks, /navigateToPasswordUpdate\(\)/);
+  assert.match(authContext, /event === 'PASSWORD_RECOVERY'[\s\S]*navigateToPasswordUpdate\(\)/);
+  assert.match(authNavigation, /window\.history\.replaceState\(\{\}, '', '\/update-password'\)/);
   assert.doesNotMatch(nativeAuthLinks, /console\.(log|error|warn)/);
   assert.doesNotMatch(nativeAuthLinks, /sessionStorage\.setItem\([\s\S]*error\.message/);
 });
