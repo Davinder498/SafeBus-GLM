@@ -2,7 +2,11 @@ import { createContext, useCallback, useEffect, useMemo, useState, type ReactNod
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 import { useAppSurface } from '@/contexts/AppSurfaceContext';
-import { getPasswordResetRedirect, normalizeAuthEmail } from '@/lib/authNavigation';
+import {
+  getPasswordResetRedirect,
+  navigateToPasswordUpdate,
+  normalizeAuthEmail,
+} from '@/lib/authNavigation';
 
 export const adminRoles = [
   'platform_super_admin',
@@ -225,6 +229,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       data: { subscription },
     } = client.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession);
+
+      if (event === 'PASSWORD_RECOVERY') {
+        navigateToPasswordUpdate();
+      }
 
       if (!nextSession) {
         setProfile(null);
