@@ -34,7 +34,7 @@ export function ResetPasswordPage() {
         <Card className="w-full p-6 sm:p-8">
           <h1 className="text-3xl font-bold tracking-normal text-navy-900">Reset password</h1>
           <p className="mt-3 text-gray-600">
-            Enter your account email and SafeBus will send a password reset link.
+            Enter your account email and BusSafe will send a password reset link.
           </p>
 
           {(configError || error) && (

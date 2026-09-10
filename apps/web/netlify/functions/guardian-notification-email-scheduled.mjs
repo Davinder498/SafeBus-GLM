@@ -1,4 +1,4 @@
-// SafeBus Alberta - Phase 15B scheduled guardian notification dispatcher
+// BusSafe Alberta - Phase 15B scheduled guardian notification dispatcher
 //
 // This is a Netlify scheduled function that invokes the same secured dispatcher
 // logic as the manual POST endpoint, but without requiring a browser user or an

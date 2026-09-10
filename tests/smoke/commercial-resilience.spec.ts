@@ -27,7 +27,7 @@ test.describe('Point 10 safe degraded behavior', () => {
     ).toBeVisible();
     await expect(
       page.getByText(
-        'Your account is signed in, but no SafeBus profile was found. Ask an administrator to finish your profile setup.',
+        'Your account is signed in, but no BusSafe profile was found. Ask an administrator to finish your profile setup.',
       ),
     ).toBeVisible();
     await expect(page.getByText(rawBackendError)).toHaveCount(0);

@@ -113,14 +113,14 @@ export function BusQrCredentialPanel({ busId, busNumber }: { busId: string; busN
             className="bus-qr-print-sheet rounded-xl border border-gray-200 bg-white p-4 text-center print:border-0"
             data-testid="admin-bus-qr-result"
           >
-            <p className="text-sm font-semibold text-gray-500">SafeBus Alberta</p>
+            <p className="text-sm font-semibold text-gray-500">BusSafe Alberta</p>
             <h3 className="text-2xl font-bold text-navy-900">Bus {busNumber}</h3>
             <img
               alt={`Driver scan QR for Bus ${busNumber}`}
               src={qrDataUrl}
               className="mx-auto my-4 h-64 w-64"
             />
-            <p className="text-sm text-gray-700">Driver: open SafeBus and choose Scan to start.</p>
+            <p className="text-sm text-gray-700">Driver: open BusSafe and choose Scan to start.</p>
             <Button type="button" size="sm" className="mt-3 print:hidden" onClick={printQr}>
               Print QR
             </Button>

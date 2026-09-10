@@ -21,8 +21,8 @@ export function AdminNotAvailablePage() {
         </div>
         <h1 className="text-xl font-bold text-slate-900">Admin access on web only</h1>
         <p className="mt-2 text-sm text-slate-600">
-          The SafeBus mobile app is built for drivers and guardians. Admin features — fleet
-          management, routes, people, and settings — are available on the SafeBus web app from a
+          The BusSafe mobile app is built for drivers and guardians. Admin features — fleet
+          management, routes, people, and settings — are available on the BusSafe web app from a
           computer or tablet browser.
         </p>
         <div className="mt-6 flex flex-col gap-3">

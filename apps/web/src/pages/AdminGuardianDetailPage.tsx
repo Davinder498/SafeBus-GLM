@@ -248,7 +248,7 @@ export function AdminGuardianDetailPage() {
                   </span>
                   <div>
                     <h2 className="font-bold text-navy-900">Guardian contact</h2>
-                    <p className="text-sm text-slate-600">Used for their SafeBus account.</p>
+                    <p className="text-sm text-slate-600">Used for their BusSafe account.</p>
                   </div>
                 </div>
                 <dl className="mt-5 grid gap-5 sm:grid-cols-2">

@@ -58,6 +58,8 @@ export async function verifyAndroidPublicationFiles(root = process.cwd()) {
     webRoutes,
     mobileRoutes,
     accountSettings,
+    androidStrings,
+    mobileIndex,
   ] = await Promise.all([
     read('apps/mobile/package.json').then(JSON.parse),
     read('apps/mobile/.env.example'),
@@ -68,6 +70,8 @@ export async function verifyAndroidPublicationFiles(root = process.cwd()) {
     read('apps/web/src/routes/router.tsx'),
     read('apps/mobile/src/routes/router.tsx'),
     read('apps/web/src/pages/AccountSettingsPage.tsx'),
+    read('apps/mobile/android/app/src/main/res/values/strings.xml'),
+    read('apps/mobile/index.html'),
   ]);
 
   for (const packageName of REQUIRED_CAPACITOR_PACKAGES) {
@@ -91,6 +95,12 @@ export async function verifyAndroidPublicationFiles(root = process.cwd()) {
     /SystemBars:[\s\S]*insetsHandling: 'css'/.test(capacitorConfig),
     'Capacitor SystemBars CSS inset handling is required.',
   );
+  invariant(/appName: 'BusSafe Alberta'/.test(capacitorConfig), 'Capacitor appName must use BusSafe Alberta.');
+  invariant(
+    /<string name="app_name">BusSafe Alberta<\/string>/.test(androidStrings),
+    'Android app_name must use BusSafe Alberta.',
+  );
+  invariant(/<title>BusSafe Alberta<\/title>/.test(mobileIndex), 'The mobile title must use BusSafe Alberta.');
 
   const envNames = [...envExample.matchAll(/^\s*(VITE_[A-Z0-9_]+)\s*=/gm)].map((match) => match[1]);
   invariant(
@@ -131,7 +141,12 @@ export async function verifyAndroidPublicationFiles(root = process.cwd()) {
     images[relativePath] = `${actual[0]}x${actual[1]}`;
   }
 
-  return { applicationId: 'com.safebusalberta.app', targetSdk: 36, images };
+  return {
+    applicationId: 'com.safebusalberta.app',
+    brandName: 'BusSafe Alberta',
+    targetSdk: 36,
+    images,
+  };
 }
 
 export async function verifyAndroidPublicationOnline({ fetchImpl = fetch } = {}) {
@@ -146,7 +161,7 @@ export async function verifyAndroidPublicationOnline({ fetchImpl = fetch } = {})
     invariant(response.ok, `${origin}${pathname} is not publicly available.`);
     invariant(
       (await response.text()).includes('id="root"'),
-      `${origin}${pathname} did not return the SafeBus web application.`,
+      `${origin}${pathname} did not return the BusSafe web application.`,
     );
   }
 

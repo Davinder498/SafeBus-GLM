@@ -29,7 +29,7 @@ export function LoginPage() {
       if (profile.status !== 'active') {
         await signOut();
         throw new Error(
-          `This SafeBus account is ${profile.status}. Ask your administrator to reactivate it.`,
+          `This BusSafe account is ${profile.status}. Ask your administrator to reactivate it.`,
         );
       }
       navigate(getDashboardPath(profile.role), { replace: true });
@@ -57,7 +57,7 @@ export function LoginPage() {
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 backdrop-blur">
               <Bus className="h-5 w-5" />
             </span>
-            <span className="text-lg font-bold tracking-tight">SafeBus Alberta</span>
+            <span className="text-lg font-bold tracking-tight">BusSafe Alberta</span>
           </Link>
         </div>
         <div className="relative px-10 pb-10">
@@ -82,7 +82,7 @@ export function LoginPage() {
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-navy-700 text-white">
               <Bus className="h-5 w-5" />
             </span>
-            <span className="text-lg font-bold tracking-tight text-slate-900">SafeBus Alberta</span>
+            <span className="text-lg font-bold tracking-tight text-slate-900">BusSafe Alberta</span>
           </Link>
 
           <p className="text-xs font-semibold uppercase tracking-[0.1em] text-navy-600">

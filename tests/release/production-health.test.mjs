@@ -12,7 +12,7 @@ const securityHeaders = {
 };
 
 function htmlResponse(status = 200) {
-  return new Response('<!doctype html><title>SafeBus Alberta</title>', {
+  return new Response('<!doctype html><title>BusSafe Alberta</title>', {
     status,
     headers: { 'content-type': 'text/html; charset=utf-8', ...securityHeaders },
   });

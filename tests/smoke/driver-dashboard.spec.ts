@@ -22,7 +22,7 @@ test.describe('Driver dashboard — protected route', () => {
       page.getByRole('heading', { name: 'Sign in required' }),
     ).toBeVisible();
     await expect(
-      page.getByText('Use your SafeBus account to access this dashboard.'),
+      page.getByText('Use your BusSafe account to access this dashboard.'),
     ).toBeVisible();
   });
 
@@ -41,11 +41,11 @@ test.describe('Driver dashboard — protected route', () => {
 });
 
 test.describe('Landing page', () => {
-  test('renders the SafeBus brand heading', async ({ page }) => {
+  test('renders the BusSafe brand heading', async ({ page }) => {
     await page.goto('/');
 
     await expect(
-      page.getByRole('heading', { name: 'SafeBus Alberta', level: 1 }),
+      page.getByRole('heading', { name: 'BusSafe Alberta', level: 1 }),
     ).toBeVisible();
   });
 

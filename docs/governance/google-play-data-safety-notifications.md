@@ -21,7 +21,7 @@ The app does not use data for advertising, advertising profiles, sale, or in-app
 
 - Supabase provides authentication, database, realtime, and approved server-side functions.
 - Netlify delivers the web application and approved functions.
-- Geoapify receives map tile coordinates, IP address, origin/referrer, and ordinary request metadata; SafeBus account identifiers are not added to tile requests.
+- Geoapify receives map tile coordinates, IP address, origin/referrer, and ordinary request metadata; BusSafe account identifiers are not added to tile requests.
 - Firebase Cloud Messaging receives the Android registration token, generic or event-type-only alert content, device IP, and ordinary delivery metadata after opt-in.
 - The final declaration must identify every approved email, monitoring, or support processor actually enabled in production. Do not declare a planned processor as active or omit an enabled processor.
 

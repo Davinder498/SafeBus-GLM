@@ -23,7 +23,7 @@ export function AccountSettingsPage() {
         <PageHeader
           eyebrow="Account"
           title="Privacy and account"
-          description="Review SafeBus privacy information and find the account-deletion process."
+          description="Review BusSafe privacy information and find the account-deletion process."
         />
 
         <Card className="p-5">
@@ -53,7 +53,7 @@ export function AccountSettingsPage() {
             <div>
               <h2 className="font-bold text-slate-950">Privacy policy</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Learn what SafeBus handles, how bus location is limited to active trips, and how to
+                Learn what BusSafe handles, how bus location is limited to active trips, and how to
                 exercise privacy choices.
               </p>
               <a
@@ -74,7 +74,7 @@ export function AccountSettingsPage() {
             <div>
               <h2 className="font-bold text-slate-950">Request account deletion</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                SafeBus accounts are issued by participating school authorities. The public request
+                BusSafe accounts are issued by participating school authorities. The public request
                 page remains available even after you sign out or remove the app.
               </p>
               <a

@@ -107,11 +107,12 @@ archiving is needed; the collision is documented here and asserted by
 | 0093        | `0093_planned_driver_bus_assignments.sql`                     | Canonical, pending isolated validation | Read-only driver planning guidance that does not replace the bus-QR start authorization.                                                                                                                                                                                                                                        |
 | 0094        | `0094_schedule_push_notification_dispatcher.sql`              | Canonical, pending isolated validation | Protected pg_cron/pg_net/Vault schedule for the push dispatcher; runtime remains fail-closed behind tenant and privacy approval.                                                                                                                                                                                                |
 | 0095        | `0095_fix_idempotent_push_registration.sql`                   | Canonical, pending isolated validation | Idempotent active-installation refresh and conflict revocation for Android FCM registration.                                                                                                                                                                                                                                    |
+| 0096        | `0096_bussafe_notification_copy.sql`                          | Canonical, pending isolated validation | User-visible Android push copy rebranded to BusSafe without changing recipients, authorization, payload sensitivity, delivery state, RLS, or grants.                                                                                                                                                                            |
 
 ## 4. Fresh-rebuild proof
 
 A fresh database must be built from `0001` through
-`0095_fix_idempotent_push_registration.sql` in canonical order
+`0096_bussafe_notification_copy.sql` in canonical order
 (with archived files excluded) before these phases can be accepted. The archived
 files in `supabase/legacy/` are excluded from fresh rebuilds because:
 

@@ -1,4 +1,4 @@
-// SafeBus Alberta - Phase 15B notification delivery operational summary types.
+// BusSafe Alberta - Phase 15B notification delivery operational summary types.
 //
 // These types intentionally contain NO personal information (no recipient emails,
 // guardian names, student names, message bodies, provider message IDs, or outbox IDs).

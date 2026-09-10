@@ -15,7 +15,7 @@ function setEnv(extra = {}) {
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key';
   process.env.SAFEBUS_EMAIL_PROVIDER_API_KEY = 'provider-key';
   process.env.SAFEBUS_EMAIL_FROM = 'noreply@example.test';
-  process.env.SAFEBUS_EMAIL_FROM_NAME = 'SafeBus QA';
+  process.env.SAFEBUS_EMAIL_FROM_NAME = 'BusSafe QA';
   process.env.SAFEBUS_NOTIFICATION_DISPATCHER_SECRET = 'dispatcher-secret';
   delete process.env.SAFEBUS_DEV_EMAIL_RECIPIENT_OVERRIDE;
   delete process.env.CONTEXT;

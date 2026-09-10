@@ -25,7 +25,7 @@ test('production monitor remains public-only and privacy-safe', async () => {
   ]);
   const source = `${runner}\n${library}`;
 
-  assert.match(source, /SafeBus-Production-Health\/1\.0/);
+  assert.match(source, /BusSafe-Production-Health\/1\.0/);
   assert.match(source, /redirect: 'error'/);
   assert.match(source, /AbortSignal\.timeout/);
   assert.match(source, /\.netlify\/functions\/map-tile-config/);

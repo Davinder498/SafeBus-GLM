@@ -16,7 +16,7 @@ test.describe('Commercial WCAG 2.2 AA gate', () => {
 
   test('public landing and sign-in surfaces', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'SafeBus Alberta', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'BusSafe Alberta', level: 1 })).toBeVisible();
     await expectNoWcagAaViolations(page, 'Public landing page');
 
     await page.goto('/login');

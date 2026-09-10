@@ -16,7 +16,7 @@ function LoadingScreen() {
     <PublicLayout>
       <main className="mx-auto flex min-h-[calc(100vh-150px)] max-w-lg items-center px-4 py-12 sm:px-6">
         <Card className="w-full p-8 text-center">
-          <p className="text-lg font-bold text-navy-900">Loading SafeBus</p>
+          <p className="text-lg font-bold text-navy-900">Loading BusSafe</p>
           <p className="mt-2 text-gray-600">Checking your session...</p>
         </Card>
       </main>
@@ -56,7 +56,7 @@ export function ProtectedRoute({ allowedRoles, children, requireMfa = true }: Pr
     return (
       <AuthMessage
         title="Sign in required"
-        message="Use your SafeBus account to access this dashboard."
+        message="Use your BusSafe account to access this dashboard."
       />
     );
   }
@@ -65,7 +65,7 @@ export function ProtectedRoute({ allowedRoles, children, requireMfa = true }: Pr
     return (
       <AuthMessage
         title="Profile setup needed"
-        message={authError ?? 'Your SafeBus profile could not be loaded.'}
+        message={authError ?? 'Your BusSafe profile could not be loaded.'}
       />
     );
   }
@@ -78,7 +78,7 @@ export function ProtectedRoute({ allowedRoles, children, requireMfa = true }: Pr
     return (
       <AuthMessage
         title="Account unavailable"
-        message={`This SafeBus account is ${profile.status}. Ask your administrator to reactivate it.`}
+        message={`This BusSafe account is ${profile.status}. Ask your administrator to reactivate it.`}
       />
     );
   }

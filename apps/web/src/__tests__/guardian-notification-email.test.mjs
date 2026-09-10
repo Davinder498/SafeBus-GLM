@@ -75,7 +75,7 @@ describe('guardian notification email template', () => {
     expect(combined).not.toContain('Marie');
     expect(combined).not.toMatch(/\d+\.\d{4,}/); // no coordinates
     // Must not expose route/stop/bus-number/driver identifiers.
-    // Note: "SafeBus" is the brand name and is intentionally present.
+    // Note: "BusSafe" is the brand name and is intentionally present.
     expect(combined).not.toContain('Route');
     expect(combined).not.toContain('Stop');
     expect(combined).not.toMatch(/Bus\s+\d/);

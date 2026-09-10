@@ -235,7 +235,7 @@ export function AdminAdministratorsPage() {
           <Card className="p-5">
             <h2 className="text-lg font-bold text-navy-900">Invite administrator</h2>
             <p className="mt-1 text-sm text-slate-600">
-              The email becomes the login. SafeBus sends a secure activation link.
+              The email becomes the login. BusSafe sends a secure activation link.
             </p>
             <form className="mt-5 space-y-4" onSubmit={handleInvite}>
               <div className="grid gap-4 md:grid-cols-2">

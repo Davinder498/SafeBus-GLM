@@ -56,7 +56,7 @@ function request(fetchImpl, url, timeoutMs) {
     headers: {
       accept: 'text/html,application/json;q=0.9',
       'cache-control': 'no-cache',
-      'user-agent': 'SafeBus-Production-Health/1.0',
+      'user-agent': 'BusSafe-Production-Health/1.0',
     },
     redirect: 'error',
     signal: AbortSignal.timeout(timeoutMs),
@@ -94,8 +94,8 @@ export async function runProductionHealth({
           throw new Error('Landing page did not return HTML.');
         }
         const body = await response.text();
-        if (!body.includes('SafeBus Alberta')) {
-          throw new Error('Landing page did not contain the SafeBus release marker.');
+        if (!body.includes('BusSafe Alberta')) {
+          throw new Error('Landing page did not contain the BusSafe release marker.');
         }
         for (const [header, requiredValues] of REQUIRED_SECURITY_HEADERS) {
           const value = response.headers.get(header)?.toLowerCase() ?? '';
@@ -115,8 +115,8 @@ export async function runProductionHealth({
         const response = await request(fetchImpl, `${origin}/login`, timeoutMs);
         assertOk(response, 'Login route');
         const body = await response.text();
-        if (!body.includes('SafeBus Alberta')) {
-          throw new Error('Login route did not return the SafeBus application shell.');
+        if (!body.includes('BusSafe Alberta')) {
+          throw new Error('Login route did not return the BusSafe application shell.');
         }
       },
     }),

@@ -60,7 +60,7 @@ export function UpdatePasswordPage() {
             Choose a new password
           </h1>
           <p className="mt-3 text-gray-600">
-            Enter and confirm the new password for your SafeBus account.
+            Enter and confirm the new password for your BusSafe account.
           </p>
 
           {(configError || recoveryError || error) && (

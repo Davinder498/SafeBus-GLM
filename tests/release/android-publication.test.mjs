@@ -6,6 +6,7 @@ test('Android publication files are complete, API 36 ready, and explicitly versi
   const result = await verifyAndroidPublicationFiles();
 
   assert.equal(result.applicationId, 'com.safebusalberta.app');
+  assert.equal(result.brandName, 'BusSafe Alberta');
   assert.equal(result.targetSdk, 36);
   assert.equal(Object.keys(result.images).length, 7);
 });

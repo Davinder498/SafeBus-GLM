@@ -86,7 +86,7 @@ export function NotificationsPage() {
   }
 
   return <DashboardLayout title="Notifications" portal={portal} navItems={[]} navGroups={navGroups}>
-    <PageHeader title="Notifications" description="Your authoritative SafeBus inbox. In-app updates remain available regardless of push settings."
+    <PageHeader title="Notifications" description="Your authoritative BusSafe inbox. In-app updates remain available regardless of push settings."
       action={<Link to="/notifications/settings"><Button variant="secondary"><Settings className="mr-2 h-4 w-4" />Settings</Button></Link>} />
     <div className="mb-4 flex flex-wrap items-center gap-3">
       <label className="text-sm font-medium text-slate-700">Category <select value={category} onChange={(e)=>setCategory(e.target.value as NotificationCategory | '')} className="ml-2 rounded-lg border border-slate-300 bg-white px-3 py-2">

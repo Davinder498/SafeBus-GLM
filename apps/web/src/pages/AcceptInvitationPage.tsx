@@ -52,7 +52,7 @@ export function AcceptInvitationPage() {
           <Card className="w-full p-8 text-center">
             <p className="text-lg font-bold text-navy-900">Checking your invitation</p>
             <p className="mt-2 text-gray-600">
-              Please wait while SafeBus verifies the secure link.
+              Please wait while BusSafe verifies the secure link.
             </p>
           </Card>
         </main>
@@ -74,7 +74,7 @@ export function AcceptInvitationPage() {
             Create your password
           </h1>
           <p className="mt-3 text-gray-600">
-            Finish accepting your SafeBus invitation. After your password is saved, you will be
+            Finish accepting your BusSafe invitation. After your password is saved, you will be
             taken to the dashboard for your assigned role.
           </p>
 
@@ -140,7 +140,7 @@ export function AcceptInvitationPage() {
           {session && !profile && (
             <div className="mt-6">
               <div className="rounded-lg border border-danger-200 bg-danger-50 p-4 text-sm text-danger-700">
-                {authError ?? 'SafeBus could not find the profile connected to this invitation.'}
+                {authError ?? 'BusSafe could not find the profile connected to this invitation.'}
               </div>
               <Button
                 type="button"

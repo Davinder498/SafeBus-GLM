@@ -1,10 +1,10 @@
-# SafeBus Alberta
+# BusSafe Alberta
 
 > Real-time school bus visibility for Alberta schools and parents.
 
-SafeBus is a school transportation operations platform focused on driver trip workflow, live bus visibility, admin monitoring, guardian-scoped route visibility, and privacy-first student access control.
+BusSafe is a school transportation operations platform focused on driver trip workflow, live bus visibility, admin monitoring, guardian-scoped route visibility, and privacy-first student access control.
 
-**This is not a Student Information System.** SafeBus works alongside existing systems such as PowerSchool and SchoolEngage.
+**This is not a Student Information System.** BusSafe works alongside existing systems such as PowerSchool and SchoolEngage.
 
 ## Province
 
@@ -17,7 +17,7 @@ finalized by Alberta privacy counsel in **Phase 3** against:
 - **Education Act** — student record confidentiality
 
 > **Note:** Earlier versions of this README referenced _FOIP_. That reference
-> was obsolete for SafeBus's legal-role analysis and is corrected in Phase 3
+> was obsolete for BusSafe's legal-role analysis and is corrected in Phase 3
 > (see `docs/governance/risk-register.md` R-006 and
 > `docs/governance/phase-3/legal-role-analysis.md`). Final statutory mapping
 > is confirmed by counsel, not engineering.

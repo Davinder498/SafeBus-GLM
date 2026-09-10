@@ -81,7 +81,7 @@ export function BusQrStartScanner({
       setMessage(null);
       if (!isLikelyBusQrToken(rawToken)) {
         setState('invalid');
-        setMessage('This is not a valid SafeBus vehicle QR.');
+        setMessage('This is not a valid BusSafe vehicle QR.');
         processingRef.current = false;
         return;
       }
@@ -134,7 +134,7 @@ export function BusQrStartScanner({
             setMessage(
               permissions.locationPermission === 'disabled'
                 ? 'Turn on Android location services, then check access again.'
-                : 'In Android settings, choose Permissions > Location > Allow all the time, then return to SafeBus.',
+                : 'In Android settings, choose Permissions > Location > Allow all the time, then return to BusSafe.',
             );
             return;
           }
@@ -143,7 +143,7 @@ export function BusQrStartScanner({
             setNativeSettingsTarget('app');
             setState('location-settings');
             setMessage(
-              'In Android settings, allow SafeBus notifications so active tracking remains visible, then return to SafeBus.',
+              'In Android settings, allow BusSafe notifications so active tracking remains visible, then return to BusSafe.',
             );
             return;
           }
@@ -376,7 +376,7 @@ export function BusQrStartScanner({
                   <p className="mt-2 text-sm leading-6 text-gray-700">
                     Collection starts only for a trip you start, a persistent Android notification
                     stays visible, and collection stops when the trip ends, is cancelled, or the
-                    authorization expires. SafeBus does not use this location for advertising or
+                    authorization expires. BusSafe does not use this location for advertising or
                     off-shift monitoring.
                   </p>
                 </div>
@@ -432,7 +432,7 @@ export function BusQrStartScanner({
             )}
             {state === 'unsupported' && (
               <p className="text-sm font-semibold text-warning-700">
-                Use the SafeBus Android app or enter the QR token for testing.
+                Use the BusSafe Android app or enter the QR token for testing.
               </p>
             )}
             {message && state !== 'location-settings' && (

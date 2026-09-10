@@ -139,7 +139,7 @@ export function StudentQrCredentialPanel({ studentId, studentName, disabled = fa
             data-testid="admin-qr-generation-result"
           >
             <div className="mx-auto max-w-xs text-center">
-              <p className="text-sm font-semibold text-gray-500">SafeBus</p>
+              <p className="text-sm font-semibold text-gray-500">BusSafe</p>
               <h3 className="text-xl font-bold text-navy-900">{badgeName}</h3>
               <img
                 alt="Student QR badge"

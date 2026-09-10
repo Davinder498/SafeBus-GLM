@@ -10,7 +10,7 @@ export function NotFoundPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.08em] text-yellow-700">404</p>
           <h1 className="mt-2 text-3xl font-bold text-navy-900">Page not found</h1>
           <p className="mt-3 text-gray-600">
-            This route is not part of the SafeBus Alberta frontend foundation.
+            This route is not part of the BusSafe Alberta frontend foundation.
           </p>
           <Link
             to="/"
