@@ -212,7 +212,7 @@ public final class DriverTrackingService extends Service implements LocationList
                     if (result.statusCode == 401) {
                         TrackingConfig refreshed = refreshSession(config);
                         if (refreshed == null) {
-                            stopFromServer("Authentication expired — reopen SafeBus");
+                            stopFromServer("Authentication expired — reopen BusSafe");
                             break;
                         }
                         config = refreshed;
@@ -381,7 +381,7 @@ public final class DriverTrackingService extends Service implements LocationList
         NotificationChannel channel = new NotificationChannel(
             CHANNEL_ID, "Active bus tracking", NotificationManager.IMPORTANCE_LOW
         );
-        channel.setDescription("Persistent indicator shown only while SafeBus is collecting or recovering trip locations.");
+        channel.setDescription("Persistent indicator shown only while BusSafe is collecting or recovering trip locations.");
         channel.setShowBadge(false);
         manager.createNotificationChannel(channel);
     }
@@ -393,7 +393,7 @@ public final class DriverTrackingService extends Service implements LocationList
         );
         return new NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("SafeBus trip tracking")
+            .setContentTitle("BusSafe trip tracking")
             .setContentText(content)
             .setContentIntent(pending)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)

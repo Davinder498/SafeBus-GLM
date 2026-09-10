@@ -16,7 +16,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
               <Bus className="h-5 w-5" aria-hidden />
             </span>
             <span className="hidden text-base font-bold tracking-tight text-slate-900 min-[390px]:inline">
-              SafeBus Alberta
+              BusSafe Alberta
             </span>
           </Link>
           <nav className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex">
@@ -41,7 +41,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
       {children}
       <footer className="border-t border-slate-200 bg-slate-50">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 text-sm text-slate-500 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
-          <p>SafeBus Alberta. Track the bus, not the child.</p>
+          <p>BusSafe Alberta. Track the bus, not the child.</p>
           <div className="flex flex-wrap gap-x-5 gap-y-2">
             <Link className="font-medium text-slate-700 hover:text-slate-950" to="/privacy">
               Privacy

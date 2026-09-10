@@ -9,6 +9,10 @@ import { installSupabaseMock } from '../smoke/fixtures/supabase-mock';
 const screenshotDirectory = path.resolve('apps', 'mobile', 'assets', 'google-play', 'screenshots');
 
 async function capture(page: Page, filename: string) {
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+  });
+  await page.waitForTimeout(350);
   const [scrollWidth, clientWidth] = await page.evaluate(() => {
     window.scrollTo({ top: 0, left: 0 });
     return [document.documentElement.scrollWidth, document.documentElement.clientWidth];

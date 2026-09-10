@@ -21,6 +21,10 @@ const registrationFixMigration = await readFile(
   ),
   'utf8',
 );
+const rebrandMigration = await readFile(
+  new URL('../../supabase/migrations/0096_bussafe_notification_copy.sql', import.meta.url),
+  'utf8',
+);
 const edgeConfig = await readFile(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
 const edgeHandler = await readFile(
   new URL('../../supabase/functions/push-notification-dispatcher/index.ts', import.meta.url),
@@ -129,8 +133,13 @@ test('one-minute scheduler is fail-closed and reads credentials only from Vault'
   assert.doesNotMatch(schedulerMigration, /BEGIN PRIVATE KEY|service_role|eyJ[A-Za-z0-9_-]+/);
 });
 
-test('FCM payload and diagnostics remain privacy safe', () => {
-  assert.match(migration, /'Open SafeBus to view this update\.'/);
+test('FCM payload and diagnostics remain privacy safe and use the current brand', () => {
+  assert.match(rebrandMigration, /'Open BusSafe to view this update\.'/);
+  assert.match(rebrandMigration, /'BusSafe update'/);
+  assert.doesNotMatch(rebrandMigration, /Open SafeBus|SafeBus update/);
+  assert.match(rebrandMigration, /auth\.role\(\) <>? ?'service_role'/i);
+  assert.match(rebrandMigration, /for update of o skip locked/i);
+  assert.match(rebrandMigration, /access_expires_at/i);
   assert.match(dispatcherCore, /notification: \{ title: row\.title, body: row\.body \}/);
   assert.match(dispatcherCore, /visibility: 'PRIVATE'/);
   assert.doesNotMatch(dispatcherCore, /studentName|routeName|stopName|latitude|longitude/);

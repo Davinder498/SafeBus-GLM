@@ -65,7 +65,7 @@ function PreferenceCard({ preference }: { preference: GuardianNotificationPrefer
         <fieldset className="space-y-4" disabled={saving} aria-describedby={describedBy}>
           <legend className="text-xl font-bold text-navy-900">{preference.studentName}</legend>
           <p id={describedBy} className="text-sm leading-6 text-gray-600">
-            Choose whether SafeBus may email you after a pickup or drop-off event is recorded. These
+            Choose whether BusSafe may email you after a pickup or drop-off event is recorded. These
             messages are not live child tracking and do not confirm safety or custody.
           </p>
 

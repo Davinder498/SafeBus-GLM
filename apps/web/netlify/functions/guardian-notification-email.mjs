@@ -50,18 +50,18 @@ export function buildGuardianEventEmail({ notificationType, studentFirstName, ev
   const when = new Intl.DateTimeFormat('en-CA', { dateStyle: 'medium', timeStyle: 'short', timeZone: tz }).format(new Date(eventCreatedAt));
   const firstToken = String(studentFirstName || '').trim().split(/\s+/)[0];
   const safeFirstName = firstToken || 'your student';
-  const subject = `SafeBus ${action} event recorded`;
+  const subject = `BusSafe ${action} event recorded`;
   const text = [
     `A ${action} event was recorded for ${safeFirstName} at ${when} (${zoneLabel}).`,
     '',
     'This message reflects an event recorded by the transportation system. It is not live child tracking and does not independently verify safety or custody.',
     '',
-    'SafeBus Alberta',
+    'BusSafe Alberta',
   ].join('\n');
   return {
     subject,
     text,
-    html: `<p>A ${action} event was recorded for ${escapeHtml(safeFirstName)} at ${escapeHtml(when)} (${escapeHtml(zoneLabel)}).</p><p>This message reflects an event recorded by the transportation system. It is not live child tracking and does not independently verify safety or custody.</p><p>SafeBus Alberta</p>`,
+    html: `<p>A ${action} event was recorded for ${escapeHtml(safeFirstName)} at ${escapeHtml(when)} (${escapeHtml(zoneLabel)}).</p><p>This message reflects an event recorded by the transportation system. It is not live child tracking and does not independently verify safety or custody.</p><p>BusSafe Alberta</p>`,
     action,
     verb,
   };
@@ -113,7 +113,7 @@ function requireConfig() {
   const from = process.env.SAFEBUS_EMAIL_FROM;
   const dispatcherSecret = process.env.SAFEBUS_NOTIFICATION_DISPATCHER_SECRET;
   if (!url || !service || !apiKey || !from || !dispatcherSecret) throw new Error('configuration_error');
-  return { url, service, apiKey, from, fromName: process.env.SAFEBUS_EMAIL_FROM_NAME || 'SafeBus Alberta', dispatcherSecret, devOverride: process.env.SAFEBUS_DEV_EMAIL_RECIPIENT_OVERRIDE || '' };
+  return { url, service, apiKey, from, fromName: process.env.SAFEBUS_EMAIL_FROM_NAME || 'BusSafe Alberta', dispatcherSecret, devOverride: process.env.SAFEBUS_DEV_EMAIL_RECIPIENT_OVERRIDE || '' };
 }
 
 function authorized(event, secret) {

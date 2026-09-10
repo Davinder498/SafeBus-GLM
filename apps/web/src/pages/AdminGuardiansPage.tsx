@@ -92,7 +92,7 @@ export function AdminGuardiansPage() {
               <p className="text-xs font-bold uppercase tracking-wide text-blue-700">Secure invitation</p>
               <h2 className="mt-1 text-lg font-bold text-navy-900">Add guardian</h2>
               <p className="mt-1 text-sm text-slate-600">
-                The email becomes the login. SafeBus sends the activation link; admins never handle passwords.
+                The email becomes the login. BusSafe sends the activation link; admins never handle passwords.
               </p>
             </div>
             <form className="mt-5 space-y-4" onSubmit={(event) => void inviteGuardian(event)}>

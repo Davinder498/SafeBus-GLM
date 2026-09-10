@@ -77,13 +77,13 @@ export function installNativeDriverTrackingBridge(): void {
       if (device.locationPermission !== 'always') {
         throw new Error(
           device.locationPermission === 'foreground_only'
-            ? 'Allow SafeBus location access all the time before starting a trip.'
+            ? 'Allow BusSafe location access all the time before starting a trip.'
             : 'Enable precise location access before starting a trip.',
         );
       }
       if (device.notificationPermission === 'denied') {
         throw new Error(
-          'Allow SafeBus notifications so active trip tracking stays visible on this phone.',
+          'Allow BusSafe notifications so active trip tracking stays visible on this phone.',
         );
       }
       if (sessionResult.error || !sessionResult.data.session) {

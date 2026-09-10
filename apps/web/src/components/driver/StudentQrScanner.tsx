@@ -270,7 +270,7 @@ export function StudentQrScanner({ onRecord, busyStudentId }: Props) {
             )}
             {state === 'scanning' && (
               <p className="text-sm font-medium text-gray-700">
-                Point the rear camera at one SafeBus student pass.
+                Point the rear camera at one BusSafe student pass.
               </p>
             )}
             {state === 'resolving' && (
@@ -293,7 +293,7 @@ export function StudentQrScanner({ onRecord, busyStudentId }: Props) {
             )}
             {state === 'unsupported' && (
               <p className="text-sm font-semibold text-warning-700">
-                This browser cannot scan QR codes here. Use the SafeBus Android app or a supported
+                This browser cannot scan QR codes here. Use the BusSafe Android app or a supported
                 secure browser.
               </p>
             )}

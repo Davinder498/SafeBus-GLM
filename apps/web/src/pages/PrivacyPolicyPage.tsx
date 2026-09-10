@@ -12,15 +12,15 @@ export function PrivacyPolicyPage() {
             Public privacy notice
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
-            SafeBus Alberta privacy policy
+            BusSafe Alberta privacy policy
           </h1>
           <p className="mt-3 text-sm text-slate-500">Effective {effectiveDate}</p>
 
           <div className="mt-8 space-y-8 text-base leading-7 text-slate-700">
             <section>
-              <h2 className="text-xl font-bold text-slate-950">What SafeBus does</h2>
+              <h2 className="text-xl font-bold text-slate-950">What BusSafe does</h2>
               <p className="mt-2">
-                SafeBus Alberta supports school transportation operations and gives authorized
+                BusSafe Alberta supports school transportation operations and gives authorized
                 guardians narrow visibility of the bus assigned to their student. Our governing
                 principle is simple: track the bus, not the child. We do not track a student phone,
                 wearable, or personal GPS device.
@@ -46,7 +46,7 @@ export function PrivacyPolicyPage() {
                 </li>
               </ul>
               <p className="mt-3">
-                SafeBus does not require an Alberta Student Number, student home address, student
+                BusSafe does not require an Alberta Student Number, student home address, student
                 health data, custody narrative, contacts, photos, messages, microphone content, or
                 information from other apps.
               </p>
@@ -65,7 +65,7 @@ export function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-bold text-slate-950">Who processes it</h2>
               <p className="mt-2">
-                The issuing school authority and its authorized transportation staff use SafeBus.
+                The issuing school authority and its authorized transportation staff use BusSafe.
                 Service providers support hosting and authentication (Supabase), application
                 delivery (Netlify), map tiles (Geoapify), transactional email, and opt-in Android
                 push delivery (Google Firebase Cloud Messaging). Access is limited to what is needed
@@ -92,7 +92,7 @@ export function PrivacyPolicyPage() {
                 Android push and guardian email notifications are off until enabled. You can turn
                 them off and revoke registered devices from notification settings. To access,
                 correct, or delete an account or associated information, start with the school
-                authority that issued the invitation. SafeBus assists the authority after identity
+                authority that issued the invitation. BusSafe assists the authority after identity
                 and legal-retention requirements are verified.
               </p>
               <Link
@@ -106,7 +106,7 @@ export function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-bold text-slate-950">Security and changes</h2>
               <p className="mt-2">
-                SafeBus uses encryption in transit, role-based access, tenant isolation, restricted
+                BusSafe uses encryption in transit, role-based access, tenant isolation, restricted
                 administrative access, and audit records. We will update this notice when material
                 practices change and will communicate significant changes through the issuing school
                 authority or the app.
@@ -117,8 +117,8 @@ export function PrivacyPolicyPage() {
               <h2 className="text-xl font-bold text-slate-950">Contact</h2>
               <p className="mt-2">
                 Contact the privacy office or transportation office of the school authority that
-                issued your SafeBus account. If that channel is unavailable, use the verified
-                developer contact displayed on the SafeBus Alberta Google Play listing and include
+                issued your BusSafe account. If that channel is unavailable, use the verified
+                developer contact displayed on the BusSafe Alberta Google Play listing and include
                 the name of your school authority. Do not send student health, address, custody, or
                 other unnecessary sensitive information.
               </p>

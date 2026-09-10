@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseNativePasswordRecoveryLink } from './authDeepLinkParsing';
 
 describe('native password-recovery links', () => {
-  it('accepts only the SafeBus Android recovery destination', () => {
+  it('accepts only the BusSafe Android recovery destination', () => {
     expect(
       parseNativePasswordRecoveryLink(
         'com.safebusalberta.app://auth/update-password#access_token=access&refresh_token=refresh&type=recovery',

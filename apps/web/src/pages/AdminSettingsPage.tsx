@@ -87,7 +87,7 @@ export function AdminSettingsPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="text-xl font-bold text-navy-900">Current user</h2>
-                  <p className="mt-1 text-sm text-gray-600">Signed-in SafeBus profile</p>
+                  <p className="mt-1 text-sm text-gray-600">Signed-in BusSafe profile</p>
                 </div>
                 <RoleBadge role={profile.role} />
               </div>

@@ -29,7 +29,7 @@ export function DriverProfilePage() {
         <PageHeader
           eyebrow="Profile"
           title="Your driver profile"
-          description="Review the account details used for your SafeBus access."
+          description="Review the account details used for your BusSafe access."
         />
 
         {!profile ? (
@@ -42,7 +42,7 @@ export function DriverProfilePage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h2 className="text-xl font-bold text-navy-900">{profile.full_name ?? 'Driver'}</h2>
-                <p className="mt-1 text-sm text-gray-600">SafeBus driver account</p>
+                <p className="mt-1 text-sm text-gray-600">BusSafe driver account</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <RoleBadge role={profile.role} />

@@ -36,7 +36,7 @@ test('bounded local release-shell load stays within the Point 10 guardrail', asy
         path,
         status: response.status(),
         durationMs: Math.round(performance.now() - startedAt),
-        marker: body.includes('SafeBus Alberta'),
+        marker: body.includes('BusSafe Alberta'),
       });
     }
   }

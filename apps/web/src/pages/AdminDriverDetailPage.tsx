@@ -285,8 +285,8 @@ export function AdminDriverDetailPage() {
       setConfirmRevokeDevices(false);
       setMessage(
         revoked === 1
-          ? 'One driver phone tracking credential and all SafeBus sessions were revoked.'
-          : `${revoked} driver phone tracking credentials and all SafeBus sessions were revoked.`,
+          ? 'One driver phone tracking credential and all BusSafe sessions were revoked.'
+          : `${revoked} driver phone tracking credentials and all BusSafe sessions were revoked.`,
       );
     } catch (error) {
       setWriteError(
@@ -736,7 +736,7 @@ export function AdminDriverDetailPage() {
                   <div>
                     <h2 className="font-bold text-navy-900">Personal phone tracking access</h2>
                     <p className="mt-1 text-sm leading-6 text-gray-700">
-                      Revoke SafeBus tracking credentials and signed-in sessions immediately when
+                      Revoke BusSafe tracking credentials and signed-in sessions immediately when
                       this driver's phone is lost, stolen, replaced, or compromised. This does not
                       inspect or erase any personal content on the phone.
                     </p>
@@ -789,7 +789,7 @@ export function AdminDriverDetailPage() {
         <ConfirmDialog
           open={confirmRevokeDevices}
           title={`Revoke phone tracking for ${detail ? displayName(detail) : 'this driver'}?`}
-          description="All active SafeBus tracking credentials and signed-in sessions for this driver will stop working. The driver must sign in again and acknowledge the current location notice to register an eligible phone."
+          description="All active BusSafe tracking credentials and signed-in sessions for this driver will stop working. The driver must sign in again and acknowledge the current location notice to register an eligible phone."
           confirmLabel="Revoke tracking"
           destructive
           busy={busy}

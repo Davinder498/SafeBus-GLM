@@ -26,7 +26,7 @@ export function DriverSettingsPage() {
             <div>
               <h2 className="text-lg font-bold text-navy-900">Location access</h2>
               <p className="mt-1 text-sm leading-6 text-gray-600">
-                SafeBus requests location access only for bus trips that you start and stops
+                BusSafe requests location access only for bus trips that you start and stops
                 collecting after you end or cancel the trip.
               </p>
             </div>
@@ -38,7 +38,7 @@ export function DriverSettingsPage() {
             <p className="text-sm font-semibold text-navy-900">Before starting a trip</p>
             <p className="mt-1 text-sm leading-6 text-gray-600">
               {nativeAndroid
-                ? 'Turn on location services, allow precise location all the time, and allow notifications. Set this up while parked; SafeBus can then continue the active trip when the screen is locked.'
+                ? 'Turn on location services, allow precise location all the time, and allow notifications. Set this up while parked; BusSafe can then continue the active trip when the screen is locked.'
                 : 'Turn on device location services and allow location access when your browser asks. Keep this page open during the trip so updates can continue.'}
             </p>
           </div>
@@ -48,12 +48,12 @@ export function DriverSettingsPage() {
           <Card className="p-5">
             <h2 className="text-lg font-bold text-navy-900">Using your personal phone</h2>
             <p className="mt-2 text-sm leading-6 text-gray-600">
-              The same SafeBus Android app serves drivers and guardians. Your signed-in role decides
+              The same BusSafe Android app serves drivers and guardians. Your signed-in role decides
               which screens you can use. Driver tracking does not require company ownership or
               mobile-device management.
             </p>
             <p className="mt-3 text-sm leading-6 text-gray-600">
-              During an active trip, SafeBus stores queued bus-location fixes and its device
+              During an active trip, BusSafe stores queued bus-location fixes and its device
               credential in encrypted app storage. It does not access your contacts, photos,
               microphone, messages, or location from other apps. A persistent Android notification
               shows while collection or required offline recovery is active.

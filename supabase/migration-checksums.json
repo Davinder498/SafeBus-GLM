@@ -578,6 +578,12 @@
       "filename": "0095_fix_idempotent_push_registration.sql",
       "bytes": 4876,
       "sha256": "c7fd381bfabc8a956d20f9259f85cb03af3c52e64f0d90635fb405009e9ec87d"
+    },
+    {
+      "version": "0096",
+      "filename": "0096_bussafe_notification_copy.sql",
+      "bytes": 8762,
+      "sha256": "d0d210f3ec692e02c6b0aebbc875e137e86fedba6384c82798eca15eb1fc7e8e"
     }
   ]
 }

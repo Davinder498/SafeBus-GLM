@@ -1,4 +1,4 @@
-// SafeBus Alberta - Phase 5 scheduled invitation expiry sweep.
+// BusSafe Alberta - Phase 5 scheduled invitation expiry sweep.
 //
 // Netlify invokes this hourly. The database RPC atomically expires open
 // invitations and disables any still-invited profile. No recipient details are

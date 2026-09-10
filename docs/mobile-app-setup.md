@@ -1,9 +1,9 @@
-# SafeBus Mobile App — Setup & Testing Guide
+# BusSafe Mobile App — Setup & Testing Guide
 
 > Commercial Release 1 uses one Android app for guardians and drivers. Drivers may use an eligible personal phone; iOS is deferred. See [phase-7-production-driver-tracking.md](phase-7-production-driver-tracking.md) for BYOD, privacy, Play review, and physical road-test gates. The committed Android project contains the native foreground service; do not regenerate or delete it.
 
-The SafeBus mobile app is a **native Android wrapper** around the existing
-SafeBus web app, built with [Capacitor](https://capacitorjs.com/). It provides
+The BusSafe mobile app is a **native Android wrapper** around the existing
+BusSafe web app, built with [Capacitor](https://capacitorjs.com/). It provides
 a dedicated native experience for **drivers** and **guardians**, while tenant
 admins and superadmins continue using the full web app on desktop/tablet.
 
@@ -39,7 +39,7 @@ apps/
 - `getDashboardPath(role)` post-login redirect — unchanged
 - All pages, services, hooks, components — unchanged
 - Environment variables: still only `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`
-- Map configuration: fetched from the deployed SafeBus Netlify function; the
+- Map configuration: fetched from the deployed BusSafe Netlify function; the
   Geoapify key is not a mobile build environment variable
 
 ### Native navigation
@@ -166,7 +166,7 @@ app installs on devices without them.
 
 If an admin signs in on the mobile app, they see a friendly message:
 
-> "Admin access on web only — The SafeBus mobile app is built for drivers and
+> "Admin access on web only — The BusSafe mobile app is built for drivers and
 > guardians."
 
 With a link to open the full web app in a browser.
@@ -210,7 +210,7 @@ Configure `VITE_SUPABASE_URL` as an environment variable. From Android Studio,
 local signed builds remain available for authorized release-key custodians.
 
 Enrol the Play app in Google Play App Signing with a Google-managed app-signing
-key. The configured SafeBus keystore is a separate upload key; retain encrypted
+key. The configured BusSafe keystore is a separate upload key; retain encrypted
 and offline backups. Do not upload locally produced or unsigned bundles.
 
 For non-Play local testing from Android Studio:

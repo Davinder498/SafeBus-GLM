@@ -69,11 +69,11 @@ export function getDashboardPath(
 }
 
 function getProfileErrorMessage() {
-  return 'Your account is signed in, but no SafeBus profile was found. Ask an administrator to finish your profile setup.';
+  return 'Your account is signed in, but no BusSafe profile was found. Ask an administrator to finish your profile setup.';
 }
 
 function getSessionErrorMessage() {
-  return 'SafeBus could not verify your session right now. Please try signing in again.';
+  return 'BusSafe could not verify your session right now. Please try signing in again.';
 }
 
 interface AuthProviderProps {
@@ -128,7 +128,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const registerSession = useCallback(async () => {
     if (!supabase) return;
     await supabase.rpc('register_current_user_session', {
-      p_device_label: 'SafeBus web',
+      p_device_label: 'BusSafe web',
       p_user_agent: typeof navigator === 'undefined' ? null : navigator.userAgent,
     });
   }, []);
@@ -150,7 +150,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     if (!isProfileRole(data.role)) {
       throw new Error(
-        'Your SafeBus profile has an unsupported role. Ask an administrator to review your account.',
+        'Your BusSafe profile has an unsupported role. Ask an administrator to review your account.',
       );
     }
 
@@ -276,7 +276,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSession(null);
       setProfile(null);
       setMfaStatus({ currentLevel: null, nextLevel: null, verifiedFactors: [] });
-      setAuthError('This SafeBus session was revoked by an administrator. Sign in again.');
+      setAuthError('This BusSafe session was revoked by an administrator. Sign in again.');
     }
 
     void verifyCurrentSession();
@@ -401,7 +401,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { error: activationError } = await supabase.rpc('complete_invited_account');
       if (activationError) {
         throw new Error(
-          'Your password was saved, but SafeBus could not finish activating the account. Retry this page or ask your administrator for help.',
+          'Your password was saved, but BusSafe could not finish activating the account. Retry this page or ask your administrator for help.',
         );
       }
 

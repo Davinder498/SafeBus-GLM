@@ -42,14 +42,14 @@ describe('Supabase Android push dispatcher', () => {
       event_type: 'trip_missing',
       category: 'operations',
       severity: 'urgent',
-      title: 'SafeBus update',
-      body: 'Open SafeBus to view this update.',
+      title: 'BusSafe update',
+      body: 'Open BusSafe to view this update.',
       android_channel: 'urgent_operations',
       collapse_key: 'notification-notification-id',
     });
     expect(message.message.notification).toEqual({
-      title: 'SafeBus update',
-      body: 'Open SafeBus to view this update.',
+      title: 'BusSafe update',
+      body: 'Open BusSafe to view this update.',
     });
     expect(message.message.data).not.toHaveProperty('studentName');
     expect(message.message.android).toMatchObject({
@@ -124,8 +124,8 @@ describe('Supabase Android push dispatcher', () => {
       event_type: 'trip_started',
       category: 'trip_status',
       severity: 'info',
-      title: 'SafeBus update',
-      body: 'Open SafeBus to view this update.',
+      title: 'BusSafe update',
+      body: 'Open BusSafe to view this update.',
       android_channel: 'trip_updates',
       collapse_key: 'notification-notification-id',
     };
@@ -155,8 +155,8 @@ describe('Supabase Android push dispatcher', () => {
       event_type: 'trip_started',
       category: 'trip_status',
       severity: 'info',
-      title: 'SafeBus update',
-      body: 'Open SafeBus to view this update.',
+      title: 'BusSafe update',
+      body: 'Open BusSafe to view this update.',
       android_channel: 'trip_updates',
       collapse_key: 'notification-n1',
       attempt_count: 1,

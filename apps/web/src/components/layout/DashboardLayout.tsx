@@ -366,13 +366,13 @@ export function DashboardLayout({
           <Link
             to="/"
             className="flex min-w-0 items-center gap-2.5"
-            aria-label="SafeBus Alberta home"
+            aria-label="BusSafe Alberta home"
           >
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-navy-700 text-white shadow-sm">
               <Bus className="h-5 w-5" aria-hidden />
             </span>
             <span className="hidden flex-col leading-tight sm:flex">
-              <span className="text-sm font-bold text-slate-900">SafeBus Alberta</span>
+              <span className="text-sm font-bold text-slate-900">BusSafe Alberta</span>
               <span className="text-xs text-slate-500">{portalTitles[portal]} portal</span>
             </span>
           </Link>
@@ -462,7 +462,7 @@ export function DashboardLayout({
             <aside className="absolute left-0 top-0 h-full w-72 max-w-[85vw] overflow-y-auto bg-white p-4 shadow-popover animate-slide-in-right">
               <div className="mb-4 flex items-center justify-between">
                 <span className="flex items-center gap-2 text-sm font-bold text-slate-900">
-                  <Bus className="h-4 w-4 text-navy-600" /> SafeBus Alberta
+                  <Bus className="h-4 w-4 text-navy-600" /> BusSafe Alberta
                 </span>
                 <button
                   type="button"

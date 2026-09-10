@@ -582,7 +582,7 @@ export function StudentOnboardingForm({
                 <input className={fieldClassName} type="tel" maxLength={40} value={guardianPhone} onChange={(event) => setGuardianPhone(event.target.value)} required />
               </label>
               <p className="self-end rounded-lg bg-blue-50 p-3 text-sm text-blue-900">
-                SafeBus sends the guardian a secure link to create or activate their account. No password is handled by the admin.
+                BusSafe sends the guardian a secure link to create or activate their account. No password is handled by the admin.
               </p>
             </div>
           )}
