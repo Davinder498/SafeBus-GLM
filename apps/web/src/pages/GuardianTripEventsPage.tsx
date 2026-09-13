@@ -68,7 +68,7 @@ export function GuardianTripEventsPage() {
           description="See the latest status recorded during the active school bus run."
         />
 
-        <Card className="p-4">
+        <Card className="p-4" data-ui="manual-refresh-card">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Button
               type="button"

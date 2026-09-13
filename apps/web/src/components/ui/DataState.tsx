@@ -13,7 +13,7 @@ interface DataStateProps {
 
 export function DataState({ title, message, icon, action }: DataStateProps) {
   return (
-    <Card className="p-8 text-center">
+    <Card className="p-8 text-center" data-ui-state="data-state">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
         {icon ?? <Inbox className="h-6 w-6" aria-hidden />}
       </div>

@@ -8,6 +8,10 @@ import {
   type AuthContextValue,
   type Profile,
 } from '@/contexts/AuthContext';
+import {
+  NotificationContext,
+  type NotificationContextValue,
+} from '@/contexts/NotificationContext';
 import { DashboardLayout, driverNavGroups } from './DashboardLayout';
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean })
@@ -62,21 +66,28 @@ function LocationProbe() {
   return <span data-testid="location-probe">{location.pathname}</span>;
 }
 
-async function renderDriverLayout(surface?: AppSurface) {
+async function renderDriverLayout(surface?: AppSurface, unreadCount = 0) {
   const container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
 
+  const notificationValue: NotificationContextValue = {
+    unreadCount,
+    connectionState: 'connected',
+    refreshNotifications: vi.fn(async () => undefined),
+  };
   const layout = (
     <AuthContext.Provider value={authValue}>
-      <DashboardLayout
-        title="Driver Dashboard"
-        portal="driver"
-        navItems={[]}
-        navGroups={driverNavGroups}
-      >
-        <LocationProbe />
-      </DashboardLayout>
+      <NotificationContext.Provider value={notificationValue}>
+        <DashboardLayout
+          title="Driver Dashboard"
+          portal="driver"
+          navItems={[]}
+          navGroups={driverNavGroups}
+        >
+          <LocationProbe />
+        </DashboardLayout>
+      </NotificationContext.Provider>
     </AuthContext.Provider>
   );
 
@@ -112,6 +123,17 @@ describe('DashboardLayout navigation presentation', () => {
     );
     expect(container.querySelector('button[aria-label="Open navigation"]')).toBeNull();
     expect(container.querySelector('aside')).toBeNull();
+    expect(container.querySelector('[data-testid="safebus-brand-mark"]')).not.toBeNull();
+  });
+
+  it('shows unread notifications on the native Alerts destination', async () => {
+    const container = await renderDriverLayout('native-mobile', 7);
+    const alertsTab = Array.from(container.querySelectorAll('a')).find(
+      (tab) => tab.textContent?.includes('Alerts'),
+    );
+
+    expect(alertsTab?.textContent).toContain('7');
+    expect(alertsTab?.querySelector('.sb-bottom-tab-badge')).not.toBeNull();
   });
 
   it('opens the secondary driver Profile route from the account menu', async () => {
@@ -126,6 +148,22 @@ describe('DashboardLayout navigation presentation', () => {
 
     expect(container.querySelector('[data-testid="location-probe"]')?.textContent).toBe(
       '/driver/profile',
+    );
+  });
+
+  it('opens Driver settings from the native account menu', async () => {
+    const container = await renderDriverLayout('native-mobile');
+    const accountButton = container.querySelector<HTMLButtonElement>('button[aria-haspopup="menu"]');
+
+    await act(async () => accountButton?.click());
+
+    const settingsButton = Array.from(
+      container.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'),
+    ).find((item) => item.textContent?.trim() === 'Driver settings');
+    await act(async () => settingsButton?.click());
+
+    expect(container.querySelector('[data-testid="location-probe"]')?.textContent).toBe(
+      '/driver/settings',
     );
   });
 });

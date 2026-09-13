@@ -28,6 +28,8 @@ const dotToneClasses: Record<StatusTone, string> = {
 export function StatusPill({ children, tone = 'neutral', dot = false }: StatusPillProps) {
   return (
     <span
+      data-ui="status-pill"
+      data-tone={tone}
       className={cn(
         'inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset',
         toneClasses[tone],

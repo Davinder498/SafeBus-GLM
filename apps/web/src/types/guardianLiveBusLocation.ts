@@ -29,3 +29,31 @@ export interface GuardianStudentLiveBusLocation {
 }
 
 export type GuardianBusVisibility = GuardianStudentLiveBusLocation;
+
+export type GuardianBusServiceTripStatus = 'active' | 'paused' | 'inactive';
+
+export interface GuardianBusServiceStop {
+  name: string;
+  order: number;
+  latitude: number | null;
+  longitude: number | null;
+  plannedArrivalTime: string | null;
+}
+
+/**
+ * Guardian-safe presentation of one current bus service. Internal route,
+ * pattern, trip, bus, driver, tenant, and student identifiers are excluded.
+ */
+export interface GuardianBusServiceLine {
+  busNumber: string;
+  licensePlate: string | null;
+  routeName: string;
+  tripName: string;
+  direction: 'forward' | 'reverse';
+  tripStatus: GuardianBusServiceTripStatus;
+  locationState: GuardianLiveBusLocationState;
+  latitude: number | null;
+  longitude: number | null;
+  locationRecordedAt: string | null;
+  stops: GuardianBusServiceStop[];
+}

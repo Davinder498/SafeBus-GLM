@@ -55,6 +55,7 @@
     "get_driver_active_trip_route_shape()",
     "get_driver_active_trip_student_manifest()",
     "get_driver_completed_trip_history(integer)",
+    "get_guardian_bus_service_lines(text)",
     "get_guardian_bus_visibility_v2()",
     "get_guardian_notification_preferences()",
     "get_guardian_notification_preferences_v2()",

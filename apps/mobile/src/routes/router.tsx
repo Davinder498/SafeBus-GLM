@@ -13,6 +13,7 @@ import { DriverSettingsPage } from '@/pages/DriverSettingsPage';
 import { DriverTripHistoryPage } from '@/pages/DriverTripHistoryPage';
 import { GuardianLiveMapPage } from '@/pages/GuardianLiveMapPage';
 import { GuardianLiveTripsPage } from '@/pages/GuardianLiveTripsPage';
+import { GuardianBusDetailPage } from '@/pages/GuardianBusDetailPage';
 import { NotificationsPage } from '@/pages/NotificationsPage';
 import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
 import { GuardianRoutesPage } from '@/pages/GuardianRoutesPage';
@@ -145,6 +146,14 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={['guardian']}>
         <GuardianRoutesPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/guardian/buses/:busNumber',
+    element: (
+      <ProtectedRoute allowedRoles={['guardian']}>
+        <GuardianBusDetailPage />
       </ProtectedRoute>
     ),
   },
