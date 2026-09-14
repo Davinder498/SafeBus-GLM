@@ -13,6 +13,7 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 export function Card({ children, className, interactive = false, ...props }: CardProps) {
   return (
     <div
+      data-ui="card"
       className={cn(
         'min-w-0 rounded-xl border border-slate-200/80 bg-white shadow-card',
         interactive &&

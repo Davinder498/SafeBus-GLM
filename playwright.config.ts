@@ -16,7 +16,8 @@ const playwrightBaseUrl = `http://localhost:${playwrightPort}`;
  */
 export default defineConfig({
   testDir: './tests',
-  testIgnore: /release-assets/,
+  // Native UI tests require the mobile entry point and its dedicated config.
+  testIgnore: [/release-assets/, /mobile-ui/],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

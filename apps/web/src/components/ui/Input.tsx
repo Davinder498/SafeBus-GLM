@@ -18,6 +18,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     <input
       ref={ref}
       type={type}
+      data-ui="input"
       className={cn(
         'block w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-slate-900 shadow-xs',
         'placeholder:text-slate-400',

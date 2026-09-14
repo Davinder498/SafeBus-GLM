@@ -3780,6 +3780,12 @@ export interface Database {
         }
         Returns: unknown
       }
+      get_guardian_bus_service_lines: {
+        Args: {
+          p_bus_number: string
+        }
+        Returns: unknown
+      }
       get_guardian_live_route_overlays: {
         Args: {
         }

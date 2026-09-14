@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
+import { useAppSurface } from '@/contexts/AppSurfaceContext';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
@@ -18,6 +19,7 @@ function formatTimestamp(iso: string): string {
 }
 
 export function GuardianLiveTripsPage() {
+  const appSurface = useAppSurface();
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
@@ -63,7 +65,7 @@ export function GuardianLiveTripsPage() {
           description="See whether the assigned bus is currently running the student's school service."
         />
 
-        <Card className="p-4">
+        <Card className="p-4" data-ui="manual-refresh-card">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Button
               type="button"
@@ -126,8 +128,17 @@ export function GuardianLiveTripsPage() {
                       <p className="mt-1 text-sm text-gray-500">No bus assigned yet.</p>
                     )}
                   </div>
-                  <StatusPill tone={bus.hasActiveTrip ? 'success' : 'neutral'}>
-                    {bus.hasActiveTrip ? 'School run active' : 'Trip not started'}
+                  <StatusPill
+                    tone={bus.hasActiveTrip ? 'success' : 'neutral'}
+                    dot={appSurface === 'native-mobile'}
+                  >
+                    {appSurface === 'native-mobile'
+                      ? bus.hasActiveTrip
+                        ? 'Active'
+                        : 'Inactive'
+                      : bus.hasActiveTrip
+                        ? 'School run active'
+                        : 'Trip not started'}
                   </StatusPill>
                 </div>
 

@@ -67,6 +67,9 @@ export function Button({
   return (
     <button
       className={cn(buttonVariants({ variant, size }), fullWidth && 'w-full', className)}
+      data-ui="button"
+      data-variant={variant}
+      data-size={size}
       disabled={disabled || loading}
       {...props}
     >

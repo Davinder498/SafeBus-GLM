@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, NavLink } from 'react-router';
-import { Bus } from 'lucide-react';
+import { BrandMark } from '@/components/ui/BrandMark';
 
 interface PublicLayoutProps {
   children: ReactNode;
@@ -8,13 +8,14 @@ interface PublicLayoutProps {
 
 export function PublicLayout({ children }: PublicLayoutProps) {
   return (
-    <div className="min-h-screen bg-white">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-md">
+    <div className="min-h-screen bg-white" data-ui="public-shell">
+      <header
+        className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-md"
+        data-ui="public-app-bar"
+      >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-navy-700 text-white shadow-sm">
-              <Bus className="h-5 w-5" aria-hidden />
-            </span>
+            <BrandMark />
             <span className="hidden text-base font-bold tracking-tight text-slate-900 min-[390px]:inline">
               BusSafe Alberta
             </span>
@@ -39,7 +40,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
         </div>
       </header>
       {children}
-      <footer className="border-t border-slate-200 bg-slate-50">
+      <footer className="border-t border-slate-200 bg-slate-50" data-ui="public-footer">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 text-sm text-slate-500 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
           <p>BusSafe Alberta. Track the bus, not the child.</p>
           <div className="flex flex-wrap gap-x-5 gap-y-2">

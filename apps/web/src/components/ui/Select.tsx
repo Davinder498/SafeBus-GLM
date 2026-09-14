@@ -14,6 +14,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
     <div className="relative">
       <select
         ref={ref}
+        data-ui="select"
         className={cn(
           'block w-full appearance-none rounded-lg border bg-white px-3 py-2.5 pr-9 text-sm text-slate-900 shadow-xs',
           'focus:outline-none focus-visible:ring-2',

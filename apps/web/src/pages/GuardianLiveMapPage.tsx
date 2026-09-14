@@ -1,4 +1,5 @@
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
+import { useAppSurface } from '@/contexts/AppSurfaceContext';
 import { GuardianLiveBusMap } from '@/components/guardian/GuardianLiveBusMap';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -9,6 +10,8 @@ import { useGuardianLiveBusLocations } from '@/hooks/useGuardianLiveBusLocations
 import { useMapTileConfig } from '@/hooks/useMapTileConfig';
 import type { TrackingConnectionState } from '@/hooks/useTrackingInvalidations';
 import type { GuardianStudentLiveBusLocation } from '@/types/guardianLiveBusLocation';
+import { useSearchParams } from 'react-router';
+import { groupGuardianBuses } from '@/utils/guardianBusGroups';
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
@@ -53,9 +56,26 @@ function locationStateMeta(state: GuardianStudentLiveBusLocation['locationState'
 }
 
 export function GuardianLiveMapPage() {
+  const appSurface = useAppSurface();
+  const [searchParams] = useSearchParams();
+  const selectedBusNumber =
+    appSurface === 'native-mobile' ? (searchParams.get('bus')?.trim() ?? '') : '';
   const { state, refreshing, lastRefreshedAt, connectionState, refresh } =
     useGuardianLiveBusLocations();
   const mapTileConfig = useMapTileConfig();
+  const busGroups = state.kind === 'ready' ? groupGuardianBuses(state.locations) : [];
+  const visibleGroups =
+    appSurface === 'native-mobile'
+      ? selectedBusNumber
+        ? busGroups.filter(
+            (group) =>
+              group.busNumber?.toLocaleLowerCase() === selectedBusNumber.toLocaleLowerCase(),
+          )
+        : busGroups
+      : state.kind === 'ready'
+        ? state.locations.flatMap((location) => groupGuardianBuses([location]))
+        : [];
+  const visibleLocations = visibleGroups.map((group) => group.visibility);
 
   return (
     <DashboardLayout
@@ -67,11 +87,11 @@ export function GuardianLiveMapPage() {
       <div className="mx-auto max-w-3xl space-y-5">
         <PageHeader
           eyebrow="Live bus map"
-          title="Live Bus Map"
+          title={selectedBusNumber ? `Bus ${selectedBusNumber} Live Map` : 'Live Bus Map'}
           description="See the bus only while it is running the school service assigned to your linked student."
         />
 
-        <Card className="p-4">
+        <Card className="p-4" data-ui="manual-refresh-card">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Button
               type="button"
@@ -110,33 +130,47 @@ export function GuardianLiveMapPage() {
             </Button>
           </div>
         )}
-        {state.kind === 'ready' && state.locations.length === 0 && (
+        {state.kind === 'ready' && visibleLocations.length === 0 && (
           <div data-testid="guardian-live-map-empty">
             <DataState
-              title="No linked students are available yet."
-              message="Please contact your school transportation office."
+              title={selectedBusNumber ? 'This bus is not available.' : 'No linked students are available yet.'}
+              message={
+                selectedBusNumber
+                  ? 'Its assignment may have changed. Return to My Buses to see current assignments.'
+                  : 'Please contact your school transportation office.'
+              }
             />
           </div>
         )}
-        {state.kind === 'ready' && state.locations.length > 0 && (
+        {state.kind === 'ready' && visibleLocations.length > 0 && (
           <>
-            <GuardianLiveBusMap locations={state.locations} tileConfig={mapTileConfig} />
+            <GuardianLiveBusMap locations={visibleLocations} tileConfig={mapTileConfig} />
             <section
               className="grid gap-4"
               aria-label="Student bus status"
               data-testid="guardian-live-map-list"
             >
-              {state.locations.map((bus) => {
+              {visibleGroups.map((group) => {
+                const bus = group.visibility;
                 const meta = locationStateMeta(bus.locationState);
                 return (
                   <Card
-                    key={bus.studentId}
+                    key={group.key}
                     className="p-5"
                     data-testid="guardian-live-map-student-card"
                   >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
-                        <h3 className="text-lg font-bold text-navy-900">{bus.studentName}</h3>
+                        <h3 className="text-lg font-bold text-navy-900">
+                          {appSurface === 'native-mobile' && bus.busNumber
+                            ? `Bus ${bus.busNumber}`
+                            : bus.studentName}
+                        </h3>
+                        {appSurface === 'native-mobile' && (
+                          <p className="mt-1 text-sm font-medium text-gray-600">
+                            {group.students.map((student) => student.studentName).join(', ')}
+                          </p>
+                        )}
                         {bus.busNumber ? (
                           <p className="mt-1 text-sm text-gray-600">
                             Bus <span className="font-semibold text-navy-900">{bus.busNumber}</span>{' '}

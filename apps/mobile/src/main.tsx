@@ -24,6 +24,8 @@ import './index.css';
  * 2. Edge-to-edge system-bar styling on native Android.
  */
 async function bootstrap() {
+  document.documentElement.dataset.appSurface = 'native-mobile';
+
   // Android 16 enforces edge-to-edge. Keep system controls visible against the light app shell.
   if (Capacitor.isNativePlatform()) {
     installNativeDriverTrackingBridge();

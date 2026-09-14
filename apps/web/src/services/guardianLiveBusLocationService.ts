@@ -1,6 +1,8 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 import type {
   GuardianBusAssignmentState,
+  GuardianBusServiceLine,
+  GuardianBusServiceStop,
   GuardianBusVisibility,
   GuardianLiveBusLocationState,
   GuardianStudentTripStatus,
@@ -69,3 +71,75 @@ export async function fetchGuardianBusVisibility(): Promise<GuardianBusVisibilit
 
 // Retain the hook-facing name while using the single bus-first server contract.
 export const fetchGuardianLiveBusLocations = fetchGuardianBusVisibility;
+
+interface GuardianBusServiceStopRpcRow {
+  name: string;
+  order: number;
+  latitude: number | null;
+  longitude: number | null;
+  plannedArrivalTime: string | null;
+}
+
+interface GuardianBusServiceLineRpcRow {
+  busNumber: string;
+  licensePlate: string | null;
+  routeName: string;
+  tripName: string;
+  direction: 'forward' | 'reverse';
+  tripStatus: 'active' | 'paused' | 'inactive';
+  locationState: GuardianLiveBusLocationState;
+  latitude: number | null;
+  longitude: number | null;
+  locationRecordedAt: string | null;
+  stops: GuardianBusServiceStopRpcRow[];
+}
+
+function isFiniteCoordinate(value: unknown, minimum: number, maximum: number): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= minimum && value <= maximum;
+}
+
+function mapGuardianBusServiceStop(row: GuardianBusServiceStopRpcRow): GuardianBusServiceStop {
+  return {
+    name: row.name,
+    order: row.order,
+    latitude: isFiniteCoordinate(row.latitude, -90, 90) ? row.latitude : null,
+    longitude: isFiniteCoordinate(row.longitude, -180, 180) ? row.longitude : null,
+    plannedArrivalTime: row.plannedArrivalTime,
+  };
+}
+
+export function mapGuardianBusServiceLine(
+  row: GuardianBusServiceLineRpcRow,
+): GuardianBusServiceLine {
+  return {
+    busNumber: row.busNumber,
+    licensePlate: row.licensePlate,
+    routeName: row.routeName,
+    tripName: row.tripName,
+    direction: row.direction,
+    tripStatus: row.tripStatus,
+    locationState: row.locationState,
+    latitude: isFiniteCoordinate(row.latitude, -90, 90) ? row.latitude : null,
+    longitude: isFiniteCoordinate(row.longitude, -180, 180) ? row.longitude : null,
+    locationRecordedAt: row.locationRecordedAt,
+    stops: (row.stops ?? []).map(mapGuardianBusServiceStop),
+  };
+}
+
+/** Load ordered guardian-safe service lines for one assigned bus number. */
+export async function fetchGuardianBusServiceLines(
+  busNumber: string,
+): Promise<GuardianBusServiceLine[]> {
+  const normalizedBusNumber = busNumber.trim();
+  if (!normalizedBusNumber) return [];
+
+  const { data, error } = await requireSupabase().rpc('get_guardian_bus_service_lines', {
+    p_bus_number: normalizedBusNumber,
+  });
+  if (error) {
+    if (import.meta.env.DEV) console.error('Failed to load guardian bus service lines', error);
+    throw new Error('We could not load this bus route. Please try again.');
+  }
+
+  return ((data ?? []) as GuardianBusServiceLineRpcRow[]).map(mapGuardianBusServiceLine);
+}

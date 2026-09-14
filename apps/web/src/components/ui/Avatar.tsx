@@ -26,6 +26,7 @@ function getInitials(name?: string): string {
 export function Avatar({ name, src, size = 'md', className }: AvatarProps) {
   return (
     <span
+      data-ui="avatar"
       className={cn(
         'inline-flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full bg-navy-100 font-semibold text-navy-700 ring-1 ring-inset ring-navy-200',
         sizeClasses[size],
