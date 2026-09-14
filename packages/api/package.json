@@ -20,8 +20,8 @@
   },
   "dependencies": {
     "@safebus/types": "workspace:*",
-    "@supabase/supabase-js": "^2.115.0",
-    "zod": "^4.5.4"
+    "@supabase/supabase-js": "^2.116.0",
+    "zod": "^4.6.2"
   },
   "devDependencies": {
     "rimraf": "^6.0.1",
