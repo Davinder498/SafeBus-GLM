@@ -76,9 +76,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const value = useMemo(() => ({ unreadCount, connectionState, refreshNotifications }), [connectionState, refreshNotifications, unreadCount]);
   return <NotificationContext.Provider value={value}>
     {children}
-    <div aria-live="polite" aria-atomic="true" className="fixed right-4 top-4 z-[100] max-w-sm">
+    <div aria-live="polite" aria-atomic="true" className="fixed right-4 top-4 z-[100] max-w-sm" data-ui="notification-toast-region">
       {toast ? <button type="button" onClick={() => { window.location.assign(toast.destinationPath); }}
-        className="rounded-xl border border-blue-200 bg-white p-4 text-left shadow-xl">
+        className="rounded-xl border border-blue-200 bg-white p-4 text-left shadow-xl" data-ui="notification-toast">
         <span className="block font-semibold text-slate-950">{toast.title}</span>
         <span className="mt-1 block text-sm text-slate-600">{toast.body}</span>
       </button> : null}

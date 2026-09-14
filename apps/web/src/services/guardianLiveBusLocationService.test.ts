@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  mapGuardianBusServiceLine,
   mapGuardianBusVisibilityRow,
   type GuardianBusVisibilityRpcRow,
 } from '@/services/guardianLiveBusLocationService';
@@ -63,5 +64,44 @@ describe('guardian bus-first visibility mapping', () => {
       licensePlate: null,
       locationState: 'inactive',
     });
+  });
+
+  it('maps ordered guardian service stops without exposing internal identifiers', () => {
+    const line = mapGuardianBusServiceLine({
+      busNumber: '42',
+      licensePlate: 'TEST-42',
+      routeName: 'Cedar School Line',
+      tripName: 'Morning school run',
+      direction: 'forward',
+      tripStatus: 'active',
+      locationState: 'fresh',
+      latitude: 51.047,
+      longitude: -114.0719,
+      locationRecordedAt: '2026-08-03T18:00:00.000Z',
+      stops: [
+        {
+          name: 'North Terminal',
+          order: 1,
+          latitude: 51.044,
+          longitude: -114.0719,
+          plannedArrivalTime: '08:00:00',
+        },
+        {
+          name: 'Riverside School',
+          order: 2,
+          latitude: 51.056,
+          longitude: -114.0719,
+          plannedArrivalTime: '08:25:00',
+        },
+      ],
+    });
+
+    expect(line.stops.map((stop) => stop.name)).toEqual([
+      'North Terminal',
+      'Riverside School',
+    ]);
+    expect(line).not.toHaveProperty('routeId');
+    expect(line).not.toHaveProperty('tripId');
+    expect(line).not.toHaveProperty('driverId');
   });
 });

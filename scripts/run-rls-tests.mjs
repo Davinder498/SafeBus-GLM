@@ -18,6 +18,7 @@ const DEFAULT_RLS_FILES = [
   'tests/rls/guardian-linking-rls.sql',
   'tests/rls/student-roster-shared-cleanup.sql',
   'tests/rls/guardian-bus-first-visibility-rls.sql',
+  'tests/rls/guardian-bus-service-line-rls.sql',
   'tests/rls/driver-active-trip-student-manifest-rls.sql',
   'tests/rls/driver-student-trip-events-rls.sql',
   'tests/rls/guardian-notification-outbox-rls.sql',

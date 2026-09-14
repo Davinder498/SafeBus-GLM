@@ -14,7 +14,10 @@ interface PageHeaderProps {
 
 export function PageHeader({ eyebrow, title, description, icon, badge, action }: PageHeaderProps) {
   return (
-    <div className="min-w-0 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div
+      className="min-w-0 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+      data-ui="page-header"
+    >
       <div className="flex min-w-0 items-start gap-3 sm:gap-4">
         {icon && (
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-navy-50 text-navy-600 ring-1 ring-inset ring-navy-100">
@@ -25,17 +28,28 @@ export function PageHeader({ eyebrow, title, description, icon, badge, action }:
           {(eyebrow || badge) && (
             <div className="mb-1.5">
               {badge ?? (
-                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-navy-600">
+                <p
+                  className="text-xs font-semibold uppercase tracking-[0.1em] text-navy-600"
+                  data-ui="page-eyebrow"
+                >
                   {eyebrow}
                 </p>
               )}
             </div>
           )}
-          <h1 className="break-words text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <h1
+            className="break-words text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl"
+            data-ui="page-title"
+          >
             {title}
           </h1>
           {description && (
-            <p className={cn('mt-2 max-w-3xl text-sm leading-6 text-slate-500')}>{description}</p>
+            <p
+              className={cn('mt-2 max-w-3xl text-sm leading-6 text-slate-500')}
+              data-ui="page-description"
+            >
+              {description}
+            </p>
           )}
         </div>
       </div>

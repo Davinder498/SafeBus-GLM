@@ -28,6 +28,7 @@ import { useAppSurface, type AppSurface } from '@/contexts/AppSurfaceContext';
 import { useAuth } from '@/contexts/useAuth';
 import { NotificationContext } from '@/contexts/NotificationContext';
 import { Avatar } from '@/components/ui/Avatar';
+import { BrandMark } from '@/components/ui/BrandMark';
 import { DropdownMenu, DropdownItem, DropdownSeparator } from '@/components/ui/DropdownMenu';
 import { getRoleLabel } from '@/components/ui/RoleBadge';
 
@@ -346,10 +347,21 @@ export function DashboardLayout({
     .filter((group) => group.items.length > 0);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div
+      className="min-h-screen bg-slate-50"
+      data-ui="dashboard-shell"
+      data-app-surface={appSurface}
+      data-portal={portal}
+    >
       {/* Top header */}
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-[1400px] min-w-0 items-center gap-2 px-3 sm:gap-4 sm:px-6 lg:px-8">
+      <header
+        className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-md"
+        data-ui="app-bar"
+      >
+        <div
+          className="mx-auto flex h-16 max-w-[1400px] min-w-0 items-center gap-2 px-3 sm:gap-4 sm:px-6 lg:px-8"
+          data-ui="app-bar-inner"
+        >
           {/* Mobile menu button */}
           {!usesBottomTabs && (
             <button
@@ -368,10 +380,8 @@ export function DashboardLayout({
             className="flex min-w-0 items-center gap-2.5"
             aria-label="BusSafe Alberta home"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-navy-700 text-white shadow-sm">
-              <Bus className="h-5 w-5" aria-hidden />
-            </span>
-            <span className="hidden flex-col leading-tight sm:flex">
+            <BrandMark />
+            <span className="sb-brand-copy hidden flex-col leading-tight sm:flex">
               <span className="text-sm font-bold text-slate-900">BusSafe Alberta</span>
               <span className="text-xs text-slate-500">{portalTitles[portal]} portal</span>
             </span>
@@ -383,6 +393,7 @@ export function DashboardLayout({
           <div className="flex items-center gap-1.5">
             <Link
               to="/notifications"
+              data-ui="top-notifications"
               className="relative hidden rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 min-[360px]:block"
               aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : 'Notifications'}
             >
@@ -419,6 +430,12 @@ export function DashboardLayout({
               {usesBottomTabs && portal === 'driver' && (
                 <>
                   <DropdownItem
+                    icon={<Settings className="h-4 w-4" />}
+                    onClick={() => navigate('/driver/settings')}
+                  >
+                    Driver settings
+                  </DropdownItem>
+                  <DropdownItem
                     icon={<UserCircle className="h-4 w-4" />}
                     onClick={() => navigate('/driver/profile')}
                   >
@@ -435,7 +452,11 @@ export function DashboardLayout({
                   Privacy &amp; account
                 </DropdownItem>
               )}
-              <DropdownItem icon={<LogOut className="h-4 w-4" />} onClick={handleLogout}>
+              <DropdownItem
+                destructive
+                icon={<LogOut className="h-4 w-4" />}
+                onClick={handleLogout}
+              >
                 Sign out
               </DropdownItem>
             </DropdownMenu>
@@ -481,6 +502,7 @@ export function DashboardLayout({
         {/* Main content */}
         <main
           className="min-w-0 max-w-full flex-1 px-3 py-5 sm:px-6 sm:py-6 lg:px-8"
+          data-ui="mobile-main"
           style={
             usesBottomTabs
               ? { paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }
@@ -491,7 +513,9 @@ export function DashboardLayout({
         </main>
       </div>
 
-      {usesBottomTabs && <BottomTabNav items={bottomTabItems} portal={portal} />}
+      {usesBottomTabs && (
+        <BottomTabNav items={bottomTabItems} portal={portal} unreadCount={unreadCount} />
+      )}
     </div>
   );
 }
@@ -499,9 +523,11 @@ export function DashboardLayout({
 function BottomTabNav({
   items,
   portal,
+  unreadCount,
 }: {
   items: DashboardNavItem[];
   portal: DashboardLayoutProps['portal'];
+  unreadCount: number;
 }) {
   return (
     <nav
@@ -523,16 +549,30 @@ function BottomTabNav({
               key={item.label}
               to={to}
               end={to === `/${portal}`}
+              aria-label={
+                item.label === 'Alerts' && unreadCount > 0
+                  ? `Alerts, ${unreadCount} unread`
+                  : item.label
+              }
               className={({ isActive }: NavLinkRenderProps) =>
                 cn(
-                  'flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-500',
+                  'sb-bottom-tab flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-500',
                   isActive
-                    ? 'bg-navy-50 font-bold text-navy-700'
+                    ? 'sb-bottom-tab-active bg-navy-50 font-bold text-navy-700'
                     : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800',
                 )
               }
             >
-              {item.icon && <span aria-hidden>{item.icon}</span>}
+              {item.icon && (
+                <span className="sb-bottom-tab-indicator" aria-hidden>
+                  {item.icon}
+                  {item.label === 'Alerts' && unreadCount > 0 ? (
+                    <span className="sb-bottom-tab-badge">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  ) : null}
+                </span>
+              )}
               <span className="max-w-full truncate">{item.label}</span>
             </NavLink>
           );
