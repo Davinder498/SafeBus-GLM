@@ -1,0 +1,379 @@
+import { useEffect, useState } from 'react';
+import { ArrowLeft, BusFront, MapPin, Navigation, Users } from 'lucide-react';
+import { Link, useParams } from 'react-router';
+import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
+import { Card } from '@/components/ui/Card';
+import { DataState } from '@/components/ui/DataState';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { StatusPill } from '@/components/ui/StatusPill';
+import {
+  fetchGuardianBusServiceLines,
+  fetchGuardianBusVisibility,
+} from '@/services/guardianLiveBusLocationService';
+import type {
+  GuardianBusServiceLine,
+  GuardianBusServiceStop,
+  GuardianBusVisibility,
+} from '@/types/guardianLiveBusLocation';
+import { calculateGuardianBusProgress } from '@/utils/guardianBusProgress';
+import { groupGuardianBuses, type GuardianBusGroup } from '@/utils/guardianBusGroups';
+
+type LoadState =
+  | { kind: 'loading' }
+  | { kind: 'error' }
+  | { kind: 'not-found' }
+  | {
+      kind: 'ready';
+      group: GuardianBusGroup;
+      serviceLines: GuardianBusServiceLine[] | null;
+    };
+
+function formatTimestamp(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function formatGrade(grade: string): string {
+  return /^grade\s/i.test(grade) ? grade : `Grade ${grade}`;
+}
+
+function studentStatus(student: GuardianBusVisibility): string {
+  if (student.studentTripStatus === 'picked_up') return 'On board';
+  if (student.studentTripStatus === 'dropped_off') return 'Drop-off complete';
+  if (student.studentTripStatus === 'not_picked_up') return 'Waiting for pickup';
+  return 'Service not started';
+}
+
+function serviceLineStatus(line: GuardianBusServiceLine): {
+  label: string;
+  tone: 'success' | 'warning' | 'neutral';
+} {
+  if (line.tripStatus === 'paused') {
+    return { label: 'Paused', tone: 'warning' };
+  }
+  if (line.locationState === 'fresh') {
+    return { label: 'Live', tone: 'success' };
+  }
+  if (line.locationState === 'stale') {
+    return { label: 'Delayed', tone: 'warning' };
+  }
+  if (line.tripStatus === 'active') {
+    return { label: 'Waiting', tone: 'neutral' };
+  }
+  return { label: 'Inactive', tone: 'neutral' };
+}
+
+export function GuardianBusDetailPage() {
+  const { busNumber: encodedBusNumber } = useParams();
+  const busNumber = encodedBusNumber ? decodeURIComponent(encodedBusNumber) : '';
+  const [state, setState] = useState<LoadState>({ kind: 'loading' });
+
+  useEffect(() => {
+    let active = true;
+    let hasLoaded = false;
+
+    const load = async () => {
+      const [visibilityResult, serviceLineResult] = await Promise.allSettled([
+        fetchGuardianBusVisibility(),
+        fetchGuardianBusServiceLines(busNumber),
+      ]);
+      if (!active) return;
+      if (visibilityResult.status === 'rejected') {
+        if (!hasLoaded) setState({ kind: 'error' });
+        return;
+      }
+
+      const group = groupGuardianBuses(visibilityResult.value).find(
+        (candidate) =>
+          candidate.busNumber?.trim().toLocaleLowerCase() ===
+          busNumber.trim().toLocaleLowerCase(),
+      );
+      setState(
+        group
+          ? {
+              kind: 'ready',
+              group,
+              serviceLines:
+                serviceLineResult.status === 'fulfilled' ? serviceLineResult.value : null,
+            }
+          : { kind: 'not-found' },
+      );
+      hasLoaded = true;
+    };
+
+    void load();
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void load();
+    }, 15_000);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') void load();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [busNumber]);
+
+  return (
+    <DashboardLayout
+      title="Parent Dashboard"
+      portal="parent"
+      navItems={[]}
+      navGroups={guardianNavGroups}
+    >
+      <div className="mx-auto max-w-3xl space-y-5" data-ui="guardian-bus-detail-page">
+        <Link
+          to="/guardian/routes"
+          className="inline-flex min-h-12 items-center gap-2 rounded-xl px-2 text-sm font-bold text-navy-700 hover:bg-navy-50"
+        >
+          <ArrowLeft className="h-5 w-5" aria-hidden /> Back to my buses
+        </Link>
+
+        <PageHeader
+          eyebrow="Bus details"
+          title={busNumber ? `Bus ${busNumber}` : 'Bus details'}
+          description="Verified service information for the bus assigned to your linked students."
+        />
+
+        {state.kind === 'loading' && (
+          <DataState title="Loading bus details" message="Checking the latest verified bus status." />
+        )}
+        {state.kind === 'error' && (
+          <DataState title="We could not load this bus." message="Please return to My Buses and try again." />
+        )}
+        {state.kind === 'not-found' && (
+          <DataState title="This bus is not available." message="Its assignment may have changed." />
+        )}
+
+        {state.kind === 'ready' && (
+          <BusDetails group={state.group} serviceLines={state.serviceLines} />
+        )}
+      </div>
+    </DashboardLayout>
+  );
+}
+
+function BusDetails({
+  group,
+  serviceLines,
+}: {
+  group: GuardianBusGroup;
+  serviceLines: GuardianBusServiceLine[] | null;
+}) {
+  const liveMapPath = group.busNumber
+    ? `/guardian/live-map?bus=${encodeURIComponent(group.busNumber)}`
+    : '/guardian/live-map';
+
+  return (
+    <>
+      <Card className="overflow-hidden" data-ui="guardian-bus-detail-hero">
+        <div className="bg-navy-900 p-5 text-white">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-yellow-400 text-navy-900">
+                <BusFront className="h-7 w-7" aria-hidden />
+              </span>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-100">Assigned bus</p>
+                <h2 className="mt-1 text-4xl font-extrabold tracking-tight">Bus {group.busNumber}</h2>
+              </div>
+            </div>
+            <StatusPill tone={group.hasActiveTrip ? 'success' : 'neutral'} dot>
+              {group.hasActiveTrip ? 'Active' : 'Inactive'}
+            </StatusPill>
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-white/10 p-3">
+              <p className="text-xs font-semibold text-blue-100">License plate</p>
+              <p className="mt-1 font-bold">{group.licensePlate ?? 'Not available'}</p>
+            </div>
+            <div className="rounded-2xl bg-white/10 p-3">
+              <p className="text-xs font-semibold text-blue-100">Students</p>
+              <p className="mt-1 font-bold">{group.students.length}</p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {serviceLines === null && (
+        <DataState
+          title="Route line is not available"
+          message="The bus and live map remain available. Route stops will appear after the guardian route contract is approved and released."
+          icon={<Navigation className="h-6 w-6" aria-hidden />}
+        />
+      )}
+
+      {serviceLines?.length === 0 && (
+        <DataState
+          title="No current service line"
+          message="The assigned route may be changing. Check again when the next school run begins."
+          icon={<Navigation className="h-6 w-6" aria-hidden />}
+        />
+      )}
+
+      {serviceLines?.map((line) => (
+        <ServiceLineCard
+          key={`${line.routeName}:${line.tripName}:${line.direction}`}
+          line={line}
+        />
+      ))}
+
+      <Card className="p-5">
+        <h2 className="flex items-center gap-2 text-lg font-bold text-navy-900">
+          <Users className="h-5 w-5 text-navy-700" aria-hidden /> Assigned students
+        </h2>
+        <ul className="mt-4 divide-y divide-gray-200">
+          {group.students.map((student) => (
+            <li key={student.studentId} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+              <div>
+                <p className="font-bold text-navy-900">{student.studentName}</p>
+                {student.studentGrade && (
+                  <p className="text-sm text-gray-500">{formatGrade(student.studentGrade)}</p>
+                )}
+              </div>
+              <span className="text-right text-sm font-semibold text-gray-600">{studentStatus(student)}</span>
+            </li>
+          ))}
+        </ul>
+      </Card>
+
+      <Link
+        to={liveMapPath}
+        className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-navy-800 px-5 py-3 font-bold text-white shadow-lg shadow-navy-900/10 hover:bg-navy-900"
+      >
+        <MapPin className="h-5 w-5" aria-hidden /> See live map
+      </Link>
+    </>
+  );
+}
+
+function formatPlannedTime(time: string | null): string | null {
+  if (!time) return null;
+  const [hoursText, minutesText] = time.split(':');
+  const hours = Number(hoursText);
+  const minutes = Number(minutesText);
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return time;
+  const date = new Date(2000, 0, 1, hours, minutes);
+  return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
+function describeBusPosition(stops: GuardianBusServiceStop[], progress: number): string {
+  const scaledPosition = (progress / 100) * (stops.length - 1);
+  const nearestIndex = Math.round(scaledPosition);
+  if (Math.abs(scaledPosition - nearestIndex) < 0.08) {
+    return `at ${stops[nearestIndex]?.name ?? 'a scheduled stop'}`;
+  }
+  const before = stops[Math.floor(scaledPosition)];
+  const after = stops[Math.ceil(scaledPosition)];
+  return before && after
+    ? `between ${before.name} and ${after.name}`
+    : 'on the scheduled service line';
+}
+
+function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
+  const status = serviceLineStatus(line);
+  const progress = calculateGuardianBusProgress(line.stops, line.latitude, line.longitude);
+  const hasLivePosition = line.locationState === 'fresh' && progress !== null;
+
+  return (
+    <Card className="p-5" data-ui="guardian-service-line-card">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-700">
+            Live service line
+          </p>
+          <h2 className="mt-1 text-xl font-bold text-navy-900">{line.routeName}</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            {line.tripName} · {line.direction === 'reverse' ? 'Return direction' : 'Outbound direction'}
+          </p>
+        </div>
+        <StatusPill tone={status.tone} dot>{status.label}</StatusPill>
+      </div>
+
+      {line.stops.length > 0 ? (
+        <div
+          className="mt-6"
+          data-ui="guardian-service-line"
+          aria-label={`${line.routeName} scheduled stops`}
+        >
+          <span className="guardian-service-line__track" aria-hidden />
+          {hasLivePosition && (
+            <span
+              className="guardian-service-line__bus"
+              style={{ top: `clamp(0.875rem, ${progress}%, calc(100% - 0.875rem))` }}
+              aria-hidden
+              data-testid="guardian-service-line-bus"
+            >
+              <BusFront className="h-5 w-5" />
+            </span>
+          )}
+
+          {line.stops.map((stop, index) => (
+            <ServiceStopPoint
+              key={`${stop.order}:${stop.name}`}
+              stop={stop}
+              index={index}
+              total={line.stops.length}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm text-gray-600">
+          Scheduled stops are not available for this service yet.
+        </div>
+      )}
+
+      {hasLivePosition ? (
+        <p className="mt-4 rounded-2xl bg-navy-50 p-3 text-sm font-semibold text-navy-800" aria-live="polite">
+          Bus is currently {describeBusPosition(line.stops, progress)}.
+        </p>
+      ) : (
+        <p className="mt-4 rounded-2xl bg-slate-50 p-3 text-sm text-gray-600">
+          Live position appears when the school run is active and a fresh GPS update is available.
+        </p>
+      )}
+
+      <p className="mt-4 text-xs leading-5 text-gray-500">
+        The bus marker is projected onto the scheduled stop line from the latest verified GPS point.
+      </p>
+
+      {line.locationRecordedAt && (
+        <p className="mt-3 flex items-center gap-2 text-sm text-gray-600">
+          <Navigation className="h-4 w-4 text-navy-700" aria-hidden /> Last location update{' '}
+          {formatTimestamp(line.locationRecordedAt)}
+        </p>
+      )}
+    </Card>
+  );
+}
+
+function ServiceStopPoint({
+  stop,
+  index,
+  total,
+}: {
+  stop: GuardianBusServiceStop;
+  index: number;
+  total: number;
+}) {
+  const isStart = index === 0;
+  const isEnd = index === total - 1;
+  const plannedTime = formatPlannedTime(stop.plannedArrivalTime);
+  const positionLabel = isStart ? 'Start' : isEnd ? 'End' : `Stop ${index + 1}`;
+
+  return (
+    <div className="guardian-service-line__point" data-terminal={isStart || isEnd || undefined}>
+      <span aria-hidden />
+      <div className="min-w-0">
+        <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-gray-500">
+          {positionLabel}{plannedTime ? ` · ${plannedTime}` : ''}
+        </p>
+        <p className="mt-0.5 font-bold text-navy-900">{stop.name}</p>
+      </div>
+    </div>
+  );
+}

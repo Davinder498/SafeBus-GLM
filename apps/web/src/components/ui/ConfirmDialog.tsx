@@ -56,9 +56,13 @@ export function ConfirmDialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
+      data-ui="dialog-backdrop"
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm animate-fade-in"
     >
-      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-4 shadow-popover animate-scale-in sm:p-6">
+      <div
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-4 shadow-popover animate-scale-in sm:p-6"
+        data-ui="dialog-panel"
+      >
         <div className="flex items-start gap-3 sm:gap-4">
           <div
             className={cn(

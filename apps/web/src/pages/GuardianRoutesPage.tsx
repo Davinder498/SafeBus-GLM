@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
+import { BusFront, ChevronRight, Users } from 'lucide-react';
+import { Link } from 'react-router';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
+import { useAppSurface } from '@/contexts/AppSurfaceContext';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
@@ -7,6 +10,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { fetchGuardianBusVisibility } from '@/services/guardianLiveBusLocationService';
 import type { GuardianBusVisibility } from '@/types/guardianLiveBusLocation';
+import { groupGuardianBuses, guardianBusDetailsPath } from '@/utils/guardianBusGroups';
 
 type LoadState =
   { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; buses: GuardianBusVisibility[] };
@@ -17,7 +21,12 @@ function formatTimestamp(iso: string): string {
   return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }
 
+function formatGrade(grade: string): string {
+  return /^grade\s/i.test(grade) ? grade : `Grade ${grade}`;
+}
+
 export function GuardianRoutesPage() {
+  const appSurface = useAppSurface();
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
@@ -38,6 +47,8 @@ export function GuardianRoutesPage() {
     void load();
   }, [load]);
 
+  const busGroups = state.kind === 'ready' ? groupGuardianBuses(state.buses) : [];
+
   return (
     <DashboardLayout
       title="Parent Dashboard"
@@ -52,7 +63,7 @@ export function GuardianRoutesPage() {
           description="See each linked student's stable bus number and the plate of the physical vehicle currently assigned to it."
         />
 
-        <Card className="p-4">
+        <Card className="p-4" data-ui="manual-refresh-card">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Button
               type="button"
@@ -97,7 +108,93 @@ export function GuardianRoutesPage() {
             />
           </div>
         )}
-        {state.kind === 'ready' && state.buses.length > 0 && (
+        {state.kind === 'ready' && appSurface === 'native-mobile' && busGroups.length > 0 && (
+          <section className="grid gap-4" data-testid="guardian-routes-list">
+            {busGroups.map((group) => {
+              const content = (
+                <Card
+                  className="p-5"
+                  data-testid="guardian-student-bus-card"
+                  data-ui="guardian-bus-card"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-navy-50 text-navy-700">
+                        <BusFront className="h-6 w-6" aria-hidden />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-gray-500">
+                          Assigned bus
+                        </p>
+                        <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-navy-900">
+                          {group.busNumber ? `Bus ${group.busNumber}` : 'Not assigned'}
+                        </h2>
+                      </div>
+                    </div>
+                    <StatusPill tone={group.hasActiveTrip ? 'success' : 'neutral'} dot>
+                      {group.hasActiveTrip ? 'Active' : 'Inactive'}
+                    </StatusPill>
+                  </div>
+
+                  <div className="mt-5 grid gap-4 border-t border-gray-200 pt-4 sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        License plate
+                      </p>
+                      <p className="mt-1 text-base font-bold text-navy-900">
+                        {group.licensePlate ?? 'Not available'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        <Users className="h-4 w-4" aria-hidden /> Assigned students
+                      </p>
+                      <ul className="mt-2 space-y-1" aria-label="Assigned students">
+                        {group.students.map((student) => (
+                          <li key={student.studentId} className="font-semibold text-navy-900">
+                            {student.studentName}
+                            {student.studentGrade ? (
+                              <span className="font-normal text-gray-500">
+                                {' '}· {formatGrade(student.studentGrade)}
+                              </span>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {group.busNumber ? (
+                    <div className="mt-5 flex items-center justify-between border-t border-gray-200 pt-4 text-sm font-bold text-navy-700">
+                      <span>View bus details</span>
+                      <ChevronRight className="h-5 w-5" aria-hidden />
+                    </div>
+                  ) : (
+                    <p className="mt-5 border-t border-gray-200 pt-4 text-sm text-gray-600">
+                      Bus information is not available yet.
+                    </p>
+                  )}
+                </Card>
+              );
+
+              return group.busNumber ? (
+                <Link
+                  key={group.key}
+                  to={guardianBusDetailsPath(group.busNumber)}
+                  className="block rounded-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+                  aria-label={`View details for Bus ${group.busNumber}`}
+                  data-testid="guardian-bus-details-link"
+                >
+                  {content}
+                </Link>
+              ) : (
+                <div key={group.key}>{content}</div>
+              );
+            })}
+          </section>
+        )}
+
+        {state.kind === 'ready' && appSurface === 'web' && state.buses.length > 0 && (
           <section className="grid gap-4" data-testid="guardian-routes-list">
             {state.buses.map((bus) => (
               <Card key={bus.studentId} className="p-5" data-testid="guardian-student-bus-card">
@@ -120,9 +217,7 @@ export function GuardianRoutesPage() {
                         Bus number
                       </p>
                       <p className="mt-1 text-2xl font-bold text-navy-900">{bus.busNumber}</p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        This service number stays the same.
-                      </p>
+                      <p className="mt-1 text-xs text-gray-500">This service number stays the same.</p>
                     </div>
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">

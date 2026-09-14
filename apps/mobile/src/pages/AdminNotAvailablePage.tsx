@@ -1,6 +1,7 @@
 import { Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { BrandMark } from '@/components/ui/BrandMark';
 import { useAuth } from '@/contexts/useAuth';
 
 /**
@@ -14,8 +15,18 @@ export function AdminNotAvailablePage() {
   const { signOut } = useAuth();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+    <div
+      className="flex min-h-screen items-center justify-center bg-slate-50 p-6"
+      data-ui="mobile-fallback"
+    >
       <Card className="max-w-md p-8 text-center">
+        <div className="mb-6 flex items-center justify-center gap-3">
+          <BrandMark className="h-12 w-12 rounded-xl" iconClassName="h-6 w-6" />
+          <span className="text-left leading-tight">
+            <span className="block font-bold text-navy-900">BusSafe Alberta</span>
+            <span className="block text-xs text-slate-500">Mobile app</span>
+          </span>
+        </div>
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-navy-50">
           <Monitor className="h-7 w-7 text-navy-600" />
         </div>

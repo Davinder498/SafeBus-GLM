@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router';
-import { Bus, AlertCircle, ShieldCheck } from 'lucide-react';
+import { AlertCircle, ShieldCheck } from 'lucide-react';
 import { getDashboardPath } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
+import { BrandMark } from '@/components/ui/BrandMark';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-slate-50" data-ui="login-shell">
       {/* Left brand panel — hidden on small screens */}
       <div className="relative hidden w-1/2 overflow-hidden bg-navy-900 lg:flex lg:flex-col lg:justify-between">
         <div className="absolute inset-0 bg-gradient-to-br from-navy-900 via-navy-800 to-navy-950" />
@@ -54,9 +55,7 @@ export function LoginPage() {
         />
         <div className="relative p-10">
           <Link to="/" className="flex items-center gap-2.5 text-white">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 backdrop-blur">
-              <Bus className="h-5 w-5" />
-            </span>
+            <BrandMark className="h-9 w-9" tone="glass" />
             <span className="text-lg font-bold tracking-tight">BusSafe Alberta</span>
           </Link>
         </div>
@@ -75,13 +74,14 @@ export function LoginPage() {
       </div>
 
       {/* Right form panel */}
-      <div className="flex w-full flex-col justify-center px-4 py-12 sm:px-6 lg:w-1/2">
-        <div className="mx-auto w-full max-w-sm">
+      <div
+        className="flex w-full flex-col justify-center px-4 py-12 sm:px-6 lg:w-1/2"
+        data-ui="login-panel"
+      >
+        <div className="mx-auto w-full max-w-sm" data-ui="login-card">
           {/* Mobile brand */}
           <Link to="/" className="mb-8 flex items-center gap-2.5 lg:hidden">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-navy-700 text-white">
-              <Bus className="h-5 w-5" />
-            </span>
+            <BrandMark className="h-12 w-12 rounded-xl" iconClassName="h-6 w-6" />
             <span className="text-lg font-bold tracking-tight text-slate-900">BusSafe Alberta</span>
           </Link>
 
@@ -146,6 +146,7 @@ export function LoginPage() {
             <button
               type="button"
               onClick={() => navigate('/')}
+              data-mobile-hide
               className="text-sm font-medium text-slate-500 hover:text-slate-700"
             >
               Back to site

@@ -17,6 +17,7 @@
     "test:product-verification": "playwright test tests/smoke/commercial-authenticated-e2e.spec.ts tests/smoke/commercial-resilience.spec.ts tests/smoke/commercial-accessibility.spec.ts tests/release/product-load.spec.ts",
     "test:smoke:release": "playwright test tests/release/release-smoke.spec.ts",
     "android:store:capture": "playwright test --config playwright.android-store.config.ts",
+    "test:mobile-ui": "playwright test --config playwright.mobile-ui.config.ts",
     "test:rls": "node scripts/run-rls-tests.mjs",
     "test:rls:phase3": "node -e \"const fs=require('fs'); const f='tests/rls/phase3-retention-rls.sql'; if(!fs.existsSync(f)) throw new Error('Missing '+f); console.log('Phase 3 retention RLS SQL file exists')\"",
     "test:rls:bus-service": "node -e \"const fs=require('fs'); const f='tests/rls/student-bus-service-assignment-rls.sql'; if(!fs.existsSync(f)) throw new Error('Missing '+f); console.log('Bus-service RLS SQL file exists')\"",

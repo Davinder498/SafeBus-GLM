@@ -48,7 +48,7 @@ export function DropdownMenu({ trigger, children, align = 'right', className }: 
   }, [open]);
 
   return (
-    <div ref={containerRef} className="relative inline-block">
+    <div ref={containerRef} className="relative inline-block" data-ui="dropdown">
       <button
         type="button"
         aria-haspopup="menu"
@@ -61,6 +61,7 @@ export function DropdownMenu({ trigger, children, align = 'right', className }: 
       {open && (
         <div
           role="menu"
+          data-ui="dropdown-panel"
           onClick={() => setOpen(false)}
           className={cn(
             'absolute z-50 mt-2 min-w-[12rem] overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-popover animate-scale-in',
@@ -91,6 +92,7 @@ export function DropdownItem({
   return (
     <button
       role="menuitem"
+      data-ui="dropdown-item"
       className={cn(
         'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors',
         destructive
