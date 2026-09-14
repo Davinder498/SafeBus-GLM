@@ -174,11 +174,16 @@ test('driver active-trip shell keeps daily actions touch friendly', async ({ pag
   await expect(tabs.filter({ hasText: 'Scan' })).toHaveAttribute('aria-current', 'page');
 
   const actionableButtons = page.locator('[data-testid="driver-active-trip-only"] [data-ui="button"]');
-  const buttonHeights = await actionableButtons.evaluateAll((elements) =>
-    elements.map((element) => element.getBoundingClientRect().height),
-  );
-  expect(buttonHeights.length).toBeGreaterThan(0);
-  expect(buttonHeights.every((height) => height >= 48)).toBe(true);
+  await expect(actionableButtons.first()).toBeVisible();
+  // The entrance translation can briefly produce fractional bounding boxes.
+  // Retry the measurement until layout settles, retaining the 48px minimum.
+  await expect.poll(async () =>
+    actionableButtons.evaluateAll((elements) =>
+      elements.length === 0
+        ? 0
+        : Math.min(...elements.map((element) => element.getBoundingClientRect().height)),
+    ),
+  ).toBeGreaterThanOrEqual(48);
 
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('driver-active-trip.png') });
