@@ -1,9 +1,25 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import {
   guardianVisibilityRow,
   installGuardianVisibilityMock,
 } from '../smoke/fixtures/guardian-bus-visibility';
 import { installSupabaseMock } from '../smoke/fixtures/supabase-mock';
+
+async function expectTouchTargets(controls: Locator) {
+  await expect(controls.first()).toBeVisible();
+  // Entrance translations briefly produce fractional bounding boxes. Wait for
+  // settled layout without weakening the 48px minimum in either dimension.
+  await expect.poll(async () =>
+    controls.evaluateAll((elements) =>
+      elements.length === 0
+        ? 0
+        : Math.min(...elements.flatMap((element) => {
+            const { width, height } = element.getBoundingClientRect();
+            return [width, height];
+          })),
+    ),
+  ).toBeGreaterThanOrEqual(48);
+}
 
 async function expectNoHorizontalOverflow(page: import('@playwright/test').Page) {
   const dimensions = await page.evaluate(() => ({
@@ -44,18 +60,10 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(tabs).toHaveCount(5);
   await expect(tabs.filter({ hasText: 'Home' })).toHaveAttribute('aria-current', 'page');
 
-  const tabHeights = await tabs.evaluateAll((elements) =>
-    elements.map((element) => element.getBoundingClientRect().height),
-  );
-  expect(tabHeights.every((height) => height >= 48)).toBe(true);
+  await expectTouchTargets(tabs);
 
   const liveMapAction = page.getByRole('link', { name: 'View live map' });
-  const actionSize = await liveMapAction.evaluate((element) => {
-    const rect = element.getBoundingClientRect();
-    return { height: rect.height, width: rect.width };
-  });
-  expect(actionSize.height).toBeGreaterThanOrEqual(48);
-  expect(actionSize.width).toBeGreaterThanOrEqual(48);
+  await expectTouchTargets(liveMapAction);
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('guardian-home.png') });
 });
@@ -174,16 +182,7 @@ test('driver active-trip shell keeps daily actions touch friendly', async ({ pag
   await expect(tabs.filter({ hasText: 'Scan' })).toHaveAttribute('aria-current', 'page');
 
   const actionableButtons = page.locator('[data-testid="driver-active-trip-only"] [data-ui="button"]');
-  await expect(actionableButtons.first()).toBeVisible();
-  // The entrance translation can briefly produce fractional bounding boxes.
-  // Retry the measurement until layout settles, retaining the 48px minimum.
-  await expect.poll(async () =>
-    actionableButtons.evaluateAll((elements) =>
-      elements.length === 0
-        ? 0
-        : Math.min(...elements.map((element) => element.getBoundingClientRect().height)),
-    ),
-  ).toBeGreaterThanOrEqual(48);
+  await expectTouchTargets(actionableButtons);
 
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('driver-active-trip.png') });
@@ -226,10 +225,7 @@ test('login uses the mobile brand and accessible control sizing', async ({ page 
   await expect(page.getByRole('button', { name: 'Back to site' })).toBeHidden();
 
   const controls = page.locator('[data-ui="login-card"] input, [data-ui="login-card"] [data-ui="button"]');
-  const heights = await controls.evaluateAll((elements) =>
-    elements.map((element) => element.getBoundingClientRect().height),
-  );
-  expect(heights.every((height) => height >= 48)).toBe(true);
+  await expectTouchTargets(controls);
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('login.png') });
 });
