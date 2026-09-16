@@ -109,7 +109,7 @@ test('every external GitHub Action is pinned to an immutable commit', async () =
 
   assert.ok(actionLines.length > 0);
   for (const line of actionLines) {
-    const parsed = line.match(/^\s*(?:-\s+)?uses:\s+([^\s#]+)(?:\s+#\s+(v\d+))?\s*$/);
+    const parsed = line.match(/^\s*(?:-\s+)?uses:\s+([^\s#]+)(?:\s+#\s+(v\d+(?:\.\d+){0,2}))?\s*$/);
     assert.ok(parsed, `could not parse action reference: ${line.trim()}`);
 
     const [, actionReference, versionComment] = parsed;
@@ -124,7 +124,7 @@ test('every external GitHub Action is pinned to an immutable commit', async () =
     );
     assert.match(
       versionComment ?? '',
-      /^v\d+$/,
+      /^v\d+(?:\.\d+){0,2}$/,
       `pinned action is missing its Dependabot version comment: ${line.trim()}`,
     );
   }
