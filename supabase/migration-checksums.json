@@ -590,6 +590,12 @@
       "filename": "0097_guardian_bus_service_line.sql",
       "bytes": 7458,
       "sha256": "a6757b18c1b53f30a4b7e9e0a3b379618ab09a92117958c870b06fe149022126"
+    },
+    {
+      "version": "0098",
+      "filename": "0098_fix_planned_driver_assignment_context.sql",
+      "bytes": 7364,
+      "sha256": "94d74dab316df55cfe203de55d41a73ce5944ea6395594976247f14849b1502b"
     }
   ]
 }

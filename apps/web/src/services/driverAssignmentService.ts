@@ -128,6 +128,9 @@ export async function setPlannedDriverAssignment(
 
   if (!error) return data as unknown as DriverRouteAssignment;
   logDevError('Failed to save planned driver assignment', error);
+  if (error.code === '42883' || error.code === 'PGRST202') {
+    throw new Error('Planned assignments are temporarily unavailable. Please contact support.');
+  }
   if (error.code === '42501') {
     throw new Error('Only a tenant administrator can change planned assignments.');
   }

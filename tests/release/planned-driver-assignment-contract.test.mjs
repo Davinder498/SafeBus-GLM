@@ -3,13 +3,32 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const migration = fs.readFileSync(
-  'supabase/migrations/0093_planned_driver_bus_assignments.sql',
+  'supabase/migrations/0098_fix_planned_driver_assignment_context.sql',
   'utf8',
 );
 const service = fs.readFileSync('apps/web/src/services/driverAssignmentService.ts', 'utf8');
 const dashboard = fs.readFileSync('apps/web/src/pages/DriverDashboardPage.tsx', 'utf8');
 const generated = fs.readFileSync('packages/types/src/database.generated.ts', 'utf8');
 const surface = JSON.parse(fs.readFileSync('config/authorization-surface.json', 'utf8'));
+
+test('planned assignment identity helpers resolve to canonical function definitions', () => {
+  // Schema qualification matters: checking only current_tenant_id() previously
+  // allowed references to nonexistent safebus_private helpers to pass.
+  const definitions = fs
+    .readdirSync('supabase/migrations')
+    .filter((name) => name.endsWith('.sql'))
+    .map((name) => fs.readFileSync(`supabase/migrations/${name}`, 'utf8'))
+    .join('\n');
+  for (const helper of ['current_tenant_id', 'current_user_role']) {
+    const call = migration.match(new RegExp(`\\b([a-z_]+)\\.${helper}\\(\\)`));
+    assert.ok(call, `Missing schema-qualified ${helper} call`);
+    assert.match(
+      definitions,
+      new RegExp(`create (?:or replace )?function ${call[1]}\\.${helper}\\(\\)`, 'i'),
+    );
+  }
+  assert.doesNotMatch(migration, /safebus_private\.current_(?:tenant_id|user_role)\(\)/);
+});
 
 test('the atomic writer validates the complete planned-assignment boundary', () => {
   assert.match(
