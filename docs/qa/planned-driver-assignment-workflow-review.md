@@ -60,11 +60,13 @@ route` until its start date. The repair does not broaden these policies.
 
 ## Validation and release boundary
 
-Run `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test`, and
-`pnpm migrations:verify`. Targeted browser coverage includes the admin bus
-workspace, driver detail planning, QR route choice, active-trip workflow,
-manifest/events, history, and guardian bus visibility. These tests use synthetic
-mock responses and do not write production data.
+Passed `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test`, and
+`pnpm migrations:verify` (99 immutable migrations). All 122 targeted browser
+tests passed across desktop and mobile Chromium: 30 admin workspace / driver
+dashboard tests and 92 manifest, trip history, guardian map and event-status
+tests. Coverage includes driver detail planning, QR route choice and the
+active-trip workflow. These tests use synthetic mock responses and do not write
+production data; they do not establish native Android or live database success.
 
 The SQL regression in `tests/rls/planned-driver-bus-assignments-rls.sql` must run
 only on an explicitly approved isolated target after migration 0098. Before
@@ -77,3 +79,9 @@ Do not apply the migration directly to production or report the live issue as
 fixed merely because local checks pass. AGENTS.md requires isolated migration
 validation and the protected approved adoption/release workflow, and human
 approval before merging the review PR.
+
+The existing `scripts/deploy-migrations.mjs` also explicitly blocks every pending
+migration in single-production-database mode. Approving the isolated target and
+validating the repair must precede an explicitly reviewed schema-release path;
+merging this PR or rerunning the current application-release workflow alone will
+not apply migration 0098.
