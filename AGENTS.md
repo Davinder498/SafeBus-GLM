@@ -33,6 +33,24 @@ Core product principle:
 - Do not run RLS tests or QA seed/fixture writers against production.
 - Modify production only through the protected, approved adoption/release workflow.
 
+### Customer-authorized existing-database verification (2026-09-18)
+
+The customer explicitly requires use of the existing database and declines an
+additional environment. This supersedes the blanket restriction above for
+reviewed, bounded verification only:
+
+- Run read-only authorization checks with `BEGIN TRANSACTION READ ONLY`, local
+  statement/lock timeouts, transaction-local roles/claims, and final `ROLLBACK`.
+- `tests/rls/guardian-existing-database-readonly.sql` is the initial reviewed check.
+- Keep the database production-designated. Do not spoof a development identity or
+  weaken the destructive fixture runner's environment guards.
+- Before any fixture-writing test, inspect its statements and called triggers for
+  persistent changes, external effects, locks, and interaction with existing data.
+  Use uniquely scoped synthetic fixtures and one rollback-only transaction; never
+  alter existing records, disable security controls, or send notifications as QA.
+- This authorization does not authorize resets, destructive/load testing, blanket
+  migration replay, or bypass of the protected production release workflow.
+
 ## Frontend Environment
 
 Frontend may only use:
@@ -108,3 +126,4 @@ pnpm typecheck
 pnpm lint
 pnpm build
 pnpm test
+```

@@ -8,8 +8,9 @@ Working branch: `codex/guardian-readiness`.
 - Preserve the approved commercial release scope: Alberta public school authorities,
   web and Android, 1–3 initial customers and no more than 100 buses.
 - Prioritize guardian visibility; readiness determines launch timing.
-- The customer reports synthetic data only. The existing hosted database remains
-  production-designated. No additional environment is authorized.
+- The customer reports synthetic data only and explicitly requires verification
+  against the existing hosted database. It remains production-designated; no
+  additional environment is authorized.
 - Feature branches and reviewed pull requests; no automatic merge or production release.
 
 ## Verified defects and changes
@@ -85,9 +86,12 @@ not server authorization or database RLS. No real student records were queried.
    `safebus_release.migration_checksums` nor `safebus_release.releases` on the hosted
    project. The repository's migration-file verification passes, but that does not
    establish the applied schema or satisfy the protected release workflow.
-3. **Database behavior tests.** Execute cross-tenant, guardian-link expiry/revocation,
-   inactive-user, driver-scope, migration replay, and recovery cases on an authorized
-   isolated target. This remains blocked by the current environment constraint.
+3. **Database behavior tests.** Use the existing database for reviewed read-only
+   checks and, following side-effect review, uniquely scoped synthetic fixtures in
+   rollback-only transactions. Cross-tenant, guardian-link expiry/revocation,
+   inactive-user, and driver-scope coverage remains to be established. Clean migration
+   replay, destructive recovery, and load tests cannot safely be proven on this sole
+   database; record those limitations rather than requiring a new environment.
 4. **Remaining commercial gates.** Verify Android background tracking on devices,
    measured pilot capacity, backup restoration, alert delivery, privacy/vendor
    approvals, and customer acceptance as specified by the existing release scope.
@@ -96,6 +100,23 @@ not server authorization or database RLS. No real student records were queried.
 The hosted review was catalog-only and used the security advisor. It made no schema,
 data, authentication-setting, or deployment changes. Detailed infrastructure findings
 are retained locally rather than adding live-target details to this public repository.
+
+### Existing-database execution update
+
+After the customer's explicit direction to use the existing database, six catalog
+checks passed: both guardian RPCs exist, anonymous execution is denied, and
+authenticated execution is granted. Four behavioral assertions also passed under
+the actual `anon`/`authenticated` database roles: anonymous calls to both RPCs are
+denied, and an authenticated role without a subject receives no visibility rows and
+is denied service-line access. Role and identity simulation were asserted first.
+
+The behavioral SQL is committed at
+`tests/rls/guardian-existing-database-readonly.sql`. Execution used a PostgreSQL
+read-only transaction, five-second statement timeout, one-second lock timeout, and
+final rollback. No fixtures or persistent database changes were made. These checks
+do not establish valid-guardian cross-tenant, expiry, or revocation behavior, nor do
+they test HTTP token validation. An additional environment is no longer a delivery
+requirement; remaining proof is scoped to what can safely run on the existing target.
 
 ## Review and release
 
