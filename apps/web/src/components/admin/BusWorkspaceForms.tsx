@@ -256,7 +256,9 @@ export function BusWorkspaceDriverForm({
     assignment?.effective_from ??
       (service.effective_from && service.effective_from > today ? service.effective_from : today),
   );
-  const [effectiveTo, setEffectiveTo] = useState(assignment?.effective_to ?? '');
+  const [effectiveTo, setEffectiveTo] = useState(
+    assignment?.effective_to ?? service.effective_to ?? '',
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -268,6 +270,13 @@ export function BusWorkspaceDriverForm({
     }
     if (effectiveTo && effectiveTo < effectiveFrom) {
       setError('Effective-to date must be on or after effective-from date.');
+      return;
+    }
+    if (
+      (service.effective_from && effectiveFrom < service.effective_from) ||
+      (service.effective_to && (!effectiveTo || effectiveTo > service.effective_to))
+    ) {
+      setError('Planned dates must stay within the selected bus service dates.');
       return;
     }
     setSaving(true);
@@ -342,9 +351,9 @@ export function BusWorkspaceDriverForm({
         </label>
       </div>
       <p className="text-sm text-gray-600">
-        Saving deactivates any overlapping driver assignment for this named trip and keeps it in
-        history. This plan does not start a trip; the driver confirms the bus and route by scanning
-        its QR code.
+        Replacing a plan keeps the earlier assignment in history, or ends it the day before a future
+        replacement starts. Dates cannot overlap another plan for this route trip. This plan does
+        not start a trip; the driver confirms the bus and route by scanning its QR code.
       </p>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" loading={saving}>
@@ -390,7 +399,9 @@ export function DriverPlannedBusAssignmentForm({
         ? selectedService.effective_from
         : today),
   );
-  const [effectiveTo, setEffectiveTo] = useState(assignment?.effective_to ?? '');
+  const [effectiveTo, setEffectiveTo] = useState(
+    assignment?.effective_to ?? selectedService?.effective_to ?? '',
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

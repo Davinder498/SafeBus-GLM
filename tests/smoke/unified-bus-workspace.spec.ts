@@ -28,14 +28,17 @@ const bus = {
   updated_at: '2026-07-20T00:00:00Z',
 };
 
-async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean } = {}) {
+async function mockBusWorkspace(
+  page: Page,
+  options: { includeExpired?: boolean; serviceEndDate?: string } = {},
+) {
   let routeEnded = false;
   let expiredRouteClosed = false;
   let expiredRouteRenewed = false;
   let renewedRouteEffectiveFrom = '2099-02-01';
   let renewedRouteEffectiveTo: string | null = null;
   let hasActiveQr = false;
-  let routeEffectiveTo: string | null = null;
+  let routeEffectiveTo: string | null = options.serviceEndDate ?? null;
   let studentStatus: 'active' | 'inactive' | 'archived' = 'active';
   let studentEffectiveTo: string | null = null;
   let addedStudentStatus: 'active' | 'archived' | null = null;
@@ -874,6 +877,61 @@ async function mockBusWorkspace(page: Page, options: { includeExpired?: boolean 
 }
 
 test.describe('unified bus workspace', () => {
+  test('keeps planned driver dates inside a finite bus service before submitting', async ({
+    page,
+  }) => {
+    await mockBusWorkspace(page, { serviceEndDate: '2099-12-31' });
+    let writes = 0;
+    await page.route('**/rpc/admin_set_driver_bus_assignment', async (route) => {
+      writes += 1;
+      await route.fallback();
+    });
+    await page.goto(`/admin/buses/${busId}?tab=drivers`);
+    await page
+      .getByTestId(`driver-service-${serviceId}`)
+      .getByRole('button', { name: 'Change planned driver' })
+      .click();
+    await expect(page.getByLabel('Effective to')).toHaveValue('2099-12-31');
+    await page.getByLabel('Effective to').fill('2100-01-01');
+    await page.getByRole('button', { name: 'Save planned assignment' }).click();
+    await expect(
+      page.getByText('Planned dates must stay within the selected bus service dates.'),
+    ).toBeVisible();
+    expect(writes).toBe(0);
+    await page.getByLabel('Effective to').fill('2099-12-31');
+    await page.getByRole('button', { name: 'Save planned assignment' }).click();
+    await expect(page.getByText('Planned driver assignment updated.')).toBeVisible();
+    expect(writes).toBe(1);
+  });
+
+  test('preserves the form and explains a missing backend helper without blaming the admin', async ({
+    page,
+  }) => {
+    await mockBusWorkspace(page);
+    await page.route('**/rpc/admin_set_driver_bus_assignment', (route) =>
+      route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: '42883',
+          message: 'function safebus_private.current_tenant_id() does not exist',
+        }),
+      }),
+    );
+    await page.goto(`/admin/buses/${busId}?tab=drivers`);
+    await page
+      .getByTestId(`driver-service-${serviceId}`)
+      .getByRole('button', { name: 'Change planned driver' })
+      .click();
+    await page.getByLabel('Planned driver').selectOption('driver-2');
+    await page.getByRole('button', { name: 'Save planned assignment' }).click();
+    await expect(
+      page.getByText('Planned assignments are temporarily unavailable. Please contact support.'),
+    ).toBeVisible();
+    await expect(page.getByLabel('Planned driver')).toHaveValue('driver-2');
+    await expect(page.getByText('Planned driver assignment updated.')).toHaveCount(0);
+  });
+
   test('creates bus details before unlocking assignment tabs', async ({ page }) => {
     await mockBusWorkspace(page);
     await page.goto('/admin/buses/new');
@@ -939,12 +997,12 @@ test.describe('unified bus workspace', () => {
     const revokeButton = page.getByTestId('admin-revoke-driver-tracking-devices');
     await expect(assignButton).toHaveCSS('white-space', 'nowrap');
     await expect(revokeButton).toHaveCSS('white-space', 'nowrap');
-    expect(await assignButton.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
-      true,
-    );
-    expect(await revokeButton.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
-      true,
-    );
+    expect(
+      await assignButton.evaluate((element) => element.scrollWidth <= element.clientWidth),
+    ).toBe(true);
+    expect(
+      await revokeButton.evaluate((element) => element.scrollWidth <= element.clientWidth),
+    ).toBe(true);
     await plannedSection.getByRole('button', { name: 'Edit planned assignment' }).click();
 
     const serviceSelect = page.getByLabel('Planned bus service');
