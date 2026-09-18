@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useState } from 'react';
 import { BusFront, ChevronRight, Users } from 'lucide-react';
 import { Link } from 'react-router';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
@@ -8,12 +7,8 @@ import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { fetchGuardianBusVisibility } from '@/services/guardianLiveBusLocationService';
-import type { GuardianBusVisibility } from '@/types/guardianLiveBusLocation';
+import { useGuardianLiveBusLocations } from '@/hooks/useGuardianLiveBusLocations';
 import { groupGuardianBuses, guardianBusDetailsPath } from '@/utils/guardianBusGroups';
-
-type LoadState =
-  { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; buses: GuardianBusVisibility[] };
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
@@ -27,27 +22,9 @@ function formatGrade(grade: string): string {
 
 export function GuardianRoutesPage() {
   const appSurface = useAppSurface();
-  const [state, setState] = useState<LoadState>({ kind: 'loading' });
-  const [refreshing, setRefreshing] = useState(false);
-  const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
+  const { state, refreshing, lastRefreshedAt, refresh: load } = useGuardianLiveBusLocations();
 
-  const load = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      setState({ kind: 'ready', buses: await fetchGuardianBusVisibility() });
-      setLastRefreshedAt(new Date().toISOString());
-    } catch {
-      setState({ kind: 'error' });
-    } finally {
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const busGroups = state.kind === 'ready' ? groupGuardianBuses(state.buses) : [];
+  const busGroups = state.kind === 'ready' ? groupGuardianBuses(state.locations) : [];
 
   return (
     <DashboardLayout
@@ -100,7 +77,7 @@ export function GuardianRoutesPage() {
             </Button>
           </div>
         )}
-        {state.kind === 'ready' && state.buses.length === 0 && (
+        {state.kind === 'ready' && state.locations.length === 0 && (
           <div data-testid="guardian-routes-empty">
             <DataState
               title="No linked students are available yet."
@@ -155,7 +132,8 @@ export function GuardianRoutesPage() {
                             {student.studentName}
                             {student.studentGrade ? (
                               <span className="font-normal text-gray-500">
-                                {' '}· {formatGrade(student.studentGrade)}
+                                {' '}
+                                · {formatGrade(student.studentGrade)}
                               </span>
                             ) : null}
                           </li>
@@ -194,9 +172,9 @@ export function GuardianRoutesPage() {
           </section>
         )}
 
-        {state.kind === 'ready' && appSurface === 'web' && state.buses.length > 0 && (
+        {state.kind === 'ready' && appSurface === 'web' && state.locations.length > 0 && (
           <section className="grid gap-4" data-testid="guardian-routes-list">
-            {state.buses.map((bus) => (
+            {state.locations.map((bus) => (
               <Card key={bus.studentId} className="p-5" data-testid="guardian-student-bus-card">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
@@ -217,7 +195,9 @@ export function GuardianRoutesPage() {
                         Bus number
                       </p>
                       <p className="mt-1 text-2xl font-bold text-navy-900">{bus.busNumber}</p>
-                      <p className="mt-1 text-xs text-gray-500">This service number stays the same.</p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        This service number stays the same.
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
