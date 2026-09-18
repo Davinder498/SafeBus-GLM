@@ -1,18 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { fetchGuardianBusVisibility } from '@/services/guardianLiveBusLocationService';
-import type {
-  GuardianBusVisibility,
-  GuardianStudentTripStatus,
-} from '@/types/guardianLiveBusLocation';
-
-type LoadState =
-  { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; buses: GuardianBusVisibility[] };
+import { useGuardianLiveBusLocations } from '@/hooks/useGuardianLiveBusLocations';
+import type { GuardianStudentTripStatus } from '@/types/guardianLiveBusLocation';
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
@@ -34,25 +27,7 @@ function statusTone(status: GuardianStudentTripStatus): 'success' | 'warning' | 
 }
 
 export function GuardianTripEventsPage() {
-  const [state, setState] = useState<LoadState>({ kind: 'loading' });
-  const [refreshing, setRefreshing] = useState(false);
-  const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      setState({ kind: 'ready', buses: await fetchGuardianBusVisibility() });
-      setLastRefreshedAt(new Date().toISOString());
-    } catch {
-      setState({ kind: 'error' });
-    } finally {
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { state, refreshing, lastRefreshedAt, refresh: load } = useGuardianLiveBusLocations();
 
   return (
     <DashboardLayout
@@ -107,7 +82,7 @@ export function GuardianTripEventsPage() {
             </Button>
           </div>
         )}
-        {state.kind === 'ready' && state.buses.length === 0 && (
+        {state.kind === 'ready' && state.locations.length === 0 && (
           <div data-testid="guardian-events-empty">
             <DataState
               title="No linked students are available yet."
@@ -115,9 +90,9 @@ export function GuardianTripEventsPage() {
             />
           </div>
         )}
-        {state.kind === 'ready' && state.buses.length > 0 && (
+        {state.kind === 'ready' && state.locations.length > 0 && (
           <section className="grid gap-4" data-testid="guardian-events-list">
-            {state.buses.map((bus) => (
+            {state.locations.map((bus) => (
               <Card key={bus.studentId} className="p-5" data-testid="guardian-events-student-card">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>

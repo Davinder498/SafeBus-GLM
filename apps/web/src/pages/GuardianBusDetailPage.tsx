@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback } from 'react';
+import { useVerifiedGuardianData } from '@/hooks/useVerifiedGuardianData';
 import { ArrowLeft, BusFront, MapPin, Navigation, Users } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
@@ -17,16 +18,6 @@ import type {
 } from '@/types/guardianLiveBusLocation';
 import { calculateGuardianBusProgress } from '@/utils/guardianBusProgress';
 import { groupGuardianBuses, type GuardianBusGroup } from '@/utils/guardianBusGroups';
-
-type LoadState =
-  | { kind: 'loading' }
-  | { kind: 'error' }
-  | { kind: 'not-found' }
-  | {
-      kind: 'ready';
-      group: GuardianBusGroup;
-      serviceLines: GuardianBusServiceLine[] | null;
-    };
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
@@ -67,56 +58,31 @@ function serviceLineStatus(line: GuardianBusServiceLine): {
 export function GuardianBusDetailPage() {
   const { busNumber: encodedBusNumber } = useParams();
   const busNumber = encodedBusNumber ? decodeURIComponent(encodedBusNumber) : '';
-  const [state, setState] = useState<LoadState>({ kind: 'loading' });
-
-  useEffect(() => {
-    let active = true;
-    let hasLoaded = false;
-
-    const load = async () => {
-      const [visibilityResult, serviceLineResult] = await Promise.allSettled([
-        fetchGuardianBusVisibility(),
-        fetchGuardianBusServiceLines(busNumber),
+  const fetchDetails = useCallback(
+    async (signal: AbortSignal) => {
+      const [visibility, serviceLines] = await Promise.all([
+        fetchGuardianBusVisibility(signal),
+        fetchGuardianBusServiceLines(busNumber, signal).catch(() => null),
       ]);
-      if (!active) return;
-      if (visibilityResult.status === 'rejected') {
-        if (!hasLoaded) setState({ kind: 'error' });
-        return;
-      }
-
-      const group = groupGuardianBuses(visibilityResult.value).find(
+      const group = groupGuardianBuses(visibility).find(
         (candidate) =>
-          candidate.busNumber?.trim().toLocaleLowerCase() ===
-          busNumber.trim().toLocaleLowerCase(),
+          candidate.busNumber?.trim().toLocaleLowerCase() === busNumber.trim().toLocaleLowerCase(),
       );
-      setState(
-        group
-          ? {
-              kind: 'ready',
-              group,
-              serviceLines:
-                serviceLineResult.status === 'fulfilled' ? serviceLineResult.value : null,
-            }
-          : { kind: 'not-found' },
-      );
-      hasLoaded = true;
-    };
-
-    void load();
-    const interval = window.setInterval(() => {
-      if (document.visibilityState === 'visible') void load();
-    }, 15_000);
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') void load();
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-
-    return () => {
-      active = false;
-      window.clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibility);
-    };
-  }, [busNumber]);
+      return { group, serviceLines };
+    },
+    [busNumber],
+  );
+  const { state: verified } = useVerifiedGuardianData(fetchDetails, busNumber);
+  const state =
+    verified.kind === 'ready'
+      ? verified.data.group
+        ? {
+            kind: 'ready' as const,
+            group: verified.data.group,
+            serviceLines: verified.data.serviceLines,
+          }
+        : { kind: 'not-found' as const }
+      : verified;
 
   return (
     <DashboardLayout
@@ -140,13 +106,22 @@ export function GuardianBusDetailPage() {
         />
 
         {state.kind === 'loading' && (
-          <DataState title="Loading bus details" message="Checking the latest verified bus status." />
+          <DataState
+            title="Loading bus details"
+            message="Checking the latest verified bus status."
+          />
         )}
         {state.kind === 'error' && (
-          <DataState title="We could not load this bus." message="Please return to My Buses and try again." />
+          <DataState
+            title="We could not load this bus."
+            message="Please return to My Buses and try again."
+          />
         )}
         {state.kind === 'not-found' && (
-          <DataState title="This bus is not available." message="Its assignment may have changed." />
+          <DataState
+            title="This bus is not available."
+            message="Its assignment may have changed."
+          />
         )}
 
         {state.kind === 'ready' && (
@@ -178,8 +153,12 @@ function BusDetails({
                 <BusFront className="h-7 w-7" aria-hidden />
               </span>
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-100">Assigned bus</p>
-                <h2 className="mt-1 text-4xl font-extrabold tracking-tight">Bus {group.busNumber}</h2>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-100">
+                  Assigned bus
+                </p>
+                <h2 className="mt-1 text-4xl font-extrabold tracking-tight">
+                  Bus {group.busNumber}
+                </h2>
               </div>
             </div>
             <StatusPill tone={group.hasActiveTrip ? 'success' : 'neutral'} dot>
@@ -216,10 +195,7 @@ function BusDetails({
       )}
 
       {serviceLines?.map((line) => (
-        <ServiceLineCard
-          key={`${line.routeName}:${line.tripName}:${line.direction}`}
-          line={line}
-        />
+        <ServiceLineCard key={`${line.routeName}:${line.tripName}:${line.direction}`} line={line} />
       ))}
 
       <Card className="p-5">
@@ -228,14 +204,19 @@ function BusDetails({
         </h2>
         <ul className="mt-4 divide-y divide-gray-200">
           {group.students.map((student) => (
-            <li key={student.studentId} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+            <li
+              key={student.studentId}
+              className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+            >
               <div>
                 <p className="font-bold text-navy-900">{student.studentName}</p>
                 {student.studentGrade && (
                   <p className="text-sm text-gray-500">{formatGrade(student.studentGrade)}</p>
                 )}
               </div>
-              <span className="text-right text-sm font-semibold text-gray-600">{studentStatus(student)}</span>
+              <span className="text-right text-sm font-semibold text-gray-600">
+                {studentStatus(student)}
+              </span>
             </li>
           ))}
         </ul>
@@ -288,10 +269,13 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
           </p>
           <h2 className="mt-1 text-xl font-bold text-navy-900">{line.routeName}</h2>
           <p className="mt-1 text-sm text-gray-600">
-            {line.tripName} · {line.direction === 'reverse' ? 'Return direction' : 'Outbound direction'}
+            {line.tripName} ·{' '}
+            {line.direction === 'reverse' ? 'Return direction' : 'Outbound direction'}
           </p>
         </div>
-        <StatusPill tone={status.tone} dot>{status.label}</StatusPill>
+        <StatusPill tone={status.tone} dot>
+          {status.label}
+        </StatusPill>
       </div>
 
       {line.stops.length > 0 ? (
@@ -328,7 +312,10 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
       )}
 
       {hasLivePosition ? (
-        <p className="mt-4 rounded-2xl bg-navy-50 p-3 text-sm font-semibold text-navy-800" aria-live="polite">
+        <p
+          className="mt-4 rounded-2xl bg-navy-50 p-3 text-sm font-semibold text-navy-800"
+          aria-live="polite"
+        >
           Bus is currently {describeBusPosition(line.stops, progress)}.
         </p>
       ) : (
@@ -370,7 +357,8 @@ function ServiceStopPoint({
       <span aria-hidden />
       <div className="min-w-0">
         <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-gray-500">
-          {positionLabel}{plannedTime ? ` · ${plannedTime}` : ''}
+          {positionLabel}
+          {plannedTime ? ` · ${plannedTime}` : ''}
         </p>
         <p className="mt-0.5 font-bold text-navy-900">{stop.name}</p>
       </div>

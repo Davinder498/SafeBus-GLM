@@ -60,8 +60,11 @@ export function mapGuardianBusVisibilityRow(
 }
 
 /** Load the guardian's linked students and bus-only visibility state. */
-export async function fetchGuardianBusVisibility(): Promise<GuardianBusVisibility[]> {
-  const { data, error } = await requireSupabase().rpc('get_guardian_bus_visibility_v2');
+export async function fetchGuardianBusVisibility(
+  signal?: AbortSignal,
+): Promise<GuardianBusVisibility[]> {
+  const request = requireSupabase().rpc('get_guardian_bus_visibility_v2');
+  const { data, error } = await (signal ? request.abortSignal(signal) : request);
   if (error) {
     if (import.meta.env.DEV) console.error('Failed to load guardian bus visibility', error);
     throw new Error('We could not load your bus information. Please try again.');
@@ -95,7 +98,9 @@ interface GuardianBusServiceLineRpcRow {
 }
 
 function isFiniteCoordinate(value: unknown, minimum: number, maximum: number): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= minimum && value <= maximum;
+  return (
+    typeof value === 'number' && Number.isFinite(value) && value >= minimum && value <= maximum
+  );
 }
 
 function mapGuardianBusServiceStop(row: GuardianBusServiceStopRpcRow): GuardianBusServiceStop {
@@ -129,13 +134,15 @@ export function mapGuardianBusServiceLine(
 /** Load ordered guardian-safe service lines for one assigned bus number. */
 export async function fetchGuardianBusServiceLines(
   busNumber: string,
+  signal?: AbortSignal,
 ): Promise<GuardianBusServiceLine[]> {
   const normalizedBusNumber = busNumber.trim();
   if (!normalizedBusNumber) return [];
 
-  const { data, error } = await requireSupabase().rpc('get_guardian_bus_service_lines', {
+  const request = requireSupabase().rpc('get_guardian_bus_service_lines', {
     p_bus_number: normalizedBusNumber,
   });
+  const { data, error } = await (signal ? request.abortSignal(signal) : request);
   if (error) {
     if (import.meta.env.DEV) console.error('Failed to load guardian bus service lines', error);
     throw new Error('We could not load this bus route. Please try again.');
