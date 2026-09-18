@@ -2,6 +2,64 @@ import { expect, test } from '@playwright/test';
 import { installSupabaseMock, MOCK } from './fixtures/supabase-mock';
 
 test.describe('Driver dashboard — authenticated', () => {
+  test('camera scanner fills the viewport and stops a late camera stream after closing', async ({
+    page,
+  }) => {
+    await installSupabaseMock(page, { withAssignments: true });
+    await page.addInitScript(() => {
+      const scannerWindow = window as typeof window & {
+        scannerTrackStopped?: boolean;
+        releaseScannerCamera?: () => void;
+      };
+      Object.defineProperty(window, 'BarcodeDetector', {
+        value: class {
+          async detect() {
+            return [];
+          }
+        },
+      });
+      Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+        value: () =>
+          new Promise((resolve) => {
+            scannerWindow.releaseScannerCamera = () =>
+              resolve({
+                getTracks: () => [
+                  {
+                    stop: () => {
+                      scannerWindow.scannerTrackStopped = true;
+                    },
+                  },
+                ],
+              });
+          }),
+      });
+    });
+    await page.goto('/driver');
+    await page.getByTestId('driver-scan-bus-qr').click();
+    const scanner = page.getByRole('dialog', { name: 'Scan bus QR' });
+    await expect(scanner).toBeVisible();
+    const bounds = await scanner.boundingBox();
+    const viewport = page.viewportSize()!;
+    expect(bounds!.x).toBe(0);
+    expect(bounds!.y).toBe(0);
+    expect(bounds!.width).toBe(viewport.width);
+    expect(bounds!.height).toBe(viewport.height);
+    await expect(page.getByTestId('driver-bus-qr-video')).toBeVisible();
+    await scanner.getByRole('button', { name: 'Close scanner', exact: true }).click();
+    await expect(scanner).toHaveCount(0);
+    await page.evaluate(() => {
+      (window as typeof window & { releaseScannerCamera?: () => void }).releaseScannerCamera?.();
+    });
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => (window as typeof window & { scannerTrackStopped?: boolean }).scannerTrackStopped,
+        ),
+      )
+      .toBe(true);
+    await expect(page.getByTestId('driver-scan-bus-qr')).toBeVisible();
+  });
+
   test('shows read-only planned guidance and keeps QR scanning as the only start action', async ({
     page,
   }) => {

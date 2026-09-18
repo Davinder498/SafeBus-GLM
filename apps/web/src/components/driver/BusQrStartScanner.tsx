@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Bus, Camera, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -49,6 +50,8 @@ export function BusQrStartScanner({
   onStarted: (result: BusTrackingStartResult) => Promise<void> | void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
+  const cameraRequestRef = useRef(0);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<number | null>(null);
   const scanningRef = useRef(false);
@@ -71,7 +74,23 @@ export function BusQrStartScanner({
     if (videoRef.current) videoRef.current.srcObject = null;
   }, []);
 
-  useEffect(() => stopCamera, [stopCamera]);
+  useEffect(
+    () => () => {
+      cameraRequestRef.current += 1;
+      stopCamera();
+    },
+    [stopCamera],
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    dialogRef.current?.showModal();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
 
   const processToken = useCallback(
     async (rawToken: string) => {
@@ -207,6 +226,7 @@ export function BusQrStartScanner({
 
   const start = useCallback(async () => {
     stopCamera();
+    const cameraRequest = ++cameraRequestRef.current;
     setOpen(true);
     setMessage(null);
     setState('starting');
@@ -227,11 +247,16 @@ export function BusQrStartScanner({
         video: { facingMode: { ideal: 'environment' } },
         audio: false,
       });
+      if (cameraRequest !== cameraRequestRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play().catch(() => undefined);
       }
+      if (cameraRequest !== cameraRequestRef.current) return;
       const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
       scanningRef.current = true;
       setState('scanning');
@@ -254,6 +279,7 @@ export function BusQrStartScanner({
       };
       timerRef.current = window.setTimeout(() => void scanFrame(), 500);
     } catch (cause) {
+      if (cameraRequest !== cameraRequestRef.current) return;
       stopCamera();
       setState(
         cause instanceof DOMException && cause.name === 'NotAllowedError'
@@ -264,6 +290,7 @@ export function BusQrStartScanner({
   }, [processToken, stopCamera]);
 
   function close() {
+    cameraRequestRef.current += 1;
     stopCamera();
     setOpen(false);
     setState('idle');
@@ -306,182 +333,212 @@ export function BusQrStartScanner({
           </Button>
         )}
 
-        {open && (
-          <div className="space-y-4">
-            {(state === 'starting' || state === 'scanning') && (
-              <video
-                ref={videoRef}
-                muted
-                playsInline
-                className="aspect-video w-full rounded-xl bg-gray-900"
-                data-testid="driver-bus-qr-video"
-              />
-            )}
-            {state === 'starting' && (
-              <p className="text-sm text-gray-600">Requesting camera permission...</p>
-            )}
-            {state === 'scanning' && (
-              <p className="text-sm font-semibold text-gray-700">
-                Point the rear camera at the QR inside the bus.
-              </p>
-            )}
-            {state === 'choosing' && (
-              <div className="space-y-3">
-                <div>
-                  <p className="font-bold text-navy-900">Bus {startOptions[0]?.busNumber}</p>
-                  <p className="text-sm text-gray-600">Choose the route direction to start.</p>
-                </div>
-                {startOptions.map((option) => (
-                  <button
-                    key={option.busRouteAssignmentId}
-                    type="button"
-                    className="flex w-full items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                    onClick={() => void startSelected(option)}
-                  >
-                    <span>
-                      <span className="block font-bold text-navy-900">
-                        {option.routeCode} · {option.tripName}
-                      </span>
-                      <span className="mt-1 block text-sm text-gray-600">{option.routeName}</span>
-                    </span>
-                    <span className="shrink-0 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
-                      {option.resumed
-                        ? 'Resume'
-                        : option.direction === 'forward'
-                          ? 'Outbound'
-                          : 'Return'}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-            {state === 'location-disclosure' && (
-              <div
-                role="dialog"
-                aria-labelledby="driver-location-disclosure-title"
-                aria-describedby="driver-location-disclosure-description"
-                className="space-y-4 rounded-xl border-2 border-blue-300 bg-blue-50 p-4"
-                data-testid="driver-location-disclosure"
-              >
-                <div>
-                  <h3 id="driver-location-disclosure-title" className="font-bold text-navy-900">
-                    Allow active-trip bus location
-                  </h3>
-                  <p
-                    id="driver-location-disclosure-description"
-                    className="mt-2 text-sm font-semibold leading-6 text-gray-800"
-                  >
-                    {DRIVER_LOCATION_DISCLOSURE}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-gray-700">
-                    Collection starts only for a trip you start, a persistent Android notification
-                    stays visible, and collection stops when the trip ends, is cancelled, or the
-                    authorization expires. BusSafe does not use this location for advertising or
-                    off-shift monitoring.
-                  </p>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <Button
-                    type="button"
-                    onClick={acceptLocationDisclosure}
-                    data-testid="driver-location-disclosure-continue"
-                  >
-                    Continue and allow location
-                  </Button>
+        {open &&
+          createPortal(
+            <dialog
+              ref={dialogRef}
+              aria-labelledby="bus-qr-scanner-title"
+              onCancel={close}
+              className="fixed inset-0 m-0 h-[100dvh] max-h-none w-screen max-w-none overflow-y-auto bg-white p-0 backdrop:bg-black"
+              data-testid="driver-bus-qr-fullscreen"
+            >
+              <div className="flex min-h-full flex-col gap-4 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
+                <div className="flex items-center justify-between gap-4">
+                  <h2 id="bus-qr-scanner-title" className="text-lg font-bold text-navy-900">
+                    Scan bus QR
+                  </h2>
                   <Button type="button" variant="secondary" onClick={close}>
-                    Not now
+                    Close scanner
                   </Button>
                 </div>
-              </div>
-            )}
-            {state === 'location-settings' && pendingOption && (
-              <div className="space-y-3 rounded-xl border border-warning-300 bg-warning-50 p-4">
-                <h3 className="font-bold text-navy-900">Android access needs attention</h3>
-                <p className="text-sm leading-6 text-gray-700">{message}</p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <Button type="button" onClick={() => void openNativeSettings()}>
-                    Open Android settings
-                  </Button>
+                {(state === 'starting' || state === 'scanning') && (
+                  <div
+                    className="relative min-h-48 flex-1 overflow-hidden rounded-xl bg-gray-900"
+                    style={{ minHeight: '60dvh' }}
+                  >
+                    <video
+                      ref={videoRef}
+                      muted
+                      playsInline
+                      className="absolute inset-0 h-full w-full object-cover"
+                      data-testid="driver-bus-qr-video"
+                    />
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                    >
+                      <div className="aspect-square w-2/3 max-w-sm rounded-2xl border-4 border-white shadow-lg" />
+                    </div>
+                  </div>
+                )}
+                {state === 'starting' && (
+                  <p className="text-sm text-gray-600">Requesting camera permission...</p>
+                )}
+                {state === 'scanning' && (
+                  <p className="text-sm font-semibold text-gray-700">
+                    Point the rear camera at the QR inside the bus.
+                  </p>
+                )}
+                {state === 'choosing' && (
+                  <div className="space-y-3">
+                    <div>
+                      <p className="font-bold text-navy-900">Bus {startOptions[0]?.busNumber}</p>
+                      <p className="text-sm text-gray-600">Choose the route direction to start.</p>
+                    </div>
+                    {startOptions.map((option) => (
+                      <button
+                        key={option.busRouteAssignmentId}
+                        type="button"
+                        className="flex w-full items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                        onClick={() => void startSelected(option)}
+                      >
+                        <span>
+                          <span className="block font-bold text-navy-900">
+                            {option.routeCode} · {option.tripName}
+                          </span>
+                          <span className="mt-1 block text-sm text-gray-600">
+                            {option.routeName}
+                          </span>
+                        </span>
+                        <span className="shrink-0 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                          {option.resumed
+                            ? 'Resume'
+                            : option.direction === 'forward'
+                              ? 'Outbound'
+                              : 'Return'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {state === 'location-disclosure' && (
+                  <div
+                    role="dialog"
+                    aria-labelledby="driver-location-disclosure-title"
+                    aria-describedby="driver-location-disclosure-description"
+                    className="space-y-4 rounded-xl border-2 border-blue-300 bg-blue-50 p-4"
+                    data-testid="driver-location-disclosure"
+                  >
+                    <div>
+                      <h3 id="driver-location-disclosure-title" className="font-bold text-navy-900">
+                        Allow active-trip bus location
+                      </h3>
+                      <p
+                        id="driver-location-disclosure-description"
+                        className="mt-2 text-sm font-semibold leading-6 text-gray-800"
+                      >
+                        {DRIVER_LOCATION_DISCLOSURE}
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-gray-700">
+                        Collection starts only for a trip you start, a persistent Android
+                        notification stays visible, and collection stops when the trip ends, is
+                        cancelled, or the authorization expires. BusSafe does not use this location
+                        for advertising or off-shift monitoring.
+                      </p>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <Button
+                        type="button"
+                        onClick={acceptLocationDisclosure}
+                        data-testid="driver-location-disclosure-continue"
+                      >
+                        Continue and allow location
+                      </Button>
+                      <Button type="button" variant="secondary" onClick={close}>
+                        Not now
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {state === 'location-settings' && pendingOption && (
+                  <div className="space-y-3 rounded-xl border border-warning-300 bg-warning-50 p-4">
+                    <h3 className="font-bold text-navy-900">Android access needs attention</h3>
+                    <p className="text-sm leading-6 text-gray-700">{message}</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <Button type="button" onClick={() => void openNativeSettings()}>
+                        Open Android settings
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => void startSelected(pendingOption, true)}
+                      >
+                        Check access again
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {state === 'checking-location' && (
+                  <p className="text-sm font-semibold text-blue-700">
+                    Confirming location permission before starting the bus...
+                  </p>
+                )}
+                {state === 'starting-trip' && (
+                  <p className="text-sm font-semibold text-blue-700">
+                    Connecting this phone to the bus...
+                  </p>
+                )}
+                {state === 'permission-denied' && (
+                  <p className="text-sm font-semibold text-danger-700">
+                    Camera permission was denied.
+                  </p>
+                )}
+                {state === 'no-camera' && (
+                  <p className="text-sm font-semibold text-danger-700">
+                    No camera is available on this device.
+                  </p>
+                )}
+                {state === 'unsupported' && (
+                  <p className="text-sm font-semibold text-warning-700">
+                    Use the BusSafe Android app or enter the QR token for testing.
+                  </p>
+                )}
+                {message && state !== 'location-settings' && (
+                  <p
+                    role={state === 'invalid' ? 'alert' : 'status'}
+                    className={`text-sm font-semibold ${state === 'invalid' ? 'text-danger-700' : 'text-success-700'}`}
+                  >
+                    {message}
+                  </p>
+                )}
+
+                {(state === 'unsupported' || import.meta.env.DEV) &&
+                  state !== 'started' &&
+                  state !== 'choosing' && (
+                    <form
+                      className="flex flex-col gap-2 sm:flex-row"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void processToken(manualToken);
+                      }}
+                    >
+                      <input
+                        aria-label="Manual bus QR token for QA"
+                        className="min-h-11 min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm"
+                        value={manualToken}
+                        onChange={(event) => setManualToken(event.target.value)}
+                        placeholder="QA token entry"
+                      />
+                      <Button type="submit">Connect</Button>
+                    </form>
+                  )}
+
+                {state === 'invalid' && (
                   <Button
                     type="button"
+                    size="lg"
+                    fullWidth
                     variant="secondary"
-                    onClick={() => void startSelected(pendingOption, true)}
+                    leftIcon={<RefreshCw className="h-5 w-5" />}
+                    onClick={() => void start()}
                   >
-                    Check access again
+                    Try again
                   </Button>
-                </div>
+                )}
               </div>
-            )}
-            {state === 'checking-location' && (
-              <p className="text-sm font-semibold text-blue-700">
-                Confirming location permission before starting the bus...
-              </p>
-            )}
-            {state === 'starting-trip' && (
-              <p className="text-sm font-semibold text-blue-700">
-                Connecting this phone to the bus...
-              </p>
-            )}
-            {state === 'permission-denied' && (
-              <p className="text-sm font-semibold text-danger-700">Camera permission was denied.</p>
-            )}
-            {state === 'no-camera' && (
-              <p className="text-sm font-semibold text-danger-700">
-                No camera is available on this device.
-              </p>
-            )}
-            {state === 'unsupported' && (
-              <p className="text-sm font-semibold text-warning-700">
-                Use the BusSafe Android app or enter the QR token for testing.
-              </p>
-            )}
-            {message && state !== 'location-settings' && (
-              <p
-                role={state === 'invalid' ? 'alert' : 'status'}
-                className={`text-sm font-semibold ${state === 'invalid' ? 'text-danger-700' : 'text-success-700'}`}
-              >
-                {message}
-              </p>
-            )}
-
-            {(state === 'unsupported' || import.meta.env.DEV) &&
-              state !== 'started' &&
-              state !== 'choosing' && (
-                <form
-                  className="flex flex-col gap-2 sm:flex-row"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void processToken(manualToken);
-                  }}
-                >
-                  <input
-                    aria-label="Manual bus QR token for QA"
-                    className="min-h-11 min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm"
-                    value={manualToken}
-                    onChange={(event) => setManualToken(event.target.value)}
-                    placeholder="QA token entry"
-                  />
-                  <Button type="submit">Connect</Button>
-                </form>
-              )}
-
-            {state === 'invalid' && (
-              <Button
-                type="button"
-                size="lg"
-                fullWidth
-                variant="secondary"
-                leftIcon={<RefreshCw className="h-5 w-5" />}
-                onClick={() => void start()}
-              >
-                Try again
-              </Button>
-            )}
-            <Button type="button" fullWidth variant="ghost" onClick={close}>
-              Close scanner
-            </Button>
-          </div>
-        )}
+            </dialog>,
+            document.body,
+          )}
       </div>
     </Card>
   );
