@@ -4,6 +4,23 @@
 -- applied to an explicitly approved isolated development or staging database.
 begin;
 
+-- Exercise function initialization even without fixture data. The old RPC
+-- failed with undefined_function (42883) before it could deny the caller.
+-- Run only in the approved non-production harness, never on the hosted database.
+set local request.jwt.claim.sub = '';
+set local request.jwt.claims = '{}';
+set local role authenticated;
+do $$
+begin
+  begin
+    perform public.admin_set_driver_bus_assignment(null, null, current_date, null, null);
+    raise exception 'TEST FAILED: missing identity was not denied';
+  exception when insufficient_privilege then
+    null;
+  end;
+end $$;
+reset role;
+
 do $$
 declare
   v_definition text;
@@ -24,6 +41,15 @@ begin
 
   if not v_security_definer then
     raise exception 'TEST FAILED: planned assignment writer must be SECURITY DEFINER';
+  end if;
+
+  if to_regprocedure('public.current_tenant_id()') is null
+    or to_regprocedure('public.current_user_role()') is null
+    or position('public.current_tenant_id()' in v_definition) = 0
+    or position('public.current_user_role()' in v_definition) = 0
+    or position('safebus_private.current_tenant_id()' in v_definition) > 0
+    or position('safebus_private.current_user_role()' in v_definition) > 0 then
+    raise exception 'TEST FAILED: planned assignment identity helper schemas do not resolve';
   end if;
 
   select lower(qual)
