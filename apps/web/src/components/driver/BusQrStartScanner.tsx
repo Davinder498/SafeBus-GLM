@@ -35,6 +35,7 @@ type ScannerState =
   | 'no-camera'
   | 'unsupported'
   | 'choosing'
+  | 'pre-trip'
   | 'location-disclosure'
   | 'location-settings'
   | 'checking-location'
@@ -63,6 +64,7 @@ export function BusQrStartScanner({
   const [scannedToken, setScannedToken] = useState('');
   const [startOptions, setStartOptions] = useState<BusQrStartOption[]>([]);
   const [pendingOption, setPendingOption] = useState<BusQrStartOption | null>(null);
+  const [inspectionConfirmed, setInspectionConfirmed] = useState(false);
   const [nativeSettingsTarget, setNativeSettingsTarget] = useState<'app' | 'location'>('app');
 
   const stopCamera = useCallback(() => {
@@ -206,6 +208,19 @@ export function BusQrStartScanner({
     [onStarted, scannedToken],
   );
 
+  const reviewPreTrip = useCallback(
+    (option: BusQrStartOption) => {
+      if (option.resumed) {
+        void startSelected(option);
+        return;
+      }
+      setPendingOption(option);
+      setInspectionConfirmed(false);
+      setState('pre-trip');
+    },
+    [startSelected],
+  );
+
   const acceptLocationDisclosure = useCallback(() => {
     if (!pendingOption) return;
     window.localStorage.setItem(DRIVER_LOCATION_NOTICE_STORAGE_KEY, DRIVER_LOCATION_NOTICE_VERSION);
@@ -299,6 +314,7 @@ export function BusQrStartScanner({
     setScannedToken('');
     setStartOptions([]);
     setPendingOption(null);
+    setInspectionConfirmed(false);
     setNativeSettingsTarget('app');
   }
 
@@ -390,7 +406,7 @@ export function BusQrStartScanner({
                         key={option.busRouteAssignmentId}
                         type="button"
                         className="flex w-full items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                        onClick={() => void startSelected(option)}
+                        onClick={() => reviewPreTrip(option)}
                       >
                         <span>
                           <span className="block font-bold text-navy-900">
@@ -409,6 +425,58 @@ export function BusQrStartScanner({
                         </span>
                       </button>
                     ))}
+                  </div>
+                )}
+                {state === 'pre-trip' && pendingOption && (
+                  <div
+                    className="space-y-4 rounded-2xl border-2 border-blue-300 bg-blue-50 p-5"
+                    role="dialog"
+                    aria-labelledby="pre-trip-inspection-title"
+                    data-testid="driver-pre-trip-dialog"
+                  >
+                    <div>
+                      <h3
+                        id="pre-trip-inspection-title"
+                        className="text-lg font-bold text-navy-900"
+                      >
+                        Confirm pre-trip inspection
+                      </h3>
+                      <p className="mt-2 text-sm leading-6 text-gray-700">
+                        Confirm the bus is safe to operate, emergency equipment is present, and no
+                        defect prevents service. You are starting Bus {pendingOption.busNumber} on{' '}
+                        {pendingOption.tripName}.
+                      </p>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <label className="flex items-start gap-3 rounded-xl border border-blue-200 bg-white p-4 sm:col-span-2">
+                        <input
+                          type="checkbox"
+                          className="mt-1 h-5 w-5"
+                          checked={inspectionConfirmed}
+                          onChange={(event) => setInspectionConfirmed(event.target.checked)}
+                        />
+                        <span className="text-sm font-semibold text-gray-800">
+                          I confirm the pre-trip inspection is complete and this bus is safe to
+                          operate.
+                        </span>
+                      </label>
+                      <Button
+                        type="button"
+                        size="lg"
+                        disabled={!inspectionConfirmed}
+                        onClick={() => void startSelected(pendingOption)}
+                        data-testid="driver-confirm-inspection-start"
+                      >
+                        Start trip
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => setState('choosing')}
+                      >
+                        Back
+                      </Button>
+                    </div>
                   </div>
                 )}
                 {state === 'location-disclosure' && (

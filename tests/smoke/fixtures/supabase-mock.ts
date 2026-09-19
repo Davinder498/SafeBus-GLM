@@ -530,6 +530,14 @@ export async function installSupabaseMock(
           });
           return;
         }
+        if (table === 'rpc/confirm_pre_trip') {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ id: 'pre-trip-confirmation-id' }),
+          });
+          return;
+        }
         if (table === 'rpc/update_driver_trip_location') {
           // Acknowledge the location update with the current-location row.
           if (opts.locationUpdateDelayMs) {

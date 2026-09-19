@@ -322,7 +322,11 @@ async function installDriverManifestMock(
 
   await page.addInitScript((profileForSession: MockProfile) => {
     const session = {
-      access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
+      access_token: [
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+        'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ',
+        'smoke-test-signature',
+      ].join('.'),
       refresh_token: 'mock-refresh',
       token_type: 'bearer',
       expires_in: 3600,
@@ -361,6 +365,7 @@ async function installCameraAndLocationMock(page: Page, token: string | null = S
       __cameraConstraints?: MediaStreamConstraints;
       __cameraTrackStops?: number;
       __locationWatchStarts?: number;
+      __barcodeFormats?: string[];
       BarcodeDetector?: new () => { detect: () => Promise<Array<{ rawValue: string }>> };
     };
     runtime.__cameraTrackStops = 0;
@@ -425,6 +430,9 @@ async function installCameraAndLocationMock(page: Page, token: string | null = S
     HTMLMediaElement.prototype.play = async () => undefined;
 
     runtime.BarcodeDetector = class {
+      constructor(options?: { formats?: string[] }) {
+        runtime.__barcodeFormats = options?.formats;
+      }
       async detect() {
         return scannedToken ? [{ rawValue: scannedToken }] : [];
       }
@@ -581,13 +589,32 @@ test.describe('Milestone 7B - Driver student trip event recording', () => {
     ).toBeGreaterThanOrEqual(1);
   });
 
-  test('does not expose the quarantined student QR scanning workflow', async ({ page }) => {
+  test('offers pass scanning alongside manual student cards', async ({ page }) => {
     await installDriverManifestMock(page, { rows: [manifestRow()] });
     await page.goto('/driver/pickup-drop-off');
 
     await expect(page.getByTestId('driver-manifest-student-card')).toBeVisible();
-    await expect(page.getByTestId('driver-open-qr-scanner')).toHaveCount(0);
+    await expect(page.getByTestId('driver-open-qr-scanner')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Mark picked up' })).toBeVisible();
+  });
+
+  test('scans QR and bar-code student passes and records the next event', async ({ page }) => {
+    const control = await installDriverManifestMock(page, { rows: [manifestRow()] });
+    await installCameraAndLocationMock(page);
+    await page.goto('/driver/pickup-drop-off');
+
+    await page.getByTestId('driver-open-qr-scanner').click();
+    await expect(page.getByTestId('driver-student-scanner-fullscreen')).toBeVisible();
+    await expect(page.getByTestId('driver-qr-recorded-message')).toHaveText('Pickup recorded.', {
+      timeout: 10000,
+    });
+    expect(control.qrResolveCalls).toHaveLength(1);
+    expect(control.eventRpcCalls).toContain('mark_student_picked_up_for_active_trip');
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { __barcodeFormats?: string[] }).__barcodeFormats,
+      ),
+    ).toEqual(expect.arrayContaining(['qr_code', 'code_128', 'code_39']));
   });
 
   test('raw backend error is not rendered', async ({ page }) => {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LogOut, UserCheck } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { DriverLocationStatus } from '@/components/driver/DriverLocationStatus';
+import { StudentQrScanner } from '@/components/driver/StudentQrScanner';
 import { DashboardLayout, driverNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -36,20 +37,16 @@ export function DriverManifestPage() {
   const location = useLocation();
   const tracking = useDriverTracking();
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
-  const [refreshing, setRefreshing] = useState(false);
   const [pendingStudentId, setPendingStudentId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setRefreshing(true);
     try {
       const rows = await fetchDriverActiveTripStudentManifest();
       setState({ kind: 'ready', rows });
     } catch {
       setState({ kind: 'error' });
-    } finally {
-      setRefreshing(false);
     }
   }, []);
 
@@ -103,24 +100,12 @@ export function DriverManifestPage() {
           title="Pickup & drop-off"
           description="Record pickup and drop-off for students assigned to the active trip."
         />
-
-        <Card className="p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={() => void load()}
-              disabled={refreshing}
-              data-testid="driver-manifest-refresh-button"
-            >
-              {refreshing ? 'Refreshing...' : 'Refresh'}
-            </Button>
-            <Link to="/driver" className="text-sm font-semibold text-navy-700 hover:text-navy-900">
-              {activeTrip ? 'Back to active bus' : 'Back to scan bus'}
-            </Link>
-          </div>
-        </Card>
+        <Link
+          to="/driver"
+          className="inline-flex min-h-11 items-center text-sm font-semibold text-navy-700 hover:text-navy-900"
+        >
+          {activeTrip ? 'Back to active bus' : 'Back to scan bus'}
+        </Link>
 
         {navigationState?.tripStarted && activeTrip && (
           <Card
@@ -182,6 +167,7 @@ export function DriverManifestPage() {
 
         {state.kind === 'ready' && activeTrip && (
           <div className="space-y-5">
+            <StudentQrScanner onRecord={updateStudentStatus} busyStudentId={pendingStudentId} />
             <Card className="p-5" data-testid="driver-manifest-trip-context">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>

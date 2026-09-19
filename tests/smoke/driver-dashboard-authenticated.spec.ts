@@ -71,6 +71,7 @@ test.describe('Driver dashboard — authenticated', () => {
     ).toBeVisible();
     await expect(page.getByTestId('driver-bus-qr-scanner')).toBeVisible();
     await expect(page.getByTestId('driver-scan-bus-qr')).toHaveText('Scan bus QR to start');
+    const scanner = page.getByTestId('driver-bus-qr-scanner');
     const plannedCard = page.getByTestId('driver-planned-assignments');
     await expect(plannedCard).toBeVisible();
     await expect(plannedCard.getByText('Bus 12').first()).toBeVisible();
@@ -79,6 +80,7 @@ test.describe('Driver dashboard — authenticated', () => {
     await expect(page.getByTestId('driver-assignment-card')).toHaveCount(0);
     await expect(page.getByTestId('driver-outbound-toggle')).toHaveCount(0);
     await expect(page.getByTestId('driver-return-toggle')).toHaveCount(0);
+    expect((await scanner.boundingBox())!.y).toBeLessThan((await plannedCard.boundingBox())!.y);
   });
 
   test('accepts a different eligible bus scan and shows a non-blocking plan mismatch', async ({
@@ -141,6 +143,8 @@ test.describe('Driver dashboard — authenticated', () => {
     await page.getByLabel('Manual bus QR token for QA').fill(MOCK.busQrToken);
     await page.getByRole('button', { name: 'Connect' }).click();
     await page.getByRole('button', { name: /ALT · Alternate Outbound/ }).click();
+    await page.getByLabel(/I confirm the pre-trip inspection/).check();
+    await page.getByTestId('driver-confirm-inspection-start').click();
 
     await expect(page.getByRole('heading', { name: 'Bus 99', level: 1 })).toBeVisible();
     await expect(page.getByTestId('driver-plan-mismatch-notice')).toContainText(
@@ -170,6 +174,11 @@ test.describe('Driver dashboard — authenticated', () => {
     await expect(page.getByRole('button', { name: /North Ridge Outbound/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /North Ridge Return/ })).toBeVisible();
     await page.getByRole('button', { name: /North Ridge Outbound/ }).click();
+    await expect(page.getByTestId('driver-pre-trip-dialog')).toBeVisible();
+    expect(scannedToken).toBeUndefined();
+    await expect(page.getByTestId('driver-confirm-inspection-start')).toBeDisabled();
+    await page.getByLabel(/I confirm the pre-trip inspection/).check();
+    await page.getByTestId('driver-confirm-inspection-start').click();
 
     await expect(page.getByRole('heading', { name: 'Bus 12', level: 1 })).toBeVisible();
     await expect(page.getByTestId('driver-active-trip-only')).toBeVisible();
@@ -190,6 +199,8 @@ test.describe('Driver dashboard — authenticated', () => {
     await page.getByLabel('Manual bus QR token for QA').fill(MOCK.busQrToken);
     await page.getByRole('button', { name: 'Connect' }).click();
     await page.getByRole('button', { name: /North Ridge Outbound/ }).click();
+    await page.getByLabel(/I confirm the pre-trip inspection/).check();
+    await page.getByTestId('driver-confirm-inspection-start').click();
 
     await expect(
       page.getByText('Location permission is required. The bus was not started.'),

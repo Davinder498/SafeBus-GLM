@@ -37,6 +37,8 @@ test.describe('Point 10 authenticated CR1 journeys', () => {
     await page.getByLabel('Manual bus QR token for QA').fill(MOCK.busQrToken);
     await page.getByRole('button', { name: 'Connect' }).click();
     await page.getByRole('button', { name: /North Ridge Outbound/ }).click();
+    await page.getByLabel(/I confirm the pre-trip inspection/).check();
+    await page.getByTestId('driver-confirm-inspection-start').click();
 
     await expect(page.getByRole('heading', { name: 'Bus 12', level: 1 })).toBeVisible();
     await expect(page.getByText('This phone is now its GPS.')).toBeVisible();
