@@ -35,6 +35,8 @@ test.describe('bus-first driver workflow', () => {
     await page.getByLabel('Manual bus QR token for QA').fill(MOCK.busQrToken);
     await page.getByRole('button', { name: 'Connect' }).click();
     await page.getByRole('button', { name: /North Ridge Outbound/ }).click();
+    await page.getByLabel(/I confirm the pre-trip inspection/).check();
+    await page.getByTestId('driver-confirm-inspection-start').click();
 
     await expect(page.getByText('This bus QR could not be verified or started.')).toBeVisible({
       timeout: 10000,

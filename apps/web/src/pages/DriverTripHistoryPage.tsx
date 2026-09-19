@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
-import { Bus, CalendarDays, Clock3, RefreshCw } from 'lucide-react';
+import { Bus, CalendarDays, Clock3 } from 'lucide-react';
 import { DashboardLayout, driverNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -43,17 +43,6 @@ export function DriverTripHistoryPage() {
           eyebrow="History"
           title="Completed trips"
           description="Review your recently completed daily runs. Routes remain reusable for future trips."
-          action={
-            <Button
-              type="button"
-              variant="secondary"
-              leftIcon={<RefreshCw className="h-4 w-4" aria-hidden />}
-              onClick={() => void loadHistory()}
-              disabled={state.kind === 'loading'}
-            >
-              Refresh
-            </Button>
-          }
         />
 
         {state.kind === 'loading' && (
@@ -64,8 +53,11 @@ export function DriverTripHistoryPage() {
         )}
 
         {state.kind === 'error' && (
-          <div data-testid="driver-trip-history-error">
+          <div className="space-y-3" data-testid="driver-trip-history-error">
             <DataState title="Could not load completed trips" message={state.message} />
+            <Button type="button" variant="secondary" onClick={() => void loadHistory()}>
+              Try again
+            </Button>
           </div>
         )}
 

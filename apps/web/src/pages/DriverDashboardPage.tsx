@@ -171,13 +171,24 @@ export function DriverDashboardPage() {
 
   async function handleStarted(result: BusTrackingStartResult) {
     await tracking.activateTracking(result.trackingToken);
+    let inspectionRecorded = result.resumed;
+    if (!result.resumed) {
+      try {
+        await confirmPreTrip(result.trip.id);
+        inspectionRecorded = true;
+      } catch {
+        setActionError(
+          'The trip started, but the pre-trip confirmation could not be recorded. Confirm it again below.',
+        );
+      }
+    }
     setState((current) => ({
       kind: 'ready',
       activeTrip: result.trip,
       plannedAssignments: current.kind === 'ready' ? current.plannedAssignments : [],
     }));
-    setPreTripConfirmed(false);
-    setActionError(null);
+    setPreTripConfirmed(inspectionRecorded);
+    if (inspectionRecorded) setActionError(null);
     setMessage(
       result.resumed
         ? `Bus ${result.busNumber} GPS resumed on this phone.`
@@ -378,13 +389,74 @@ export function DriverDashboardPage() {
 
         {state.kind === 'ready' && !activeTrip && (
           <div className="space-y-5">
-            <PlannedAssignmentsCard assignments={plannedAssignments} />
             <BusQrStartScanner hasActiveTrip={false} onStarted={handleStarted} />
+            <PlannedAssignmentsCard assignments={plannedAssignments} />
           </div>
         )}
 
         {state.kind === 'ready' && activeTrip && (
           <div className="space-y-5" data-testid="driver-active-trip-only">
+            <Card
+              className="sticky top-2 z-10 border-blue-200 bg-white p-4 shadow-lg"
+              data-testid="driver-primary-trip-actions"
+            >
+              <p className="mb-3 text-sm font-bold text-navy-900">Trip actions</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Button
+                  type="button"
+                  size="lg"
+                  leftIcon={<ClipboardCheck className="h-5 w-5" />}
+                  onClick={() => navigate('/driver/pickup-drop-off')}
+                >
+                  Pickup & drop-off
+                </Button>
+                {isActive && (
+                  <Button
+                    type="button"
+                    size="lg"
+                    variant="secondary"
+                    loading={pausing}
+                    leftIcon={<Pause className="h-5 w-5" />}
+                    onClick={() => void handlePauseTrip()}
+                    data-testid="driver-pause-trip"
+                  >
+                    Pause trip
+                  </Button>
+                )}
+                {isPaused && (
+                  <Button
+                    type="button"
+                    size="lg"
+                    loading={resuming}
+                    leftIcon={<Play className="h-5 w-5" />}
+                    onClick={() => void handleResumeTrip()}
+                    data-testid="driver-resume-trip"
+                  >
+                    Resume trip
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  size="lg"
+                  variant="danger"
+                  leftIcon={<Bus className="h-5 w-5" />}
+                  onClick={() => setConfirmEndOpen(true)}
+                >
+                  End trip
+                </Button>
+                <Button
+                  type="button"
+                  size="lg"
+                  variant="outline"
+                  loading={cancelling}
+                  leftIcon={<Square className="h-5 w-5" />}
+                  onClick={() => setConfirmCancelOpen(true)}
+                  data-testid="driver-cancel-trip"
+                >
+                  Cancel trip
+                </Button>
+              </div>
+            </Card>
             <Card className="border-success-200 p-5 ring-1 ring-success-100">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
@@ -495,64 +567,6 @@ export function DriverDashboardPage() {
                   </div>
                 </form>
               )}
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <Button
-                  type="button"
-                  size="lg"
-                  leftIcon={<ClipboardCheck className="h-5 w-5" />}
-                  onClick={() => navigate('/driver/pickup-drop-off')}
-                >
-                  Pickup & drop-off
-                </Button>
-                <Button
-                  type="button"
-                  size="lg"
-                  variant="danger"
-                  leftIcon={<Bus className="h-5 w-5" />}
-                  onClick={() => setConfirmEndOpen(true)}
-                >
-                  End trip
-                </Button>
-              </div>
-
-              {/* Phase 6: pause / resume / cancel */}
-              <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                {isActive && (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    loading={pausing}
-                    leftIcon={<Pause className="h-5 w-5" />}
-                    onClick={() => void handlePauseTrip()}
-                    data-testid="driver-pause-trip"
-                  >
-                    Pause trip
-                  </Button>
-                )}
-                {isPaused && (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    loading={resuming}
-                    leftIcon={<Play className="h-5 w-5" />}
-                    onClick={() => void handleResumeTrip()}
-                    data-testid="driver-resume-trip"
-                  >
-                    Resume trip
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  loading={cancelling}
-                  leftIcon={<Square className="h-5 w-5" />}
-                  onClick={() => setConfirmCancelOpen(true)}
-                  data-testid="driver-cancel-trip"
-                >
-                  Cancel trip
-                </Button>
-              </div>
             </Card>
 
             {currentTripDiffersFromPlan && (
