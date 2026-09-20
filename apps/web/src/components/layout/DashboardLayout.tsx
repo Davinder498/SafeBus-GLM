@@ -8,7 +8,6 @@ import {
   Bus,
   Route,
   Radio,
-  School,
   Settings,
   ClipboardList,
   Building2,
@@ -122,13 +121,6 @@ export const adminNavItems: DashboardNavItem[] = [
     group: 'people',
     description: 'Linked guardians',
     icon: <UserCircle className="h-4 w-4" />,
-  },
-  {
-    label: 'Schools',
-    to: '/admin/schools',
-    group: 'management',
-    description: 'School records',
-    icon: <School className="h-4 w-4" />,
   },
   {
     label: 'Administrators',

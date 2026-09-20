@@ -108,13 +108,17 @@
     "start_bus_tracking_from_qr(text,uuid)",
     "substitute_driver(uuid,uuid)",
     "tenant_add_sub_administrator(uuid,text,text,text,uuid)",
+    "tenant_archive_school(uuid)",
     "tenant_change_admin_role(uuid,text,uuid)",
+    "tenant_create_school(text,text)",
     "tenant_depart_administrator(uuid)",
     "tenant_invite_administrator(uuid,uuid,text,text)",
     "tenant_restore_administrator(uuid)",
+    "tenant_restore_school(uuid)",
     "tenant_search_audit_events(text,text,uuid,timestamp with time zone,timestamp with time zone,integer,integer)",
     "tenant_suspend_administrator(uuid)",
     "tenant_transfer_administrator(uuid,uuid)",
+    "tenant_update_school(uuid,text,text)",
     "update_bus_tracking_location(text,double precision,double precision,double precision,double precision,double precision)"
   ],
   "serviceRole": [

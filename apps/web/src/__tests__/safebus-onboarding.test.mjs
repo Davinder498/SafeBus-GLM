@@ -135,9 +135,7 @@ function setupClients({
       return adminClient.rpc(name, args);
     },
   };
-  createClient
-    .mockReturnValueOnce(productionUserClient)
-    .mockReturnValueOnce(productionAdminClient);
+  createClient.mockReturnValueOnce(productionUserClient).mockReturnValueOnce(productionAdminClient);
   return { userClient, adminClient, profileLookup };
 }
 
@@ -157,8 +155,6 @@ function createTenantEvent(body = {}) {
       kind: 'createTenant',
       tenantName: 'Test Transportation',
       tenantType: 'bus_contractor',
-      schoolName: '',
-      city: 'Red Deer',
       adminName: 'First Admin',
       adminEmail: 'first.admin@example.test',
       ...body,
@@ -181,9 +177,7 @@ describe('BusSafe member onboarding', () => {
       const response = await handler(createTenantEvent());
 
       expect(response.statusCode).toBe(503);
-      expect(JSON.parse(response.body).error).toContain(
-        'Add SUPABASE_SECRET_KEY to apps/web/.env',
-      );
+      expect(JSON.parse(response.body).error).toContain('Add SUPABASE_SECRET_KEY to apps/web/.env');
       expect(createClient).not.toHaveBeenCalled();
     } finally {
       process.env.SUPABASE_SERVICE_ROLE_KEY = legacyService;
@@ -413,10 +407,9 @@ describe('BusSafe member onboarding', () => {
       ban_duration: 'none',
       email_confirm: true,
     });
-    expect(adminClient.auth.resetPasswordForEmail).toHaveBeenCalledWith(
-      'guardian@example.test',
-      { redirectTo: 'https://app.example.test/accept-invitation' },
-    );
+    expect(adminClient.auth.resetPasswordForEmail).toHaveBeenCalledWith('guardian@example.test', {
+      redirectTo: 'https://app.example.test/accept-invitation',
+    });
     expect(adminClient.auth.resend).not.toHaveBeenCalled();
     expect(adminClient.auth.admin.deleteUser).not.toHaveBeenCalled();
     expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
@@ -554,9 +547,7 @@ describe('BusSafe member onboarding', () => {
     const { adminClient } = setupClients({
       invitation,
       profile: invitedProfile,
-      rpcResults: [
-        { data: { invitationId: invitation.id, status: 'revoked' }, error: null },
-      ],
+      rpcResults: [{ data: { invitationId: invitation.id, status: 'revoked' }, error: null }],
     });
 
     const response = await handler({
@@ -830,8 +821,8 @@ describe('BusSafe member onboarding', () => {
     'rejects the removed platform-wide %s action',
     async (kind) => {
       const response = await handler({
-      httpMethod: 'POST',
-      headers: { authorization: 'Bearer test-token' },
+        httpMethod: 'POST',
+        headers: { authorization: 'Bearer test-token' },
         body: JSON.stringify({ kind, profileId: 'tenant-admin-1', status: 'disabled' }),
       });
 
@@ -876,7 +867,6 @@ describe('BusSafe member onboarding', () => {
     };
     const setup = {
       tenant: { id: 'tenant-new', name: 'Test Transportation', status: 'active' },
-      school: null,
     };
     const { adminClient, userClient } = setupClients({
       callerProfile: platformAdmin,
@@ -904,7 +894,7 @@ describe('BusSafe member onboarding', () => {
       p_tenant_name: 'Test Transportation',
       p_tenant_type: 'bus_contractor',
       p_school_name: null,
-      p_city: 'Red Deer',
+      p_city: null,
       p_admin_name: 'First Admin',
       p_admin_email: 'first.admin@example.test',
     });
@@ -920,7 +910,6 @@ describe('BusSafe member onboarding', () => {
     };
     const setup = {
       tenant: { id: 'tenant-recovered', name: 'Test Transportation', status: 'active' },
-      school: null,
     };
     const { adminClient } = setupClients({
       callerProfile: platformAdmin,
@@ -961,7 +950,6 @@ describe('BusSafe member onboarding', () => {
     };
     const setup = {
       tenant: { id: 'tenant-fresh', name: 'Test Transportation', status: 'active' },
-      school: null,
     };
     const { adminClient, userClient } = setupClients({
       callerProfile: platformAdmin,
@@ -993,7 +981,7 @@ describe('BusSafe member onboarding', () => {
       p_tenant_name: 'Test Transportation',
       p_tenant_type: 'bus_contractor',
       p_school_name: null,
-      p_city: 'Red Deer',
+      p_city: null,
       p_admin_name: 'First Admin',
       p_admin_email: 'first.admin@example.test',
     });

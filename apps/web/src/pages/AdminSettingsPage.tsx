@@ -74,7 +74,7 @@ export function AdminSettingsPage() {
           description="Review your account access and the organization context available to you."
         />
 
-        <AdminSettingsNav showBilling={profile?.role === 'tenant_admin'} />
+        <AdminSettingsNav role={profile?.role} />
 
         {loading && (
           <DataState

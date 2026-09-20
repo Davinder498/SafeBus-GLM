@@ -28,7 +28,6 @@ const tenantAdminRoutes = [
   '/admin/drivers',
   '/admin/students',
   '/admin/guardians',
-  '/admin/schools',
   '/admin/administrators',
   '/admin/bulk-import',
   '/admin/audit-search',
@@ -72,6 +71,10 @@ describe('tenant admin shell navigation model', () => {
     const managementItems = adminNavItems.filter((item) => item.group === 'management');
     expect(managementItems.map((item) => item.label)).not.toContain('Subscription & billing');
     expect(managementItems.filter((item) => item.to === '/admin/settings')).toHaveLength(1);
+  });
+
+  it('keeps nominal school administration inside settings', () => {
+    expect(adminNavItems.map((item) => item.to)).not.toContain('/admin/schools');
   });
 });
 

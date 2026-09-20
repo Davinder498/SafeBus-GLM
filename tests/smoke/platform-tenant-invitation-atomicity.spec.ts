@@ -131,7 +131,6 @@ async function installPlatformMock(
           name: createdTenant.tenant_name,
           status: 'active',
         },
-        school: null,
         invitationStatus: 'sent',
         recipientEmail: createdTenant.first_tenant_admin_email,
       }),
