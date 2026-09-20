@@ -29,11 +29,9 @@ const tenantAdminRoutes = [
   '/admin/students',
   '/admin/guardians',
   '/admin/schools',
-  '/admin/users',
   '/admin/administrators',
   '/admin/bulk-import',
   '/admin/audit-search',
-  '/admin/subscription',
   '/admin/settings',
 ];
 
@@ -68,6 +66,12 @@ describe('tenant admin shell navigation model', () => {
       .filter((item) => item.group === 'transportation')
       .map((item) => item.label);
     expect(transportationItems).toEqual(['Routes', 'Buses']);
+  });
+
+  it('keeps subscription and billing inside settings instead of duplicating sidebar navigation', () => {
+    const managementItems = adminNavItems.filter((item) => item.group === 'management');
+    expect(managementItems.map((item) => item.label)).not.toContain('Subscription & billing');
+    expect(managementItems.filter((item) => item.to === '/admin/settings')).toHaveLength(1);
   });
 });
 
