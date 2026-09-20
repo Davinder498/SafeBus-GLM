@@ -132,13 +132,6 @@ export const adminNavItems: DashboardNavItem[] = [
     icon: <School className="h-4 w-4" />,
   },
   {
-    label: 'Users',
-    to: '/admin/users',
-    group: 'management',
-    description: 'Access records',
-    icon: <Users className="h-4 w-4" />,
-  },
-  {
     label: 'Administrators',
     to: '/admin/administrators',
     group: 'management',
