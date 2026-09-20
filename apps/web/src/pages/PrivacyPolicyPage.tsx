@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 
-const effectiveDate = 'September 19, 2026';
+const effectiveDate = 'September 20, 2026';
 
 export function PrivacyPolicyPage() {
   return (
@@ -49,6 +49,10 @@ export function PrivacyPolicyPage() {
                   Notification choices and, after opt-in, an Android installation identifier, device
                   model, permission state, and Firebase Cloud Messaging token.
                 </li>
+                <li>
+                  Tenant subscription details such as the billing contact, purchase-order reference,
+                  contracted bus allowance, plan, renewal dates, and invoice status.
+                </li>
               </ul>
               <p className="mt-3">
                 BusSafe does not require an Alberta Student Number, student home address, student
@@ -74,11 +78,13 @@ export function PrivacyPolicyPage() {
                 The issuing school authority and its authorized transportation staff use BusSafe.
                 Service providers support hosting and authentication (Supabase), application
                 delivery (Netlify), map tiles (Geoapify), transactional email, and opt-in Android
-                push delivery (Google Firebase Cloud Messaging). Prospective-tenant inquiries are
-                delivered to BusSafe through the transactional email provider and are not stored in
-                the application database. Access is limited to what is needed to provide each
-                service. Push previews exclude names, routes, stops, coordinates, driver identity,
-                tenant identifiers, and internal identifiers.
+                push delivery (Google Firebase Cloud Messaging). Stripe processes subscription
+                invoices, billing details, and payment methods. BusSafe stores only a limited
+                subscription summary and does not store card or bank details. Prospective-tenant
+                inquiries are delivered to BusSafe through the transactional email provider and are
+                not stored in the application database. Access is limited to what is needed to
+                provide each service. Push previews exclude names, routes, stops, coordinates,
+                driver identity, tenant identifiers, and internal identifiers.
               </p>
             </section>
 

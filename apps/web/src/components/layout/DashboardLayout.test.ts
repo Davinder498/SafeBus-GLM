@@ -33,6 +33,7 @@ const tenantAdminRoutes = [
   '/admin/administrators',
   '/admin/bulk-import',
   '/admin/audit-search',
+  '/admin/subscription',
   '/admin/settings',
 ];
 

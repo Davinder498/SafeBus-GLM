@@ -79,7 +79,7 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
       actual.delete(match[1]);
     }
     for (const match of laterMigration.matchAll(
-      /grant execute on function public\.([a-z0-9_]+)\([^;]+\)\s+to (authenticated|service_role)/gi,
+      /grant execute on function public\.([a-z0-9_]+)\([^;]*\)\s+to (authenticated|service_role)/gi,
     )) {
       actual.set(match[1], match[2]);
     }
@@ -88,7 +88,9 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
     /insert into safebus_notification_rpc_allowlist[\s\S]*?values([\s\S]*?);/i,
   )?.[1];
   assert.ok(notificationAllowlist);
-  for (const match of notificationAllowlist.matchAll(/\('([a-z0-9_]+)',\s*'(authenticated|service_role)'\)/g)) {
+  for (const match of notificationAllowlist.matchAll(
+    /\('([a-z0-9_]+)',\s*'(authenticated|service_role)'\)/g,
+  )) {
     actual.set(match[1], match[2]);
   }
   const expected = new Map();

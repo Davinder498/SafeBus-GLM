@@ -3821,6 +3821,17 @@ export interface Database {
         }
         Returns: unknown
       }
+      get_platform_tenant_billing_detail: {
+        Args: {
+          p_tenant_id: string
+        }
+        Returns: unknown
+      }
+      get_platform_tenant_billing_summaries: {
+        Args: {
+        }
+        Returns: unknown
+      }
       get_platform_tenant_onboarding_summary: {
         Args: {
         }
@@ -3839,6 +3850,11 @@ export interface Database {
       get_tenant_notification_delivery_summary: {
         Args: {
           p_recent_window_hours?: number | null
+        }
+        Returns: unknown
+      }
+      get_tenant_subscription: {
+        Args: {
         }
         Returns: unknown
       }

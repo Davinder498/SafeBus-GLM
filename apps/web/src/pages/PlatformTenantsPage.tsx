@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router';
 import { DashboardLayout, platformNavItems } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -7,25 +8,17 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import {
   createTenantWithAdmin,
-  emergencyRecovery,
-  fetchPlatformFirstAdminInvitations,
   fetchPlatformTenantSummaries,
-  updateInvitation,
-  updateTenantLifecycle,
-  type PlatformFirstAdminInvitation,
   type PlatformTenantSummary,
 } from '@/services/onboardingService';
+import { fetchPlatformBillingSummaries } from '@/services/subscriptionService';
+import type { PlatformBillingSummary } from '@/types/subscription';
 
 export function PlatformTenantsPage() {
   const [tenants, setTenants] = useState<PlatformTenantSummary[]>([]);
-  const [invitations, setInvitations] = useState<PlatformFirstAdminInvitation[]>([]);
+  const [billingSummaries, setBillingSummaries] = useState<PlatformBillingSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [recoveringProfileId, setRecoveringProfileId] = useState<string | null>(null);
-  const [invitationAction, setInvitationAction] = useState<{
-    id: string;
-    action: 'resend' | 'cancel';
-  } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -39,12 +32,12 @@ export function PlatformTenantsPage() {
   async function load() {
     setLoading(true);
     try {
-      const [summary, invites] = await Promise.all([
+      const [summary, billing] = await Promise.all([
         fetchPlatformTenantSummaries(),
-        fetchPlatformFirstAdminInvitations(),
+        fetchPlatformBillingSummaries(),
       ]);
       setTenants(summary);
-      setInvitations(invites);
+      setBillingSummaries(billing);
     } finally {
       setLoading(false);
     }
@@ -54,12 +47,9 @@ export function PlatformTenantsPage() {
       setError(e instanceof Error ? e.message : 'Unable to load onboarding.');
     });
   }, []);
-  const invitesByTenant = useMemo(
-    () =>
-      new Map(
-        tenants.map((t) => [t.tenant_id, invitations.filter((i) => i.tenant_id === t.tenant_id)]),
-      ),
-    [tenants, invitations],
+  const billingByTenant = useMemo(
+    () => new Map(billingSummaries.map((item) => [item.tenantId, item])),
+    [billingSummaries],
   );
   async function submit() {
     setError(null);
@@ -81,7 +71,9 @@ export function PlatformTenantsPage() {
       try {
         await load();
       } catch {
-        setError('The invitation was sent, but the tenant list could not refresh. Reload the page.');
+        setError(
+          'The invitation was sent, but the tenant list could not refresh. Reload the page.',
+        );
       }
     } catch (e) {
       setError(
@@ -89,60 +81,6 @@ export function PlatformTenantsPage() {
       );
     } finally {
       setCreating(false);
-    }
-  }
-  async function lifecycle(tenantId: string, status: 'active' | 'suspended' | 'disabled') {
-    setError(null);
-    try {
-      await updateTenantLifecycle(tenantId, status);
-      setMessage(`Tenant ${status}.`);
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Unable to update tenant status.');
-    }
-  }
-  async function act(
-    invitation: PlatformFirstAdminInvitation,
-    action: 'resend' | 'cancel',
-    email: string,
-  ) {
-    if (invitationAction) return;
-    setError(null);
-    setMessage(null);
-    setInvitationAction({ id: invitation.invitation_id, action });
-    try {
-      await updateInvitation(invitation.invitation_id, action);
-      setMessage(
-        action === 'resend'
-          ? `A new password setup email was sent to ${email}.`
-          : `Invitation for ${email} was cancelled.`,
-      );
-      try {
-        await load();
-      } catch {
-        setError('The action completed, but the invitation list could not refresh. Reload the page.');
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Unable to update invitation.');
-    } finally {
-      setInvitationAction(null);
-    }
-  }
-  async function recoverFirstAdministrator(tenant: PlatformTenantSummary) {
-    if (!tenant.first_tenant_admin_profile_id || recoveringProfileId) return;
-    setError(null);
-    setMessage(null);
-    setRecoveringProfileId(tenant.first_tenant_admin_profile_id);
-    try {
-      await emergencyRecovery(tenant.first_tenant_admin_profile_id, tenant.tenant_id);
-      setMessage(
-        `Emergency access restored for ${tenant.first_tenant_admin_email ?? 'the first administrator'}.`,
-      );
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Emergency administrator recovery failed.');
-    } finally {
-      setRecoveringProfileId(null);
     }
   }
   return (
@@ -231,7 +169,7 @@ export function PlatformTenantsPage() {
           <DataState title="No tenants yet" message="Create the first tenant above." />
         )}
         {tenants.map((t) => {
-          const invites = invitesByTenant.get(t.tenant_id) ?? [];
+          const billing = billingByTenant.get(t.tenant_id);
           const tone =
             t.tenant_status === 'active' && t.setup_readiness === 'ready'
               ? 'success'
@@ -249,6 +187,13 @@ export function PlatformTenantsPage() {
                   </p>
                 </div>
                 <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                  <StatusPill
+                    tone={billing?.warning ? 'warning' : billing?.configured ? 'info' : 'neutral'}
+                  >
+                    {billing?.configured
+                      ? `Billing ${billing.status?.replaceAll('_', ' ') ?? 'configured'}`
+                      : 'Subscription not configured'}
+                  </StatusPill>
                   <StatusPill tone={tone}>
                     {t.tenant_status === 'active'
                       ? t.setup_readiness === 'ready'
@@ -256,36 +201,12 @@ export function PlatformTenantsPage() {
                         : t.setup_readiness.replace('_', ' ')
                       : t.tenant_status}
                   </StatusPill>
-                  {t.tenant_status === 'active' ? (
-                    <Button
-                      className="w-full sm:w-auto"
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => void lifecycle(t.tenant_id, 'suspended')}
-                    >
-                      Suspend
-                    </Button>
-                  ) : (
-                    <Button
-                      className="w-full sm:w-auto"
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => void lifecycle(t.tenant_id, 'active')}
-                    >
-                      Reactivate tenant record
-                    </Button>
-                  )}
-                  <Button
-                    className="w-full sm:w-auto"
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => void lifecycle(t.tenant_id, 'disabled')}
+                  <Link
+                    to={`/admin/tenants/${t.tenant_id}`}
+                    className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-navy-700 px-3 text-sm font-semibold text-white shadow-sm hover:bg-navy-800 sm:w-auto"
                   >
-                    Deactivate
-                  </Button>
+                    View tenant
+                  </Link>
                 </div>
               </div>
               <div className="mt-4 grid gap-3 text-sm sm:grid-cols-5">
@@ -320,72 +241,8 @@ export function PlatformTenantsPage() {
                       Password setup pending
                     </span>
                   )}
-                  {t.tenant_status === 'active' &&
-                    ['suspended', 'disabled'].includes(t.tenant_admin_status) &&
-                    t.first_tenant_admin_profile_id && (
-                      <Button
-                        className="w-full sm:w-auto"
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        loading={recoveringProfileId === t.first_tenant_admin_profile_id}
-                        disabled={recoveringProfileId !== null}
-                        onClick={() => void recoverFirstAdministrator(t)}
-                      >
-                        Emergency recovery
-                      </Button>
-                    )}
                 </div>
               )}
-              <div className="mt-4 space-y-2 border-t pt-3">
-                <h3 className="text-sm font-bold text-navy-900">Invitations</h3>
-                {invites.map((i) => (
-                  <div
-                    key={i.invitation_id}
-                    className="flex flex-col items-stretch gap-2 text-sm sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <span className="min-w-0 break-all">
-                      First administrator · {i.status} · delivery {i.delivery_status}
-                    </span>
-                    {['pending', 'resent', 'failed'].includes(i.status) && (
-                      <span className="flex flex-col gap-2 sm:flex-row">
-                        <Button
-                          className="w-full sm:w-auto"
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          loading={
-                            invitationAction?.id === i.invitation_id &&
-                            invitationAction.action === 'resend'
-                          }
-                          disabled={invitationAction !== null}
-                          onClick={() =>
-                            void act(i, 'resend', t.first_tenant_admin_email ?? 'first administrator')
-                          }
-                        >
-                          Resend
-                        </Button>
-                        <Button
-                          className="w-full sm:w-auto"
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          loading={
-                            invitationAction?.id === i.invitation_id &&
-                            invitationAction.action === 'cancel'
-                          }
-                          disabled={invitationAction !== null}
-                          onClick={() =>
-                            void act(i, 'cancel', t.first_tenant_admin_email ?? 'first administrator')
-                          }
-                        >
-                          Cancel
-                        </Button>
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
             </Card>
           );
         })}

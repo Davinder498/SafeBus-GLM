@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
@@ -143,10 +144,26 @@ export function AdminSettingsPage() {
             </section>
 
             <Card className="border-navy-100 bg-navy-50 p-5">
-              <p className="text-sm font-semibold text-navy-900">
-                Organization edits and role changes will be handled through secure admin workflows
-                in a later milestone.
-              </p>
+              {profile.role === 'tenant_admin' ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-navy-900">Subscription &amp; billing</p>
+                    <p className="mt-1 text-sm text-navy-700">
+                      Review the annual per-bus contract, fleet allowance, invoices, and renewal.
+                    </p>
+                  </div>
+                  <Link
+                    to="/admin/subscription"
+                    className="text-sm font-bold text-navy-700 underline underline-offset-4"
+                  >
+                    View subscription
+                  </Link>
+                </div>
+              ) : (
+                <p className="text-sm font-semibold text-navy-900">
+                  Organization edits and role changes are restricted to tenant administrators.
+                </p>
+              )}
             </Card>
           </>
         )}

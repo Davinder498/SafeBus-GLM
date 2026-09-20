@@ -596,6 +596,12 @@
       "filename": "0098_fix_planned_driver_assignment_context.sql",
       "bytes": 7364,
       "sha256": "94d74dab316df55cfe203de55d41a73ce5944ea6395594976247f14849b1502b"
+    },
+    {
+      "version": "0099",
+      "filename": "0099_annual_per_bus_subscription_management.sql",
+      "bytes": 29878,
+      "sha256": "bd61f7aac2859a9edfb2c915fb9fd25d1200c27714e748e8501ac034c6406ca5"
     }
   ]
 }

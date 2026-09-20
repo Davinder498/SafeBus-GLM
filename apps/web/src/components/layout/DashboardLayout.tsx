@@ -22,6 +22,7 @@ import {
   History,
   FileUp,
   ShieldCheck,
+  CreditCard,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAppSurface, type AppSurface } from '@/contexts/AppSurfaceContext';
@@ -160,6 +161,14 @@ export const adminNavItems: DashboardNavItem[] = [
     description: 'Search tenant audit events',
     allowedRoles: ['tenant_admin'],
     icon: <ClipboardList className="h-4 w-4" />,
+  },
+  {
+    label: 'Subscription & billing',
+    to: '/admin/subscription',
+    group: 'management',
+    description: 'Annual contract and invoices',
+    allowedRoles: ['tenant_admin'],
+    icon: <CreditCard className="h-4 w-4" />,
   },
   {
     label: 'Settings',

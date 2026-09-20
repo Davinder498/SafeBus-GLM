@@ -54,7 +54,11 @@ async function installPlatformMock(
   await page.addInitScript(
     ({ user }) => {
       const session = {
-        access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
+        access_token: [
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+          'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ',
+          'smoke-test-signature',
+        ].join('.'),
         refresh_token: 'platform-refresh-token',
         token_type: 'bearer',
         expires_in: 3600,
@@ -134,6 +138,14 @@ async function installPlatformMock(
     });
   });
 
+  await page.route('**/.netlify/functions/platform-subscriptions', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ prices: [] }),
+    });
+  });
+
   await page.route('**/*', async (route: Route) => {
     const url = new URL(route.request().url());
     if (!url.hostname.endsWith('.supabase.co')) {
@@ -207,6 +219,46 @@ async function installPlatformMock(
       return;
     }
 
+    if (path.includes('/rest/v1/rpc/get_platform_tenant_billing_summaries')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          tenantCreated
+            ? [
+                {
+                  tenant_id: createdTenant.tenant_id,
+                  subscription_configured: false,
+                  subscription_status: null,
+                  licensed_bus_count: null,
+                  active_bus_count: 0,
+                  current_period_end: null,
+                  billing_warning: false,
+                },
+              ]
+            : [],
+        ),
+      });
+      return;
+    }
+
+    if (path.includes('/rest/v1/rpc/get_platform_tenant_billing_detail')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          configured: false,
+          tenant_id: createdTenant.tenant_id,
+          tenant_name: createdTenant.tenant_name,
+          tenant_type: createdTenant.tenant_type,
+          tenant_status: createdTenant.tenant_status,
+          active_bus_count: 0,
+          billing_warning: false,
+        }),
+      });
+      return;
+    }
+
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -259,19 +311,23 @@ test.describe('platform tenant invitation atomicity', () => {
   test('platform super admin can resend a pending tenant-admin invitation', async ({ page }) => {
     const state = await installPlatformMock(page, 'resend');
     await page.goto('/admin/tenants');
+    await page.getByRole('link', { name: 'View tenant' }).click();
 
-    await page.getByRole('button', { name: 'Resend' }).click();
+    await page.getByRole('button', { name: 'Resend invitation' }).click();
 
     await expect(page.getByRole('status')).toContainText(
       `A new password setup email was sent to ${createdTenant.first_tenant_admin_email}`,
     );
     expect(state.resendRequestCount()).toBe(1);
-    await expect(page.getByText(/First administrator · resent/)).toBeVisible();
+    await expect(page.getByText(/Invitation resent · delivery sent/)).toBeVisible();
   });
 
-  test('platform super admin can perform emergency recovery for the first administrator', async ({ page }) => {
+  test('platform super admin can perform emergency recovery for the first administrator', async ({
+    page,
+  }) => {
     const state = await installPlatformMock(page, 'recovery');
     await page.goto('/admin/tenants');
+    await page.getByRole('link', { name: 'View tenant' }).click();
 
     await page.getByRole('button', { name: 'Emergency recovery' }).click();
 
