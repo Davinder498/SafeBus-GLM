@@ -64,13 +64,13 @@ test.describe('Phase 15B tenant admin notification delivery summary', () => {
   test('guardian cannot access admin trips page', async ({ page }) => {
     await mockRole(page, 'guardian');
     await page.goto('/admin/trips');
-    await expect(page.getByText('Wrong portal')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Use the correct BusSafe app' })).toBeVisible();
   });
 
   test('driver cannot access admin trips page', async ({ page }) => {
     await mockRole(page, 'driver');
     await page.goto('/admin/trips');
-    await expect(page.getByText('Wrong portal')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Use the correct BusSafe app' })).toBeVisible();
   });
 
   test('Platform Super Admin cannot access tenant admin trips page', async ({ page }) => {

@@ -84,16 +84,16 @@ export function LandingPage() {
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  to="/login"
+                  to="/contact"
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-yellow-400 px-5 py-3 font-bold text-navy-900 shadow-lg shadow-yellow-400/20 transition-all hover:bg-yellow-300 hover:shadow-yellow-400/30"
                 >
-                  Open demo <ArrowRight className="h-4 w-4" />
+                  Request a consultation <ArrowRight className="h-4 w-4" />
                 </Link>
                 <a
-                  href="#pilot"
+                  href="#capabilities"
                   className="inline-flex items-center justify-center rounded-lg border border-white/25 px-5 py-3 font-semibold text-white backdrop-blur transition-colors hover:bg-white/10"
                 >
-                  Discuss pilot
+                  Explore capabilities
                 </a>
               </div>
             </div>
@@ -150,7 +150,7 @@ export function LandingPage() {
         </section>
 
         {/* Feature grid */}
-        <section className="bg-slate-50">
+        <section id="capabilities" className="scroll-mt-24 bg-slate-50">
           <div className="mx-auto grid max-w-7xl gap-5 px-4 py-16 sm:px-6 md:grid-cols-2 lg:px-8">
             {sections.map((section) => (
               <Card key={section.id} id={section.id} interactive className="p-6">
@@ -187,10 +187,10 @@ export function LandingPage() {
                 gated by security, privacy, reliability, and pilot approval.
               </p>
               <Link
-                to="/login"
+                to="/contact"
                 className="mt-6 inline-flex items-center gap-2 rounded-lg bg-white px-5 py-3 font-bold text-navy-900 shadow-lg transition-colors hover:bg-navy-50"
               >
-                View demo portals <ArrowRight className="h-4 w-4" />
+                Discuss a pilot <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>

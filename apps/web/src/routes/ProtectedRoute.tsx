@@ -1,9 +1,16 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, Navigate } from 'react-router';
 import { Card } from '@/components/ui/Card';
 import { PublicLayout } from '@/components/layout/PublicLayout';
-import { adminRoles, getDashboardPath, type ProfileRole } from '@/contexts/AuthContext';
+import {
+  adminRoles,
+  getDashboardPath,
+  getSurfaceAccessMessage,
+  isRoleAllowedOnSurface,
+  type ProfileRole,
+} from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
+import { useAppSurface } from '@/contexts/AppSurfaceContext';
 
 interface ProtectedRouteProps {
   allowedRoles: ProfileRole[];
@@ -44,7 +51,37 @@ function AuthMessage({ title, message }: { title: string; message: string }) {
 }
 
 export function ProtectedRoute({ allowedRoles, children, requireMfa = true }: ProtectedRouteProps) {
-  const { session, profile, loading, authError, mfaStatus, mfaLoading } = useAuth();
+  const appSurface = useAppSurface();
+  const { session, profile, loading, authError, mfaStatus, mfaLoading, signOut } = useAuth();
+  const [surfaceMismatch, setSurfaceMismatch] = useState(false);
+  const activeSurfaceMismatch = Boolean(
+    session && profile?.status === 'active' && !isRoleAllowedOnSurface(profile.role, appSurface),
+  );
+
+  useEffect(() => {
+    if (!activeSurfaceMismatch) return;
+    setSurfaceMismatch(true);
+    void signOut();
+  }, [activeSurfaceMismatch, signOut]);
+
+  if (surfaceMismatch || activeSurfaceMismatch) {
+    return (
+      <PublicLayout>
+        <main className="mx-auto flex min-h-[calc(100vh-150px)] max-w-lg items-center px-4 py-12 sm:px-6">
+          <Card className="w-full p-8 text-center">
+            <h1 className="text-3xl font-bold text-navy-900">Use the correct BusSafe app</h1>
+            <p className="mt-3 text-gray-600">{getSurfaceAccessMessage(appSurface)}</p>
+            <Link
+              to="/login"
+              className="mt-6 inline-flex rounded-lg bg-navy-700 px-5 py-3 font-bold text-white hover:bg-navy-800"
+            >
+              Return to sign in
+            </Link>
+          </Card>
+        </main>
+      </PublicLayout>
+    );
+  }
 
   if (loading) return <LoadingScreen />;
 

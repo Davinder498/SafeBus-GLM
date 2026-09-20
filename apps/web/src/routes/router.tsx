@@ -4,6 +4,7 @@ import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
 import { AdminBusesPage } from '@/pages/AdminBusesPage';
 import { AdminBusWorkspacePage } from '@/pages/AdminBusWorkspacePage';
 import { LandingPage } from '@/pages/LandingPage';
+import { ContactPage } from '@/pages/ContactPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { UpdatePasswordPage } from '@/pages/UpdatePasswordPage';
@@ -25,29 +26,17 @@ import { AdminUsersPage } from '@/pages/AdminUsersPage';
 import { AdminAdministratorsPage } from '@/pages/AdminAdministratorsPage';
 import { AdminBulkImportPage } from '@/pages/AdminBulkImportPage';
 import { AdminAuditSearchPage } from '@/pages/AdminAuditSearchPage';
-import { DriverDashboardPage } from '@/pages/DriverDashboardPage';
-import { DriverManifestPage } from '@/pages/DriverManifestPage';
-import { DriverProfilePage } from '@/pages/DriverProfilePage';
-import { DriverSettingsPage } from '@/pages/DriverSettingsPage';
-import { DriverTripHistoryPage } from '@/pages/DriverTripHistoryPage';
-import { GuardianLiveMapPage } from '@/pages/GuardianLiveMapPage';
-import { GuardianLiveTripsPage } from '@/pages/GuardianLiveTripsPage';
 import { NotificationsPage } from '@/pages/NotificationsPage';
 import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
-import { GuardianRoutesPage } from '@/pages/GuardianRoutesPage';
-import { GuardianTripEventsPage } from '@/pages/GuardianTripEventsPage';
-import { GuardianNotificationPreferencesPage } from '@/pages/GuardianNotificationPreferencesPage';
-import { ParentDashboardPage } from '@/pages/ParentDashboardPage';
 import { PlatformTenantsPage } from '@/pages/PlatformTenantsPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { MfaPage } from '@/pages/MfaPage';
 import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage';
 import { AccountDeletionPage } from '@/pages/AccountDeletionPage';
-import { AccountSettingsPage } from '@/pages/AccountSettingsPage';
 import { ProtectedRoute } from './ProtectedRoute';
 import { PublicOnlyRoute } from './PublicOnlyRoute';
 import { InvitationEntryRoute } from './InvitationEntryRoute';
-import { adminRoles, allowedRoles } from '@/contexts/AuthContext';
+import { adminRoles } from '@/contexts/AuthContext';
 
 export const appRoutes: RouteObject[] = [
   {
@@ -66,19 +55,12 @@ export const appRoutes: RouteObject[] = [
       </PublicOnlyRoute>
     ),
   },
+  { path: '/contact', element: <ContactPage /> },
   { path: '/accept-invitation', element: <AcceptInvitationPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/update-password', element: <UpdatePasswordPage /> },
   { path: '/privacy', element: <PrivacyPolicyPage /> },
   { path: '/account-deletion', element: <AccountDeletionPage /> },
-  {
-    path: '/account',
-    element: (
-      <ProtectedRoute allowedRoles={['driver', 'guardian']}>
-        <AccountSettingsPage />
-      </ProtectedRoute>
-    ),
-  },
   {
     path: '/mfa',
     element: (
@@ -90,7 +72,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/notifications',
     element: (
-      <ProtectedRoute allowedRoles={[...allowedRoles]}>
+      <ProtectedRoute allowedRoles={[...adminRoles]}>
         <NotificationsPage />
       </ProtectedRoute>
     ),
@@ -98,16 +80,8 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/notifications/settings',
     element: (
-      <ProtectedRoute allowedRoles={[...allowedRoles]}>
+      <ProtectedRoute allowedRoles={[...adminRoles]}>
         <NotificationSettingsPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/notifications/settings/email',
-    element: (
-      <ProtectedRoute allowedRoles={['guardian']}>
-        <GuardianNotificationPreferencesPage />
       </ProtectedRoute>
     ),
   },
@@ -300,91 +274,6 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminLiveTripsPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/driver',
-    element: (
-      <ProtectedRoute allowedRoles={['driver']}>
-        <DriverDashboardPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/driver/pickup-drop-off',
-    element: (
-      <ProtectedRoute allowedRoles={['driver']}>
-        <DriverManifestPage />
-      </ProtectedRoute>
-    ),
-  },
-  { path: '/driver/manifest', element: <Navigate to="/driver/pickup-drop-off" replace /> },
-  {
-    path: '/driver/history',
-    element: (
-      <ProtectedRoute allowedRoles={['driver']}>
-        <DriverTripHistoryPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/driver/settings',
-    element: (
-      <ProtectedRoute allowedRoles={['driver']}>
-        <DriverSettingsPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/driver/profile',
-    element: (
-      <ProtectedRoute allowedRoles={['driver']}>
-        <DriverProfilePage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/parent',
-    element: (
-      <ProtectedRoute allowedRoles={['guardian']}>
-        <ParentDashboardPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/guardian/routes',
-    element: (
-      <ProtectedRoute allowedRoles={['guardian']}>
-        <GuardianRoutesPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/guardian/live-map',
-    element: (
-      <ProtectedRoute allowedRoles={['guardian']}>
-        <GuardianLiveMapPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/guardian/live',
-    element: (
-      <ProtectedRoute allowedRoles={['guardian']}>
-        <GuardianLiveTripsPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/guardian/notifications',
-    element: <Navigate to="/notifications/settings" replace />,
-  },
-  {
-    path: '/guardian/events',
-    element: (
-      <ProtectedRoute allowedRoles={['guardian']}>
-        <GuardianTripEventsPage />
       </ProtectedRoute>
     ),
   },

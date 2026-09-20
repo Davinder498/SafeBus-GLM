@@ -17,7 +17,23 @@ const playwrightBaseUrl = `http://localhost:${playwrightPort}`;
 export default defineConfig({
   testDir: './tests',
   // Native UI tests require the mobile entry point and its dedicated config.
-  testIgnore: [/release-assets/, /mobile-ui/],
+  // Driver and guardian operational journeys run through the mobile-entry
+  // suite. The website suite is limited to public and administrative surfaces.
+  testIgnore: [
+    /release-assets/,
+    /mobile-ui/,
+    /driver-active-trip-student-manifest\.spec\.ts/,
+    /driver-assignment\.spec\.ts/,
+    /driver-dashboard(?:-authenticated)?\.spec\.ts/,
+    /driver-trip-history\.spec\.ts/,
+    /guardian-live-bus-map\.spec\.ts/,
+    /guardian-live-trip-status\.spec\.ts/,
+    /guardian-trip-event-status\.spec\.ts/,
+    /guardian-verification-recovery\.spec\.ts/,
+    /notifications-inbox\.spec\.ts/,
+    /phase-16a-student-qr\.spec\.ts/,
+    /phase6-driver-operations\.spec\.ts/,
+  ],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
