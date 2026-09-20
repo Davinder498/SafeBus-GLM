@@ -653,7 +653,9 @@ test.describe('Phase 6 — role portal boundaries', () => {
       await installAdminAssignmentsMock(page, role);
       await page.goto('/admin/driver-assignments');
 
-      await expect(page.getByRole('heading', { name: 'Wrong portal', level: 1 })).toBeVisible();
+      const expectedHeading =
+        role === 'platform_super_admin' ? 'Wrong portal' : 'Use the correct BusSafe app';
+      await expect(page.getByRole('heading', { name: expectedHeading, level: 1 })).toBeVisible();
       await expect(page.getByRole('heading', { name: 'Drivers', level: 1 })).toHaveCount(0);
     });
   }

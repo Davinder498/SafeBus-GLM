@@ -20,23 +20,20 @@ export function PublicLayout({ children }: PublicLayoutProps) {
               BusSafe Alberta
             </span>
           </Link>
-          <nav className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex">
-            <a href="/#parents" className="transition-colors hover:text-slate-900">
-              Parents
-            </a>
-            <a href="/#drivers" className="transition-colors hover:text-slate-900">
-              Drivers
-            </a>
-            <a href="/#admins" className="transition-colors hover:text-slate-900">
-              Admins
-            </a>
-          </nav>
-          <NavLink
-            to="/login"
-            className="shrink-0 rounded-lg bg-navy-700 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-navy-800 sm:px-4"
-          >
-            Demo login
-          </NavLink>
+          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+            <NavLink
+              to="/login"
+              className="px-2 py-2 text-sm font-semibold text-slate-600 transition-colors hover:text-slate-950"
+            >
+              Sign in
+            </NavLink>
+            <NavLink
+              to="/contact"
+              className="rounded-lg bg-navy-700 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-navy-800 sm:px-4"
+            >
+              Contact
+            </NavLink>
+          </div>
         </div>
       </header>
       {children}
@@ -44,6 +41,12 @@ export function PublicLayout({ children }: PublicLayoutProps) {
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 text-sm text-slate-500 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
           <p>BusSafe Alberta. Track the bus, not the child.</p>
           <div className="flex flex-wrap gap-x-5 gap-y-2">
+            <Link className="font-medium text-slate-700 hover:text-slate-950" to="/contact">
+              Contact
+            </Link>
+            <Link className="font-medium text-slate-700 hover:text-slate-950" to="/login">
+              Administrator sign in
+            </Link>
             <Link className="font-medium text-slate-700 hover:text-slate-950" to="/privacy">
               Privacy
             </Link>

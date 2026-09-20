@@ -10,7 +10,6 @@ This means **`pnpm dev` works end-to-end** — no separate Netlify CLI process i
 
 The plugin loads **all** variables from `apps/web/.env` into `process.env` (not just `VITE_`-prefixed ones), so server-side secrets like `SUPABASE_SECRET_KEY` are available to the functions. The plugin only runs during `vite dev` and is never bundled into production.
 
-
 ## Prerequisites
 
 1. Node.js ≥ 20
@@ -51,6 +50,12 @@ SUPABASE_URL=https://YOUR-DEV-PROJECT.supabase.co
 SUPABASE_ANON_KEY=your-dev-anon-key
 SUPABASE_SECRET_KEY=your-dev-service-role-key
 SAFEBUS_INVITE_REDIRECT_URL=http://localhost:5173/accept-invitation
+
+# Prospective-tenant inquiry delivery (server-only)
+SAFEBUS_EMAIL_PROVIDER_API_KEY=your-resend-api-key
+SAFEBUS_EMAIL_FROM=verified-sender@example.ca
+SAFEBUS_EMAIL_FROM_NAME=BusSafe Alberta
+SAFEBUS_INQUIRY_TO=private-sales-inbox@example.ca
 ```
 
 > **Privacy rule (AGENTS.md):** never put `SUPABASE_SECRET_KEY` (the service role key) in a `VITE_` variable, in frontend code, or in committed files. The Netlify CLI reads it from the server-side environment only.
@@ -124,30 +129,33 @@ From the same **Tenant onboarding** page, pending invitations show **Resend** an
 
 ## Architecture reference
 
-| Layer | File | Responsibility |
-|---|---|---|
-| Platform admin UI | `apps/web/src/pages/PlatformTenantsPage.tsx` | Create tenant + admin, manage lifecycle |
-| Onboarding service | `apps/web/src/services/onboardingService.ts` | Calls the Netlify Function |
-| Netlify Function | `apps/web/netlify/functions/safebus-onboarding.mjs` | Invites auth user, runs atomic finalize RPC |
-| Finalize RPC | `platform_finalize_tenant_invitation` (migration `0049`) | Creates tenant + admin profile atomically |
-| Activation RPC | `complete_invited_account` (migration `0048`) | `invited → active` after password set |
-| Accept page | `apps/web/src/pages/AcceptInvitationPage.tsx` | Set password + activate |
-| Reset page | `apps/web/src/pages/ResetPasswordPage.tsx` | Request reset link |
-| Update page | `apps/web/src/pages/UpdatePasswordPage.tsx` | Set new password |
-| Auth context | `apps/web/src/contexts/AuthContext.tsx` | Session, profile, all auth methods |
+| Layer              | File                                                     | Responsibility                                          |
+| ------------------ | -------------------------------------------------------- | ------------------------------------------------------- |
+| Platform admin UI  | `apps/web/src/pages/PlatformTenantsPage.tsx`             | Create tenant + admin, manage lifecycle                 |
+| Onboarding service | `apps/web/src/services/onboardingService.ts`             | Calls the Netlify Function                              |
+| Netlify Function   | `apps/web/netlify/functions/safebus-onboarding.mjs`      | Invites auth user, runs atomic finalize RPC             |
+| Finalize RPC       | `platform_finalize_tenant_invitation` (migration `0049`) | Creates tenant + admin profile atomically               |
+| Activation RPC     | `complete_invited_account` (migration `0048`)            | `invited → active` after password set                   |
+| Accept page        | `apps/web/src/pages/AcceptInvitationPage.tsx`            | Set password + activate                                 |
+| Reset page         | `apps/web/src/pages/ResetPasswordPage.tsx`               | Request reset link                                      |
+| Update page        | `apps/web/src/pages/UpdatePasswordPage.tsx`              | Set new password                                        |
+| Auth context       | `apps/web/src/contexts/AuthContext.tsx`                  | Session, profile, all auth methods                      |
+| Inquiry page       | `apps/web/src/pages/ContactPage.tsx`                     | Collects prospective-tenant business contact details    |
+| Inquiry function   | `apps/web/netlify/functions/tenant-inquiry.mjs`          | Validates and emails inquiries without database storage |
 
 ## Troubleshooting
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| "onboarding service is unreachable (HTTP 404)" | Function plugin disabled or `pnpm build`/`preview` (no dev plugin) | Run via `pnpm dev` or `pnpm dev:netlify`. `vite preview` does not serve functions. |
-| "Server onboarding is not configured" | Missing server env vars | Add `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY` to `apps/web/.env` |
-| "The function crashed during local development" | Runtime error in the handler | Check the Vite dev server terminal for the full stack trace |
-| "onboarding service is unreachable (HTTP 404)" | Function route not matched | Confirm `netlify.toml` `[functions] directory = "apps/web/netlify/functions"` |
-| "Server onboarding is not configured" | Missing server env vars | Add `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY` to `.env` |
-| "Sign in required" | No session token | Sign in at `/login` first |
-| Resend reports an email rate limit | Supabase built-in mail quota was reached | Wait for the Auth email window to reset or configure custom SMTP, then retry once |
-| Link opens the site root | Redirect URL was rejected or an older email was opened | Use the newest email; the app recovers invited root sessions to `/accept-invitation`, but the exact callback should still be allow-listed |
-| Invite email never arrives | Supabase email not configured | Check Supabase → Auth → Email Templates + provider |
-| `complete_invited_account` fails | Migration not applied | Apply migration `0048` to hosted DEV |
-| `platform_finalize_tenant_invitation` fails | Migration not applied | Apply migration `0049` to hosted DEV |
+| Symptom                                         | Likely cause                                                       | Fix                                                                                                                                                                       |
+| ----------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "onboarding service is unreachable (HTTP 404)"  | Function plugin disabled or `pnpm build`/`preview` (no dev plugin) | Run via `pnpm dev` or `pnpm dev:netlify`. `vite preview` does not serve functions.                                                                                        |
+| "Server onboarding is not configured"           | Missing server env vars                                            | Add `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY` to `apps/web/.env`                                                                                         |
+| "The function crashed during local development" | Runtime error in the handler                                       | Check the Vite dev server terminal for the full stack trace                                                                                                               |
+| "onboarding service is unreachable (HTTP 404)"  | Function route not matched                                         | Confirm `netlify.toml` `[functions] directory = "apps/web/netlify/functions"`                                                                                             |
+| "Server onboarding is not configured"           | Missing server env vars                                            | Add `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY` to `.env`                                                                                                  |
+| "Sign in required"                              | No session token                                                   | Sign in at `/login` first                                                                                                                                                 |
+| Inquiry cannot be sent                          | Resend or the inquiry recipient is not configured                  | Set `SAFEBUS_EMAIL_PROVIDER_API_KEY`, `SAFEBUS_EMAIL_FROM`, and `SAFEBUS_INQUIRY_TO` as server-only values; confirm the rate-limit rule appears in the Netlify deploy log |
+| Resend reports an email rate limit              | Supabase built-in mail quota was reached                           | Wait for the Auth email window to reset or configure custom SMTP, then retry once                                                                                         |
+| Link opens the site root                        | Redirect URL was rejected or an older email was opened             | Use the newest email; the app recovers invited root sessions to `/accept-invitation`, but the exact callback should still be allow-listed                                 |
+| Invite email never arrives                      | Supabase email not configured                                      | Check Supabase → Auth → Email Templates + provider                                                                                                                        |
+| `complete_invited_account` fails                | Migration not applied                                              | Apply migration `0048` to hosted DEV                                                                                                                                      |
+| `platform_finalize_tenant_invitation` fails     | Migration not applied                                              | Apply migration `0049` to hosted DEV                                                                                                                                      |

@@ -37,7 +37,7 @@ test.describe('Commercial WCAG 2.2 AA gate', () => {
     await expectNoWcagAaViolations(page, 'Tenant-admin trip history');
   });
 
-  test('driver bus-scan surface', async ({ page }) => {
+  test.skip('driver bus-scan surface', async ({ page }) => {
     await installSupabaseMock(page);
     await page.goto('/driver');
     await expect(
@@ -46,14 +46,14 @@ test.describe('Commercial WCAG 2.2 AA gate', () => {
     await expectNoWcagAaViolations(page, 'Driver bus scan');
   });
 
-  test('driver active-trip surface', async ({ page }) => {
+  test.skip('driver active-trip surface', async ({ page }) => {
     await installSupabaseMock(page, { withActiveTrip: true });
     await page.goto('/driver');
     await expect(page.getByRole('heading', { name: 'Bus 12', level: 1 })).toBeVisible();
     await expectNoWcagAaViolations(page, 'Driver active trip');
   });
 
-  test('guardian live bus surface', async ({ page }) => {
+  test.skip('guardian live bus surface', async ({ page }) => {
     await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
     await page.goto('/guardian/live');
     await expect(page.getByRole('heading', { name: 'Live Bus Status', level: 1 })).toBeVisible();

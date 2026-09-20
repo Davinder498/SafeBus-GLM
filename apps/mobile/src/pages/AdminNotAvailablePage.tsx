@@ -1,5 +1,6 @@
+import { useEffect } from 'react';
+import { Link } from 'react-router';
 import { Monitor } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BrandMark } from '@/components/ui/BrandMark';
 import { useAuth } from '@/contexts/useAuth';
@@ -13,6 +14,10 @@ import { useAuth } from '@/contexts/useAuth';
  */
 export function AdminNotAvailablePage() {
   const { signOut } = useAuth();
+
+  useEffect(() => {
+    void signOut();
+  }, [signOut]);
 
   return (
     <div
@@ -36,11 +41,12 @@ export function AdminNotAvailablePage() {
           management, routes, people, and settings — are available on the BusSafe web app from a
           computer or tablet browser.
         </p>
-        <div className="mt-6 flex flex-col gap-3">
-          <Button variant="ghost" onClick={() => void signOut()}>
-            Sign out
-          </Button>
-        </div>
+        <Link
+          to="/login"
+          className="mt-6 inline-flex rounded-lg bg-navy-700 px-5 py-3 text-sm font-semibold text-white hover:bg-navy-800"
+        >
+          Return to sign in
+        </Link>
       </Card>
     </div>
   );
