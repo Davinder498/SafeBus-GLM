@@ -47,6 +47,10 @@ test.describe('Landing page', () => {
     await expect(
       page.getByRole('heading', { name: 'BusSafe Alberta', level: 1 }),
     ).toBeVisible();
+    const mark = page.getByTestId('safebus-brand-mark').first();
+    await expect(mark.locator('img')).toBeVisible();
+    await expect(mark).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(mark).toHaveCSS('box-shadow', 'none');
   });
 
   test('links to the login page', async ({ page }) => {
