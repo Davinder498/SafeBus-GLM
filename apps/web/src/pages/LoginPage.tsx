@@ -65,7 +65,7 @@ export function LoginPage() {
         />
         <div className="relative p-10">
           <Link to="/" className="flex items-center gap-2.5 text-white">
-            <BrandMark className="h-9 w-9" tone="glass" />
+            <BrandMark className="h-9 w-9" />
             <span className="text-lg font-bold tracking-tight">BusSafe Alberta</span>
           </Link>
         </div>
