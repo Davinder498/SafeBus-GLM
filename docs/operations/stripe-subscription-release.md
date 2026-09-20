@@ -31,7 +31,7 @@ source of truth. SafeBus stores only a display projection and never stores card 
    confirm the approved price list, and create a subscription only after contract approval.
 3. Confirm Stripe created one customer and one subscription, then confirm SafeBus shows the same
    status, quantity, dates, amount, invoice terms, and billing contact.
-4. As that tenant's `tenant_admin`, confirm `/admin/subscription` is read-only and the hosted portal
+4. As that tenant's `tenant_admin`, confirm `/admin/settings/billing` is read-only and the hosted portal
    exposes invoices/payment details without plan-change or cancellation controls.
 5. Verify school, transportation, driver, and guardian roles cannot access billing routes or data.
 6. Trigger a signed Stripe test event that has no SafeBus tenant mapping and confirm it is safely

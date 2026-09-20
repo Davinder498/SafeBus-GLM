@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
+import { AdminSettingsNav } from '@/components/settings/AdminSettingsNav';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -69,10 +69,12 @@ export function AdminSettingsPage() {
     >
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Settings"
-          title="Organization context"
-          description="Read-only account and organization details loaded through Supabase RLS."
+          eyebrow="Administration"
+          title="Settings"
+          description="Review your account access and the organization context available to you."
         />
+
+        <AdminSettingsNav showBilling={profile?.role === 'tenant_admin'} />
 
         {loading && (
           <DataState
@@ -144,26 +146,10 @@ export function AdminSettingsPage() {
             </section>
 
             <Card className="border-navy-100 bg-navy-50 p-5">
-              {profile.role === 'tenant_admin' ? (
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-bold text-navy-900">Subscription &amp; billing</p>
-                    <p className="mt-1 text-sm text-navy-700">
-                      Review the annual per-bus contract, fleet allowance, invoices, and renewal.
-                    </p>
-                  </div>
-                  <Link
-                    to="/admin/subscription"
-                    className="text-sm font-bold text-navy-700 underline underline-offset-4"
-                  >
-                    View subscription
-                  </Link>
-                </div>
-              ) : (
-                <p className="text-sm font-semibold text-navy-900">
-                  Organization edits and role changes are restricted to tenant administrators.
-                </p>
-              )}
+              <p className="text-sm font-semibold text-navy-900">
+                These details are read-only. Organization changes and access updates are managed by
+                an authorized tenant administrator or the SafeBus platform team.
+              </p>
             </Card>
           </>
         )}
