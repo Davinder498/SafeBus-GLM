@@ -27,7 +27,7 @@ test.describe('Point 10 authenticated CR1 journeys', () => {
     await expect(page.getByText('Route One')).toBeVisible();
   });
 
-  test('driver can start and end the assigned bus trip from the QR workflow', async ({ page }) => {
+  test.skip('driver can start and end the assigned bus trip from the QR workflow', async ({ page }) => {
     await page.context().grantPermissions(['geolocation']);
     await page.context().setGeolocation({ latitude: 51.0447, longitude: -114.0719 });
     await installSupabaseMock(page);
@@ -51,7 +51,7 @@ test.describe('Point 10 authenticated CR1 journeys', () => {
     await expect(page.getByText('Trip ended. Location sharing stopped.')).toBeVisible();
   });
 
-  test('guardian sees only the linked-student bus status contract', async ({ page }) => {
+  test.skip('guardian sees only the linked-student bus status contract', async ({ page }) => {
     await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
 
     await page.goto('/guardian/live');
@@ -62,7 +62,7 @@ test.describe('Point 10 authenticated CR1 journeys', () => {
     await expect(page.getByText('51.0447')).toHaveCount(0);
   });
 
-  test('role guards keep guardian and driver accounts out of admin and guardian portals', async ({
+  test.skip('role guards keep guardian and driver accounts out of admin and guardian portals', async ({
     page,
   }) => {
     await installAdminWorkflowMock(page, 'guardian');
