@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CreditCard, ExternalLink } from 'lucide-react';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
+import { AdminSettingsNav } from '@/components/settings/AdminSettingsNav';
 import { SubscriptionOverview } from '@/components/subscription/SubscriptionOverview';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -55,8 +56,8 @@ export function AdminSubscriptionPage() {
     >
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Subscription & billing"
-          title="Annual SafeBus subscription"
+          eyebrow="Settings"
+          title="Subscription & billing"
           description="Review your annual per-bus contract, fleet allowance, renewal, and invoice status. Contract changes are handled by the SafeBus platform team."
           icon={<CreditCard className="h-6 w-6" />}
           action={
@@ -73,6 +74,8 @@ export function AdminSubscriptionPage() {
             ) : undefined
           }
         />
+
+        <AdminSettingsNav showBilling />
 
         {error && (
           <Card className="border-danger-200 bg-danger-50 p-4">

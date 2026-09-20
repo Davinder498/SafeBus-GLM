@@ -65,6 +65,7 @@ describe('platform privacy boundary routing', () => {
       '/admin/live-trips',
       '/admin/live-fleet',
       '/admin/subscription',
+      '/admin/settings/billing',
     ]) {
       expect(routeAllowsPlatform(path), `${path} should not allow Platform Super Admin`).toBe(
         false,

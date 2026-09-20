@@ -33,7 +33,7 @@ export async function handler(event) {
     const session = await stripe.billingPortal.sessions.create({
       customer: state.external_customer_id,
       configuration: ctx.config.stripePortalConfigurationId,
-      return_url: `${origin}/admin/subscription`,
+      return_url: `${origin}/admin/settings/billing`,
     });
     await writeBillingAudit(
       ctx.admin,

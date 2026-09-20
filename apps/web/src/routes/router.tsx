@@ -129,6 +129,14 @@ export const appRoutes: RouteObject[] = [
     path: '/admin/subscription',
     element: (
       <ProtectedRoute allowedRoles={['tenant_admin']}>
+        <Navigate to="/admin/settings/billing" replace />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/settings/billing',
+    element: (
+      <ProtectedRoute allowedRoles={['tenant_admin']}>
         <AdminSubscriptionPage />
       </ProtectedRoute>
     ),
