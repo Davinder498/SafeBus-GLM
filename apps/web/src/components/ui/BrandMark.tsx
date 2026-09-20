@@ -1,5 +1,5 @@
-import { Bus } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import safeBusLogo from '../../../../mobile/assets/brand/safebus-master-mark.png';
 
 interface BrandMarkProps {
   className?: string;
@@ -8,8 +8,7 @@ interface BrandMarkProps {
 }
 
 /**
- * Shared brand tile. The web surface keeps the existing outline bus while the
- * native-mobile stylesheet replaces it with the approved yellow bus mark.
+ * Shared brand tile used by both the web and mobile surfaces.
  */
 export function BrandMark({ className, iconClassName, tone = 'primary' }: BrandMarkProps) {
   return (
@@ -22,7 +21,11 @@ export function BrandMark({ className, iconClassName, tone = 'primary' }: BrandM
       data-testid="safebus-brand-mark"
       aria-hidden
     >
-      <Bus className={cn('h-5 w-5', iconClassName)} />
+      <img
+        src={safeBusLogo}
+        alt=""
+        className={cn('h-5 w-5 object-contain', iconClassName)}
+      />
     </span>
   );
 }

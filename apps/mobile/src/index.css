@@ -49,15 +49,12 @@
   html[data-app-surface='native-mobile'] .safebus-brand-mark {
     border: 1px solid #174d84;
     background-color: var(--mobile-primary) !important;
-    background-image: url('../assets/brand/safebus-master-mark.png');
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: 78%;
     box-shadow: 0 4px 14px rgb(11 47 91 / 0.22);
   }
 
-  html[data-app-surface='native-mobile'] .safebus-brand-mark svg {
-    display: none;
+  html[data-app-surface='native-mobile'] .safebus-brand-mark img {
+    width: 78%;
+    height: 78%;
   }
 
   html[data-app-surface='native-mobile'] [data-ui='login-shell'],
