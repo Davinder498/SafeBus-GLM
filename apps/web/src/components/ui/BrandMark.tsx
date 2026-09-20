@@ -22,7 +22,7 @@ export function BrandMark({ className, iconClassName }: BrandMarkProps) {
       <img
         src={safeBusLogo}
         alt=""
-        className={cn('h-5 w-5 object-contain', iconClassName)}
+        className={cn('h-[30px] w-[30px] object-contain', iconClassName)}
       />
     </span>
   );

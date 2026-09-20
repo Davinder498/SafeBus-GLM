@@ -19,6 +19,7 @@ import { AdminRouteDetailPage } from '@/pages/AdminRouteDetailPage';
 import { AdminRouteManagePage } from '@/pages/AdminRouteManagePage';
 import { AdminSchoolsPage } from '@/pages/AdminSchoolsPage';
 import { AdminSettingsPage } from '@/pages/AdminSettingsPage';
+import { AdminSubscriptionPage } from '@/pages/AdminSubscriptionPage';
 import { AdminStudentDetailPage } from '@/pages/AdminStudentDetailPage';
 import { AdminStudentsPage } from '@/pages/AdminStudentsPage';
 import { AdminTripsPage } from '@/pages/AdminTripsPage';
@@ -29,6 +30,7 @@ import { AdminAuditSearchPage } from '@/pages/AdminAuditSearchPage';
 import { NotificationsPage } from '@/pages/NotificationsPage';
 import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
 import { PlatformTenantsPage } from '@/pages/PlatformTenantsPage';
+import { PlatformTenantDetailPage } from '@/pages/PlatformTenantDetailPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { MfaPage } from '@/pages/MfaPage';
 import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage';
@@ -100,6 +102,14 @@ export const appRoutes: RouteObject[] = [
   { path: '/admin/more', element: <Navigate to="/admin" replace /> },
   { path: '/admin/stops', element: <Navigate to="/admin/routes" replace /> },
   {
+    path: '/admin/tenants/:tenantId',
+    element: (
+      <ProtectedRoute allowedRoles={['platform_super_admin']}>
+        <PlatformTenantDetailPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/admin/tenants',
     element: (
       <ProtectedRoute allowedRoles={['platform_super_admin']}>
@@ -112,6 +122,14 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminTripsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/subscription',
+    element: (
+      <ProtectedRoute allowedRoles={['tenant_admin']}>
+        <AdminSubscriptionPage />
       </ProtectedRoute>
     ),
   },

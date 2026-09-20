@@ -13,6 +13,8 @@ test('landing page loads without third-party font requests', async ({ page }) =>
   await expect(page.getByRole('heading', { name: 'BusSafe Alberta', level: 1 })).toBeVisible();
   const mark = page.getByRole('banner').getByTestId('safebus-brand-mark');
   await expect(mark.locator('img')).toBeVisible();
+  await expect(mark.locator('img')).toHaveCSS('width', '30px');
+  await expect(mark.locator('img')).toHaveCSS('height', '30px');
   await expect(mark).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(mark).toHaveCSS('box-shadow', 'none');
   await expect(page.getByRole('banner').getByRole('link', { name: 'Contact' })).toBeVisible();

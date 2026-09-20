@@ -25,6 +25,12 @@ const AUTHENTICATED_ONLY_FUNCTIONS = {
     required: new Set(['p_password']),
   },
   is_current_user_session_active: { properties: {}, required: new Set() },
+  get_platform_tenant_billing_detail: {
+    properties: { p_tenant_id: { type: 'string', format: 'uuid' } },
+    required: new Set(['p_tenant_id']),
+  },
+  get_platform_tenant_billing_summaries: { properties: {}, required: new Set() },
+  get_tenant_subscription: { properties: {}, required: new Set() },
   record_student_record_access: {
     properties: { p_student_id: { type: 'string', format: 'uuid' } },
     required: new Set(['p_student_id']),
@@ -176,7 +182,13 @@ function generateFromOpenApi(schema) {
     const block = [`${quoteProperty(functionName)}: {`];
     block.push(
       '  Args: ' +
-        objectType(definition.properties, definition.required, enums, 'insert', nullableArguments)[0],
+        objectType(
+          definition.properties,
+          definition.required,
+          enums,
+          'insert',
+          nullableArguments,
+        )[0],
     );
     block.push(
       ...indent(
@@ -286,9 +298,7 @@ function generateWithCli() {
   const require = createRequire(import.meta.url);
   const supabasePackage = require.resolve('supabase/package.json');
   const supabaseCli = path.join(path.dirname(supabasePackage), 'dist', 'supabase.js');
-  const targetArguments = databaseUrl
-    ? ['--db-url', databaseUrl]
-    : ['--project-id', projectId];
+  const targetArguments = databaseUrl ? ['--db-url', databaseUrl] : ['--project-id', projectId];
 
   return new Promise((resolve, reject) => {
     const child = spawn(

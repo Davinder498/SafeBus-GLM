@@ -49,6 +49,7 @@ describe('platform privacy boundary routing', () => {
 
   it('allows platform super admins only on the platform tenant route', () => {
     expect(routeAllowsPlatform('/admin/tenants')).toBe(true);
+    expect(routeAllowsPlatform('/admin/tenants/:tenantId')).toBe(true);
 
     for (const path of [
       '/admin',
@@ -63,6 +64,7 @@ describe('platform privacy boundary routing', () => {
       '/admin/trips',
       '/admin/live-trips',
       '/admin/live-fleet',
+      '/admin/subscription',
     ]) {
       expect(routeAllowsPlatform(path), `${path} should not allow Platform Super Admin`).toBe(
         false,
