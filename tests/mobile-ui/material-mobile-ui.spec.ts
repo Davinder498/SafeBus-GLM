@@ -32,18 +32,12 @@ async function expectNoHorizontalOverflow(page: import('@playwright/test').Page)
 async function expectMaterialBrand(page: import('@playwright/test').Page) {
   const mark = page.getByTestId('safebus-brand-mark').last();
   await expect(mark).toBeVisible();
-  const presentation = await mark.evaluate((element) => {
-    const style = getComputedStyle(element);
-    const icon = element.querySelector('svg');
-    return {
-      backgroundImage: style.backgroundImage,
-      backgroundColor: style.backgroundColor,
-      iconDisplay: icon ? getComputedStyle(icon).display : null,
-    };
-  });
-  expect(presentation.backgroundImage).toContain('safebus-master-mark');
-  expect(presentation.backgroundColor).toBe('rgb(11, 47, 91)');
-  expect(presentation.iconDisplay).toBe('none');
+  const logo = mark.locator('img');
+  await expect(logo).toBeVisible();
+  await expect(logo).toHaveAttribute('src', /safebus-master-mark.*\.png/);
+  await expect(logo).toHaveAttribute('alt', '');
+  await expect(mark.locator('svg')).toHaveCount(0);
+  await expect(mark).toHaveCSS('background-color', 'rgb(11, 47, 91)');
 }
 
 test('guardian shell uses the branded Material mobile treatment', async ({ page }, testInfo) => {
