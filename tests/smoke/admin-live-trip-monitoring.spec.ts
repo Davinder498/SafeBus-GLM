@@ -172,13 +172,13 @@ test.describe('Admin live fleet monitoring', () => {
   test('guardian cannot access admin live fleet page', async ({ page }) => {
     await installMock(page, { role: 'guardian' });
     await page.goto('/admin/live-trips');
-    await expect(page.getByText('Wrong portal')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Use the correct BusSafe app' })).toBeVisible();
   });
 
   test('driver cannot access admin live fleet page', async ({ page }) => {
     await installMock(page, { role: 'driver' });
     await page.goto('/admin/live-trips');
-    await expect(page.getByText('Wrong portal')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Use the correct BusSafe app' })).toBeVisible();
   });
 
   test('tenant admin can access live fleet map, summary, list, speed, stale, and missing GPS states', async ({ page }) => {
