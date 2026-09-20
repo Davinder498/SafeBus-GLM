@@ -6,18 +6,25 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
-import { getDashboardPath } from '@/contexts/AuthContext';
+import {
+  getDashboardPath,
+  getSurfaceAccessMessage,
+  isRoleAllowedOnSurface,
+} from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
+import { useAppSurface } from '@/contexts/AppSurfaceContext';
 
 const minimumPasswordLength = 12;
 
 export function UpdatePasswordPage() {
   const navigate = useNavigate();
-  const { session, profile, loading, authError, configError, updatePassword } = useAuth();
+  const appSurface = useAppSurface();
+  const { session, profile, loading, authError, configError, updatePassword, signOut } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [surfaceCompletion, setSurfaceCompletion] = useState<string | null>(null);
   const [recoveryError] = useState(() => {
     const message = sessionStorage.getItem('safebus.passwordRecoveryError');
     sessionStorage.removeItem('safebus.passwordRecoveryError');
@@ -39,6 +46,15 @@ export function UpdatePasswordPage() {
     setSubmitting(true);
     try {
       await updatePassword(password);
+      if (profile?.status === 'active' && !isRoleAllowedOnSurface(profile.role, appSurface)) {
+        await signOut();
+        setSurfaceCompletion(
+          profile.role === 'driver' || profile.role === 'guardian'
+            ? 'Your password is updated. Open the BusSafe mobile app to sign in.'
+            : getSurfaceAccessMessage(appSurface),
+        );
+        return;
+      }
       navigate(profile?.status === 'active' ? getDashboardPath(profile.role) : '/login', {
         replace: true,
       });
@@ -72,7 +88,16 @@ export function UpdatePasswordPage() {
             </div>
           )}
 
-          {!loading && !session && (
+          {surfaceCompletion && (
+            <div
+              className="mt-6 rounded-lg border border-success-200 bg-success-50 p-4 text-sm font-medium text-success-800"
+              role="status"
+            >
+              {surfaceCompletion}
+            </div>
+          )}
+
+          {!surfaceCompletion && !loading && !session && (
             <div className="mt-6">
               <div className="rounded-lg border border-warning-200 bg-warning-50 p-4 text-sm text-warning-800">
                 {authError ?? 'This password reset link is invalid or expired. Request a new link.'}
@@ -86,11 +111,11 @@ export function UpdatePasswordPage() {
             </div>
           )}
 
-          {loading && (
+          {!surfaceCompletion && loading && (
             <p className="mt-6 text-sm text-slate-600">Checking the secure reset link...</p>
           )}
 
-          {!loading && session && (
+          {!surfaceCompletion && !loading && session && (
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
               <Field label="New password" htmlFor="new-password" required>
                 <Input

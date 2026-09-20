@@ -1,8 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { AlertCircle, ShieldCheck } from 'lucide-react';
-import { getDashboardPath } from '@/contexts/AuthContext';
+import {
+  getDashboardPath,
+  getSurfaceAccessMessage,
+  isRoleAllowedOnSurface,
+} from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
+import { useAppSurface } from '@/contexts/AppSurfaceContext';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
@@ -10,7 +15,8 @@ import { BrandMark } from '@/components/ui/BrandMark';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { signIn, signOut, configError } = useAuth();
+  const appSurface = useAppSurface();
+  const { signIn, signOut, configError, authError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -32,6 +38,10 @@ export function LoginPage() {
         throw new Error(
           `This BusSafe account is ${profile.status}. Ask your administrator to reactivate it.`,
         );
+      }
+      if (!isRoleAllowedOnSurface(profile.role, appSurface)) {
+        await signOut();
+        throw new Error(getSurfaceAccessMessage(appSurface));
       }
       navigate(getDashboardPath(profile.role), { replace: true });
     } catch (signInError) {
@@ -64,7 +74,8 @@ export function LoginPage() {
             Live bus visibility for Alberta schools.
           </h2>
           <p className="mt-4 max-w-md text-navy-100">
-            Track the bus, not the child. Operations, driver, and guardian portals in one place.
+            Track the bus, not the child. Transportation administration and operational visibility
+            in one place.
           </p>
           <div className="mt-8 flex items-center gap-2 text-sm text-navy-200">
             <ShieldCheck className="h-4 w-4 text-success-400" />
@@ -90,13 +101,15 @@ export function LoginPage() {
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">Sign in</h1>
           <p className="mt-2 text-sm text-slate-500">
-            Use your email and password. Demo accounts will be configured separately.
+            {appSurface === 'web'
+              ? 'Platform and school-transportation administrators can sign in here.'
+              : 'Drivers and parents can sign in to the mobile app here.'}
           </p>
 
-          {(configError || error) && (
+          {(configError || error || authError) && (
             <div className="mt-5 flex items-start gap-3 rounded-lg border border-danger-200 bg-danger-50 p-4 text-sm font-medium text-danger-700">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{configError ?? error}</span>
+              <span>{configError ?? error ?? authError}</span>
             </div>
           )}
 

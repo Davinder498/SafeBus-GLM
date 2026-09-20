@@ -6,19 +6,26 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
-import { getDashboardPath } from '@/contexts/AuthContext';
+import {
+  getDashboardPath,
+  getSurfaceAccessMessage,
+  isRoleAllowedOnSurface,
+} from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
+import { useAppSurface } from '@/contexts/AppSurfaceContext';
 
 const minimumPasswordLength = 12;
 
 export function AcceptInvitationPage() {
   const navigate = useNavigate();
+  const appSurface = useAppSurface();
   const { session, profile, loading, authError, configError, completeInvitation, signOut } =
     useAuth();
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [surfaceCompletion, setSurfaceCompletion] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -35,6 +42,15 @@ export function AcceptInvitationPage() {
     setSubmitting(true);
     try {
       const nextProfile = await completeInvitation(password);
+      if (!isRoleAllowedOnSurface(nextProfile.role, appSurface)) {
+        await signOut();
+        setSurfaceCompletion(
+          nextProfile.role === 'driver' || nextProfile.role === 'guardian'
+            ? 'Your account is ready. Open the BusSafe mobile app to sign in.'
+            : getSurfaceAccessMessage(appSurface),
+        );
+        return;
+      }
       navigate(getDashboardPath(nextProfile.role), { replace: true });
     } catch (setupError) {
       setError(
@@ -87,6 +103,15 @@ export function AcceptInvitationPage() {
             </div>
           )}
 
+          {surfaceCompletion && (
+            <div
+              className="mt-6 rounded-lg border border-success-200 bg-success-50 p-4 text-sm font-medium text-success-800"
+              role="status"
+            >
+              {surfaceCompletion}
+            </div>
+          )}
+
           {session && profile?.status === 'active' && (
             <div className="mt-6">
               <div className="rounded-lg border border-success-200 bg-success-50 p-4 text-sm text-success-800">
@@ -106,7 +131,7 @@ export function AcceptInvitationPage() {
             </div>
           )}
 
-          {!session && (
+          {!surfaceCompletion && !session && (
             <div className="mt-6">
               <div className="rounded-lg border border-warning-200 bg-warning-50 p-4 text-sm text-warning-800">
                 {authError ??
@@ -121,7 +146,7 @@ export function AcceptInvitationPage() {
             </div>
           )}
 
-          {session && unavailableStatus && (
+          {!surfaceCompletion && session && unavailableStatus && (
             <div className="mt-6">
               <div className="rounded-lg border border-danger-200 bg-danger-50 p-4 text-sm text-danger-700">
                 This account is {unavailableStatus}. Ask your administrator to reactivate it.
@@ -137,7 +162,7 @@ export function AcceptInvitationPage() {
             </div>
           )}
 
-          {session && !profile && (
+          {!surfaceCompletion && session && !profile && (
             <div className="mt-6">
               <div className="rounded-lg border border-danger-200 bg-danger-50 p-4 text-sm text-danger-700">
                 {authError ?? 'BusSafe could not find the profile connected to this invitation.'}
@@ -153,7 +178,7 @@ export function AcceptInvitationPage() {
             </div>
           )}
 
-          {session && profile?.status === 'invited' && (
+          {!surfaceCompletion && session && profile?.status === 'invited' && (
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
               <Field label="New password" htmlFor="invitation-password" required>
                 <Input

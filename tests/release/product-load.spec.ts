@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const PATHS = ['/', '/login', '/admin', '/driver', '/guardian/live'] as const;
+const PATHS = ['/', '/contact', '/login', '/admin', '/privacy'] as const;
 const REQUESTS_PER_PATH = 12;
 const CONCURRENCY = 10;
 const MAX_P95_MS = 2_500;

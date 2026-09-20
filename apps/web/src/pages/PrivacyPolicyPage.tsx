@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 
-const effectiveDate = 'September 9, 2026';
+const effectiveDate = 'September 19, 2026';
 
 export function PrivacyPolicyPage() {
   return (
@@ -32,6 +32,11 @@ export function PrivacyPolicyPage() {
               <ul className="mt-2 list-disc space-y-2 pl-6">
                 <li>Account identity, role, name, email, and optional work contact details.</li>
                 <li>
+                  Business contact information submitted by prospective school authorities,
+                  including name, work email, organization, role, optional phone number, inquiry
+                  topic, and message.
+                </li>
+                <li>
                   The minimum student transportation record supplied by a school authority,
                   including name, grade, school, route, stop, and authorized guardian links.
                 </li>
@@ -57,8 +62,9 @@ export function PrivacyPolicyPage() {
               <p className="mt-2">
                 We use the information only to authenticate invited users, operate transportation,
                 maintain authorized bus visibility, deliver notifications users have enabled,
-                support the service, and meet security, audit, and legal obligations. We do not sell
-                personal information, serve advertising, or build advertising profiles.
+                respond to prospective-tenant inquiries, support the service, and meet security,
+                audit, and legal obligations. We do not sell personal information, serve
+                advertising, or build advertising profiles.
               </p>
             </section>
 
@@ -68,9 +74,11 @@ export function PrivacyPolicyPage() {
                 The issuing school authority and its authorized transportation staff use BusSafe.
                 Service providers support hosting and authentication (Supabase), application
                 delivery (Netlify), map tiles (Geoapify), transactional email, and opt-in Android
-                push delivery (Google Firebase Cloud Messaging). Access is limited to what is needed
-                to provide each service. Push previews exclude names, routes, stops, coordinates,
-                driver identity, tenant identifiers, and internal identifiers.
+                push delivery (Google Firebase Cloud Messaging). Prospective-tenant inquiries are
+                delivered to BusSafe through the transactional email provider and are not stored in
+                the application database. Access is limited to what is needed to provide each
+                service. Push previews exclude names, routes, stops, coordinates, driver identity,
+                tenant identifiers, and internal identifiers.
               </p>
             </section>
 

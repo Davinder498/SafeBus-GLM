@@ -1,7 +1,7 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, supabaseConfigError } from '@/lib/supabase';
-import { useAppSurface } from '@/contexts/AppSurfaceContext';
+import { useAppSurface, type AppSurface } from '@/contexts/AppSurfaceContext';
 import {
   getPasswordResetRedirect,
   navigateToPasswordUpdate,
@@ -70,6 +70,18 @@ export function getDashboardPath(
   if (adminRoles.includes(role as (typeof adminRoles)[number])) return '/admin';
   if (role === 'driver') return '/driver';
   return '/parent';
+}
+
+export function isRoleAllowedOnSurface(role: ProfileRole, surface: AppSurface): boolean {
+  return surface === 'web'
+    ? adminRoles.includes(role as (typeof adminRoles)[number])
+    : role === 'driver' || role === 'guardian';
+}
+
+export function getSurfaceAccessMessage(surface: AppSurface): string {
+  return surface === 'web'
+    ? 'Driver and parent accounts use the BusSafe mobile app. Administrator accounts can sign in on this website.'
+    : 'Administrator accounts use the BusSafe website. Driver and parent accounts can sign in in the mobile app.';
 }
 
 function getProfileErrorMessage() {
@@ -355,17 +367,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setAuthError(null);
   }, []);
 
-  const requestPasswordReset = useCallback(async (email: string) => {
-    if (!supabase) {
-      throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
-    }
+  const requestPasswordReset = useCallback(
+    async (email: string) => {
+      if (!supabase) {
+        throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
+      }
 
-    const { error } = await supabase.auth.resetPasswordForEmail(normalizeAuthEmail(email), {
-      redirectTo: getPasswordResetRedirect(appSurface, window.location.origin),
-    });
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizeAuthEmail(email), {
+        redirectTo: getPasswordResetRedirect(appSurface, window.location.origin),
+      });
 
-    if (error) throw new Error(error.message);
-  }, [appSurface]);
+      if (error) throw new Error(error.message);
+    },
+    [appSurface],
+  );
 
   const updatePassword = useCallback(async (password: string) => {
     if (!supabase) {
