@@ -578,6 +578,38 @@ export interface Database {
           },
         ];
       };
+      bus_admin_details: {
+        Row: {
+          bus_id: string;
+          tenant_id: string;
+          fleet_number: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          bus_id: string;
+          tenant_id: string;
+          fleet_number: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          bus_id?: string;
+          tenant_id?: string;
+          fleet_number?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'bus_admin_details_bus_tenant_fkey';
+            columns: ['bus_id', 'tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'buses';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+        ];
+      };
       buses: {
         Row: {
           id: string;
@@ -3219,6 +3251,17 @@ export interface Database {
         };
         Returns: unknown;
       };
+      admin_create_bus: {
+        Args: {
+          p_bus_number: string;
+          p_capacity: number | null;
+          p_fleet_number: string;
+          p_license_plate: string | null;
+          p_school_id: string | null;
+          p_status?: string | null;
+        };
+        Returns: unknown;
+      };
       admin_create_student_onboarding: {
         Args: {
           p_payload: Json;
@@ -3379,6 +3422,17 @@ export interface Database {
           p_route_id: string;
           p_route_trip_pattern_id: string;
           p_trip_type: string;
+        };
+        Returns: unknown;
+      };
+      admin_update_bus: {
+        Args: {
+          p_bus_id: string;
+          p_capacity: number | null;
+          p_fleet_number: string;
+          p_license_plate: string | null;
+          p_school_id: string | null;
+          p_status: string;
         };
         Returns: unknown;
       };
@@ -3723,6 +3777,16 @@ export interface Database {
       get_admin_bus_workspace: {
         Args: {
           p_bus_id: string;
+        };
+        Returns: unknown;
+      };
+      get_admin_buses_page: {
+        Args: {
+          p_page?: number | null;
+          p_page_size?: number | null;
+          p_school_id?: string | null;
+          p_search?: string | null;
+          p_status?: string | null;
         };
         Returns: unknown;
       };

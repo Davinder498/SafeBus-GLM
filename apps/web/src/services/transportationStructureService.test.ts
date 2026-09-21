@@ -2,7 +2,25 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/supabase', () => ({ supabase: null, supabaseConfigError: null }));
 
-import { describeRouteError } from './transportationStructureService';
+import {
+  describeBusError,
+  describeRouteError,
+  DuplicateIdentifierError,
+} from './transportationStructureService';
+
+describe('bus save error translation', () => {
+  it('maps a duplicate fleet number to the fleet-number field', () => {
+    const error = describeBusError({
+      code: '23505',
+      message:
+        'duplicate key value violates unique constraint "bus_admin_details_tenant_fleet_number_unique"',
+    });
+
+    expect(error).toBeInstanceOf(DuplicateIdentifierError);
+    expect((error as DuplicateIdentifierError).field).toBe('fleetNumber');
+    expect(error.message).toBe('A bus with this fleet number already exists in your organization.');
+  });
+});
 
 describe('route save error translation', () => {
   it('identifies the route-code constraint precisely', () => {

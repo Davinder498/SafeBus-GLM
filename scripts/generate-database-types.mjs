@@ -20,6 +20,41 @@ const schemaKey = process.env.SUPABASE_SECRET_KEY;
 // from service_role and are therefore completed from their canonical migration
 // definitions when the OpenAPI fallback is used.
 const AUTHENTICATED_ONLY_FUNCTIONS = {
+  admin_create_bus: {
+    properties: {
+      p_school_id: { type: 'string', format: 'uuid', description: 'nullable' },
+      p_bus_number: { type: 'string', format: 'text' },
+      p_fleet_number: { type: 'string', format: 'text' },
+      p_license_plate: { type: 'string', format: 'text', description: 'nullable' },
+      p_capacity: { type: 'integer', description: 'nullable' },
+      p_status: { type: 'string', format: 'text', default: 'active' },
+    },
+    required: new Set([
+      'p_school_id',
+      'p_bus_number',
+      'p_fleet_number',
+      'p_license_plate',
+      'p_capacity',
+    ]),
+  },
+  admin_update_bus: {
+    properties: {
+      p_bus_id: { type: 'string', format: 'uuid' },
+      p_school_id: { type: 'string', format: 'uuid', description: 'nullable' },
+      p_fleet_number: { type: 'string', format: 'text' },
+      p_license_plate: { type: 'string', format: 'text', description: 'nullable' },
+      p_capacity: { type: 'integer', description: 'nullable' },
+      p_status: { type: 'string', format: 'text' },
+    },
+    required: new Set([
+      'p_bus_id',
+      'p_school_id',
+      'p_fleet_number',
+      'p_license_plate',
+      'p_capacity',
+      'p_status',
+    ]),
+  },
   enforce_new_password_policy: {
     properties: { p_password: { type: 'string', format: 'text' } },
     required: new Set(['p_password']),
@@ -30,6 +65,16 @@ const AUTHENTICATED_ONLY_FUNCTIONS = {
     required: new Set(['p_tenant_id']),
   },
   get_platform_tenant_billing_summaries: { properties: {}, required: new Set() },
+  get_admin_buses_page: {
+    properties: {
+      p_page: { type: 'integer', default: 1 },
+      p_page_size: { type: 'integer', default: 50 },
+      p_search: { type: 'string', format: 'text', default: '' },
+      p_status: { type: 'string', format: 'text', description: 'nullable', default: null },
+      p_school_id: { type: 'string', format: 'uuid', description: 'nullable', default: null },
+    },
+    required: new Set(),
+  },
   get_tenant_subscription: { properties: {}, required: new Set() },
   record_student_record_access: {
     properties: { p_student_id: { type: 'string', format: 'uuid' } },

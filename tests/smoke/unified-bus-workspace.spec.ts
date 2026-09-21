@@ -21,6 +21,7 @@ const bus = {
   school_id: null,
   school_name: null,
   bus_number: 'AF02',
+  fleet_number: 'FLEET-102',
   license_plate: 'CPK1452',
   capacity: 50,
   status: 'active',
@@ -30,7 +31,11 @@ const bus = {
 
 async function mockBusWorkspace(
   page: Page,
-  options: { includeExpired?: boolean; serviceEndDate?: string } = {},
+  options: {
+    includeExpired?: boolean;
+    serviceEndDate?: string;
+    fleetNumber?: string | null;
+  } = {},
 ) {
   let routeEnded = false;
   let expiredRouteClosed = false;
@@ -289,7 +294,10 @@ async function mockBusWorkspace(
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          bus,
+          bus: {
+            ...bus,
+            fleet_number: 'fleetNumber' in options ? options.fleetNumber : bus.fleet_number,
+          },
           routeAssignments: currentRoutes,
           driverAssignments: [
             {
@@ -710,11 +718,21 @@ async function mockBusWorkspace(
         body: JSON.stringify(single ? profile : [profile, ...driverProfiles]),
       });
     }
-    if (path.includes('/rest/v1/buses') && method === 'POST') {
+    if (path.includes('/rpc/admin_create_bus')) {
       return route.fulfill({
-        status: 201,
+        status: 200,
         contentType: 'application/json',
         body: JSON.stringify(bus),
+      });
+    }
+    if (path.includes('/rpc/admin_update_bus')) {
+      const body = route.request().postDataJSON() as {
+        p_fleet_number?: string;
+      };
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ...bus, fleet_number: body.p_fleet_number ?? bus.fleet_number }),
       });
     }
     if (path.includes('/rest/v1/bus_route_assignments') && method === 'PATCH') {
@@ -941,13 +959,50 @@ test.describe('unified bus workspace', () => {
     await expect(page.getByRole('tab', { name: 'Students' })).toBeDisabled();
 
     await page.getByLabel('Bus number').fill('AF02');
+    await page.getByLabel('Fleet number (internal)').fill('FLEET-102');
     await page.getByLabel('License plate').fill('CPK1452');
     await page.getByLabel('Capacity').fill('50');
+    const createRequest = page.waitForRequest((request) =>
+      request.url().includes('/rpc/admin_create_bus'),
+    );
     await page.getByRole('button', { name: 'Save bus' }).click();
+
+    const request = await createRequest;
+    expect(request.postDataJSON()).toMatchObject({
+      p_bus_number: 'AF02',
+      p_fleet_number: 'FLEET-102',
+    });
 
     await expect(page).toHaveURL(new RegExp(`/admin/buses/${busId}\\?tab=routes`));
     await expect(page.getByRole('tab', { name: 'Routes' })).toBeEnabled();
     await expect(page.getByRole('button', { name: 'Assign route', exact: true })).toBeVisible();
+  });
+
+  test('keeps a legacy bus operational and requires its fleet number on the next detail save', async ({
+    page,
+  }) => {
+    await mockBusWorkspace(page, { fleetNumber: null });
+    await page.goto(`/admin/buses/${busId}?tab=details`);
+
+    await expect(
+      page.getByText('Not assigned. Add a fleet number before saving these details.'),
+    ).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Routes' })).toBeEnabled();
+    await page.getByRole('button', { name: 'Save bus' }).click();
+    await expect(
+      page.getByText('Fleet number is required for transportation administration.'),
+    ).toBeVisible();
+
+    await page.getByLabel('Fleet number (internal)').fill('  Fleet   102  ');
+    const updateRequest = page.waitForRequest((request) =>
+      request.url().includes('/rpc/admin_update_bus'),
+    );
+    await page.getByRole('button', { name: 'Save bus' }).click();
+    expect((await updateRequest).postDataJSON()).toMatchObject({
+      p_bus_id: busId,
+      p_fleet_number: 'Fleet 102',
+    });
+    await expect(page.getByText('Bus details updated.')).toBeVisible();
   });
 
   test('changes a planned driver, reloads history, and preserves the invite return path', async ({

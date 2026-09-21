@@ -614,6 +614,12 @@
       "filename": "0101_defer_route_stop_order_uniqueness.sql",
       "bytes": 839,
       "sha256": "1479a3bab00ef806cc2eff74b51fef73b44ba66df8e56dba493a1bd7dc3c3ce4"
+    },
+    {
+      "version": "0102",
+      "filename": "0102_internal_bus_fleet_numbers.sql",
+      "bytes": 25880,
+      "sha256": "991781923c5ceb55d4fcf042282fc85e4bacc84a35cd62cdbe827d84f77a514a"
     }
   ]
 }
