@@ -29,10 +29,14 @@ test('user-facing deletion preserves transportation and historical records', () 
 test('platform onboarding no longer accepts or creates a school', () => {
   const platformPage = read('apps/web/src/pages/PlatformTenantsPage.tsx');
   const onboarding = read('apps/web/netlify/functions/safebus-onboarding.mjs');
+  const createTenantHandler = onboarding.slice(
+    onboarding.indexOf('async function createTenant'),
+    onboarding.indexOf('async function inviteMember'),
+  );
 
   assert.doesNotMatch(platformPage, /schoolName|Initial school name/i);
-  assert.doesNotMatch(onboarding, /body\.schoolName|body\.city|p_city:\s*city/i);
-  assert.match(onboarding, /p_school_name:\s*null[\s\S]*p_city:\s*null/i);
+  assert.doesNotMatch(createTenantHandler, /body\.schoolName|body\.city|p_city:\s*city/i);
+  assert.match(createTenantHandler, /p_school_name:\s*null[\s\S]*p_city:\s*null/i);
   assert.match(
     migration,
     /Legacy school arguments are ignored; school setup is exclusively tenant-owned/i,

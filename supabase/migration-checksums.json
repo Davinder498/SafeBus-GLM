@@ -606,8 +606,8 @@
     {
       "version": "0100",
       "filename": "0100_tenant_school_directory.sql",
-      "bytes": 13960,
-      "sha256": "3679f0aed0fe0a8d27301e671b584d53d349e74a579b85356365d2996f0f2fd7"
+      "bytes": 14056,
+      "sha256": "6c82fa4aef0fbad38e674d0f1cb72e882202f78ec71d33029f5b676841cbdc2d"
     }
   ]
 }
