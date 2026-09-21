@@ -65,6 +65,18 @@ begin
   end if;
 
   if not exists (
+    select 1
+    from pg_constraint constraint_row
+    where constraint_row.conrelid = 'public.route_stops'::regclass
+      and constraint_row.conname = 'route_stops_route_order_unique'
+      and constraint_row.contype = 'u'
+      and constraint_row.condeferrable
+      and constraint_row.condeferred
+  ) then
+    raise exception 'Route stop order uniqueness must be deferred for atomic reordering';
+  end if;
+
+  if not exists (
     select 1 from pg_attribute
     where attrelid = 'public.driver_route_assignments'::regclass
       and attname = 'route_trip_pattern_id' and not attisdropped
