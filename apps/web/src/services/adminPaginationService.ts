@@ -35,29 +35,38 @@ export async function fetchAdminPage<T>(
   entity: AdminListEntity,
   query: AdminListQuery,
 ): Promise<PaginatedResult<T>> {
-  const { data, error } = entity === 'students'
-    ? await requireSupabase().rpc('get_admin_students_page', {
-        p_page: query.page,
-        p_page_size: query.pageSize,
-        p_search: query.search?.trim() ?? '',
-        p_status: query.status || null,
-        p_school_id: query.schoolId || null,
-      })
-    : entity === 'student_bus_assignments'
-    ? await requireSupabase().rpc('get_admin_student_bus_assignments_page', {
-        p_page: query.page,
-        p_page_size: query.pageSize,
-        p_search: query.search?.trim() ?? '',
-        p_status: query.status || null,
-      })
-    : await requireSupabase().rpc('get_admin_paginated_list', {
-    p_entity: entity,
-    p_page: query.page,
-    p_page_size: query.pageSize,
-    p_search: query.search?.trim() ?? '',
-    p_status: query.status || null,
-    p_school_id: query.schoolId || null,
-      });
+  const { data, error } =
+    entity === 'students'
+      ? await requireSupabase().rpc('get_admin_students_page', {
+          p_page: query.page,
+          p_page_size: query.pageSize,
+          p_search: query.search?.trim() ?? '',
+          p_status: query.status || null,
+          p_school_id: query.schoolId || null,
+        })
+      : entity === 'student_bus_assignments'
+        ? await requireSupabase().rpc('get_admin_student_bus_assignments_page', {
+            p_page: query.page,
+            p_page_size: query.pageSize,
+            p_search: query.search?.trim() ?? '',
+            p_status: query.status || null,
+          })
+        : entity === 'buses'
+          ? await requireSupabase().rpc('get_admin_buses_page', {
+              p_page: query.page,
+              p_page_size: query.pageSize,
+              p_search: query.search?.trim() ?? '',
+              p_status: query.status || null,
+              p_school_id: query.schoolId || null,
+            })
+          : await requireSupabase().rpc('get_admin_paginated_list', {
+              p_entity: entity,
+              p_page: query.page,
+              p_page_size: query.pageSize,
+              p_search: query.search?.trim() ?? '',
+              p_status: query.status || null,
+              p_school_id: query.schoolId || null,
+            });
   if (error) throw new Error('Unable to load this list.');
   const result = data as unknown as PaginatedResult<T>;
   return { ...result, rows: result?.rows ?? [], totalCount: result?.totalCount ?? 0 };
@@ -74,7 +83,9 @@ export async function searchAdminStudents(search: string): Promise<StudentSearch
 }
 
 export async function fetchAdminGuardianLinks(guardianId: string): Promise<GuardianLinkSummary[]> {
-  const { data, error } = await requireSupabase().rpc('get_admin_guardian_links', { p_guardian_id: guardianId });
+  const { data, error } = await requireSupabase().rpc('get_admin_guardian_links', {
+    p_guardian_id: guardianId,
+  });
   if (error) throw new Error('Unable to load linked students.');
   return (data ?? []) as GuardianLinkSummary[];
 }

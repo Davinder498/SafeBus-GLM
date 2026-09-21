@@ -527,7 +527,6 @@ export function AdminBusWorkspacePage() {
                     key={bus?.updated_at ?? 'new-bus'}
                     bus={bus}
                     schools={schools}
-                    defaultTenantId={profile?.tenant_id ?? null}
                     onSubmit={saveBus}
                     onCancel={backToBuses}
                     onDirtyChange={setDetailsDirty}

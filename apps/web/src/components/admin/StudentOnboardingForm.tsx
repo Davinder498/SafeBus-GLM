@@ -282,6 +282,7 @@ export function StudentOnboardingForm({
   const [busId, setBusId] = useState('');
   const [busLabel, setBusLabel] = useState('');
   const [busNumber, setBusNumber] = useState('');
+  const [fleetNumber, setFleetNumber] = useState('');
   const [licensePlate, setLicensePlate] = useState('');
   const [capacity, setCapacity] = useState('');
   const [tripType, setTripType] = useState<'morning' | 'evening'>('morning');
@@ -379,7 +380,18 @@ export function StudentOnboardingForm({
         setFormError('Bus number is required.');
         return;
       }
-      if (capacity && (!Number.isInteger(Number(capacity)) || Number(capacity) < 0 || Number(capacity) > 200)) {
+      if (busMode === 'new' && !fleetNumber.trim()) {
+        setFormError('Fleet number is required for a new bus.');
+        return;
+      }
+      if (busMode === 'new' && fleetNumber.trim().replace(/\s+/g, ' ').length > 40) {
+        setFormError('Fleet number must be 40 characters or fewer.');
+        return;
+      }
+      if (
+        capacity &&
+        (!Number.isInteger(Number(capacity)) || Number(capacity) < 0 || Number(capacity) > 200)
+      ) {
         setFormError('Bus capacity must be a whole number between 0 and 200.');
         return;
       }
@@ -433,6 +445,7 @@ export function StudentOnboardingForm({
               : {
                   mode: 'new' as const,
                   number: busNumber,
+                  fleetNumber: fleetNumber.trim().replace(/\s+/g, ' '),
                   licensePlate,
                   capacity,
                 },
@@ -471,7 +484,8 @@ export function StudentOnboardingForm({
         </p>
         <h2 className="mt-1 text-xl font-bold text-navy-900">Add student and transportation</h2>
         <p className="mt-1 text-sm text-gray-600">
-          Create the student, link or invite a guardian, and configure their bus service in one secure workflow.
+          Create the student, link or invite a guardian, and configure their bus service in one
+          secure workflow.
         </p>
       </div>
 
@@ -489,23 +503,47 @@ export function StudentOnboardingForm({
           <div className="grid gap-4 md:grid-cols-2">
             <label className={labelClassName}>
               First name
-              <input className={fieldClassName} maxLength={100} value={firstName} onChange={(event) => setFirstName(event.target.value)} />
+              <input
+                className={fieldClassName}
+                maxLength={100}
+                value={firstName}
+                onChange={(event) => setFirstName(event.target.value)}
+              />
             </label>
             <label className={labelClassName}>
               Last name
-              <input className={fieldClassName} maxLength={100} value={lastName} onChange={(event) => setLastName(event.target.value)} />
+              <input
+                className={fieldClassName}
+                maxLength={100}
+                value={lastName}
+                onChange={(event) => setLastName(event.target.value)}
+              />
             </label>
             <label className={labelClassName}>
               Preferred name (optional)
-              <input className={fieldClassName} maxLength={100} value={preferredName} onChange={(event) => setPreferredName(event.target.value)} />
+              <input
+                className={fieldClassName}
+                maxLength={100}
+                value={preferredName}
+                onChange={(event) => setPreferredName(event.target.value)}
+              />
             </label>
             <label className={labelClassName}>
               Grade (optional)
-              <input className={fieldClassName} maxLength={40} value={grade} onChange={(event) => setGrade(event.target.value)} />
+              <input
+                className={fieldClassName}
+                maxLength={40}
+                value={grade}
+                onChange={(event) => setGrade(event.target.value)}
+              />
             </label>
             <label className={labelClassName}>
               School (optional)
-              <select className={fieldClassName} value={schoolId} onChange={(event) => setSchoolId(event.target.value)}>
+              <select
+                className={fieldClassName}
+                value={schoolId}
+                onChange={(event) => setSchoolId(event.target.value)}
+              >
                 <option value="">No school</option>
                 {schools.map((school) => (
                   <option key={school.id} value={school.id}>
@@ -567,22 +605,49 @@ export function StudentOnboardingForm({
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <label className={labelClassName}>
                 Guardian first name
-                <input className={fieldClassName} maxLength={100} value={guardianFirstName} onChange={(event) => setGuardianFirstName(event.target.value)} required />
+                <input
+                  className={fieldClassName}
+                  maxLength={100}
+                  value={guardianFirstName}
+                  onChange={(event) => setGuardianFirstName(event.target.value)}
+                  required
+                />
               </label>
               <label className={labelClassName}>
                 Guardian last name
-                <input className={fieldClassName} maxLength={100} value={guardianLastName} onChange={(event) => setGuardianLastName(event.target.value)} required />
+                <input
+                  className={fieldClassName}
+                  maxLength={100}
+                  value={guardianLastName}
+                  onChange={(event) => setGuardianLastName(event.target.value)}
+                  required
+                />
               </label>
               <label className={labelClassName}>
                 Guardian email
-                <input className={fieldClassName} type="email" maxLength={320} value={guardianEmail} onChange={(event) => setGuardianEmail(event.target.value)} required />
+                <input
+                  className={fieldClassName}
+                  type="email"
+                  maxLength={320}
+                  value={guardianEmail}
+                  onChange={(event) => setGuardianEmail(event.target.value)}
+                  required
+                />
               </label>
               <label className={labelClassName}>
                 Phone
-                <input className={fieldClassName} type="tel" maxLength={40} value={guardianPhone} onChange={(event) => setGuardianPhone(event.target.value)} required />
+                <input
+                  className={fieldClassName}
+                  type="tel"
+                  maxLength={40}
+                  value={guardianPhone}
+                  onChange={(event) => setGuardianPhone(event.target.value)}
+                  required
+                />
               </label>
               <p className="self-end rounded-lg bg-blue-50 p-3 text-sm text-blue-900">
-                BusSafe sends the guardian a secure link to create or activate their account. No password is handled by the admin.
+                BusSafe sends the guardian a secure link to create or activate their account. No
+                password is handled by the admin.
               </p>
             </div>
           )}
@@ -643,11 +708,21 @@ export function StudentOnboardingForm({
                   <div className="grid gap-4 sm:grid-cols-2 md:col-span-1">
                     <label className={labelClassName}>
                       Route name
-                      <input className={fieldClassName} maxLength={160} value={routeName} onChange={(event) => setRouteName(event.target.value)} />
+                      <input
+                        className={fieldClassName}
+                        maxLength={160}
+                        value={routeName}
+                        onChange={(event) => setRouteName(event.target.value)}
+                      />
                     </label>
                     <label className={labelClassName}>
                       Route code
-                      <input className={fieldClassName} maxLength={40} value={routeCode} onChange={(event) => setRouteCode(event.target.value)} />
+                      <input
+                        className={fieldClassName}
+                        maxLength={40}
+                        value={routeCode}
+                        onChange={(event) => setRouteCode(event.target.value)}
+                      />
                     </label>
                     <ModeSelect
                       label="Route type"
@@ -664,12 +739,16 @@ export function StudentOnboardingForm({
 
                 {busMode === 'existing' ? (
                   <EntitySearchPicker<BusSearchOption>
-                    label="Search bus by number"
-                    placeholder="Start typing a bus number"
+                    label="Search bus by public or fleet number"
+                    placeholder="Start typing a bus or fleet number"
                     value={busId}
                     selectedLabel={busLabel}
                     search={searchAdminBuses}
-                    optionLabel={(option) => `Bus ${option.bus_number}${option.license_plate ? ` — ${option.license_plate}` : ''}`}
+                    optionLabel={(option) =>
+                      `Bus ${option.bus_number} — Fleet ${option.fleet_number ?? 'Not assigned'}${
+                        option.license_plate ? ` — ${option.license_plate}` : ''
+                      }`
+                    }
                     onChange={(id, label) => {
                       setBusId(id);
                       setBusLabel(label);
@@ -679,15 +758,44 @@ export function StudentOnboardingForm({
                   <div className="grid gap-4 sm:grid-cols-2 md:col-span-1">
                     <label className={labelClassName}>
                       Bus number
-                      <input className={fieldClassName} maxLength={40} value={busNumber} onChange={(event) => setBusNumber(event.target.value)} />
+                      <input
+                        className={fieldClassName}
+                        maxLength={40}
+                        value={busNumber}
+                        onChange={(event) => setBusNumber(event.target.value)}
+                      />
+                    </label>
+                    <label className={labelClassName}>
+                      Fleet number (internal)
+                      <input
+                        className={fieldClassName}
+                        maxLength={40}
+                        value={fleetNumber}
+                        onChange={(event) => setFleetNumber(event.target.value)}
+                      />
+                      <span className="text-xs font-medium text-gray-500">
+                        Used by transportation staff and not shown to families or drivers.
+                      </span>
                     </label>
                     <label className={labelClassName}>
                       License plate (optional)
-                      <input className={fieldClassName} maxLength={40} value={licensePlate} onChange={(event) => setLicensePlate(event.target.value)} />
+                      <input
+                        className={fieldClassName}
+                        maxLength={40}
+                        value={licensePlate}
+                        onChange={(event) => setLicensePlate(event.target.value)}
+                      />
                     </label>
                     <label className={labelClassName}>
                       Capacity (optional)
-                      <input className={fieldClassName} type="number" min="0" max="200" value={capacity} onChange={(event) => setCapacity(event.target.value)} />
+                      <input
+                        className={fieldClassName}
+                        type="number"
+                        min="0"
+                        max="200"
+                        value={capacity}
+                        onChange={(event) => setCapacity(event.target.value)}
+                      />
                     </label>
                   </div>
                 )}
@@ -705,7 +813,12 @@ export function StudentOnboardingForm({
                 />
                 <label className={labelClassName}>
                   Effective from
-                  <input className={fieldClassName} type="date" value={effectiveFrom} onChange={(event) => setEffectiveFrom(event.target.value)} />
+                  <input
+                    className={fieldClassName}
+                    type="date"
+                    value={effectiveFrom}
+                    onChange={(event) => setEffectiveFrom(event.target.value)}
+                  />
                 </label>
               </div>
 
@@ -740,7 +853,8 @@ export function StudentOnboardingForm({
               </div>
               {(pickupMode === 'new' || dropoffMode === 'new') && (
                 <p className="rounded-lg bg-warning-50 p-3 text-sm font-semibold text-warning-900">
-                  Use a shared operational stop label such as an intersection, school, or community location. Do not enter a student home address.
+                  Use a shared operational stop label such as an intersection, school, or community
+                  location. Do not enter a student home address.
                 </p>
               )}
             </div>

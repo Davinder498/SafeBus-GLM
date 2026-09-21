@@ -9,13 +9,13 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { adminRoles } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
-import type { Bus } from '@/types/transportation';
+import type { AdminBus } from '@/types/transportation';
 
-function statusLabel(status: Bus['status']) {
+function statusLabel(status: AdminBus['status']) {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
-function statusTone(status: Bus['status']): 'success' | 'warning' | 'neutral' {
+function statusTone(status: AdminBus['status']): 'success' | 'warning' | 'neutral' {
   if (status === 'active') return 'success';
   if (status === 'maintenance') return 'warning';
   return 'neutral';
@@ -24,7 +24,7 @@ function statusTone(status: Bus['status']): 'success' | 'warning' | 'neutral' {
 export function AdminBusesPage() {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const list = usePaginatedAdminList<Bus>('buses');
+  const list = usePaginatedAdminList<AdminBus>('buses');
 
   const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
 
@@ -59,7 +59,7 @@ export function AdminBusesPage() {
             type="search"
             value={list.searchInput}
             onChange={(event) => list.setSearchInput(event.target.value)}
-            placeholder="Search by bus number, plate, or status"
+            placeholder="Search by bus number, fleet number, plate, school, or status"
             className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
           />
         </div>
@@ -87,6 +87,18 @@ export function AdminBusesPage() {
                       </StatusPill>
                     </div>
                     <p className="mt-2 text-sm text-gray-600">
+                      Fleet number:{' '}
+                      <span
+                        className={
+                          bus.fleet_number
+                            ? 'font-semibold text-navy-900'
+                            : 'font-semibold text-amber-700'
+                        }
+                      >
+                        {bus.fleet_number ?? 'Not assigned — complete bus details'}
+                      </span>
+                    </p>
+                    <p className="mt-1 text-sm text-gray-600">
                       Plate:{' '}
                       <span className="font-semibold text-navy-900">
                         {bus.license_plate ?? 'Not assigned'}

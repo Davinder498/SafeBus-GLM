@@ -1,8 +1,8 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 import type { DriverRouteAssignment } from '@/types/driverAssignments';
-import type { Bus, BusRouteAssignment, StudentBusAssignment } from '@/types/transportation';
+import type { AdminBus, BusRouteAssignment, StudentBusAssignment } from '@/types/transportation';
 
-export interface AdminBusWorkspaceBus extends Bus {
+export interface AdminBusWorkspaceBus extends AdminBus {
   school_name: string | null;
 }
 
