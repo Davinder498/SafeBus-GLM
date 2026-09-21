@@ -277,12 +277,21 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
 
     try {
       const isUpdate = !!editingRoute;
-      const result = await saveRouteDefinition(payload);
+      // The page owns edit identity. Re-assert it at the mutation boundary so
+      // an edit can never fall through to the RPC's create path because of
+      // stale or remounted form state.
+      const savePayload = editingRoute
+        ? { ...payload, route: { ...payload.route, id: editingRoute.id } }
+        : payload;
+      const result = await saveRouteDefinition(savePayload);
+      if (editingRoute && result.routeId !== editingRoute.id) {
+        throw new Error('The route update returned an unexpected route. Reload and try again.');
+      }
       if (!profile?.tenant_id) throw new Error('An active tenant is required.');
       await saveRouteServiceDays({
         tenantId: profile.tenant_id,
         routeId: result.routeId,
-        activeDays: payload.serviceDays,
+        activeDays: savePayload.serviceDays,
       });
 
       setSuccessMessage(
@@ -325,6 +334,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
         {canWrite && showCreateForm && (
           <InlineFormShell title="Add route">
             <RouteWithStopsForm
+              key="create-route"
               route={null}
               existingStops={[]}
               existingTripPatterns={[]}
@@ -341,6 +351,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
         {canWrite && editingRoute && (
           <InlineFormShell title={`Edit ${editingRoute.route_code}`}>
             <RouteWithStopsForm
+              key={editingRoute.id}
               route={editingRoute}
               existingStops={stopsByRoute.get(editingRoute.id) ?? []}
               existingTripPatterns={tripPatterns.filter(

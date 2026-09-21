@@ -608,6 +608,12 @@
       "filename": "0100_tenant_school_directory.sql",
       "bytes": 14056,
       "sha256": "6c82fa4aef0fbad38e674d0f1cb72e882202f78ec71d33029f5b676841cbdc2d"
+    },
+    {
+      "version": "0101",
+      "filename": "0101_defer_route_stop_order_uniqueness.sql",
+      "bytes": 839,
+      "sha256": "1479a3bab00ef806cc2eff74b51fef73b44ba66df8e56dba493a1bd7dc3c3ce4"
     }
   ]
 }

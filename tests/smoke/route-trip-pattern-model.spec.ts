@@ -12,7 +12,15 @@ const profile = {
   updated_at: '2026-01-01T00:00:00Z',
 };
 
-async function mockRoutes(page: Page, role = 'tenant_admin') {
+interface ExistingRouteFixture {
+  route: Record<string, unknown>;
+  stops: Array<Record<string, unknown>>;
+  tripPatterns: Array<Record<string, unknown>>;
+  tripSchedules?: Array<Record<string, unknown>>;
+  serviceDays?: Array<Record<string, unknown>>;
+}
+
+async function mockRoutes(page: Page, role = 'tenant_admin', existingRoute?: ExistingRouteFixture) {
   let savedPayload: Record<string, unknown> | null = null;
   let savedServiceDays: Array<Record<string, unknown>> | null = null;
   const currentProfile = { ...profile, role };
@@ -83,7 +91,12 @@ async function mockRoutes(page: Page, role = 'tenant_admin') {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ rows: [], totalCount: 0, page: 1, pageSize: 50 }),
+        body: JSON.stringify({
+          rows: existingRoute ? [existingRoute.route] : [],
+          totalCount: existingRoute ? 1 : 0,
+          page: 1,
+          pageSize: 50,
+        }),
       });
     }
     if (path.includes('/rpc/admin_save_route_definition')) {
@@ -92,15 +105,37 @@ async function mockRoutes(page: Page, role = 'tenant_admin') {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          routeId: '33333333-3333-3333-3333-333333333333',
+          routeId:
+            (existingRoute?.route.id as string | undefined) ??
+            '33333333-3333-3333-3333-333333333333',
           definitionStatus: 'ready',
-          activeStopCount: 2,
+          activeStopCount: existingRoute ? existingRoute.stops.length + 1 : 2,
         }),
       });
     }
     if (path.includes('/route_service_days') && method === 'POST') {
       savedServiceDays = route.request().postDataJSON() as Array<Record<string, unknown>>;
       return route.fulfill({ status: 201, contentType: 'application/json', body: '[]' });
+    }
+    if (existingRoute && method === 'GET') {
+      const rows = path.includes('/route_trip_stop_schedules')
+        ? (existingRoute.tripSchedules ?? [])
+        : path.includes('/route_trip_patterns')
+          ? existingRoute.tripPatterns
+          : path.includes('/route_service_days')
+            ? (existingRoute.serviceDays ?? [])
+            : path.includes('/route_stops')
+              ? existingRoute.stops
+              : path.includes('/routes')
+                ? [existingRoute.route]
+                : null;
+      if (rows) {
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(rows),
+        });
+      }
     }
     if (path.startsWith('/rest/v1/') && method === 'GET') {
       return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
@@ -203,6 +238,96 @@ test.describe('route corridor and named trips', () => {
       ['Museum', 1],
       ['School', 2],
       ['Lunch stop', 3],
+    ]);
+  });
+
+  test('editing an existing route keeps its identity while adding a stop', async ({ page }) => {
+    const routeId = '33333333-3333-3333-3333-333333333333';
+    const tenantId = profile.tenant_id;
+    const routeRecord = {
+      id: routeId,
+      tenant_id: tenantId,
+      school_id: null,
+      route_name: 'Demo Route 01',
+      route_code: 'DR01',
+      route_type: 'special',
+      route_kind: 'regular',
+      map_color: '#2563EB',
+      definition_status: 'ready',
+      status: 'active',
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+      school_name: null,
+      stop_count: 2,
+      active_assignment_count: 0,
+    };
+    const stops = [
+      {
+        id: '44444444-4444-4444-4444-444444444441',
+        tenant_id: tenantId,
+        route_id: routeId,
+        school_id: null,
+        stop_name: 'First stop',
+        stop_order: 1,
+        planned_arrival_time: null,
+        latitude: 51.04,
+        longitude: -114.07,
+        status: 'active',
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+      },
+      {
+        id: '44444444-4444-4444-4444-444444444442',
+        tenant_id: tenantId,
+        route_id: routeId,
+        school_id: null,
+        stop_name: 'Last stop',
+        stop_order: 2,
+        planned_arrival_time: null,
+        latitude: 51.05,
+        longitude: -114.06,
+        status: 'active',
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+      },
+    ];
+    const tripPatterns = ['forward', 'reverse'].map((direction, index) => ({
+      id: `55555555-5555-5555-5555-55555555555${index + 1}`,
+      tenant_id: tenantId,
+      route_id: routeId,
+      direction,
+      display_name: direction === 'forward' ? 'Outbound' : 'Return',
+      status: 'active',
+      schedule_review_required: false,
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+    }));
+    const mock = await mockRoutes(page, 'tenant_admin', {
+      route: routeRecord,
+      stops,
+      tripPatterns,
+    });
+
+    await page.goto('/admin/routes');
+    await page.getByRole('button', { name: 'Edit route' }).click();
+    await expect(page.getByRole('heading', { name: 'Edit DR01' })).toBeVisible();
+    await page.getByRole('button', { name: 'Add stop' }).click();
+    await page.getByLabel('Stop name').fill('New stop');
+    await page.getByLabel('Latitude').fill('51.06');
+    await page.getByLabel('Longitude').fill('-114.05');
+    await page.getByRole('button', { name: 'Save stop details' }).click();
+    await page.getByRole('button', { name: 'Save route definition' }).click();
+
+    await expect(page.getByText('Route definition updated.')).toBeVisible();
+    const payload = mock.savedPayload() as {
+      p_route: { id?: string; routeCode: string };
+      p_stops: Array<{ stopName: string }>;
+    };
+    expect(payload.p_route).toMatchObject({ id: routeId, routeCode: 'DR01' });
+    expect(payload.p_stops.map((stop) => stop.stopName)).toEqual([
+      'First stop',
+      'Last stop',
+      'New stop',
     ]);
   });
 

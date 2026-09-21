@@ -233,12 +233,19 @@ export async function getVisibleRoutes(): Promise<Route[]> {
  * user-facing message. The most common cause of write failures is the
  * per-tenant unique constraint on route_code.
  */
-function describeRouteError(error: { message?: string; code?: string }): Error {
+export function describeRouteError(error: { message?: string; code?: string }): Error {
   const message = error?.message ?? '';
+  const normalizedMessage = message.toLowerCase();
+
+  if (normalizedMessage.includes('route_stops_route_order_unique')) {
+    return new Error(
+      'The stop sequence could not be updated safely. Reload this route and try saving the stops again.',
+    );
+  }
+
   const isDuplicateRouteCode =
-    message.includes('routes_tenant_route_code_unique') ||
-    (message.includes('duplicate key value violates unique constraint') &&
-      message.includes('route'));
+    normalizedMessage.includes('routes_tenant_route_code_unique') ||
+    normalizedMessage.includes('route with this code already exists');
   if (isDuplicateRouteCode) {
     return new Error(
       'A route with this code already exists in your organization. Use a different route code.',
