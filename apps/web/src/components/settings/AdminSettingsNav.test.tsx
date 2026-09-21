@@ -2,6 +2,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it } from 'vitest';
+import type { ProfileRole } from '@/contexts/AuthContext';
 import { AdminSettingsNav } from './AdminSettingsNav';
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -17,7 +18,7 @@ afterEach(async () => {
   document.body.innerHTML = '';
 });
 
-async function renderSettingsNav(path: string, showBilling: boolean) {
+async function renderSettingsNav(path: string, role: ProfileRole) {
   const container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
@@ -25,7 +26,7 @@ async function renderSettingsNav(path: string, showBilling: boolean) {
   await act(async () => {
     root?.render(
       <MemoryRouter initialEntries={[path]}>
-        <AdminSettingsNav showBilling={showBilling} />
+        <AdminSettingsNav role={role} />
       </MemoryRouter>,
     );
   });
@@ -35,19 +36,21 @@ async function renderSettingsNav(path: string, showBilling: boolean) {
 
 describe('AdminSettingsNav', () => {
   it('keeps billing hidden from non-tenant administrators', async () => {
-    const container = await renderSettingsNav('/admin/settings', false);
+    const container = await renderSettingsNav('/admin/settings', 'school_admin');
 
     expect(Array.from(container.querySelectorAll('a')).map((link) => link.textContent)).toEqual([
       'OrganizationAccount and organization context',
+      'SchoolsTenant school directory',
     ]);
   });
 
   it('shows billing as a tenant-admin settings section and marks it active', async () => {
-    const container = await renderSettingsNav('/admin/settings/billing', true);
+    const container = await renderSettingsNav('/admin/settings/billing', 'tenant_admin');
     const links = Array.from(container.querySelectorAll('a'));
 
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
       '/admin/settings',
+      '/admin/settings/schools',
       '/admin/settings/billing',
     ]);
     expect(

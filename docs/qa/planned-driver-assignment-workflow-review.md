@@ -6,6 +6,22 @@ read-only; no assignment was submitted or changed during the investigation.
 
 ## Cause and repair
 
+### Live repair applied September 18, 2026
+
+The Platform Administrator explicitly directed this repair to the sole live
+database, overriding the isolated-target requirement for this specific change.
+Applied migration `fix_planned_driver_assignment_context` through the Supabase
+migration tool after checking the live definition against the reviewed repair
+and saving its previous definition locally for rollback. Only the two helper
+schema references changed in the function body. Post-application queries
+confirmed the correct public helpers, unchanged execute grants and security
+mode, and successful function initialization followed by the expected rejection
+of a request without administrator context. No assignment or fixture was
+created during verification. An authenticated successful assignment save still
+requires confirmation in the app. The release-boundary notes below describe the
+original review gate; this explicit live repair is a scoped exception, not a
+general change to the deployment policy.
+
 `public.admin_set_driver_bus_assignment` initializes its tenant with
 `safebus_private.current_tenant_id()` and checks the role through
 `safebus_private.current_user_role()`. Neither private helper exists. The

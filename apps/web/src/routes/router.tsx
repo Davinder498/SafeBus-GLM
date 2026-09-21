@@ -142,6 +142,14 @@ export const appRoutes: RouteObject[] = [
     ),
   },
   {
+    path: '/admin/settings/schools',
+    element: (
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
+        <AdminSchoolsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/admin/settings',
     element: (
       <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
@@ -153,7 +161,7 @@ export const appRoutes: RouteObject[] = [
     path: '/admin/schools',
     element: (
       <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
-        <AdminSchoolsPage />
+        <Navigate to="/admin/settings/schools" replace />
       </ProtectedRoute>
     ),
   },

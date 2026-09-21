@@ -154,7 +154,7 @@ Admin-style roles that should route to `/admin`:
 Sign in as `tenant-admin@example.test`, then verify:
 
 - `/admin/settings` shows the current user, tenant, and profile context.
-- `/admin/schools` shows `Maple Creek School`.
+- `/admin/settings/schools` shows `Maple Creek School`.
 - `/admin/users` shows the profiles visible through RLS.
 
 If `/admin/users` shows fewer rows than expected, verify the signed-in admin role and profile tenant assignment.

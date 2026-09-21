@@ -602,6 +602,12 @@
       "filename": "0099_annual_per_bus_subscription_management.sql",
       "bytes": 29878,
       "sha256": "bd61f7aac2859a9edfb2c915fb9fd25d1200c27714e748e8501ac034c6406ca5"
+    },
+    {
+      "version": "0100",
+      "filename": "0100_tenant_school_directory.sql",
+      "bytes": 14056,
+      "sha256": "6c82fa4aef0fbad38e674d0f1cb72e882202f78ec71d33029f5b676841cbdc2d"
     }
   ]
 }

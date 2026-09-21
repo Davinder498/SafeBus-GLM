@@ -12,8 +12,10 @@ import {
   fetchTenantSubscription,
 } from '@/services/subscriptionService';
 import type { TenantSubscription } from '@/types/subscription';
+import { useAuth } from '@/contexts/useAuth';
 
 export function AdminSubscriptionPage() {
+  const { profile } = useAuth();
   const [subscription, setSubscription] = useState<TenantSubscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -75,7 +77,7 @@ export function AdminSubscriptionPage() {
           }
         />
 
-        <AdminSettingsNav showBilling />
+        <AdminSettingsNav role={profile?.role} />
 
         {error && (
           <Card className="border-danger-200 bg-danger-50 p-4">

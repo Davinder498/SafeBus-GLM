@@ -72,16 +72,16 @@ function clients(token) {
   if (!url || !anon || !service) throw new OnboardingConfigurationError();
   /** @type {import('@supabase/supabase-js').SupabaseClient<import('@safebus/types/database').Database>} */
   const user = createClient(url, anon, {
-      global: {
-        fetch: fetchWithTimeout,
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    });
+    global: {
+      fetch: fetchWithTimeout,
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  });
   /** @type {import('@supabase/supabase-js').SupabaseClient<import('@safebus/types/database').Database>} */
   const admin = createClient(url, service, {
-      auth: { autoRefreshToken: false, persistSession: false },
-      global: { fetch: fetchWithTimeout },
-    });
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { fetch: fetchWithTimeout },
+  });
   return { user, admin };
 }
 
@@ -258,8 +258,7 @@ async function sendInitialTenantAdminInvitation(ctx, email, fullName, redirectTo
 
 async function sendInvitedPasswordSetup(ctx, { userId, email, redirectTo }) {
   const normalizedEmail = clean(email).toLowerCase();
-  const { data: authData, error: authLookupError } =
-    await ctx.admin.auth.admin.getUserById(userId);
+  const { data: authData, error: authLookupError } = await ctx.admin.auth.admin.getUserById(userId);
   const authUser = authData?.user;
 
   if (
@@ -400,8 +399,6 @@ async function createTenant(event, body) {
   if (ctx.error) return ctx.error;
   const tenantName = clean(body.tenantName);
   const tenantType = clean(body.tenantType) || 'school';
-  const schoolName = clean(body.schoolName);
-  const city = clean(body.city);
   const adminName = clean(body.adminName);
   const email = clean(body.adminEmail).toLowerCase();
   if (!tenantName || !adminName || !email) {
@@ -411,8 +408,6 @@ async function createTenant(event, body) {
   }
   if (
     tenantName.length > 200 ||
-    schoolName.length > 200 ||
-    city.length > 100 ||
     adminName.length > 200 ||
     email.length > 320 ||
     !EMAIL_PATTERN.test(email)
@@ -435,8 +430,8 @@ async function createTenant(event, body) {
       p_auth_user_id: invitation.userId,
       p_tenant_name: tenantName,
       p_tenant_type: tenantType,
-      p_school_name: schoolName || null,
-      p_city: city || null,
+      p_school_name: null,
+      p_city: null,
       p_admin_name: adminName,
       p_admin_email: email,
     },
@@ -581,15 +576,27 @@ async function inviteMember(event, body) {
     if (invitation.createdAuthUser) {
       await ctx.admin.auth.admin.deleteUser(invitation.userId);
     }
-    const safeFinalizeMessage = typeof finalizeError?.message === 'string' && (
-      finalizeError.message.includes('A driver with this driving licence number already exists.') ||
-      finalizeError.message.includes('A driver with this email address already exists.') ||
-      finalizeError.message.includes('A driver with this phone number already exists.') ||
-      finalizeError.message.includes('That email is already linked to a different SafeBus tenant or role.') ||
-      finalizeError.message.includes('That email is already linked to another SafeBus profile.')
-    )
-      ? finalizeError.message.replace('That email is already linked to a different SafeBus tenant or role.', 'A driver with this email address already exists. Use a different email address or select the existing driver.').replace('That email is already linked to another SafeBus profile.', 'A driver with this email address already exists. Use a different email address or select the existing driver.')
-      : 'The email provider accepted the invitation, but BusSafe could not create the member record. No member was added; retry the invitation.';
+    const safeFinalizeMessage =
+      typeof finalizeError?.message === 'string' &&
+      (finalizeError.message.includes(
+        'A driver with this driving licence number already exists.',
+      ) ||
+        finalizeError.message.includes('A driver with this email address already exists.') ||
+        finalizeError.message.includes('A driver with this phone number already exists.') ||
+        finalizeError.message.includes(
+          'That email is already linked to a different SafeBus tenant or role.',
+        ) ||
+        finalizeError.message.includes('That email is already linked to another SafeBus profile.'))
+        ? finalizeError.message
+            .replace(
+              'That email is already linked to a different SafeBus tenant or role.',
+              'A driver with this email address already exists. Use a different email address or select the existing driver.',
+            )
+            .replace(
+              'That email is already linked to another SafeBus profile.',
+              'A driver with this email address already exists. Use a different email address or select the existing driver.',
+            )
+        : 'The email provider accepted the invitation, but BusSafe could not create the member record. No member was added; retry the invitation.';
     return json(400, { error: safeFinalizeMessage });
   }
 
@@ -666,7 +673,8 @@ async function inviteAdministrator(event, body) {
   if (invitation.error) return invitation.error;
 
   // Call the appropriate RPC based on role.
-  const rpcName = role === 'tenant_admin' ? 'tenant_invite_administrator' : 'tenant_add_sub_administrator';
+  const rpcName =
+    role === 'tenant_admin' ? 'tenant_invite_administrator' : 'tenant_add_sub_administrator';
   const rpcParams =
     role === 'tenant_admin'
       ? {
@@ -689,7 +697,10 @@ async function inviteAdministrator(event, body) {
       await ctx.admin.auth.admin.deleteUser(invitation.userId);
     }
     return json(400, {
-      error: typeof finalizeError?.message === 'string' ? finalizeError.message : 'The administrator invitation could not be finalized.',
+      error:
+        typeof finalizeError?.message === 'string'
+          ? finalizeError.message
+          : 'The administrator invitation could not be finalized.',
     });
   }
 
@@ -834,24 +845,28 @@ async function bulkInvitationDispatch(event, body) {
       await ctx.admin.rpc('reconcile_bulk_invitation_delivery', {
         p_queue_invitation_id: row.invitation_id,
         p_profile_id: null,
-        p_error: responseErrorMessage(invitation.error, 'Invitation provider rejected this recipient.'),
+        p_error: responseErrorMessage(
+          invitation.error,
+          'Invitation provider rejected this recipient.',
+        ),
       });
       continue;
     }
 
-    const driverDetails = role === 'driver'
-      ? {
-          license_number: clean(rowData.license_number),
-          license_class: clean(rowData.license_class),
-          license_issue_date: clean(rowData.license_issue_date),
-          license_expiry_date: clean(rowData.license_expiry_date),
-          address_line1: clean(rowData.address_line1),
-          address_line2: clean(rowData.address_line2) || null,
-          city: clean(rowData.city),
-          province: clean(rowData.province),
-          postal_code: clean(rowData.postal_code),
-        }
-      : null;
+    const driverDetails =
+      role === 'driver'
+        ? {
+            license_number: clean(rowData.license_number),
+            license_class: clean(rowData.license_class),
+            license_issue_date: clean(rowData.license_issue_date),
+            license_expiry_date: clean(rowData.license_expiry_date),
+            address_line1: clean(rowData.address_line1),
+            address_line2: clean(rowData.address_line2) || null,
+            city: clean(rowData.city),
+            province: clean(rowData.province),
+            postal_code: clean(rowData.postal_code),
+          }
+        : null;
     const { data: finalized, error: finalizeError } = await ctx.user.rpc(
       'admin_finalize_member_invitation',
       {
@@ -892,7 +907,13 @@ async function bulkInvitationDispatch(event, body) {
   const { data: summary } = await ctx.user.rpc('get_bulk_invitation_delivery_summary', {
     p_batch_id: batchId,
   });
-  return json(200, { batchId, claimed: claimed?.length ?? 0, sent, failed, summary: summary ?? {} });
+  return json(200, {
+    batchId,
+    claimed: claimed?.length ?? 0,
+    sent,
+    failed,
+    summary: summary ?? {},
+  });
 }
 
 async function action(event, body) {

@@ -24,8 +24,6 @@ export function PlatformTenantsPage() {
   const [form, setForm] = useState({
     tenantName: '',
     tenantType: 'school',
-    schoolName: '',
-    city: '',
     adminName: '',
     adminEmail: '',
   });
@@ -60,8 +58,6 @@ export function PlatformTenantsPage() {
       setForm({
         tenantName: '',
         tenantType: 'school',
-        schoolName: '',
-        city: '',
         adminName: '',
         adminEmail: '',
       });
@@ -127,18 +123,6 @@ export function PlatformTenantsPage() {
               <option value="bus_contractor">Bus contractor</option>
               <option value="demo">Demo</option>
             </select>
-            <input
-              className="rounded-lg border px-4 py-3"
-              placeholder="Initial school name (optional)"
-              value={form.schoolName}
-              onChange={(e) => setForm({ ...form, schoolName: e.target.value })}
-            />
-            <input
-              className="rounded-lg border px-4 py-3"
-              placeholder="City"
-              value={form.city}
-              onChange={(e) => setForm({ ...form, city: e.target.value })}
-            />
             <input
               className="rounded-lg border px-4 py-3"
               placeholder="Tenant admin full name"

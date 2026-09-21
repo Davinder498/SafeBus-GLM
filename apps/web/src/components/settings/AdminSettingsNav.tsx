@@ -1,9 +1,10 @@
-import { Building2, CreditCard } from 'lucide-react';
+import { Building2, CreditCard, School } from 'lucide-react';
 import { NavLink, type NavLinkRenderProps } from 'react-router';
+import type { ProfileRole } from '@/contexts/AuthContext';
 import { cn } from '@/utils/cn';
 
 interface AdminSettingsNavProps {
-  showBilling: boolean;
+  role: ProfileRole | null | undefined;
 }
 
 const settingsItems = [
@@ -13,7 +14,15 @@ const settingsItems = [
     to: '/admin/settings',
     end: true,
     icon: Building2,
-    billingOnly: false,
+    allowedRoles: ['tenant_admin', 'school_admin', 'transportation_admin'],
+  },
+  {
+    label: 'Schools',
+    description: 'Tenant school directory',
+    to: '/admin/settings/schools',
+    end: false,
+    icon: School,
+    allowedRoles: ['tenant_admin', 'school_admin', 'transportation_admin'],
   },
   {
     label: 'Subscription & billing',
@@ -21,12 +30,14 @@ const settingsItems = [
     to: '/admin/settings/billing',
     end: false,
     icon: CreditCard,
-    billingOnly: true,
+    allowedRoles: ['tenant_admin'],
   },
 ] as const;
 
-export function AdminSettingsNav({ showBilling }: AdminSettingsNavProps) {
-  const visibleItems = settingsItems.filter((item) => !item.billingOnly || showBilling);
+export function AdminSettingsNav({ role }: AdminSettingsNavProps) {
+  const visibleItems = settingsItems.filter(
+    (item) => role && (item.allowedRoles as readonly ProfileRole[]).includes(role),
+  );
 
   return (
     <nav aria-label="Settings sections" className="overflow-x-auto border-b border-slate-200">
