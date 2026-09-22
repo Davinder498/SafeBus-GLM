@@ -3997,6 +3997,10 @@ export interface Database {
         Args: {};
         Returns: unknown;
       };
+      get_support_directory: {
+        Args: {};
+        Returns: unknown;
+      };
       get_tenant_notification_delivery_summary: {
         Args: {
           p_recent_window_hours?: number | null;
@@ -4573,6 +4577,28 @@ export interface Database {
           p_delivery_status: string;
           p_invitation_id: string;
           p_status?: string | null;
+        };
+        Returns: unknown;
+      };
+      update_platform_support_contact: {
+        Args: {
+          p_display_name: string;
+          p_email: string;
+          p_instructions: string | null;
+          p_phone: string | null;
+          p_support_hours: string | null;
+          p_website_url: string | null;
+        };
+        Returns: unknown;
+      };
+      update_tenant_support_contact: {
+        Args: {
+          p_display_name: string;
+          p_email: string;
+          p_instructions: string | null;
+          p_phone: string | null;
+          p_support_hours: string | null;
+          p_website_url: string | null;
         };
         Returns: unknown;
       };

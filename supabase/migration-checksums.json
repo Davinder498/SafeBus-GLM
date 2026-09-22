@@ -644,6 +644,12 @@
       "filename": "0106_guardian_student_stops.sql",
       "bytes": 3133,
       "sha256": "2cae71eb487536611ee50894aa93732031d6844ac621f42c2a974a5392ffb94e"
+    },
+    {
+      "version": "0107",
+      "filename": "0107_support_directory.sql",
+      "bytes": 8034,
+      "sha256": "427505c6ac729547fb9fde8974db9d95e471d5157058f781f6320cbe7fd3ee9f"
     }
   ]
 }

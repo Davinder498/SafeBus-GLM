@@ -1,4 +1,4 @@
-import { Building2, CreditCard, School } from 'lucide-react';
+import { Building2, CircleHelp, CreditCard, School } from 'lucide-react';
 import { NavLink, type NavLinkRenderProps } from 'react-router';
 import type { ProfileRole } from '@/contexts/AuthContext';
 import { cn } from '@/utils/cn';
@@ -8,6 +8,14 @@ interface AdminSettingsNavProps {
 }
 
 const settingsItems = [
+  {
+    label: 'Support',
+    description: 'Platform and user help contacts',
+    to: '/admin/settings/support',
+    end: false,
+    icon: CircleHelp,
+    allowedRoles: ['tenant_admin', 'school_admin', 'transportation_admin'],
+  },
   {
     label: 'Organization',
     description: 'Account and organization context',
