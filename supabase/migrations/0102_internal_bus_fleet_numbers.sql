@@ -31,7 +31,7 @@ create index bus_admin_details_tenant_id_idx
 
 create trigger set_updated_at_bus_admin_details
   before update on public.bus_admin_details
-  for each row execute function safebus_private.set_updated_at();
+  for each row execute function public.set_updated_at();
 
 alter table public.bus_admin_details enable row level security;
 
