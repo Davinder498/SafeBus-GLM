@@ -632,6 +632,12 @@
       "filename": "0104_version_fleet_number_bus_update_rpc.sql",
       "bytes": 1292,
       "sha256": "db21e6b449e093ed88b3b61e6fe29e9bff2676f0dd983c04487a435defd51bca"
+    },
+    {
+      "version": "0105",
+      "filename": "0105_fix_bus_fleet_audit_helper.sql",
+      "bytes": 1124,
+      "sha256": "703bb08b8c47223c603929b4ed05ba0923e41ca2576e1203c3433afc94e27f72"
     }
   ]
 }
