@@ -22,6 +22,7 @@ export interface RouteSearchOption {
 export interface BusSearchOption {
   id: string;
   bus_number: string;
+  fleet_number: string | null;
   license_plate: string | null;
   capacity: number | null;
 }
@@ -46,14 +47,14 @@ export type GuardianChoice =
     };
 
 export type RouteChoice =
-  | { mode: 'existing'; id: string }
-  | { mode: 'new'; name: string; code: string; type: RouteType };
+  { mode: 'existing'; id: string } | { mode: 'new'; name: string; code: string; type: RouteType };
 
 export type BusChoice =
   | { mode: 'existing'; id: string }
   | {
       mode: 'new';
       number: string;
+      fleetNumber: string;
       licensePlate: string;
       capacity: string;
     };
@@ -104,10 +105,7 @@ function client() {
   return supabase;
 }
 
-type SearchRpcName =
-  | 'search_admin_guardians'
-  | 'search_admin_routes'
-  | 'search_admin_buses';
+type SearchRpcName = 'search_admin_guardians' | 'search_admin_routes' | 'search_admin_buses';
 
 async function search<T>(rpcName: SearchRpcName, query: string): Promise<T[]> {
   const normalized = query.trim();
@@ -170,6 +168,7 @@ function rpcPayload(input: CreateStudentOnboardingInput, guardianId: string | nu
       : {
           id: null,
           number: input.transportation.bus.number,
+          fleetNumber: input.transportation.bus.fleetNumber,
           licensePlate: input.transportation.bus.licensePlate,
           capacity: input.transportation.bus.capacity,
         };
@@ -193,26 +192,40 @@ function describeOnboardingError(message: string, guardianWasProvisioned: boolea
   const suffix = guardianWasProvisioned
     ? ' The guardian account was prepared; reopen this form and select that guardian by email to retry.'
     : '';
+  if (message.includes('Recent authentication is required')) {
+    return new Error(
+      `Linking a student to a guardian requires a recent sign-in. Sign out and sign back in, then reopen this form and retry. No student or transportation records were saved.${suffix}`,
+    );
+  }
   if (message.includes('routes_tenant_route_code_unique')) {
     return new Error(`That route code already exists in your organization.${suffix}`);
   }
   if (message.includes('buses_tenant_bus_number_unique')) {
     return new Error(`That bus number already exists in your organization.${suffix}`);
   }
-  if (message.includes('not found in your tenant') || message.includes('not found on the selected route')) {
-    return new Error(`One of the selected records is no longer available. Search and select it again.${suffix}`);
+  if (message.includes('bus_admin_details_tenant_fleet_number_unique')) {
+    return new Error(`That fleet number already exists in your organization.${suffix}`);
+  }
+  if (
+    message.includes('not found in your tenant') ||
+    message.includes('not found on the selected route')
+  ) {
+    return new Error(
+      `One of the selected records is no longer available. Search and select it again.${suffix}`,
+    );
   }
   if (message.includes('Only a tenant administrator')) {
     return new Error('Only a tenant administrator can complete this onboarding workflow.');
   }
-  return new Error(`We could not complete student onboarding. No partial student or transportation records were saved.${suffix}`);
+  return new Error(
+    `We could not complete student onboarding. No partial student or transportation records were saved.${suffix}`,
+  );
 }
 
 export async function createStudentOnboarding(
   input: CreateStudentOnboardingInput,
 ): Promise<StudentOnboardingResult> {
-  let guardianId: string | null =
-    input.guardian.mode === 'existing' ? input.guardian.id : null;
+  let guardianId: string | null = input.guardian.mode === 'existing' ? input.guardian.id : null;
   let guardianInvitationStatus: string | null = null;
   let guardianWasProvisioned = false;
 
@@ -225,7 +238,9 @@ export async function createStudentOnboarding(
       phone: input.guardian.phone.trim(),
     });
     if (!invitation.guardianId) {
-      throw new Error('The guardian invitation was sent, but the guardian record was not returned.');
+      throw new Error(
+        'The guardian invitation was sent, but the guardian record was not returned.',
+      );
     }
     guardianId = invitation.guardianId;
     guardianInvitationStatus = invitation.status;

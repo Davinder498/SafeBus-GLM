@@ -7,6 +7,7 @@ import type { Student } from '@/types/studentGuardian';
 import { StudentSearchPicker } from '@/components/admin/StudentSearchPicker';
 import type { CreateAssignmentInput } from '@/types/driverAssignments';
 import type {
+  AdminBus,
   Bus,
   BusStatus,
   CreateBusInput,
@@ -52,6 +53,10 @@ function parseNullableNumber(value: string): number | null {
   return Number(value);
 }
 
+export function normalizeFleetNumber(value: string): string {
+  return value.trim().replace(/\s+/g, ' ');
+}
+
 function getSchoolTenantId(schools: School[], schoolId: string | null): string | null {
   if (!schoolId) return null;
   return schools.find((school) => school.id === schoolId)?.tenant_id ?? null;
@@ -95,26 +100,33 @@ export function AdminWriteError({ message }: { message: string | null }) {
 export function BusForm({
   bus,
   schools,
-  defaultTenantId,
   onSubmit,
   onCancel,
   onDirtyChange,
 }: {
-  bus: Bus | null;
+  bus: AdminBus | null;
   schools: School[];
-  defaultTenantId: string | null;
   onSubmit: (input: CreateBusInput | UpdateBusInput) => Promise<void>;
   onCancel: () => void;
   onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [schoolId, setSchoolId] = useState(bus?.school_id ?? '');
   const [busNumber, setBusNumber] = useState(bus?.bus_number ?? '');
+  const [fleetNumber, setFleetNumber] = useState(bus?.fleet_number ?? '');
   const [licensePlate, setLicensePlate] = useState(bus?.license_plate ?? '');
   const [capacity, setCapacity] = useState(bus?.capacity?.toString() ?? '');
   const [status, setStatus] = useState<BusStatus>(bus?.status ?? 'active');
-  const currentSignature = JSON.stringify({ schoolId, busNumber, licensePlate, capacity, status });
+  const currentSignature = JSON.stringify({
+    schoolId,
+    busNumber,
+    fleetNumber,
+    licensePlate,
+    capacity,
+    status,
+  });
   const [savedSignature, setSavedSignature] = useState(currentSignature);
   const [formError, setFormError] = useState<string | null>(null);
+  const [fleetNumberError, setFleetNumberError] = useState<string | null>(null);
   const [licensePlateError, setLicensePlateError] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
 
@@ -125,19 +137,24 @@ export function BusForm({
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setFormError(null);
+    setFleetNumberError(null);
     setLicensePlateError(null);
 
-    const tenantId =
-      bus?.tenant_id ?? getSchoolTenantId(schools, schoolId || null) ?? defaultTenantId;
     const parsedCapacity = parseNullableNumber(capacity);
-
-    if (!tenantId) {
-      setFormError('Use an account with a tenant before saving this bus.');
-      return;
-    }
+    const normalizedFleetNumber = normalizeFleetNumber(fleetNumber);
 
     if (!busNumber.trim()) {
       setFormError('Bus number is required.');
+      return;
+    }
+
+    if (!normalizedFleetNumber) {
+      setFleetNumberError('Fleet number is required for transportation administration.');
+      return;
+    }
+
+    if (normalizedFleetNumber.length > 40) {
+      setFleetNumberError('Fleet number must be 40 characters or fewer.');
       return;
     }
 
@@ -149,9 +166,9 @@ export function BusForm({
     setSubmitState('saving');
     try {
       const input = {
-        tenant_id: tenantId,
         school_id: schoolId || null,
         bus_number: busNumber.trim(),
+        fleet_number: normalizedFleetNumber,
         license_plate: normalizeLicensePlate(licensePlate),
         capacity: parsedCapacity,
         status,
@@ -160,7 +177,7 @@ export function BusForm({
         bus
           ? {
               school_id: input.school_id,
-              bus_number: input.bus_number,
+              fleet_number: input.fleet_number,
               license_plate: input.license_plate,
               capacity: input.capacity,
               status: input.status,
@@ -169,6 +186,10 @@ export function BusForm({
       );
       setSavedSignature(currentSignature);
     } catch (error) {
+      if (error instanceof DuplicateIdentifierError && error.field === 'fleetNumber') {
+        setFleetNumberError(error.message);
+        return;
+      }
       if (error instanceof DuplicateIdentifierError && error.field === 'licensePlate') {
         setLicensePlateError(error.message);
         return;
@@ -196,6 +217,35 @@ export function BusForm({
             <span id="stable-bus-number-help" className="text-xs font-medium text-gray-500">
               Students keep this number. Update the physical plate when the vehicle changes.
             </span>
+          )}
+        </label>
+        <label className={labelClassName}>
+          Fleet number (internal)
+          <input
+            className={`${fieldClassName} ${fleetNumberError ? 'border-danger-300 focus-visible:ring-danger-500' : ''}`}
+            maxLength={40}
+            aria-invalid={fleetNumberError ? 'true' : undefined}
+            aria-describedby={
+              fleetNumberError ? 'fleet-number-help fleet-number-error' : 'fleet-number-help'
+            }
+            value={fleetNumber}
+            onChange={(event) => {
+              setFleetNumber(event.target.value);
+              setFleetNumberError(null);
+            }}
+          />
+          <span id="fleet-number-help" className="text-xs font-medium text-gray-500">
+            Used by transportation staff and not shown to families or drivers.
+          </span>
+          {fleetNumberError && (
+            <p id="fleet-number-error" className="mt-1 text-xs font-medium text-danger-600">
+              {fleetNumberError}
+            </p>
+          )}
+          {bus && !bus.fleet_number && !fleetNumberError && (
+            <p className="mt-1 text-xs font-semibold text-amber-700">
+              Not assigned. Add a fleet number before saving these details.
+            </p>
           )}
         </label>
         <label className={labelClassName}>

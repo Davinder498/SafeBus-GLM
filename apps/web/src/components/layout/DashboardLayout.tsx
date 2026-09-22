@@ -229,7 +229,6 @@ export const driverNativeNavItems: DashboardNavItem[] = [
 
 export const guardianNativeNavItems: DashboardNavItem[] = [
   { label: 'Home', to: '/parent', icon: <LayoutDashboard className="h-5 w-5" /> },
-  { label: 'Map', to: '/guardian/live-map', icon: <MapPinned className="h-5 w-5" /> },
   { label: 'Buses', to: '/guardian/routes', icon: <Bus className="h-5 w-5" /> },
   { label: 'Updates', to: '/guardian/events', icon: <Calendar className="h-5 w-5" /> },
   { label: 'Alerts', to: '/notifications', icon: <Bell className="h-5 w-5" /> },

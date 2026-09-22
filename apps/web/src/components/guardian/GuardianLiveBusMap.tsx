@@ -18,6 +18,7 @@ export interface GuardianLiveBusMapProps {
   locations: GuardianStudentLiveBusLocation[];
   tileConfig: MapTileConfig;
   regionLabel?: string;
+  fullScreen?: boolean;
 }
 
 interface MapMarkerEntry {
@@ -123,6 +124,7 @@ export function GuardianLiveBusMap({
   locations,
   tileConfig,
   regionLabel = 'Guardian live bus interactive map',
+  fullScreen = false,
 }: GuardianLiveBusMapProps) {
   const [tileFailed, setTileFailed] = useState(false);
   const markerEntries = useMemo(() => buildMarkerEntries(locations), [locations]);
@@ -163,24 +165,33 @@ export function GuardianLiveBusMap({
 
   return (
     <GuardianMapBoundary>
-      <Card className="overflow-hidden" data-testid="guardian-live-bus-map">
-        <div className="border-b border-gray-100 p-5">
-          <h2 className="text-lg font-bold text-navy-900">Live bus map</h2>
-          <p className="mt-1 text-sm text-gray-600">
-            Only the current bus location is shown. Route lines and other operational details are
-            not displayed.
-          </p>
-          {markerEntries.length === 0 && (
-            <p
-              className="mt-3 text-sm font-semibold text-gray-700"
-              data-testid="guardian-live-bus-map-empty"
-            >
-              No current bus location to show right now.
+      <Card
+        className={
+          fullScreen
+            ? 'flex h-full min-h-0 flex-col overflow-hidden rounded-none border-0 shadow-none'
+            : 'overflow-hidden'
+        }
+        data-testid="guardian-live-bus-map"
+      >
+        {!fullScreen && (
+          <div className="border-b border-gray-100 p-5">
+            <h2 className="text-lg font-bold text-navy-900">Live bus map</h2>
+            <p className="mt-1 text-sm text-gray-600">
+              Only the current bus location is shown. Route lines and other operational details are
+              not displayed.
             </p>
-          )}
-        </div>
+            {markerEntries.length === 0 && (
+              <p
+                className="mt-3 text-sm font-semibold text-gray-700"
+                data-testid="guardian-live-bus-map-empty"
+              >
+                No current bus location to show right now.
+              </p>
+            )}
+          </div>
+        )}
         <section
-          className="h-80"
+          className={fullScreen ? 'min-h-0 flex-1' : 'h-80'}
           aria-label={regionLabel}
           data-testid="guardian-live-bus-map-region"
         >

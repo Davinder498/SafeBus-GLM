@@ -1,6 +1,7 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 import type { Json } from '@safebus/types/database';
 import type {
+  AdminBus,
   Bus,
   CreateBusInput,
   CreateDriverInput,
@@ -23,7 +24,7 @@ import type {
   UpdateStudentRouteAssignmentInput,
 } from '@/types/transportation';
 
-export type DuplicateField = 'licensePlate' | 'licenseNumber' | 'email' | 'phone';
+export type DuplicateField = 'fleetNumber' | 'licensePlate' | 'licenseNumber' | 'email' | 'phone';
 
 export class DuplicateIdentifierError extends Error {
   field: DuplicateField;
@@ -43,8 +44,14 @@ function requireSupabase() {
   return supabase;
 }
 
-function describeBusError(error: { message?: string; code?: string }): Error {
+export function describeBusError(error: { message?: string; code?: string }): Error {
   const message = error?.message ?? '';
+  if (message.includes('bus_admin_details_tenant_fleet_number_unique')) {
+    return new DuplicateIdentifierError(
+      'fleetNumber',
+      'A bus with this fleet number already exists in your organization.',
+    );
+  }
   if (
     message.includes('buses_tenant_license_plate_unique_idx') ||
     (message.includes('duplicate key value violates unique constraint') &&
@@ -79,39 +86,40 @@ export async function getVisibleBuses(): Promise<Bus[]> {
   return (data ?? []) as Bus[];
 }
 
-export async function createBus(input: CreateBusInput): Promise<Bus> {
+export async function createBus(input: CreateBusInput): Promise<AdminBus> {
   const client = requireSupabase();
-  const { data, error } = await client
-    .from('buses')
-    .insert(input)
-    .select(
-      'id, tenant_id, school_id, bus_number, license_plate, capacity, status, created_at, updated_at',
-    )
-    .single();
+  const { data, error } = await client.rpc('admin_create_bus', {
+    p_school_id: input.school_id,
+    p_bus_number: input.bus_number,
+    p_fleet_number: input.fleet_number,
+    p_license_plate: input.license_plate,
+    p_capacity: input.capacity,
+    p_status: input.status,
+  });
 
   if (error) {
     if (import.meta.env.DEV) console.error('Failed to create bus', error);
     throw describeBusError(error);
   }
-  return data as Bus;
+  return data as unknown as AdminBus;
 }
 
-export async function updateBus(id: string, input: UpdateBusInput): Promise<Bus> {
+export async function updateBus(id: string, input: UpdateBusInput): Promise<AdminBus> {
   const client = requireSupabase();
-  const { data, error } = await client
-    .from('buses')
-    .update(input)
-    .eq('id', id)
-    .select(
-      'id, tenant_id, school_id, bus_number, license_plate, capacity, status, created_at, updated_at',
-    )
-    .single();
+  const { data, error } = await client.rpc('admin_update_bus_with_fleet_number', {
+    p_bus_id: id,
+    p_school_id: input.school_id,
+    p_fleet_number: input.fleet_number,
+    p_license_plate: input.license_plate,
+    p_capacity: input.capacity,
+    p_status: input.status,
+  });
 
   if (error) {
     if (import.meta.env.DEV) console.error('Failed to update bus', error);
     throw describeBusError(error);
   }
-  return data as Bus;
+  return data as unknown as AdminBus;
 }
 
 export async function deleteBus(id: string): Promise<void> {
