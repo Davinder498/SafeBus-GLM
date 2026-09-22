@@ -3436,6 +3436,17 @@ export interface Database {
         };
         Returns: unknown;
       };
+      admin_update_bus_with_fleet_number: {
+        Args: {
+          p_bus_id: string;
+          p_capacity: number | null;
+          p_fleet_number: string;
+          p_license_plate: string | null;
+          p_school_id: string | null;
+          p_status: string;
+        };
+        Returns: unknown;
+      };
       bind_driver_tracking_device: {
         Args: {
           p_device_credential: string;

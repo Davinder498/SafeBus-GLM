@@ -21,6 +21,7 @@
     "admin_set_student_guardian_status(uuid,text,text,text)",
     "admin_update_bus(uuid,uuid,text,text,integer,text)",
     "admin_update_bus_route_assignment(uuid,uuid,uuid,text,date,date)",
+    "admin_update_bus_with_fleet_number(uuid,uuid,text,text,integer,text)",
     "archive_user_notifications(uuid[])",
     "bind_driver_tracking_device(text,uuid,text)",
     "bulk_import_commit(uuid,boolean)",
