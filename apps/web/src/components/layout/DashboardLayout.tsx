@@ -64,6 +64,7 @@ interface DashboardLayoutProps {
 
 export const platformNavItems: DashboardNavItem[] = [
   { label: 'Tenants', to: '/admin/tenants', icon: <Building2 className="h-4 w-4" /> },
+  { label: 'Support', to: '/admin/platform-support', icon: <CircleHelp className="h-4 w-4" /> },
 ];
 
 export const platformNavGroups: DashboardNavGroup[] = [
