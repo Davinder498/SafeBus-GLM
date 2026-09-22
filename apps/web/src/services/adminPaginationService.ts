@@ -35,38 +35,41 @@ export async function fetchAdminPage<T>(
   entity: AdminListEntity,
   query: AdminListQuery,
 ): Promise<PaginatedResult<T>> {
-  const { data, error } =
+  const client = requireSupabase();
+  const rpcArguments = {
+    p_page: query.page,
+    p_page_size: query.pageSize,
+    p_search: query.search?.trim() ?? '',
+    p_status: query.status || null,
+    p_school_id: query.schoolId || null,
+  };
+  let { data, error } =
     entity === 'students'
-      ? await requireSupabase().rpc('get_admin_students_page', {
-          p_page: query.page,
-          p_page_size: query.pageSize,
-          p_search: query.search?.trim() ?? '',
-          p_status: query.status || null,
-          p_school_id: query.schoolId || null,
-        })
+      ? await client.rpc('get_admin_students_page', rpcArguments)
       : entity === 'student_bus_assignments'
-        ? await requireSupabase().rpc('get_admin_student_bus_assignments_page', {
+        ? await client.rpc('get_admin_student_bus_assignments_page', {
             p_page: query.page,
             p_page_size: query.pageSize,
             p_search: query.search?.trim() ?? '',
             p_status: query.status || null,
           })
         : entity === 'buses'
-          ? await requireSupabase().rpc('get_admin_buses_page', {
-              p_page: query.page,
-              p_page_size: query.pageSize,
-              p_search: query.search?.trim() ?? '',
-              p_status: query.status || null,
-              p_school_id: query.schoolId || null,
-            })
-          : await requireSupabase().rpc('get_admin_paginated_list', {
+          ? await client.rpc('get_admin_buses_page', rpcArguments)
+          : await client.rpc('get_admin_paginated_list', {
               p_entity: entity,
-              p_page: query.page,
-              p_page_size: query.pageSize,
-              p_search: query.search?.trim() ?? '',
-              p_status: query.status || null,
-              p_school_id: query.schoolId || null,
+              ...rpcArguments,
             });
+
+  // Keep the bus directory available while the fleet-number migration moves
+  // through the protected production adoption workflow. The generic RPC is the
+  // pre-migration, tenant-scoped implementation and does not bypass RLS.
+  if (entity === 'buses' && (error?.code === 'PGRST202' || error?.code === '42883')) {
+    ({ data, error } = await client.rpc('get_admin_paginated_list', {
+      p_entity: entity,
+      ...rpcArguments,
+    }));
+  }
+
   if (error) throw new Error('Unable to load this list.');
   const result = data as unknown as PaginatedResult<T>;
   return { ...result, rows: result?.rows ?? [], totalCount: result?.totalCount ?? 0 };
