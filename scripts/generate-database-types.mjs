@@ -78,6 +78,7 @@ const AUTHENTICATED_ONLY_FUNCTIONS = {
     required: new Set(['p_password']),
   },
   is_current_user_session_active: { properties: {}, required: new Set() },
+  get_guardian_student_stops: { properties: {}, required: new Set() },
   get_platform_tenant_billing_detail: {
     properties: { p_tenant_id: { type: 'string', format: 'uuid' } },
     required: new Set(['p_tenant_id']),

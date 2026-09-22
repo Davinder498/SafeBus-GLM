@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Bell, Bus, Calendar, History, LayoutDashboard, List, MapPinned } from 'lucide-react';
+import { Bell, Bus, Calendar, History, LayoutDashboard, List } from 'lucide-react';
 import type { ReactElement } from 'react';
 import {
   adminNavItems,
@@ -121,7 +121,6 @@ describe('guardian shell navigation model', () => {
   it('keeps notification choices reachable in the native app', () => {
     const expected = [
       { label: 'Home', to: '/parent', icon: LayoutDashboard },
-      { label: 'Map', to: '/guardian/live-map', icon: MapPinned },
       { label: 'Buses', to: '/guardian/routes', icon: Bus },
       { label: 'Updates', to: '/guardian/events', icon: Calendar },
       { label: 'Alerts', to: '/notifications', icon: Bell },

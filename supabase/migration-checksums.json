@@ -638,6 +638,12 @@
       "filename": "0105_fix_bus_fleet_audit_helper.sql",
       "bytes": 1124,
       "sha256": "703bb08b8c47223c603929b4ed05ba0923e41ca2576e1203c3433afc94e27f72"
+    },
+    {
+      "version": "0106",
+      "filename": "0106_guardian_student_stops.sql",
+      "bytes": 3133,
+      "sha256": "2cae71eb487536611ee50894aa93732031d6844ac621f42c2a974a5392ffb94e"
     }
   ]
 }
