@@ -55,11 +55,30 @@ const AUTHENTICATED_ONLY_FUNCTIONS = {
       'p_status',
     ]),
   },
+  admin_update_bus_with_fleet_number: {
+    properties: {
+      p_bus_id: { type: 'string', format: 'uuid' },
+      p_school_id: { type: 'string', format: 'uuid', description: 'nullable' },
+      p_fleet_number: { type: 'string', format: 'text' },
+      p_license_plate: { type: 'string', format: 'text', description: 'nullable' },
+      p_capacity: { type: 'integer', description: 'nullable' },
+      p_status: { type: 'string', format: 'text' },
+    },
+    required: new Set([
+      'p_bus_id',
+      'p_school_id',
+      'p_fleet_number',
+      'p_license_plate',
+      'p_capacity',
+      'p_status',
+    ]),
+  },
   enforce_new_password_policy: {
     properties: { p_password: { type: 'string', format: 'text' } },
     required: new Set(['p_password']),
   },
   is_current_user_session_active: { properties: {}, required: new Set() },
+  get_guardian_student_stops: { properties: {}, required: new Set() },
   get_platform_tenant_billing_detail: {
     properties: { p_tenant_id: { type: 'string', format: 'uuid' } },
     required: new Set(['p_tenant_id']),

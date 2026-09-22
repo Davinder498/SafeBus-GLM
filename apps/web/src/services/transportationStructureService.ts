@@ -106,7 +106,7 @@ export async function createBus(input: CreateBusInput): Promise<AdminBus> {
 
 export async function updateBus(id: string, input: UpdateBusInput): Promise<AdminBus> {
   const client = requireSupabase();
-  const { data, error } = await client.rpc('admin_update_bus', {
+  const { data, error } = await client.rpc('admin_update_bus_with_fleet_number', {
     p_bus_id: id,
     p_school_id: input.school_id,
     p_fleet_number: input.fleet_number,

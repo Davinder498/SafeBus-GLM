@@ -8,9 +8,53 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const migrationName = fs
   .readdirSync(path.join(root, 'supabase/migrations'))
   .find((name) => name.endsWith('_internal_bus_fleet_numbers.sql'));
+const schemaRefreshMigrationName = fs
+  .readdirSync(path.join(root, 'supabase/migrations'))
+  .find((name) => name.endsWith('_refresh_fleet_number_api_schema.sql'));
+const versionedUpdateMigrationName = fs
+  .readdirSync(path.join(root, 'supabase/migrations'))
+  .find((name) => name.endsWith('_version_fleet_number_bus_update_rpc.sql'));
+const auditRepairMigrationName = fs
+  .readdirSync(path.join(root, 'supabase/migrations'))
+  .find((name) => name.endsWith('_fix_bus_fleet_audit_helper.sql'));
 
 assert.ok(migrationName, 'internal fleet-number migration is missing');
+assert.ok(schemaRefreshMigrationName, 'fleet-number API schema refresh migration is missing');
+assert.ok(versionedUpdateMigrationName, 'versioned fleet-number update migration is missing');
+assert.ok(auditRepairMigrationName, 'fleet-number audit repair migration is missing');
 const migration = read(`supabase/migrations/${migrationName}`);
+const schemaRefreshMigration = read(`supabase/migrations/${schemaRefreshMigrationName}`);
+const versionedUpdateMigration = read(`supabase/migrations/${versionedUpdateMigrationName}`);
+const auditRepairMigration = read(`supabase/migrations/${auditRepairMigrationName}`);
+
+test('bus fleet writes resolve their private audit call to the existing audit writer', () => {
+  assert.match(migration, /perform safebus_private\.write_audit_event\(/i);
+  assert.match(auditRepairMigration, /create function safebus_private\.write_audit_event\(/i);
+  assert.match(auditRepairMigration, /security invoker/i);
+  assert.match(auditRepairMigration, /perform public\.write_audit_event\(/i);
+  assert.match(
+    auditRepairMigration,
+    /revoke all on function safebus_private\.write_audit_event\([\s\S]*from public, anon, authenticated, service_role/i,
+  );
+});
+
+test('fleet-number RPCs are exposed without a stale PostgREST schema cache', () => {
+  assert.match(schemaRefreshMigration, /pg_notify\('pgrst',\s*'reload schema'\)/i);
+});
+
+test('bus updates use a versioned fleet-number RPC endpoint', () => {
+  assert.match(
+    versionedUpdateMigration,
+    /create function public\.admin_update_bus_with_fleet_number/i,
+  );
+  assert.match(versionedUpdateMigration, /select public\.admin_update_bus\(/i);
+  assert.match(versionedUpdateMigration, /grant execute[\s\S]*to authenticated/i);
+  assert.match(versionedUpdateMigration, /pg_notify\('pgrst',\s*'reload schema'\)/i);
+  assert.match(
+    read('apps/web/src/services/transportationStructureService.ts'),
+    /rpc\('admin_update_bus_with_fleet_number'/i,
+  );
+});
 
 test('fleet numbers are separate from the driver-visible buses table', () => {
   assert.match(migration, /create table public\.bus_admin_details/i);
@@ -22,6 +66,11 @@ test('fleet numbers are separate from the driver-visible buses table', () => {
   assert.match(migration, /bus_admin_details_tenant_fleet_number_unique/i);
   assert.match(migration, /lower\(fleet_number\)/i);
   assert.match(migration, /length\(fleet_number\) between 1 and 40/i);
+  assert.match(
+    migration,
+    /create trigger set_updated_at_bus_admin_details[\s\S]*execute function public\.set_updated_at\(\)/i,
+  );
+  assert.doesNotMatch(migration, /safebus_private\.set_updated_at\(\)/i);
 });
 
 test('fleet metadata is read-only to scoped tenant administrators', () => {
