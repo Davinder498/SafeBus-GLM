@@ -35,6 +35,8 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 import { MfaPage } from '@/pages/MfaPage';
 import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage';
 import { AccountDeletionPage } from '@/pages/AccountDeletionPage';
+import { AdminSupportPage } from '@/pages/AdminSupportPage';
+import { PlatformSupportPage } from '@/pages/PlatformSupportPage';
 import { ProtectedRoute } from './ProtectedRoute';
 import { PublicOnlyRoute } from './PublicOnlyRoute';
 import { InvitationEntryRoute } from './InvitationEntryRoute';
@@ -101,6 +103,22 @@ export const appRoutes: RouteObject[] = [
   { path: '/admin/people', element: <Navigate to="/admin" replace /> },
   { path: '/admin/more', element: <Navigate to="/admin" replace /> },
   { path: '/admin/stops', element: <Navigate to="/admin/routes" replace /> },
+  {
+    path: '/admin/platform-support',
+    element: (
+      <ProtectedRoute allowedRoles={['platform_super_admin']}>
+        <PlatformSupportPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/settings/support',
+    element: (
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
+        <AdminSupportPage />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: '/admin/tenants/:tenantId',
     element: (

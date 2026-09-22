@@ -21,6 +21,7 @@ import {
   History,
   FileUp,
   ShieldCheck,
+  CircleHelp,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAppSurface, type AppSurface } from '@/contexts/AppSurfaceContext';
@@ -63,6 +64,7 @@ interface DashboardLayoutProps {
 
 export const platformNavItems: DashboardNavItem[] = [
   { label: 'Tenants', to: '/admin/tenants', icon: <Building2 className="h-4 w-4" /> },
+  { label: 'Support', to: '/admin/platform-support', icon: <CircleHelp className="h-4 w-4" /> },
 ];
 
 export const platformNavGroups: DashboardNavGroup[] = [
@@ -188,6 +190,7 @@ export const driverNavGroups: DashboardNavGroup[] = [
       },
       { label: 'Settings', to: '/driver/settings', icon: <Settings className="h-4 w-4" /> },
       { label: 'Profile', to: '/driver/profile', icon: <UserCircle className="h-4 w-4" /> },
+      { label: 'Support', to: '/support', icon: <CircleHelp className="h-4 w-4" /> },
     ],
   },
 ];
@@ -212,6 +215,7 @@ export const guardianNavGroups: DashboardNavGroup[] = [
         to: '/notifications',
         icon: <Bell className="h-4 w-4" />,
       },
+      { label: 'Support', to: '/support', icon: <CircleHelp className="h-4 w-4" /> },
     ],
   },
 ];
@@ -429,12 +433,20 @@ export function DashboardLayout({
                 </>
               )}
               {usesBottomTabs && portal !== 'admin' && (
-                <DropdownItem
-                  icon={<ShieldCheck className="h-4 w-4" />}
-                  onClick={() => navigate('/account')}
-                >
-                  Privacy &amp; account
-                </DropdownItem>
+                <>
+                  <DropdownItem
+                    icon={<CircleHelp className="h-4 w-4" />}
+                    onClick={() => navigate('/support')}
+                  >
+                    Support
+                  </DropdownItem>
+                  <DropdownItem
+                    icon={<ShieldCheck className="h-4 w-4" />}
+                    onClick={() => navigate('/account')}
+                  >
+                    Privacy &amp; account
+                  </DropdownItem>
+                </>
               )}
               <DropdownItem
                 destructive

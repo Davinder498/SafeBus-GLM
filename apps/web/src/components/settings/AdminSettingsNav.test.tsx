@@ -39,6 +39,7 @@ describe('AdminSettingsNav', () => {
     const container = await renderSettingsNav('/admin/settings', 'school_admin');
 
     expect(Array.from(container.querySelectorAll('a')).map((link) => link.textContent)).toEqual([
+      'SupportPlatform and user help contacts',
       'OrganizationAccount and organization context',
       'SchoolsTenant school directory',
     ]);
@@ -49,6 +50,7 @@ describe('AdminSettingsNav', () => {
     const links = Array.from(container.querySelectorAll('a'));
 
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/admin/settings/support',
       '/admin/settings',
       '/admin/settings/schools',
       '/admin/settings/billing',
