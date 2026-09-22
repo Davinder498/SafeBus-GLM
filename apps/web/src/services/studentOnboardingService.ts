@@ -192,6 +192,11 @@ function describeOnboardingError(message: string, guardianWasProvisioned: boolea
   const suffix = guardianWasProvisioned
     ? ' The guardian account was prepared; reopen this form and select that guardian by email to retry.'
     : '';
+  if (message.includes('Recent authentication is required')) {
+    return new Error(
+      `Linking a student to a guardian requires a recent sign-in. Sign out and sign back in, then reopen this form and retry. No student or transportation records were saved.${suffix}`,
+    );
+  }
   if (message.includes('routes_tenant_route_code_unique')) {
     return new Error(`That route code already exists in your organization.${suffix}`);
   }
