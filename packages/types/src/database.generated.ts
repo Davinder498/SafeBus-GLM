@@ -3963,6 +3963,10 @@ export interface Database {
         Args: {};
         Returns: unknown;
       };
+      get_guardian_student_stops: {
+        Args: {};
+        Returns: unknown;
+      };
       get_guardian_student_trip_event_visibility: {
         Args: {};
         Returns: unknown;

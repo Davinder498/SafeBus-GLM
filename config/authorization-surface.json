@@ -63,6 +63,7 @@
     "get_guardian_bus_visibility_v2()",
     "get_guardian_notification_preferences()",
     "get_guardian_notification_preferences_v2()",
+    "get_guardian_student_stops()",
     "get_notification_delivery_health_v2()",
     "get_notification_preferences()",
     "get_platform_first_admin_invitation_status()",

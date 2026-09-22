@@ -9,16 +9,20 @@ async function expectTouchTargets(controls: Locator) {
   await expect(controls.first()).toBeVisible();
   // Entrance translations briefly produce fractional bounding boxes. Wait for
   // settled layout without weakening the 48px minimum in either dimension.
-  await expect.poll(async () =>
-    controls.evaluateAll((elements) =>
-      elements.length === 0
-        ? 0
-        : Math.min(...elements.flatMap((element) => {
-            const { width, height } = element.getBoundingClientRect();
-            return [width, height];
-          })),
-    ),
-  ).toBeGreaterThanOrEqual(48);
+  await expect
+    .poll(async () =>
+      controls.evaluateAll((elements) =>
+        elements.length === 0
+          ? 0
+          : Math.min(
+              ...elements.flatMap((element) => {
+                const { width, height } = element.getBoundingClientRect();
+                return [width, height];
+              }),
+            ),
+      ),
+    )
+    .toBeGreaterThanOrEqual(48);
 }
 
 async function expectNoHorizontalOverflow(page: import('@playwright/test').Page) {
@@ -41,17 +45,36 @@ async function expectMaterialBrand(page: import('@playwright/test').Page) {
 }
 
 test('guardian shell uses the branded Material mobile treatment', async ({ page }, testInfo) => {
-  await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
+  await installGuardianVisibilityMock(page, {
+    rows: [guardianVisibilityRow()],
+    studentStops: [
+      {
+        student_id: '33333333-3333-3333-3333-333333333333',
+        bus_number: '42',
+        trip_name: 'Morning school run',
+        direction: 'forward',
+        pickup_stop_name: 'Cedar Avenue',
+        dropoff_stop_name: 'Riverside School',
+      },
+    ],
+  });
   await page.goto('/parent');
 
   await expect(page.getByRole('heading', { name: 'My Buses', level: 1 })).toBeVisible();
   await expectMaterialBrand(page);
-  await expect(page.getByText('Track the assigned bus during an active school run.')).toHaveCount(0);
+  await expect(page.getByText('Track the assigned bus during an active school run.')).toHaveCount(
+    0,
+  );
   await expect(page.getByRole('heading', { name: 'Bus number and license plate' })).toHaveCount(0);
   await expect(page.getByText('Active', { exact: true })).toBeVisible();
+  const studentCard = page.getByTestId('guardian-home-student-card');
+  await expect(studentCard).toContainText('Avery Johnson');
+  await expect(studentCard).toContainText('Bus 42');
+  await expect(studentCard).toContainText('Cedar Avenue');
+  await expect(studentCard).toContainText('Riverside School');
 
   const tabs = page.getByTestId('native-bottom-navigation').getByRole('link');
-  await expect(tabs).toHaveCount(5);
+  await expect(tabs).toHaveCount(4);
   await expect(tabs.filter({ hasText: 'Home' })).toHaveAttribute('aria-current', 'page');
 
   await expectTouchTargets(tabs);
@@ -60,9 +83,57 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expectTouchTargets(liveMapAction);
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('guardian-home.png') });
+  await liveMapAction.click();
+  await expect(page.getByTestId('guardian-fullscreen-map')).toBeVisible();
+  await expect(page.getByTestId('native-bottom-navigation')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Back to home' })).toBeVisible();
 });
 
-test('guardian buses group students and open a clean bus detail view', async ({ page }, testInfo) => {
+test('guardian home keeps each linked student with their own bus and stops', async ({ page }) => {
+  await installGuardianVisibilityMock(page, {
+    rows: [
+      guardianVisibilityRow(),
+      guardianVisibilityRow({
+        student_id: '44444444-4444-4444-4444-444444444444',
+        student_name: 'Morgan Johnson',
+        bus_number: '27',
+      }),
+    ],
+    studentStops: [
+      {
+        student_id: '33333333-3333-3333-3333-333333333333',
+        bus_number: '42',
+        trip_name: 'Morning run',
+        direction: 'forward',
+        pickup_stop_name: 'Cedar Avenue',
+        dropoff_stop_name: 'Riverside School',
+      },
+      {
+        student_id: '44444444-4444-4444-4444-444444444444',
+        bus_number: '27',
+        trip_name: 'Evening run',
+        direction: 'reverse',
+        pickup_stop_name: 'Hill School',
+        dropoff_stop_name: 'Oak Street',
+      },
+    ],
+  });
+  await page.goto('/parent');
+
+  const cards = page.getByTestId('guardian-home-student-card');
+  await expect(cards).toHaveCount(2);
+  await expect(cards.nth(0)).toContainText('Avery Johnson');
+  await expect(cards.nth(0)).toContainText('Cedar Avenue');
+  await expect(cards.nth(0)).not.toContainText('Oak Street');
+  await expect(cards.nth(1)).toContainText('Morgan Johnson');
+  await expect(cards.nth(1)).toContainText('Bus 27');
+  await expect(cards.nth(1)).toContainText('Oak Street');
+  await expect(cards.nth(1)).not.toContainText('Cedar Avenue');
+});
+
+test('guardian buses group students and open a clean bus detail view', async ({
+  page,
+}, testInfo) => {
   await installGuardianVisibilityMock(page, {
     rows: [
       guardianVisibilityRow({ student_name: 'Avery Johnson' }),
@@ -106,7 +177,9 @@ test('guardian buses group students and open a clean bus detail view', async ({ 
   await expect(serviceLine.getByText(/Start/)).toBeVisible();
   await expect(serviceLine.getByText(/End/)).toBeVisible();
   await expect(page.getByTestId('guardian-service-line-bus')).toBeVisible();
-  await expect(page.getByText(/Bus is currently between North Terminal and Cedar Avenue/)).toBeVisible();
+  await expect(
+    page.getByText(/Bus is currently between North Terminal and Cedar Avenue/),
+  ).toBeVisible();
   await page.locator('[data-ui="guardian-service-line-card"]').screenshot({
     path: testInfo.outputPath('guardian-service-line.png'),
   });
@@ -122,13 +195,12 @@ test('guardian buses group students and open a clean bus detail view', async ({ 
     .locator('[data-ui="guardian-bus-detail-hero"]')
     .getByText('Inactive', { exact: true });
   await expect(inverseStatus).toHaveCSS('color', 'rgb(255, 255, 255)');
-  await expect(inverseStatus.locator('> span')).toHaveCSS(
-    'background-color',
-    'rgb(241, 245, 249)',
-  );
+  await expect(inverseStatus.locator('> span')).toHaveCSS('background-color', 'rgb(241, 245, 249)');
 });
 
-test('guardian bus detail remains useful while the route contract is unavailable', async ({ page }) => {
+test('guardian bus detail remains useful while the route contract is unavailable', async ({
+  page,
+}) => {
   await installGuardianVisibilityMock(page, {
     rows: [guardianVisibilityRow()],
     failServiceLines: true,
@@ -149,7 +221,9 @@ test('mobile notification settings stay focused and do not request device histor
   });
   await page.goto('/notifications/settings');
 
-  await expect(page.getByRole('heading', { name: 'Notification settings', level: 1 })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Notification settings', level: 1 }),
+  ).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Push notifications' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Alert types' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Lock-screen privacy' })).toBeVisible();
@@ -175,7 +249,9 @@ test('driver active-trip shell keeps daily actions touch friendly', async ({ pag
   await expect(tabs).toHaveCount(4);
   await expect(tabs.filter({ hasText: 'Scan' })).toHaveAttribute('aria-current', 'page');
 
-  const actionableButtons = page.locator('[data-testid="driver-active-trip-only"] [data-ui="button"]');
+  const actionableButtons = page.locator(
+    '[data-testid="driver-active-trip-only"] [data-ui="button"]',
+  );
   await expectTouchTargets(actionableButtons);
 
   await expectNoHorizontalOverflow(page);
@@ -218,7 +294,9 @@ test('login uses the mobile brand and accessible control sizing', async ({ page 
   await expectMaterialBrand(page);
   await expect(page.getByRole('button', { name: 'Back to site' })).toBeHidden();
 
-  const controls = page.locator('[data-ui="login-card"] input, [data-ui="login-card"] [data-ui="button"]');
+  const controls = page.locator(
+    '[data-ui="login-card"] input, [data-ui="login-card"] [data-ui="button"]',
+  );
   await expectTouchTargets(controls);
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('login.png') });

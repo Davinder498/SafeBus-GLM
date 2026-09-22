@@ -1,4 +1,5 @@
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
+import { ArrowLeft } from 'lucide-react';
 import { useAppSurface } from '@/contexts/AppSurfaceContext';
 import { GuardianLiveBusMap } from '@/components/guardian/GuardianLiveBusMap';
 import { Button } from '@/components/ui/Button';
@@ -10,7 +11,7 @@ import { useGuardianLiveBusLocations } from '@/hooks/useGuardianLiveBusLocations
 import { useMapTileConfig } from '@/hooks/useMapTileConfig';
 import type { TrackingConnectionState } from '@/hooks/useTrackingInvalidations';
 import type { GuardianStudentLiveBusLocation } from '@/types/guardianLiveBusLocation';
-import { useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { groupGuardianBuses } from '@/utils/guardianBusGroups';
 
 function formatTimestamp(iso: string): string {
@@ -77,6 +78,86 @@ export function GuardianLiveMapPage() {
         : [];
   const visibleLocations = visibleGroups.map((group) => group.visibility);
 
+  if (appSurface === 'native-mobile') {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex flex-col bg-slate-50"
+        data-testid="guardian-fullscreen-map"
+      >
+        <header
+          className="z-10 flex min-h-16 items-center gap-3 border-b border-slate-200 bg-white px-4"
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        >
+          <Link
+            to="/parent"
+            className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-xl text-navy-700"
+            aria-label="Back to home"
+          >
+            <ArrowLeft className="h-6 w-6" aria-hidden />
+          </Link>
+          <h1 className="min-w-0 flex-1 truncate text-lg font-bold text-navy-900">
+            {selectedBusNumber ? `Bus ${selectedBusNumber} live map` : 'Live bus map'}
+          </h1>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={refresh}
+            disabled={refreshing}
+            data-testid="guardian-live-map-refresh-button"
+          >
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </header>
+        <main
+          className="relative min-h-0 flex-1"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
+          {state.kind === 'loading' && (
+            <DataState title="Loading live bus map" message="Checking the current bus location." />
+          )}
+          {state.kind === 'error' && (
+            <div data-testid="guardian-live-map-error">
+              <DataState
+                title="We could not load the live bus map right now."
+                message="Please try again."
+              />
+            </div>
+          )}
+          {state.kind === 'ready' && visibleLocations.length === 0 && (
+            <div data-testid="guardian-live-map-empty">
+              <DataState
+                title={
+                  selectedBusNumber
+                    ? 'This bus is not available.'
+                    : 'No linked students are available yet.'
+                }
+                message="Return to Home to see current assignments."
+              />
+            </div>
+          )}
+          {state.kind === 'ready' && visibleLocations.length > 0 && (
+            <>
+              <GuardianLiveBusMap
+                locations={visibleLocations}
+                tileConfig={mapTileConfig}
+                fullScreen
+              />
+              {!visibleLocations.some((location) => location.locationState === 'fresh') && (
+                <p
+                  className="absolute bottom-4 left-4 right-4 rounded-xl bg-white/95 p-3 text-center text-sm font-semibold text-navy-900 shadow-lg"
+                  role="status"
+                >
+                  No current bus location to show right now.
+                </p>
+              )}
+            </>
+          )}
+        </main>
+      </div>
+    );
+  }
+
   return (
     <DashboardLayout
       title="Parent Dashboard"
@@ -133,7 +214,11 @@ export function GuardianLiveMapPage() {
         {state.kind === 'ready' && visibleLocations.length === 0 && (
           <div data-testid="guardian-live-map-empty">
             <DataState
-              title={selectedBusNumber ? 'This bus is not available.' : 'No linked students are available yet.'}
+              title={
+                selectedBusNumber
+                  ? 'This bus is not available.'
+                  : 'No linked students are available yet.'
+              }
               message={
                 selectedBusNumber
                   ? 'Its assignment may have changed. Return to My Buses to see current assignments.'
@@ -162,15 +247,8 @@ export function GuardianLiveMapPage() {
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <h3 className="text-lg font-bold text-navy-900">
-                          {appSurface === 'native-mobile' && bus.busNumber
-                            ? `Bus ${bus.busNumber}`
-                            : bus.studentName}
+                          {bus.studentName}
                         </h3>
-                        {appSurface === 'native-mobile' && (
-                          <p className="mt-1 text-sm font-medium text-gray-600">
-                            {group.students.map((student) => student.studentName).join(', ')}
-                          </p>
-                        )}
                         {bus.busNumber ? (
                           <p className="mt-1 text-sm text-gray-600">
                             Bus <span className="font-semibold text-navy-900">{bus.busNumber}</span>{' '}
