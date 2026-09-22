@@ -11,14 +11,33 @@ const migrationName = fs
 const schemaRefreshMigrationName = fs
   .readdirSync(path.join(root, 'supabase/migrations'))
   .find((name) => name.endsWith('_refresh_fleet_number_api_schema.sql'));
+const versionedUpdateMigrationName = fs
+  .readdirSync(path.join(root, 'supabase/migrations'))
+  .find((name) => name.endsWith('_version_fleet_number_bus_update_rpc.sql'));
 
 assert.ok(migrationName, 'internal fleet-number migration is missing');
 assert.ok(schemaRefreshMigrationName, 'fleet-number API schema refresh migration is missing');
+assert.ok(versionedUpdateMigrationName, 'versioned fleet-number update migration is missing');
 const migration = read(`supabase/migrations/${migrationName}`);
 const schemaRefreshMigration = read(`supabase/migrations/${schemaRefreshMigrationName}`);
+const versionedUpdateMigration = read(`supabase/migrations/${versionedUpdateMigrationName}`);
 
 test('fleet-number RPCs are exposed without a stale PostgREST schema cache', () => {
   assert.match(schemaRefreshMigration, /pg_notify\('pgrst',\s*'reload schema'\)/i);
+});
+
+test('bus updates use a versioned fleet-number RPC endpoint', () => {
+  assert.match(
+    versionedUpdateMigration,
+    /create function public\.admin_update_bus_with_fleet_number/i,
+  );
+  assert.match(versionedUpdateMigration, /select public\.admin_update_bus\(/i);
+  assert.match(versionedUpdateMigration, /grant execute[\s\S]*to authenticated/i);
+  assert.match(versionedUpdateMigration, /pg_notify\('pgrst',\s*'reload schema'\)/i);
+  assert.match(
+    read('apps/web/src/services/transportationStructureService.ts'),
+    /rpc\('admin_update_bus_with_fleet_number'/i,
+  );
 });
 
 test('fleet numbers are separate from the driver-visible buses table', () => {

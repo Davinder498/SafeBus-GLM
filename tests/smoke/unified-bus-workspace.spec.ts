@@ -725,7 +725,7 @@ async function mockBusWorkspace(
         body: JSON.stringify(bus),
       });
     }
-    if (path.includes('/rpc/admin_update_bus')) {
+    if (path.includes('/rpc/admin_update_bus_with_fleet_number')) {
       const body = route.request().postDataJSON() as {
         p_fleet_number?: string;
       };
@@ -995,7 +995,7 @@ test.describe('unified bus workspace', () => {
 
     await page.getByLabel('Fleet number (internal)').fill('  Fleet   102  ');
     const updateRequest = page.waitForRequest((request) =>
-      request.url().includes('/rpc/admin_update_bus'),
+      request.url().includes('/rpc/admin_update_bus_with_fleet_number'),
     );
     await page.getByRole('button', { name: 'Save bus' }).click();
     expect((await updateRequest).postDataJSON()).toMatchObject({
