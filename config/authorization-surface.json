@@ -1,5 +1,6 @@
 {
   "authenticated": [
+    "admin_create_bus(uuid,text,text,text,integer,text)",
     "admin_create_route_shape_version(uuid,jsonb,text,text)",
     "admin_create_student_onboarding(jsonb)",
     "admin_deactivate_student_guardian(uuid)",
@@ -18,7 +19,9 @@
     "admin_set_student_bus_service(uuid,uuid,uuid,text,uuid,uuid,uuid,uuid,date,date,uuid[])",
     "admin_set_student_bus_service_status(uuid[],text,boolean)",
     "admin_set_student_guardian_status(uuid,text,text,text)",
+    "admin_update_bus(uuid,uuid,text,text,integer,text)",
     "admin_update_bus_route_assignment(uuid,uuid,uuid,text,date,date)",
+    "admin_update_bus_with_fleet_number(uuid,uuid,text,text,integer,text)",
     "archive_user_notifications(uuid[])",
     "bind_driver_tracking_device(text,uuid,text)",
     "bulk_import_commit(uuid,boolean)",
@@ -37,6 +40,7 @@
     "get_admin_bus_qr_credential_status(uuid)",
     "get_admin_bus_services()",
     "get_admin_bus_workspace(uuid)",
+    "get_admin_buses_page(integer,integer,text,text,uuid)",
     "get_admin_dashboard_overview()",
     "get_admin_guardian_links(uuid)",
     "get_admin_live_fleet_monitoring()",
@@ -59,6 +63,7 @@
     "get_guardian_bus_visibility_v2()",
     "get_guardian_notification_preferences()",
     "get_guardian_notification_preferences_v2()",
+    "get_guardian_student_stops()",
     "get_notification_delivery_health_v2()",
     "get_notification_preferences()",
     "get_platform_first_admin_invitation_status()",

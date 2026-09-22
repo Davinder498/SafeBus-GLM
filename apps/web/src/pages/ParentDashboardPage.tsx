@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BusFront, ChevronRight, Users } from 'lucide-react';
+import { BusFront, ChevronRight, MapPin, Users } from 'lucide-react';
 import { Link } from 'react-router';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
 import { useAppSurface } from '@/contexts/AppSurfaceContext';
@@ -8,11 +8,21 @@ import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { fetchGuardianBusVisibility } from '@/services/guardianLiveBusLocationService';
+import {
+  fetchGuardianStudentStops,
+  type GuardianStudentStopAssignment,
+} from '@/services/guardianStudentStopsService';
 import type { GuardianBusVisibility } from '@/types/guardianLiveBusLocation';
 import { groupGuardianBuses, guardianBusDetailsPath } from '@/utils/guardianBusGroups';
 
 type LoadState =
-  { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; buses: GuardianBusVisibility[] };
+  | { kind: 'loading' }
+  | { kind: 'error' }
+  | {
+      kind: 'ready';
+      buses: GuardianBusVisibility[];
+      stops: GuardianStudentStopAssignment[] | null;
+    };
 
 const actionLinkClass =
   'inline-flex rounded-lg bg-navy-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-navy-800';
@@ -23,9 +33,14 @@ export function ParentDashboardPage() {
 
   useEffect(() => {
     let active = true;
-    fetchGuardianBusVisibility()
-      .then((buses) => {
-        if (active) setState({ kind: 'ready', buses });
+    Promise.all([
+      fetchGuardianBusVisibility(),
+      appSurface === 'native-mobile'
+        ? fetchGuardianStudentStops().catch(() => null)
+        : Promise.resolve(null),
+    ])
+      .then(([buses, stops]) => {
+        if (active) setState({ kind: 'ready', buses, stops });
       })
       .catch(() => {
         if (active) setState({ kind: 'error' });
@@ -33,7 +48,7 @@ export function ParentDashboardPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [appSurface]);
 
   const busGroups = state.kind === 'ready' ? groupGuardianBuses(state.buses) : [];
 
@@ -93,20 +108,20 @@ export function ParentDashboardPage() {
                       Assigned bus
                     </p>
                     {group.busNumber ? (
-                    <>
+                      <>
                         <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-navy-900">
                           Bus {group.busNumber}
                         </h2>
-                      <p className="mt-2 text-gray-600">
-                        License plate:{' '}
-                        <span className="font-semibold text-navy-900">
+                        <p className="mt-2 text-gray-600">
+                          License plate:{' '}
+                          <span className="font-semibold text-navy-900">
                             {group.licensePlate ?? 'Not available'}
-                        </span>
-                      </p>
-                    </>
-                  ) : (
-                    <h2 className="mt-1 text-xl font-bold text-navy-900">No bus assigned yet</h2>
-                  )}
+                          </span>
+                        </p>
+                      </>
+                    ) : (
+                      <h2 className="mt-1 text-xl font-bold text-navy-900">No bus assigned yet</h2>
+                    )}
                   </div>
                 </div>
                 <StatusPill tone={group.hasActiveTrip ? 'success' : 'neutral'} dot>
@@ -145,6 +160,76 @@ export function ParentDashboardPage() {
               </div>
             </Card>
           ))}
+
+        {state.kind === 'ready' && appSurface === 'native-mobile' && state.buses.length > 0 && (
+          <section
+            aria-labelledby="my-kids-heading"
+            data-testid="guardian-home-my-kids"
+            className="space-y-3"
+          >
+            <h2 id="my-kids-heading" className="text-xl font-bold text-navy-900">
+              My Kids
+            </h2>
+            {state.buses.map((student) => {
+              const assignments =
+                state.stops?.filter(
+                  (stop) =>
+                    stop.studentId === student.studentId && stop.busNumber === student.busNumber,
+                ) ?? [];
+              return (
+                <Card
+                  key={student.studentId}
+                  className="p-5"
+                  data-testid="guardian-home-student-card"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-navy-50 text-navy-700">
+                      <Users className="h-5 w-5" aria-hidden />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-bold text-navy-900">{student.studentName}</h3>
+                      {student.studentGrade && (
+                        <p className="text-sm text-gray-600">{student.studentGrade}</p>
+                      )}
+                      <p className="mt-1 font-semibold text-navy-700">
+                        {student.busNumber ? `Bus ${student.busNumber}` : 'No bus assigned yet'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 border-t border-gray-200 pt-4">
+                    <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+                      <MapPin className="h-4 w-4" aria-hidden /> Stop information
+                    </p>
+                    {state.stops === null ? (
+                      <p className="mt-2 text-sm text-gray-600">
+                        Stop information is unavailable right now.
+                      </p>
+                    ) : assignments.length === 0 ? (
+                      <p className="mt-2 text-sm text-gray-600">No stops assigned yet.</p>
+                    ) : (
+                      <ul className="mt-3 space-y-3">
+                        {assignments.map((assignment, index) => (
+                          <li
+                            key={`${assignment.direction}:${assignment.tripName}:${index}`}
+                            className="rounded-xl bg-slate-50 p-3 text-sm"
+                          >
+                            <p className="font-bold text-navy-900">{assignment.tripName}</p>
+                            <p className="mt-1 text-gray-600">
+                              Pickup: {assignment.pickupStopName ?? 'Not assigned'}
+                            </p>
+                            <p className="text-gray-600">
+                              Drop-off: {assignment.dropoffStopName ?? 'Not assigned'}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </section>
+        )}
 
         {state.kind === 'ready' &&
           appSurface === 'web' &&
@@ -188,17 +273,19 @@ export function ParentDashboardPage() {
             </Card>
           ))}
 
-        {appSurface === 'web' && <Card className="p-5">
-          <h2 className="text-lg font-bold text-navy-900">Bus number and license plate</h2>
-          <p className="mt-2 text-sm leading-6 text-gray-600">
-            The bus number is the student's stable service number. The license plate identifies the
-            physical vehicle and can change when transportation assigns another vehicle to that
-            service.
-          </p>
-          <Link to="/guardian/routes" className={`${actionLinkClass} mt-4`}>
-            View all assigned buses
-          </Link>
-        </Card>}
+        {appSurface === 'web' && (
+          <Card className="p-5">
+            <h2 className="text-lg font-bold text-navy-900">Bus number and license plate</h2>
+            <p className="mt-2 text-sm leading-6 text-gray-600">
+              The bus number is the student's stable service number. The license plate identifies
+              the physical vehicle and can change when transportation assigns another vehicle to
+              that service.
+            </p>
+            <Link to="/guardian/routes" className={`${actionLinkClass} mt-4`}>
+              View all assigned buses
+            </Link>
+          </Card>
+        )}
       </div>
     </DashboardLayout>
   );

@@ -44,6 +44,15 @@ export type GuardianBusServiceLineRow = {
   }>;
 };
 
+export type GuardianStudentStopRow = {
+  student_id: string;
+  bus_number: string;
+  trip_name: string;
+  direction: string;
+  pickup_stop_name: string | null;
+  dropoff_stop_name: string | null;
+};
+
 export function guardianBusServiceLine(
   overrides: Partial<GuardianBusServiceLineRow> = {},
 ): GuardianBusServiceLineRow {
@@ -118,6 +127,7 @@ export async function installGuardianVisibilityMock(
   options: {
     rows?: GuardianVisibilityRow[];
     serviceLines?: GuardianBusServiceLineRow[];
+    studentStops?: GuardianStudentStopRow[];
     fail?: boolean;
     failServiceLines?: boolean;
     role?: Role;
@@ -138,6 +148,7 @@ export async function installGuardianVisibilityMock(
   };
   let rows = options.rows ?? [];
   let serviceLines = options.serviceLines ?? [guardianBusServiceLine()];
+  const studentStops = options.studentStops ?? [];
   let fail = options.fail ?? false;
   let calls = 0;
   let deviceCalls = 0;
@@ -152,12 +163,20 @@ export async function installGuardianVisibilityMock(
       const body = path.includes('/user')
         ? { id: profile.id, email: profile.email, role: 'authenticated', aud: 'authenticated' }
         : {};
-      return requestRoute.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+      return requestRoute.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(body),
+      });
     }
     if (!path.startsWith('/rest/v1/')) return requestRoute.fallback();
     if (method === 'GET' && path.includes('/profiles')) {
       const single = (requestRoute.request().headers().accept ?? '').includes('object+json');
-      return requestRoute.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(single ? profile : [profile]) });
+      return requestRoute.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(single ? profile : [profile]),
+      });
     }
     if (method === 'POST' && path.includes('/rpc/get_notification_preferences')) {
       return requestRoute.fulfill({
@@ -216,7 +235,16 @@ export async function installGuardianVisibilityMock(
       return requestRoute.fulfill({
         status: fail ? 500 : 200,
         contentType: 'application/json',
-        body: JSON.stringify(fail ? { message: options.rawError ?? 'private backend error' } : rows),
+        body: JSON.stringify(
+          fail ? { message: options.rawError ?? 'private backend error' } : rows,
+        ),
+      });
+    }
+    if (method === 'POST' && path.includes('/rpc/get_guardian_student_stops')) {
+      return requestRoute.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(studentStops),
       });
     }
     if (method === 'POST' && path.includes('/rpc/get_guardian_bus_service_lines')) {
@@ -230,9 +258,7 @@ export async function installGuardianVisibilityMock(
         body: JSON.stringify(
           options.failServiceLines
             ? { message: options.rawError ?? 'private backend error' }
-            : serviceLines.filter(
-                (line) => line.busNumber.toLocaleLowerCase() === requestedBus,
-              ),
+            : serviceLines.filter((line) => line.busNumber.toLocaleLowerCase() === requestedBus),
         ),
       });
     }
@@ -241,21 +267,47 @@ export async function installGuardianVisibilityMock(
 
   await page.addInitScript((sessionProfile) => {
     const session = {
-      access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
-      refresh_token: 'test', token_type: 'bearer', expires_in: 3600,
+      access_token: [
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+        'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ',
+        'smoke-test-signature',
+      ].join('.'),
+      refresh_token: 'test',
+      token_type: 'bearer',
+      expires_in: 3600,
       expires_at: Math.floor(Date.now() / 1000) + 3600,
-      user: { id: sessionProfile.id, email: sessionProfile.email, role: 'authenticated', aud: 'authenticated' },
+      user: {
+        id: sessionProfile.id,
+        email: sessionProfile.email,
+        role: 'authenticated',
+        aud: 'authenticated',
+      },
     };
-    for (const key of ['supabase.auth.token', 'sb-placeholder-auth-token', 'sb-bppmqykkbhrmotcybxrh-auth-token', 'sb-localhost-auth-token']) {
+    for (const key of [
+      'supabase.auth.token',
+      'sb-placeholder-auth-token',
+      'sb-bppmqykkbhrmotcybxrh-auth-token',
+      'sb-localhost-auth-token',
+    ]) {
       window.localStorage.setItem(key, JSON.stringify(session));
     }
   }, profile);
 
   return {
-    setRows(nextRows: GuardianVisibilityRow[]) { rows = nextRows; },
-    setServiceLines(nextLines: GuardianBusServiceLineRow[]) { serviceLines = nextLines; },
-    setFail(nextFail: boolean) { fail = nextFail; },
-    getCallCount() { return calls; },
-    getDeviceCallCount() { return deviceCalls; },
+    setRows(nextRows: GuardianVisibilityRow[]) {
+      rows = nextRows;
+    },
+    setServiceLines(nextLines: GuardianBusServiceLineRow[]) {
+      serviceLines = nextLines;
+    },
+    setFail(nextFail: boolean) {
+      fail = nextFail;
+    },
+    getCallCount() {
+      return calls;
+    },
+    getDeviceCallCount() {
+      return deviceCalls;
+    },
   };
 }

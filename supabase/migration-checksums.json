@@ -614,6 +614,36 @@
       "filename": "0101_defer_route_stop_order_uniqueness.sql",
       "bytes": 839,
       "sha256": "1479a3bab00ef806cc2eff74b51fef73b44ba66df8e56dba493a1bd7dc3c3ce4"
+    },
+    {
+      "version": "0102",
+      "filename": "0102_internal_bus_fleet_numbers.sql",
+      "bytes": 25871,
+      "sha256": "38119a6161115dc58594078a7e5193cbc7d6675812de2aca61a462295c90e8ed"
+    },
+    {
+      "version": "0103",
+      "filename": "0103_refresh_fleet_number_api_schema.sql",
+      "bytes": 426,
+      "sha256": "a73d56ce7c562d67efa20c4e6aa8b45c6aeef62c6b06dc4e5eeca5a251bf3613"
+    },
+    {
+      "version": "0104",
+      "filename": "0104_version_fleet_number_bus_update_rpc.sql",
+      "bytes": 1292,
+      "sha256": "db21e6b449e093ed88b3b61e6fe29e9bff2676f0dd983c04487a435defd51bca"
+    },
+    {
+      "version": "0105",
+      "filename": "0105_fix_bus_fleet_audit_helper.sql",
+      "bytes": 1124,
+      "sha256": "703bb08b8c47223c603929b4ed05ba0923e41ca2576e1203c3433afc94e27f72"
+    },
+    {
+      "version": "0106",
+      "filename": "0106_guardian_student_stops.sql",
+      "bytes": 3133,
+      "sha256": "2cae71eb487536611ee50894aa93732031d6844ac621f42c2a974a5392ffb94e"
     }
   ]
 }

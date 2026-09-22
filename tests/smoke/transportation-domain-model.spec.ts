@@ -131,7 +131,11 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
+            access_token: [
+              'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+              'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ',
+              'smoke-test-signature',
+            ].join('.'),
             refresh_token: 'mock-refresh',
             token_type: 'bearer',
             expires_in: 3600,
@@ -242,6 +246,19 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
           await route.fulfill({ status: 201, contentType: 'application/json', body: '[]' });
           return;
         }
+        if (path.includes('/rpc/get_admin_buses_page')) {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              rows: [{ ...busNoSchool, fleet_number: 'UNIT-42' }],
+              totalCount: 1,
+              page: 1,
+              pageSize: 25,
+            }),
+          });
+          return;
+        }
         if (path.includes('/rpc/get_admin_paginated_list')) {
           const body = route.request().postDataJSON() as { p_entity?: string };
           const rows =
@@ -262,7 +279,7 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
-              bus: { ...busNoSchool, school_name: null },
+              bus: { ...busNoSchool, fleet_number: 'UNIT-42', school_name: null },
               routeAssignments: [],
               driverAssignments: [],
               studentAssignments: [],
@@ -357,11 +374,11 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
           });
           return;
         }
-        if (path.includes('/buses')) {
+        if (path.includes('/rpc/admin_create_bus')) {
           await route.fulfill({
-            status: 201,
+            status: 200,
             contentType: 'application/json',
-            body: JSON.stringify(busNoSchool),
+            body: JSON.stringify({ ...busNoSchool, fleet_number: 'UNIT-42' }),
           });
           return;
         }
@@ -402,7 +419,11 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
   // Seed session in localStorage (same keys as the proven 4C mock).
   await page.addInitScript(() => {
     const fakeSession = {
-      access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
+      access_token: [
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+        'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ',
+        'smoke-test-signature',
+      ].join('.'),
       refresh_token: 'mock-refresh',
       token_type: 'bearer',
       expires_in: 3600,
@@ -503,6 +524,7 @@ test.describe('Milestone 4E — school optional for transportation', () => {
 
     // Fill bus number but leave school at "Not assigned".
     await page.getByLabel('Bus number').fill('42');
+    await page.getByLabel('Fleet number (internal)').fill('UNIT-42');
 
     // Submit the form.
     await page.getByRole('button', { name: 'Save bus' }).click();
@@ -524,7 +546,11 @@ test.describe.skip('Milestone 4E — driver trip start with no-school bus + rout
     // Override the seeded session user id to match the driver profile.
     await page.addInitScript(() => {
       const fakeSession = {
-        access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
+        access_token: [
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+          'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ',
+          'smoke-test-signature',
+        ].join('.'),
         refresh_token: 'mock-refresh',
         token_type: 'bearer',
         expires_in: 3600,

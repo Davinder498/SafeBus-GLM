@@ -23,6 +23,11 @@ export interface Bus {
   updated_at: string;
 }
 
+/** Administrative bus projection. Internal fleet numbers never enter mobile/shared bus reads. */
+export interface AdminBus extends Bus {
+  fleet_number: string | null;
+}
+
 export interface Driver {
   id: string;
   tenant_id: string;
@@ -279,15 +284,15 @@ export interface StudentBusAssignment {
 }
 
 export type CreateBusInput = {
-  tenant_id: string;
   school_id: string | null;
   bus_number: string;
+  fleet_number: string;
   license_plate: string | null;
   capacity: number | null;
   status: BusStatus;
 };
 
-export type UpdateBusInput = Partial<Omit<CreateBusInput, 'tenant_id'>>;
+export type UpdateBusInput = Omit<CreateBusInput, 'bus_number'>;
 
 export type CreateDriverInput = {
   tenant_id: string;
