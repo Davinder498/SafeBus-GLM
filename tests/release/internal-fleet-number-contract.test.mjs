@@ -31,6 +31,11 @@ test('fleet numbers are separate from the driver-visible buses table', () => {
   assert.match(migration, /bus_admin_details_tenant_fleet_number_unique/i);
   assert.match(migration, /lower\(fleet_number\)/i);
   assert.match(migration, /length\(fleet_number\) between 1 and 40/i);
+  assert.match(
+    migration,
+    /create trigger set_updated_at_bus_admin_details[\s\S]*execute function public\.set_updated_at\(\)/i,
+  );
+  assert.doesNotMatch(migration, /safebus_private\.set_updated_at\(\)/i);
 });
 
 test('fleet metadata is read-only to scoped tenant administrators', () => {
