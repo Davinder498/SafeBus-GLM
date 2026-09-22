@@ -620,6 +620,12 @@
       "filename": "0102_internal_bus_fleet_numbers.sql",
       "bytes": 25880,
       "sha256": "991781923c5ceb55d4fcf042282fc85e4bacc84a35cd62cdbe827d84f77a514a"
+    },
+    {
+      "version": "0103",
+      "filename": "0103_refresh_fleet_number_api_schema.sql",
+      "bytes": 426,
+      "sha256": "a73d56ce7c562d67efa20c4e6aa8b45c6aeef62c6b06dc4e5eeca5a251bf3613"
     }
   ]
 }
