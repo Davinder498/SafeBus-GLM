@@ -8,9 +8,18 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const migrationName = fs
   .readdirSync(path.join(root, 'supabase/migrations'))
   .find((name) => name.endsWith('_internal_bus_fleet_numbers.sql'));
+const schemaRefreshMigrationName = fs
+  .readdirSync(path.join(root, 'supabase/migrations'))
+  .find((name) => name.endsWith('_refresh_fleet_number_api_schema.sql'));
 
 assert.ok(migrationName, 'internal fleet-number migration is missing');
+assert.ok(schemaRefreshMigrationName, 'fleet-number API schema refresh migration is missing');
 const migration = read(`supabase/migrations/${migrationName}`);
+const schemaRefreshMigration = read(`supabase/migrations/${schemaRefreshMigrationName}`);
+
+test('fleet-number RPCs are exposed without a stale PostgREST schema cache', () => {
+  assert.match(schemaRefreshMigration, /pg_notify\('pgrst',\s*'reload schema'\)/i);
+});
 
 test('fleet numbers are separate from the driver-visible buses table', () => {
   assert.match(migration, /create table public\.bus_admin_details/i);
