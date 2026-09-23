@@ -79,6 +79,108 @@
   }
 }
 
+/* Guardian transit-style line. Progress is supplied by the scoped server RPC;
+ * CSS only animates between verified values. */
+[data-ui='guardian-service-line'] {
+  position: relative;
+  display: grid;
+  gap: 0;
+  padding: 0.25rem 0 0.25rem 2.75rem;
+}
+
+.guardian-service-line__track,
+.guardian-service-line__travelled {
+  position: absolute;
+  top: 0.875rem;
+  left: 0.6875rem;
+  width: 0.25rem;
+  border-radius: 999px;
+}
+
+.guardian-service-line__track {
+  bottom: 0.875rem;
+  background: #bfd0e3;
+}
+
+.guardian-service-line__travelled {
+  max-height: calc(100% - 1.75rem);
+  background: #0b2f5b;
+  transition: height 500ms ease;
+}
+
+.guardian-service-line__bus {
+  position: absolute;
+  z-index: 3;
+  left: -0.125rem;
+  display: flex;
+  width: 1.875rem;
+  height: 1.875rem;
+  transform: translateY(-50%);
+  align-items: center;
+  justify-content: center;
+  border: 3px solid white;
+  border-radius: 999px;
+  background: #ffc928;
+  color: #0b2f5b;
+  box-shadow: 0 5px 14px rgb(11 47 91 / 0.22);
+  transition: top 500ms ease;
+}
+
+.guardian-service-line__point {
+  position: relative;
+  min-height: 5rem;
+  padding-bottom: 1rem;
+}
+
+.guardian-service-line__point:last-child {
+  min-height: 3rem;
+  padding-bottom: 0;
+}
+
+.guardian-service-line__point > span {
+  position: absolute;
+  top: 0.375rem;
+  left: -2.4375rem;
+  z-index: 2;
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 3px solid #647f9c;
+  border-radius: 999px;
+  background: white;
+  box-shadow: 0 0 0 2px white;
+}
+
+.guardian-service-line__point[data-state='passed'] > span {
+  border-color: #0b2f5b;
+  background: #0b2f5b;
+}
+
+.guardian-service-line__point[data-state='passed'] p {
+  color: #64748b;
+}
+
+.guardian-service-line__point[data-state='next'] {
+  margin: -0.375rem -0.5rem 0.625rem;
+  padding: 0.75rem 0.5rem 1rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.875rem;
+  background: #eff6ff;
+}
+
+.guardian-service-line__point[data-state='next'] > span,
+.guardian-service-line__point[data-state='at_stop'] > span,
+.guardian-service-line__point[data-terminal='true'] > span {
+  border-color: #0b2f5b;
+  background: #ffc928;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guardian-service-line__bus,
+  .guardian-service-line__travelled {
+    transition: none !important;
+  }
+}
+
 /*
  * Leaflet 1.9.4 tile rendering fix.
  *

@@ -35,12 +35,22 @@ export type GuardianBusServiceLineRow = {
   latitude: number | null;
   longitude: number | null;
   locationRecordedAt: string | null;
+  progressPercent: number | null;
+  progressSource: 'route_shape' | 'stop_sequence' | null;
+  nextStopName: string | null;
+  nextStopOrder: number | null;
+  etaUpdatedAt: string | null;
   stops: Array<{
     name: string;
     order: number;
     latitude: number | null;
     longitude: number | null;
     plannedArrivalTime: string | null;
+    serviceState: 'passed' | 'at_stop' | 'next' | 'upcoming' | 'unavailable';
+    etaStatus: 'available' | 'arriving_soon' | 'passed' | 'paused' | 'unavailable';
+    etaMinMinutes: number | null;
+    etaMaxMinutes: number | null;
+    etaLabel: string;
   }>;
 };
 
@@ -67,6 +77,11 @@ export function guardianBusServiceLine(
     latitude: 51.047,
     longitude: -114.0719,
     locationRecordedAt: '2026-01-01T15:00:00.000Z',
+    progressPercent: 25,
+    progressSource: 'route_shape',
+    nextStopName: 'Cedar Avenue',
+    nextStopOrder: 2,
+    etaUpdatedAt: '2026-01-01T15:00:00.000Z',
     stops: [
       {
         name: 'North Terminal',
@@ -74,6 +89,11 @@ export function guardianBusServiceLine(
         latitude: 51.044,
         longitude: -114.0719,
         plannedArrivalTime: '08:00:00',
+        serviceState: 'passed',
+        etaStatus: 'passed',
+        etaMinMinutes: null,
+        etaMaxMinutes: null,
+        etaLabel: 'Passed',
       },
       {
         name: 'Cedar Avenue',
@@ -81,6 +101,11 @@ export function guardianBusServiceLine(
         latitude: 51.05,
         longitude: -114.0719,
         plannedArrivalTime: '08:12:00',
+        serviceState: 'next',
+        etaStatus: 'available',
+        etaMinMinutes: 6,
+        etaMaxMinutes: 9,
+        etaLabel: '6–9 min',
       },
       {
         name: 'Riverside School',
@@ -88,6 +113,11 @@ export function guardianBusServiceLine(
         latitude: 51.056,
         longitude: -114.0719,
         plannedArrivalTime: '08:25:00',
+        serviceState: 'upcoming',
+        etaStatus: 'available',
+        etaMinMinutes: 19,
+        etaMaxMinutes: 26,
+        etaLabel: '19–26 min',
       },
     ],
     ...overrides,

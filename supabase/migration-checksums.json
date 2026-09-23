@@ -650,6 +650,12 @@
       "filename": "0107_support_directory.sql",
       "bytes": 8125,
       "sha256": "4650b90142c8fea31b7f16e7b726f6fd1e74911f21f6ef78b448848dc705a916"
+    },
+    {
+      "version": "0108",
+      "filename": "0108_guardian_eta_service_line.sql",
+      "bytes": 19784,
+      "sha256": "3ed16121ac7de212b58750e77ad58da391980b2bf3db3713617784b79c53e9f2"
     }
   ]
 }

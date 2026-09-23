@@ -1,5 +1,6 @@
 -- Guardian bus service-line structural and privilege regression checks.
--- Apply through migration 0097 in an approved isolated database before running.
+-- Apply through the ETA-driven guardian service-line migration in an approved
+-- isolated database before running.
 begin;
 
 do $$
@@ -24,7 +25,8 @@ begin
     or position('student_bus_assignments' in v_definition) = 0
     or position('bus_route_assignments' in v_definition) = 0
     or position('route_trip_pattern_id' in v_definition) = 0
-    or position('driver_trip_current_locations' in v_definition) = 0 then
+    or position('driver_trip_current_locations' in v_definition) = 0
+    or position('route_shape_id' in v_definition) = 0 then
     raise exception 'TEST FAILED: guardian bus service-line RPC lacks exact guardian, tenant, assignment, trip, or location checks';
   end if;
 
@@ -34,8 +36,30 @@ begin
     or position('''latitude''' in v_definition) = 0
     or position('''longitude''' in v_definition) = 0
     or position('''tripstatus''' in v_definition) = 0
-    or position('''locationstate''' in v_definition) = 0 then
+    or position('''locationstate''' in v_definition) = 0
+    or position('''progresspercent''' in v_definition) = 0
+    or position('''progresssource''' in v_definition) = 0
+    or position('''nextstopname''' in v_definition) = 0
+    or position('''nextstoporder''' in v_definition) = 0
+    or position('''etaupdatedat''' in v_definition) = 0
+    or position('''servicestate''' in v_definition) = 0
+    or position('''etastatus''' in v_definition) = 0
+    or position('''etaminminutes''' in v_definition) = 0
+    or position('''etamaxminutes''' in v_definition) = 0
+    or position('''etalabel''' in v_definition) = 0 then
     raise exception 'TEST FAILED: guardian bus service-line response lacks required presentation fields';
+  end if;
+
+  if position('st_linelocatepoint' in v_definition) = 0
+    or position('st_distance' in v_definition) = 0
+    or position('''route_shape''' in v_definition) = 0
+    or position('''stop_sequence''' in v_definition) = 0
+    or position('interval ''2 minutes''' in v_definition) = 0
+    or position('loc.recorded_at > now()' in v_definition) = 0
+    or position('v_service.trip_status = ''paused''' in v_definition) = 0
+    or position('v_service.speed_mps * 0.6' in v_definition) = 0
+    or position('> 5400' in v_definition) = 0 then
+    raise exception 'TEST FAILED: guardian service-line lacks shape matching, fallback, freshness, pause, blended-speed, or ETA ceiling safeguards';
   end if;
 
   if position('''routeid''' in v_definition) > 0

@@ -78,6 +78,11 @@ describe('guardian bus-first visibility mapping', () => {
       latitude: 51.047,
       longitude: -114.0719,
       locationRecordedAt: '2026-08-03T18:00:00.000Z',
+      progressPercent: 25,
+      progressSource: 'route_shape',
+      nextStopName: 'Riverside School',
+      nextStopOrder: 2,
+      etaUpdatedAt: '2026-08-03T18:00:00.000Z',
       stops: [
         {
           name: 'North Terminal',
@@ -85,6 +90,11 @@ describe('guardian bus-first visibility mapping', () => {
           latitude: 51.044,
           longitude: -114.0719,
           plannedArrivalTime: '08:00:00',
+          serviceState: 'passed',
+          etaStatus: 'passed',
+          etaMinMinutes: null,
+          etaMaxMinutes: null,
+          etaLabel: 'Passed',
         },
         {
           name: 'Riverside School',
@@ -92,16 +102,79 @@ describe('guardian bus-first visibility mapping', () => {
           latitude: 51.056,
           longitude: -114.0719,
           plannedArrivalTime: '08:25:00',
+          serviceState: 'next',
+          etaStatus: 'available',
+          etaMinMinutes: 8,
+          etaMaxMinutes: 11,
+          etaLabel: 'About 8 min',
         },
       ],
     });
 
-    expect(line.stops.map((stop) => stop.name)).toEqual([
-      'North Terminal',
-      'Riverside School',
-    ]);
+    expect(line.stops.map((stop) => stop.name)).toEqual(['North Terminal', 'Riverside School']);
+    expect(line).toMatchObject({
+      progressPercent: 25,
+      progressSource: 'route_shape',
+      nextStopName: 'Riverside School',
+    });
+    expect(line.stops[1]).toMatchObject({
+      serviceState: 'next',
+      etaMinMinutes: 8,
+      etaMaxMinutes: 11,
+    });
     expect(line).not.toHaveProperty('routeId');
     expect(line).not.toHaveProperty('tripId');
     expect(line).not.toHaveProperty('driverId');
+  });
+
+  it('normalizes every stop state and rejects an invalid server progress value', () => {
+    const states = ['passed', 'at_stop', 'next', 'upcoming', 'unavailable'] as const;
+    const line = mapGuardianBusServiceLine({
+      busNumber: '42',
+      licensePlate: null,
+      routeName: 'Cedar School Line',
+      tripName: 'Return run',
+      direction: 'reverse',
+      tripStatus: 'paused',
+      locationState: 'fresh',
+      latitude: 51.047,
+      longitude: -114.0719,
+      locationRecordedAt: '2026-08-03T18:00:00.000Z',
+      progressPercent: Number.NaN,
+      progressSource: 'stop_sequence',
+      nextStopName: null,
+      nextStopOrder: null,
+      etaUpdatedAt: null,
+      stops: states.map((serviceState, index) => ({
+        name: `Stop ${index + 1}`,
+        order: states.length - index,
+        latitude: 51.04 + index * 0.001,
+        longitude: -114.07,
+        plannedArrivalTime: null,
+        serviceState,
+        etaStatus:
+          serviceState === 'passed'
+            ? 'passed'
+            : serviceState === 'at_stop'
+              ? 'arriving_soon'
+              : serviceState === 'unavailable'
+                ? 'unavailable'
+                : 'paused',
+        etaMinMinutes: serviceState === 'at_stop' ? 0 : null,
+        etaMaxMinutes: serviceState === 'at_stop' ? 0 : null,
+        etaLabel: serviceState === 'passed' ? 'Passed' : 'ETA paused',
+      })),
+    });
+
+    expect(line.progressPercent).toBeNull();
+    expect(line.progressSource).toBe('stop_sequence');
+    expect(line.stops.map((stop) => stop.serviceState)).toEqual(states);
+    expect(line.stops.map((stop) => stop.etaStatus)).toEqual([
+      'passed',
+      'arriving_soon',
+      'paused',
+      'paused',
+      'unavailable',
+    ]);
   });
 });

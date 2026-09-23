@@ -1,8 +1,11 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 import type {
   GuardianBusAssignmentState,
+  GuardianBusProgressSource,
   GuardianBusServiceLine,
   GuardianBusServiceStop,
+  GuardianBusStopEtaStatus,
+  GuardianBusStopServiceState,
   GuardianBusVisibility,
   GuardianLiveBusLocationState,
   GuardianStudentTripStatus,
@@ -81,6 +84,11 @@ interface GuardianBusServiceStopRpcRow {
   latitude: number | null;
   longitude: number | null;
   plannedArrivalTime: string | null;
+  serviceState: GuardianBusStopServiceState;
+  etaStatus: GuardianBusStopEtaStatus;
+  etaMinMinutes: number | null;
+  etaMaxMinutes: number | null;
+  etaLabel: string;
 }
 
 interface GuardianBusServiceLineRpcRow {
@@ -94,6 +102,11 @@ interface GuardianBusServiceLineRpcRow {
   latitude: number | null;
   longitude: number | null;
   locationRecordedAt: string | null;
+  progressPercent: number | null;
+  progressSource: GuardianBusProgressSource | null;
+  nextStopName: string | null;
+  nextStopOrder: number | null;
+  etaUpdatedAt: string | null;
   stops: GuardianBusServiceStopRpcRow[];
 }
 
@@ -110,6 +123,11 @@ function mapGuardianBusServiceStop(row: GuardianBusServiceStopRpcRow): GuardianB
     latitude: isFiniteCoordinate(row.latitude, -90, 90) ? row.latitude : null,
     longitude: isFiniteCoordinate(row.longitude, -180, 180) ? row.longitude : null,
     plannedArrivalTime: row.plannedArrivalTime,
+    serviceState: row.serviceState ?? 'unavailable',
+    etaStatus: row.etaStatus ?? 'unavailable',
+    etaMinMinutes: Number.isInteger(row.etaMinMinutes) ? row.etaMinMinutes : null,
+    etaMaxMinutes: Number.isInteger(row.etaMaxMinutes) ? row.etaMaxMinutes : null,
+    etaLabel: row.etaLabel || 'ETA unavailable',
   };
 }
 
@@ -127,6 +145,17 @@ export function mapGuardianBusServiceLine(
     latitude: isFiniteCoordinate(row.latitude, -90, 90) ? row.latitude : null,
     longitude: isFiniteCoordinate(row.longitude, -180, 180) ? row.longitude : null,
     locationRecordedAt: row.locationRecordedAt,
+    progressPercent:
+      typeof row.progressPercent === 'number' && Number.isFinite(row.progressPercent)
+        ? Math.min(100, Math.max(0, row.progressPercent))
+        : null,
+    progressSource:
+      row.progressSource === 'route_shape' || row.progressSource === 'stop_sequence'
+        ? row.progressSource
+        : null,
+    nextStopName: row.nextStopName,
+    nextStopOrder: Number.isInteger(row.nextStopOrder) ? row.nextStopOrder : null,
+    etaUpdatedAt: row.etaUpdatedAt,
     stops: (row.stops ?? []).map(mapGuardianBusServiceStop),
   };
 }
