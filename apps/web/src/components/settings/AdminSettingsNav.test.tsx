@@ -35,7 +35,7 @@ async function renderSettingsNav(path: string, role: ProfileRole) {
 }
 
 describe('AdminSettingsNav', () => {
-  it('keeps billing hidden from non-tenant administrators', async () => {
+  it('keeps tenant-owned support and billing hidden from delegated administrators', async () => {
     const container = await renderSettingsNav('/admin/settings', 'school_admin');
 
     expect(Array.from(container.querySelectorAll('a')).map((link) => link.textContent)).toEqual([
@@ -49,6 +49,7 @@ describe('AdminSettingsNav', () => {
     const links = Array.from(container.querySelectorAll('a'));
 
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/admin/settings/support',
       '/admin/settings',
       '/admin/settings/schools',
       '/admin/settings/billing',

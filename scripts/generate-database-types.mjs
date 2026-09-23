@@ -20,6 +20,43 @@ const schemaKey = process.env.SUPABASE_SECRET_KEY;
 // from service_role and are therefore completed from their canonical migration
 // definitions when the OpenAPI fallback is used.
 const AUTHENTICATED_ONLY_FUNCTIONS = {
+  get_support_directory: { properties: {}, required: new Set() },
+  update_platform_support_contact: {
+    properties: {
+      p_display_name: { type: 'string', format: 'text' },
+      p_email: { type: 'string', format: 'text' },
+      p_phone: { type: 'string', format: 'text', description: 'nullable' },
+      p_website_url: { type: 'string', format: 'text', description: 'nullable' },
+      p_support_hours: { type: 'string', format: 'text', description: 'nullable' },
+      p_instructions: { type: 'string', format: 'text', description: 'nullable' },
+    },
+    required: new Set([
+      'p_display_name',
+      'p_email',
+      'p_phone',
+      'p_website_url',
+      'p_support_hours',
+      'p_instructions',
+    ]),
+  },
+  update_tenant_support_contact: {
+    properties: {
+      p_display_name: { type: 'string', format: 'text' },
+      p_email: { type: 'string', format: 'text' },
+      p_phone: { type: 'string', format: 'text', description: 'nullable' },
+      p_website_url: { type: 'string', format: 'text', description: 'nullable' },
+      p_support_hours: { type: 'string', format: 'text', description: 'nullable' },
+      p_instructions: { type: 'string', format: 'text', description: 'nullable' },
+    },
+    required: new Set([
+      'p_display_name',
+      'p_email',
+      'p_phone',
+      'p_website_url',
+      'p_support_hours',
+      'p_instructions',
+    ]),
+  },
   admin_create_bus: {
     properties: {
       p_school_id: { type: 'string', format: 'uuid', description: 'nullable' },

@@ -239,6 +239,7 @@ export interface MockSupabaseOptions {
   withMultipleAssignments?: boolean;
   withCompletedTrips?: boolean;
   locationUpdateDelayMs?: number;
+  supportDirectory?: unknown;
 }
 
 /**
@@ -401,6 +402,14 @@ export async function installSupabaseMock(
 
       // POST (insert a new trip, or call an RPC)
       if (method === 'POST') {
+        if (table === 'rpc/get_support_directory') {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(opts.supportDirectory ?? { platform: null, tenant: null }),
+          });
+          return;
+        }
         if (table === 'rpc/get_current_driver_trip_assignments') {
           await route.fulfill({
             status: 200,

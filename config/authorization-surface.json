@@ -70,6 +70,7 @@
     "get_platform_tenant_billing_detail(uuid)",
     "get_platform_tenant_billing_summaries()",
     "get_platform_tenant_onboarding_summary_secure()",
+    "get_support_directory()",
     "get_tenant_notification_delivery_summary(integer)",
     "get_tenant_subscription()",
     "get_user_notification_unread_count()",
@@ -124,7 +125,9 @@
     "tenant_suspend_administrator(uuid)",
     "tenant_transfer_administrator(uuid,uuid)",
     "tenant_update_school(uuid,text,text)",
-    "update_bus_tracking_location(text,double precision,double precision,double precision,double precision,double precision)"
+    "update_bus_tracking_location(text,double precision,double precision,double precision,double precision,double precision)",
+    "update_platform_support_contact(text,text,text,text,text,text)",
+    "update_tenant_support_contact(text,text,text,text,text,text)"
   ],
   "serviceRole": [
     "apply_notification_retention(boolean)",

@@ -36,6 +36,8 @@ import { MfaPage } from '@/pages/MfaPage';
 import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage';
 import { AccountDeletionPage } from '@/pages/AccountDeletionPage';
 import { SupportPage } from '@/pages/SupportPage';
+import { AdminSupportPage } from '@/pages/AdminSupportPage';
+import { PlatformSupportPage } from '@/pages/PlatformSupportPage';
 import { ProtectedRoute } from './ProtectedRoute';
 import { PublicOnlyRoute } from './PublicOnlyRoute';
 import { InvitationEntryRoute } from './InvitationEntryRoute';
@@ -67,7 +69,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/support',
     element: (
-      <ProtectedRoute allowedRoles={['tenant_admin']}>
+      <ProtectedRoute allowedRoles={['tenant_admin', 'driver', 'guardian']}>
         <SupportPage />
       </ProtectedRoute>
     ),
@@ -110,6 +112,22 @@ export const appRoutes: RouteObject[] = [
   { path: '/admin/people', element: <Navigate to="/admin" replace /> },
   { path: '/admin/more', element: <Navigate to="/admin" replace /> },
   { path: '/admin/stops', element: <Navigate to="/admin/routes" replace /> },
+  {
+    path: '/admin/platform-support',
+    element: (
+      <ProtectedRoute allowedRoles={['platform_super_admin']}>
+        <PlatformSupportPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/settings/support',
+    element: (
+      <ProtectedRoute allowedRoles={['tenant_admin']}>
+        <AdminSupportPage />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: '/admin/tenants/:tenantId',
     element: (

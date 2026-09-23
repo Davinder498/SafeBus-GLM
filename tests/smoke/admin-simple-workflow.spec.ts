@@ -11,8 +11,11 @@ test.describe('Simplified tenant admin workflow', () => {
     await mockAdmin(page);
     await page.goto('/support');
     await expect(page.getByRole('heading', { name: 'Support', level: 1 })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Contact your school authority' })).toBeVisible();
-    await expect(page.getByText('BusSafe is not an emergency service.')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Contact the platform administrator' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Contact details shown to drivers and guardians' }),
+    ).toBeVisible();
+    await expect(page.getByRole('link', { name: 'platform@example.test' })).toBeVisible();
   });
   test('overview shows active and inactive clickable route tiles that open route detail', async ({ page }) => {
     await mockAdmin(page);

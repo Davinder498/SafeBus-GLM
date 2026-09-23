@@ -44,12 +44,14 @@ describe('platform privacy boundary routing', () => {
     expect(paths).toContain('/driver');
     expect(paths).toContain('/parent');
     expect(paths).toContain('/guardian/routes');
+    expect(paths).toContain('/support');
     expect(paths.filter((path) => path?.startsWith('/admin'))).toEqual(['/admin/*', '/admin']);
   });
 
   it('allows platform super admins only on the platform tenant route', () => {
     expect(routeAllowsPlatform('/admin/tenants')).toBe(true);
     expect(routeAllowsPlatform('/admin/tenants/:tenantId')).toBe(true);
+    expect(routeAllowsPlatform('/admin/platform-support')).toBe(true);
 
     for (const path of [
       '/admin',

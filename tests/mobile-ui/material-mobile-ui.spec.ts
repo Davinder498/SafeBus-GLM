@@ -258,6 +258,32 @@ test('driver active-trip shell keeps daily actions touch friendly', async ({ pag
   await page.screenshot({ path: testInfo.outputPath('driver-active-trip.png') });
 });
 
+test('driver support page shows only the tenant support contact', async ({ page }) => {
+  await installSupabaseMock(page, {
+    supportDirectory: {
+      platform: null,
+      tenant: {
+        displayName: 'Prairie Schools Transportation',
+        email: 'transport@example.test',
+        phone: '403-555-0123',
+        websiteUrl: 'https://example.test/support',
+        supportHours: 'Monday–Friday, 8:00 AM–4:30 PM MT',
+        instructions: 'Include your bus number when asking for help.',
+        updatedAt: '2026-09-22T12:00:00Z',
+      },
+    },
+  });
+  await page.goto('/support');
+  await expect(page.getByRole('heading', { name: 'Support', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Tenant administrator support' })).toBeVisible();
+  await expect(page.getByText('Prairie Schools Transportation')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'transport@example.test' })).toHaveAttribute(
+    'href',
+    'mailto:transport@example.test',
+  );
+  await expect(page.getByText('BusSafe platform support')).toHaveCount(0);
+});
+
 test('driver account menu exposes existing secondary destinations', async ({ page }) => {
   await installSupabaseMock(page);
   await page.goto('/driver');
@@ -265,6 +291,7 @@ test('driver account menu exposes existing secondary destinations', async ({ pag
   await page.locator('button[aria-haspopup="menu"]').click();
   await expect(page.getByRole('menuitem', { name: 'Driver settings' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Profile' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Support' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Privacy & account' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Sign out' })).toBeVisible();
 });

@@ -27,7 +27,7 @@ import { UpdatePasswordPage } from '@/pages/UpdatePasswordPage';
 import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage';
 import { AccountDeletionPage } from '@/pages/AccountDeletionPage';
 import { AccountSettingsPage } from '@/pages/AccountSettingsPage';
-import { SupportPage } from '@/pages/SupportPage';
+import { MobileSupportPage } from '@/pages/MobileSupportPage';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { PublicOnlyRoute } from '@/routes/PublicOnlyRoute';
 import { AdminNotAvailablePage } from '../pages/AdminNotAvailablePage';
@@ -58,18 +58,18 @@ export const appRoutes: RouteObject[] = [
   { path: '/privacy', element: <PrivacyPolicyPage /> },
   { path: '/account-deletion', element: <AccountDeletionPage /> },
   {
-    path: '/account',
+    path: '/support',
     element: (
       <ProtectedRoute allowedRoles={['driver', 'guardian']}>
-        <AccountSettingsPage />
+        <MobileSupportPage />
       </ProtectedRoute>
     ),
   },
   {
-    path: '/support',
+    path: '/account',
     element: (
       <ProtectedRoute allowedRoles={['driver', 'guardian']}>
-        <SupportPage />
+        <AccountSettingsPage />
       </ProtectedRoute>
     ),
   },
