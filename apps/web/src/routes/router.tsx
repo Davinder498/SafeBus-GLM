@@ -69,7 +69,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/support',
     element: (
-      <ProtectedRoute allowedRoles={['tenant_admin']}>
+      <ProtectedRoute allowedRoles={['tenant_admin', 'driver', 'guardian']}>
         <SupportPage />
       </ProtectedRoute>
     ),

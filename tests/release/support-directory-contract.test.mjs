@@ -46,6 +46,10 @@ test('support pages are separated by platform, tenant, and mobile audiences', as
   ]);
   assert.match(webRoutes, /path: '\/admin\/platform-support'[\s\S]*platform_super_admin/i);
   assert.match(webRoutes, /path: '\/admin\/settings\/support'[\s\S]*allowedRoles=\{\['tenant_admin'\]\}/i);
+  assert.match(
+    webRoutes,
+    /path: '\/support'[\s\S]*allowedRoles=\{\['tenant_admin', 'driver', 'guardian'\]\}/i,
+  );
   assert.match(mobileRoutes, /path: '\/support'[\s\S]*allowedRoles=\{\['driver', 'guardian'\]\}/i);
   assert.match(layout, /onClick=\{\(\) => navigate\('\/support'\)\}/i);
 });

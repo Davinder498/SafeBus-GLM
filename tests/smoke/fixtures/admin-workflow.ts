@@ -115,6 +115,33 @@ export async function installAdminWorkflowMock(
       await route.fulfill({ status: 200, headers: { 'content-range': '0-0/1' }, body: '' });
       return;
     }
+    if (path.includes('/rpc/get_support_directory')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          platform: {
+            displayName: 'BusSafe platform administration',
+            email: 'platform@example.test',
+            phone: '403-555-0100',
+            websiteUrl: 'https://example.test/platform-support',
+            supportHours: 'Monday–Friday, 8:00 AM–5:00 PM MT',
+            instructions: 'Include your tenant name when asking for help.',
+            updatedAt: '2026-09-22T12:00:00Z',
+          },
+          tenant: {
+            displayName: 'Prairie Schools Transportation',
+            email: 'transport@example.test',
+            phone: '403-555-0123',
+            websiteUrl: 'https://example.test/support',
+            supportHours: 'Monday–Friday, 8:00 AM–4:30 PM MT',
+            instructions: 'Include your bus number when asking for help.',
+            updatedAt: '2026-09-22T12:00:00Z',
+          },
+        }),
+      });
+      return;
+    }
     if (path.includes('/rpc/get_admin_live_fleet_monitoring')) {
       await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
       return;
