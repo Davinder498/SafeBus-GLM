@@ -31,6 +31,11 @@ export interface GuardianStudentLiveBusLocation {
 export type GuardianBusVisibility = GuardianStudentLiveBusLocation;
 
 export type GuardianBusServiceTripStatus = 'active' | 'paused' | 'inactive';
+export type GuardianBusProgressSource = 'route_shape' | 'stop_sequence';
+export type GuardianBusStopServiceState =
+  'passed' | 'at_stop' | 'next' | 'upcoming' | 'unavailable';
+export type GuardianBusStopEtaStatus =
+  'available' | 'arriving_soon' | 'passed' | 'paused' | 'unavailable';
 
 export interface GuardianBusServiceStop {
   name: string;
@@ -38,6 +43,11 @@ export interface GuardianBusServiceStop {
   latitude: number | null;
   longitude: number | null;
   plannedArrivalTime: string | null;
+  serviceState: GuardianBusStopServiceState;
+  etaStatus: GuardianBusStopEtaStatus;
+  etaMinMinutes: number | null;
+  etaMaxMinutes: number | null;
+  etaLabel: string;
 }
 
 /**
@@ -55,5 +65,10 @@ export interface GuardianBusServiceLine {
   latitude: number | null;
   longitude: number | null;
   locationRecordedAt: string | null;
+  progressPercent: number | null;
+  progressSource: GuardianBusProgressSource | null;
+  nextStopName: string | null;
+  nextStopOrder: number | null;
+  etaUpdatedAt: string | null;
   stops: GuardianBusServiceStop[];
 }
