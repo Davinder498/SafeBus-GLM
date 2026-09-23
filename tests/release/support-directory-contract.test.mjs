@@ -4,7 +4,7 @@ import test from 'node:test';
 
 const migrationPath = 'supabase/migrations/0107_support_directory.sql';
 
-test('support directory uses tiered role-scoped contacts', async () => {
+test('support directory follows the platform-to-tenant-to-user contact chain', async () => {
   const sql = await fs.readFile(migrationPath, 'utf8');
   assert.match(sql, /create table public\.platform_support_contacts/i);
   assert.match(sql, /create table public\.tenant_support_contacts/i);
@@ -15,12 +15,14 @@ test('support directory uses tiered role-scoped contacts', async () => {
   );
   assert.match(
     sql,
-    /v_role in \('platform_super_admin', 'tenant_admin', 'school_admin', 'transportation_admin'\)[\s\S]*from public\.platform_support_contacts/i,
+    /v_role in \('platform_super_admin', 'tenant_admin'\)[\s\S]*from public\.platform_support_contacts/i,
   );
   assert.match(
     sql,
-    /v_role in \('tenant_admin', 'school_admin', 'transportation_admin', 'driver', 'guardian'\)[\s\S]*tenant_id = v_tenant_id/i,
+    /v_role in \('tenant_admin', 'driver', 'guardian'\)[\s\S]*tenant_id = v_tenant_id/i,
   );
+  assert.doesNotMatch(sql, /v_role in \([^)]*'school_admin'[^)]*\)/i);
+  assert.doesNotMatch(sql, /v_role in \([^)]*'transportation_admin'[^)]*\)/i);
 });
 
 test('support writes are role restricted, recently authenticated, and audited', async () => {
@@ -43,7 +45,7 @@ test('support pages are separated by platform, tenant, and mobile audiences', as
     fs.readFile('apps/web/src/components/layout/DashboardLayout.tsx', 'utf8'),
   ]);
   assert.match(webRoutes, /path: '\/admin\/platform-support'[\s\S]*platform_super_admin/i);
-  assert.match(webRoutes, /path: '\/admin\/settings\/support'/i);
+  assert.match(webRoutes, /path: '\/admin\/settings\/support'[\s\S]*allowedRoles=\{\['tenant_admin'\]\}/i);
   assert.match(mobileRoutes, /path: '\/support'[\s\S]*allowedRoles=\{\['driver', 'guardian'\]\}/i);
   assert.match(layout, /onClick=\{\(\) => navigate\('\/support'\)\}/i);
 });

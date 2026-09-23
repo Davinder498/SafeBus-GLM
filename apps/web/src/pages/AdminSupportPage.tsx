@@ -6,7 +6,6 @@ import { SupportContactForm } from '@/components/support/SupportContactForm';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { useAuth } from '@/contexts/useAuth';
 import {
   fetchSupportDirectory,
   updateTenantSupportContact,
@@ -14,7 +13,6 @@ import {
 } from '@/services/supportDirectoryService';
 
 export function AdminSupportPage() {
-  const { profile } = useAuth();
   const [directory, setDirectory] = useState<SupportDirectory>({ platform: null, tenant: null });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -44,9 +42,9 @@ export function AdminSupportPage() {
         <PageHeader
           eyebrow="Settings"
           title="Support"
-          description="Contact BusSafe platform support and maintain the help desk shown to your drivers and guardians."
+          description="Contact the BusSafe platform administrator and manage the contact details shown to your drivers and guardians."
         />
-        <AdminSettingsNav role={profile?.role} />
+        <AdminSettingsNav role="tenant_admin" />
         {message && (
           <Card className="border-success-200 bg-success-50 p-4">
             <p role="status" className="text-sm font-semibold text-success-700">
@@ -69,38 +67,37 @@ export function AdminSupportPage() {
         ) : (
           <>
             {directory.platform ? (
-              <SupportContactCard title="BusSafe platform support" contact={directory.platform} />
+              <SupportContactCard
+                title="Contact the platform administrator"
+                contact={directory.platform}
+              />
             ) : (
               <DataState
                 title="Platform support is not configured yet"
                 message="A platform administrator must publish the support contact."
               />
             )}
-            {profile?.role === 'tenant_admin' ? (
-              <SupportContactForm
-                title="Support for drivers and guardians"
-                contact={directory.tenant}
-                saving={saving}
-                onSave={async (input) => {
-                  setSaving(true);
-                  setError(null);
-                  setMessage(null);
-                  try {
-                    await updateTenantSupportContact(input);
-                    setMessage('Tenant support details updated for drivers and guardians.');
-                    await load();
-                  } catch (cause) {
-                    setError(
-                      cause instanceof Error ? cause.message : 'Unable to save tenant support.',
-                    );
-                  } finally {
-                    setSaving(false);
-                  }
-                }}
-              />
-            ) : directory.tenant ? (
-              <SupportContactCard title="Tenant support contact" contact={directory.tenant} />
-            ) : null}
+            <SupportContactForm
+              title="Contact details shown to drivers and guardians"
+              contact={directory.tenant}
+              saving={saving}
+              onSave={async (input) => {
+                setSaving(true);
+                setError(null);
+                setMessage(null);
+                try {
+                  await updateTenantSupportContact(input);
+                  setMessage('Contact details updated for drivers and guardians.');
+                  await load();
+                } catch (cause) {
+                  setError(
+                    cause instanceof Error ? cause.message : 'Unable to save contact details.',
+                  );
+                } finally {
+                  setSaving(false);
+                }
+              }}
+            />
           </>
         )}
       </div>

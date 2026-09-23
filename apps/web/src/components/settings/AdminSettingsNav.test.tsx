@@ -35,11 +35,10 @@ async function renderSettingsNav(path: string, role: ProfileRole) {
 }
 
 describe('AdminSettingsNav', () => {
-  it('keeps billing hidden from non-tenant administrators', async () => {
+  it('keeps tenant-owned support and billing hidden from delegated administrators', async () => {
     const container = await renderSettingsNav('/admin/settings', 'school_admin');
 
     expect(Array.from(container.querySelectorAll('a')).map((link) => link.textContent)).toEqual([
-      'SupportPlatform and user help contacts',
       'OrganizationAccount and organization context',
       'SchoolsTenant school directory',
     ]);

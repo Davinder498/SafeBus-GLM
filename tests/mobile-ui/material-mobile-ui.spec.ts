@@ -275,6 +275,7 @@ test('driver support page shows only the tenant support contact', async ({ page 
   });
   await page.goto('/support');
   await expect(page.getByRole('heading', { name: 'Support', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Tenant administrator support' })).toBeVisible();
   await expect(page.getByText('Prairie Schools Transportation')).toBeVisible();
   await expect(page.getByRole('link', { name: 'transport@example.test' })).toHaveAttribute(
     'href',
