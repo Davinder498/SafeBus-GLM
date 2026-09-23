@@ -35,6 +35,7 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 import { MfaPage } from '@/pages/MfaPage';
 import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage';
 import { AccountDeletionPage } from '@/pages/AccountDeletionPage';
+import { SupportPage } from '@/pages/SupportPage';
 import { ProtectedRoute } from './ProtectedRoute';
 import { PublicOnlyRoute } from './PublicOnlyRoute';
 import { InvitationEntryRoute } from './InvitationEntryRoute';
@@ -63,6 +64,14 @@ export const appRoutes: RouteObject[] = [
   { path: '/update-password', element: <UpdatePasswordPage /> },
   { path: '/privacy', element: <PrivacyPolicyPage /> },
   { path: '/account-deletion', element: <AccountDeletionPage /> },
+  {
+    path: '/support',
+    element: (
+      <ProtectedRoute allowedRoles={['tenant_admin']}>
+        <SupportPage />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: '/mfa',
     element: (

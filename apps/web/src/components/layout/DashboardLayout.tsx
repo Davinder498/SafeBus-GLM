@@ -21,6 +21,7 @@ import {
   History,
   FileUp,
   ShieldCheck,
+  CircleHelp,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAppSurface, type AppSurface } from '@/contexts/AppSurfaceContext';
@@ -153,6 +154,14 @@ export const adminNavItems: DashboardNavItem[] = [
     description: 'Tenant configuration',
     icon: <Settings className="h-4 w-4" />,
   },
+  {
+    label: 'Support',
+    to: '/support',
+    group: 'management',
+    description: 'Help and support contacts',
+    allowedRoles: ['tenant_admin'],
+    icon: <CircleHelp className="h-4 w-4" />,
+  },
 ];
 
 export const adminNavGroups: DashboardNavGroup[] = [
@@ -188,6 +197,7 @@ export const driverNavGroups: DashboardNavGroup[] = [
       },
       { label: 'Settings', to: '/driver/settings', icon: <Settings className="h-4 w-4" /> },
       { label: 'Profile', to: '/driver/profile', icon: <UserCircle className="h-4 w-4" /> },
+      { label: 'Support', to: '/support', icon: <CircleHelp className="h-4 w-4" /> },
     ],
   },
 ];
@@ -212,6 +222,7 @@ export const guardianNavGroups: DashboardNavGroup[] = [
         to: '/notifications',
         icon: <Bell className="h-4 w-4" />,
       },
+      { label: 'Support', to: '/support', icon: <CircleHelp className="h-4 w-4" /> },
     ],
   },
 ];
@@ -429,12 +440,20 @@ export function DashboardLayout({
                 </>
               )}
               {usesBottomTabs && portal !== 'admin' && (
-                <DropdownItem
-                  icon={<ShieldCheck className="h-4 w-4" />}
-                  onClick={() => navigate('/account')}
-                >
-                  Privacy &amp; account
-                </DropdownItem>
+                <>
+                  <DropdownItem
+                    icon={<CircleHelp className="h-4 w-4" />}
+                    onClick={() => navigate('/support')}
+                  >
+                    Support
+                  </DropdownItem>
+                  <DropdownItem
+                    icon={<ShieldCheck className="h-4 w-4" />}
+                    onClick={() => navigate('/account')}
+                  >
+                    Privacy &amp; account
+                  </DropdownItem>
+                </>
               )}
               <DropdownItem
                 destructive

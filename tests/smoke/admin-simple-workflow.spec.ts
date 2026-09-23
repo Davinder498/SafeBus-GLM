@@ -6,7 +6,14 @@ import {
 import { installMapProviderAvailable, installMapProviderOutage } from './fixtures/map-provider';
 
 test.describe('Simplified tenant admin workflow', () => {
-  test('uses direct sidebar navigation choices', async ({ page }) => { await mockAdmin(page); await page.goto('/admin'); if ((page.viewportSize()?.width ?? 1280) < 1024) await page.getByRole('button', { name: 'Open navigation' }).click(); for (const label of ['Overview', 'Students', 'Guardians', 'Drivers', 'Buses', 'Routes', 'Live Operations']) await expect(page.getByRole('link', { name: label, exact: true })).toBeVisible(); await expect(page.getByRole('link', { name: 'Stops', exact: true })).toHaveCount(0); });
+  test('uses direct sidebar navigation choices', async ({ page }) => { await mockAdmin(page); await page.goto('/admin'); if ((page.viewportSize()?.width ?? 1280) < 1024) await page.getByRole('button', { name: 'Open navigation' }).click(); for (const label of ['Overview', 'Students', 'Guardians', 'Drivers', 'Buses', 'Routes', 'Live Operations', 'Support']) await expect(page.getByRole('link', { name: label, exact: true })).toBeVisible(); await expect(page.getByRole('link', { name: 'Stops', exact: true })).toHaveCount(0); });
+  test('opens tenant support from the authenticated navigation', async ({ page }) => {
+    await mockAdmin(page);
+    await page.goto('/support');
+    await expect(page.getByRole('heading', { name: 'Support', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Contact your school authority' })).toBeVisible();
+    await expect(page.getByText('BusSafe is not an emergency service.')).toBeVisible();
+  });
   test('overview shows active and inactive clickable route tiles that open route detail', async ({ page }) => {
     await mockAdmin(page);
     await installMapProviderAvailable(page);
