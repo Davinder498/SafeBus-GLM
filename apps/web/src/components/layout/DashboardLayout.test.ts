@@ -32,6 +32,7 @@ const tenantAdminRoutes = [
   '/admin/bulk-import',
   '/admin/audit-search',
   '/admin/settings',
+  '/support',
 ];
 
 describe('tenant admin shell navigation model', () => {
@@ -88,6 +89,7 @@ describe('driver shell navigation model', () => {
       ['Pickup & drop-off', '/driver/pickup-drop-off'],
       ['Settings', '/driver/settings'],
       ['Profile', '/driver/profile'],
+      ['Support', '/support'],
     ]);
   });
 
@@ -115,6 +117,7 @@ describe('guardian shell navigation model', () => {
       ['My buses', '/guardian/routes'],
       ['Pickup & drop-off', '/guardian/events'],
       ['Notifications', '/notifications'],
+      ['Support', '/support'],
     ]);
   });
 

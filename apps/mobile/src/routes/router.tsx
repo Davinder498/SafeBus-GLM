@@ -27,6 +27,7 @@ import { UpdatePasswordPage } from '@/pages/UpdatePasswordPage';
 import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage';
 import { AccountDeletionPage } from '@/pages/AccountDeletionPage';
 import { AccountSettingsPage } from '@/pages/AccountSettingsPage';
+import { SupportPage } from '@/pages/SupportPage';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { PublicOnlyRoute } from '@/routes/PublicOnlyRoute';
 import { AdminNotAvailablePage } from '../pages/AdminNotAvailablePage';
@@ -61,6 +62,14 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={['driver', 'guardian']}>
         <AccountSettingsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/support',
+    element: (
+      <ProtectedRoute allowedRoles={['driver', 'guardian']}>
+        <SupportPage />
       </ProtectedRoute>
     ),
   },
