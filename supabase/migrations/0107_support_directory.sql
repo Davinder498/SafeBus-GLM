@@ -39,13 +39,15 @@ begin
   v_tenant_id := public.current_tenant_id();
   if v_role is null then raise exception 'Support directory requires an active profile.' using errcode = '42501'; end if;
 
-  if v_role in ('platform_super_admin', 'tenant_admin', 'school_admin', 'transportation_admin') then
+  -- Platform administrators publish the contact that tenant administrators use.
+  if v_role in ('platform_super_admin', 'tenant_admin') then
     select jsonb_build_object('displayName', display_name, 'email', email, 'phone', phone,
       'websiteUrl', website_url, 'supportHours', support_hours, 'instructions', instructions,
       'updatedAt', updated_at) into v_platform from public.platform_support_contacts where id = true;
   end if;
 
-  if v_role in ('tenant_admin', 'school_admin', 'transportation_admin', 'driver', 'guardian') and v_tenant_id is not null then
+  -- Tenant administrators maintain the contact shown to their own drivers and guardians.
+  if v_role in ('tenant_admin', 'driver', 'guardian') and v_tenant_id is not null then
     select jsonb_build_object('displayName', display_name, 'email', email, 'phone', phone,
       'websiteUrl', website_url, 'supportHours', support_hours, 'instructions', instructions,
       'updatedAt', updated_at) into v_tenant from public.tenant_support_contacts where tenant_id = v_tenant_id;

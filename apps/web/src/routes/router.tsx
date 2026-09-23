@@ -123,7 +123,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/admin/settings/support',
     element: (
-      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
+      <ProtectedRoute allowedRoles={['tenant_admin']}>
         <AdminSupportPage />
       </ProtectedRoute>
     ),

@@ -35,7 +35,7 @@ export function PlatformSupportPage() {
         <PageHeader
           eyebrow="Platform administration"
           title="Support system"
-          description="Manage the verified platform contact shown to tenant administrators."
+          description="Manage the platform administrator contact shown to tenant administrators."
         />
         {message && (
           <Card className="border-success-200 bg-success-50 p-4">
@@ -58,7 +58,7 @@ export function PlatformSupportPage() {
           />
         ) : (
           <SupportContactForm
-            title="Platform support contact"
+            title="Contact details for tenant administrators"
             contact={contact}
             saving={saving}
             onSave={async (input) => {

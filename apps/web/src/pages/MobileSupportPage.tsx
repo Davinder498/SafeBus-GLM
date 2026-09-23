@@ -43,7 +43,7 @@ export function MobileSupportPage() {
         <PageHeader
           eyebrow="Help"
           title="Support"
-          description="Contact the transportation organization that manages your BusSafe account."
+          description="Contact your tenant administrator for help with your BusSafe account or transportation service."
         />
         {loading && (
           <DataState
@@ -55,12 +55,12 @@ export function MobileSupportPage() {
           <DataState title="Support details are unavailable" message="Please try again later." />
         )}
         {!loading && !error && contact && (
-          <SupportContactCard title="Your organization’s support team" contact={contact} />
+          <SupportContactCard title="Tenant administrator support" contact={contact} />
         )}
         {!loading && !error && !contact && (
           <DataState
             title="Support contact is not configured yet"
-            message="Contact your school transportation office using its usual contact information."
+            message="Contact your tenant administrator using their usual contact information."
           />
         )}
       </div>

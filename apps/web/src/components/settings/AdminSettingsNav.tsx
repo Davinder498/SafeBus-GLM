@@ -10,11 +10,11 @@ interface AdminSettingsNavProps {
 const settingsItems = [
   {
     label: 'Support',
-    description: 'Platform and user help contacts',
+    description: 'Platform contact and tenant help details',
     to: '/admin/settings/support',
     end: false,
     icon: CircleHelp,
-    allowedRoles: ['tenant_admin', 'school_admin', 'transportation_admin'],
+    allowedRoles: ['tenant_admin'],
   },
   {
     label: 'Organization',
