@@ -16,7 +16,6 @@ import type {
   GuardianBusServiceStop,
   GuardianBusVisibility,
 } from '@/types/guardianLiveBusLocation';
-import { calculateGuardianBusProgress } from '@/utils/guardianBusProgress';
 import { groupGuardianBuses, type GuardianBusGroup } from '@/utils/guardianBusGroups';
 
 function formatTimestamp(iso: string): string {
@@ -242,23 +241,17 @@ function formatPlannedTime(time: string | null): string | null {
   return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
-function describeBusPosition(stops: GuardianBusServiceStop[], progress: number): string {
-  const scaledPosition = (progress / 100) * (stops.length - 1);
-  const nearestIndex = Math.round(scaledPosition);
-  if (Math.abs(scaledPosition - nearestIndex) < 0.08) {
-    return `at ${stops[nearestIndex]?.name ?? 'a scheduled stop'}`;
-  }
-  const before = stops[Math.floor(scaledPosition)];
-  const after = stops[Math.ceil(scaledPosition)];
-  return before && after
-    ? `between ${before.name} and ${after.name}`
-    : 'on the scheduled service line';
-}
-
 function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
   const status = serviceLineStatus(line);
-  const progress = calculateGuardianBusProgress(line.stops, line.latitude, line.longitude);
+  const progress = line.progressPercent;
   const hasLivePosition = line.locationState === 'fresh' && progress !== null;
+  const nextStop = line.stops.find((stop) => stop.serviceState === 'next');
+  const atStop = line.stops.find((stop) => stop.serviceState === 'at_stop');
+  const announcement = nextStop
+    ? `Next stop ${nextStop.name}. ${nextStop.etaLabel}.`
+    : atStop
+      ? `Bus is at ${atStop.name}.`
+      : '';
 
   return (
     <Card className="p-5" data-ui="guardian-service-line-card">
@@ -287,6 +280,13 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
           <span className="guardian-service-line__track" aria-hidden />
           {hasLivePosition && (
             <span
+              className="guardian-service-line__travelled"
+              style={{ height: `clamp(0rem, ${progress}%, 100%)` }}
+              aria-hidden
+            />
+          )}
+          {hasLivePosition && (
+            <span
               className="guardian-service-line__bus"
               style={{ top: `clamp(0.875rem, ${progress}%, calc(100% - 0.875rem))` }}
               aria-hidden
@@ -312,12 +312,16 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
       )}
 
       {hasLivePosition ? (
-        <p
-          className="mt-4 rounded-2xl bg-navy-50 p-3 text-sm font-semibold text-navy-800"
-          aria-live="polite"
-        >
-          Bus is currently {describeBusPosition(line.stops, progress)}.
-        </p>
+        <div className="mt-4 rounded-2xl bg-navy-50 p-3 text-sm text-navy-800">
+          <p className="font-semibold">
+            {line.nextStopName
+              ? `Next stop: ${line.nextStopName}`
+              : 'Bus is at the end of this run.'}
+          </p>
+          {line.progressSource === 'stop_sequence' && (
+            <p className="mt-1 text-xs text-navy-700">Position estimated from the ordered stops.</p>
+          )}
+        </div>
       ) : (
         <p className="mt-4 rounded-2xl bg-slate-50 p-3 text-sm text-gray-600">
           Live position appears when the school run is active and a fresh GPS update is available.
@@ -325,7 +329,12 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
       )}
 
       <p className="mt-4 text-xs leading-5 text-gray-500">
-        The bus marker is projected onto the scheduled stop line from the latest verified GPS point.
+        The marker moves only when a verified location update is received. It is never projected
+        ahead of the last update.
+      </p>
+
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {announcement}
       </p>
 
       {line.locationRecordedAt && (
@@ -353,14 +362,30 @@ function ServiceStopPoint({
   const positionLabel = isStart ? 'Start' : isEnd ? 'End' : `Stop ${index + 1}`;
 
   return (
-    <div className="guardian-service-line__point" data-terminal={isStart || isEnd || undefined}>
+    <div
+      className="guardian-service-line__point"
+      data-terminal={isStart || isEnd || undefined}
+      data-state={stop.serviceState}
+    >
       <span aria-hidden />
-      <div className="min-w-0">
-        <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-gray-500">
-          {positionLabel}
-          {plannedTime ? ` · ${plannedTime}` : ''}
-        </p>
-        <p className="mt-0.5 font-bold text-navy-900">{stop.name}</p>
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-gray-500">
+            {stop.serviceState === 'next' ? 'Next stop' : positionLabel}
+          </p>
+          <p className="mt-0.5 font-bold text-navy-900">{stop.name}</p>
+          <p className="mt-1 text-xs text-gray-500">Planned {plannedTime ?? 'time unavailable'}</p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="guardian-service-line__eta text-sm font-extrabold text-navy-800">
+            {stop.etaLabel}
+          </p>
+          {stop.etaMinMinutes !== null && stop.etaMaxMinutes !== null && (
+            <p className="mt-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-gray-500">
+              Live ETA
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

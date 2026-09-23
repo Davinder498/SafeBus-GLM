@@ -1,5 +1,6 @@
 import { expect, test, type Locator } from '@playwright/test';
 import {
+  guardianBusServiceLine,
   guardianVisibilityRow,
   installGuardianVisibilityMock,
 } from '../smoke/fixtures/guardian-bus-visibility';
@@ -134,7 +135,7 @@ test('guardian home keeps each linked student with their own bus and stops', asy
 test('guardian buses group students and open a clean bus detail view', async ({
   page,
 }, testInfo) => {
-  await installGuardianVisibilityMock(page, {
+  const guardianMock = await installGuardianVisibilityMock(page, {
     rows: [
       guardianVisibilityRow({ student_name: 'Avery Johnson' }),
       guardianVisibilityRow({
@@ -177,9 +178,36 @@ test('guardian buses group students and open a clean bus detail view', async ({
   await expect(serviceLine.getByText(/Start/)).toBeVisible();
   await expect(serviceLine.getByText(/End/)).toBeVisible();
   await expect(page.getByTestId('guardian-service-line-bus')).toBeVisible();
+  await expect(page.getByText('Next stop: Cedar Avenue')).toBeVisible();
+  await expect(serviceLine.getByText('Passed')).toBeVisible();
+  await expect(serviceLine.getByText('6–9 min')).toBeVisible();
+  await expect(serviceLine.getByText('19–26 min')).toBeVisible();
+  await expect(serviceLine.getByText('Planned 8:12 AM')).toBeVisible();
   await expect(
-    page.getByText(/Bus is currently between North Terminal and Cedar Avenue/),
-  ).toBeVisible();
+    serviceLine.locator('.guardian-service-line__point[data-state="next"]'),
+  ).toContainText('Cedar Avenue');
+  const busMarker = page.getByTestId('guardian-service-line-bus');
+  await expect(busMarker).toHaveAttribute('style', /25%/);
+  await page.waitForTimeout(600);
+  await expect(busMarker).toHaveAttribute('style', /25%/);
+  guardianMock.setServiceLines([
+    guardianBusServiceLine({
+      progressPercent: 75,
+      progressSource: 'stop_sequence',
+      nextStopName: 'Riverside School',
+    }),
+  ]);
+  await page.reload();
+  await expect(page.getByTestId('guardian-service-line-bus')).toHaveAttribute('style', /75%/);
+  await expect(page.getByText('Position estimated from the ordered stops.')).toBeVisible();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect
+    .poll(() =>
+      page
+        .getByTestId('guardian-service-line-bus')
+        .evaluate((element) => Number.parseFloat(getComputedStyle(element).transitionDuration)),
+    )
+    .toBeLessThan(0.001);
   await page.locator('[data-ui="guardian-service-line-card"]').screenshot({
     path: testInfo.outputPath('guardian-service-line.png'),
   });
