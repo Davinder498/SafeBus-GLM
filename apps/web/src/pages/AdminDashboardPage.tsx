@@ -127,45 +127,45 @@ export function AdminDashboardPage() {
 
         {data && (
           <>
-            <section className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm sm:p-5">
+            <section className="rounded-2xl border border-navy-200 bg-white p-4 shadow-sm sm:p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-lg font-bold text-navy-950">Operational attention</h2>
-                  <p className="mt-1 text-sm text-gray-600">
+                  <p className="mt-1 text-sm text-slate-600">
                     Existing live-trip and setup signals shown without adding new backend data.
                   </p>
                 </div>
                 <Link
                   to="/admin/live-trips"
-                  className="inline-flex rounded-lg border border-cyan-200 px-3 py-2 text-sm font-semibold text-cyan-800 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+                  className="inline-flex rounded-lg border border-navy-200 px-3 py-2 text-sm font-semibold text-navy-800 hover:bg-navy-50 focus:outline-none focus:ring-2 focus:ring-navy-500 focus:ring-offset-2"
                 >
                   View live trips
                 </Link>
               </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <Card className="p-5">
-                  <p className="text-sm font-semibold text-gray-600">Active trips</p>
+                  <p className="text-sm font-semibold text-slate-600">Active trips</p>
                   <p className="mt-1 text-3xl font-bold text-navy-900">{activeTrips}</p>
-                  <p className="mt-2 text-sm text-gray-600">
+                  <p className="mt-2 text-sm text-slate-600">
                     Driver-started trips currently operating.
                   </p>
                 </Card>
                 <Card className="p-5">
-                  <p className="text-sm font-semibold text-gray-600">Stale locations</p>
-                  <p className="mt-1 text-3xl font-bold text-warning-600">{staleTrips}</p>
-                  <p className="mt-2 text-sm text-gray-600">Buses with GPS not updated recently.</p>
+                  <p className="text-sm font-semibold text-slate-600">Stale locations</p>
+                  <p className="mt-1 text-3xl font-bold text-warning-700">{staleTrips}</p>
+                  <p className="mt-2 text-sm text-slate-600">Buses with GPS not updated recently.</p>
                 </Card>
                 <Card className="p-5">
-                  <p className="text-sm font-semibold text-gray-600">Missing locations</p>
+                  <p className="text-sm font-semibold text-slate-600">Missing locations</p>
                   <p className="mt-1 text-3xl font-bold text-danger-600">{missingTrips}</p>
-                  <p className="mt-2 text-sm text-gray-600">Active trips without GPS data.</p>
+                  <p className="mt-2 text-sm text-slate-600">Active trips without GPS data.</p>
                 </Card>
                 <Card className="p-5">
-                  <p className="text-sm font-semibold text-gray-600">Setup readiness</p>
+                  <p className="text-sm font-semibold text-slate-600">Setup readiness</p>
                   <p className="mt-1 text-3xl font-bold text-navy-900">
                     {setupComplete} of {setupKeys.length}
                   </p>
-                  <p className="mt-2 text-sm text-gray-600">Core setup steps complete.</p>
+                  <p className="mt-2 text-sm text-slate-600">Core setup steps complete.</p>
                 </Card>
               </div>
             </section>
@@ -173,10 +173,10 @@ export function AdminDashboardPage() {
             <AdminTripsOverview trips={data.tripOverview} failed={data.tripOverviewFailed} />
 
             {/* Clickable route tiles */}
-            <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
               <div>
                 <h2 className="text-xl font-bold text-navy-900">Routes</h2>
-                <p className="mt-1 text-sm text-gray-600">
+                <p className="mt-1 text-sm text-slate-600">
                   Active and inactive routes are shown below. Select any tile to open its details
                   and map.
                 </p>
@@ -208,14 +208,14 @@ export function AdminDashboardPage() {
 
               <Link
                 to="/admin/routes"
-                className="mt-4 inline-flex rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-navy-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+                className="mt-4 inline-flex rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-navy-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-navy-500 focus:ring-offset-2"
               >
                 View all routes &rarr;
               </Link>
             </section>
 
             {/* Setup checklist */}
-            <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
               <h2 className="text-xl font-bold text-navy-900">Setup checklist</h2>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {setupKeys.map((item) => {
@@ -225,7 +225,7 @@ export function AdminDashboardPage() {
                     <Link
                       key={item.key}
                       to={item.to}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-slate-50 p-4 text-sm hover:border-cyan-200 hover:bg-cyan-50/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+                      className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm hover:border-navy-200 hover:bg-navy-50/50 focus:outline-none focus:ring-2 focus:ring-navy-500 focus:ring-offset-2"
                     >
                       <span className="font-semibold text-navy-900">{item.label}</span>
                       <span

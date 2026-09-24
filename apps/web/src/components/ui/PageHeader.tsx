@@ -45,7 +45,7 @@ export function PageHeader({ eyebrow, title, description, icon, badge, action }:
           </h1>
           {description && (
             <p
-              className={cn('mt-2 max-w-3xl text-sm leading-6 text-slate-500')}
+              className={cn('mt-2 max-w-3xl text-sm leading-6 text-slate-600')}
               data-ui="page-description"
             >
               {description}

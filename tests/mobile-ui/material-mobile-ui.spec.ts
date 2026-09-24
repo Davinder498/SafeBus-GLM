@@ -42,7 +42,7 @@ async function expectMaterialBrand(page: import('@playwright/test').Page) {
   await expect(logo).toHaveAttribute('src', /safebus-master-mark.*\.png/);
   await expect(logo).toHaveAttribute('alt', '');
   await expect(mark.locator('svg')).toHaveCount(0);
-  await expect(mark).toHaveCSS('background-color', 'rgb(11, 47, 91)');
+  await expect(mark).toHaveCSS('background-color', 'rgb(35, 92, 120)');
 }
 
 test('guardian shell uses the branded Material mobile treatment', async ({ page }, testInfo) => {
