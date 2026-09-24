@@ -336,14 +336,14 @@ export function DashboardLayout({
 
   return (
     <div
-      className="min-h-screen bg-[#F6F8F7]"
+      className="min-h-screen bg-[var(--color-canvas)]"
       data-ui="dashboard-shell"
       data-app-surface={appSurface}
       data-portal={portal}
     >
       {/* Top header */}
       <header
-        className="sticky top-0 z-40 border-b border-[#DCE5E4] bg-white/90 backdrop-blur-md"
+        className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[#F5F8F7]/95 backdrop-blur-md"
         data-ui="app-bar"
       >
         <div
@@ -464,7 +464,7 @@ export function DashboardLayout({
       <div className="mx-auto flex max-w-[1400px] gap-0 px-0 lg:px-6">
         {/* Desktop sidebar */}
         {!usesBottomTabs && (
-          <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto border-r border-[#DCE5E4] bg-white py-6 lg:block">
+          <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto border-r border-[var(--color-border)] bg-[var(--color-surface)] py-6 lg:block">
             <SidebarNav groups={groups} portal={portal} />
           </aside>
         )}
@@ -476,7 +476,7 @@ export function DashboardLayout({
               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
               onClick={() => setMobileOpen(false)}
             />
-            <aside className="absolute left-0 top-0 h-full w-72 max-w-[85vw] overflow-y-auto bg-white p-4 shadow-popover animate-slide-in-right">
+            <aside className="absolute left-0 top-0 h-full w-72 max-w-[85vw] overflow-y-auto bg-[var(--color-surface)] p-4 shadow-popover animate-slide-in-right">
               <div className="mb-4 flex items-center justify-between">
                 <span className="flex items-center gap-2 text-sm font-bold text-slate-900">
                   <Bus className="h-4 w-4 text-navy-600" /> BusSafe Alberta
@@ -527,7 +527,7 @@ function BottomTabNav({
 }) {
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 shadow-[0_-4px_16px_rgba(15,23,42,0.08)] backdrop-blur-md"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-border)] bg-[#F5F8F7]/95 shadow-[0_-4px_16px_rgba(15,23,42,0.08)] backdrop-blur-md"
       aria-label="Primary navigation"
       data-testid="native-bottom-navigation"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}

@@ -8,6 +8,10 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Darker muted copy preserves AA contrast on the softened app surfaces.
+        slate: {
+          500: '#52666A',
+        },
         // Prairie Transit blue — calm, trustworthy, and shared by web/mobile.
         // The `navy` alias is retained so the existing UI adopts it globally.
         navy: {

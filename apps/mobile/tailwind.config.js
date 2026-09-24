@@ -9,6 +9,10 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Darker muted copy preserves AA contrast on the softened app surfaces.
+        slate: {
+          500: '#52666A',
+        },
         // Prairie Transit blue — matches the web application.
         navy: {
           50: '#F0F6F7',

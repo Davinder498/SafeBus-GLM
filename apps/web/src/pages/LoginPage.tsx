@@ -52,7 +52,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50" data-ui="login-shell">
+    <div className="flex min-h-screen bg-[var(--color-canvas)]" data-ui="login-shell">
       {/* Left brand panel — hidden on small screens */}
       <div className="relative hidden w-1/2 overflow-hidden bg-navy-900 lg:flex lg:flex-col lg:justify-between">
         <div className="absolute inset-0 bg-gradient-to-br from-navy-900 via-navy-800 to-navy-950" />
