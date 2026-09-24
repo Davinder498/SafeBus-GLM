@@ -152,7 +152,7 @@ export function AdminDashboardPage() {
                 </Card>
                 <Card className="p-5">
                   <p className="text-sm font-semibold text-slate-600">Stale locations</p>
-                  <p className="mt-1 text-3xl font-bold text-warning-600">{staleTrips}</p>
+                  <p className="mt-1 text-3xl font-bold text-warning-700">{staleTrips}</p>
                   <p className="mt-2 text-sm text-slate-600">Buses with GPS not updated recently.</p>
                 </Card>
                 <Card className="p-5">
