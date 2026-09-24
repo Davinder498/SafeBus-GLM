@@ -6,10 +6,35 @@ import {
 import { installMapProviderAvailable, installMapProviderOutage } from './fixtures/map-provider';
 
 test.describe('Simplified tenant admin workflow', () => {
-  test('uses direct sidebar navigation choices', async ({ page }) => { await mockAdmin(page); await page.goto('/admin'); if ((page.viewportSize()?.width ?? 1280) < 1024) await page.getByRole('button', { name: 'Open navigation' }).click(); for (const label of ['Overview', 'Students', 'Guardians', 'Drivers', 'Buses', 'Routes', 'Live Operations', 'Support']) await expect(page.getByRole('link', { name: label, exact: true })).toBeVisible(); await expect(page.getByRole('link', { name: 'Stops', exact: true })).toHaveCount(0); });
-  test('opens tenant support from the authenticated navigation', async ({ page }) => {
+  test('uses direct sidebar navigation choices', async ({ page }) => {
     await mockAdmin(page);
-    await page.goto('/support');
+    await page.goto('/admin');
+    if ((page.viewportSize()?.width ?? 1280) < 1024) {
+      await page.getByRole('button', { name: 'Open navigation' }).click();
+    }
+    for (const label of [
+      'Overview',
+      'Students',
+      'Guardians',
+      'Drivers',
+      'Buses',
+      'Routes',
+      'Live Operations',
+      'Settings',
+    ]) {
+      await expect(page.getByRole('link', { name: label, exact: true })).toBeVisible();
+    }
+    await expect(page.getByRole('link', { name: 'Support', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Stops', exact: true })).toHaveCount(0);
+  });
+  test('opens tenant support from settings', async ({ page }) => {
+    await mockAdmin(page);
+    await page.goto('/admin/settings');
+    await page
+      .getByRole('navigation', { name: 'Settings sections' })
+      .getByRole('link', { name: /^Support/ })
+      .click();
+    await expect(page).toHaveURL('/admin/settings/support');
     await expect(page.getByRole('heading', { name: 'Support', level: 1 })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Contact the platform administrator' })).toBeVisible();
     await expect(
