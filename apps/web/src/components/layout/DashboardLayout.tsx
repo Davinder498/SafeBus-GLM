@@ -155,14 +155,6 @@ export const adminNavItems: DashboardNavItem[] = [
     description: 'Tenant configuration',
     icon: <Settings className="h-4 w-4" />,
   },
-  {
-    label: 'Support',
-    to: '/support',
-    group: 'management',
-    description: 'Help and support contacts',
-    allowedRoles: ['tenant_admin'],
-    icon: <CircleHelp className="h-4 w-4" />,
-  },
 ];
 
 export const adminNavGroups: DashboardNavGroup[] = [
