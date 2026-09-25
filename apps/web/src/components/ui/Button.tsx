@@ -19,7 +19,7 @@ const buttonVariants = cva(
         success:
           'bg-success-600 text-white shadow-sm hover:bg-success-700 focus-visible:ring-success-500',
         outline:
-          'border border-slate-300 bg-white text-slate-700 shadow-xs hover:bg-slate-50 hover:text-slate-900 focus-visible:ring-navy-500',
+          'border border-[#DCE5E4] bg-white text-slate-700 shadow-xs hover:bg-[#EFF4F3] hover:text-slate-900 focus-visible:ring-navy-500',
       },
       size: {
         sm: 'h-9 px-3 text-sm',

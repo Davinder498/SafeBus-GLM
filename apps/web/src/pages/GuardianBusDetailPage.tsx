@@ -16,7 +16,11 @@ import type {
   GuardianBusServiceStop,
   GuardianBusVisibility,
 } from '@/types/guardianLiveBusLocation';
-import { groupGuardianBuses, type GuardianBusGroup } from '@/utils/guardianBusGroups';
+import {
+  groupGuardianBuses,
+  guardianBusStatus,
+  type GuardianBusGroup,
+} from '@/utils/guardianBusGroups';
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
@@ -138,6 +142,7 @@ function BusDetails({
   group: GuardianBusGroup;
   serviceLines: GuardianBusServiceLine[] | null;
 }) {
+  const busStatus = guardianBusStatus(group);
   const liveMapPath = group.busNumber
     ? `/guardian/live-map?bus=${encodeURIComponent(group.busNumber)}`
     : '/guardian/live-map';
@@ -160,8 +165,8 @@ function BusDetails({
                 </h2>
               </div>
             </div>
-            <StatusPill tone={group.hasActiveTrip ? 'success' : 'neutral'} dot>
-              {group.hasActiveTrip ? 'Active' : 'Inactive'}
+            <StatusPill tone={busStatus.tone} dot pulse={busStatus.pulse}>
+              {busStatus.label}
             </StatusPill>
           </div>
           <div className="mt-5 grid grid-cols-2 gap-3">
@@ -248,7 +253,9 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
   const nextStop = line.stops.find((stop) => stop.serviceState === 'next');
   const atStop = line.stops.find((stop) => stop.serviceState === 'at_stop');
   const announcement = nextStop
-    ? `Next stop ${nextStop.name}. ${nextStop.etaLabel}.`
+    ? `Next stop ${nextStop.name}.${
+        nextStop.etaStatus === 'unavailable' ? '' : ` ${nextStop.etaLabel}.`
+      }`
     : atStop
       ? `Bus is at ${atStop.name}.`
       : '';
@@ -266,7 +273,7 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
             {line.direction === 'reverse' ? 'Return direction' : 'Outbound direction'}
           </p>
         </div>
-        <StatusPill tone={status.tone} dot>
+        <StatusPill tone={status.tone} dot pulse={status.label === 'Live'}>
           {status.label}
         </StatusPill>
       </div>
@@ -376,16 +383,18 @@ function ServiceStopPoint({
           <p className="mt-0.5 font-bold text-navy-900">{stop.name}</p>
           <p className="mt-1 text-xs text-gray-500">Planned {plannedTime ?? 'time unavailable'}</p>
         </div>
-        <div className="shrink-0 text-right">
-          <p className="guardian-service-line__eta text-sm font-extrabold text-navy-800">
-            {stop.etaLabel}
-          </p>
-          {stop.etaMinMinutes !== null && stop.etaMaxMinutes !== null && (
-            <p className="mt-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-gray-500">
-              Live ETA
+        {stop.etaStatus !== 'unavailable' && (
+          <div className="shrink-0 text-right">
+            <p className="guardian-service-line__eta text-sm font-extrabold text-navy-800">
+              {stop.etaLabel}
             </p>
-          )}
-        </div>
+            {stop.etaMinMinutes !== null && stop.etaMaxMinutes !== null && (
+              <p className="mt-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-gray-500">
+                Live ETA
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

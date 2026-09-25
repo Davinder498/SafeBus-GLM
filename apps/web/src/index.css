@@ -11,6 +11,21 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --color-brand: #235c78;
+    --color-brand-hover: #19465e;
+    --color-brand-strong: #123447;
+    --color-brand-soft: #e8f2f5;
+    --color-accent: #f2b84b;
+    --color-accent-soft: #fff4d8;
+    --color-canvas: #f6f8f7;
+    --color-surface: #ffffff;
+    --color-surface-subtle: #eff4f3;
+    --color-border: #dce5e4;
+    --color-text: #172b3a;
+    --color-text-muted: #5e6f73;
+  }
+
   html {
     font-family:
       'Inter',
@@ -22,7 +37,9 @@
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    background: var(--color-canvas);
+    color: var(--color-text);
+    @apply antialiased;
   }
 
   /* WCAG 2.1 AA: visible focus indicator */
@@ -66,11 +83,11 @@
 
   /* Modern gradient mesh background for auth/public surfaces */
   .bg-mesh {
-    background-color: #eff6ff;
+    background-color: var(--color-brand-soft);
     background-image:
-      radial-gradient(at 0% 0%, rgb(219 234 254 / 0.6) 0px, transparent 50%),
-      radial-gradient(at 98% 1%, rgb(254 243 199 / 0.5) 0px, transparent 50%),
-      radial-gradient(at 50% 100%, rgb(219 234 254 / 0.4) 0px, transparent 50%);
+      radial-gradient(at 0% 0%, rgb(195 221 228 / 0.62) 0px, transparent 50%),
+      radial-gradient(at 98% 1%, rgb(255 244 216 / 0.7) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgb(225 238 241 / 0.52) 0px, transparent 50%);
   }
 
   /* Glassy card overlay used on auth surfaces */
@@ -99,12 +116,12 @@
 
 .guardian-service-line__track {
   bottom: 0.875rem;
-  background: #bfd0e3;
+  background: var(--color-border);
 }
 
 .guardian-service-line__travelled {
   max-height: calc(100% - 1.75rem);
-  background: #0b2f5b;
+  background: var(--color-brand);
   transition: height 500ms ease;
 }
 
@@ -120,9 +137,9 @@
   justify-content: center;
   border: 3px solid white;
   border-radius: 999px;
-  background: #ffc928;
-  color: #0b2f5b;
-  box-shadow: 0 5px 14px rgb(11 47 91 / 0.22);
+  background: var(--color-accent);
+  color: var(--color-brand-strong);
+  box-shadow: 0 5px 14px rgb(35 92 120 / 0.22);
   transition: top 500ms ease;
 }
 
@@ -151,27 +168,27 @@
 }
 
 .guardian-service-line__point[data-state='passed'] > span {
-  border-color: #0b2f5b;
-  background: #0b2f5b;
+  border-color: var(--color-brand);
+  background: var(--color-brand);
 }
 
 .guardian-service-line__point[data-state='passed'] p {
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 .guardian-service-line__point[data-state='next'] {
   margin: -0.375rem -0.5rem 0.625rem;
   padding: 0.75rem 0.5rem 1rem;
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--color-border);
   border-radius: 0.875rem;
-  background: #eff6ff;
+  background: var(--color-brand-soft);
 }
 
 .guardian-service-line__point[data-state='next'] > span,
 .guardian-service-line__point[data-state='at_stop'] > span,
 .guardian-service-line__point[data-terminal='true'] > span {
-  border-color: #0b2f5b;
-  background: #ffc928;
+  border-color: var(--color-brand);
+  background: var(--color-accent);
 }
 
 @media (prefers-reduced-motion: reduce) {

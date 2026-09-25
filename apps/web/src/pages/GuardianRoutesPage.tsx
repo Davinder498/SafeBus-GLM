@@ -8,7 +8,11 @@ import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { useGuardianLiveBusLocations } from '@/hooks/useGuardianLiveBusLocations';
-import { groupGuardianBuses, guardianBusDetailsPath } from '@/utils/guardianBusGroups';
+import {
+  groupGuardianBuses,
+  guardianBusDetailsPath,
+  guardianBusStatus,
+} from '@/utils/guardianBusGroups';
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
@@ -88,6 +92,7 @@ export function GuardianRoutesPage() {
         {state.kind === 'ready' && appSurface === 'native-mobile' && busGroups.length > 0 && (
           <section className="grid gap-4" data-testid="guardian-routes-list">
             {busGroups.map((group) => {
+              const status = guardianBusStatus(group);
               const content = (
                 <Card
                   className="p-5"
@@ -108,8 +113,8 @@ export function GuardianRoutesPage() {
                         </h2>
                       </div>
                     </div>
-                    <StatusPill tone={group.hasActiveTrip ? 'success' : 'neutral'} dot>
-                      {group.hasActiveTrip ? 'Active' : 'Inactive'}
+                    <StatusPill tone={status.tone} dot pulse={status.pulse}>
+                      {status.label}
                     </StatusPill>
                   </div>
 

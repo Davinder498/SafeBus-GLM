@@ -344,14 +344,14 @@ export function DashboardLayout({
 
   return (
     <div
-      className="min-h-screen bg-slate-50"
+      className="min-h-screen bg-[#F6F8F7]"
       data-ui="dashboard-shell"
       data-app-surface={appSurface}
       data-portal={portal}
     >
       {/* Top header */}
       <header
-        className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-md"
+        className="sticky top-0 z-40 border-b border-[#DCE5E4] bg-white/90 backdrop-blur-md"
         data-ui="app-bar"
       >
         <div
@@ -472,7 +472,7 @@ export function DashboardLayout({
       <div className="mx-auto flex max-w-[1400px] gap-0 px-0 lg:px-6">
         {/* Desktop sidebar */}
         {!usesBottomTabs && (
-          <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto border-r border-slate-200 bg-white py-6 lg:block">
+          <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto border-r border-[#DCE5E4] bg-white py-6 lg:block">
             <SidebarNav groups={groups} portal={portal} />
           </aside>
         )}

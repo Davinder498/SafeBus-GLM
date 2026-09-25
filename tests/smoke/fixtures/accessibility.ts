@@ -16,5 +16,11 @@ export async function expectNoWcagAaViolations(page: Page, surface: string) {
     })),
   }));
 
+  if (evidence.length > 0) {
+    process.stderr.write(
+      `[accessibility] ${surface} WCAG violations:\n${JSON.stringify(evidence, null, 2)}\n`,
+    );
+  }
+
   expect(evidence, `${surface} must have no automated WCAG 2.2 A/AA violations`).toEqual([]);
 }
