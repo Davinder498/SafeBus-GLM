@@ -336,14 +336,22 @@ export function DashboardLayout({
 
   return (
     <div
+ codex/dynamic-role-support
+      className="min-h-screen bg-[#F6F8F7]"
+
       className="min-h-screen bg-[var(--color-canvas)]"
+ main
       data-ui="dashboard-shell"
       data-app-surface={appSurface}
       data-portal={portal}
     >
       {/* Top header */}
       <header
+ codex/dynamic-role-support
+        className="sticky top-0 z-40 border-b border-[#DCE5E4] bg-white/90 backdrop-blur-md"
+
         className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[#F5F8F7]/95 backdrop-blur-md"
+ main
         data-ui="app-bar"
       >
         <div
@@ -464,7 +472,11 @@ export function DashboardLayout({
       <div className="mx-auto flex max-w-[1400px] gap-0 px-0 lg:px-6">
         {/* Desktop sidebar */}
         {!usesBottomTabs && (
+ codex/dynamic-role-support
+          <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto border-r border-[#DCE5E4] bg-white py-6 lg:block">
+
           <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto border-r border-[var(--color-border)] bg-[var(--color-surface)] py-6 lg:block">
+ main
             <SidebarNav groups={groups} portal={portal} />
           </aside>
         )}

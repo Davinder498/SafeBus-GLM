@@ -18,6 +18,13 @@
     --color-brand-soft: #e8f2f5;
     --color-accent: #f2b84b;
     --color-accent-soft: #fff4d8;
+ codex/dynamic-role-support
+    --color-canvas: #f6f8f7;
+    --color-surface: #ffffff;
+    --color-surface-subtle: #eff4f3;
+    --color-border: #dce5e4;
+    --color-text: #172b3a;
+    --color-text-muted: #5e6f73;
     --color-canvas: #e6ecea;
     --color-surface: #f5f8f7;
     --color-surface-subtle: #dfe7e4;
@@ -25,6 +32,7 @@
     --color-text: #132e3b;
     --color-text-muted: #52666a;
     --color-auth-canvas: #dfe9e8;
+ main
   }
 
   html {
@@ -84,11 +92,19 @@
 
   /* Modern gradient mesh background for auth/public surfaces */
   .bg-mesh {
+codex/dynamic-role-support
+    background-color: var(--color-brand-soft);
+    background-image:
+      radial-gradient(at 0% 0%, rgb(195 221 228 / 0.62) 0px, transparent 50%),
+      radial-gradient(at 98% 1%, rgb(255 244 216 / 0.7) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgb(225 238 241 / 0.52) 0px, transparent 50%);
+
     background-color: var(--color-auth-canvas);
     background-image:
       radial-gradient(at 0% 0%, rgb(184 207 210 / 0.62) 0px, transparent 50%),
       radial-gradient(at 98% 1%, rgb(240 222 178 / 0.52) 0px, transparent 50%),
       radial-gradient(at 50% 100%, rgb(202 219 218 / 0.56) 0px, transparent 50%);
+ main
   }
 
   /* Glassy card overlay used on auth surfaces */

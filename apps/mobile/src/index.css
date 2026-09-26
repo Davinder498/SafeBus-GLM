@@ -12,11 +12,18 @@
     --mobile-primary-container: #e8f2f5;
     --mobile-accent: #f2b84b;
     --mobile-accent-container: #fff4d8;
+    codex/dynamic-role-support
+    --mobile-surface: #f6f8f7;
+    --mobile-on-surface: #172b3a;
+    --mobile-muted: #5e6f73;
+    --mobile-outline: #dce5e4;
+
     --mobile-surface: #e6ecea;
     --mobile-surface-container: #f5f8f7;
     --mobile-on-surface: #132e3b;
     --mobile-muted: #52666a;
     --mobile-outline: #c8d3d0;
+ main
     background: var(--mobile-surface);
     color: var(--mobile-on-surface);
     overscroll-behavior-y: none;
@@ -127,6 +134,12 @@
       linear-gradient(180deg, rgb(205 219 218 / 0.62), transparent 15rem), var(--mobile-surface);
   }
 
+  html[data-app-surface='native-mobile'][data-portal='parent'][data-ui='dashboard-shell'] {
+    background:
+      radial-gradient(circle at 100% 0%, rgb(242 184 75 / 0.24), transparent 18rem),
+      linear-gradient(180deg, #fff8e8 0%, #fdfaf2 22rem, var(--mobile-surface) 42rem);
+  }
+
   html[data-app-surface='native-mobile'] [data-ui='app-bar'] {
     position: fixed;
     top: 0;
@@ -137,7 +150,11 @@
     padding-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
     padding-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
     border-color: rgb(215 222 232 / 0.8);
+ codex/dynamic-role-support
+    background: white;
+
     background: var(--mobile-surface-container);
+ main
     box-shadow: 0 1px 0 rgb(35 92 120 / 0.03);
     transform: translateZ(0);
     backface-visibility: hidden;
@@ -247,7 +264,11 @@
 
   html[data-app-surface='native-mobile'] [data-ui='button'][data-variant='outline'] {
     border-color: #dce5e4;
+codex/dynamic-role-support
+    background: white;
+
     background: var(--mobile-surface-container);
+main
     color: var(--mobile-primary);
     box-shadow: none;
   }
@@ -483,10 +504,17 @@
 
   html[data-app-surface='native-mobile'] [data-testid='guardian-home-bus-card'] {
     overflow: hidden;
+codex/dynamic-role-support
+    border-color: #e8c566;
+    background:
+      radial-gradient(circle at 100% 0%, rgb(242 184 75 / 0.34), transparent 48%), #fff9e8;
+    box-shadow: 0 10px 28px rgb(146 99 15 / 0.1);
+
     border-color: #dce5e4;
     background:
       radial-gradient(circle at 100% 0%, rgb(242 184 75 / 0.18), transparent 42%),
       var(--mobile-surface-container);
+ main
   }
 
   html[data-app-surface='native-mobile'] [data-ui='guardian-bus-card'] {
@@ -494,6 +522,17 @@
       transform 150ms ease,
       border-color 150ms ease,
       box-shadow 150ms ease;
+  }
+
+  html[data-app-surface='native-mobile'] a:hover [data-ui='guardian-bus-card'] {
+    border-color: #d3a62d;
+    box-shadow: 0 14px 32px rgb(146 99 15 / 0.14);
+  }
+
+  html[data-app-surface='native-mobile']
+    [data-ui='status-pill'][data-pulse='true']
+    .status-pill__dot {
+    animation: guardian-live-status-pulse 1.35s ease-in-out infinite;
   }
 
   html[data-app-surface='native-mobile'] a:active [data-ui='guardian-bus-card'] {
@@ -650,6 +689,8 @@
     letter-spacing: -0.045em;
   }
 
+ codex/dynamic-role-support
+
   html[data-app-surface='native-mobile'] [data-testid='guardian-home-bus-card'] > div:last-child {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -689,6 +730,7 @@
     grid-column: 1 / -1;
   }
 
+ main
   html[data-app-surface='native-mobile'] [data-testid='guardian-live-bus-map'] {
     border-radius: 1.5rem;
   }
@@ -835,5 +877,24 @@
 @media (prefers-reduced-motion: reduce) {
   html[data-app-surface='native-mobile'] .sb-bottom-tab-indicator {
     transition: none;
+  }
+
+  html[data-app-surface='native-mobile']
+    [data-ui='status-pill'][data-pulse='true']
+    .status-pill__dot {
+    animation: none;
+  }
+}
+
+@keyframes guardian-live-status-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgb(34 197 94 / 0.42);
+  }
+
+  50% {
+    opacity: 0.52;
+    box-shadow: 0 0 0 0.3rem rgb(34 197 94 / 0);
   }
 }

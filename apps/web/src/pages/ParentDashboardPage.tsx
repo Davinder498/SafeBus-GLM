@@ -13,7 +13,11 @@ import {
   type GuardianStudentStopAssignment,
 } from '@/services/guardianStudentStopsService';
 import type { GuardianBusVisibility } from '@/types/guardianLiveBusLocation';
-import { groupGuardianBuses, guardianBusDetailsPath } from '@/utils/guardianBusGroups';
+import {
+  groupGuardianBuses,
+  guardianBusDetailsPath,
+  guardianBusStatus,
+} from '@/utils/guardianBusGroups';
 
 type LoadState =
   | { kind: 'loading' }
@@ -91,75 +95,69 @@ export function ParentDashboardPage() {
 
         {state.kind === 'ready' &&
           appSurface === 'native-mobile' &&
-          busGroups.map((group) => (
-            <Card
-              key={group.key}
-              className="p-5"
-              data-testid="guardian-home-bus-card"
-              data-ui="guardian-bus-card"
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex min-w-0 items-start gap-3">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/80 text-navy-700 shadow-sm">
-                    <BusFront className="h-6 w-6" aria-hidden />
-                  </span>
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-gray-500">
-                      Assigned bus
-                    </p>
-                    {group.busNumber ? (
-                      <>
-                        <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-navy-900">
-                          Bus {group.busNumber}
-                        </h2>
-                        <p className="mt-2 text-gray-600">
-                          License plate:{' '}
-                          <span className="font-semibold text-navy-900">
-                            {group.licensePlate ?? 'Not available'}
-                          </span>
-                        </p>
-                      </>
-                    ) : (
-                      <h2 className="mt-1 text-xl font-bold text-navy-900">No bus assigned yet</h2>
-                    )}
+          busGroups.map((group) => {
+            const status = guardianBusStatus(group);
+            const content = (
+              <Card
+                className="p-5"
+                data-testid="guardian-home-bus-card"
+                data-ui="guardian-bus-card"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/80 text-navy-700 shadow-sm">
+                      <BusFront className="h-6 w-6" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-gray-500">
+                        Assigned bus
+                      </p>
+                      <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-navy-900">
+                        {group.busNumber ? `Bus ${group.busNumber}` : 'No bus assigned yet'}
+                      </h2>
+                    </div>
                   </div>
+                  <StatusPill tone={status.tone} dot pulse={status.pulse}>
+                    {status.label}
+                  </StatusPill>
                 </div>
-                <StatusPill tone={group.hasActiveTrip ? 'success' : 'neutral'} dot>
-                  {group.hasActiveTrip ? 'Active' : 'Inactive'}
-                </StatusPill>
-              </div>
 
-              <div className="mt-4 rounded-2xl bg-white/70 p-3">
-                <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-                  <Users className="h-4 w-4" aria-hidden /> Assigned students
-                </p>
-                <p className="mt-1 font-semibold text-navy-900">
-                  {group.students.map((student) => student.studentName).join(', ')}
-                </p>
-              </div>
+                <div className="mt-4 rounded-2xl bg-white/70 p-3">
+                  <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+                    <Users className="h-4 w-4" aria-hidden /> Assigned students
+                  </p>
+                  <p className="mt-1 font-semibold text-navy-900">
+                    {group.students.map((student) => student.studentName).join(', ')}
+                  </p>
+                </div>
 
-              <div className="mt-5 flex flex-wrap gap-3 border-t border-gray-200 pt-5">
-                {group.busNumber && (
-                  <Link
-                    to={guardianBusDetailsPath(group.busNumber)}
-                    className={`${actionLinkClass} justify-between`}
-                  >
-                    Bus details <ChevronRight className="h-5 w-5" aria-hidden />
-                  </Link>
+                {group.busNumber ? (
+                  <div className="mt-4 flex items-center justify-between border-t border-amber-200/80 pt-4 text-sm font-bold text-navy-700">
+                    <span>View bus details</span>
+                    <ChevronRight className="h-5 w-5" aria-hidden />
+                  </div>
+                ) : (
+                  <p className="mt-4 border-t border-amber-200/80 pt-4 text-sm text-gray-600">
+                    Bus information is not available yet.
+                  </p>
                 )}
-                <Link
-                  to={
-                    group.busNumber
-                      ? `/guardian/live-map?bus=${encodeURIComponent(group.busNumber)}`
-                      : '/guardian/live-map'
-                  }
-                  className={actionLinkClass}
-                >
-                  View live map
-                </Link>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+
+            return group.busNumber ? (
+              <Link
+                key={group.key}
+                to={guardianBusDetailsPath(group.busNumber)}
+                className="block rounded-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-300"
+                aria-label={`View details for Bus ${group.busNumber}`}
+                data-testid="guardian-home-bus-link"
+              >
+                {content}
+              </Link>
+            ) : (
+              <div key={group.key}>{content}</div>
+            );
+          })}
 
         {state.kind === 'ready' && appSurface === 'native-mobile' && state.buses.length > 0 && (
           <section

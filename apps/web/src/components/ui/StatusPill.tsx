@@ -7,6 +7,8 @@ interface StatusPillProps {
   tone?: StatusTone;
   /** Renders a leading status dot (modern indicator style). */
   dot?: boolean;
+  /** Gently pulses the status dot for a currently running live service. */
+  pulse?: boolean;
 }
 
 const toneClasses: Record<StatusTone, string> = {
@@ -25,17 +27,25 @@ const dotToneClasses: Record<StatusTone, string> = {
   neutral: 'bg-slate-400',
 };
 
-export function StatusPill({ children, tone = 'neutral', dot = false }: StatusPillProps) {
+export function StatusPill({
+  children,
+  tone = 'neutral',
+  dot = false,
+  pulse = false,
+}: StatusPillProps) {
   return (
     <span
       data-ui="status-pill"
       data-tone={tone}
+      data-pulse={pulse || undefined}
       className={cn(
         'inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset',
         toneClasses[tone],
       )}
     >
-      {dot && <span className={cn('h-1.5 w-1.5 rounded-full', dotToneClasses[tone])} />}
+      {dot && (
+        <span className={cn('status-pill__dot h-1.5 w-1.5 rounded-full', dotToneClasses[tone])} />
+      )}
       {children}
     </span>
   );

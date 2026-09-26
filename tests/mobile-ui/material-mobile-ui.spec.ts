@@ -72,6 +72,17 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   );
   await expect(page.getByRole('heading', { name: 'Bus number and license plate' })).toHaveCount(0);
   await expect(page.getByText('Active', { exact: true })).toBeVisible();
+  const homeBusLink = page.getByRole('link', { name: 'View details for Bus 42' });
+  const homeBusCard = page.getByTestId('guardian-home-bus-card');
+  await expect(homeBusLink).toHaveAttribute('href', '/guardian/buses/42');
+  await expect(homeBusCard).not.toContainText('License plate');
+  await expect(homeBusCard).not.toContainText('TEST-42');
+  await expect(homeBusCard).not.toContainText('live');
+  await expect(homeBusCard).toHaveCSS('background-color', 'rgb(255, 249, 232)');
+  await expect(homeBusCard.locator('[data-ui="status-pill"][data-tone="success"]')).toHaveAttribute(
+    'data-pulse',
+    'true',
+  );
   const studentCard = page.getByTestId('guardian-home-student-card');
   await expect(studentCard).toHaveCSS('background-color', 'rgb(245, 248, 247)');
   await expect(studentCard).toContainText('Avery Johnson');
@@ -85,11 +96,14 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
 
   await expectTouchTargets(tabs);
 
-  const liveMapAction = page.getByRole('link', { name: 'View live map' });
-  await expectTouchTargets(liveMapAction);
+  await expectTouchTargets(homeBusLink);
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('guardian-home.png') });
-  await liveMapAction.click();
+  await homeBusLink.click();
+  await expect(page).toHaveURL('/guardian/buses/42');
+  await expect(page.getByText('License plate')).toBeVisible();
+  await expect(page.getByText('TEST-42')).toBeVisible();
+  await page.getByRole('link', { name: 'See live map' }).click();
   await expect(page.getByTestId('guardian-fullscreen-map')).toBeVisible();
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Back to home' })).toBeVisible();
@@ -135,6 +149,63 @@ test('guardian home keeps each linked student with their own bus and stops', asy
   await expect(cards.nth(1)).toContainText('Bus 27');
   await expect(cards.nth(1)).toContainText('Oak Street');
   await expect(cards.nth(1)).not.toContainText('Cedar Avenue');
+});
+
+test('guardian home gives each current bus state a distinct accessible treatment', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await installGuardianVisibilityMock(page, {
+    rows: [
+      guardianVisibilityRow(),
+      guardianVisibilityRow({
+        student_id: '44444444-4444-4444-4444-444444444444',
+        student_name: 'Morgan Johnson',
+        bus_number: '27',
+        location_state: 'stale',
+      }),
+      guardianVisibilityRow({
+        student_id: '55555555-5555-5555-5555-555555555555',
+        student_name: 'Taylor Johnson',
+        bus_number: '53',
+        location_state: 'missing',
+      }),
+      guardianVisibilityRow({
+        student_id: '66666666-6666-6666-6666-666666666666',
+        student_name: 'Jordan Johnson',
+        bus_number: '64',
+        has_active_trip: false,
+        location_state: 'inactive',
+      }),
+    ],
+  });
+  await page.goto('/parent');
+
+  const active = page.getByRole('link', { name: 'View details for Bus 42' });
+  const delayed = page.getByRole('link', { name: 'View details for Bus 27' });
+  const unavailable = page.getByRole('link', { name: 'View details for Bus 53' });
+  const inactive = page.getByRole('link', { name: 'View details for Bus 64' });
+
+  await expect(active.locator('[data-ui="status-pill"]')).toHaveAttribute('data-tone', 'success');
+  await expect(active.locator('[data-ui="status-pill"]')).toContainText('Active');
+  await expect(active.locator('.status-pill__dot')).toHaveCSS(
+    'animation-name',
+    'guardian-live-status-pulse',
+  );
+  await expect(delayed.locator('[data-ui="status-pill"]')).toHaveAttribute('data-tone', 'warning');
+  await expect(delayed.locator('[data-ui="status-pill"]')).toContainText('Delayed');
+  await expect(unavailable.locator('[data-ui="status-pill"]')).toHaveAttribute(
+    'data-tone',
+    'warning',
+  );
+  await expect(unavailable.locator('[data-ui="status-pill"]')).toContainText(
+    'Location unavailable',
+  );
+  await expect(inactive.locator('[data-ui="status-pill"]')).toHaveAttribute('data-tone', 'neutral');
+  await expect(inactive.locator('[data-ui="status-pill"]')).toContainText('Inactive');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(active.locator('.status-pill__dot')).toHaveCSS('animation-name', 'none');
 });
 
 test('guardian buses group students and open a clean bus detail view', async ({
@@ -229,6 +300,40 @@ test('guardian buses group students and open a clean bus detail view', async ({
     .getByText('Inactive', { exact: true });
   await expect(inverseStatus).toHaveCSS('color', 'rgb(255, 255, 255)');
   await expect(inverseStatus.locator('> span')).toHaveCSS('background-color', 'rgb(241, 245, 249)');
+
+  guardianMock.setServiceLines([
+    guardianBusServiceLine({
+      busNumber: '27',
+      licensePlate: 'TEST-27',
+      tripStatus: 'inactive',
+      locationState: 'inactive',
+      latitude: null,
+      longitude: null,
+      locationRecordedAt: null,
+      progressPercent: null,
+      progressSource: null,
+      nextStopName: null,
+      nextStopOrder: null,
+      etaUpdatedAt: null,
+      stops: [
+        {
+          name: 'Hill School',
+          order: 1,
+          latitude: null,
+          longitude: null,
+          plannedArrivalTime: null,
+          serviceState: 'unavailable',
+          etaStatus: 'unavailable',
+          etaMinMinutes: null,
+          etaMaxMinutes: null,
+          etaLabel: 'ETA unavailable',
+        },
+      ],
+    }),
+  ]);
+  await page.reload();
+  await expect(page.getByText('ETA unavailable', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Planned time unavailable', { exact: true })).toBeVisible();
 });
 
 test('guardian bus detail remains useful while the route contract is unavailable', async ({
