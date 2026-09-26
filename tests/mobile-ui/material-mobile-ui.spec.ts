@@ -62,6 +62,10 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await page.goto('/parent');
 
   await expect(page.getByRole('heading', { name: 'My Buses', level: 1 })).toBeVisible();
+  await expect(page.locator('[data-ui="dashboard-shell"]')).toHaveCSS(
+    'background-color',
+    'rgb(230, 236, 234)',
+  );
   await expectMaterialBrand(page);
   await expect(page.getByText('Track the assigned bus during an active school run.')).toHaveCount(
     0,
@@ -80,6 +84,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
     'true',
   );
   const studentCard = page.getByTestId('guardian-home-student-card');
+  await expect(studentCard).toHaveCSS('background-color', 'rgb(245, 248, 247)');
   await expect(studentCard).toContainText('Avery Johnson');
   await expect(studentCard).toContainText('Bus 42');
   await expect(studentCard).toContainText('Cedar Avenue');

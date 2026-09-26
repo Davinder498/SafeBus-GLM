@@ -12,10 +12,18 @@
     --mobile-primary-container: #e8f2f5;
     --mobile-accent: #f2b84b;
     --mobile-accent-container: #fff4d8;
+    codex/dynamic-role-support
     --mobile-surface: #f6f8f7;
     --mobile-on-surface: #172b3a;
     --mobile-muted: #5e6f73;
     --mobile-outline: #dce5e4;
+
+    --mobile-surface: #e6ecea;
+    --mobile-surface-container: #f5f8f7;
+    --mobile-on-surface: #132e3b;
+    --mobile-muted: #52666a;
+    --mobile-outline: #c8d3d0;
+ main
     background: var(--mobile-surface);
     color: var(--mobile-on-surface);
     overscroll-behavior-y: none;
@@ -76,7 +84,7 @@
     max-width: 27rem;
     border: 1px solid rgb(215 222 232 / 0.9);
     border-radius: 1.75rem;
-    background: rgb(255 255 255 / 0.92);
+    background: rgb(245 248 247 / 0.94);
     padding: 1.5rem;
     box-shadow: 0 18px 48px rgb(35 92 120 / 0.1);
     backdrop-filter: blur(18px);
@@ -98,7 +106,7 @@
 
   html[data-app-surface='native-mobile'] [data-ui='public-app-bar'] {
     border-color: rgb(215 222 232 / 0.75);
-    background: rgb(255 255 255 / 0.94);
+    background: rgb(245 248 247 / 0.96);
   }
 
   html[data-app-surface='native-mobile'] [data-ui='public-app-bar'] > div,
@@ -123,7 +131,7 @@
     min-height: 100dvh;
     padding-top: 4.25rem;
     background:
-      linear-gradient(180deg, rgb(231 240 250 / 0.55), transparent 15rem), var(--mobile-surface);
+      linear-gradient(180deg, rgb(205 219 218 / 0.62), transparent 15rem), var(--mobile-surface);
   }
 
   html[data-app-surface='native-mobile'][data-portal='parent'][data-ui='dashboard-shell'] {
@@ -142,7 +150,11 @@
     padding-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
     padding-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
     border-color: rgb(215 222 232 / 0.8);
+ codex/dynamic-role-support
     background: white;
+
+    background: var(--mobile-surface-container);
+ main
     box-shadow: 0 1px 0 rgb(35 92 120 / 0.03);
     transform: translateZ(0);
     backface-visibility: hidden;
@@ -218,6 +230,7 @@
   html[data-app-surface='native-mobile'] [data-ui='card'] {
     border-color: rgb(215 222 232 / 0.86);
     border-radius: 1.25rem;
+    background: var(--mobile-surface-container);
     box-shadow:
       0 1px 2px rgb(35 92 120 / 0.04),
       0 8px 24px rgb(35 92 120 / 0.055);
@@ -251,7 +264,11 @@
 
   html[data-app-surface='native-mobile'] [data-ui='button'][data-variant='outline'] {
     border-color: #dce5e4;
+codex/dynamic-role-support
     background: white;
+
+    background: var(--mobile-surface-container);
+main
     color: var(--mobile-primary);
     box-shadow: none;
   }
@@ -271,7 +288,7 @@
     border-radius: 0.875rem;
     padding-right: 1rem;
     padding-left: 1rem;
-    background: white;
+    background: var(--mobile-surface-container);
     font-size: 1rem;
     box-shadow: inset 0 1px 2px rgb(35 92 120 / 0.035);
   }
@@ -281,7 +298,7 @@
     border-color: #dce5e4;
     border-radius: 0.875rem;
     padding: 0.875rem 1rem;
-    background: white;
+    background: var(--mobile-surface-container);
     font-size: 1rem;
   }
 
@@ -333,7 +350,7 @@
 
   html[data-app-surface='native-mobile'] [data-ui-state='data-state'] {
     padding: 2rem 1.25rem;
-    background: rgb(255 255 255 / 0.86);
+    background: rgb(245 248 247 / 0.9);
   }
 
   html[data-app-surface='native-mobile'] main h2,
@@ -353,7 +370,7 @@
     min-height: 3.25rem;
     border-color: #dce5e4;
     border-radius: 0.875rem;
-    background: white;
+    background: var(--mobile-surface-container);
     font-size: 1rem;
   }
 
@@ -487,10 +504,17 @@
 
   html[data-app-surface='native-mobile'] [data-testid='guardian-home-bus-card'] {
     overflow: hidden;
+codex/dynamic-role-support
     border-color: #e8c566;
     background:
       radial-gradient(circle at 100% 0%, rgb(242 184 75 / 0.34), transparent 48%), #fff9e8;
     box-shadow: 0 10px 28px rgb(146 99 15 / 0.1);
+
+    border-color: #dce5e4;
+    background:
+      radial-gradient(circle at 100% 0%, rgb(242 184 75 / 0.18), transparent 42%),
+      var(--mobile-surface-container);
+ main
   }
 
   html[data-app-surface='native-mobile'] [data-ui='guardian-bus-card'] {
@@ -665,6 +689,48 @@
     letter-spacing: -0.045em;
   }
 
+ codex/dynamic-role-support
+
+  html[data-app-surface='native-mobile'] [data-testid='guardian-home-bus-card'] > div:last-child {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.625rem;
+  }
+
+  html[data-app-surface='native-mobile'] [data-testid='guardian-home-bus-card'] > div:last-child a {
+    display: inline-flex;
+    min-height: 3rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #c3dde4;
+    border-radius: 0.875rem;
+    background: var(--mobile-primary-container);
+    padding: 0.625rem;
+    color: var(--mobile-primary);
+    text-align: center;
+    font-size: 0.8125rem;
+    box-shadow: none;
+  }
+
+  html[data-app-surface='native-mobile']
+    [data-testid='guardian-home-bus-card']
+    > div:last-child
+    a:first-child {
+    grid-column: 1 / -1;
+    border-color: var(--mobile-primary);
+    background: var(--mobile-primary);
+    color: white;
+    box-shadow: 0 7px 16px rgb(35 92 120 / 0.16);
+  }
+
+  html[data-app-surface='native-mobile']
+    [data-testid='guardian-home-bus-card']
+    > div:last-child
+    a:last-child {
+    grid-column: 1 / -1;
+  }
+
+ main
   html[data-app-surface='native-mobile'] [data-testid='guardian-live-bus-map'] {
     border-radius: 1.5rem;
   }
