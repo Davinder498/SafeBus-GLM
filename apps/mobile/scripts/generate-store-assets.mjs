@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 import sharp from 'sharp';
@@ -26,6 +26,11 @@ await Promise.all([
   mkdir(webPublicDirectory, { recursive: true }),
   mkdir(path.join(androidResDirectory, 'drawable-nodpi'), { recursive: true }),
 ]);
+
+const officialMarkSource = await readFile(masterSourcePath, 'utf8');
+const busOnlySource = Buffer.from(
+  officialMarkSource.replace(/\s*<rect width="1024" height="1024"[^>]*\/>/, ''),
+);
 
 await sharp(masterSourcePath)
   .resize(1024, 1024, { fit: 'contain' })
@@ -78,11 +83,11 @@ const densitySizes = {
 const renderMark = (size) =>
   sharp(masterSourcePath).resize(size, size, { fit: 'contain' }).png().toBuffer();
 
-const writeCanvasIcon = async (size, outputPath, inset = 0.08) => {
+const writeCanvasIcon = async (size, outputPath, inset = 0.04) => {
   const markSize = Math.round(size * (1 - inset * 2));
   const mark = await renderMark(markSize);
   return sharp({
-    create: { width: size, height: size, channels: 4, background: brand.navy },
+    create: { width: size, height: size, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
   }).composite([{
     input: mark,
     left: Math.round((size - markSize) / 2),
@@ -90,7 +95,19 @@ const writeCanvasIcon = async (size, outputPath, inset = 0.08) => {
   }]).png({ compressionLevel: 9 }).toFile(outputPath);
 };
 
-const writeTransparentForeground = async (size, outputPath) => {
+const writeAdaptiveForeground = async (size, outputPath) => {
+  const markSize = Math.round(size * 0.62);
+  const mark = await sharp(busOnlySource).resize(markSize, markSize, { fit: 'contain' }).png().toBuffer();
+  return sharp({
+    create: { width: size, height: size, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+  }).composite([{
+    input: mark,
+    left: Math.round((size - markSize) / 2),
+    top: Math.round((size - markSize) / 2),
+  }]).png({ compressionLevel: 9 }).toFile(outputPath);
+};
+
+const writeSplashIcon = async (size, outputPath) => {
   const markSize = Math.round(size * 0.62);
   const mark = await renderMark(markSize);
   return sharp({
@@ -111,7 +128,7 @@ const androidIconTasks = Object.entries(densitySizes).flatMap(([density, size]) 
     sharp({ create: { width: size, height: size, channels: 4, background: brand.navy } })
       .png({ compressionLevel: 9 })
       .toFile(path.join(directory, 'ic_launcher_background.png')),
-    writeTransparentForeground(foregroundSize, path.join(directory, 'ic_launcher_foreground.png')),
+    writeAdaptiveForeground(foregroundSize, path.join(directory, 'ic_launcher_foreground.png')),
   ];
 });
 
@@ -143,7 +160,7 @@ await Promise.all([
     .resize(512, 512)
     .png({ compressionLevel: 9 })
     .toFile(path.join(webPublicDirectory, 'icon-512.png')),
-  writeTransparentForeground(
+  writeSplashIcon(
     432,
     path.join(androidResDirectory, 'drawable-nodpi', 'safebus_splash_icon.png'),
   ),

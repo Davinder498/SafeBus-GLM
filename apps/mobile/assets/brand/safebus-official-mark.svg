@@ -10,7 +10,7 @@
       <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#122536" flood-opacity="0.24"/>
     </filter>
   </defs>
-  <rect width="1024" height="1024" rx="112" fill="#172B3A"/>
+  <rect width="1024" height="1024" rx="160" fill="#172B3A"/>
   <g filter="url(#bus-shadow)" transform="translate(512 512) scale(1.16) translate(-512 -512)">
     <path d="M294 294c0-66 54-120 120-120h196c66 0 120 54 120 120v350c0 58-47 105-105 105H399c-58 0-105-47-105-105V294Z" fill="url(#bus)"/>
     <path d="M314 291c0-54 44-98 98-98h200c54 0 98 44 98 98v34H314v-34Z" fill="#F1BD36"/>

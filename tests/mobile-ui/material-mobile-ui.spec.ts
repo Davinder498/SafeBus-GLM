@@ -44,8 +44,9 @@ async function expectMaterialBrand(page: import('@playwright/test').Page) {
   await expect(mark.locator('svg')).toHaveCount(0);
   await expect(mark).toHaveCSS(
     'background-color',
-    'rgb(23, 43, 58)',
+    'rgba(0, 0, 0, 0)',
   );
+  await expect(logo).toHaveCSS('border-radius', '18%');
 }
 
 async function installNotificationInboxMock(page: import('@playwright/test').Page) {
