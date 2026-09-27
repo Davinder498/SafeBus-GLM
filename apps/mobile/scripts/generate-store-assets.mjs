@@ -15,7 +15,7 @@ const webPublicDirectory = path.join(workspaceDirectory, 'apps', 'web', 'public'
 const androidResDirectory = path.join(mobileDirectory, 'android', 'app', 'src', 'main', 'res');
 
 const brand = {
-  navy: '#0F2A44',
+  navy: '#172B3A',
   yellow: '#FCD66B',
   canvas: '#F4E1A1',
 };
@@ -82,7 +82,7 @@ const writeCanvasIcon = async (size, outputPath, inset = 0.08) => {
   const markSize = Math.round(size * (1 - inset * 2));
   const mark = await renderMark(markSize);
   return sharp({
-    create: { width: size, height: size, channels: 4, background: brand.canvas },
+    create: { width: size, height: size, channels: 4, background: brand.navy },
   }).composite([{
     input: mark,
     left: Math.round((size - markSize) / 2),
@@ -108,7 +108,7 @@ const androidIconTasks = Object.entries(densitySizes).flatMap(([density, size]) 
   return [
     writeCanvasIcon(size, path.join(directory, 'ic_launcher.png')),
     writeCanvasIcon(size, path.join(directory, 'ic_launcher_round.png')),
-    sharp({ create: { width: size, height: size, channels: 4, background: brand.canvas } })
+    sharp({ create: { width: size, height: size, channels: 4, background: brand.navy } })
       .png({ compressionLevel: 9 })
       .toFile(path.join(directory, 'ic_launcher_background.png')),
     writeTransparentForeground(foregroundSize, path.join(directory, 'ic_launcher_foreground.png')),

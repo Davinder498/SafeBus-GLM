@@ -205,9 +205,10 @@ test('guardian delivery preference RPC is fail-closed and synchronizes current a
 });
 
 test('the official scalable mark is the single web brand source', () => {
-  assert.match(officialMark, /<pattern id="dots"/);
-  assert.match(officialMark, /<rect width="1024" height="1024" rx="96" fill="#171D23"/);
-  assert.match(officialMark, /width="760" height="912".*fill="url\(#panel\)"/);
+  assert.match(officialMark, /solid navy-blue tile/);
+  assert.match(officialMark, /<rect width="1024" height="1024" rx="112" fill="#172B3A"/);
+  assert.doesNotMatch(officialMark, /<pattern id="dots"/);
+  assert.doesNotMatch(officialMark, /id="panel"|panel-shadow|fill="url\(#panel\)"/);
   assert.match(officialMark, /fill="url\(#bus\)"/);
   assert.match(officialMark, /fill="#C7463D"/);
   assert.match(brandMarkComponent, /safebus-official-mark\.svg/);
