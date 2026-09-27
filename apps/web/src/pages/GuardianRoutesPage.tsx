@@ -1,4 +1,4 @@
-import { BusFront, ChevronRight, Users } from 'lucide-react';
+import { BusFront, Users } from 'lucide-react';
 import { Link } from 'react-router';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
 import { useAppSurface } from '@/contexts/AppSurfaceContext';
@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { GuardianIconTile } from '@/components/ui/GuardianIconTile';
 import { useGuardianLiveBusLocations } from '@/hooks/useGuardianLiveBusLocations';
 import {
   groupGuardianBuses,
@@ -41,7 +42,7 @@ export function GuardianRoutesPage() {
         <PageHeader
           eyebrow="Assigned buses"
           title="My Buses"
-          description="See each linked student's stable bus number and the plate of the physical vehicle currently assigned to it."
+          description="See each linked student's assigned bus and its current service status."
         />
 
         <Card className="p-4" data-ui="manual-refresh-card">
@@ -101,9 +102,9 @@ export function GuardianRoutesPage() {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex min-w-0 items-start gap-3">
-                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-navy-50 text-navy-700">
+                      <GuardianIconTile>
                         <BusFront className="h-6 w-6" aria-hidden />
-                      </span>
+                      </GuardianIconTile>
                       <div className="min-w-0">
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-gray-500">
                           Assigned bus
@@ -118,45 +119,30 @@ export function GuardianRoutesPage() {
                     </StatusPill>
                   </div>
 
-                  <div className="mt-5 grid gap-4 border-t border-gray-200 pt-4 sm:grid-cols-2">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        License plate
-                      </p>
-                      <p className="mt-1 text-base font-bold text-navy-900">
-                        {group.licensePlate ?? 'Not available'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        <Users className="h-4 w-4" aria-hidden /> Assigned students
-                      </p>
-                      <ul className="mt-2 space-y-1" aria-label="Assigned students">
-                        {group.students.map((student) => (
-                          <li key={student.studentId} className="font-semibold text-navy-900">
-                            {student.studentName}
-                            {student.studentGrade ? (
-                              <span className="font-normal text-gray-500">
-                                {' '}
-                                · {formatGrade(student.studentGrade)}
-                              </span>
-                            ) : null}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                  <div className="mt-5 border-t border-navy-900/15 pt-4">
+                    <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      <Users className="h-4 w-4" aria-hidden /> Assigned students
+                    </p>
+                    <ul className="mt-2 space-y-1" aria-label="Assigned students">
+                      {group.students.map((student) => (
+                        <li key={student.studentId} className="font-semibold text-navy-900">
+                          {student.studentName}
+                          {student.studentGrade ? (
+                            <span className="font-normal text-gray-500">
+                              {' '}
+                              · {formatGrade(student.studentGrade)}
+                            </span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
 
-                  {group.busNumber ? (
-                    <div className="mt-5 flex items-center justify-between border-t border-gray-200 pt-4 text-sm font-bold text-navy-700">
-                      <span>View bus details</span>
-                      <ChevronRight className="h-5 w-5" aria-hidden />
-                    </div>
-                  ) : (
+                  {!group.busNumber ? (
                     <p className="mt-5 border-t border-gray-200 pt-4 text-sm text-gray-600">
                       Bus information is not available yet.
                     </p>
-                  )}
+                  ) : null}
                 </Card>
               );
 
@@ -164,7 +150,7 @@ export function GuardianRoutesPage() {
                 <Link
                   key={group.key}
                   to={guardianBusDetailsPath(group.busNumber)}
-                  className="block rounded-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+                  className="block rounded-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-navy-900/20"
                   aria-label={`View details for Bus ${group.busNumber}`}
                   data-testid="guardian-bus-details-link"
                 >

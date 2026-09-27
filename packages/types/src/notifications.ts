@@ -64,6 +64,11 @@ export interface NotificationPreferences {
   categories: Partial<Record<Exclude<NotificationCategory, 'platform'>, boolean>>;
 }
 
+export interface GuardianDeliveryPreferences {
+  pushEnabled: boolean;
+  emailPickupDropoffEnabled: boolean;
+}
+
 export interface AndroidPushDevice {
   id: string;
   installationId: string;

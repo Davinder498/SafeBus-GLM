@@ -1389,6 +1389,8 @@ export interface Database {
           updated_at: string;
           first_name: string;
           last_name: string;
+          pickup_dropoff_email_enabled: boolean;
+          email_preferences_set_at: string | null;
         };
         Insert: {
           id?: string;
@@ -1402,6 +1404,8 @@ export interface Database {
           updated_at?: string;
           first_name: string;
           last_name: string;
+          pickup_dropoff_email_enabled?: boolean;
+          email_preferences_set_at?: string | null;
         };
         Update: {
           id?: string;
@@ -1415,6 +1419,8 @@ export interface Database {
           updated_at?: string;
           first_name?: string;
           last_name?: string;
+          pickup_dropoff_email_enabled?: boolean;
+          email_preferences_set_at?: string | null;
         };
         Relationships: [
           {
@@ -3129,6 +3135,10 @@ export interface Database {
           access_expires_at: string | null;
         }[];
       };
+      get_guardian_delivery_preferences: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       get_notification_delivery_health_v2: { Args: Record<PropertyKey, never>; Returns: Json };
       get_notification_preferences: { Args: Record<PropertyKey, never>; Returns: Json };
       get_user_notification_unread_count: { Args: Record<PropertyKey, never>; Returns: number };
@@ -3228,6 +3238,13 @@ export interface Database {
           p_push_service_changes: boolean;
         };
         Returns: undefined;
+      };
+      set_guardian_delivery_preferences: {
+        Args: {
+          p_push_enabled: boolean;
+          p_email_pickup_dropoff_enabled: boolean;
+        };
+        Returns: Json;
       };
       set_notification_preferences: {
         Args: {

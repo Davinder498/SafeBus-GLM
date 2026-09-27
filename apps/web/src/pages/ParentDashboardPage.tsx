@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BusFront, ChevronRight, MapPin, Users } from 'lucide-react';
+import { BusFront, MapPin, Users } from 'lucide-react';
 import { Link } from 'react-router';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
 import { useAppSurface } from '@/contexts/AppSurfaceContext';
@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { GuardianIconTile } from '@/components/ui/GuardianIconTile';
 import { fetchGuardianBusVisibility } from '@/services/guardianLiveBusLocationService';
 import {
   fetchGuardianStudentStops,
@@ -105,11 +106,11 @@ export function ParentDashboardPage() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex min-w-0 items-start gap-3">
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/80 text-navy-700 shadow-sm">
+                    <GuardianIconTile>
                       <BusFront className="h-6 w-6" aria-hidden />
-                    </span>
+                    </GuardianIconTile>
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-gray-500">
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-navy-700">
                         Assigned bus
                       </p>
                       <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-navy-900">
@@ -122,8 +123,8 @@ export function ParentDashboardPage() {
                   </StatusPill>
                 </div>
 
-                <div className="mt-4 rounded-2xl bg-white/70 p-3">
-                  <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+                <div className="mt-4 rounded-2xl border border-navy-900/15 bg-navy-900/5 p-3">
+                  <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-navy-700">
                     <Users className="h-4 w-4" aria-hidden /> Assigned students
                   </p>
                   <p className="mt-1 font-semibold text-navy-900">
@@ -131,12 +132,7 @@ export function ParentDashboardPage() {
                   </p>
                 </div>
 
-                {group.busNumber ? (
-                  <div className="mt-4 flex items-center justify-between border-t border-amber-200/80 pt-4 text-sm font-bold text-navy-700">
-                    <span>View bus details</span>
-                    <ChevronRight className="h-5 w-5" aria-hidden />
-                  </div>
-                ) : (
+                {!group.busNumber && (
                   <p className="mt-4 border-t border-amber-200/80 pt-4 text-sm text-gray-600">
                     Bus information is not available yet.
                   </p>
@@ -179,11 +175,12 @@ export function ParentDashboardPage() {
                   key={student.studentId}
                   className="p-5"
                   data-testid="guardian-home-student-card"
+                  data-ui="guardian-student-card"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-navy-50 text-navy-700">
+                    <GuardianIconTile size="sm">
                       <Users className="h-5 w-5" aria-hidden />
-                    </span>
+                    </GuardianIconTile>
                     <div className="min-w-0">
                       <h3 className="text-lg font-bold text-navy-900">{student.studentName}</h3>
                       {student.studentGrade && (

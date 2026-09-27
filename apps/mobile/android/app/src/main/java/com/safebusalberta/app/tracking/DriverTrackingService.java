@@ -392,7 +392,7 @@ public final class DriverTrackingService extends Service implements LocationList
             this, 0, open, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
         );
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_stat_safebus)
             .setContentTitle("BusSafe trip tracking")
             .setContentText(content)
             .setContentIntent(pending)

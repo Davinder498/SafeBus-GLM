@@ -39,10 +39,40 @@ async function expectMaterialBrand(page: import('@playwright/test').Page) {
   await expect(mark).toBeVisible();
   const logo = mark.locator('img');
   await expect(logo).toBeVisible();
-  await expect(logo).toHaveAttribute('src', /safebus-master-mark.*\.png/);
+  await expect(logo).toHaveAttribute('src', /safebus-official-mark.*\.svg/);
   await expect(logo).toHaveAttribute('alt', '');
   await expect(mark.locator('svg')).toHaveCount(0);
-  await expect(mark).toHaveCSS('background-color', 'rgb(35, 92, 120)');
+  await expect(mark).toHaveCSS(
+    'background-color',
+    'rgb(23, 43, 58)',
+  );
+}
+
+async function installNotificationInboxMock(page: import('@playwright/test').Page) {
+  await page.route('**/rest/v1/rpc/get_user_notification_unread_count', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: '1' }),
+  );
+  await page.route('**/rest/v1/rpc/get_user_notifications', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([
+        {
+          id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+          event_type: 'trip_cancelled',
+          category: 'trip_status',
+          severity: 'urgent',
+          title: 'Trip cancelled',
+          body: 'Bus service status has changed.',
+          occurred_at: '2026-09-01T12:00:00Z',
+          created_at: '2026-09-01T12:00:00Z',
+          read_at: null,
+          archived_at: null,
+          destination_path: '/notifications?notification=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        },
+      ]),
+    }),
+  );
 }
 
 test('guardian shell uses the branded Material mobile treatment', async ({ page }, testInfo) => {
@@ -64,7 +94,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(page.getByRole('heading', { name: 'My Buses', level: 1 })).toBeVisible();
   await expect(page.locator('[data-ui="dashboard-shell"]')).toHaveCSS(
     'background-color',
-    'rgb(230, 236, 234)',
+    'rgb(244, 225, 161)',
   );
   await expectMaterialBrand(page);
   await expect(page.getByText('Track the assigned bus during an active school run.')).toHaveCount(
@@ -78,13 +108,24 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(homeBusCard).not.toContainText('License plate');
   await expect(homeBusCard).not.toContainText('TEST-42');
   await expect(homeBusCard).not.toContainText('live');
-  await expect(homeBusCard).toHaveCSS('background-color', 'rgb(255, 249, 232)');
-  await expect(homeBusCard.locator('[data-ui="status-pill"][data-tone="success"]')).toHaveAttribute(
-    'data-pulse',
-    'true',
+  await expect(homeBusCard).not.toContainText('View bus details');
+  await expect(homeBusCard).toHaveCSS('background-color', 'rgb(241, 215, 128)');
+  await expect(page.locator('[data-ui="dashboard-shell"]')).toHaveCSS(
+    'background-color',
+    'rgb(244, 225, 161)',
   );
+  await expect(page.getByTestId('guardian-home-student-card')).toHaveCSS(
+    'background-color',
+    'rgb(250, 236, 189)',
+  );
+  await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
+    'background-color',
+    'rgb(23, 43, 58)',
+  );
+  const activeStatus = homeBusCard.locator('[data-ui="status-pill"][data-tone="success"]');
+  await expect(activeStatus).toHaveAttribute('data-pulse', 'true');
+  await expect(activeStatus).toHaveCSS('color', 'rgb(22, 101, 52)');
   const studentCard = page.getByTestId('guardian-home-student-card');
-  await expect(studentCard).toHaveCSS('background-color', 'rgb(245, 248, 247)');
   await expect(studentCard).toContainText('Avery Johnson');
   await expect(studentCard).toContainText('Bus 42');
   await expect(studentCard).toContainText('Cedar Avenue');
@@ -93,6 +134,11 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   const tabs = page.getByTestId('native-bottom-navigation').getByRole('link');
   await expect(tabs).toHaveCount(4);
   await expect(tabs.filter({ hasText: 'Home' })).toHaveAttribute('aria-current', 'page');
+  await expect(tabs.filter({ hasText: 'Updates' })).toHaveAttribute('href', '/notifications');
+  await expect(tabs.filter({ hasText: 'Settings' })).toHaveAttribute(
+    'href',
+    '/notifications/settings',
+  );
 
   await expectTouchTargets(tabs);
 
@@ -105,6 +151,16 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(page.getByText('TEST-42')).toBeVisible();
   await page.getByRole('link', { name: 'See live map' }).click();
   await expect(page.getByTestId('guardian-fullscreen-map')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Bus 42 live map' })).toBeVisible();
+  await expect(page.getByTestId('guardian-fullscreen-map')).toHaveCSS(
+    'background-color',
+    'rgb(244, 225, 161)',
+  );
+  await expect(page.locator('[data-ui="guardian-map-app-bar"]')).toHaveCSS(
+    'background-color',
+    'rgb(241, 215, 128)',
+  );
+  await page.screenshot({ path: testInfo.outputPath('guardian-live-map.png') });
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Back to home' })).toBeVisible();
 });
@@ -242,11 +298,22 @@ test('guardian buses group students and open a clean bus detail view', async ({
   const bus42Card = page.getByRole('link', { name: 'View details for Bus 42' });
   await expect(bus42Card.getByText('Avery Johnson')).toBeVisible();
   await expect(bus42Card.getByText('Morgan Johnson')).toBeVisible();
+  await expect(bus42Card.getByText('License plate')).toHaveCount(0);
+  await expect(bus42Card.getByText('View bus details')).toHaveCount(0);
+  await expect(bus42Card.locator('[data-ui="guardian-icon-tile"]')).toHaveCSS(
+    'background-color',
+    'rgb(23, 43, 58)',
+  );
+  await page.screenshot({ path: testInfo.outputPath('guardian-buses.png'), fullPage: true });
   await bus42Card.click();
 
   await expect(page.getByRole('heading', { name: 'Bus 42', level: 1 })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Cedar School Line' })).toBeVisible();
   const serviceLine = page.locator('[data-ui="guardian-service-line"]');
+  await expect(page.locator('[data-ui="guardian-service-line-card"]')).toHaveCSS(
+    'background-color',
+    'rgb(250, 236, 189)',
+  );
   await expect(serviceLine.locator('.guardian-service-line__point')).toHaveCount(3);
   await expect(serviceLine.getByText('North Terminal')).toBeVisible();
   await expect(serviceLine.getByText('Cedar Avenue')).toBeVisible();
@@ -295,11 +362,14 @@ test('guardian buses group students and open a clean bus detail view', async ({
   await page.screenshot({ path: testInfo.outputPath('guardian-bus-details.png'), fullPage: true });
 
   await page.goto('/guardian/buses/27');
-  const inverseStatus = page
+  const inactiveStatus = page
     .locator('[data-ui="guardian-bus-detail-hero"]')
     .getByText('Inactive', { exact: true });
-  await expect(inverseStatus).toHaveCSS('color', 'rgb(255, 255, 255)');
-  await expect(inverseStatus.locator('> span')).toHaveCSS('background-color', 'rgb(241, 245, 249)');
+  await expect(inactiveStatus).toHaveCSS('color', 'rgb(71, 85, 105)');
+  await expect(inactiveStatus.locator('> span')).toHaveCSS(
+    'background-color',
+    'rgb(100, 116, 139)',
+  );
 
   guardianMock.setServiceLines([
     guardianBusServiceLine({
@@ -362,10 +432,56 @@ test('mobile notification settings stay focused and do not request device histor
   await expect(
     page.getByRole('heading', { name: 'Notification settings', level: 1 }),
   ).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Push notifications' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Alert types' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Lock-screen privacy' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Save notification settings' })).toBeVisible();
+  const push = page.getByRole('checkbox', { name: 'Push notifications' });
+  const email = page.getByRole('checkbox', { name: 'Pickup and drop-off emails' });
+  await expect(push).toBeVisible();
+  await expect(email).toBeVisible();
+  await expect(page.getByText('Alert types', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Lock-screen privacy', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Save notification settings' })).toHaveCount(0);
+  await expect(page.locator('[data-ui="dashboard-shell"]')).toHaveCSS(
+    'background-color',
+    'rgb(244, 225, 161)',
+  );
+  await expect(page.locator('[data-ui="guardian-delivery-settings-card"]')).toHaveCSS(
+    'background-color',
+    'rgb(250, 236, 189)',
+  );
+  const rows = page.locator('[data-ui="guardian-delivery-row"]');
+  await expect(rows).toHaveCount(2);
+  const [firstRow, secondRow] = await rows.evaluateAll((elements) =>
+    elements.map((element) => {
+      const icon = element.firstElementChild?.getBoundingClientRect();
+      const text = element.children[1]?.getBoundingClientRect();
+      const control = element.lastElementChild?.getBoundingClientRect();
+      return { iconX: icon?.x, textX: text?.x, controlX: control?.x };
+    }),
+  );
+  expect(firstRow).toEqual(secondRow);
+  await email.check();
+  await expect(email).toBeChecked();
+  await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(1);
+  await expect(page.getByRole('status')).toHaveText('Saved');
+  await push.uncheck();
+  await expect(push).not.toBeChecked();
+  await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(2);
+  await expect(page.getByRole('status')).toHaveText('Saved');
+  mock.setDeliveryPreferenceSaveFailure(true);
+  await email.uncheck();
+  await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(3);
+  await expect(email).toBeChecked();
+  await expect(page.getByText('Preference save failed', { exact: true })).toBeVisible();
+  mock.setDeliveryPreferenceSaveFailure(false);
+  await push.check();
+  await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(4);
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible();
+  const settingsTab = page
+    .getByTestId('native-bottom-navigation')
+    .getByRole('link', { name: 'Settings' });
+  await expect(settingsTab).toHaveAttribute('aria-current', 'page');
+  await expect(
+    page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Updates' }),
+  ).not.toHaveAttribute('aria-current', 'page');
 
   await expect(page.getByText('Registered Android devices', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Quiet hours', { exact: true })).toHaveCount(0);
@@ -374,6 +490,40 @@ test('mobile notification settings stay focused and do not request device histor
 
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('notification-settings.png'), fullPage: true });
+
+  await page.locator('[data-ui="dropdown"] > button').click();
+  const profileMenu = page.locator('[data-ui="dropdown-panel"]');
+  await expect(profileMenu).toHaveCSS('background-color', 'rgb(250, 236, 189)');
+  await page.screenshot({ path: testInfo.outputPath('guardian-profile-menu.png') });
+  await page.getByRole('menuitem', { name: 'Privacy & account' }).click();
+  await expect(page.getByRole('heading', { name: 'Privacy and account', level: 1 })).toBeVisible();
+  await expect(page.locator('[data-ui="guardian-account-card"]').first()).toHaveCSS(
+    'background-color',
+    'rgb(250, 236, 189)',
+  );
+  await page.screenshot({ path: testInfo.outputPath('guardian-account.png'), fullPage: true });
+});
+
+test('guardian updates use the unified warm card system', async ({ page }, testInfo) => {
+  await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
+  await installNotificationInboxMock(page);
+  await page.goto('/notifications');
+
+  await expect(page.getByRole('heading', { name: 'Updates', level: 1 })).toBeVisible();
+  const filters = page.locator('[data-ui="notification-filters"]');
+  const notification = page.locator('[data-ui="notification-card"]');
+  await expect(filters).toHaveCSS('background-color', 'rgb(250, 236, 189)');
+  await expect(filters).toHaveCSS('padding', '20px');
+  await expect(filters).toHaveCSS('margin-bottom', '24px');
+  await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('gap', '20px');
+  await expect(notification).toHaveCSS('background-color', 'rgb(241, 215, 128)');
+  await expect(notification).toHaveCSS('padding', '20px');
+  await expect(notification.locator('[data-ui="notification-unread-dot"]')).toHaveCSS(
+    'background-color',
+    'rgb(23, 43, 58)',
+  );
+  await expectNoHorizontalOverflow(page);
+  await page.screenshot({ path: testInfo.outputPath('guardian-updates.png'), fullPage: true });
 });
 
 test('driver active-trip shell keeps daily actions touch friendly', async ({ page }, testInfo) => {

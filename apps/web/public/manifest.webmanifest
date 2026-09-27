@@ -1,0 +1,21 @@
+{
+  "name": "BusSafe Alberta",
+  "short_name": "BusSafe",
+  "description": "School bus visibility for Alberta families and transportation teams.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F4E1A1",
+  "theme_color": "#F4E1A1",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

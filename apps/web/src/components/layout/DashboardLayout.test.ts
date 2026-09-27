@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Bell, Bus, Calendar, History, LayoutDashboard, List } from 'lucide-react';
+import { Bell, Bus, History, LayoutDashboard, List, Settings } from 'lucide-react';
 import type { ReactElement } from 'react';
 import {
   adminNavItems,
@@ -130,8 +130,8 @@ describe('guardian shell navigation model', () => {
     const expected = [
       { label: 'Home', to: '/parent', icon: LayoutDashboard },
       { label: 'Buses', to: '/guardian/routes', icon: Bus },
-      { label: 'Updates', to: '/guardian/events', icon: Calendar },
-      { label: 'Alerts', to: '/notifications', icon: Bell },
+      { label: 'Updates', to: '/notifications', icon: Bell },
+      { label: 'Settings', to: '/notifications/settings', icon: Settings },
     ];
 
     expect(guardianNativeNavItems).toHaveLength(expected.length);

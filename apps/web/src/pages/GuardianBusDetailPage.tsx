@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { GuardianIconTile } from '@/components/ui/GuardianIconTile';
 import {
   fetchGuardianBusServiceLines,
   fetchGuardianBusVisibility,
@@ -150,14 +151,14 @@ function BusDetails({
   return (
     <>
       <Card className="overflow-hidden" data-ui="guardian-bus-detail-hero">
-        <div className="bg-navy-900 p-5 text-white">
+        <div className="p-5 text-navy-900" data-ui="guardian-bus-detail-summary">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-yellow-400 text-navy-900">
+              <GuardianIconTile size="lg">
                 <BusFront className="h-7 w-7" aria-hidden />
-              </span>
+              </GuardianIconTile>
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-100">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-navy-700">
                   Assigned bus
                 </p>
                 <h2 className="mt-1 text-4xl font-extrabold tracking-tight">
@@ -170,12 +171,12 @@ function BusDetails({
             </StatusPill>
           </div>
           <div className="mt-5 grid grid-cols-2 gap-3">
-            <div className="rounded-2xl bg-white/10 p-3">
-              <p className="text-xs font-semibold text-blue-100">License plate</p>
+            <div className="rounded-2xl border border-navy-900/10 bg-navy-900/5 p-3">
+              <p className="text-xs font-semibold text-navy-700">License plate</p>
               <p className="mt-1 font-bold">{group.licensePlate ?? 'Not available'}</p>
             </div>
-            <div className="rounded-2xl bg-white/10 p-3">
-              <p className="text-xs font-semibold text-blue-100">Students</p>
+            <div className="rounded-2xl border border-navy-900/10 bg-navy-900/5 p-3">
+              <p className="text-xs font-semibold text-navy-700">Students</p>
               <p className="mt-1 font-bold">{group.students.length}</p>
             </div>
           </div>
@@ -203,9 +204,12 @@ function BusDetails({
       ))}
 
       <Card className="p-5">
-        <h2 className="flex items-center gap-2 text-lg font-bold text-navy-900">
-          <Users className="h-5 w-5 text-navy-700" aria-hidden /> Assigned students
-        </h2>
+        <div className="flex items-center gap-3">
+          <GuardianIconTile size="sm">
+            <Users className="h-5 w-5" aria-hidden />
+          </GuardianIconTile>
+          <h2 className="text-lg font-bold text-navy-900">Assigned students</h2>
+        </div>
         <ul className="mt-4 divide-y divide-gray-200">
           {group.students.map((student) => (
             <li
@@ -264,7 +268,7 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
     <Card className="p-5" data-ui="guardian-service-line-card">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-700">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-navy-700">
             Live service line
           </p>
           <h2 className="mt-1 text-xl font-bold text-navy-900">{line.routeName}</h2>
@@ -313,13 +317,19 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
           ))}
         </div>
       ) : (
-        <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm text-gray-600">
+        <div
+          className="mt-5 rounded-2xl p-4 text-sm text-gray-600"
+          data-ui="guardian-service-line-note"
+        >
           Scheduled stops are not available for this service yet.
         </div>
       )}
 
       {hasLivePosition ? (
-        <div className="mt-4 rounded-2xl bg-navy-50 p-3 text-sm text-navy-800">
+        <div
+          className="mt-4 rounded-2xl p-3 text-sm text-navy-800"
+          data-ui="guardian-service-line-note"
+        >
           <p className="font-semibold">
             {line.nextStopName
               ? `Next stop: ${line.nextStopName}`
@@ -330,7 +340,10 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
           )}
         </div>
       ) : (
-        <p className="mt-4 rounded-2xl bg-slate-50 p-3 text-sm text-gray-600">
+        <p
+          className="mt-4 rounded-2xl p-3 text-sm text-gray-600"
+          data-ui="guardian-service-line-note"
+        >
           Live position appears when the school run is active and a fresh GPS update is available.
         </p>
       )}

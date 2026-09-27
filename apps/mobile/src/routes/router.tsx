@@ -18,7 +18,6 @@ import { NotificationsPage } from '@/pages/NotificationsPage';
 import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
 import { GuardianRoutesPage } from '@/pages/GuardianRoutesPage';
 import { GuardianTripEventsPage } from '@/pages/GuardianTripEventsPage';
-import { GuardianNotificationPreferencesPage } from '@/pages/GuardianNotificationPreferencesPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { ParentDashboardPage } from '@/pages/ParentDashboardPage';
@@ -91,11 +90,7 @@ export const appRoutes: RouteObject[] = [
   },
   {
     path: '/notifications/settings/email',
-    element: (
-      <ProtectedRoute allowedRoles={['guardian']}>
-        <GuardianNotificationPreferencesPage />
-      </ProtectedRoute>
-    ),
+    element: <Navigate to="/notifications/settings" replace />,
   },
 
   /* ----------------------------- Driver routes ----------------------------- */

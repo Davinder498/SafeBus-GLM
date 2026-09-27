@@ -1,5 +1,6 @@
 import type {
   AndroidPushDevice,
+  GuardianDeliveryPreferences,
   NotificationCategory,
   NotificationCursor,
   NotificationDeliveryHealthV2,
@@ -114,6 +115,39 @@ export async function saveNotificationPreferences(value: NotificationPreferences
     p_preview_mode: value.previewMode,
     p_categories: value.categories,
   }));
+}
+
+interface GuardianDeliveryPreferencesRow {
+  push_enabled: boolean;
+  email_pickup_dropoff_enabled: boolean;
+}
+
+function mapGuardianDeliveryPreferences(
+  value: GuardianDeliveryPreferencesRow,
+): GuardianDeliveryPreferences {
+  return {
+    pushEnabled: value.push_enabled,
+    emailPickupDropoffEnabled: value.email_pickup_dropoff_enabled,
+  };
+}
+
+export async function fetchGuardianDeliveryPreferences(): Promise<GuardianDeliveryPreferences> {
+  const value = assertData<GuardianDeliveryPreferencesRow>(
+    await clientRpc()('get_guardian_delivery_preferences'),
+  );
+  return mapGuardianDeliveryPreferences(value);
+}
+
+export async function saveGuardianDeliveryPreferences(
+  value: GuardianDeliveryPreferences,
+): Promise<GuardianDeliveryPreferences> {
+  const result = assertData<GuardianDeliveryPreferencesRow>(
+    await clientRpc()('set_guardian_delivery_preferences', {
+      p_push_enabled: value.pushEnabled,
+      p_email_pickup_dropoff_enabled: value.emailPickupDropoffEnabled,
+    }),
+  );
+  return mapGuardianDeliveryPreferences(result);
 }
 
 interface DeviceRow {

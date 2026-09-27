@@ -46,9 +46,9 @@ test('billing routes have the intended role boundaries and mobile remains unchan
   assert.doesNotMatch(mobileRouter, /subscription|tenants\/:tenantId/);
 });
 
-test('web bus mark is 1.5 times larger while native sizing remains overridden', () => {
+test('official bus mark fills its native brand tile without changing the web mark size', () => {
   const brand = read('apps/web/src/components/ui/BrandMark.tsx');
   const mobile = read('apps/mobile/src/index.css');
   assert.match(brand, /h-\[30px\] w-\[30px\]/);
-  assert.match(mobile, /\.safebus-brand-mark img\s*\{[\s\S]*width: 78%;[\s\S]*height: 78%;/);
+  assert.match(mobile, /\.safebus-brand-mark img\s*\{[\s\S]*width: 100%;[\s\S]*height: 100%;/);
 });

@@ -182,6 +182,12 @@ export async function installGuardianVisibilityMock(
   let fail = options.fail ?? false;
   let calls = 0;
   let deviceCalls = 0;
+  let deliveryPreferenceSaves = 0;
+  let deliveryPreferenceSaveFails = false;
+  let deliveryPreferences = {
+    push_enabled: true,
+    email_pickup_dropoff_enabled: false,
+  };
 
   await page.route('**/*', async (requestRoute: Route) => {
     const url = new URL(requestRoute.request().url());
@@ -229,6 +235,36 @@ export async function installGuardianVisibilityMock(
             operations: false,
           },
         }),
+      });
+    }
+    if (method === 'POST' && path.includes('/rpc/get_guardian_delivery_preferences')) {
+      return requestRoute.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(deliveryPreferences),
+      });
+    }
+    if (method === 'POST' && path.includes('/rpc/set_guardian_delivery_preferences')) {
+      deliveryPreferenceSaves += 1;
+      if (deliveryPreferenceSaveFails) {
+        return requestRoute.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'Preference save failed' }),
+        });
+      }
+      const body = requestRoute.request().postDataJSON() as {
+        p_push_enabled: boolean;
+        p_email_pickup_dropoff_enabled: boolean;
+      };
+      deliveryPreferences = {
+        push_enabled: body.p_push_enabled,
+        email_pickup_dropoff_enabled: body.p_email_pickup_dropoff_enabled,
+      };
+      return requestRoute.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(deliveryPreferences),
       });
     }
     if (method === 'POST' && path.includes('/rpc/list_own_push_devices')) {
@@ -338,6 +374,12 @@ export async function installGuardianVisibilityMock(
     },
     getDeviceCallCount() {
       return deviceCalls;
+    },
+    getDeliveryPreferenceSaveCount() {
+      return deliveryPreferenceSaves;
+    },
+    setDeliveryPreferenceSaveFailure(nextFail: boolean) {
+      deliveryPreferenceSaveFails = nextFail;
     },
   };
 }

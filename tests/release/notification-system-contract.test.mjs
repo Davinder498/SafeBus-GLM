@@ -25,6 +25,22 @@ const rebrandMigration = await readFile(
   new URL('../../supabase/migrations/0096_bussafe_notification_copy.sql', import.meta.url),
   'utf8',
 );
+const simplifiedPreferencesMigration = await readFile(
+  new URL('../../supabase/migrations/0109_guardian_delivery_preferences.sql', import.meta.url),
+  'utf8',
+);
+const notificationSettingsPage = await readFile(
+  new URL('../../apps/web/src/pages/NotificationSettingsPage.tsx', import.meta.url),
+  'utf8',
+);
+const officialMark = await readFile(
+  new URL('../../apps/mobile/assets/brand/safebus-official-mark.svg', import.meta.url),
+  'utf8',
+);
+const brandMarkComponent = await readFile(
+  new URL('../../apps/web/src/components/ui/BrandMark.tsx', import.meta.url),
+  'utf8',
+);
 const edgeConfig = await readFile(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
 const edgeHandler = await readFile(
   new URL('../../supabase/functions/push-notification-dispatcher/index.ts', import.meta.url),
@@ -164,6 +180,38 @@ test('quiet hours and urgent bypass are fail-closed defaults', () => {
     /at time zone v_timezone/i,
     'quiet-hour calculation must use timezone-aware conversion for DST',
   );
+});
+
+test('guardian delivery settings expose two account-level choices only', () => {
+  assert.match(notificationSettingsPage, /label="Push notifications"/);
+  assert.match(notificationSettingsPage, /label="Pickup and drop-off emails"/);
+  assert.doesNotMatch(notificationSettingsPage, /Alert types|Lock-screen privacy|Generic preview|Event type only/);
+  assert.doesNotMatch(notificationSettingsPage, /Save notification settings|Manage email choices/);
+  assert.match(notificationSettingsPage, /saveGuardianDeliveryPreferences/);
+});
+
+test('guardian delivery preference RPC is fail-closed and synchronizes current and future links', () => {
+  assert.match(simplifiedPreferencesMigration, /pickup_dropoff_email_enabled boolean not null default false/i);
+  assert.match(simplifiedPreferencesMigration, /get_guardian_delivery_preferences\(\)/i);
+  assert.match(simplifiedPreferencesMigration, /set_guardian_delivery_preferences\([\s\S]*p_push_enabled boolean[\s\S]*p_email_pickup_dropoff_enabled boolean/i);
+  assert.match(simplifiedPreferencesMigration, /security definer[\s\S]*set search_path = ''/i);
+  assert.match(simplifiedPreferencesMigration, /auth\.uid\(\) is null/i);
+  assert.match(simplifiedPreferencesMigration, /zz_student_guardians_apply_delivery_defaults/i);
+  assert.match(simplifiedPreferencesMigration, /student_guardians_sync_push_defaults/i);
+  assert.match(simplifiedPreferencesMigration, /bool_and\([\s\S]*notify_pickup[\s\S]*notify_dropoff/i);
+  assert.match(simplifiedPreferencesMigration, /revoke all on function public\.get_guardian_delivery_preferences\(\) from public, anon, authenticated/i);
+  assert.match(simplifiedPreferencesMigration, /grant execute on function public\.get_guardian_delivery_preferences\(\) to authenticated/i);
+  assert.doesNotMatch(simplifiedPreferencesMigration, /to anon|grant execute[\s\S]*to public/i);
+});
+
+test('the official scalable mark is the single web brand source', () => {
+  assert.match(officialMark, /<pattern id="dots"/);
+  assert.match(officialMark, /<rect width="1024" height="1024" rx="96" fill="#171D23"/);
+  assert.match(officialMark, /width="760" height="912".*fill="url\(#panel\)"/);
+  assert.match(officialMark, /fill="url\(#bus\)"/);
+  assert.match(officialMark, /fill="#C7463D"/);
+  assert.match(brandMarkComponent, /safebus-official-mark\.svg/);
+  assert.doesNotMatch(brandMarkComponent, /safebus-master-mark\.png/);
 });
 
 test('Android registration handles permission, channels, taps, refresh and cleanup', () => {

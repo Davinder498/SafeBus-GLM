@@ -15,11 +15,7 @@ export function Card({ children, className, interactive = false, ...props }: Car
     <div
       data-ui="card"
       className={cn(
- codex/dynamic-role-support
-        'min-w-0 rounded-xl border border-[#DCE5E4] bg-white shadow-card',
-
-        'min-w-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-card',
- main
+        'min-w-0 rounded-xl border border-[#B6953F] bg-[#FAECBD] shadow-card',
         interactive &&
           'transition-shadow duration-200 hover:-translate-y-0.5 hover:shadow-card-hover',
         className,
