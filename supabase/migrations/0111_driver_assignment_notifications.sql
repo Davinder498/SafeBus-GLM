@@ -20,14 +20,17 @@ alter table public.guardian_notification_outbox
   add constraint guardian_notification_outbox_type_check check (notification_type in (
     'student_picked_up',
     'student_dropped_off',
-    'guardian_pickup_recorded',
-    'guardian_dropoff_recorded',
-    'guardian_trip_started',
-    'guardian_trip_completed',
-    'guardian_trip_cancelled',
-    'guardian_trip_delayed',
-    'guardian_trip_disrupted',
-    'guardian_service_change',
+    'trip_started',
+    'trip_completed',
+    'trip_cancelled',
+    'trip_late',
+    'trip_missing',
+    'traffic_disruption',
+    'weather_disruption',
+    'road_closure',
+    'mechanical_disruption',
+    'student_service_changed',
+    'guardian_access_changed',
     'driver_assignment_created',
     'driver_assignment_changed',
     'driver_assignment_ended'
@@ -39,7 +42,7 @@ comment on table public.guardian_notification_outbox is
   'Durable recipient-profile email outbox. The legacy name is retained for guardian rollout compatibility.';
 
 create index guardian_notification_outbox_recipient_profile_idx
-  on public.guardian_notification_outbox(recipient_profile_id, status, available_at);
+  on public.guardian_notification_outbox(recipient_profile_id, status, available_after);
 create unique index guardian_notification_outbox_recipient_notification_unique
   on public.guardian_notification_outbox(
     tenant_id, recipient_profile_id, user_notification_id, notification_type
