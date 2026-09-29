@@ -16,7 +16,7 @@ const config: CapacitorConfig = {
   appId: 'com.safebusalberta.app',
   appName: 'BusSafe Alberta',
   webDir: 'dist',
-  backgroundColor: '#f4e1a1',
+  backgroundColor: '#f2f6f7',
   server: {
     androidScheme: 'https',
   },
@@ -34,7 +34,7 @@ const config: CapacitorConfig = {
     },
     SplashScreen: {
       launchShowDuration: 1000,
-      backgroundColor: '#f4e1a1',
+      backgroundColor: '#f2f6f7',
       androidSplashResourceName: 'launch_background',
       showSpinner: false,
     },

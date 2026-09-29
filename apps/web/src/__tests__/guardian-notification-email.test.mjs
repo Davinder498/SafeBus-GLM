@@ -178,6 +178,21 @@ describe('retry and idempotency helpers', () => {
   });
 });
 
+describe('driver assignment email privacy', () => {
+  for (const [notificationType, label] of [
+    ['driver_assignment_created', 'Assignment created'],
+    ['driver_assignment_changed', 'Assignment changed'],
+    ['driver_assignment_ended', 'Assignment ended'],
+  ]) {
+    it(`builds generic ${label.toLowerCase()} copy`, () => {
+      const email = buildGuardianEventEmail({ notificationType });
+      expect(email.subject).toBe(`BusSafe: ${label}`);
+      expect(email.text).toContain('Open BusSafe to view the update.');
+      expect(email.text).not.toMatch(/\b(bus|route|stop|schedule|student)\b/i);
+    });
+  }
+});
+
 describe('log privacy', () => {
   it('redacts sensitive log fields (backwards-compatible helper)', () => {
     expect(redactLog({ outboxId: '1', email: 'g@example.com', text: 'body', result: 'x' })).toEqual(

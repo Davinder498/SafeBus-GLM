@@ -117,7 +117,7 @@ describe('DashboardLayout navigation presentation', () => {
     const tabs = Array.from(navigation?.querySelectorAll('a') ?? []);
 
     expect(navigation).not.toBeNull();
-    expect(tabs.map((tab) => tab.textContent)).toEqual(['Scan', 'Riders', 'History', 'Alerts']);
+    expect(tabs.map((tab) => tab.textContent)).toEqual(['Scan', 'Riders', 'History', 'Settings']);
     expect(tabs.find((tab) => tab.getAttribute('aria-current') === 'page')?.textContent).toBe(
       'History',
     );
@@ -126,14 +126,14 @@ describe('DashboardLayout navigation presentation', () => {
     expect(container.querySelector('[data-testid="safebus-brand-mark"]')).not.toBeNull();
   });
 
-  it('shows unread notifications on the native Alerts destination', async () => {
+  it('does not put notification badges on the driver Settings destination', async () => {
     const container = await renderDriverLayout('native-mobile', 7);
-    const alertsTab = Array.from(container.querySelectorAll('a')).find(
-      (tab) => tab.textContent?.includes('Alerts'),
+    const settingsTab = Array.from(container.querySelectorAll('a')).find(
+      (tab) => tab.textContent?.includes('Settings'),
     );
 
-    expect(alertsTab?.textContent).toContain('7');
-    expect(alertsTab?.querySelector('.sb-bottom-tab-badge')).not.toBeNull();
+    expect(settingsTab?.textContent).not.toContain('7');
+    expect(settingsTab?.querySelector('.sb-bottom-tab-badge')).toBeNull();
   });
 
   it('opens the secondary driver Profile route from the account menu', async () => {
@@ -151,7 +151,7 @@ describe('DashboardLayout navigation presentation', () => {
     );
   });
 
-  it('opens Driver settings from the native account menu', async () => {
+  it('does not duplicate Driver settings in the native account menu', async () => {
     const container = await renderDriverLayout('native-mobile');
     const accountButton = container.querySelector<HTMLButtonElement>('button[aria-haspopup="menu"]');
 
@@ -160,10 +160,6 @@ describe('DashboardLayout navigation presentation', () => {
     const settingsButton = Array.from(
       container.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'),
     ).find((item) => item.textContent?.trim() === 'Driver settings');
-    await act(async () => settingsButton?.click());
-
-    expect(container.querySelector('[data-testid="location-probe"]')?.textContent).toBe(
-      '/driver/settings',
-    );
+    expect(settingsButton).toBeUndefined();
   });
 });

@@ -228,7 +228,7 @@ export const driverNativeNavItems: DashboardNavItem[] = [
     icon: <List className="h-5 w-5" />,
   },
   { label: 'History', to: '/driver/history', icon: <History className="h-5 w-5" /> },
-  { label: 'Alerts', to: '/notifications', icon: <Bell className="h-5 w-5" /> },
+  { label: 'Settings', to: '/driver/settings', icon: <Settings className="h-5 w-5" /> },
 ];
 
 export const guardianNativeNavItems: DashboardNavItem[] = [
@@ -421,12 +421,6 @@ export function DashboardLayout({
               <DropdownSeparator />
               {usesBottomTabs && portal === 'driver' && (
                 <>
-                  <DropdownItem
-                    icon={<Settings className="h-4 w-4" />}
-                    onClick={() => navigate('/driver/settings')}
-                  >
-                    Driver settings
-                  </DropdownItem>
                   <DropdownItem
                     icon={<UserCircle className="h-4 w-4" />}
                     onClick={() => navigate('/driver/profile')}

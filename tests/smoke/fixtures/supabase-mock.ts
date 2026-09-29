@@ -259,6 +259,11 @@ export async function installSupabaseMock(
   let currentActiveTrip: ReturnType<typeof activeTripRow> | null = opts.withActiveTrip
     ? activeTripRow(currentAssignments?.[0] ?? assignmentRow())
     : null;
+  let driverDeliveryPreferences = {
+    push_enabled: false,
+    email_enabled: false,
+    assignment_alerts: { push: false, email: false },
+  };
 
   const setActiveTrip = (trip: ReturnType<typeof activeTripRow> | null) => {
     currentActiveTrip = trip;
@@ -423,6 +428,26 @@ export async function installSupabaseMock(
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify(opts.withCompletedTrips ? [completedTripHistoryRow()] : []),
+          });
+          return;
+        }
+        if (table === 'rpc/get_driver_delivery_preferences') {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(driverDeliveryPreferences),
+          });
+          return;
+        }
+        if (table === 'rpc/set_driver_delivery_preferences') {
+          const requestBody = route.request().postDataJSON() as {
+            p_preferences?: typeof driverDeliveryPreferences;
+          } | null;
+          driverDeliveryPreferences = requestBody?.p_preferences ?? driverDeliveryPreferences;
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(driverDeliveryPreferences),
           });
           return;
         }

@@ -41,8 +41,8 @@ test.describe('Phase 15B tenant admin notification delivery summary', () => {
     await mockRole(page, 'tenant_admin');
     await page.goto('/admin/trips');
     await expect(page.getByRole('heading', { name: 'Notification delivery', level: 2 })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Guardian email' }).getByText('Pending', { exact: true })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Guardian email' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Email' }).getByText('Pending', { exact: true })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Email' })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Android push' })).toBeVisible();
     // Failure category labels
     await expect(page.getByText(/Temporary provider error/)).toBeVisible();
@@ -85,7 +85,7 @@ test.describe('Phase 15B tenant admin notification delivery summary', () => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/admin/trips');
     await expect(page.getByRole('heading', { name: 'Notification delivery', level: 2 })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Guardian email' }).getByText('Pending', { exact: true })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Email' }).getByText('Pending', { exact: true })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Android push' })).toBeVisible();
   });
 

@@ -653,11 +653,48 @@ test('driver account menu exposes existing secondary destinations', async ({ pag
   await page.goto('/driver');
 
   await page.locator('button[aria-haspopup="menu"]').click();
-  await expect(page.getByRole('menuitem', { name: 'Driver settings' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Driver settings' })).toHaveCount(0);
   await expect(page.getByRole('menuitem', { name: 'Profile' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Support' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Privacy & account' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Sign out' })).toBeVisible();
+});
+
+test('driver settings combines assignment delivery and device guidance', async ({ page }) => {
+  await installSupabaseMock(page);
+  await page.goto('/driver/settings');
+
+  await expect(page.getByRole('heading', { name: 'Driver settings', level: 1 })).toBeVisible();
+  await expect(page.getByRole('switch', { name: 'Push notifications' })).toBeVisible();
+  await expect(page.getByRole('switch', { name: 'Email notifications' })).toBeVisible();
+  await expect(page.getByText('Assignment alerts', { exact: true })).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: 'Assignment alerts push' })).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: 'Assignment alerts email' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Location access' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Driver safety' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'View notifications' })).toHaveAttribute(
+    'href',
+    '/notifications',
+  );
+
+  const tabs = page.getByTestId('native-bottom-navigation').getByRole('link');
+  await expect(tabs).toHaveCount(4);
+  await expect(tabs.last()).toContainText('Settings');
+  await expect(tabs.last()).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS(
+    'background-color',
+    'rgb(35, 92, 120)',
+  );
+  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await expectTouchTargets(page.locator('[data-ui="notification-channel-control"]'));
+  await expectNoHorizontalOverflow(page);
+});
+
+test('driver notification settings route redirects to the combined settings page', async ({ page }) => {
+  await installSupabaseMock(page);
+  await page.goto('/notifications/settings');
+  await expect(page).toHaveURL('/driver/settings');
+  await expect(page.getByRole('heading', { name: 'Driver settings', level: 1 })).toBeVisible();
 });
 
 test('landscape layout retains navigation and horizontal containment', async ({ page }) => {
