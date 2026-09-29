@@ -103,7 +103,7 @@ describe('driver shell navigation model', () => {
       { label: 'Scan', to: '/driver', icon: Bus },
       { label: 'Riders', to: '/driver/pickup-drop-off', icon: List },
       { label: 'History', to: '/driver/history', icon: History },
-      { label: 'Alerts', to: '/notifications', icon: Bell },
+      { label: 'Settings', to: '/driver/settings', icon: Settings },
     ];
 
     expect(driverNativeNavItems).toHaveLength(expected.length);

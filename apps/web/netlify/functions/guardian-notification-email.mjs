@@ -36,6 +36,9 @@ export function buildGuardianEventEmail({
   tenantTimezone,
 }) {
   const genericCopy = {
+    driver_assignment_created: ['Assignment created', 'A BusSafe assignment was created for you.'],
+    driver_assignment_changed: ['Assignment changed', 'A BusSafe assignment was changed for you.'],
+    driver_assignment_ended: ['Assignment ended', 'A BusSafe assignment was ended for you.'],
     trip_started: ['Trip started', 'A scheduled bus trip has started.'],
     trip_completed: ['Trip completed', 'A scheduled bus trip has been completed.'],
     trip_cancelled: ['Trip cancelled', 'A scheduled bus trip has been cancelled.'],
@@ -60,17 +63,21 @@ export function buildGuardianEventEmail({
   if (genericCopy) {
     const [subjectLabel, summary] = genericCopy;
     const subject = `BusSafe: ${subjectLabel}`;
+    const isDriverAssignment = notificationType.startsWith('driver_assignment_');
+    const instruction = isDriverAssignment
+      ? 'Open BusSafe to view the update.'
+      : 'Open BusSafe to view the update. This email intentionally excludes student details.';
     const text = [
       summary,
       '',
-      'Open BusSafe to view the update. This email intentionally excludes student details.',
+      instruction,
       '',
       'BusSafe Alberta',
     ].join('\n');
     return {
       subject,
       text,
-      html: `<p>${escapeHtml(summary)}</p><p>Open BusSafe to view the update. This email intentionally excludes student details.</p><p>BusSafe Alberta</p>`,
+      html: `<p>${escapeHtml(summary)}</p><p>${escapeHtml(instruction)}</p><p>BusSafe Alberta</p>`,
       action: 'update',
       verb: 'updated',
     };
@@ -232,12 +239,20 @@ export async function sendResendEmail({
 
 async function dispatchOne(supabase, cfg, row, sendEmail = sendResendEmail) {
   const startedAt = Date.now();
-  const { data: payloads, error: resolveError } = await supabase.rpc(
+  const { data: guardianPayloads, error: guardianResolveError } = await supabase.rpc(
     'resolve_guardian_notification_email_payload',
     { p_outbox_id: row.id },
   );
-  if (resolveError) throw resolveError;
-  const payload = payloads?.[0];
+  if (guardianResolveError) throw guardianResolveError;
+  let payload = guardianPayloads?.[0];
+  if (!payload) {
+    const { data: recipients, error: recipientError } = await supabase.rpc(
+      'resolve_notification_email_recipient',
+      { p_outbox_id: row.id },
+    );
+    if (recipientError) throw recipientError;
+    payload = recipients?.[0];
+  }
   if (!payload) {
     await rpcOrThrow(supabase, 'cancel_guardian_notification_email', {
       p_outbox_id: row.id,
@@ -304,7 +319,7 @@ async function dispatchOne(supabase, cfg, row, sendEmail = sendResendEmail) {
       fromName: cfg.fromName,
       to,
       ...email,
-      idempotency: idempotencyKey(row.id),
+      idempotency: payload.idempotency_key || idempotencyKey(row.id),
     });
     await rpcOrThrow(supabase, 'complete_guardian_notification_email', {
       p_outbox_id: row.id,

@@ -541,4 +541,49 @@ describe('runDispatcher integration', () => {
     const result = await handler(makeEvent('dispatcher-secret'));
     expect(result.statusCode).toBe(500);
   });
+
+  it('resolves and sends a generic assignment email to the exact driver profile', async () => {
+    const row = {
+      id: 'driver-row-1',
+      tenant_id: 't1',
+      recipient_profile_id: 'driver-profile-1',
+      notification_type: 'driver_assignment_changed',
+      attempt_count: 1,
+    };
+    mockSupabase((name) => {
+      if (name === 'claim_guardian_notification_email_batch') {
+        return Promise.resolve({ data: [row], error: null });
+      }
+      if (name === 'resolve_guardian_notification_email_payload') {
+        return Promise.resolve({ data: [], error: null });
+      }
+      if (name === 'resolve_notification_email_recipient') {
+        return Promise.resolve({
+          data: [
+            {
+              recipient_profile_id: 'driver-profile-1',
+              recipient_role: 'driver',
+              recipient_email: 'assigned-driver@example.test',
+              notification_type: 'driver_assignment_changed',
+              idempotency_key: 'notification-email-outbox:driver-row-1',
+            },
+          ],
+          error: null,
+        });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+    const sendEmail = vi.fn().mockResolvedValue({ providerMessageId: 'driver-message' });
+
+    const result = await runDispatcher(makeEvent('dispatcher-secret'), sendEmail);
+
+    expect(JSON.parse(result.body)).toMatchObject({ delivered: 1 });
+    expect(sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'assigned-driver@example.test',
+        subject: 'BusSafe: Assignment changed',
+        idempotency: 'notification-email-outbox:driver-row-1',
+      }),
+    );
+  });
 });

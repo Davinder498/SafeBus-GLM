@@ -10,8 +10,8 @@
     --mobile-primary: #172b3a;
     --mobile-primary-hover: #0f2a44;
     --mobile-primary-container: #ddf2f4;
-    --mobile-accent: #fcd66b;
-    --mobile-accent-container: #fcd66b;
+    --mobile-accent: #235c78;
+    --mobile-accent-container: #d8edf5;
     --mobile-surface: #f2f6f7;
     --mobile-on-surface: #172b3a;
     --mobile-muted: #5e6f73;
@@ -112,12 +112,12 @@
 
   html[data-app-surface='native-mobile'] [data-testid='native-bottom-navigation'] .sb-bottom-tab-active {
     background: transparent;
-    color: #fcd66b;
+    color: #b9ddeb;
   }
 
   html[data-app-surface='native-mobile'] [data-testid='native-bottom-navigation'] .sb-bottom-tab-active .sb-bottom-tab-indicator {
-    background: #fcd66b;
-    color: #172b3a;
+    background: #d8edf5;
+    color: #173f55;
   }
 
   html[data-app-surface='native-mobile'] [data-ui='notification-settings-page'] [role='switch'] {
@@ -1831,12 +1831,12 @@
 
   html[data-app-surface='native-mobile'] [data-testid='native-bottom-navigation'] .sb-bottom-tab-active {
     background: transparent;
-    color: #fcd66b;
+    color: #b9ddeb;
   }
 
   html[data-app-surface='native-mobile'] [data-testid='native-bottom-navigation'] .sb-bottom-tab-active .sb-bottom-tab-indicator {
-    background: #fcd66b;
-    color: #172b3a;
+    background: #d8edf5;
+    color: #173f55;
   }
 }
 
@@ -1845,5 +1845,34 @@
     border-color: #c9e4e7;
     background: #ddf2f4;
     color: #172b3a;
+  }
+
+  html[data-app-surface='native-mobile'] [data-ui='app-loading'] {
+    background: #f2f6f7;
+  }
+
+  html[data-app-surface='native-mobile'] [data-ui='app-loading-content'] > span:last-child {
+    background: #d7e1e4;
+  }
+
+  html[data-app-surface='native-mobile'] [data-ui='app-loading-content'] > span:last-child > span {
+    background: #235c78;
+  }
+
+  html[data-app-surface='native-mobile'] [data-ui='avatar'] {
+    border-color: #8db7c9;
+    background: #235c78;
+    color: #fff;
+  }
+
+  html[data-app-surface='native-mobile'] [role='menu'],
+  html[data-app-surface='native-mobile'] [data-ui='notification-settings-status'],
+  html[data-app-surface='native-mobile'] [data-ui='notification-filter-controls'] button {
+    border-color: #d7e1e4;
+    background-color: #fff;
+  }
+
+  html[data-app-surface='native-mobile'] input[type='checkbox'] {
+    accent-color: #235c78;
   }
 }

@@ -1279,7 +1279,8 @@ export interface Database {
         Row: {
           id: string;
           tenant_id: string;
-          guardian_id: string;
+          guardian_id: string | null;
+          recipient_profile_id: string;
           student_id: string | null;
           student_trip_event_id: string | null;
           user_notification_id: string | null;
@@ -1303,7 +1304,8 @@ export interface Database {
         Insert: {
           id?: string;
           tenant_id: string;
-          guardian_id: string;
+          guardian_id?: string | null;
+          recipient_profile_id: string;
           student_id?: string | null;
           student_trip_event_id?: string | null;
           user_notification_id?: string | null;
@@ -1327,7 +1329,8 @@ export interface Database {
         Update: {
           id?: string;
           tenant_id?: string;
-          guardian_id?: string;
+          guardian_id?: string | null;
+          recipient_profile_id?: string;
           student_id?: string | null;
           student_trip_event_id?: string | null;
           user_notification_id?: string | null;
@@ -1354,6 +1357,13 @@ export interface Database {
             columns: ['tenant_id'];
             isOneToOne: false;
             referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'guardian_notification_outbox_recipient_profile_id_fkey';
+            columns: ['recipient_profile_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
             referencedColumns: ['id'];
           },
           {
@@ -3153,6 +3163,10 @@ export interface Database {
         Args: Record<PropertyKey, never>;
         Returns: Json;
       };
+      get_driver_delivery_preferences: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       get_notification_delivery_health_v2: { Args: Record<PropertyKey, never>; Returns: Json };
       get_notification_preferences: { Args: Record<PropertyKey, never>; Returns: Json };
       get_user_notification_unread_count: { Args: Record<PropertyKey, never>; Returns: number };
@@ -3261,6 +3275,10 @@ export interface Database {
         Returns: Json;
       };
       set_guardian_delivery_preferences_v2: {
+        Args: { p_preferences: Json };
+        Returns: Json;
+      };
+      set_driver_delivery_preferences: {
         Args: { p_preferences: Json };
         Returns: Json;
       };
@@ -3641,6 +3659,10 @@ export interface Database {
         };
         Returns: unknown;
       };
+      cancel_notification_email: {
+        Args: { p_failure_category: string; p_failure_reason: string; p_outbox_id: string };
+        Returns: unknown;
+      };
       check_invitation_idempotency: {
         Args: {
           p_email: string;
@@ -3674,11 +3696,30 @@ export interface Database {
         };
         Returns: unknown;
       };
+      claim_notification_email_batch: {
+        Args: {
+          p_batch_size?: number | null;
+          p_lease_seconds?: number | null;
+          p_max_attempts?: number | null;
+          p_provider_limit_per_minute?: number | null;
+        };
+        Returns: {
+          id: string;
+          tenant_id: string;
+          recipient_profile_id: string;
+          notification_type: string;
+          attempt_count: number;
+        }[];
+      };
       complete_guardian_notification_email: {
         Args: {
           p_outbox_id: string;
           p_provider_message_id?: string | null;
         };
+        Returns: unknown;
+      };
+      complete_notification_email: {
+        Args: { p_outbox_id: string; p_provider_message_id?: string | null };
         Returns: unknown;
       };
       complete_invited_account: {
@@ -3798,6 +3839,10 @@ export interface Database {
           p_failure_reason: string;
           p_outbox_id: string;
         };
+        Returns: unknown;
+      };
+      fail_notification_email: {
+        Args: { p_failure_category: string; p_failure_reason: string; p_outbox_id: string };
         Returns: unknown;
       };
       get_admin_active_trip_operational_statuses: {
@@ -4317,6 +4362,16 @@ export interface Database {
         };
         Returns: unknown;
       };
+      resolve_notification_email_recipient: {
+        Args: { p_outbox_id: string };
+        Returns: {
+          recipient_profile_id: string;
+          recipient_role: string;
+          recipient_email: string;
+          notification_type: string;
+          idempotency_key: string;
+        }[];
+      };
       resolve_student_qr_for_active_trip: {
         Args: {
           p_qr_token: string;
@@ -4338,6 +4393,20 @@ export interface Database {
           p_retry_after_seconds: number;
         };
         Returns: unknown;
+      };
+      retry_notification_email: {
+        Args: {
+          p_failure_category: string;
+          p_failure_reason: string;
+          p_max_attempts?: number | null;
+          p_outbox_id: string;
+          p_retry_after_seconds: number;
+        };
+        Returns: unknown;
+      };
+      requeue_notification_email_dead_letter: {
+        Args: { p_outbox_id: string };
+        Returns: boolean;
       };
       revoke_all_user_sessions: {
         Args: {

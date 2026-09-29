@@ -37,6 +37,13 @@ const notificationSettingsPage = await readFile(
   new URL('../../apps/web/src/pages/NotificationSettingsPage.tsx', import.meta.url),
   'utf8',
 );
+const notificationDeliverySettings = await readFile(
+  new URL(
+    '../../apps/web/src/components/settings/NotificationDeliverySettings.tsx',
+    import.meta.url,
+  ),
+  'utf8',
+);
 const officialMark = await readFile(
   new URL('../../apps/mobile/assets/brand/safebus-official-mark.svg', import.meta.url),
   'utf8',
@@ -187,9 +194,9 @@ test('quiet hours and urgent bypass are fail-closed defaults', () => {
 });
 
 test('guardian delivery settings expose channel masters and a three-group matrix', () => {
-  assert.match(notificationSettingsPage, /label="Push notifications"/);
-  assert.match(notificationSettingsPage, /label="Email notifications"/);
-  assert.match(notificationSettingsPage, /Alert types/);
+  assert.match(notificationDeliverySettings, /label="Push notifications"/);
+  assert.match(notificationDeliverySettings, /label="Email notifications"/);
+  assert.match(notificationDeliverySettings, /Alert types/);
   assert.match(notificationSettingsPage, /Pickup & drop-off/);
   assert.match(notificationSettingsPage, /Trip updates/);
   assert.match(notificationSettingsPage, /Operational alerts/);

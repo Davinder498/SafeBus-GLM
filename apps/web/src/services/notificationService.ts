@@ -1,5 +1,6 @@
 import type {
   AndroidPushDevice,
+  DriverDeliveryPreferences,
   GuardianDeliveryPreferences,
   NotificationCategory,
   NotificationCursor,
@@ -182,6 +183,44 @@ export async function saveGuardianDeliveryPreferences(
     }),
   );
   return mapGuardianDeliveryPreferences(result);
+}
+
+interface DriverDeliveryPreferencesRow {
+  push_enabled: boolean;
+  email_enabled: boolean;
+  assignment_alerts: { push: boolean; email: boolean };
+}
+
+function mapDriverDeliveryPreferences(
+  value: DriverDeliveryPreferencesRow,
+): DriverDeliveryPreferences {
+  return {
+    pushEnabled: value.push_enabled,
+    emailEnabled: value.email_enabled,
+    assignmentAlerts: value.assignment_alerts,
+  };
+}
+
+export async function fetchDriverDeliveryPreferences(): Promise<DriverDeliveryPreferences> {
+  const value = assertData<DriverDeliveryPreferencesRow>(
+    await clientRpc()('get_driver_delivery_preferences'),
+  );
+  return mapDriverDeliveryPreferences(value);
+}
+
+export async function saveDriverDeliveryPreferences(
+  value: DriverDeliveryPreferences,
+): Promise<DriverDeliveryPreferences> {
+  const result = assertData<DriverDeliveryPreferencesRow>(
+    await clientRpc()('set_driver_delivery_preferences', {
+      p_preferences: {
+        push_enabled: value.pushEnabled,
+        email_enabled: value.emailEnabled,
+        assignment_alerts: value.assignmentAlerts,
+      },
+    }),
+  );
+  return mapDriverDeliveryPreferences(result);
 }
 
 interface DeviceRow {

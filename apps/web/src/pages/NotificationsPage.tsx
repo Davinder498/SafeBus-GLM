@@ -72,6 +72,7 @@ export function NotificationsPage() {
   const requestedId = searchParams.get('notification');
   const appSurface = useAppSurface();
   const { profile } = useAuth();
+  const isDriver = profile?.role === 'driver';
   const { unreadCount, connectionState, refreshNotifications } = useNotifications();
   const [items, setItems] = useState<UserNotification[]>([]);
   const [category, setCategory] = useState<NotificationCategory | ''>('');
@@ -88,7 +89,11 @@ export function NotificationsPage() {
     setLoading(true);
     setError(null);
     try {
-      const rows = await fetchNotifications({ limit: 30, unreadOnly, category: category || null });
+      const rows = await fetchNotifications({
+        limit: 30,
+        unreadOnly,
+        category: isDriver ? 'assignments' : category || null,
+      });
       setItems(rows);
       setHasMore(rows.length === 30);
     } catch (caught) {
@@ -98,7 +103,7 @@ export function NotificationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [category, unreadOnly]);
+  }, [category, isDriver, unreadOnly]);
   useEffect(() => {
     void load();
   }, [load]);
@@ -121,6 +126,7 @@ export function NotificationsPage() {
           ? driverNavGroups
           : guardianNavGroups;
   const isGuardianMobile = appSurface === 'native-mobile' && profile?.role === 'guardian';
+  const isRecipientMobile = appSurface === 'native-mobile' && (isGuardianMobile || isDriver);
 
   const selectedItem = requestedId ? (items.find((item) => item.id === requestedId) ?? null) : null;
 
@@ -172,7 +178,7 @@ export function NotificationsPage() {
         limit: 30,
         cursor: { createdAt: last.createdAt, id: last.id },
         unreadOnly,
-        category: category || null,
+        category: isDriver ? 'assignments' : category || null,
       });
       setItems((current) => [...current, ...rows]);
       setHasMore(rows.length === 30);
@@ -212,11 +218,11 @@ export function NotificationsPage() {
     <DashboardLayout title="Notifications" portal={portal} navItems={[]} navGroups={navGroups}>
       <div
         className={cn(
-          isGuardianMobile && '-mx-3 -my-5 min-h-[calc(100vh-5rem)] bg-[#f2f6f7] px-3 py-5',
+          isRecipientMobile && '-mx-3 -my-5 min-h-[calc(100vh-5rem)] bg-[#f2f6f7] px-3 py-5',
         )}
         data-ui="notification-inbox-page"
       >
-        {isGuardianMobile ? (
+        {isRecipientMobile ? (
           <header className="mb-3" data-ui="notification-mobile-header">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-baseline gap-2">
@@ -238,7 +244,9 @@ export function NotificationsPage() {
               </button>
             </div>
             <p className="mt-1 text-xs leading-5 text-slate-600">
-              Real-time trip, arrival, and service updates.
+              {isDriver
+                ? 'Assignment updates connected to your driver account.'
+                : 'Real-time trip, arrival, and service updates.'}
             </p>
           </header>
         ) : (
@@ -246,7 +254,7 @@ export function NotificationsPage() {
             title="Notifications"
             description="Your authoritative BusSafe inbox. In-app updates remain available regardless of push settings."
             action={
-              <Link to="/notifications/settings">
+              <Link to={isDriver ? '/driver/settings' : '/notifications/settings'}>
                 <Button variant="secondary">
                   <Settings className="mr-2 h-4 w-4" />
                   Settings

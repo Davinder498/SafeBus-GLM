@@ -78,6 +78,12 @@ export interface GuardianDeliveryChannelPreferences {
   email: boolean;
 }
 
+export interface DriverDeliveryPreferences {
+  pushEnabled: boolean;
+  emailEnabled: boolean;
+  assignmentAlerts: GuardianDeliveryChannelPreferences;
+}
+
 export interface AndroidPushDevice {
   id: string;
   installationId: string;
