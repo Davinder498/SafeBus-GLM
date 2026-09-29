@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import test from 'node:test';
 
 const migrationPath = 'supabase/migrations/0107_support_directory.sql';
+const fallbackMigrationPath = 'supabase/migrations/0112_mobile_support_fallback.sql';
 
 test('support directory follows the platform-to-tenant-to-user contact chain', async () => {
   const sql = await fs.readFile(migrationPath, 'utf8');
@@ -52,4 +53,16 @@ test('support pages are separated by platform, tenant, and mobile audiences', as
   );
   assert.match(mobileRoutes, /path: '\/support'[\s\S]*allowedRoles=\{\['driver', 'guardian'\]\}/i);
   assert.match(layout, /onClick=\{\(\) => navigate\('\/support'\)\}/i);
+});
+
+test('mobile recipients fall back to published platform support without exposing tables', async () => {
+  const sql = await fs.readFile(fallbackMigrationPath, 'utf8');
+  assert.match(
+    sql,
+    /v_role in \('driver', 'guardian'\) and v_tenant is null[\s\S]*from public\.platform_support_contacts/i,
+  );
+  assert.match(sql, /into v_tenant[\s\S]*return jsonb_build_object\('platform', v_platform, 'tenant', v_tenant\)/i);
+  assert.match(sql, /revoke all on function public\.get_support_directory\(\) from public, anon/i);
+  assert.match(sql, /grant execute on function public\.get_support_directory\(\) to authenticated/i);
+  assert.doesNotMatch(sql, /grant\s+(?:select|insert|update|delete).*support_contacts/i);
 });
