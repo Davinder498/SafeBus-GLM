@@ -35,6 +35,11 @@ describe('driver assignment notification contract', () => {
 
   it('keeps the email outbox private and adds generic service-only RPCs', () => {
     assert.match(migration, /recipient_profile_id/);
+    assert.match(
+      migration,
+      /guardian_notification_outbox\(recipient_profile_id, status, available_after\)/,
+    );
+    assert.doesNotMatch(migration, /\bavailable_at\b/);
     assert.match(migration, /revoke all on table public\.guardian_notification_outbox/);
     for (const rpc of [
       'claim_notification_email_batch',
@@ -48,5 +53,25 @@ describe('driver assignment notification contract', () => {
       assert.match(migration, new RegExp(rpc));
     }
     assert.match(migration, /to service_role/);
+  });
+
+  it('preserves every existing guardian outbox notification type', () => {
+    for (const eventType of [
+      'student_picked_up',
+      'student_dropped_off',
+      'trip_started',
+      'trip_completed',
+      'trip_cancelled',
+      'trip_late',
+      'trip_missing',
+      'traffic_disruption',
+      'weather_disruption',
+      'road_closure',
+      'mechanical_disruption',
+      'student_service_changed',
+      'guardian_access_changed',
+    ]) {
+      assert.match(migration, new RegExp(`'${eventType}'`));
+    }
   });
 });
