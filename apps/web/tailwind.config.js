@@ -15,17 +15,17 @@ export default {
         // Prairie Transit blue — calm, trustworthy, and shared by web/mobile.
         // The `navy` alias is retained so the existing UI adopts it globally.
         navy: {
-          50: '#F0F6F7',
-          100: '#E1EEF1',
-          200: '#C3DDE4',
-          300: '#96C1CE',
-          400: '#65A0B3',
-          500: '#397F99',
-          600: '#2D6C86',
-          700: '#235C78',
-          800: '#19465E',
-          900: '#163B4F',
-          950: '#123447',
+          50: '#F2F4F5',
+          100: '#E3E8EA',
+          200: '#C4CFD4',
+          300: '#99ABB3',
+          400: '#687F8A',
+          500: '#405B68',
+          600: '#294555',
+          700: '#172B3A',
+          800: '#0F2A44',
+          900: '#0C1E2A',
+          950: '#07131C',
         },
         // Warm school-bus gold. Pair with dark text, not white text.
         yellow: {

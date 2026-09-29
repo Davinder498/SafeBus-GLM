@@ -656,6 +656,18 @@
       "filename": "0108_guardian_eta_service_line.sql",
       "bytes": 19784,
       "sha256": "3ed16121ac7de212b58750e77ad58da391980b2bf3db3713617784b79c53e9f2"
+    },
+    {
+      "version": "0109",
+      "filename": "0109_guardian_delivery_preferences.sql",
+      "bytes": 10766,
+      "sha256": "7763ea6ce757267403b93324d015bef64f973f81a57e686950c5279f5a735a33"
+    },
+    {
+      "version": "0110",
+      "filename": "0110_cool_cloud_notification_preferences.sql",
+      "bytes": 36026,
+      "sha256": "df5299f9cb3a5a3c5118d721ae3d9dd76fef32c8a81420e02df7c71ef1736487"
     }
   ]
 }

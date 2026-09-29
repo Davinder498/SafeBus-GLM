@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
-import { Bell, ExternalLink, LockKeyhole, Mail } from 'lucide-react';
-import { Link } from 'react-router';
-import type { AndroidPushDevice, NotificationPreferences } from '@safebus/types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Bell, BusFront, ExternalLink, Mail, Route, TriangleAlert } from 'lucide-react';
+import type {
+  GuardianDeliveryPreferences,
+  NotificationPreferences,
+  PushPermissionState,
+} from '@safebus/types';
 import {
   DashboardLayout,
   adminNavGroups,
@@ -12,385 +15,393 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
+import { GuardianIconTile } from '@/components/ui/GuardianIconTile';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { useAppSurface } from '@/contexts/AppSurfaceContext';
 import { useAuth } from '@/contexts/useAuth';
 import {
+  fetchGuardianDeliveryPreferences,
   fetchNotificationPreferences,
-  listOwnPushDevices,
-  revokeOwnPushDevice,
+  saveGuardianDeliveryPreferences,
   saveNotificationPreferences,
 } from '@/services/notificationService';
 import '@/types/nativePush';
 
-const pushCategories = [
-  {
-    key: 'pickup_dropoff',
-    title: 'Pickup and drop-off',
-    description: 'Boarding and drop-off updates for linked students.',
-  },
-  {
-    key: 'trip_status',
-    title: 'School run status',
-    description: 'When a run starts, pauses, ends, or is cancelled.',
-  },
-  {
-    key: 'service_changes',
-    title: 'Service changes',
-    description: 'Delays, missing service, road closures, and bus changes.',
-  },
-  {
-    key: 'assignments',
-    title: 'Assignment changes',
-    description: 'Updates to an assigned bus or service.',
-  },
-  {
-    key: 'operations',
-    title: 'Operational updates',
-    description: 'Important transportation notices.',
-  },
-] as const;
+type GuardianMutation = (value: GuardianDeliveryPreferences) => GuardianDeliveryPreferences;
+type GuardianJob = { mutation: GuardianMutation; pushMasterValue?: boolean };
+
+interface ChannelCardProps {
+  checked: boolean;
+  description: string;
+  icon: React.ReactNode;
+  label: string;
+  onChange: (checked: boolean) => void;
+}
+
+function ChannelCard({ checked, description, icon, label, onChange }: ChannelCardProps) {
+  return (
+    <Card className="p-0" data-card-type={`notification-${label.toLowerCase()}`}>
+      <label
+        className="grid min-h-24 cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-4"
+        data-ui="notification-channel-control"
+      >
+        <GuardianIconTile>{icon}</GuardianIconTile>
+        <span className="min-w-0">
+          <b className="block text-navy-900">{label}</b>
+          <span className="mt-1 block text-sm leading-5 text-slate-600">{description}</span>
+        </span>
+        <input
+          type="checkbox"
+          role="switch"
+          checked={checked}
+          aria-label={label}
+          onChange={(event) => onChange(event.target.checked)}
+        />
+      </label>
+    </Card>
+  );
+}
+
+interface AlertRowProps {
+  description: string;
+  emailChecked: boolean;
+  icon: React.ReactNode;
+  label: string;
+  onEmailChange: (checked: boolean) => void;
+  onPushChange: (checked: boolean) => void;
+  pushChecked: boolean;
+}
+
+function AlertRow({
+  description,
+  emailChecked,
+  icon,
+  label,
+  onEmailChange,
+  onPushChange,
+  pushChecked,
+}: AlertRowProps) {
+  return (
+    <div
+      className="grid min-h-20 grid-cols-[auto_minmax(0,1fr)_3.5rem_3.5rem] items-center gap-2 px-4 py-3"
+      data-ui="notification-alert-row"
+    >
+      <GuardianIconTile>{icon}</GuardianIconTile>
+      <span className="min-w-0 pr-1">
+        <b className="block text-sm text-navy-900">{label}</b>
+        <span className="mt-0.5 block text-xs leading-4 text-slate-600">{description}</span>
+      </span>
+      <label
+        className="grid min-h-12 min-w-12 cursor-pointer place-items-center"
+        data-ui="notification-alert-channel-control"
+      >
+        <span className="sr-only">{label} push</span>
+        <input
+          type="checkbox"
+          checked={pushChecked}
+          aria-label={`${label} push`}
+          onChange={(event) => onPushChange(event.target.checked)}
+        />
+      </label>
+      <label
+        className="grid min-h-12 min-w-12 cursor-pointer place-items-center"
+        data-ui="notification-alert-channel-control"
+      >
+        <span className="sr-only">{label} email</span>
+        <input
+          type="checkbox"
+          checked={emailChecked}
+          aria-label={`${label} email`}
+          onChange={(event) => onEmailChange(event.target.checked)}
+        />
+      </label>
+    </div>
+  );
+}
 
 export function NotificationSettingsPage() {
   const { profile } = useAuth();
-  const appSurface = useAppSurface();
-  const isNativeMobile = appSurface === 'native-mobile';
-  const [value, setValue] = useState<NotificationPreferences | null>(null);
-  const [devices, setDevices] = useState<AndroidPushDevice[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const isGuardian = profile?.role === 'guardian';
+  const isDriver = profile?.role === 'driver';
   const isAdmin = Boolean(
     profile?.role &&
-      ['tenant_admin', 'school_admin', 'transportation_admin', 'platform_super_admin'].includes(
-        profile.role,
-      ),
+    ['tenant_admin', 'school_admin', 'transportation_admin', 'platform_super_admin'].includes(
+      profile.role,
+    ),
   );
+  const [preferences, setPreferences] = useState<GuardianDeliveryPreferences | null>(null);
+  const [legacyPreferences, setLegacyPreferences] = useState<NotificationPreferences | null>(null);
+  const [permissionState, setPermissionState] = useState<PushPermissionState | null>(null);
+  const [pendingSaves, setPendingSaves] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const persistedRef = useRef<GuardianDeliveryPreferences | null>(null);
+  const jobsRef = useRef<GuardianJob[]>([]);
+  const processingRef = useRef(false);
   const nativePushAvailable = window.SafeBusNativePush?.available === true;
 
-  useEffect(() => {
-    const shouldLoadDevices = !isAdmin && !isNativeMobile;
-    void Promise.all([
-      fetchNotificationPreferences(),
-      shouldLoadDevices ? listOwnPushDevices() : Promise.resolve([]),
-    ])
-      .then(([preferences, registeredDevices]) => {
-        setValue(preferences);
-        setDevices(registeredDevices);
-      })
-      .catch((reason: unknown) =>
-        setError(reason instanceof Error ? reason.message : 'Settings are unavailable.'),
-      );
-  }, [isAdmin, isNativeMobile]);
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      if (isGuardian) {
+        const value = await fetchGuardianDeliveryPreferences();
+        persistedRef.current = value;
+        setPreferences(value);
+      } else if (isDriver) {
+        const value = await fetchNotificationPreferences();
+        setLegacyPreferences(value);
+        setPreferences({
+          pushEnabled: value.pushEnabled,
+          emailEnabled: false,
+          pickupDropoff: { push: false, email: false },
+          tripUpdates: { push: false, email: false },
+          operationalAlerts: { push: false, email: false },
+        });
+      }
+      if (nativePushAvailable) {
+        setPermissionState(await window.SafeBusNativePush!.getPermissionState());
+      }
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Settings are unavailable.');
+    }
+  }, [isDriver, isGuardian, nativePushAvailable]);
 
-  const portal = isAdmin ? 'admin' : profile?.role === 'driver' ? 'driver' : 'parent';
+  useEffect(() => {
+    if (!isAdmin) void load();
+  }, [isAdmin, load]);
+
+  const projectPendingJobs = useCallback(() => {
+    if (!persistedRef.current) return;
+    setPreferences(
+      jobsRef.current.reduce((value, job) => job.mutation(value), persistedRef.current),
+    );
+  }, []);
+
+  const processGuardianJobs = useCallback(async () => {
+    if (processingRef.current) return;
+    processingRef.current = true;
+    while (jobsRef.current.length > 0 && persistedRef.current) {
+      const job = jobsRef.current.shift()!;
+      const previous = persistedRef.current;
+      const next = job.mutation(previous);
+      let nativePushChanged = false;
+      try {
+        if (job.pushMasterValue !== undefined && nativePushAvailable) {
+          if (job.pushMasterValue) {
+            const permission = await window.SafeBusNativePush!.enable();
+            setPermissionState(permission);
+            if (permission !== 'granted') {
+              throw new Error('Push permission is turned off in Android settings.');
+            }
+          } else {
+            await window.SafeBusNativePush!.deactivate();
+            setPermissionState(await window.SafeBusNativePush!.getPermissionState());
+          }
+          nativePushChanged = true;
+        }
+        persistedRef.current = await saveGuardianDeliveryPreferences(next);
+        setMessage('Saved');
+      } catch (reason) {
+        if (nativePushChanged) {
+          if (previous.pushEnabled) {
+            await window.SafeBusNativePush!.refresh().catch(() => undefined);
+          } else {
+            await window.SafeBusNativePush!.deactivate().catch(() => undefined);
+          }
+        }
+        setMessage(reason instanceof Error ? reason.message : 'Could not save this setting.');
+      } finally {
+        setPendingSaves(jobsRef.current.length);
+        projectPendingJobs();
+      }
+    }
+    processingRef.current = false;
+  }, [nativePushAvailable, projectPendingJobs]);
+
+  function queueGuardianChange(mutation: GuardianMutation, pushMasterValue?: boolean) {
+    if (!preferences) return;
+    jobsRef.current.push({ mutation, pushMasterValue });
+    setPreferences(mutation(preferences));
+    setPendingSaves(jobsRef.current.length + (processingRef.current ? 1 : 0));
+    setMessage(null);
+    void processGuardianJobs();
+  }
+
+  async function updateDriverPush(requestedValue: boolean) {
+    if (!preferences || !legacyPreferences || pendingSaves > 0) return;
+    const previous = preferences;
+    setPreferences({ ...preferences, pushEnabled: requestedValue });
+    setPendingSaves(1);
+    setMessage(null);
+    let nativePushChanged = false;
+    try {
+      if (nativePushAvailable) {
+        if (requestedValue) {
+          const permission = await window.SafeBusNativePush!.enable();
+          setPermissionState(permission);
+          if (permission !== 'granted') {
+            throw new Error('Push permission is turned off in Android settings.');
+          }
+        } else {
+          await window.SafeBusNativePush!.deactivate();
+        }
+        nativePushChanged = true;
+      }
+      const saved = await saveNotificationPreferences({
+        ...legacyPreferences,
+        pushEnabled: requestedValue,
+      });
+      setLegacyPreferences(saved);
+      setPreferences({ ...preferences, pushEnabled: saved.pushEnabled });
+      setMessage('Saved');
+    } catch (reason) {
+      if (nativePushChanged && !previous.pushEnabled) {
+        await window.SafeBusNativePush!.deactivate().catch(() => undefined);
+      }
+      setPreferences(previous);
+      setMessage(reason instanceof Error ? reason.message : 'Could not save this setting.');
+    } finally {
+      setPendingSaves(0);
+    }
+  }
+
+  const portal = isAdmin ? 'admin' : isDriver ? 'driver' : 'parent';
   const nav =
     profile?.role === 'platform_super_admin'
       ? platformNavGroups
       : isAdmin
         ? adminNavGroups
-        : profile?.role === 'driver'
+        : isDriver
           ? driverNavGroups
           : guardianNavGroups;
 
-  if (error) {
-    return (
-      <DashboardLayout title="Notification settings" portal={portal} navItems={[]} navGroups={nav}>
-        <DataState title="Settings unavailable" message={error} />
-      </DashboardLayout>
-    );
-  }
-
-  if (!value) {
-    return (
-      <DashboardLayout title="Notification settings" portal={portal} navItems={[]} navGroups={nav}>
-        <DataState title="Loading settings" message="Checking your notification choices." />
-      </DashboardLayout>
-    );
-  }
-
-  const update = (changes: Partial<NotificationPreferences>) =>
-    setValue((current) => (current ? { ...current, ...changes } : current));
-
-  async function save() {
-    if (!value) return;
-    setSaving(true);
-    setMessage(null);
-    try {
-      let next = value;
-      if (next.pushEnabled && nativePushAvailable) {
-        const permission = await window.SafeBusNativePush!.enable();
-        if (permission !== 'granted') next = { ...next, pushEnabled: false };
-      } else if (!next.pushEnabled && nativePushAvailable) {
-        await window.SafeBusNativePush!.deactivate();
-      }
-      setValue(await saveNotificationPreferences(next));
-      setMessage('Notification settings saved.');
-    } catch (reason) {
-      setMessage(reason instanceof Error ? reason.message : 'Could not save settings.');
-    } finally {
-      setSaving(false);
-    }
-  }
+  const updateGroup = (
+    group: 'pickupDropoff' | 'tripUpdates' | 'operationalAlerts',
+    channel: 'push' | 'email',
+    checked: boolean,
+  ) =>
+    queueGuardianChange((value) => ({
+      ...value,
+      [group]: { ...value[group], [channel]: checked },
+    }));
 
   return (
     <DashboardLayout title="Notification settings" portal={portal} navItems={[]} navGroups={nav}>
-      <div data-ui="role-page">
+      <div className="mx-auto max-w-2xl" data-ui="notification-settings-page">
         <PageHeader
           title="Notification settings"
-          description={
-            isNativeMobile
-              ? 'Choose the updates you want to receive on this phone.'
-              : 'In-app notifications always remain in your authorized inbox. These choices control Android push only.'
-          }
+          description="Choose how BusSafe should reach you."
         />
 
-        <form
-          className="space-y-4"
-          data-ui="notification-preferences-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void save();
-          }}
-        >
-          <Card className="p-5" data-ui="notification-delivery-card">
-            <div className="flex items-start gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-navy-50 text-navy-700">
-                <Bell className="h-5 w-5" aria-hidden />
-              </span>
-              <div className="min-w-0 flex-1">
-                <h2 className="font-bold text-navy-900">Push notifications</h2>
-                {isAdmin ? (
-                  <p className="mt-1 text-sm leading-6 text-slate-600">
-                    Administrators receive notifications in the web inbox.
-                  </p>
-                ) : (
-                  <label className="mt-3 flex items-start gap-3" data-ui="notification-switch-row">
-                    <input
-                      type="checkbox"
-                      checked={value.pushEnabled}
-                      disabled={!nativePushAvailable}
-                      onChange={(event) => update({ pushEnabled: event.target.checked })}
-                    />
-                    <span>
-                      <b>Allow notifications on this phone</b>
-                      <span className="mt-1 block text-sm leading-5 text-slate-600">
-                        {nativePushAvailable
-                          ? 'Android will ask for permission when you enable and save this choice.'
-                          : 'Push is unavailable in this browser or app build. Your in-app alerts remain available.'}
-                      </span>
-                    </span>
-                  </label>
-                )}
-              </div>
+        {isAdmin ? (
+          <DataState
+            title="No settings needed"
+            message="Administrative updates remain available in your notification inbox."
+          />
+        ) : error ? (
+          <div className="space-y-4">
+            <DataState title="Settings unavailable" message={error} />
+            <Button type="button" variant="secondary" onClick={() => void load()}>
+              Try again
+            </Button>
+          </div>
+        ) : !preferences ? (
+          <DataState title="Loading settings" message="Checking your notification choices." />
+        ) : (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2" data-ui="notification-delivery-cards">
+              <ChannelCard
+                label="Push notifications"
+                description="Alerts on your Android devices."
+                checked={preferences.pushEnabled}
+                icon={<Bell className="h-5 w-5" aria-hidden />}
+                onChange={(checked) =>
+                  isGuardian
+                    ? queueGuardianChange((value) => ({ ...value, pushEnabled: checked }), checked)
+                    : void updateDriverPush(checked)
+                }
+              />
+              {isGuardian ? (
+                <ChannelCard
+                  label="Email notifications"
+                  description="Updates sent to your account email."
+                  checked={preferences.emailEnabled}
+                  icon={<Mail className="h-5 w-5" aria-hidden />}
+                  onChange={(checked) =>
+                    queueGuardianChange((value) => ({ ...value, emailEnabled: checked }))
+                  }
+                />
+              ) : null}
             </div>
-            {nativePushAvailable && !isAdmin ? (
-              <Button
-                type="button"
-                variant="ghost"
-                className="mt-4 w-full"
-                rightIcon={<ExternalLink className="h-4 w-4" aria-hidden />}
-                onClick={() => void window.SafeBusNativePush?.openSystemSettings()}
-              >
-                Android notification controls
-              </Button>
+
+            {isGuardian ? (
+              <Card className="mt-4 overflow-hidden p-0" data-card-type="notification-alert-matrix">
+                <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] items-end border-b border-slate-200 px-4 py-3">
+                  <div>
+                    <h2 className="font-bold text-navy-900">Alert types</h2>
+                    <p className="mt-0.5 text-xs text-slate-600">
+                      Choose each delivery channel independently.
+                    </p>
+                  </div>
+                  <span className="text-center text-xs font-semibold text-slate-600">Push</span>
+                  <span className="text-center text-xs font-semibold text-slate-600">Email</span>
+                </div>
+                <div className="divide-y divide-slate-200">
+                  <AlertRow
+                    label="Pickup & drop-off"
+                    description="Recorded boarding and drop-off events"
+                    icon={<BusFront className="h-5 w-5" aria-hidden />}
+                    pushChecked={preferences.pickupDropoff.push}
+                    emailChecked={preferences.pickupDropoff.email}
+                    onPushChange={(checked) => updateGroup('pickupDropoff', 'push', checked)}
+                    onEmailChange={(checked) => updateGroup('pickupDropoff', 'email', checked)}
+                  />
+                  <AlertRow
+                    label="Trip updates"
+                    description="Trip starts, completions and cancellations"
+                    icon={<Route className="h-5 w-5" aria-hidden />}
+                    pushChecked={preferences.tripUpdates.push}
+                    emailChecked={preferences.tripUpdates.email}
+                    onPushChange={(checked) => updateGroup('tripUpdates', 'push', checked)}
+                    onEmailChange={(checked) => updateGroup('tripUpdates', 'email', checked)}
+                  />
+                  <AlertRow
+                    label="Operational alerts"
+                    description="Delays, disruptions and service changes"
+                    icon={<TriangleAlert className="h-5 w-5" aria-hidden />}
+                    pushChecked={preferences.operationalAlerts.push}
+                    emailChecked={preferences.operationalAlerts.email}
+                    onPushChange={(checked) => updateGroup('operationalAlerts', 'push', checked)}
+                    onEmailChange={(checked) => updateGroup('operationalAlerts', 'email', checked)}
+                  />
+                </div>
+              </Card>
             ) : null}
-          </Card>
 
-          {!isAdmin ? (
-            <Card className="p-5" data-ui="notification-categories-card">
-              <h2 className="font-bold text-navy-900">Alert types</h2>
-              <p className="mt-1 text-sm text-slate-600">Turn off anything you do not need.</p>
-              <fieldset className="mt-4 divide-y divide-slate-200">
-                <legend className="sr-only">Push notification categories</legend>
-                {pushCategories.map((category) => (
-                  <label
-                    key={category.key}
-                    className="flex min-h-16 items-start gap-3 py-3 first:pt-0 last:pb-0"
-                    data-ui="notification-switch-row"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={value.categories[category.key] ?? false}
-                      onChange={(event) =>
-                        update({
-                          categories: {
-                            ...value.categories,
-                            [category.key]: event.target.checked,
-                          },
-                        })
-                      }
-                    />
-                    <span>
-                      <b className="text-navy-900">{category.title}</b>
-                      <span className="mt-0.5 block text-sm leading-5 text-slate-600">
-                        {category.description}
-                      </span>
-                    </span>
-                  </label>
-                ))}
-              </fieldset>
-            </Card>
-          ) : null}
-
-          <Card className="p-5" data-ui="notification-preview-card">
-            <div className="flex items-start gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-navy-50 text-navy-700">
-                <LockKeyhole className="h-5 w-5" aria-hidden />
-              </span>
-              <div>
-                <h2 className="font-bold text-navy-900">Lock-screen privacy</h2>
-                <p className="mt-1 text-sm leading-5 text-slate-600">
-                  Previews never include names, routes, stops, coordinates, drivers, or internal IDs.
-                </p>
-              </div>
-            </div>
-            <fieldset className="mt-4 grid gap-3">
-              <legend className="sr-only">Lock-screen notification preview</legend>
-              <label className="flex min-h-14 items-center gap-3 rounded-2xl border border-slate-200 p-3">
-                <input
-                  type="radio"
-                  name="preview"
-                  checked={value.previewMode === 'generic'}
-                  onChange={() => update({ previewMode: 'generic' })}
-                />
-                <span>
-                  <b className="block text-navy-900">Generic preview</b>
-                  <span className="text-sm text-slate-600">Private notification wording</span>
-                </span>
-              </label>
-              <label className="flex min-h-14 items-center gap-3 rounded-2xl border border-slate-200 p-3">
-                <input
-                  type="radio"
-                  name="preview"
-                  checked={value.previewMode === 'limited'}
-                  onChange={() => update({ previewMode: 'limited' })}
-                />
-                <span>
-                  <b className="block text-navy-900">Event type only</b>
-                  <span className="text-sm text-slate-600">Shows the alert category only</span>
-                </span>
-              </label>
-            </fieldset>
-          </Card>
-
-          {!isNativeMobile ? (
-            <Card className="space-y-4 p-5" data-ui="quiet-hours-settings">
-              <label className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={value.quietHoursEnabled}
-                  onChange={(event) => update({ quietHoursEnabled: event.target.checked })}
-                />
-                Quiet hours
-              </label>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="text-sm font-medium">
-                  Start
-                  <input
-                    type="time"
-                    value={value.quietHoursStart}
-                    onChange={(event) => update({ quietHoursStart: event.target.value })}
-                    className="mt-1 block w-full rounded-lg border p-2"
-                  />
-                </label>
-                <label className="text-sm font-medium">
-                  End
-                  <input
-                    type="time"
-                    value={value.quietHoursEnd}
-                    onChange={(event) => update({ quietHoursEnd: event.target.value })}
-                    className="mt-1 block w-full rounded-lg border p-2"
-                  />
-                </label>
-              </div>
-              <label className="block text-sm font-medium">
-                Timezone override
-                <input
-                  value={value.timezoneOverride ?? ''}
-                  placeholder={value.timezone}
-                  onChange={(event) => update({ timezoneOverride: event.target.value || null })}
-                  className="mt-1 block w-full rounded-lg border p-2"
-                />
-                <span className="mt-1 block text-xs font-normal text-slate-500">
-                  Use an IANA timezone such as America/Edmonton.
-                </span>
-              </label>
-              <label className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={value.urgentBypassQuietHours}
-                  onChange={(event) => update({ urgentBypassQuietHours: event.target.checked })}
-                />
-                Allow urgent operational alerts during quiet hours
-              </label>
-            </Card>
-          ) : null}
-
-          <Button type="submit" fullWidth disabled={saving}>
-            {saving ? 'Saving…' : 'Save notification settings'}
-          </Button>
-          {message ? (
-            <p role="status" className="rounded-xl bg-slate-100 p-3 text-sm text-slate-700">
-              {message}
-            </p>
-          ) : null}
-        </form>
-
-        {!isAdmin && !isNativeMobile ? (
-          <Card className="mt-5 p-5" data-ui="registered-android-devices">
-            <h2 className="font-semibold text-slate-950">Registered Android devices</h2>
-            {devices.length === 0 ? (
-              <p className="mt-2 text-sm text-slate-600">No device is registered.</p>
-            ) : (
-              <ul className="mt-3 divide-y">
-                {devices.map((device) => (
-                  <li key={device.id} className="flex items-center justify-between gap-3 py-3">
-                    <span>
-                      <b>{device.deviceModel ?? 'Android device'}</b>
-                      <span className="block text-xs text-slate-500">
-                        {device.status} · last refreshed{' '}
-                        {new Date(device.lastSeenAt).toLocaleDateString()}
-                      </span>
-                    </span>
-                    <Button
-                      variant="secondary"
-                      onClick={() =>
-                        void revokeOwnPushDevice(device.id).then(() =>
-                          setDevices((all) => all.filter((item) => item.id !== device.id)),
-                        )
-                      }
-                    >
-                      Revoke
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        ) : null}
-
-        {profile?.role === 'guardian' ? (
-          <Card className="mt-5 p-5" data-ui="guardian-email-notifications">
-            <div className="flex items-start gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-navy-50 text-navy-700">
-                <Mail className="h-5 w-5" aria-hidden />
-              </span>
-              <div>
-                <h2 className="font-bold text-navy-900">Pickup and drop-off email</h2>
-                <p className="mt-1 text-sm leading-5 text-slate-600">
-                  Email delivery is separately optional for each linked student.
-                </p>
-                <Link
-                  className="mt-3 inline-flex min-h-12 items-center font-bold text-blue-700"
-                  to="/notifications/settings/email"
+            <div className="mt-3 min-h-12" aria-live="polite" aria-atomic="true">
+              {pendingSaves > 0 || message ? (
+                <p
+                  className="rounded-xl px-3 py-2 text-sm font-medium text-slate-700"
+                  data-ui="notification-settings-status"
+                  role="status"
                 >
-                  Manage email choices
-                </Link>
-              </div>
+                  {pendingSaves > 0 ? 'Saving…' : message}
+                </p>
+              ) : null}
+              {nativePushAvailable &&
+              (permissionState === 'denied' || permissionState === 'permanently_denied') ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="mt-2 w-full"
+                  rightIcon={<ExternalLink className="h-4 w-4" aria-hidden />}
+                  onClick={() => void window.SafeBusNativePush?.openSystemSettings()}
+                >
+                  Open Android notification settings
+                </Button>
+              ) : null}
             </div>
-          </Card>
-        ) : null}
+          </>
+        )}
       </div>
     </DashboardLayout>
   );

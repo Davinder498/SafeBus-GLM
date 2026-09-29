@@ -81,11 +81,14 @@ export function GuardianLiveMapPage() {
   if (appSurface === 'native-mobile') {
     return (
       <div
-        className="fixed inset-0 z-50 flex flex-col bg-slate-50"
+        className="fixed inset-0 z-50 flex flex-col"
+        data-ui="guardian-map-shell"
+        data-portal="parent"
         data-testid="guardian-fullscreen-map"
       >
         <header
-          className="z-10 flex min-h-16 items-center gap-3 border-b border-slate-200 bg-white px-4"
+          className="z-10 flex min-h-16 items-center gap-3 border-b px-4"
+          data-ui="guardian-map-app-bar"
           style={{ paddingTop: 'env(safe-area-inset-top)' }}
         >
           <Link
@@ -145,7 +148,8 @@ export function GuardianLiveMapPage() {
               />
               {!visibleLocations.some((location) => location.locationState === 'fresh') && (
                 <p
-                  className="absolute bottom-4 left-4 right-4 rounded-xl bg-white/95 p-3 text-center text-sm font-semibold text-navy-900 shadow-lg"
+                  className="absolute bottom-4 left-4 right-4 rounded-xl p-3 text-center text-sm font-semibold text-navy-900 shadow-lg"
+                  data-ui="guardian-map-message"
                   role="status"
                 >
                   No current bus location to show right now.
@@ -246,9 +250,7 @@ export function GuardianLiveMapPage() {
                   >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
-                        <h3 className="text-lg font-bold text-navy-900">
-                          {bus.studentName}
-                        </h3>
+                        <h3 className="text-lg font-bold text-navy-900">{bus.studentName}</h3>
                         {bus.busNumber ? (
                           <p className="mt-1 text-sm text-gray-600">
                             Bus <span className="font-semibold text-navy-900">{bus.busNumber}</span>{' '}

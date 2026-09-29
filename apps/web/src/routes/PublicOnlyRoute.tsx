@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Navigate } from 'react-router';
 import { Card } from '@/components/ui/Card';
+import { AppLoadingScreen } from '@/components/ui/AppLoadingScreen';
 import { Button } from '@/components/ui/Button';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import {
@@ -46,16 +47,7 @@ export function PublicOnlyRoute({ children }: PublicOnlyRouteProps) {
   }
 
   if (loading) {
-    return (
-      <PublicLayout>
-        <main className="mx-auto flex min-h-[calc(100vh-150px)] max-w-lg items-center px-4 py-12 sm:px-6">
-          <Card className="w-full p-8 text-center">
-            <p className="text-lg font-bold text-navy-900">Loading BusSafe</p>
-            <p className="mt-2 text-gray-600">Checking your session...</p>
-          </Card>
-        </main>
-      </PublicLayout>
-    );
+    return <AppLoadingScreen />;
   }
 
   if (session && profile?.status === 'invited') {

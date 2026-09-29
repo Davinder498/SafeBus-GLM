@@ -1,5 +1,5 @@
 import { cn } from '@/utils/cn';
-import safeBusLogo from '../../../../mobile/assets/brand/safebus-master-mark.png';
+import safeBusLogo from '../../../../mobile/assets/brand/safebus-official-mark.svg';
 
 interface BrandMarkProps {
   className?: string;

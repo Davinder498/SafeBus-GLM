@@ -234,8 +234,12 @@ export const driverNativeNavItems: DashboardNavItem[] = [
 export const guardianNativeNavItems: DashboardNavItem[] = [
   { label: 'Home', to: '/parent', icon: <LayoutDashboard className="h-5 w-5" /> },
   { label: 'Buses', to: '/guardian/routes', icon: <Bus className="h-5 w-5" /> },
-  { label: 'Updates', to: '/guardian/events', icon: <Calendar className="h-5 w-5" /> },
-  { label: 'Alerts', to: '/notifications', icon: <Bell className="h-5 w-5" /> },
+  { label: 'Updates', to: '/notifications', icon: <Bell className="h-5 w-5" /> },
+  {
+    label: 'Settings',
+    to: '/notifications/settings',
+    icon: <Settings className="h-5 w-5" />,
+  },
 ];
 
 /* -------------------------------- helpers --------------------------------- */
@@ -336,14 +340,14 @@ export function DashboardLayout({
 
   return (
     <div
-      className="min-h-screen bg-[var(--color-canvas)]"
+      className="min-h-screen bg-[#F4E1A1]"
       data-ui="dashboard-shell"
       data-app-surface={appSurface}
       data-portal={portal}
     >
       {/* Top header */}
       <header
-        className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[#F5F8F7]/95 backdrop-blur-md"
+        className="sticky top-0 z-40 border-b border-[#B6953F] bg-[#F1D780]/90 backdrop-blur-md"
         data-ui="app-bar"
       >
         <div
@@ -371,7 +375,7 @@ export function DashboardLayout({
             <BrandMark />
             <span className="sb-brand-copy hidden flex-col leading-tight sm:flex">
               <span className="text-sm font-bold text-slate-900">BusSafe Alberta</span>
-              <span className="text-xs text-slate-500">{portalTitles[portal]} portal</span>
+              <span className="text-xs text-slate-600">{portalTitles[portal]} portal</span>
             </span>
           </Link>
 
@@ -401,7 +405,7 @@ export function DashboardLayout({
                     <span className="block text-sm font-semibold text-slate-900">
                       {profile?.full_name ?? 'Account'}
                     </span>
-                    <span className="block text-xs capitalize text-slate-500">
+                    <span className="block text-xs capitalize text-slate-600">
                       {profile ? getRoleLabel(profile.role) : ''}
                     </span>
                   </span>
@@ -464,7 +468,7 @@ export function DashboardLayout({
       <div className="mx-auto flex max-w-[1400px] gap-0 px-0 lg:px-6">
         {/* Desktop sidebar */}
         {!usesBottomTabs && (
-          <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto border-r border-[var(--color-border)] bg-[var(--color-surface)] py-6 lg:block">
+          <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto border-r border-[#B6953F] bg-[#FAECBD] py-6 lg:block">
             <SidebarNav groups={groups} portal={portal} />
           </aside>
         )}
@@ -476,7 +480,7 @@ export function DashboardLayout({
               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
               onClick={() => setMobileOpen(false)}
             />
-            <aside className="absolute left-0 top-0 h-full w-72 max-w-[85vw] overflow-y-auto bg-[var(--color-surface)] p-4 shadow-popover animate-slide-in-right">
+            <aside className="absolute left-0 top-0 h-full w-72 max-w-[85vw] overflow-y-auto bg-[#FAECBD] p-4 shadow-popover animate-slide-in-right">
               <div className="mb-4 flex items-center justify-between">
                 <span className="flex items-center gap-2 text-sm font-bold text-slate-900">
                   <Bus className="h-4 w-4 text-navy-600" /> BusSafe Alberta
@@ -527,7 +531,7 @@ function BottomTabNav({
 }) {
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-border)] bg-[#F5F8F7]/95 shadow-[0_-4px_16px_rgba(15,23,42,0.08)] backdrop-blur-md"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-[#B6953F] bg-[#F1D780]/95 shadow-[0_-4px_16px_rgba(15,23,42,0.08)] backdrop-blur-md"
       aria-label="Primary navigation"
       data-testid="native-bottom-navigation"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
@@ -540,14 +544,15 @@ function BottomTabNav({
       >
         {items.map((item) => {
           const to = item.to ?? `/${portal}`;
+          const isNotificationInbox = to === '/notifications';
           return (
             <NavLink
               key={item.label}
               to={to}
-              end={to === `/${portal}`}
+              end={to === `/${portal}` || isNotificationInbox}
               aria-label={
-                item.label === 'Alerts' && unreadCount > 0
-                  ? `Alerts, ${unreadCount} unread`
+                isNotificationInbox && unreadCount > 0
+                  ? `${item.label}, ${unreadCount} unread`
                   : item.label
               }
               className={({ isActive }: NavLinkRenderProps) =>
@@ -562,7 +567,7 @@ function BottomTabNav({
               {item.icon && (
                 <span className="sb-bottom-tab-indicator" aria-hidden>
                   {item.icon}
-                  {item.label === 'Alerts' && unreadCount > 0 ? (
+                  {isNotificationInbox && unreadCount > 0 ? (
                     <span className="sb-bottom-tab-badge">
                       {unreadCount > 99 ? '99+' : unreadCount}
                     </span>

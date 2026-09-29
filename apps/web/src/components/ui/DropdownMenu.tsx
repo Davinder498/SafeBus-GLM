@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ButtonHTMLAttributes,
-  type ReactNode,
-} from 'react';
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { cn } from '@/utils/cn';
 
 interface DropdownMenuProps {
@@ -93,6 +87,7 @@ export function DropdownItem({
     <button
       role="menuitem"
       data-ui="dropdown-item"
+      data-destructive={destructive}
       className={cn(
         'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors',
         destructive
@@ -110,9 +105,13 @@ export function DropdownItem({
 }
 
 export function DropdownSeparator() {
-  return <div className="my-1 h-px bg-slate-100" />;
+  return <div className="my-1 h-px bg-slate-100" data-ui="dropdown-separator" />;
 }
 
 export function DropdownLabel({ children }: { children: ReactNode }) {
-  return <p className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">{children}</p>;
+  return (
+    <p className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
+      {children}
+    </p>
+  );
 }

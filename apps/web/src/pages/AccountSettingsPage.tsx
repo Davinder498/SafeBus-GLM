@@ -6,6 +6,7 @@ import {
 } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { GuardianIconTile } from '@/components/ui/GuardianIconTile';
 import { useAuth } from '@/contexts/useAuth';
 
 export function AccountSettingsPage() {
@@ -19,17 +20,19 @@ export function AccountSettingsPage() {
       navItems={[]}
       navGroups={isDriver ? driverNavGroups : guardianNavGroups}
     >
-      <div className="mx-auto max-w-3xl space-y-5">
+      <div className="mx-auto max-w-3xl space-y-5" data-ui="guardian-account-page">
         <PageHeader
           eyebrow="Account"
           title="Privacy and account"
           description="Review BusSafe privacy information and find the account-deletion process."
         />
 
-        <Card className="p-5">
-          <div className="flex items-start gap-3">
-            <CircleHelp className="mt-0.5 h-5 w-5 shrink-0 text-navy-600" aria-hidden />
-            <div>
+        <Card className="p-5" data-ui="guardian-account-card">
+          <div className="flex items-start gap-3" data-ui="guardian-card-row">
+            <GuardianIconTile>
+              <CircleHelp className="h-5 w-5" />
+            </GuardianIconTile>
+            <div className="min-w-0">
               <h2 className="font-bold text-slate-950">Support</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
                 Contact the transportation organization that issued your account using its verified
@@ -52,10 +55,12 @@ export function AccountSettingsPage() {
           </div>
         </Card>
 
-        <Card className="p-5">
-          <div className="flex items-start gap-3">
-            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-navy-600" aria-hidden />
-            <div>
+        <Card className="p-5" data-ui="guardian-account-card">
+          <div className="flex items-start gap-3" data-ui="guardian-card-row">
+            <GuardianIconTile>
+              <ShieldCheck className="h-5 w-5" />
+            </GuardianIconTile>
+            <div className="min-w-0">
               <h2 className="font-bold text-slate-950">Privacy policy</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
                 Learn what BusSafe handles, how bus location is limited to active trips, and how to
@@ -73,10 +78,12 @@ export function AccountSettingsPage() {
           </div>
         </Card>
 
-        <Card className="p-5">
-          <div className="flex items-start gap-3">
-            <Trash2 className="mt-0.5 h-5 w-5 shrink-0 text-danger-600" aria-hidden />
-            <div>
+        <Card className="p-5" data-ui="guardian-account-card">
+          <div className="flex items-start gap-3" data-ui="guardian-card-row">
+            <GuardianIconTile>
+              <Trash2 className="h-5 w-5" />
+            </GuardianIconTile>
+            <div className="min-w-0">
               <h2 className="font-bold text-slate-950">Request account deletion</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
                 BusSafe accounts are issued by participating school authorities. The public request

@@ -182,6 +182,15 @@ export async function installGuardianVisibilityMock(
   let fail = options.fail ?? false;
   let calls = 0;
   let deviceCalls = 0;
+  let deliveryPreferenceSaves = 0;
+  let deliveryPreferenceSaveFails = false;
+  let deliveryPreferences = {
+    push_enabled: true,
+    email_enabled: false,
+    pickup_dropoff: { push: true, email: false },
+    trip_updates: { push: true, email: false },
+    operational_alerts: { push: true, email: false },
+  };
 
   await page.route('**/*', async (requestRoute: Route) => {
     const url = new URL(requestRoute.request().url());
@@ -229,6 +238,32 @@ export async function installGuardianVisibilityMock(
             operations: false,
           },
         }),
+      });
+    }
+    if (method === 'POST' && path.includes('/rpc/get_guardian_delivery_preferences')) {
+      return requestRoute.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(deliveryPreferences),
+      });
+    }
+    if (method === 'POST' && path.includes('/rpc/set_guardian_delivery_preferences')) {
+      deliveryPreferenceSaves += 1;
+      if (deliveryPreferenceSaveFails) {
+        return requestRoute.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'Preference save failed' }),
+        });
+      }
+      const body = requestRoute.request().postDataJSON() as {
+        p_preferences: typeof deliveryPreferences;
+      };
+      deliveryPreferences = body.p_preferences;
+      return requestRoute.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(deliveryPreferences),
       });
     }
     if (method === 'POST' && path.includes('/rpc/list_own_push_devices')) {
@@ -338,6 +373,12 @@ export async function installGuardianVisibilityMock(
     },
     getDeviceCallCount() {
       return deviceCalls;
+    },
+    getDeliveryPreferenceSaveCount() {
+      return deliveryPreferenceSaves;
+    },
+    setDeliveryPreferenceSaveFailure(nextFail: boolean) {
+      deliveryPreferenceSaveFails = nextFail;
     },
   };
 }

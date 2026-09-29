@@ -9,6 +9,12 @@ export interface GuardianBusGroup {
   visibility: GuardianBusVisibility;
 }
 
+export interface GuardianBusStatus {
+  label: 'Active' | 'Delayed' | 'Locating' | 'Location unavailable' | 'Inactive';
+  tone: 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+  pulse: boolean;
+}
+
 const locationPriority: Record<GuardianBusVisibility['locationState'], number> = {
   fresh: 5,
   stale: 4,
@@ -19,7 +25,9 @@ const locationPriority: Record<GuardianBusVisibility['locationState'], number> =
 
 function busKey(bus: GuardianBusVisibility): string {
   const number = bus.busNumber?.trim().toLocaleLowerCase();
-  return bus.assignmentState === 'assigned' && number ? `bus:${number}` : `student:${bus.studentId}`;
+  return bus.assignmentState === 'assigned' && number
+    ? `bus:${number}`
+    : `student:${bus.studentId}`;
 }
 
 function chooseVisibility(
@@ -74,4 +82,27 @@ export function groupGuardianBuses(buses: GuardianBusVisibility[]): GuardianBusG
 
 export function guardianBusDetailsPath(busNumber: string): string {
   return `/guardian/buses/${encodeURIComponent(busNumber.trim())}`;
+}
+
+/**
+ * Converts the guardian-safe trip/location contract into a useful current status.
+ * Green is reserved for an active trip with a fresh, verified location.
+ */
+export function guardianBusStatus(group: GuardianBusGroup): GuardianBusStatus {
+  if (!group.hasActiveTrip) {
+    return { label: 'Inactive', tone: 'neutral', pulse: false };
+  }
+
+  switch (group.visibility.locationState) {
+    case 'fresh':
+      return { label: 'Active', tone: 'success', pulse: true };
+    case 'stale':
+      return { label: 'Delayed', tone: 'warning', pulse: false };
+    case 'invalid':
+      return { label: 'Location unavailable', tone: 'danger', pulse: false };
+    case 'missing':
+      return { label: 'Location unavailable', tone: 'warning', pulse: false };
+    case 'inactive':
+      return { label: 'Locating', tone: 'info', pulse: false };
+  }
 }

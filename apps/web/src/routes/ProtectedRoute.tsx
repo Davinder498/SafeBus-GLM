@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, Navigate } from 'react-router';
 import { Card } from '@/components/ui/Card';
+import { AppLoadingScreen } from '@/components/ui/AppLoadingScreen';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import {
   adminRoles,
@@ -16,19 +17,6 @@ interface ProtectedRouteProps {
   allowedRoles: ProfileRole[];
   children: ReactNode;
   requireMfa?: boolean;
-}
-
-function LoadingScreen() {
-  return (
-    <PublicLayout>
-      <main className="mx-auto flex min-h-[calc(100vh-150px)] max-w-lg items-center px-4 py-12 sm:px-6">
-        <Card className="w-full p-8 text-center">
-          <p className="text-lg font-bold text-navy-900">Loading BusSafe</p>
-          <p className="mt-2 text-gray-600">Checking your session...</p>
-        </Card>
-      </main>
-    </PublicLayout>
-  );
 }
 
 function AuthMessage({ title, message }: { title: string; message: string }) {
@@ -83,7 +71,7 @@ export function ProtectedRoute({ allowedRoles, children, requireMfa = true }: Pr
     );
   }
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return <AppLoadingScreen />;
 
   if (authError && !session) {
     return <AuthMessage title="Authentication unavailable" message={authError} />;
@@ -146,7 +134,7 @@ export function ProtectedRoute({ allowedRoles, children, requireMfa = true }: Pr
     adminRoles.includes(profile.role as (typeof adminRoles)[number]) &&
     (mfaLoading || mfaStatus.currentLevel === null)
   ) {
-    return <LoadingScreen />;
+    return <AppLoadingScreen />;
   }
 
   if (

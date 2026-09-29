@@ -1280,8 +1280,9 @@ export interface Database {
           id: string;
           tenant_id: string;
           guardian_id: string;
-          student_id: string;
-          student_trip_event_id: string;
+          student_id: string | null;
+          student_trip_event_id: string | null;
+          user_notification_id: string | null;
           notification_type: string;
           status: string;
           created_at: string;
@@ -1303,8 +1304,9 @@ export interface Database {
           id?: string;
           tenant_id: string;
           guardian_id: string;
-          student_id: string;
-          student_trip_event_id: string;
+          student_id?: string | null;
+          student_trip_event_id?: string | null;
+          user_notification_id?: string | null;
           notification_type: string;
           status?: string;
           created_at?: string;
@@ -1326,8 +1328,9 @@ export interface Database {
           id?: string;
           tenant_id?: string;
           guardian_id?: string;
-          student_id?: string;
-          student_trip_event_id?: string;
+          student_id?: string | null;
+          student_trip_event_id?: string | null;
+          user_notification_id?: string | null;
           notification_type?: string;
           status?: string;
           created_at?: string;
@@ -1374,6 +1377,13 @@ export interface Database {
             referencedRelation: 'student_trip_events';
             referencedColumns: ['id'];
           },
+          {
+            foreignKeyName: 'guardian_notification_outbox_user_notification_id_fkey';
+            columns: ['user_notification_id'];
+            isOneToOne: false;
+            referencedRelation: 'user_notifications';
+            referencedColumns: ['id'];
+          },
         ];
       };
       guardians: {
@@ -1389,6 +1399,8 @@ export interface Database {
           updated_at: string;
           first_name: string;
           last_name: string;
+          pickup_dropoff_email_enabled: boolean;
+          email_preferences_set_at: string | null;
         };
         Insert: {
           id?: string;
@@ -1402,6 +1414,8 @@ export interface Database {
           updated_at?: string;
           first_name: string;
           last_name: string;
+          pickup_dropoff_email_enabled?: boolean;
+          email_preferences_set_at?: string | null;
         };
         Update: {
           id?: string;
@@ -1415,6 +1429,8 @@ export interface Database {
           updated_at?: string;
           first_name?: string;
           last_name?: string;
+          pickup_dropoff_email_enabled?: boolean;
+          email_preferences_set_at?: string | null;
         };
         Relationships: [
           {
@@ -3129,6 +3145,14 @@ export interface Database {
           access_expires_at: string | null;
         }[];
       };
+      get_guardian_delivery_preferences: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
+      get_guardian_delivery_preferences_v2: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       get_notification_delivery_health_v2: { Args: Record<PropertyKey, never>; Returns: Json };
       get_notification_preferences: { Args: Record<PropertyKey, never>; Returns: Json };
       get_user_notification_unread_count: { Args: Record<PropertyKey, never>; Returns: number };
@@ -3228,6 +3252,17 @@ export interface Database {
           p_push_service_changes: boolean;
         };
         Returns: undefined;
+      };
+      set_guardian_delivery_preferences: {
+        Args: {
+          p_push_enabled: boolean;
+          p_email_pickup_dropoff_enabled: boolean;
+        };
+        Returns: Json;
+      };
+      set_guardian_delivery_preferences_v2: {
+        Args: { p_preferences: Json };
+        Returns: Json;
       };
       set_notification_preferences: {
         Args: {

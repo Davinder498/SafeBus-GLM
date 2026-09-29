@@ -8,6 +8,43 @@ import {
 } from '../../netlify/functions/guardian-notification-email.mjs';
 
 describe('guardian notification email template', () => {
+  it('keeps trip and operational email copy free of student names', () => {
+    const email = buildGuardianEventEmail({
+      notificationType: 'trip_late',
+      studentFirstName: 'PrivateStudentName',
+      eventCreatedAt: '2026-09-29T14:00:00.000Z',
+      tenantTimezone: 'America/Edmonton',
+    });
+
+    expect(email.subject).toBe('BusSafe: Bus reported late');
+    expect(email.text).toContain('Open BusSafe to view the update');
+    expect(email.text).not.toContain('PrivateStudentName');
+    expect(email.html).not.toContain('PrivateStudentName');
+  });
+
+  it.each([
+    'trip_started',
+    'trip_completed',
+    'trip_cancelled',
+    'trip_late',
+    'trip_missing',
+    'traffic_disruption',
+    'weather_disruption',
+    'road_closure',
+    'mechanical_disruption',
+    'student_service_changed',
+    'guardian_access_changed',
+  ])('uses controlled privacy-safe copy for %s', (notificationType) => {
+    const email = buildGuardianEventEmail({
+      notificationType,
+      studentFirstName: 'DoNotRender',
+      eventCreatedAt: '2026-09-29T14:00:00.000Z',
+      tenantTimezone: 'America/Edmonton',
+    });
+    expect(email.subject).toMatch(/^BusSafe:/);
+    expect(`${email.text} ${email.html}`).not.toContain('DoNotRender');
+  });
+
   it('builds a pickup template with first-name-only and tenant-timezone event timestamp', () => {
     const email = buildGuardianEventEmail({
       notificationType: 'student_picked_up',
@@ -143,7 +180,9 @@ describe('retry and idempotency helpers', () => {
 
 describe('log privacy', () => {
   it('redacts sensitive log fields (backwards-compatible helper)', () => {
-    expect(redactLog({ outboxId: '1', email: 'g@example.com', text: 'body', result: 'x' })).toEqual({ outboxId: '1', result: 'x' });
+    expect(redactLog({ outboxId: '1', email: 'g@example.com', text: 'body', result: 'x' })).toEqual(
+      { outboxId: '1', result: 'x' },
+    );
   });
 
   it('redacts all known sensitive keys', () => {
