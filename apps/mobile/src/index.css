@@ -1865,6 +1865,39 @@
     color: #fff;
   }
 
+  html[data-app-surface='native-mobile']
+    [data-portal][data-ui='dashboard-shell']
+    [data-ui='avatar'] {
+    border-color: #8db7c9;
+    background: #235c78 !important;
+    color: #fff;
+    box-shadow: 0 3px 10px rgb(35 92 120 / 0.18);
+  }
+
+  html[data-app-surface='native-mobile'] [data-ui-state='data-state'],
+  html[data-app-surface='native-mobile']
+    [data-portal='driver'][data-ui='dashboard-shell']
+    :is(
+      [data-ui='card'],
+      [data-ui='guardian-account-card'],
+      [data-testid='support-contact-card'],
+      [data-ui='notification-card'],
+      [data-ui='notification-detail-card']
+    ) {
+    border-color: #d7e1e4;
+    background: #fff;
+    box-shadow: 0 8px 24px rgb(23 43 58 / 0.07);
+  }
+
+  html[data-app-surface='native-mobile']
+    [data-portal='driver'][data-ui='dashboard-shell']
+    [data-ui='guardian-icon-tile'] {
+    border-color: #c9e4e7;
+    background: #ddf2f4;
+    color: #235c78;
+    box-shadow: none;
+  }
+
   html[data-app-surface='native-mobile'] [role='menu'],
   html[data-app-surface='native-mobile'] [data-ui='notification-settings-status'],
   html[data-app-surface='native-mobile'] [data-ui='notification-filter-controls'] button {

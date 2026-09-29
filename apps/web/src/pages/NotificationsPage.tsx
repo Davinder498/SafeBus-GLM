@@ -35,13 +35,20 @@ const categories: Array<{ value: NotificationCategory | ''; label: string }> = [
   { value: 'platform', label: 'Platform' },
 ];
 
-const mobileCategories: Array<{ value: NotificationCategory; label: string }> = [
+const guardianMobileCategories: Array<{ value: NotificationCategory; label: string }> = [
   { value: 'trip_status', label: 'Trips' },
   { value: 'service_changes', label: 'Service alerts' },
   { value: 'pickup_dropoff', label: 'Boarding' },
 ];
 
+const driverMobileCategories: Array<{ value: NotificationCategory; label: string }> = [
+  { value: 'assignments', label: 'Assignment alerts' },
+];
+
 function formatEventLabel(value: UserNotification['eventType']) {
+  if (value === 'driver_assignment_created') return 'Assignment created';
+  if (value === 'driver_assignment_changed') return 'Assignment changed';
+  if (value === 'driver_assignment_ended') return 'Assignment ended';
   const label = value.replaceAll('_', ' ');
   return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
 }
@@ -125,8 +132,11 @@ export function NotificationsPage() {
         : profile?.role === 'driver'
           ? driverNavGroups
           : guardianNavGroups;
-  const isGuardianMobile = appSurface === 'native-mobile' && profile?.role === 'guardian';
-  const isRecipientMobile = appSurface === 'native-mobile' && (isGuardianMobile || isDriver);
+  const isRecipientMobile =
+    appSurface === 'native-mobile' && (profile?.role === 'guardian' || isDriver);
+  const recipientMobileCategories = isDriver
+    ? driverMobileCategories
+    : guardianMobileCategories;
 
   const selectedItem = requestedId ? (items.find((item) => item.id === requestedId) ?? null) : null;
 
@@ -263,7 +273,7 @@ export function NotificationsPage() {
             }
           />
         )}
-        {isGuardianMobile ? (
+        {isRecipientMobile ? (
           <div
             className="mb-3 -mx-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             data-ui="notification-filters"
@@ -303,7 +313,7 @@ export function NotificationsPage() {
                   Unread {unreadCount > 0 ? unreadCount : ''}
                 </span>
               </button>
-              {mobileCategories.map((option) => (
+              {recipientMobileCategories.map((option) => (
                 <button
                   key={option.value}
                   type="button"
@@ -378,7 +388,7 @@ export function NotificationsPage() {
           <Card
             className={cn(
               'mb-4 border-blue-300 bg-blue-50/40 p-5',
-              isGuardianMobile && 'border-slate-200 bg-white p-4 shadow-sm',
+              isRecipientMobile && 'border-slate-200 bg-white !p-4 shadow-sm',
             )}
             role="region"
             aria-labelledby="notification-detail-heading"
@@ -464,7 +474,7 @@ export function NotificationsPage() {
           <DataState title="You’re all caught up" message="No notifications match these filters." />
         ) : (
           <div
-            className={cn('space-y-5', isGuardianMobile && 'space-y-3')}
+            className={cn('space-y-5', isRecipientMobile && 'space-y-3')}
             data-ui="notification-list"
           >
             {items.map((item) => (
@@ -472,15 +482,15 @@ export function NotificationsPage() {
                 key={item.id}
                 className={cn(
                   'p-5',
-                  isGuardianMobile &&
-                    'border-slate-200 bg-white p-4 shadow-[0_2px_10px_rgb(15_42_68_/_0.05)]',
+                  isRecipientMobile &&
+                    'border-slate-200 bg-white !p-4 shadow-[0_2px_10px_rgb(15_42_68_/_0.05)]',
                 )}
                 data-ui="notification-card"
                 data-unread={!item.readAt}
                 data-selected={item.id === requestedId}
                 data-severity={item.severity}
               >
-                {isGuardianMobile ? (
+                {isRecipientMobile ? (
                   <article>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import {
   DashboardLayout,
   driverNavGroups,
@@ -6,6 +7,7 @@ import {
 } from '@/components/layout/DashboardLayout';
 import { SupportContactCard } from '@/components/support/SupportContactCard';
 import { DataState } from '@/components/ui/DataState';
+import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/contexts/useAuth';
 import { fetchSupportDirectory, type SupportContact } from '@/services/supportDirectoryService';
@@ -39,7 +41,7 @@ export function MobileSupportPage() {
       navItems={[]}
       navGroups={isDriver ? driverNavGroups : guardianNavGroups}
     >
-      <div className="mx-auto max-w-3xl space-y-5">
+      <div className="mx-auto max-w-3xl space-y-5" data-ui="mobile-support-page">
         <PageHeader
           eyebrow="Help"
           title="Support"
@@ -55,12 +57,17 @@ export function MobileSupportPage() {
           <DataState title="Support details are unavailable" message="Please try again later." />
         )}
         {!loading && !error && contact && (
-          <SupportContactCard title="Tenant administrator support" contact={contact} />
+          <SupportContactCard title="Support contact" contact={contact} />
         )}
         {!loading && !error && !contact && (
           <DataState
-            title="Support contact is not configured yet"
-            message="Contact your tenant administrator using their usual contact information."
+            title="Contact your transportation administrator"
+            message="Use the verified contact from your invitation or school authority directory. You can also review the BusSafe privacy contact instructions."
+            action={
+              <Link to="/privacy#contact">
+                <Button variant="secondary">View contact instructions</Button>
+              </Link>
+            }
           />
         )}
       </div>

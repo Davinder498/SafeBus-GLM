@@ -46,9 +46,41 @@ async function expectMaterialBrand(page: import('@playwright/test').Page) {
   await expect(logo).toHaveCSS('border-radius', '18%');
 }
 
-async function installNotificationInboxMock(page: import('@playwright/test').Page) {
+async function installNotificationInboxMock(
+  page: import('@playwright/test').Page,
+  options: { driver?: boolean } = {},
+) {
   let readAt: string | null = null;
   let markAllReadCalls = 0;
+  const notification = options.driver
+    ? {
+        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        event_type: 'driver_assignment_changed',
+        category: 'assignments',
+        severity: 'info',
+        title: 'Assignment changed',
+        body: 'Your planned work assignment has changed.',
+        occurred_at: '2026-09-01T12:00:00Z',
+        created_at: '2026-09-01T12:00:00Z',
+        read_at: readAt,
+        archived_at: null,
+        destination_path:
+          '/notifications?notification=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      }
+    : {
+        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        event_type: 'trip_cancelled',
+        category: 'trip_status',
+        severity: 'urgent',
+        title: 'Trip cancelled',
+        body: 'Bus service status has changed.',
+        occurred_at: '2026-09-01T12:00:00Z',
+        created_at: '2026-09-01T12:00:00Z',
+        read_at: readAt,
+        archived_at: null,
+        destination_path:
+          '/notifications?notification=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      };
 
   await page.route('**/rest/v1/rpc/get_user_notification_unread_count', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: readAt ? '0' : '1' }),
@@ -57,21 +89,7 @@ async function installNotificationInboxMock(page: import('@playwright/test').Pag
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify([
-        {
-          id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-          event_type: 'trip_cancelled',
-          category: 'trip_status',
-          severity: 'urgent',
-          title: 'Trip cancelled',
-          body: 'Bus service status has changed.',
-          occurred_at: '2026-09-01T12:00:00Z',
-          created_at: '2026-09-01T12:00:00Z',
-          read_at: readAt,
-          archived_at: null,
-          destination_path: '/notifications?notification=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-        },
-      ]),
+      body: JSON.stringify([{ ...notification, read_at: readAt }]),
     }),
   );
   await page.route('**/rest/v1/rpc/mark_all_user_notifications_read', (route) => {
@@ -602,6 +620,36 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
   await page.screenshot({ path: testInfo.outputPath('guardian-updates.png'), fullPage: true });
 });
 
+test('driver updates reuse the compact inbox with assignment-only alerts', async ({
+  page,
+}, testInfo) => {
+  await installSupabaseMock(page);
+  await installNotificationInboxMock(page, { driver: true });
+  await page.goto('/notifications');
+
+  await expect(page.getByRole('heading', { name: 'Updates', level: 1 })).toBeVisible();
+  const filters = page.locator('[data-ui="notification-filters"]');
+  const notification = page.locator('[data-ui="notification-card"]');
+  await expect(filters.getByRole('combobox')).toHaveCount(0);
+  await expect(filters.getByRole('checkbox')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'All 1' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Unread 1' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Assignment alerts' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Service alerts' })).toHaveCount(0);
+  await expect(notification).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(notification).toHaveCSS('padding', '16px');
+  await expect(notification.getByText('Assignment changed', { exact: true })).toHaveCount(2);
+  await expect(
+    notification.getByRole('button', { name: 'Open notification: Assignment changed' }),
+  ).toHaveText('View update');
+  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS(
+    'background-color',
+    'rgb(35, 92, 120)',
+  );
+  await expectNoHorizontalOverflow(page);
+  await page.screenshot({ path: testInfo.outputPath('driver-updates.png'), fullPage: true });
+});
+
 test('driver active-trip shell keeps daily actions touch friendly', async ({ page }, testInfo) => {
   await installSupabaseMock(page, { withActiveTrip: true, withCompletedTrips: true });
   await page.goto('/driver');
@@ -622,7 +670,7 @@ test('driver active-trip shell keeps daily actions touch friendly', async ({ pag
   await page.screenshot({ path: testInfo.outputPath('driver-active-trip.png') });
 });
 
-test('driver support page shows only the tenant support contact', async ({ page }) => {
+test('driver support page shows one resolved support contact', async ({ page }) => {
   await installSupabaseMock(page, {
     supportDirectory: {
       platform: null,
@@ -639,13 +687,48 @@ test('driver support page shows only the tenant support contact', async ({ page 
   });
   await page.goto('/support');
   await expect(page.getByRole('heading', { name: 'Support', level: 1 })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Tenant administrator support' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Support contact' })).toBeVisible();
   await expect(page.getByText('Prairie Schools Transportation')).toBeVisible();
   await expect(page.getByRole('link', { name: 'transport@example.test' })).toHaveAttribute(
     'href',
     'mailto:transport@example.test',
   );
   await expect(page.getByText('BusSafe platform support')).toHaveCount(0);
+  await expect(page.getByTestId('support-contact-card')).toHaveCSS(
+    'background-color',
+    'rgb(255, 255, 255)',
+  );
+  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS(
+    'background-color',
+    'rgb(35, 92, 120)',
+  );
+
+  await page.goto('/account');
+  const accountCards = page.locator('[data-ui="guardian-account-card"]');
+  await expect(accountCards).toHaveCount(3);
+  await expect(accountCards.first()).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(accountCards.first().locator('[data-ui="guardian-icon-tile"]')).toHaveCSS(
+    'background-color',
+    'rgb(221, 242, 244)',
+  );
+});
+
+test('driver support page avoids a configuration dead end when no contact is returned', async ({
+  page,
+}) => {
+  await installSupabaseMock(page);
+  await page.goto('/support');
+
+  await expect(page.getByText('Support contact is not configured yet')).toHaveCount(0);
+  await expect(page.getByText('Contact your transportation administrator')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'View contact instructions' })).toHaveAttribute(
+    'href',
+    '/privacy#contact',
+  );
+  await expect(page.locator('[data-ui-state="data-state"]')).toHaveCSS(
+    'background-color',
+    'rgb(255, 255, 255)',
+  );
 });
 
 test('driver account menu exposes existing secondary destinations', async ({ page }) => {
