@@ -674,6 +674,12 @@
       "filename": "0111_driver_assignment_notifications.sql",
       "bytes": 27783,
       "sha256": "8a03583baa00b0983271cc111c8ba690c5807e3f63bac9b4596644064f0cf897"
+    },
+    {
+      "version": "0112",
+      "filename": "0112_mobile_support_fallback.sql",
+      "bytes": 2898,
+      "sha256": "849bebeedf854403bde43f86a1884292bdbb8802700276386620e905f8e5c35d"
     }
   ]
 }
