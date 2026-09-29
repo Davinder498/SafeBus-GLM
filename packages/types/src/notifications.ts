@@ -31,7 +31,8 @@ export type NotificationSeverity = 'info' | 'warning' | 'urgent';
 export type NotificationPreviewMode = 'generic' | 'limited';
 export type PushPermissionState = 'prompt' | 'granted' | 'denied' | 'permanently_denied';
 export type PushDeviceStatus = 'active' | 'revoked' | 'invalid' | 'stale';
-export type PushDeliveryState = 'pending' | 'processing' | 'retry' | 'delivered' | 'failed' | 'cancelled';
+export type PushDeliveryState =
+  'pending' | 'processing' | 'retry' | 'delivered' | 'failed' | 'cancelled';
 
 export interface UserNotification {
   id: string;
@@ -66,7 +67,15 @@ export interface NotificationPreferences {
 
 export interface GuardianDeliveryPreferences {
   pushEnabled: boolean;
-  emailPickupDropoffEnabled: boolean;
+  emailEnabled: boolean;
+  pickupDropoff: GuardianDeliveryChannelPreferences;
+  tripUpdates: GuardianDeliveryChannelPreferences;
+  operationalAlerts: GuardianDeliveryChannelPreferences;
+}
+
+export interface GuardianDeliveryChannelPreferences {
+  push: boolean;
+  email: boolean;
 }
 
 export interface AndroidPushDevice {

@@ -186,7 +186,10 @@ export async function installGuardianVisibilityMock(
   let deliveryPreferenceSaveFails = false;
   let deliveryPreferences = {
     push_enabled: true,
-    email_pickup_dropoff_enabled: false,
+    email_enabled: false,
+    pickup_dropoff: { push: true, email: false },
+    trip_updates: { push: true, email: false },
+    operational_alerts: { push: true, email: false },
   };
 
   await page.route('**/*', async (requestRoute: Route) => {
@@ -254,13 +257,9 @@ export async function installGuardianVisibilityMock(
         });
       }
       const body = requestRoute.request().postDataJSON() as {
-        p_push_enabled: boolean;
-        p_email_pickup_dropoff_enabled: boolean;
+        p_preferences: typeof deliveryPreferences;
       };
-      deliveryPreferences = {
-        push_enabled: body.p_push_enabled,
-        email_pickup_dropoff_enabled: body.p_email_pickup_dropoff_enabled,
-      };
+      deliveryPreferences = body.p_preferences;
       return requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',

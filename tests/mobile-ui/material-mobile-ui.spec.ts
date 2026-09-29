@@ -42,16 +42,16 @@ async function expectMaterialBrand(page: import('@playwright/test').Page) {
   await expect(logo).toHaveAttribute('src', /safebus-official-mark.*\.svg/);
   await expect(logo).toHaveAttribute('alt', '');
   await expect(mark.locator('svg')).toHaveCount(0);
-  await expect(mark).toHaveCSS(
-    'background-color',
-    'rgba(0, 0, 0, 0)',
-  );
+  await expect(mark).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(logo).toHaveCSS('border-radius', '18%');
 }
 
 async function installNotificationInboxMock(page: import('@playwright/test').Page) {
+  let readAt: string | null = null;
+  let markAllReadCalls = 0;
+
   await page.route('**/rest/v1/rpc/get_user_notification_unread_count', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: '1' }),
+    route.fulfill({ status: 200, contentType: 'application/json', body: readAt ? '0' : '1' }),
   );
   await page.route('**/rest/v1/rpc/get_user_notifications', (route) =>
     route.fulfill({
@@ -67,13 +67,22 @@ async function installNotificationInboxMock(page: import('@playwright/test').Pag
           body: 'Bus service status has changed.',
           occurred_at: '2026-09-01T12:00:00Z',
           created_at: '2026-09-01T12:00:00Z',
-          read_at: null,
+          read_at: readAt,
           archived_at: null,
           destination_path: '/notifications?notification=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
         },
       ]),
     }),
   );
+  await page.route('**/rest/v1/rpc/mark_all_user_notifications_read', (route) => {
+    markAllReadCalls += 1;
+    readAt = '2026-09-28T22:00:00Z';
+    return route.fulfill({ status: 200, contentType: 'application/json', body: '1' });
+  });
+
+  return {
+    getMarkAllReadCallCount: () => markAllReadCalls,
+  };
 }
 
 test('guardian shell uses the branded Material mobile treatment', async ({ page }, testInfo) => {
@@ -95,7 +104,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(page.getByRole('heading', { name: 'My Buses', level: 1 })).toBeVisible();
   await expect(page.locator('[data-ui="dashboard-shell"]')).toHaveCSS(
     'background-color',
-    'rgb(244, 225, 161)',
+    'rgb(242, 246, 247)',
   );
   await expectMaterialBrand(page);
   await expect(page.getByText('Track the assigned bus during an active school run.')).toHaveCount(
@@ -110,14 +119,14 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(homeBusCard).not.toContainText('TEST-42');
   await expect(homeBusCard).not.toContainText('live');
   await expect(homeBusCard).not.toContainText('View bus details');
-  await expect(homeBusCard).toHaveCSS('background-color', 'rgb(241, 215, 128)');
+  await expect(homeBusCard).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(page.locator('[data-ui="dashboard-shell"]')).toHaveCSS(
     'background-color',
-    'rgb(244, 225, 161)',
+    'rgb(242, 246, 247)',
   );
   await expect(page.getByTestId('guardian-home-student-card')).toHaveCSS(
     'background-color',
-    'rgb(250, 236, 189)',
+    'rgb(255, 255, 255)',
   );
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
@@ -155,11 +164,11 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(page.getByRole('heading', { name: 'Bus 42 live map' })).toBeVisible();
   await expect(page.getByTestId('guardian-fullscreen-map')).toHaveCSS(
     'background-color',
-    'rgb(244, 225, 161)',
+    'rgb(242, 246, 247)',
   );
   await expect(page.locator('[data-ui="guardian-map-app-bar"]')).toHaveCSS(
     'background-color',
-    'rgb(241, 215, 128)',
+    'rgb(255, 255, 255)',
   );
   await page.screenshot({ path: testInfo.outputPath('guardian-live-map.png') });
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCount(0);
@@ -313,7 +322,7 @@ test('guardian buses group students and open a clean bus detail view', async ({
   const serviceLine = page.locator('[data-ui="guardian-service-line"]');
   await expect(page.locator('[data-ui="guardian-service-line-card"]')).toHaveCSS(
     'background-color',
-    'rgb(250, 236, 189)',
+    'rgb(255, 255, 255)',
   );
   await expect(serviceLine.locator('.guardian-service-line__point')).toHaveCount(3);
   await expect(serviceLine.getByText('North Terminal')).toBeVisible();
@@ -422,7 +431,7 @@ test('guardian bus detail remains useful while the route contract is unavailable
   await expect(page.getByRole('link', { name: 'See live map' })).toBeVisible();
 });
 
-test('mobile notification settings stay focused and do not request device history', async ({
+test('mobile notification settings use Cool Cloud cards and autosave the channel matrix', async ({
   page,
 }, testInfo) => {
   const mock = await installGuardianVisibilityMock(page, {
@@ -433,48 +442,49 @@ test('mobile notification settings stay focused and do not request device histor
   await expect(
     page.getByRole('heading', { name: 'Notification settings', level: 1 }),
   ).toBeVisible();
-  const push = page.getByRole('checkbox', { name: 'Push notifications' });
-  const email = page.getByRole('checkbox', { name: 'Pickup and drop-off emails' });
+  const push = page.getByRole('switch', { name: 'Push notifications' });
+  const email = page.getByRole('switch', { name: 'Email notifications' });
   await expect(push).toBeVisible();
   await expect(email).toBeVisible();
-  await expect(page.getByText('Alert types', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Alert types', { exact: true })).toBeVisible();
+  await expect(page.locator('[data-ui="notification-alert-row"]')).toHaveCount(3);
+  for (const label of ['Pickup & drop-off', 'Trip updates', 'Operational alerts']) {
+    await expect(page.getByText(label, { exact: true })).toBeVisible();
+    await expect(page.getByRole('checkbox', { name: `${label} push` })).toBeVisible();
+    await expect(page.getByRole('checkbox', { name: `${label} email` })).toBeVisible();
+  }
   await expect(page.getByText('Lock-screen privacy', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Save notification settings' })).toHaveCount(0);
   await expect(page.locator('[data-ui="dashboard-shell"]')).toHaveCSS(
     'background-color',
-    'rgb(244, 225, 161)',
+    'rgb(242, 246, 247)',
   );
-  await expect(page.locator('[data-ui="guardian-delivery-settings-card"]')).toHaveCSS(
-    'background-color',
-    'rgb(250, 236, 189)',
-  );
-  const rows = page.locator('[data-ui="guardian-delivery-row"]');
-  await expect(rows).toHaveCount(2);
-  const [firstRow, secondRow] = await rows.evaluateAll((elements) =>
-    elements.map((element) => {
-      const icon = element.firstElementChild?.getBoundingClientRect();
-      const text = element.children[1]?.getBoundingClientRect();
-      const control = element.lastElementChild?.getBoundingClientRect();
-      return { iconX: icon?.x, textX: text?.x, controlX: control?.x };
-    }),
-  );
-  expect(firstRow).toEqual(secondRow);
+  await expect(
+    page.locator('[data-ui="notification-delivery-cards"] [data-ui="card"]').first(),
+  ).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expectTouchTargets(page.locator('[data-ui="notification-channel-control"]'));
+  await expectTouchTargets(page.locator('[data-ui="notification-alert-channel-control"]'));
   await email.check();
   await expect(email).toBeChecked();
   await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(1);
   await expect(page.getByRole('status')).toHaveText('Saved');
+  const pickupEmail = page.getByRole('checkbox', { name: 'Pickup & drop-off email' });
+  await pickupEmail.check();
+  await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(2);
   await push.uncheck();
   await expect(push).not.toBeChecked();
-  await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(2);
+  await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(3);
+  await expect(page.getByRole('checkbox', { name: 'Trip updates push' })).toBeChecked();
   await expect(page.getByRole('status')).toHaveText('Saved');
   mock.setDeliveryPreferenceSaveFailure(true);
-  await email.uncheck();
-  await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(3);
-  await expect(email).toBeChecked();
+  const tripEmail = page.getByRole('checkbox', { name: 'Trip updates email' });
+  await tripEmail.check();
+  await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(4);
+  await expect(tripEmail).not.toBeChecked();
   await expect(page.getByText('Preference save failed', { exact: true })).toBeVisible();
   mock.setDeliveryPreferenceSaveFailure(false);
-  await push.check();
-  await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(4);
+  await push.click();
+  await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(5);
   await expect(page.getByText('Saved', { exact: true })).toBeVisible();
   const settingsTab = page
     .getByTestId('native-bottom-navigation')
@@ -494,35 +504,100 @@ test('mobile notification settings stay focused and do not request device histor
 
   await page.locator('[data-ui="dropdown"] > button').click();
   const profileMenu = page.locator('[data-ui="dropdown-panel"]');
-  await expect(profileMenu).toHaveCSS('background-color', 'rgb(250, 236, 189)');
+  await expect(profileMenu).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await page.screenshot({ path: testInfo.outputPath('guardian-profile-menu.png') });
   await page.getByRole('menuitem', { name: 'Privacy & account' }).click();
   await expect(page.getByRole('heading', { name: 'Privacy and account', level: 1 })).toBeVisible();
   await expect(page.locator('[data-ui="guardian-account-card"]').first()).toHaveCSS(
     'background-color',
-    'rgb(250, 236, 189)',
+    'rgb(255, 255, 255)',
   );
   await page.screenshot({ path: testInfo.outputPath('guardian-account.png'), fullPage: true });
 });
 
-test('guardian updates use the unified warm card system', async ({ page }, testInfo) => {
+test('Android push permission denial rolls back and offers system settings recovery', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.assign(window, {
+      __openedNotificationSettings: 0,
+      SafeBusNativePush: {
+        available: true,
+        getPermissionState: async () => 'denied',
+        enable: async () => 'denied',
+        deactivate: async () => undefined,
+        refresh: async () => undefined,
+        openSystemSettings: async () => {
+          (
+            window as Window & { __openedNotificationSettings: number }
+          ).__openedNotificationSettings += 1;
+        },
+      },
+    });
+  });
+  const mock = await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
+  await page.goto('/notifications/settings');
+
+  const push = page.getByRole('switch', { name: 'Push notifications' });
+  await push.uncheck();
+  await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(1);
+  await push.click();
+  await expect(push).not.toBeChecked();
+  await expect(page.getByRole('status')).toHaveText(
+    'Push permission is turned off in Android settings.',
+  );
+  const recovery = page.getByRole('button', { name: 'Open Android notification settings' });
+  await expect(recovery).toBeVisible();
+  await recovery.click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as Window & { __openedNotificationSettings: number })
+            .__openedNotificationSettings,
+      ),
+    )
+    .toBe(1);
+});
+
+test('guardian updates prioritize compact filters and alert cards', async ({ page }, testInfo) => {
   await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
-  await installNotificationInboxMock(page);
+  const inbox = await installNotificationInboxMock(page);
   await page.goto('/notifications');
 
   await expect(page.getByRole('heading', { name: 'Updates', level: 1 })).toBeVisible();
+  await expect(page.getByText('1 new', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Mark all read' })).toBeVisible();
   const filters = page.locator('[data-ui="notification-filters"]');
   const notification = page.locator('[data-ui="notification-card"]');
-  await expect(filters).toHaveCSS('background-color', 'rgb(250, 236, 189)');
-  await expect(filters).toHaveCSS('padding', '20px');
-  await expect(filters).toHaveCSS('margin-bottom', '24px');
-  await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('gap', '20px');
-  await expect(notification).toHaveCSS('background-color', 'rgb(241, 215, 128)');
-  await expect(notification).toHaveCSS('padding', '20px');
+  await expect(page.locator('[data-ui="notification-inbox-page"]')).toHaveCSS(
+    'background-color',
+    'rgb(242, 246, 247)',
+  );
+  await expect(filters).toHaveCSS('margin-bottom', '12px');
+  await expect(page.getByRole('button', { name: 'All 1' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Unread 1' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Service alerts' })).toBeVisible();
+  await expect(filters.getByRole('combobox')).toHaveCount(0);
+  await expect(filters.getByRole('checkbox')).toHaveCount(0);
+  await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('gap', '12px');
+  await expect(notification).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(notification).toHaveCSS('padding', '16px');
   await expect(notification.locator('[data-ui="notification-unread-dot"]')).toHaveCSS(
     'background-color',
-    'rgb(23, 43, 58)',
+    'rgb(207, 89, 99)',
   );
+  await expect(
+    notification.getByRole('button', { name: 'Open notification: Trip cancelled' }),
+  ).toHaveText('View update');
+
+  await page.getByRole('button', { name: 'Mark all read' }).click();
+  await expect.poll(() => inbox.getMarkAllReadCallCount()).toBe(1);
+  await expect(page.getByText('1 new', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Mark all read' })).toBeDisabled();
+  await expect(notification.getByText('Read', { exact: true })).toBeVisible();
+  await expect(notification.locator('[data-ui="notification-unread-dot"]')).toHaveCount(0);
+
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('guardian-updates.png'), fullPage: true });
 });

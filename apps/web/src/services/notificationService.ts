@@ -9,7 +9,10 @@ import type {
 } from '@safebus/types';
 import { supabase } from '@/lib/supabase';
 
-type Rpc = (name: string, args?: Record<string, unknown>) => PromiseLike<{
+type Rpc = (
+  name: string,
+  args?: Record<string, unknown>,
+) => PromiseLike<{
   data: unknown;
   error: { message: string } | null;
 }>;
@@ -30,16 +33,28 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isDeliveryChannelHealth(value: unknown): boolean {
   if (!isRecord(value)) return false;
-  return ['pending', 'retrying', 'failed'].every((key) => typeof value[key] === 'number')
-    && (value.oldestPendingAt === null || typeof value.oldestPendingAt === 'string');
+  return (
+    ['pending', 'retrying', 'failed'].every((key) => typeof value[key] === 'number') &&
+    (value.oldestPendingAt === null || typeof value.oldestPendingAt === 'string')
+  );
 }
 
 function isNotificationDeliveryHealth(value: unknown): value is NotificationDeliveryHealthV2 {
-  if (!isRecord(value) || !isDeliveryChannelHealth(value.email) || !isDeliveryChannelHealth(value.push) || !isRecord(value.push)) return false;
-  return typeof value.push.invalidDevices === 'number'
-    && Array.isArray(value.push.recentFailureCategories)
-    && value.push.recentFailureCategories.every((item) => isRecord(item)
-      && typeof item.category === 'string' && typeof item.count === 'number');
+  if (
+    !isRecord(value) ||
+    !isDeliveryChannelHealth(value.email) ||
+    !isDeliveryChannelHealth(value.push) ||
+    !isRecord(value.push)
+  )
+    return false;
+  return (
+    typeof value.push.invalidDevices === 'number' &&
+    Array.isArray(value.push.recentFailureCategories) &&
+    value.push.recentFailureCategories.every(
+      (item) =>
+        isRecord(item) && typeof item.category === 'string' && typeof item.count === 'number',
+    )
+  );
 }
 
 interface NotificationRow {
@@ -56,12 +71,14 @@ interface NotificationRow {
   destination_path: string;
 }
 
-export async function fetchNotifications(options: {
-  limit?: number;
-  cursor?: NotificationCursor | null;
-  unreadOnly?: boolean;
-  category?: NotificationCategory | null;
-} = {}): Promise<UserNotification[]> {
+export async function fetchNotifications(
+  options: {
+    limit?: number;
+    cursor?: NotificationCursor | null;
+    unreadOnly?: boolean;
+    category?: NotificationCategory | null;
+  } = {},
+): Promise<UserNotification[]> {
   const result = await clientRpc()('get_user_notifications', {
     p_limit: options.limit ?? 30,
     p_before_created_at: options.cursor?.createdAt ?? null,
@@ -89,7 +106,9 @@ export async function fetchUnreadNotificationCount(): Promise<number> {
 }
 
 export async function setNotificationsRead(ids: string[], read = true): Promise<number> {
-  return assertData<number>(await clientRpc()('mark_user_notifications_read', { p_ids: ids, p_read: read }));
+  return assertData<number>(
+    await clientRpc()('mark_user_notifications_read', { p_ids: ids, p_read: read }),
+  );
 }
 
 export async function markAllNotificationsRead(): Promise<number> {
@@ -104,36 +123,46 @@ export async function fetchNotificationPreferences(): Promise<NotificationPrefer
   return assertData<NotificationPreferences>(await clientRpc()('get_notification_preferences'));
 }
 
-export async function saveNotificationPreferences(value: NotificationPreferences): Promise<NotificationPreferences> {
-  return assertData<NotificationPreferences>(await clientRpc()('set_notification_preferences', {
-    p_push_enabled: value.pushEnabled,
-    p_quiet_hours_enabled: value.quietHoursEnabled,
-    p_quiet_hours_start: value.quietHoursStart,
-    p_quiet_hours_end: value.quietHoursEnd,
-    p_timezone_override: value.timezoneOverride,
-    p_urgent_bypass_quiet_hours: value.urgentBypassQuietHours,
-    p_preview_mode: value.previewMode,
-    p_categories: value.categories,
-  }));
+export async function saveNotificationPreferences(
+  value: NotificationPreferences,
+): Promise<NotificationPreferences> {
+  return assertData<NotificationPreferences>(
+    await clientRpc()('set_notification_preferences', {
+      p_push_enabled: value.pushEnabled,
+      p_quiet_hours_enabled: value.quietHoursEnabled,
+      p_quiet_hours_start: value.quietHoursStart,
+      p_quiet_hours_end: value.quietHoursEnd,
+      p_timezone_override: value.timezoneOverride,
+      p_urgent_bypass_quiet_hours: value.urgentBypassQuietHours,
+      p_preview_mode: value.previewMode,
+      p_categories: value.categories,
+    }),
+  );
 }
 
-interface GuardianDeliveryPreferencesRow {
+interface GuardianDeliveryPreferencesRowV2 {
   push_enabled: boolean;
-  email_pickup_dropoff_enabled: boolean;
+  email_enabled: boolean;
+  pickup_dropoff: { push: boolean; email: boolean };
+  trip_updates: { push: boolean; email: boolean };
+  operational_alerts: { push: boolean; email: boolean };
 }
 
 function mapGuardianDeliveryPreferences(
-  value: GuardianDeliveryPreferencesRow,
+  value: GuardianDeliveryPreferencesRowV2,
 ): GuardianDeliveryPreferences {
   return {
     pushEnabled: value.push_enabled,
-    emailPickupDropoffEnabled: value.email_pickup_dropoff_enabled,
+    emailEnabled: value.email_enabled,
+    pickupDropoff: value.pickup_dropoff,
+    tripUpdates: value.trip_updates,
+    operationalAlerts: value.operational_alerts,
   };
 }
 
 export async function fetchGuardianDeliveryPreferences(): Promise<GuardianDeliveryPreferences> {
-  const value = assertData<GuardianDeliveryPreferencesRow>(
-    await clientRpc()('get_guardian_delivery_preferences'),
+  const value = assertData<GuardianDeliveryPreferencesRowV2>(
+    await clientRpc()('get_guardian_delivery_preferences_v2'),
   );
   return mapGuardianDeliveryPreferences(value);
 }
@@ -141,26 +170,43 @@ export async function fetchGuardianDeliveryPreferences(): Promise<GuardianDelive
 export async function saveGuardianDeliveryPreferences(
   value: GuardianDeliveryPreferences,
 ): Promise<GuardianDeliveryPreferences> {
-  const result = assertData<GuardianDeliveryPreferencesRow>(
-    await clientRpc()('set_guardian_delivery_preferences', {
-      p_push_enabled: value.pushEnabled,
-      p_email_pickup_dropoff_enabled: value.emailPickupDropoffEnabled,
+  const result = assertData<GuardianDeliveryPreferencesRowV2>(
+    await clientRpc()('set_guardian_delivery_preferences_v2', {
+      p_preferences: {
+        push_enabled: value.pushEnabled,
+        email_enabled: value.emailEnabled,
+        pickup_dropoff: value.pickupDropoff,
+        trip_updates: value.tripUpdates,
+        operational_alerts: value.operationalAlerts,
+      },
     }),
   );
   return mapGuardianDeliveryPreferences(result);
 }
 
 interface DeviceRow {
-  id: string; installation_id: string; device_model: string | null; app_version: string | null;
-  permission_state: AndroidPushDevice['permissionState']; status: AndroidPushDevice['status'];
-  last_registered_at: string; last_seen_at: string;
+  id: string;
+  installation_id: string;
+  device_model: string | null;
+  app_version: string | null;
+  permission_state: AndroidPushDevice['permissionState'];
+  status: AndroidPushDevice['status'];
+  last_registered_at: string;
+  last_seen_at: string;
 }
 
 export async function listOwnPushDevices(): Promise<AndroidPushDevice[]> {
   const rows = assertData<DeviceRow[]>(await clientRpc()('list_own_push_devices'));
-  return rows.map((row) => ({ id: row.id, installationId: row.installation_id,
-    deviceModel: row.device_model, appVersion: row.app_version, permissionState: row.permission_state,
-    status: row.status, lastRegisteredAt: row.last_registered_at, lastSeenAt: row.last_seen_at }));
+  return rows.map((row) => ({
+    id: row.id,
+    installationId: row.installation_id,
+    deviceModel: row.device_model,
+    appVersion: row.app_version,
+    permissionState: row.permission_state,
+    status: row.status,
+    lastRegisteredAt: row.last_registered_at,
+    lastSeenAt: row.last_seen_at,
+  }));
 }
 
 export async function revokeOwnPushDevice(id: string): Promise<boolean> {
@@ -169,6 +215,7 @@ export async function revokeOwnPushDevice(id: string): Promise<boolean> {
 
 export async function fetchNotificationDeliveryHealth(): Promise<NotificationDeliveryHealthV2> {
   const data = assertData<unknown>(await clientRpc()('get_notification_delivery_health_v2'));
-  if (!isNotificationDeliveryHealth(data)) throw new Error('Notification delivery health returned an invalid response.');
+  if (!isNotificationDeliveryHealth(data))
+    throw new Error('Notification delivery health returned an invalid response.');
   return data;
 }

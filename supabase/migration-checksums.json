@@ -662,6 +662,12 @@
       "filename": "0109_guardian_delivery_preferences.sql",
       "bytes": 10766,
       "sha256": "7763ea6ce757267403b93324d015bef64f973f81a57e686950c5279f5a735a33"
+    },
+    {
+      "version": "0110",
+      "filename": "0110_cool_cloud_notification_preferences.sql",
+      "bytes": 36026,
+      "sha256": "df5299f9cb3a5a3c5118d721ae3d9dd76fef32c8a81420e02df7c71ef1736487"
     }
   ]
 }

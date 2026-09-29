@@ -495,3 +495,12 @@ on assignments and runs, direction-aware student stop validation,
 linked-guardian geometry boundary, RLS enablement, and anonymous denial. Apply
 `0046` only after its preflight block confirms every active route is map-ready
 and every active trip schedule has been reviewed.
+
+## Guardian Delivery Preferences v2
+
+After applying `0110_cool_cloud_notification_preferences.sql` to an approved
+isolated database, run `guardian-delivery-preferences-v2-rls.sql`. It is a
+rollback-only authorization contract for guardian-only atomic access, tenant
+scoping, private delivery tables, queue cancellation, canonical email outbox
+references, and continued independence of the in-app inbox. Do not run it
+against the production-designated database.

@@ -1,6 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-const json = (statusCode, body) => ({ statusCode, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+const json = (statusCode, body) => ({
+  statusCode,
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify(body),
+});
 const MAX_ATTEMPTS = 5;
 const DEFAULT_BATCH_SIZE = 50;
 const DEFAULT_PROVIDER_LIMIT_PER_MINUTE = 50;
@@ -25,7 +29,53 @@ function safeLog(details) {
   return copy;
 }
 
-export function buildGuardianEventEmail({ notificationType, studentFirstName, eventCreatedAt, tenantTimezone }) {
+export function buildGuardianEventEmail({
+  notificationType,
+  studentFirstName,
+  eventCreatedAt,
+  tenantTimezone,
+}) {
+  const genericCopy = {
+    trip_started: ['Trip started', 'A scheduled bus trip has started.'],
+    trip_completed: ['Trip completed', 'A scheduled bus trip has been completed.'],
+    trip_cancelled: ['Trip cancelled', 'A scheduled bus trip has been cancelled.'],
+    trip_late: ['Bus reported late', 'A bus trip has been reported late.'],
+    trip_missing: ['Bus service update', 'A scheduled bus service may be missing.'],
+    traffic_disruption: ['Traffic disruption', 'A traffic disruption is affecting bus service.'],
+    weather_disruption: ['Weather disruption', 'A weather disruption is affecting bus service.'],
+    road_closure: ['Road closure', 'A road closure is affecting bus service.'],
+    mechanical_disruption: [
+      'Mechanical disruption',
+      'A mechanical issue is affecting bus service.',
+    ],
+    student_service_changed: [
+      'Bus service changed',
+      'A linked bus service assignment has changed.',
+    ],
+    guardian_access_changed: [
+      'BusSafe access changed',
+      'Access to linked transportation information has changed.',
+    ],
+  }[notificationType];
+  if (genericCopy) {
+    const [subjectLabel, summary] = genericCopy;
+    const subject = `BusSafe: ${subjectLabel}`;
+    const text = [
+      summary,
+      '',
+      'Open BusSafe to view the update. This email intentionally excludes student details.',
+      '',
+      'BusSafe Alberta',
+    ].join('\n');
+    return {
+      subject,
+      text,
+      html: `<p>${escapeHtml(summary)}</p><p>Open BusSafe to view the update. This email intentionally excludes student details.</p><p>BusSafe Alberta</p>`,
+      action: 'update',
+      verb: 'updated',
+    };
+  }
+
   const action = notificationType === 'student_picked_up' ? 'pickup' : 'drop-off';
   const verb = notificationType === 'student_picked_up' ? 'picked up' : 'dropped off';
   // Validate the tenant timezone by attempting to use it. Fall back to the
@@ -42,13 +92,22 @@ export function buildGuardianEventEmail({ notificationType, studentFirstName, ev
   }
   let zoneLabel;
   try {
-    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, timeZoneName: 'short' }).formatToParts(new Date(eventCreatedAt));
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      timeZoneName: 'short',
+    }).formatToParts(new Date(eventCreatedAt));
     zoneLabel = parts.find((p) => p.type === 'timeZoneName')?.value || tz;
   } catch {
     zoneLabel = tz;
   }
-  const when = new Intl.DateTimeFormat('en-CA', { dateStyle: 'medium', timeStyle: 'short', timeZone: tz }).format(new Date(eventCreatedAt));
-  const firstToken = String(studentFirstName || '').trim().split(/\s+/)[0];
+  const when = new Intl.DateTimeFormat('en-CA', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: tz,
+  }).format(new Date(eventCreatedAt));
+  const firstToken = String(studentFirstName || '')
+    .trim()
+    .split(/\s+/)[0];
   const safeFirstName = firstToken || 'your student';
   const subject = `BusSafe ${action} event recorded`;
   const text = [
@@ -84,11 +143,16 @@ const ESCAPE_MAP = {
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (c) => ESCAPE_MAP[c]);
 }
-export function idempotencyKey(rowId) { return `guardian-notification-outbox:${rowId}`; }
-export function retryDelaySeconds(attempt) { return [0, 300, 900, 3600, 10800][Math.max(1, Math.min(attempt, 4))] ?? 10800; }
+export function idempotencyKey(rowId) {
+  return `guardian-notification-outbox:${rowId}`;
+}
+export function retryDelaySeconds(attempt) {
+  return [0, 300, 900, 3600, 10800][Math.max(1, Math.min(attempt, 4))] ?? 10800;
+}
 export function classifyProviderError(status, message = '') {
   if (status === 408 || status === 429 || status >= 500) return 'temporary_provider_error';
-  if (status === 400 || status === 401 || status === 403 || status === 404 || status === 422) return 'permanent_provider_error';
+  if (status === 400 || status === 401 || status === 403 || status === 404 || status === 422)
+    return 'permanent_provider_error';
   if (/timeout/i.test(message)) return 'provider_timeout';
   return 'unknown';
 }
@@ -102,7 +166,13 @@ async function rpcOrThrow(supabase, name, args) {
 // Retained for backwards compatibility with Phase 15A tests. New code should prefer safeLog().
 export function redactLog(details) {
   const copy = { ...details };
-  delete copy.email; delete copy.recipient_email; delete copy.message; delete copy.body; delete copy.html; delete copy.text; delete copy.apiKey;
+  delete copy.email;
+  delete copy.recipient_email;
+  delete copy.message;
+  delete copy.body;
+  delete copy.html;
+  delete copy.text;
+  delete copy.apiKey;
   return copy;
 }
 
@@ -112,60 +182,194 @@ function requireConfig() {
   const apiKey = process.env.SAFEBUS_EMAIL_PROVIDER_API_KEY;
   const from = process.env.SAFEBUS_EMAIL_FROM;
   const dispatcherSecret = process.env.SAFEBUS_NOTIFICATION_DISPATCHER_SECRET;
-  if (!url || !service || !apiKey || !from || !dispatcherSecret) throw new Error('configuration_error');
-  return { url, service, apiKey, from, fromName: process.env.SAFEBUS_EMAIL_FROM_NAME || 'BusSafe Alberta', dispatcherSecret, devOverride: process.env.SAFEBUS_DEV_EMAIL_RECIPIENT_OVERRIDE || '' };
+  if (!url || !service || !apiKey || !from || !dispatcherSecret)
+    throw new Error('configuration_error');
+  return {
+    url,
+    service,
+    apiKey,
+    from,
+    fromName: process.env.SAFEBUS_EMAIL_FROM_NAME || 'BusSafe Alberta',
+    dispatcherSecret,
+    devOverride: process.env.SAFEBUS_DEV_EMAIL_RECIPIENT_OVERRIDE || '',
+  };
 }
 
 function authorized(event, secret) {
-  const header = event.headers['x-safebus-dispatcher-secret'] || event.headers['X-SafeBus-Dispatcher-Secret'];
+  const header =
+    event.headers['x-safebus-dispatcher-secret'] || event.headers['X-SafeBus-Dispatcher-Secret'];
   return Boolean(header && header === secret);
 }
 
-export async function sendResendEmail({ apiKey, from, fromName, to, subject, text, html, idempotency }) {
+export async function sendResendEmail({
+  apiKey,
+  from,
+  fromName,
+  to,
+  subject,
+  text,
+  html,
+  idempotency,
+}) {
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
-    headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json', 'Idempotency-Key': idempotency },
+    headers: {
+      authorization: `Bearer ${apiKey}`,
+      'content-type': 'application/json',
+      'Idempotency-Key': idempotency,
+    },
     body: JSON.stringify({ from: `${fromName} <${from}>`, to: [to], subject, text, html }),
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const err = new Error('provider_error'); err.status = response.status; err.providerMessage = data?.name || data?.message || 'provider_error'; throw err;
+    const err = new Error('provider_error');
+    err.status = response.status;
+    err.providerMessage = data?.name || data?.message || 'provider_error';
+    throw err;
   }
   return { providerMessageId: data?.id || null };
 }
 
 async function dispatchOne(supabase, cfg, row, sendEmail = sendResendEmail) {
   const startedAt = Date.now();
-  const { data: payloads, error: resolveError } = await supabase.rpc('resolve_guardian_notification_email_payload', { p_outbox_id: row.id });
+  const { data: payloads, error: resolveError } = await supabase.rpc(
+    'resolve_guardian_notification_email_payload',
+    { p_outbox_id: row.id },
+  );
   if (resolveError) throw resolveError;
   const payload = payloads?.[0];
   if (!payload) {
-    await rpcOrThrow(supabase, 'cancel_guardian_notification_email', { p_outbox_id: row.id, p_failure_category: 'eligibility_revoked', p_failure_reason: 'eligibility_revoked' });
-    console.log(JSON.stringify(safeLog({ outboxId: row.id, result: 'cancelled', category: 'eligibility_revoked', attempt: row.attempt_count, notificationType: row.notification_type })));
+    await rpcOrThrow(supabase, 'cancel_guardian_notification_email', {
+      p_outbox_id: row.id,
+      p_failure_category: 'eligibility_revoked',
+      p_failure_reason: 'eligibility_revoked',
+    });
+    console.log(
+      JSON.stringify(
+        safeLog({
+          outboxId: row.id,
+          result: 'cancelled',
+          category: 'eligibility_revoked',
+          attempt: row.attempt_count,
+          notificationType: row.notification_type,
+        }),
+      ),
+    );
     return 'cancelled';
   }
   if (!payload.recipient_email || !/^\S+@\S+\.\S+$/.test(payload.recipient_email)) {
-    await rpcOrThrow(supabase, 'cancel_guardian_notification_email', { p_outbox_id: row.id, p_failure_category: 'missing_recipient_email', p_failure_reason: 'missing_recipient_email' });
-    console.log(JSON.stringify(safeLog({ outboxId: row.id, result: 'cancelled', category: 'missing_recipient_email', attempt: row.attempt_count, notificationType: row.notification_type })));
+    await rpcOrThrow(supabase, 'cancel_guardian_notification_email', {
+      p_outbox_id: row.id,
+      p_failure_category: 'missing_recipient_email',
+      p_failure_reason: 'missing_recipient_email',
+    });
+    console.log(
+      JSON.stringify(
+        safeLog({
+          outboxId: row.id,
+          result: 'cancelled',
+          category: 'missing_recipient_email',
+          attempt: row.attempt_count,
+          notificationType: row.notification_type,
+        }),
+      ),
+    );
     return 'cancelled';
   }
-  const email = buildGuardianEventEmail({ notificationType: payload.notification_type, studentFirstName: payload.student_first_name, eventCreatedAt: payload.event_created_at, tenantTimezone: payload.tenant_timezone });
-  const to = cfg.devOverride && process.env.CONTEXT !== 'production' ? cfg.devOverride : payload.recipient_email;
-  if (cfg.devOverride && process.env.CONTEXT !== 'production') console.log(JSON.stringify(safeLog({ outboxId: row.id, result: 'dev_recipient_override', attempt: row.attempt_count, notificationType: row.notification_type })));
+  const email = buildGuardianEventEmail({
+    notificationType: payload.notification_type,
+    studentFirstName: payload.student_first_name,
+    eventCreatedAt: payload.event_created_at,
+    tenantTimezone: payload.tenant_timezone,
+  });
+  const to =
+    cfg.devOverride && process.env.CONTEXT !== 'production'
+      ? cfg.devOverride
+      : payload.recipient_email;
+  if (cfg.devOverride && process.env.CONTEXT !== 'production')
+    console.log(
+      JSON.stringify(
+        safeLog({
+          outboxId: row.id,
+          result: 'dev_recipient_override',
+          attempt: row.attempt_count,
+          notificationType: row.notification_type,
+        }),
+      ),
+    );
   try {
-    const result = await sendEmail({ apiKey: cfg.apiKey, from: cfg.from, fromName: cfg.fromName, to, ...email, idempotency: idempotencyKey(row.id) });
-    await rpcOrThrow(supabase, 'complete_guardian_notification_email', { p_outbox_id: row.id, p_provider_message_id: result.providerMessageId });
-    console.log(JSON.stringify(safeLog({ outboxId: row.id, result: 'delivered', attempt: row.attempt_count, notificationType: row.notification_type, durationMs: Date.now() - startedAt })));
+    const result = await sendEmail({
+      apiKey: cfg.apiKey,
+      from: cfg.from,
+      fromName: cfg.fromName,
+      to,
+      ...email,
+      idempotency: idempotencyKey(row.id),
+    });
+    await rpcOrThrow(supabase, 'complete_guardian_notification_email', {
+      p_outbox_id: row.id,
+      p_provider_message_id: result.providerMessageId,
+    });
+    console.log(
+      JSON.stringify(
+        safeLog({
+          outboxId: row.id,
+          result: 'delivered',
+          attempt: row.attempt_count,
+          notificationType: row.notification_type,
+          durationMs: Date.now() - startedAt,
+        }),
+      ),
+    );
     return 'delivered';
   } catch (error) {
-    const category = classifyProviderError(error.status || 0, error.providerMessage || error.message);
-    if (category === 'temporary_provider_error' || category === 'provider_timeout' || category === 'unknown') {
-      await rpcOrThrow(supabase, 'retry_guardian_notification_email', { p_outbox_id: row.id, p_failure_category: category, p_failure_reason: category, p_retry_after_seconds: retryDelaySeconds(row.attempt_count), p_max_attempts: MAX_ATTEMPTS });
-      console.log(JSON.stringify(safeLog({ outboxId: row.id, result: 'retry', category, attempt: row.attempt_count, notificationType: row.notification_type, durationMs: Date.now() - startedAt })));
+    const category = classifyProviderError(
+      error.status || 0,
+      error.providerMessage || error.message,
+    );
+    if (
+      category === 'temporary_provider_error' ||
+      category === 'provider_timeout' ||
+      category === 'unknown'
+    ) {
+      await rpcOrThrow(supabase, 'retry_guardian_notification_email', {
+        p_outbox_id: row.id,
+        p_failure_category: category,
+        p_failure_reason: category,
+        p_retry_after_seconds: retryDelaySeconds(row.attempt_count),
+        p_max_attempts: MAX_ATTEMPTS,
+      });
+      console.log(
+        JSON.stringify(
+          safeLog({
+            outboxId: row.id,
+            result: 'retry',
+            category,
+            attempt: row.attempt_count,
+            notificationType: row.notification_type,
+            durationMs: Date.now() - startedAt,
+          }),
+        ),
+      );
       return 'retry';
     }
-    await rpcOrThrow(supabase, 'fail_guardian_notification_email', { p_outbox_id: row.id, p_failure_category: category, p_failure_reason: category });
-    console.log(JSON.stringify(safeLog({ outboxId: row.id, result: 'failed', category, attempt: row.attempt_count, notificationType: row.notification_type, durationMs: Date.now() - startedAt })));
+    await rpcOrThrow(supabase, 'fail_guardian_notification_email', {
+      p_outbox_id: row.id,
+      p_failure_category: category,
+      p_failure_reason: category,
+    });
+    console.log(
+      JSON.stringify(
+        safeLog({
+          outboxId: row.id,
+          result: 'failed',
+          category,
+          attempt: row.attempt_count,
+          notificationType: row.notification_type,
+          durationMs: Date.now() - startedAt,
+        }),
+      ),
+    );
     return 'failed';
   }
 }
@@ -174,8 +378,13 @@ export async function runDispatcher(event, sendEmail) {
   const cfg = requireConfig();
   if (!authorized(event, cfg.dispatcherSecret)) return json(401, { error: 'Unauthorized.' });
   /** @type {import('@supabase/supabase-js').SupabaseClient<import('@safebus/types/database').Database>} */
-  const supabase = createClient(cfg.url, cfg.service, { auth: { autoRefreshToken: false, persistSession: false } });
-  const batchSize = Math.max(1, Math.min(Number(process.env.SAFEBUS_NOTIFICATION_BATCH_SIZE || DEFAULT_BATCH_SIZE), 100));
+  const supabase = createClient(cfg.url, cfg.service, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const batchSize = Math.max(
+    1,
+    Math.min(Number(process.env.SAFEBUS_NOTIFICATION_BATCH_SIZE || DEFAULT_BATCH_SIZE), 100),
+  );
   const providerLimit = Math.max(
     1,
     Math.min(
@@ -193,7 +402,14 @@ export async function runDispatcher(event, sendEmail) {
     p_provider_limit_per_minute: providerLimit,
   });
   if (error) throw error;
-  const summary = { claimed: rows?.length || 0, delivered: 0, retry: 0, failed: 0, cancelled: 0, error: 0 };
+  const summary = {
+    claimed: rows?.length || 0,
+    delivered: 0,
+    retry: 0,
+    failed: 0,
+    cancelled: 0,
+    error: 0,
+  };
   for (const row of rows || []) {
     try {
       const result = await dispatchOne(supabase, cfg, row, sendEmail);
@@ -202,20 +418,47 @@ export async function runDispatcher(event, sendEmail) {
       // Keep draining independent claims. This row remains protected by its
       // lease and becomes eligible for recovery when the lease expires.
       summary.error += 1;
-      console.error(JSON.stringify(safeLog({
-        outboxId: row.id,
-        result: 'row_error',
-        category: 'unknown',
-        attempt: row.attempt_count,
-        notificationType: row.notification_type,
-      })));
+      console.error(
+        JSON.stringify(
+          safeLog({
+            outboxId: row.id,
+            result: 'row_error',
+            category: 'unknown',
+            attempt: row.attempt_count,
+            notificationType: row.notification_type,
+          }),
+        ),
+      );
     }
   }
-  console.log(JSON.stringify(safeLog({ result: 'batch_complete', claimed: summary.claimed, delivered: summary.delivered, retry: summary.retry, failed: summary.failed, cancelled: summary.cancelled })));
+  console.log(
+    JSON.stringify(
+      safeLog({
+        result: 'batch_complete',
+        claimed: summary.claimed,
+        delivered: summary.delivered,
+        retry: summary.retry,
+        failed: summary.failed,
+        cancelled: summary.cancelled,
+      }),
+    ),
+  );
   return json(200, summary);
 }
 
 export async function handler(event) {
-  try { if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed.' }); return await runDispatcher(event); }
-  catch (e) { console.error(JSON.stringify(safeLog({ result: 'dispatcher_error', category: e.message === 'configuration_error' ? 'configuration_error' : 'unknown' }))); return json(500, { error: 'Notification dispatcher failed.' }); }
+  try {
+    if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed.' });
+    return await runDispatcher(event);
+  } catch (e) {
+    console.error(
+      JSON.stringify(
+        safeLog({
+          result: 'dispatcher_error',
+          category: e.message === 'configuration_error' ? 'configuration_error' : 'unknown',
+        }),
+      ),
+    );
+    return json(500, { error: 'Notification dispatcher failed.' });
+  }
 }

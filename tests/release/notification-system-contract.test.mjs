@@ -15,10 +15,7 @@ const schedulerMigration = await readFile(
   'utf8',
 );
 const registrationFixMigration = await readFile(
-  new URL(
-    '../../supabase/migrations/0095_fix_idempotent_push_registration.sql',
-    import.meta.url,
-  ),
+  new URL('../../supabase/migrations/0095_fix_idempotent_push_registration.sql', import.meta.url),
   'utf8',
 );
 const rebrandMigration = await readFile(
@@ -27,6 +24,13 @@ const rebrandMigration = await readFile(
 );
 const simplifiedPreferencesMigration = await readFile(
   new URL('../../supabase/migrations/0109_guardian_delivery_preferences.sql', import.meta.url),
+  'utf8',
+);
+const channelPreferencesMigration = await readFile(
+  new URL(
+    '../../supabase/migrations/0110_cool_cloud_notification_preferences.sql',
+    import.meta.url,
+  ),
   'utf8',
 );
 const notificationSettingsPage = await readFile(
@@ -182,25 +186,72 @@ test('quiet hours and urgent bypass are fail-closed defaults', () => {
   );
 });
 
-test('guardian delivery settings expose two account-level choices only', () => {
+test('guardian delivery settings expose channel masters and a three-group matrix', () => {
   assert.match(notificationSettingsPage, /label="Push notifications"/);
-  assert.match(notificationSettingsPage, /label="Pickup and drop-off emails"/);
-  assert.doesNotMatch(notificationSettingsPage, /Alert types|Lock-screen privacy|Generic preview|Event type only/);
+  assert.match(notificationSettingsPage, /label="Email notifications"/);
+  assert.match(notificationSettingsPage, /Alert types/);
+  assert.match(notificationSettingsPage, /Pickup & drop-off/);
+  assert.match(notificationSettingsPage, /Trip updates/);
+  assert.match(notificationSettingsPage, /Operational alerts/);
   assert.doesNotMatch(notificationSettingsPage, /Save notification settings|Manage email choices/);
   assert.match(notificationSettingsPage, /saveGuardianDeliveryPreferences/);
 });
 
+test('v2 guardian preferences are atomic, fail-closed, and preserve the inbox', () => {
+  assert.match(
+    channelPreferencesMigration,
+    /add column email_enabled boolean not null default false/i,
+  );
+  assert.match(channelPreferencesMigration, /get_guardian_delivery_preferences_v2\(\)/i);
+  assert.match(
+    channelPreferencesMigration,
+    /set_guardian_delivery_preferences_v2\(p_preferences jsonb\)/i,
+  );
+  assert.match(channelPreferencesMigration, /security definer[\s\S]*set search_path = ''/i);
+  assert.match(channelPreferencesMigration, /'operations', v_operations_push, v_operations_email/i);
+  assert.match(
+    channelPreferencesMigration,
+    /'service_changes', v_operations_push, v_operations_email/i,
+  );
+  assert.match(
+    channelPreferencesMigration,
+    /user_notification_id uuid references public\.user_notifications/i,
+  );
+  assert.match(channelPreferencesMigration, /guardian_email_outbox_is_eligible/i);
+  assert.match(channelPreferencesMigration, /user_notifications_enqueue_guardian_email/i);
+  assert.match(
+    channelPreferencesMigration,
+    /grant execute on function public\.set_guardian_delivery_preferences_v2\(jsonb\) to authenticated/i,
+  );
+  assert.doesNotMatch(channelPreferencesMigration, /delete from public\.user_notifications/i);
+});
+
 test('guardian delivery preference RPC is fail-closed and synchronizes current and future links', () => {
-  assert.match(simplifiedPreferencesMigration, /pickup_dropoff_email_enabled boolean not null default false/i);
+  assert.match(
+    simplifiedPreferencesMigration,
+    /pickup_dropoff_email_enabled boolean not null default false/i,
+  );
   assert.match(simplifiedPreferencesMigration, /get_guardian_delivery_preferences\(\)/i);
-  assert.match(simplifiedPreferencesMigration, /set_guardian_delivery_preferences\([\s\S]*p_push_enabled boolean[\s\S]*p_email_pickup_dropoff_enabled boolean/i);
+  assert.match(
+    simplifiedPreferencesMigration,
+    /set_guardian_delivery_preferences\([\s\S]*p_push_enabled boolean[\s\S]*p_email_pickup_dropoff_enabled boolean/i,
+  );
   assert.match(simplifiedPreferencesMigration, /security definer[\s\S]*set search_path = ''/i);
   assert.match(simplifiedPreferencesMigration, /auth\.uid\(\) is null/i);
   assert.match(simplifiedPreferencesMigration, /zz_student_guardians_apply_delivery_defaults/i);
   assert.match(simplifiedPreferencesMigration, /student_guardians_sync_push_defaults/i);
-  assert.match(simplifiedPreferencesMigration, /bool_and\([\s\S]*notify_pickup[\s\S]*notify_dropoff/i);
-  assert.match(simplifiedPreferencesMigration, /revoke all on function public\.get_guardian_delivery_preferences\(\) from public, anon, authenticated/i);
-  assert.match(simplifiedPreferencesMigration, /grant execute on function public\.get_guardian_delivery_preferences\(\) to authenticated/i);
+  assert.match(
+    simplifiedPreferencesMigration,
+    /bool_and\([\s\S]*notify_pickup[\s\S]*notify_dropoff/i,
+  );
+  assert.match(
+    simplifiedPreferencesMigration,
+    /revoke all on function public\.get_guardian_delivery_preferences\(\) from public, anon, authenticated/i,
+  );
+  assert.match(
+    simplifiedPreferencesMigration,
+    /grant execute on function public\.get_guardian_delivery_preferences\(\) to authenticated/i,
+  );
   assert.doesNotMatch(simplifiedPreferencesMigration, /to anon|grant execute[\s\S]*to public/i);
 });
 
