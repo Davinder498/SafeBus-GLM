@@ -4,8 +4,8 @@
   "description": "School bus visibility for Alberta families and transportation teams.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F4E1A1",
-  "theme_color": "#F4E1A1",
+  "background_color": "#F2F6F7",
+  "theme_color": "#F2F6F7",
   "icons": [
     {
       "src": "/icon-192.png",
