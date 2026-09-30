@@ -403,7 +403,13 @@ export function DashboardLayout({
                   <Avatar
                     name={profile?.full_name ?? undefined}
                     size="sm"
-                    tone={usesBottomTabs ? 'brand' : 'default'}
+                    tone={
+                      usesBottomTabs
+                        ? portal === 'parent'
+                          ? 'guardian-nav'
+                          : 'driver-brand'
+                        : 'default'
+                    }
                   />
                   <span className="hidden text-left leading-tight sm:block">
                     <span className="block text-sm font-semibold text-slate-900">

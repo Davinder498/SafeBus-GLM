@@ -6,8 +6,8 @@ interface AvatarProps {
   /** Optional image URL. If absent, initials are shown. */
   src?: string;
   size?: 'sm' | 'md' | 'lg';
-  /** Locks the native recipient avatar to the Prairie Transit brand treatment. */
-  tone?: 'default' | 'brand';
+  /** Locks native recipient avatars to their role-specific navigation treatment. */
+  tone?: 'default' | 'driver-brand' | 'guardian-nav';
   className?: string;
 }
 
