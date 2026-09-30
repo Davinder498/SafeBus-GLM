@@ -496,7 +496,9 @@ test('mobile notification settings use Cool Cloud cards and autosave the channel
   await expect(page.getByRole('status')).toHaveText('Saved');
   mock.setDeliveryPreferenceSaveFailure(true);
   const tripEmail = page.getByRole('checkbox', { name: 'Trip updates email' });
-  await tripEmail.check();
+  // The controlled checkbox can roll back before Playwright's `check()` verifies
+  // its intermediate state. Click it and assert the observable save + rollback.
+  await tripEmail.click();
   await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(4);
   await expect(tripEmail).not.toBeChecked();
   await expect(page.getByText('Preference save failed', { exact: true })).toBeVisible();
