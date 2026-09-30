@@ -734,7 +734,7 @@ test('driver support page shows one resolved support contact', async ({ page }) 
   );
   await expect(page.locator('[data-ui="avatar"]')).toHaveCSS(
     'background-color',
-    'rgb(35, 92, 120)',
+    'rgb(23, 43, 58)',
   );
 
   await page.goto('/account');
@@ -800,7 +800,7 @@ test('driver settings combines assignment delivery and device guidance', async (
   await expect(tabs.last()).toHaveAttribute('aria-current', 'page');
   await expect(page.locator('[data-ui="avatar"]')).toHaveCSS(
     'background-color',
-    'rgb(35, 92, 120)',
+    'rgb(23, 43, 58)',
   );
   await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('color', 'rgb(255, 255, 255)');
   await expectTouchTargets(page.locator('[data-ui="notification-channel-control"]'));
