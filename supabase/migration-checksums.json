@@ -680,6 +680,12 @@
       "filename": "0112_mobile_support_fallback.sql",
       "bytes": 2898,
       "sha256": "849bebeedf854403bde43f86a1884292bdbb8802700276386620e905f8e5c35d"
+    },
+    {
+      "version": "0113",
+      "filename": "0113_fixed_three_second_driver_location_cadence.sql",
+      "bytes": 1398,
+      "sha256": "74c058922aa7a8282ca25e1cc41b420d54c33be0b378ce4e3f18bcd42a33823a"
     }
   ]
 }

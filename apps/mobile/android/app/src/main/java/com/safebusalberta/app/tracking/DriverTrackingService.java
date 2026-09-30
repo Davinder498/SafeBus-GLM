@@ -18,7 +18,6 @@ import android.net.NetworkCapabilities;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.IBinder;
-import android.os.PowerManager;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
@@ -61,8 +60,7 @@ public final class DriverTrackingService extends Service implements LocationList
     private final ExecutorService networkExecutor = Executors.newSingleThreadExecutor();
     private final AtomicBoolean flushing = new AtomicBoolean(false);
     private long lastCapturedAt;
-    private long requestedIntervalMs = 5_000L;
-    private long serverMinimumMs = 3_000L;
+    private static final long LOCATION_PING_INTERVAL_MS = TrackingCadence.ACTIVE_TRIP_INTERVAL_MS;
 
     @Override
     public void onCreate() {
@@ -128,7 +126,7 @@ public final class DriverTrackingService extends Service implements LocationList
             stopForExpiredAuthorization();
             return;
         }
-        if (now - lastCapturedAt < requestedIntervalMs) return;
+        if (now - lastCapturedAt < LOCATION_PING_INTERVAL_MS) return;
         if (!location.hasAccuracy() || location.getAccuracy() > 250f
             || Math.abs(now - location.getTime()) > 120_000L) return;
 
@@ -150,11 +148,6 @@ public final class DriverTrackingService extends Service implements LocationList
             payload.put("p_connectivity", connectivityLabel());
             queue.enqueue(sequence, eventId, payload);
             lastCapturedAt = now;
-            requestedIntervalMs = TrackingCadence.intervalMs(
-                location.hasSpeed() ? location.getSpeed() : 0f,
-                isConnected(), batteryPercent(), isPowerSaveMode(), serverMinimumMs
-            );
-            restartLocationUpdatesAtCadence();
             updateNotification(queue.size() == 0
                 ? "Bus tracking active"
                 : "Bus tracking active — " + queue.size() + " update(s) waiting");
@@ -192,7 +185,7 @@ public final class DriverTrackingService extends Service implements LocationList
         locationManager.removeUpdates(this);
         String provider = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
             ? LocationManager.GPS_PROVIDER : LocationManager.NETWORK_PROVIDER;
-        locationManager.requestLocationUpdates(provider, requestedIntervalMs, 5f, this);
+        locationManager.requestLocationUpdates(provider, LOCATION_PING_INTERVAL_MS, 0f, this);
     }
 
     private void stopLocationUpdates() {
@@ -234,7 +227,6 @@ public final class DriverTrackingService extends Service implements LocationList
                     if (accepted) {
                         String recordedAt = response.optString("recordedAt", null);
                         if (recordedAt != null) store.put("last_accepted_at", recordedAt);
-                        serverMinimumMs = Math.max(3_000L, response.optLong("nextPingInMs", 3_000L));
                     }
                     if (response.optBoolean("stopTracking", false)) {
                         if ("paused".equals(response.optString("tripState"))) {
@@ -370,10 +362,6 @@ public final class DriverTrackingService extends Service implements LocationList
         int scale = battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
         if (level < 0 || scale <= 0) return 100;
         return Math.round(level * 100f / scale);
-    }
-
-    private boolean isPowerSaveMode() {
-        return ((PowerManager) getSystemService(Context.POWER_SERVICE)).isPowerSaveMode();
     }
 
     private void createNotificationChannel() {
