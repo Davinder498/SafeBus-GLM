@@ -609,6 +609,11 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
     'background-color',
     'rgb(207, 89, 99)',
   );
+  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS(
+    'background-color',
+    'rgb(35, 92, 120)',
+  );
+  await expect(page.locator('[data-ui="avatar"]')).toHaveAttribute('data-tone', 'brand');
   await expect(
     notification.getByRole('button', { name: 'Open notification: Trip cancelled' }),
   ).toHaveText('View update');
