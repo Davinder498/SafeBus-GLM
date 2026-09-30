@@ -619,7 +619,7 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
   );
   await expect(page.locator('[data-ui="avatar"]')).toHaveAttribute(
     'data-tone',
-    'guardian-nav',
+    'native-nav',
   );
   await expect(
     notification.getByRole('button', { name: 'Open notification: Trip cancelled' }),
@@ -670,11 +670,15 @@ test('driver updates reuse the compact inbox with assignment-only alerts', async
   ).toHaveText('View update');
   await expect(page.locator('[data-ui="avatar"]')).toHaveCSS(
     'background-color',
-    'rgb(35, 92, 120)',
+    'rgb(23, 43, 58)',
+  );
+  await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
+    'background-color',
+    'rgb(23, 43, 58)',
   );
   await expect(page.locator('[data-ui="avatar"]')).toHaveAttribute(
     'data-tone',
-    'driver-brand',
+    'native-nav',
   );
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('driver-updates.png'), fullPage: true });

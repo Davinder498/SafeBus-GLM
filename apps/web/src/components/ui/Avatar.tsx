@@ -6,8 +6,8 @@ interface AvatarProps {
   /** Optional image URL. If absent, initials are shown. */
   src?: string;
   size?: 'sm' | 'md' | 'lg';
-  /** Locks native recipient avatars to their role-specific navigation treatment. */
-  tone?: 'default' | 'driver-brand' | 'guardian-nav';
+  /** Matches native recipient avatars to the shared mobile navigation treatment. */
+  tone?: 'default' | 'native-nav';
   className?: string;
 }
 
