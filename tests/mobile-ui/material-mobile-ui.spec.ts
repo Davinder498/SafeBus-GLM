@@ -592,13 +592,17 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
     'background-color',
     'rgb(242, 246, 247)',
   );
-  await expect(filters).toHaveCSS('margin-bottom', '12px');
+  await expect(filters).toHaveCSS('margin-bottom', '16px');
   await expect(page.getByRole('button', { name: 'All 1' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'All 1' })).toHaveCSS(
+    'background-color',
+    'rgb(35, 92, 120)',
+  );
   await expect(page.getByRole('button', { name: 'Unread 1' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Service alerts' })).toBeVisible();
   await expect(filters.getByRole('combobox')).toHaveCount(0);
   await expect(filters.getByRole('checkbox')).toHaveCount(0);
-  await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('gap', '12px');
+  await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('gap', '16px');
   await expect(notification).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(notification).toHaveCSS('padding', '16px');
   await expect(notification.locator('[data-ui="notification-unread-dot"]')).toHaveCSS(
@@ -633,9 +637,19 @@ test('driver updates reuse the compact inbox with assignment-only alerts', async
   await expect(filters.getByRole('combobox')).toHaveCount(0);
   await expect(filters.getByRole('checkbox')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'All 1' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'All 1' })).toHaveCSS(
+    'background-color',
+    'rgb(35, 92, 120)',
+  );
   await expect(page.getByRole('button', { name: 'Unread 1' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Assignment alerts' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Service alerts' })).toHaveCount(0);
+  await expect(filters).toHaveCSS('margin-bottom', '16px');
+  await expect(filters.locator('[data-ui="notification-filter-controls"]')).toHaveCSS(
+    'gap',
+    '8px',
+  );
+  await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('gap', '16px');
   await expect(notification).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(notification).toHaveCSS('padding', '16px');
   await expect(notification.getByText('Assignment changed', { exact: true })).toHaveCount(2);
@@ -646,6 +660,7 @@ test('driver updates reuse the compact inbox with assignment-only alerts', async
     'background-color',
     'rgb(35, 92, 120)',
   );
+  await expect(page.locator('[data-ui="avatar"]')).toHaveAttribute('data-tone', 'brand');
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('driver-updates.png'), fullPage: true });
 });
