@@ -6,6 +6,8 @@ interface AvatarProps {
   /** Optional image URL. If absent, initials are shown. */
   src?: string;
   size?: 'sm' | 'md' | 'lg';
+  /** Matches native recipient avatars to the shared mobile navigation treatment. */
+  tone?: 'default' | 'native-nav';
   className?: string;
 }
 
@@ -23,10 +25,11 @@ function getInitials(name?: string): string {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
-export function Avatar({ name, src, size = 'md', className }: AvatarProps) {
+export function Avatar({ name, src, size = 'md', tone = 'default', className }: AvatarProps) {
   return (
     <span
       data-ui="avatar"
+      data-tone={tone}
       className={cn(
         'inline-flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full bg-navy-100 font-semibold text-navy-700 ring-1 ring-inset ring-navy-200',
         sizeClasses[size],

@@ -400,7 +400,11 @@ export function DashboardLayout({
             <DropdownMenu
               trigger={
                 <span className="flex items-center gap-2.5 rounded-lg py-1.5 pl-1.5 pr-2 transition-colors hover:bg-slate-100">
-                  <Avatar name={profile?.full_name ?? undefined} size="sm" />
+                  <Avatar
+                    name={profile?.full_name ?? undefined}
+                    size="sm"
+                    tone={usesBottomTabs ? 'native-nav' : 'default'}
+                  />
                   <span className="hidden text-left leading-tight sm:block">
                     <span className="block text-sm font-semibold text-slate-900">
                       {profile?.full_name ?? 'Account'}

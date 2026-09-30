@@ -1867,11 +1867,39 @@
 
   html[data-app-surface='native-mobile']
     [data-portal][data-ui='dashboard-shell']
-    [data-ui='avatar'] {
-    border-color: #8db7c9;
-    background: #235c78 !important;
-    color: #fff;
-    box-shadow: 0 3px 10px rgb(35 92 120 / 0.18);
+    [data-ui='avatar'][data-tone='native-nav'] {
+    border-color: #526674 !important;
+    background-color: #172b3a !important;
+    color: #fff !important;
+    --tw-ring-color: #526674 !important;
+    box-shadow: 0 3px 10px rgb(23 43 58 / 0.2);
+  }
+
+  /* Keep a comfortable, explicit rhythm between Updates filters and cards.
+   * These rules intentionally override the older portal-specific compact layout. */
+  html[data-app-surface='native-mobile']
+    [data-ui='notification-inbox-page']
+    [data-ui='notification-filters'] {
+    margin-bottom: 1rem !important;
+  }
+
+  html[data-app-surface='native-mobile']
+    [data-ui='notification-inbox-page']
+    [data-ui='notification-filter-controls'] {
+    gap: 0.5rem !important;
+  }
+
+  html[data-app-surface='native-mobile']
+    [data-ui='notification-inbox-page']
+    [data-ui='notification-list'] {
+    display: grid;
+    gap: 1rem !important;
+  }
+
+  html[data-app-surface='native-mobile']
+    [data-ui='notification-inbox-page']
+    [data-ui='notification-card'] {
+    margin: 0;
   }
 
   html[data-app-surface='native-mobile'] [data-ui-state='data-state'],
@@ -1903,6 +1931,14 @@
   html[data-app-surface='native-mobile'] [data-ui='notification-filter-controls'] button {
     border-color: #d7e1e4;
     background-color: #fff;
+  }
+
+  html[data-app-surface='native-mobile']
+    [data-ui='notification-filter-controls']
+    button[aria-pressed='true'] {
+    border-color: #235c78;
+    background-color: #235c78;
+    color: #fff;
   }
 
   html[data-app-surface='native-mobile'] input[type='checkbox'] {

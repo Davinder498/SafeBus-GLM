@@ -51,6 +51,26 @@ test('background location disclosure precedes native permission preparation', as
   assert.match(plugin, /NOTIFICATION_PERMISSION_REQUIRED/);
 });
 
+test('active Android trips request and report location on a fixed three-second cadence', async () => {
+  const [cadence, service, migration, webFallback] = await Promise.all([
+    source(
+      'apps/mobile/android/app/src/main/java/com/safebusalberta/app/tracking/TrackingCadence.java',
+    ),
+    source(
+      'apps/mobile/android/app/src/main/java/com/safebusalberta/app/tracking/DriverTrackingService.java',
+    ),
+    source('supabase/migrations/0113_fixed_three_second_driver_location_cadence.sql'),
+    source('apps/web/src/hooks/useDriverLocationSharing.ts'),
+  ]);
+
+  assert.match(cadence, /ACTIVE_TRIP_INTERVAL_MS\s*=\s*3_000L/);
+  assert.match(service, /requestLocationUpdates\(provider, LOCATION_PING_INTERVAL_MS, 0f, this\)/);
+  assert.doesNotMatch(service, /response\.optLong\("nextPingInMs"/);
+  assert.match(migration, /'nextPingInMs', 3000/);
+  assert.match(migration, /v_next_ms := 3000/);
+  assert.match(webFallback, /MIN_UPDATE_INTERVAL_MS\s*=\s*3_000/);
+});
+
 test('one Android binary remains role-scoped for guardians and drivers', async () => {
   const [routes, sdk, manifest, gradle, workflow] = await Promise.all([
     source('apps/mobile/src/routes/router.tsx'),
