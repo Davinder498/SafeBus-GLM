@@ -1,6 +1,10 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
 import { installMapProviderAvailable, installMapProviderOutage } from './fixtures/map-provider';
 import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
+import {
+  guardianBusServiceLine,
+  type GuardianBusServiceLineRow,
+} from './fixtures/guardian-bus-visibility';
 
 /**
  * Milestone 11B - Guardian Live Bus Map UI smoke tests.
@@ -174,18 +178,16 @@ interface InstallMockOptions {
   rawError?: string;
   profile?: MockProfile;
   session?: boolean;
+  serviceLines?: GuardianBusServiceLineRow[];
 }
 
-async function installGuardianLiveMapMock(
-  page: Page,
-  opts: InstallMockOptions = {},
-) {
+async function installGuardianLiveMapMock(page: Page, opts: InstallMockOptions = {}) {
   const profile = opts.profile ?? guardianProfile;
   let rowsForRpc: GuardianLiveBusLocationRpcRow[] = opts.rows ?? [];
   let routeRowsForRpc: GuardianStudentRouteRpcRow[] = opts.routeRows ?? [];
   let failRpc = opts.failRpc ?? false;
-  const rawError =
-    opts.rawError ?? 'permission denied for function get_guardian_bus_visibility_v2';
+  const serviceLines = opts.serviceLines ?? [guardianBusServiceLine()];
+  const rawError = opts.rawError ?? 'permission denied for function get_guardian_bus_visibility_v2';
 
   const visibilityRows = () =>
     routeRowsForRpc.map((routeRow) => {
@@ -260,11 +262,20 @@ async function installGuardianLiveMapMock(
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
+            access_token: [
+              'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+              'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ',
+              'smoke-test-signature',
+            ].join('.'),
             refresh_token: 'x',
             token_type: 'bearer',
             expires_in: 3600,
-            user: { id: profile.id, email: profile.email, aud: 'authenticated', role: 'authenticated' },
+            user: {
+              id: profile.id,
+              email: profile.email,
+              aud: 'authenticated',
+              role: 'authenticated',
+            },
           }),
         });
         return;
@@ -279,13 +290,25 @@ async function installGuardianLiveMapMock(
       const fulfillRows = async (rows: Record<string, unknown>[]) => {
         if (wantsSingle) {
           if (rows.length === 0) {
-            await route.fulfill({ status: 406, contentType: 'application/json', body: JSON.stringify({ message: 'no rows' }) });
+            await route.fulfill({
+              status: 406,
+              contentType: 'application/json',
+              body: JSON.stringify({ message: 'no rows' }),
+            });
             return;
           }
-          await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rows[0]) });
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(rows[0]),
+          });
           return;
         }
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rows) });
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(rows),
+        });
       };
 
       if (method === 'GET' && path.includes('/profiles')) {
@@ -319,6 +342,20 @@ async function installGuardianLiveMapMock(
         return;
       }
 
+      if (method === 'POST' && path.includes('/rpc/get_guardian_bus_service_lines')) {
+        const requestedBus = String(
+          (route.request().postDataJSON() as { p_bus_number?: unknown } | null)?.p_bus_number ?? '',
+        ).toLocaleLowerCase();
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(
+            serviceLines.filter((line) => line.busNumber.toLocaleLowerCase() === requestedBus),
+          ),
+        });
+        return;
+      }
+
       // Guard: no direct live-location table browser access is allowed.
       if (
         method === 'GET' &&
@@ -343,7 +380,11 @@ async function installGuardianLiveMapMock(
   if (opts.session !== false) {
     await page.addInitScript((profileForSession: MockProfile) => {
       const s = {
-        access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
+        access_token: [
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+          'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ',
+          'smoke-test-signature',
+        ].join('.'),
         refresh_token: 'x',
         token_type: 'bearer',
         expires_in: 3600,
@@ -358,8 +399,12 @@ async function installGuardianLiveMapMock(
           created_at: profileForSession.created_at,
         },
       };
-      for (const k of ['supabase.auth.token', 'sb-placeholder-auth-token',
-        'sb-bppmqykkbhrmotcybxrh-auth-token', 'sb-localhost-auth-token']) {
+      for (const k of [
+        'supabase.auth.token',
+        'sb-placeholder-auth-token',
+        'sb-bppmqykkbhrmotcybxrh-auth-token',
+        'sb-localhost-auth-token',
+      ]) {
         try {
           window.localStorage.setItem(k, JSON.stringify(s));
         } catch {
@@ -377,22 +422,45 @@ async function installGuardianLiveMapMock(
 // ---------------------------------------------------------------------------
 
 test.describe('Milestone 11B - Guardian live bus map UI', () => {
-  test('guardian with one student and fresh location sees the map and status', async ({ page }) => {
+  test('opening the map without a bus presents a bus chooser', async ({ page }) => {
     await installGuardianLiveMapMock(page, {
       rows: [freshRow()],
       routeRows: [studentRouteRow()],
     });
     await page.goto('/guardian/live-map');
 
-    await expect(page.getByRole('heading', { name: 'Live Bus Map', level: 1 })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('guardian-live-map-bus-chooser')).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByRole('link', { name: /Bus 42/ })).toHaveAttribute(
+      'href',
+      '/guardian/live-map?bus=42',
+    );
+    await expect(page.getByTestId('guardian-live-bus-map')).toHaveCount(0);
+  });
+
+  test('guardian with one student and fresh location sees the map and status', async ({ page }) => {
+    await installGuardianLiveMapMock(page, {
+      rows: [freshRow()],
+      routeRows: [studentRouteRow()],
+    });
+    await page.goto('/guardian/live-map?bus=42');
+
+    await expect(page.getByRole('heading', { name: 'Bus 42 Live Map', level: 1 })).toBeVisible({
+      timeout: 10000,
+    });
 
     // Tile config is missing in test env, so the config-missing card shows with
     // a fresh-location summary (markers are NOT rendered without tiles).
     await expect(
-      page.getByTestId('guardian-live-bus-map-config-missing').or(page.getByTestId('guardian-live-bus-map')),
+      page
+        .getByTestId('guardian-live-bus-map-config-missing')
+        .or(page.getByTestId('guardian-live-bus-map')),
     ).toBeVisible();
     await expect(
-      page.getByTestId('guardian-live-bus-map-fresh-summary').or(page.getByText(/1 current bus location/)),
+      page
+        .getByTestId('guardian-live-bus-map-fresh-summary')
+        .or(page.getByText(/1 current bus location/)),
     ).toBeVisible();
 
     // Student status list shows the safe, non-technical label for fresh state.
@@ -412,9 +480,11 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
       rows: [staleRow()],
       routeRows: [studentRouteRow()],
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
-    await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({
+      timeout: 10000,
+    });
     // No fresh summary because no fresh location.
     await expect(page.getByTestId('guardian-live-bus-map-fresh-summary')).toHaveCount(0);
     await expect(page.getByText('Location update delayed', { exact: true })).toBeVisible();
@@ -426,9 +496,11 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
       rows: [missingRow()],
       routeRows: [studentRouteRow()],
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
-    await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({
+      timeout: 10000,
+    });
     await expect(page.getByTestId('guardian-live-bus-map-fresh-summary')).toHaveCount(0);
     await expect(page.getByText('Location has not been received')).toBeVisible();
   });
@@ -438,27 +510,28 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
       rows: [invalidRow()],
       routeRows: [studentRouteRow()],
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
-    await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({
+      timeout: 10000,
+    });
     await expect(page.getByTestId('guardian-live-bus-map-fresh-summary')).toHaveCount(0);
     await expect(page.getByText('Location unavailable', { exact: true })).toBeVisible();
   });
 
   test('multiple linked students with mixed states are all listed', async ({ page }) => {
     await installGuardianLiveMapMock(page, {
-      rows: [
-        freshRow(GUARDIAN.studentId),
-        staleRow(GUARDIAN.studentId2),
-      ],
+      rows: [freshRow(GUARDIAN.studentId), staleRow(GUARDIAN.studentId2)],
       routeRows: [
         studentRouteRow(GUARDIAN.studentId, 'Avery', 'Johnson'),
         studentRouteRow(GUARDIAN.studentId2, 'Blair', 'Smith'),
       ],
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
-    await expect(page.getByTestId('guardian-live-map-student-card')).toHaveCount(2, { timeout: 10000 });
+    await expect(page.getByTestId('guardian-live-map-student-card')).toHaveCount(2, {
+      timeout: 10000,
+    });
     await expect(page.getByText('Avery Johnson')).toBeVisible();
     await expect(page.getByText('Blair Smith')).toBeVisible();
     await expect(page.getByText('Current location available', { exact: true })).toBeVisible();
@@ -466,28 +539,33 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
     // Fresh summary shows count of 2 linked students with current location? No:
     // only one fresh row, so summary says "1 linked student".
     await expect(
-      page.getByTestId('guardian-live-bus-map-fresh-summary').or(page.getByText(/1 current bus location/)),
+      page
+        .getByTestId('guardian-live-bus-map-fresh-summary')
+        .or(page.getByText(/1 current bus location/)),
     ).toBeVisible();
   });
 
-  test('siblings sharing the same coordinates render one fresh summary without implying shared bus', async ({ page }) => {
+  test('siblings sharing the same coordinates render one fresh summary without implying shared bus', async ({
+    page,
+  }) => {
     await installGuardianLiveMapMock(page, {
-      rows: [
-        freshRow(GUARDIAN.studentId),
-        freshRow(GUARDIAN.studentId2),
-      ],
+      rows: [freshRow(GUARDIAN.studentId), freshRow(GUARDIAN.studentId2)],
       routeRows: [
         studentRouteRow(GUARDIAN.studentId, 'Avery', 'Johnson'),
         studentRouteRow(GUARDIAN.studentId2, 'Blair', 'Smith'),
       ],
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
-    await expect(page.getByTestId('guardian-live-map-student-card')).toHaveCount(2, { timeout: 10000 });
+    await expect(page.getByTestId('guardian-live-map-student-card')).toHaveCount(2, {
+      timeout: 10000,
+    });
     // Both fresh; the map component groups same-coordinates into one marker.
     // Without tile config, the fresh summary reports current location available.
     await expect(
-      page.getByTestId('guardian-live-bus-map-fresh-summary').or(page.getByText(/1 current bus location/)),
+      page
+        .getByTestId('guardian-live-bus-map-fresh-summary')
+        .or(page.getByText(/1 current bus location/)),
     ).toBeVisible();
   });
 
@@ -496,11 +574,13 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
       rows: [],
       routeRows: [studentRouteRow()],
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
     // With a linked student but no location rows, the list still shows the
     // student card without a location pill (no loc row).
-    await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('no eligible students at all shows empty state', async ({ page }) => {
@@ -508,7 +588,7 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
       rows: [],
       routeRows: [],
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
     await expect(page.getByTestId('guardian-live-map-empty')).toBeVisible({ timeout: 10000 });
   });
@@ -518,10 +598,12 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
       rows: [freshRow()],
       routeRows: [studentRouteRow()],
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
     await expect(
-      page.getByTestId('guardian-live-bus-map-config-missing').or(page.getByTestId('guardian-live-bus-map')),
+      page
+        .getByTestId('guardian-live-bus-map-config-missing')
+        .or(page.getByTestId('guardian-live-bus-map')),
     ).toBeVisible({ timeout: 10000 });
     // Raw env var names are not exposed.
     await expect(page.getByText('VITE_MAP_TILE_URL', { exact: false })).toHaveCount(0);
@@ -534,7 +616,7 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
       routeRows: [studentRouteRow()],
     });
     await installMapProviderAvailable(page);
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
     // When tile config IS set (local dev / this test env), the interactive
     // Leaflet map must mount — not just the config-missing fallback card.
@@ -557,9 +639,11 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
     await expect(page.locator('.leaflet-tile-pane')).toHaveCount(1);
     await expect(page.locator('.leaflet-overlay-pane')).toHaveCount(1);
 
-    // A marker (CircleMarker renders as an SVG path inside the overlay pane)
-    // must be present for the fresh location.
-    await expect(page.locator('.leaflet-overlay-pane svg path')).toBeVisible({ timeout: 10000 });
+    // The fresh GPS point uses a bus icon, and the selected service exposes
+    // different pickup and drop-off markers.
+    await expect(page.getByTestId('guardian-live-bus-map-marker')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('guardian-live-map-pickup-stop-marker')).toBeVisible();
+    await expect(page.getByTestId('guardian-live-map-dropoff-stop-marker')).toBeVisible();
 
     // Regression guard for the Leaflet 1.9.4 `mix-blend-mode: plus-lighter`
     // bug, which made map tiles render invisibly on the white Card background.
@@ -577,13 +661,49 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
     }
   });
 
-  test('map provider outage fails closed while verified bus status remains usable', async ({ page }) => {
+  test('same-coordinate pickup and drop-off assignments use one combined marker', async ({
+    page,
+  }) => {
+    const line = guardianBusServiceLine();
+    const sharedStop = {
+      ...line.stops[0],
+      pickupStudentNames: ['Avery'],
+      dropoffStudentNames: ['Avery'],
+    };
+    await installGuardianLiveMapMock(page, {
+      rows: [freshRow()],
+      routeRows: [studentRouteRow()],
+      serviceLines: [
+        {
+          ...line,
+          stops: [
+            sharedStop,
+            ...line.stops.slice(1).map((stop) => ({
+              ...stop,
+              pickupStudentNames: [],
+              dropoffStudentNames: [],
+            })),
+          ],
+        },
+      ],
+    });
+    await installMapProviderAvailable(page);
+    await page.goto('/guardian/live-map?bus=42');
+
+    await expect(page.getByTestId('guardian-live-map-both-stop-marker')).toHaveCount(1);
+    await expect(page.getByTestId('guardian-live-map-pickup-stop-marker')).toHaveCount(0);
+    await expect(page.getByTestId('guardian-live-map-dropoff-stop-marker')).toHaveCount(0);
+  });
+
+  test('map provider outage fails closed while verified bus status remains usable', async ({
+    page,
+  }) => {
     await installGuardianLiveMapMock(page, {
       rows: [freshRow()],
       routeRows: [studentRouteRow()],
     });
     await installMapProviderOutage(page);
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
     await expect(page.getByTestId('guardian-live-bus-map-unavailable')).toBeVisible({
       timeout: 10000,
@@ -602,7 +722,7 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
       failRpc: true,
       rawError,
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
     await expect(page.getByTestId('guardian-live-map-error')).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('We could not load the live bus map right now.')).toBeVisible();
@@ -614,7 +734,7 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
       rows: [missingRow()],
       routeRows: [studentRouteRow()],
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
     await expect(page.getByText('Location has not been received')).toBeVisible({ timeout: 10000 });
 
@@ -629,9 +749,11 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
       rows: [freshRow()],
       routeRows: [studentRouteRow()],
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
-    await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({
+      timeout: 10000,
+    });
     // Raw coordinate text must not appear as normal guardian-facing text.
     await expect(page.getByText('51.0447')).toHaveCount(0);
     await expect(page.getByText('-114.0719')).toHaveCount(0);
@@ -670,8 +792,10 @@ test.describe('Milestone 11D - QA hardening', () => {
       }
     });
 
-    await page.goto('/guardian/live-map');
-    await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({ timeout: 10000 });
+    await page.goto('/guardian/live-map?bus=42');
+    await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({
+      timeout: 10000,
+    });
     // Trigger a manual refresh.
     await page.getByTestId('guardian-live-map-refresh-button').click();
     await page.waitForTimeout(500);
@@ -685,13 +809,17 @@ test.describe('Milestone 11D - QA hardening', () => {
       routeRows: [studentRouteRow()],
     });
     // Visit the live bus map page first.
-    await page.goto('/guardian/live-map');
-    await expect(page.getByRole('heading', { name: 'Live Bus Map', level: 1 })).toBeVisible({ timeout: 10000 });
+    await page.goto('/guardian/live-map?bus=42');
+    await expect(page.getByRole('heading', { name: 'Bus 42 Live Map', level: 1 })).toBeVisible({
+      timeout: 10000,
+    });
 
     // Navigate to the existing Bus Status page through the same protected route.
     await page.goto('/guardian/live');
     await expect(page).toHaveURL(/\/guardian\/live$/);
-    await expect(page.getByRole('heading', { name: 'Live Bus Status', level: 1 })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Live Bus Status', level: 1 })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('map renders on mobile viewport without crash', async ({ browser }) => {
@@ -700,14 +828,18 @@ test.describe('Milestone 11D - QA hardening', () => {
       rows: [freshRow()],
       routeRows: [studentRouteRow()],
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
     // The page renders on mobile without crashing. The map config-missing card
     // and student status list are visible. (Horizontal scroll behavior is a
     // pre-existing characteristic of the shared DashboardLayout sidebar nav and
     // is not introduced or changed by this phase.)
-    await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('guardian-live-map-student-card')).toBeVisible({
+      timeout: 10000,
+    });
     await expect(
-      page.getByTestId('guardian-live-bus-map-config-missing').or(page.getByTestId('guardian-live-bus-map')),
+      page
+        .getByTestId('guardian-live-bus-map-config-missing')
+        .or(page.getByTestId('guardian-live-bus-map')),
     ).toBeVisible();
     await page.close();
   });
@@ -719,15 +851,19 @@ test.describe('Milestone 11C - Safe refresh and resilience', () => {
       rows: [freshRow()],
       routeRows: [studentRouteRow()],
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
-    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({
+      timeout: 10000,
+    });
 
     // Transition fresh -> stale via manual refresh.
     setRows([staleRow()]);
     await page.getByTestId('guardian-live-map-refresh-button').click();
 
-    await expect(page.getByText('Location update delayed', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Location update delayed', { exact: true })).toBeVisible({
+      timeout: 10000,
+    });
     // Fresh summary must be gone (no marker).
     await expect(page.getByTestId('guardian-live-bus-map-fresh-summary')).toHaveCount(0);
   });
@@ -737,9 +873,11 @@ test.describe('Milestone 11C - Safe refresh and resilience', () => {
       rows: [freshRow()],
       routeRows: [studentRouteRow()],
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
-    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({
+      timeout: 10000,
+    });
 
     setRows([missingRow()]);
     await page.getByTestId('guardian-live-map-refresh-button').click();
@@ -753,25 +891,33 @@ test.describe('Milestone 11C - Safe refresh and resilience', () => {
       rows: [freshRow()],
       routeRows: [studentRouteRow()],
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
-    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({
+      timeout: 10000,
+    });
 
     setRows([invalidRow()]);
     await page.getByTestId('guardian-live-map-refresh-button').click();
 
-    await expect(page.getByText('Location unavailable', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Location unavailable', { exact: true })).toBeVisible({
+      timeout: 10000,
+    });
     await expect(page.getByTestId('guardian-live-bus-map-fresh-summary')).toHaveCount(0);
   });
 
-  test('fresh-to-error transition shows refresh-failure banner and no live marker', async ({ page }) => {
+  test('fresh-to-error transition shows refresh-failure banner and no live marker', async ({
+    page,
+  }) => {
     const { setRows, setFailRpc } = await installGuardianLiveMapMock(page, {
       rows: [freshRow()],
       routeRows: [studentRouteRow()],
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
-    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({
+      timeout: 10000,
+    });
 
     // Force the next RPC call to fail.
     setFailRpc(true);
@@ -787,7 +933,9 @@ test.describe('Milestone 11C - Safe refresh and resilience', () => {
     setFailRpc(false);
     setRows([freshRow()]);
     await page.getByTestId('guardian-live-map-refresh-button').click();
-    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('recovery after a later successful response', async ({ page }) => {
@@ -795,42 +943,40 @@ test.describe('Milestone 11C - Safe refresh and resilience', () => {
       rows: [missingRow()],
       routeRows: [studentRouteRow()],
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
     await expect(page.getByText('Location has not been received')).toBeVisible({ timeout: 10000 });
 
     setRows([freshRow()]);
     await page.getByTestId('guardian-live-map-refresh-button').click();
 
-    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('multiple students updating independently', async ({ page }) => {
     const { setRows } = await installGuardianLiveMapMock(page, {
-      rows: [
-        freshRow(GUARDIAN.studentId),
-        missingRow(GUARDIAN.studentId2),
-      ],
+      rows: [freshRow(GUARDIAN.studentId), missingRow(GUARDIAN.studentId2)],
       routeRows: [
         studentRouteRow(GUARDIAN.studentId, 'Avery', 'Johnson'),
         studentRouteRow(GUARDIAN.studentId2, 'Blair', 'Smith'),
       ],
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
     await expect(page.getByText('Avery Johnson')).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('Current location available', { exact: true })).toBeVisible();
     await expect(page.getByText('Location has not been received')).toBeVisible();
 
     // Swap states: student1 -> missing, student2 -> fresh.
-    setRows([
-      missingRow(GUARDIAN.studentId),
-      freshRow(GUARDIAN.studentId2),
-    ]);
+    setRows([missingRow(GUARDIAN.studentId), freshRow(GUARDIAN.studentId2)]);
     await page.getByTestId('guardian-live-map-refresh-button').click();
 
     // Both labels should still be present but swapped.
-    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Current location available', { exact: true })).toBeVisible({
+      timeout: 10000,
+    });
     await expect(page.getByText('Location has not been received')).toBeVisible();
   });
 
@@ -840,7 +986,7 @@ test.describe('Milestone 11C - Safe refresh and resilience', () => {
       routeRows: [studentRouteRow()],
       failRpc: true,
     });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
     await expect(page.getByTestId('guardian-live-map-error')).toBeVisible({ timeout: 10000 });
     // No student cards rendered because no successful data.
@@ -851,25 +997,37 @@ test.describe('Milestone 11C - Safe refresh and resilience', () => {
 test.describe('Milestone 11B - Role protection', () => {
   test('logged-out user is blocked from guardian live bus map page', async ({ page }) => {
     await installGuardianLiveMapMock(page, { session: false });
-    await page.goto('/guardian/live-map');
-    await expect(page.getByRole('heading', { name: 'Sign in required' })).toBeVisible({ timeout: 15000 });
+    await page.goto('/guardian/live-map?bus=42');
+    await expect(page.getByRole('heading', { name: 'Sign in required' })).toBeVisible({
+      timeout: 15000,
+    });
   });
 
   test('admin user is blocked from guardian live bus map page', async ({ page }) => {
     await installGuardianLiveMapMock(page, { profile: adminProfile });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
-    await expect(page.getByRole('heading', { name: 'Wrong portal' })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole('link', { name: 'Open your dashboard' })).toHaveAttribute('href', '/admin');
+    await expect(page.getByRole('heading', { name: 'Wrong portal' })).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByRole('link', { name: 'Open your dashboard' })).toHaveAttribute(
+      'href',
+      '/admin',
+    );
     await expect(page.getByRole('heading', { name: 'Live Bus Map', level: 1 })).toHaveCount(0);
   });
 
   test('driver user is blocked from guardian live bus map page', async ({ page }) => {
     await installGuardianLiveMapMock(page, { profile: driverProfile });
-    await page.goto('/guardian/live-map');
+    await page.goto('/guardian/live-map?bus=42');
 
-    await expect(page.getByRole('heading', { name: 'Wrong portal' })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole('link', { name: 'Open your dashboard' })).toHaveAttribute('href', '/driver');
+    await expect(page.getByRole('heading', { name: 'Wrong portal' })).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByRole('link', { name: 'Open your dashboard' })).toHaveAttribute(
+      'href',
+      '/driver',
+    );
     await expect(page.getByRole('heading', { name: 'Live Bus Map', level: 1 })).toHaveCount(0);
   });
 });

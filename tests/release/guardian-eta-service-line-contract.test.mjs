@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-const migrationPath = 'supabase/migrations/0108_guardian_eta_service_line.sql';
+const migrationPath = 'supabase/migrations/0114_guardian_tracking_alert_clarity.sql';
 
 test('guardian ETA service line keeps its guardian-only RPC boundary', async () => {
   const sql = (await readFile(migrationPath, 'utf8')).toLowerCase();
@@ -53,6 +53,7 @@ test('guardian ETA response remains additive and telemetry-safe', async () => {
   const sql = await readFile(migrationPath, 'utf8');
 
   for (const field of [
+    'progressPosition',
     'progressPercent',
     'progressSource',
     'nextStopName',
@@ -63,6 +64,8 @@ test('guardian ETA response remains additive and telemetry-safe', async () => {
     'etaMinMinutes',
     'etaMaxMinutes',
     'etaLabel',
+    'pickupStudentNames',
+    'dropoffStudentNames',
   ]) {
     assert.ok(sql.includes(`'${field}'`), `missing response field: ${field}`);
   }
@@ -70,6 +73,14 @@ test('guardian ETA response remains additive and telemetry-safe', async () => {
   for (const privateField of ['accuracyM', 'speedMps', 'driverId', 'tripId', 'tenantId']) {
     assert.ok(!sql.includes(`'${privateField}'`), `private JSON field exposed: ${privateField}`);
   }
+
+  assert.match(sql, /linked_guardian\.guardian_id = v_guardian_id/);
+  assert.match(sql, /linked_guardian\.tenant_id = v_tenant_id/);
+  assert.match(sql, /linked_guardian\.status = 'active'/);
+  assert.match(sql, /linked_guardian\.access_expires_at/);
+  assert.match(sql, /linked_assignment\.status = 'active'/);
+  assert.match(sql, /linked_bus_route\.bus_id = v_service\.bus_id/);
+  assert.match(sql, /linked_bus_route\.route_trip_pattern_id = v_service\.route_trip_pattern_id/);
 });
 
 test('guardian UI uses authoritative progress and honours reduced motion', async () => {
@@ -78,7 +89,8 @@ test('guardian UI uses authoritative progress and honours reduced motion', async
     readFile('apps/web/src/index.css', 'utf8'),
   ]);
 
-  assert.match(page, /line\.progressPercent/);
+  assert.match(page, /line\.progressPosition/);
+  assert.match(page, /interpolateServiceLinePosition/);
   assert.doesNotMatch(page, /calculateGuardianBusProgress/);
   assert.match(page, /progressSource === 'stop_sequence'/);
   assert.match(page, /Planned \{plannedTime/);

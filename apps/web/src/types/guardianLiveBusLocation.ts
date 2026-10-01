@@ -42,6 +42,8 @@ export interface GuardianBusServiceStop {
   order: number;
   latitude: number | null;
   longitude: number | null;
+  pickupStudentNames: string[];
+  dropoffStudentNames: string[];
   plannedArrivalTime: string | null;
   serviceState: GuardianBusStopServiceState;
   etaStatus: GuardianBusStopEtaStatus;
@@ -65,6 +67,8 @@ export interface GuardianBusServiceLine {
   latitude: number | null;
   longitude: number | null;
   locationRecordedAt: string | null;
+  /** Fractional zero-based position between the ordered stop anchors. */
+  progressPosition: number | null;
   progressPercent: number | null;
   progressSource: GuardianBusProgressSource | null;
   nextStopName: string | null;

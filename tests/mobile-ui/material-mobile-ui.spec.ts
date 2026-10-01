@@ -4,6 +4,7 @@ import {
   guardianVisibilityRow,
   installGuardianVisibilityMock,
 } from '../smoke/fixtures/guardian-bus-visibility';
+import { installMapProviderAvailable } from '../smoke/fixtures/map-provider';
 import { installSupabaseMock } from '../smoke/fixtures/supabase-mock';
 
 async function expectTouchTargets(controls: Locator) {
@@ -64,8 +65,7 @@ async function installNotificationInboxMock(
         created_at: '2026-09-01T12:00:00Z',
         read_at: readAt,
         archived_at: null,
-        destination_path:
-          '/notifications?notification=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        destination_path: '/notifications?notification=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       }
     : {
         id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
@@ -73,13 +73,12 @@ async function installNotificationInboxMock(
         category: 'trip_status',
         severity: 'urgent',
         title: 'Trip cancelled',
-        body: 'Bus service status has changed.',
+        body: 'The trip was cancelled at 6:00 AM.',
         occurred_at: '2026-09-01T12:00:00Z',
         created_at: '2026-09-01T12:00:00Z',
         read_at: readAt,
         archived_at: null,
-        destination_path:
-          '/notifications?notification=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        destination_path: '/notifications?notification=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       };
 
   await page.route('**/rest/v1/rpc/get_user_notification_unread_count', (route) =>
@@ -104,6 +103,7 @@ async function installNotificationInboxMock(
 }
 
 test('guardian shell uses the branded Material mobile treatment', async ({ page }, testInfo) => {
+  await installMapProviderAvailable(page);
   await installGuardianVisibilityMock(page, {
     rows: [guardianVisibilityRow()],
     studentStops: [
@@ -188,9 +188,52 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
     'background-color',
     'rgb(255, 255, 255)',
   );
+  await expect(page.getByTestId('guardian-live-bus-map-marker')).toHaveCount(1);
+  await expect(page.getByTestId('guardian-live-map-pickup-stop-marker')).toHaveCount(1);
+  await expect(page.getByTestId('guardian-live-map-dropoff-stop-marker')).toHaveCount(1);
   await page.screenshot({ path: testInfo.outputPath('guardian-live-map.png') });
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Back to home' })).toBeVisible();
+});
+
+test('guardian live map requires a bus choice and merges shared pickup and drop-off stops', async ({
+  page,
+}) => {
+  await installMapProviderAvailable(page);
+  const sharedStopLine = guardianBusServiceLine();
+  const sharedLatitude = sharedStopLine.stops[0].latitude;
+  const sharedLongitude = sharedStopLine.stops[0].longitude;
+  await installGuardianVisibilityMock(page, {
+    rows: [
+      guardianVisibilityRow(),
+      guardianVisibilityRow({
+        student_id: '44444444-4444-4444-4444-444444444444',
+        student_name: 'Morgan Johnson',
+        bus_number: '27',
+        license_plate: 'TEST-27',
+      }),
+    ],
+    serviceLines: [
+      guardianBusServiceLine({
+        stops: sharedStopLine.stops.map((stop, index) => ({
+          ...stop,
+          latitude: index === 2 ? sharedLatitude : stop.latitude,
+          longitude: index === 2 ? sharedLongitude : stop.longitude,
+        })),
+      }),
+    ],
+  });
+
+  await page.goto('/guardian/live-map');
+  await expect(page.getByTestId('guardian-live-map-bus-chooser')).toBeVisible();
+  await expect(page.getByTestId('guardian-live-bus-map')).toHaveCount(0);
+  await page.getByRole('link', { name: /Bus 42/ }).click();
+
+  await expect(page).toHaveURL('/guardian/live-map?bus=42');
+  await expect(page.getByTestId('guardian-live-bus-map-marker')).toHaveCount(1);
+  await expect(page.getByTestId('guardian-live-map-both-stop-marker')).toHaveCount(1);
+  await expect(page.getByTestId('guardian-live-map-pickup-stop-marker')).toHaveCount(0);
+  await expect(page.getByTestId('guardian-live-map-dropoff-stop-marker')).toHaveCount(0);
 });
 
 test('guardian home keeps each linked student with their own bus and stops', async ({ page }) => {
@@ -358,18 +401,34 @@ test('guardian buses group students and open a clean bus detail view', async ({
     serviceLine.locator('.guardian-service-line__point[data-state="next"]'),
   ).toContainText('Cedar Avenue');
   const busMarker = page.getByTestId('guardian-service-line-bus');
-  await expect(busMarker).toHaveAttribute('style', /25%/);
-  await page.waitForTimeout(600);
-  await expect(busMarker).toHaveAttribute('style', /25%/);
+  const distanceFromSegmentMidpoint = async (lowerIndex: number, upperIndex: number) => {
+    const stopCenters = await serviceLine
+      .locator('[data-service-stop-anchor]')
+      .evaluateAll((anchors) =>
+        anchors.map((anchor) => {
+          const rect = anchor.getBoundingClientRect();
+          return rect.top + rect.height / 2;
+        }),
+      );
+    const busBox = await busMarker.boundingBox();
+    if (!busBox) return Number.POSITIVE_INFINITY;
+    const busCenter = busBox.y + busBox.height / 2;
+    const expected = (stopCenters[lowerIndex] + stopCenters[upperIndex]) / 2;
+    return Math.abs(busCenter - expected);
+  };
+  await expect.poll(() => distanceFromSegmentMidpoint(0, 1)).toBeLessThan(1.5);
+  await page.setViewportSize({ width: 360, height: 740 });
+  await expect.poll(() => distanceFromSegmentMidpoint(0, 1)).toBeLessThan(1.5);
   guardianMock.setServiceLines([
     guardianBusServiceLine({
+      progressPosition: 1.5,
       progressPercent: 75,
       progressSource: 'stop_sequence',
       nextStopName: 'Riverside School',
     }),
   ]);
   await page.reload();
-  await expect(page.getByTestId('guardian-service-line-bus')).toHaveAttribute('style', /75%/);
+  await expect.poll(() => distanceFromSegmentMidpoint(1, 2)).toBeLessThan(1.5);
   await expect(page.getByText('Position estimated from the ordered stops.')).toBeVisible();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect
@@ -408,6 +467,7 @@ test('guardian buses group students and open a clean bus detail view', async ({
       latitude: null,
       longitude: null,
       locationRecordedAt: null,
+      progressPosition: null,
       progressPercent: null,
       progressSource: null,
       nextStopName: null,
@@ -419,6 +479,8 @@ test('guardian buses group students and open a clean bus detail view', async ({
           order: 1,
           latitude: null,
           longitude: null,
+          pickupStudentNames: [],
+          dropoffStudentNames: [],
           plannedArrivalTime: null,
           serviceState: 'unavailable',
           etaStatus: 'unavailable',
@@ -611,21 +673,21 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
     'background-color',
     'rgb(207, 89, 99)',
   );
-  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS(
-    'background-color',
-    'rgb(23, 43, 58)',
-  );
+  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
     'rgb(23, 43, 58)',
   );
-  await expect(page.locator('[data-ui="avatar"]')).toHaveAttribute(
-    'data-tone',
-    'native-nav',
-  );
+  await expect(page.locator('[data-ui="avatar"]')).toHaveAttribute('data-tone', 'native-nav');
   await expect(
-    notification.getByRole('button', { name: 'Open notification: Trip cancelled' }),
+    notification.getByRole('button', {
+      name: 'Open notification: The trip was cancelled at 6:00 AM.',
+    }),
   ).toHaveText('View update');
+  await expect(notification.getByText('The trip was cancelled at 6:00 AM.')).toHaveCount(1);
+  await expect(notification.getByText('Category', { exact: true })).toHaveCount(0);
+  await expect(notification.getByText('Priority', { exact: true })).toHaveCount(0);
+  await expect(notification.getByText('Received', { exact: true })).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Mark all read' }).click();
   await expect.poll(() => inbox.getMarkAllReadCallCount()).toBe(1);
@@ -659,29 +721,22 @@ test('driver updates reuse the compact inbox with assignment-only alerts', async
   await expect(page.getByRole('button', { name: 'Assignment alerts' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Service alerts' })).toHaveCount(0);
   await expect(filters).toHaveCSS('margin-bottom', '16px');
-  await expect(filters.locator('[data-ui="notification-filter-controls"]')).toHaveCSS(
-    'gap',
-    '8px',
-  );
+  await expect(filters.locator('[data-ui="notification-filter-controls"]')).toHaveCSS('gap', '8px');
   await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('gap', '16px');
   await expect(notification).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(notification).toHaveCSS('padding', '16px');
-  await expect(notification.getByText('Assignment changed', { exact: true })).toHaveCount(2);
+  await expect(notification.getByText('Your planned work assignment has changed.')).toHaveCount(1);
   await expect(
-    notification.getByRole('button', { name: 'Open notification: Assignment changed' }),
+    notification.getByRole('button', {
+      name: 'Open notification: Your planned work assignment has changed.',
+    }),
   ).toHaveText('View update');
-  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS(
-    'background-color',
-    'rgb(23, 43, 58)',
-  );
+  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
     'rgb(23, 43, 58)',
   );
-  await expect(page.locator('[data-ui="avatar"]')).toHaveAttribute(
-    'data-tone',
-    'native-nav',
-  );
+  await expect(page.locator('[data-ui="avatar"]')).toHaveAttribute('data-tone', 'native-nav');
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('driver-updates.png'), fullPage: true });
 });
@@ -734,10 +789,7 @@ test('driver support page shows one resolved support contact', async ({ page }) 
     'background-color',
     'rgb(255, 255, 255)',
   );
-  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS(
-    'background-color',
-    'rgb(23, 43, 58)',
-  );
+  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
 
   await page.goto('/account');
   const accountCards = page.locator('[data-ui="guardian-account-card"]');
@@ -800,16 +852,15 @@ test('driver settings combines assignment delivery and device guidance', async (
   await expect(tabs).toHaveCount(4);
   await expect(tabs.last()).toContainText('Settings');
   await expect(tabs.last()).toHaveAttribute('aria-current', 'page');
-  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS(
-    'background-color',
-    'rgb(23, 43, 58)',
-  );
+  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
   await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('color', 'rgb(255, 255, 255)');
   await expectTouchTargets(page.locator('[data-ui="notification-channel-control"]'));
   await expectNoHorizontalOverflow(page);
 });
 
-test('driver notification settings route redirects to the combined settings page', async ({ page }) => {
+test('driver notification settings route redirects to the combined settings page', async ({
+  page,
+}) => {
   await installSupabaseMock(page);
   await page.goto('/notifications/settings');
   await expect(page).toHaveURL('/driver/settings');

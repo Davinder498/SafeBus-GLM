@@ -252,7 +252,10 @@ export function ParentDashboardPage() {
                 </StatusPill>
               </div>
               <div className="mt-5 flex flex-wrap gap-3 border-t border-gray-200 pt-5">
-                <Link to="/guardian/live-map" className={actionLinkClass}>
+                <Link
+                  to={`/guardian/live-map?bus=${encodeURIComponent(bus.busNumber ?? '')}`}
+                  className={actionLinkClass}
+                >
                   View live map
                 </Link>
                 <Link to="/guardian/live" className={actionLinkClass}>

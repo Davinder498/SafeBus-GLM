@@ -1,5 +1,6 @@
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
-import { ArrowLeft } from 'lucide-react';
+import { useCallback } from 'react';
+import { ArrowLeft, BusFront } from 'lucide-react';
 import { useAppSurface } from '@/contexts/AppSurfaceContext';
 import { GuardianLiveBusMap } from '@/components/guardian/GuardianLiveBusMap';
 import { Button } from '@/components/ui/Button';
@@ -8,11 +9,13 @@ import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { useGuardianLiveBusLocations } from '@/hooks/useGuardianLiveBusLocations';
+import { useVerifiedGuardianData } from '@/hooks/useVerifiedGuardianData';
 import { useMapTileConfig } from '@/hooks/useMapTileConfig';
 import type { TrackingConnectionState } from '@/hooks/useTrackingInvalidations';
 import type { GuardianStudentLiveBusLocation } from '@/types/guardianLiveBusLocation';
 import { Link, useSearchParams } from 'react-router';
-import { groupGuardianBuses } from '@/utils/guardianBusGroups';
+import { fetchGuardianBusServiceLines } from '@/services/guardianLiveBusLocationService';
+import { groupGuardianBuses, type GuardianBusGroup } from '@/utils/guardianBusGroups';
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
@@ -59,24 +62,29 @@ function locationStateMeta(state: GuardianStudentLiveBusLocation['locationState'
 export function GuardianLiveMapPage() {
   const appSurface = useAppSurface();
   const [searchParams] = useSearchParams();
-  const selectedBusNumber =
-    appSurface === 'native-mobile' ? (searchParams.get('bus')?.trim() ?? '') : '';
+  const selectedBusNumber = searchParams.get('bus')?.trim() ?? '';
   const { state, refreshing, lastRefreshedAt, connectionState, refresh } =
     useGuardianLiveBusLocations();
   const mapTileConfig = useMapTileConfig();
   const busGroups = state.kind === 'ready' ? groupGuardianBuses(state.locations) : [];
-  const visibleGroups =
-    appSurface === 'native-mobile'
-      ? selectedBusNumber
-        ? busGroups.filter(
-            (group) =>
-              group.busNumber?.toLocaleLowerCase() === selectedBusNumber.toLocaleLowerCase(),
-          )
-        : busGroups
-      : state.kind === 'ready'
-        ? state.locations.flatMap((location) => groupGuardianBuses([location]))
-        : [];
+  const visibleGroups = selectedBusNumber
+    ? busGroups.filter(
+        (group) => group.busNumber?.toLocaleLowerCase() === selectedBusNumber.toLocaleLowerCase(),
+      )
+    : [];
   const visibleLocations = visibleGroups.map((group) => group.visibility);
+  const fetchSelectedServiceLines = useCallback(
+    (signal: AbortSignal) =>
+      selectedBusNumber
+        ? fetchGuardianBusServiceLines(selectedBusNumber, signal)
+        : Promise.resolve([]),
+    [selectedBusNumber],
+  );
+  const { state: serviceLineState } = useVerifiedGuardianData(
+    fetchSelectedServiceLines,
+    `live-map:${selectedBusNumber}`,
+  );
+  const serviceLines = serviceLineState.kind === 'ready' ? serviceLineState.data : [];
 
   if (appSurface === 'native-mobile') {
     return (
@@ -127,7 +135,10 @@ export function GuardianLiveMapPage() {
               />
             </div>
           )}
-          {state.kind === 'ready' && visibleLocations.length === 0 && (
+          {state.kind === 'ready' && !selectedBusNumber && (
+            <BusChooser groups={busGroups} compact />
+          )}
+          {state.kind === 'ready' && selectedBusNumber && visibleLocations.length === 0 && (
             <div data-testid="guardian-live-map-empty">
               <DataState
                 title={
@@ -143,9 +154,19 @@ export function GuardianLiveMapPage() {
             <>
               <GuardianLiveBusMap
                 locations={visibleLocations}
+                serviceLines={serviceLines}
                 tileConfig={mapTileConfig}
                 fullScreen
               />
+              {serviceLineState.kind === 'error' && (
+                <p
+                  className="absolute left-4 right-4 top-4 rounded-xl p-3 text-center text-sm font-semibold text-navy-900 shadow-lg"
+                  data-ui="guardian-map-message"
+                  role="status"
+                >
+                  Pickup and drop-off locations are temporarily unavailable.
+                </p>
+              )}
               {!visibleLocations.some((location) => location.locationState === 'fresh') && (
                 <p
                   className="absolute bottom-4 left-4 right-4 rounded-xl p-3 text-center text-sm font-semibold text-navy-900 shadow-lg"
@@ -215,7 +236,8 @@ export function GuardianLiveMapPage() {
             </Button>
           </div>
         )}
-        {state.kind === 'ready' && visibleLocations.length === 0 && (
+        {state.kind === 'ready' && !selectedBusNumber && <BusChooser groups={busGroups} />}
+        {state.kind === 'ready' && selectedBusNumber && visibleLocations.length === 0 && (
           <div data-testid="guardian-live-map-empty">
             <DataState
               title={
@@ -233,7 +255,19 @@ export function GuardianLiveMapPage() {
         )}
         {state.kind === 'ready' && visibleLocations.length > 0 && (
           <>
-            <GuardianLiveBusMap locations={visibleLocations} tileConfig={mapTileConfig} />
+            <GuardianLiveBusMap
+              locations={visibleLocations}
+              serviceLines={serviceLines}
+              tileConfig={mapTileConfig}
+            />
+            {serviceLineState.kind === 'error' && (
+              <Card className="p-4" role="status">
+                <p className="text-sm text-gray-600">
+                  Pickup and drop-off locations are temporarily unavailable. The verified bus
+                  location remains visible.
+                </p>
+              </Card>
+            )}
             <section
               className="grid gap-4"
               aria-label="Student bus status"
@@ -276,6 +310,59 @@ export function GuardianLiveMapPage() {
         )}
       </div>
     </DashboardLayout>
+  );
+}
+
+function BusChooser({
+  groups,
+  compact = false,
+}: {
+  groups: GuardianBusGroup[];
+  compact?: boolean;
+}) {
+  const assignedGroups = groups.filter((group) => group.busNumber);
+  if (assignedGroups.length === 0) {
+    return (
+      <DataState
+        title="No assigned buses are available yet."
+        message="Please contact your school transportation office."
+      />
+    );
+  }
+
+  return (
+    <div
+      className={
+        compact
+          ? 'h-full overflow-y-auto bg-slate-50 p-4'
+          : 'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'
+      }
+      data-testid="guardian-live-map-bus-chooser"
+    >
+      <div className={compact ? 'mx-auto max-w-md' : ''}>
+        <h2 className="text-lg font-bold text-navy-900">Choose a bus</h2>
+        <p className="mt-1 text-sm text-gray-600">
+          Select a bus to see its live location and assigned pickup and drop-off stops.
+        </p>
+        <div className="mt-4 grid gap-3">
+          {assignedGroups.map((group) => (
+            <Link
+              key={group.key}
+              to={`/guardian/live-map?bus=${encodeURIComponent(group.busNumber ?? '')}`}
+              className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 font-bold text-navy-900 shadow-sm hover:border-navy-300 hover:bg-navy-50"
+            >
+              <span className="flex items-center gap-3">
+                <BusFront className="h-5 w-5 text-navy-700" aria-hidden />
+                Bus {group.busNumber}
+              </span>
+              <span className="text-sm font-semibold text-gray-500">
+                {group.students.length} student{group.students.length === 1 ? '' : 's'}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 

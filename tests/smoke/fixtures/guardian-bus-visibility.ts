@@ -35,6 +35,7 @@ export type GuardianBusServiceLineRow = {
   latitude: number | null;
   longitude: number | null;
   locationRecordedAt: string | null;
+  progressPosition: number | null;
   progressPercent: number | null;
   progressSource: 'route_shape' | 'stop_sequence' | null;
   nextStopName: string | null;
@@ -45,6 +46,8 @@ export type GuardianBusServiceLineRow = {
     order: number;
     latitude: number | null;
     longitude: number | null;
+    pickupStudentNames: string[];
+    dropoffStudentNames: string[];
     plannedArrivalTime: string | null;
     serviceState: 'passed' | 'at_stop' | 'next' | 'upcoming' | 'unavailable';
     etaStatus: 'available' | 'arriving_soon' | 'passed' | 'paused' | 'unavailable';
@@ -77,6 +80,7 @@ export function guardianBusServiceLine(
     latitude: 51.047,
     longitude: -114.0719,
     locationRecordedAt: '2026-01-01T15:00:00.000Z',
+    progressPosition: 0.5,
     progressPercent: 25,
     progressSource: 'route_shape',
     nextStopName: 'Cedar Avenue',
@@ -88,6 +92,8 @@ export function guardianBusServiceLine(
         order: 1,
         latitude: 51.044,
         longitude: -114.0719,
+        pickupStudentNames: ['Avery'],
+        dropoffStudentNames: [],
         plannedArrivalTime: '08:00:00',
         serviceState: 'passed',
         etaStatus: 'passed',
@@ -100,6 +106,8 @@ export function guardianBusServiceLine(
         order: 2,
         latitude: 51.05,
         longitude: -114.0719,
+        pickupStudentNames: [],
+        dropoffStudentNames: [],
         plannedArrivalTime: '08:12:00',
         serviceState: 'next',
         etaStatus: 'available',
@@ -112,6 +120,8 @@ export function guardianBusServiceLine(
         order: 3,
         latitude: 51.056,
         longitude: -114.0719,
+        pickupStudentNames: [],
+        dropoffStudentNames: ['Avery'],
         plannedArrivalTime: '08:25:00',
         serviceState: 'upcoming',
         etaStatus: 'available',

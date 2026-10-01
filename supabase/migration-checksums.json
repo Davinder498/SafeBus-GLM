@@ -686,6 +686,12 @@
       "filename": "0113_fixed_three_second_driver_location_cadence.sql",
       "bytes": 1398,
       "sha256": "74c058922aa7a8282ca25e1cc41b420d54c33be0b378ce4e3f18bcd42a33823a"
+    },
+    {
+      "version": "0114",
+      "filename": "0114_guardian_tracking_alert_clarity.sql",
+      "bytes": 31415,
+      "sha256": "4abc2f84a1a86ebc28c7be8833af4d4c73b2dd89d71ce829f3d74b6484baa7cd"
     }
   ]
 }
