@@ -214,6 +214,74 @@
   mix-blend-mode: normal;
 }
 
+/* Guardian map markers use inline SVG so the current bus remains legible at
+ * small map scales without loading another remote asset. */
+.guardian-map-icon-shell {
+  border: 0;
+  background: transparent;
+}
+
+.guardian-map-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 5px rgb(15 42 68 / 0.25));
+}
+
+.guardian-map-icon svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: white;
+}
+
+.guardian-map-icon--bus {
+  box-sizing: border-box;
+  padding: 0.45rem;
+  border: 3px solid white;
+  border-radius: 999px;
+  background: var(--color-brand);
+  color: white;
+}
+
+.guardian-map-icon--bus svg {
+  fill: none;
+}
+
+.guardian-map-icon--pickup {
+  color: #047857;
+}
+
+.guardian-map-icon--dropoff {
+  color: #c2410c;
+}
+
+.guardian-map-icon--both {
+  color: #6d28d9;
+}
+
+.guardian-map-icon--pickup svg,
+.guardian-map-icon--dropoff svg,
+.guardian-map-icon--both svg {
+  fill: currentColor;
+  stroke: white;
+}
+
+.guardian-map-icon b {
+  position: absolute;
+  top: 0.42rem;
+  color: white;
+  font-size: 0.6rem;
+  line-height: 1;
+}
+
 /* Print only the generated bus QR card when its Print QR action is used. */
 @media print {
   @page {

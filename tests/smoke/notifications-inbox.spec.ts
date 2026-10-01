@@ -1,17 +1,171 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
 
-const profile = { id:'33333333-3333-3333-3333-333333333333',tenant_id:'22222222-2222-2222-2222-222222222222',school_id:null,full_name:'Guardian Test',email:'guardian@example.test',role:'guardian',status:'active',created_at:'2026-01-01T00:00:00Z',updated_at:'2026-01-01T00:00:00Z' };
-const notification = { id:'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',event_type:'trip_cancelled',category:'trip_status',severity:'urgent',title:'Trip cancelled',body:'Bus service status has changed.',occurred_at:'2026-09-01T12:00:00Z',created_at:'2026-09-01T12:00:00Z',read_at:null,archived_at:null,destination_path:'/notifications?notification=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' };
+const profile = {
+  id: '33333333-3333-3333-3333-333333333333',
+  tenant_id: '22222222-2222-2222-2222-222222222222',
+  school_id: null,
+  full_name: 'Guardian Test',
+  email: 'guardian@example.test',
+  role: 'guardian',
+  status: 'active',
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+};
+const notification = {
+  id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+  event_type: 'trip_cancelled',
+  category: 'trip_status',
+  severity: 'urgent',
+  title: 'Trip cancelled',
+  body: 'The trip was cancelled at 6:00 AM.',
+  occurred_at: '2026-09-01T12:00:00Z',
+  created_at: '2026-09-01T12:00:00Z',
+  read_at: null,
+  archived_at: null,
+  destination_path: '/notifications?notification=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+};
 
 async function mockGuardian(page: Page) {
-  await page.addInitScript(({ userProfile })=>{const session={access_token:['eyJhbGciOiJIUzI1NiJ9','eyJzdWIiOiIzMzMzMzMzMy0zMzMzLTMzMzMtMzMzMy0zMzMzMzMzMzMzMzMiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImV4cCI6NDEwMjQ0NDgwMH0','test'].join('.'),refresh_token:'test',token_type:'bearer',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,user:{id:userProfile.id,email:userProfile.email,aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{},created_at:userProfile.created_at}};for(const key of ['supabase.auth.token','sb-placeholder-auth-token','sb-bppmqykkbhrmotcybxrh-auth-token'])localStorage.setItem(key,JSON.stringify(session));},{userProfile:profile});
-  await page.route('**/*',async(route:Route)=>{const url=new URL(route.request().url());if(!url.hostname.endsWith('.supabase.co'))return route.fallback();const path=url.pathname;if(path.startsWith('/auth/v1/'))return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(path.endsWith('/user')?{id:profile.id,email:profile.email,role:'authenticated',aud:'authenticated'}:{})});if(!path.startsWith('/rest/v1/'))return route.fallback();if(path.includes('/profiles'))return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify((route.request().headers().accept??'').includes('object+json')?profile:[profile])});if(path.includes('/rpc/get_user_notification_unread_count'))return route.fulfill({status:200,contentType:'application/json',body:'112'});if(path.includes('/rpc/get_user_notifications'))return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([notification])});if(path.includes('/rpc/get_guardian_delivery_preferences'))return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({push_enabled:false,email_pickup_dropoff_enabled:false})});if(path.includes('/rpc/mark_')||path.includes('/rpc/archive_'))return route.fulfill({status:200,contentType:'application/json',body:'1'});return blockUnexpectedSupabaseRestAccess(route,route.request().method(),path);});
+  await page.addInitScript(
+    ({ userProfile }) => {
+      const session = {
+        access_token: [
+          'eyJhbGciOiJIUzI1NiJ9',
+          'eyJzdWIiOiIzMzMzMzMzMy0zMzMzLTMzMzMtMzMzMy0zMzMzMzMzMzMzMzMiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImV4cCI6NDEwMjQ0NDgwMH0',
+          'test',
+        ].join('.'),
+        refresh_token: 'test',
+        token_type: 'bearer',
+        expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        user: {
+          id: userProfile.id,
+          email: userProfile.email,
+          aud: 'authenticated',
+          role: 'authenticated',
+          app_metadata: { provider: 'email' },
+          user_metadata: {},
+          created_at: userProfile.created_at,
+        },
+      };
+      for (const key of [
+        'supabase.auth.token',
+        'sb-placeholder-auth-token',
+        'sb-bppmqykkbhrmotcybxrh-auth-token',
+      ])
+        localStorage.setItem(key, JSON.stringify(session));
+    },
+    { userProfile: profile },
+  );
+  await page.route('**/*', async (route: Route) => {
+    const url = new URL(route.request().url());
+    if (!url.hostname.endsWith('.supabase.co')) return route.fallback();
+    const path = url.pathname;
+    if (path.startsWith('/auth/v1/'))
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          path.endsWith('/user')
+            ? { id: profile.id, email: profile.email, role: 'authenticated', aud: 'authenticated' }
+            : {},
+        ),
+      });
+    if (!path.startsWith('/rest/v1/')) return route.fallback();
+    if (path.includes('/profiles'))
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          (route.request().headers().accept ?? '').includes('object+json') ? profile : [profile],
+        ),
+      });
+    if (path.includes('/rpc/get_user_notification_unread_count'))
+      return route.fulfill({ status: 200, contentType: 'application/json', body: '112' });
+    if (path.includes('/rpc/get_user_notifications'))
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([notification]),
+      });
+    if (path.includes('/rpc/get_guardian_delivery_preferences'))
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ push_enabled: false, email_pickup_dropoff_enabled: false }),
+      });
+    if (path.includes('/rpc/mark_') || path.includes('/rpc/archive_'))
+      return route.fulfill({ status: 200, contentType: 'application/json', body: '1' });
+    return blockUnexpectedSupabaseRestAccess(route, route.request().method(), path);
+  });
 }
 
-test.describe('universal notification inbox',()=>{
-  test('shows an unread badge, private inbox row and responsive controls',async({page})=>{await mockGuardian(page);await page.setViewportSize({width:375,height:760});await page.goto('/notifications');await expect(page.getByRole('heading',{name:'Notifications'})).toBeVisible();await expect(page.getByText('Trip cancelled',{exact:true})).toBeVisible();await expect(page.getByLabel('Notifications, 112 unread')).toContainText('99+');await expect(page.getByRole('link',{name:/Settings/})).toBeVisible();});
-  test('opens an inbox notification in an accessible detail view',async({page})=>{await mockGuardian(page);await page.goto('/notifications');await page.getByRole('button',{name:'Open notification: Trip cancelled'}).click();await expect(page).toHaveURL(/\/notifications\?notification=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa$/);await expect(page.getByRole('heading',{name:'Notification details'})).toBeVisible();await expect(page.getByRole('heading',{name:'Trip cancelled'})).toBeVisible();await expect(page.getByRole('button',{name:'Mark unread'})).toBeVisible();await page.getByRole('button',{name:'Close notification details'}).click();await expect(page).toHaveURL(/\/notifications$/);await expect(page.getByRole('heading',{name:'Notification details'})).toHaveCount(0);});
-  test('opens notification details from an authenticated push URL',async({page})=>{await mockGuardian(page);await page.goto(`/notifications?notification=${notification.id}`);await expect(page.getByRole('heading',{name:'Notification details'})).toBeVisible();await expect(page.getByRole('heading',{name:'Trip cancelled'})).toBeVisible();});
-  test('legacy guardian URL redirects to unified settings',async({page})=>{await mockGuardian(page);await page.route('**/rest/v1/rpc/get_notification_preferences',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({pushEnabled:false,quietHoursEnabled:true,quietHoursStart:'21:00',quietHoursEnd:'07:00',timezone:'America/Edmonton',timezoneOverride:null,urgentBypassQuietHours:true,previewMode:'generic',categories:{}})}));await page.route('**/rest/v1/rpc/list_own_push_devices',route=>route.fulfill({status:200,contentType:'application/json',body:'[]'}));await page.goto('/guardian/notifications');await expect(page).toHaveURL(/\/notifications\/settings$/);await expect(page.getByRole('heading',{name:'Notification settings'})).toBeVisible();});
+test.describe('universal notification inbox', () => {
+  test('shows an unread badge, private inbox row and responsive controls', async ({ page }) => {
+    await mockGuardian(page);
+    await page.setViewportSize({ width: 375, height: 760 });
+    await page.goto('/notifications');
+    await expect(page.getByRole('heading', { name: 'Notifications' })).toBeVisible();
+    await expect(
+      page.getByText('The trip was cancelled at 6:00 AM.', { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByLabel('Notifications, 112 unread')).toContainText('99+');
+    await expect(page.getByRole('link', { name: /Settings/ })).toBeVisible();
+  });
+  test('opens an inbox notification in an accessible detail view', async ({ page }) => {
+    await mockGuardian(page);
+    await page.goto('/notifications');
+    await page
+      .getByRole('button', { name: 'Open notification: The trip was cancelled at 6:00 AM.' })
+      .click();
+    await expect(page).toHaveURL(
+      /\/notifications\?notification=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa$/,
+    );
+    await expect(page.getByRole('heading', { name: 'Notification details' })).toBeVisible();
+    await expect(page.getByText('The trip was cancelled at 6:00 AM.', { exact: true })).toHaveCount(
+      2,
+    );
+    await expect(page.getByText('Category', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Priority', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Received', { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Mark unread' })).toBeVisible();
+    await page.getByRole('button', { name: 'Close notification details' }).click();
+    await expect(page).toHaveURL(/\/notifications$/);
+    await expect(page.getByRole('heading', { name: 'Notification details' })).toHaveCount(0);
+  });
+  test('opens notification details from an authenticated push URL', async ({ page }) => {
+    await mockGuardian(page);
+    await page.goto(`/notifications?notification=${notification.id}`);
+    await expect(page.getByRole('heading', { name: 'Notification details' })).toBeVisible();
+    await expect(page.getByText('The trip was cancelled at 6:00 AM.', { exact: true })).toHaveCount(
+      2,
+    );
+  });
+  test('legacy guardian URL redirects to unified settings', async ({ page }) => {
+    await mockGuardian(page);
+    await page.route('**/rest/v1/rpc/get_notification_preferences', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          pushEnabled: false,
+          quietHoursEnabled: true,
+          quietHoursStart: '21:00',
+          quietHoursEnd: '07:00',
+          timezone: 'America/Edmonton',
+          timezoneOverride: null,
+          urgentBypassQuietHours: true,
+          previewMode: 'generic',
+          categories: {},
+        }),
+      }),
+    );
+    await page.route('**/rest/v1/rpc/list_own_push_devices', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }),
+    );
+    await page.goto('/guardian/notifications');
+    await expect(page).toHaveURL(/\/notifications\/settings$/);
+    await expect(page.getByRole('heading', { name: 'Notification settings' })).toBeVisible();
+  });
 });

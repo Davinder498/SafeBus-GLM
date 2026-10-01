@@ -37,6 +37,7 @@ begin
     or position('''longitude''' in v_definition) = 0
     or position('''tripstatus''' in v_definition) = 0
     or position('''locationstate''' in v_definition) = 0
+    or position('''progressposition''' in v_definition) = 0
     or position('''progresspercent''' in v_definition) = 0
     or position('''progresssource''' in v_definition) = 0
     or position('''nextstopname''' in v_definition) = 0
@@ -48,6 +49,14 @@ begin
     or position('''etamaxminutes''' in v_definition) = 0
     or position('''etalabel''' in v_definition) = 0 then
     raise exception 'TEST FAILED: guardian bus service-line response lacks required presentation fields';
+  end if;
+
+  if position('''pickupstudentnames''' in v_definition) = 0
+    or position('''dropoffstudentnames''' in v_definition) = 0
+    or position('linked_guardian.guardian_id = v_guardian_id' in v_definition) = 0
+    or position('linked_guardian.access_expires_at' in v_definition) = 0
+    or position('linked_bus_route.bus_id = v_service.bus_id' in v_definition) = 0 then
+    raise exception 'TEST FAILED: guardian stop labels are not constrained to current linked students on the selected bus';
   end if;
 
   if position('st_linelocatepoint' in v_definition) = 0

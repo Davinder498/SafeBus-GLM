@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useVerifiedGuardianData } from '@/hooks/useVerifiedGuardianData';
 import { ArrowLeft, BusFront, MapPin, Navigation, Users } from 'lucide-react';
 import { Link, useParams } from 'react-router';
@@ -250,10 +250,80 @@ function formatPlannedTime(time: string | null): string | null {
   return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
+export function interpolateServiceLinePosition(
+  stopAnchors: number[],
+  progressPosition: number,
+): { start: number; end: number; bus: number } | null {
+  if (stopAnchors.length === 0 || !Number.isFinite(progressPosition)) return null;
+  const boundedPosition = Math.min(stopAnchors.length - 1, Math.max(0, progressPosition));
+  const lowerIndex = Math.floor(boundedPosition);
+  const upperIndex = Math.ceil(boundedPosition);
+  const segmentProgress = boundedPosition - lowerIndex;
+  const lower = stopAnchors[lowerIndex] ?? stopAnchors[0];
+  const upper = stopAnchors[upperIndex] ?? lower;
+  return {
+    start: stopAnchors[0],
+    end: stopAnchors.at(-1) ?? stopAnchors[0],
+    bus: lower + (upper - lower) * segmentProgress,
+  };
+}
+
 function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
   const status = serviceLineStatus(line);
   const progress = line.progressPercent;
-  const hasLivePosition = line.locationState === 'fresh' && progress !== null;
+  const progressPosition =
+    line.progressPosition ??
+    (progress !== null && line.stops.length > 1
+      ? (progress / 100) * (line.stops.length - 1)
+      : null);
+  const hasLivePosition = line.locationState === 'fresh' && progressPosition !== null;
+  const serviceLineRef = useRef<HTMLDivElement>(null);
+  const [lineLayout, setLineLayout] = useState<{
+    start: number;
+    end: number;
+    bus: number;
+  } | null>(null);
+
+  useLayoutEffect(() => {
+    const container = serviceLineRef.current;
+    if (!container || !hasLivePosition || progressPosition === null) {
+      setLineLayout(null);
+      return;
+    }
+
+    const measure = () => {
+      const anchors = Array.from(
+        container.querySelectorAll<HTMLElement>('[data-service-stop-anchor]'),
+      );
+      if (anchors.length === 0) {
+        setLineLayout(null);
+        return;
+      }
+      const containerRect = container.getBoundingClientRect();
+      const positions = anchors.map((anchor) => {
+        const rect = anchor.getBoundingClientRect();
+        return rect.top - containerRect.top + rect.height / 2;
+      });
+      const nextLayout = interpolateServiceLinePosition(positions, progressPosition);
+      if (!nextLayout) {
+        setLineLayout(null);
+        return;
+      }
+      setLineLayout((current) =>
+        current &&
+        Math.abs(current.start - nextLayout.start) < 0.25 &&
+        Math.abs(current.end - nextLayout.end) < 0.25 &&
+        Math.abs(current.bus - nextLayout.bus) < 0.25
+          ? current
+          : nextLayout,
+      );
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [hasLivePosition, progressPosition, line.stops.length]);
   const nextStop = line.stops.find((stop) => stop.serviceState === 'next');
   const atStop = line.stops.find((stop) => stop.serviceState === 'at_stop');
   const announcement = nextStop
@@ -287,19 +357,35 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
           className="mt-6"
           data-ui="guardian-service-line"
           aria-label={`${line.routeName} scheduled stops`}
+          ref={serviceLineRef}
         >
-          <span className="guardian-service-line__track" aria-hidden />
-          {hasLivePosition && (
+          <span
+            className="guardian-service-line__track"
+            style={
+              lineLayout
+                ? {
+                    top: `${lineLayout.start}px`,
+                    height: `${lineLayout.end - lineLayout.start}px`,
+                    bottom: 'auto',
+                  }
+                : undefined
+            }
+            aria-hidden
+          />
+          {hasLivePosition && lineLayout && (
             <span
               className="guardian-service-line__travelled"
-              style={{ height: `clamp(0rem, ${progress}%, 100%)` }}
+              style={{
+                top: `${lineLayout.start}px`,
+                height: `${Math.max(0, lineLayout.bus - lineLayout.start)}px`,
+              }}
               aria-hidden
             />
           )}
-          {hasLivePosition && (
+          {hasLivePosition && lineLayout && (
             <span
               className="guardian-service-line__bus"
-              style={{ top: `clamp(0.875rem, ${progress}%, calc(100% - 0.875rem))` }}
+              style={{ top: `${lineLayout.bus}px` }}
               aria-hidden
               data-testid="guardian-service-line-bus"
             >
@@ -387,7 +473,7 @@ function ServiceStopPoint({
       data-terminal={isStart || isEnd || undefined}
       data-state={stop.serviceState}
     >
-      <span aria-hidden />
+      <span data-service-stop-anchor aria-hidden />
       <div className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-gray-500">

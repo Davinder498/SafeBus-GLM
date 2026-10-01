@@ -45,34 +45,6 @@ const driverMobileCategories: Array<{ value: NotificationCategory; label: string
   { value: 'assignments', label: 'Assignment alerts' },
 ];
 
-function formatEventLabel(value: UserNotification['eventType']) {
-  if (value === 'driver_assignment_created') return 'Assignment created';
-  if (value === 'driver_assignment_changed') return 'Assignment changed';
-  if (value === 'driver_assignment_ended') return 'Assignment ended';
-  const label = value.replaceAll('_', ' ');
-  return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
-}
-
-function formatNotificationTime(value: string) {
-  const date = new Date(value);
-  const today = new Date();
-  const isToday =
-    date.getFullYear() === today.getFullYear() &&
-    date.getMonth() === today.getMonth() &&
-    date.getDate() === today.getDate();
-  const time = new Intl.DateTimeFormat(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(date);
-
-  if (isToday) return `Today, ${time}`;
-
-  return `${new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-  }).format(date)}, ${time}`;
-}
-
 export function NotificationsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -134,9 +106,7 @@ export function NotificationsPage() {
           : guardianNavGroups;
   const isRecipientMobile =
     appSurface === 'native-mobile' && (profile?.role === 'guardian' || isDriver);
-  const recipientMobileCategories = isDriver
-    ? driverMobileCategories
-    : guardianMobileCategories;
+  const recipientMobileCategories = isDriver ? driverMobileCategories : guardianMobileCategories;
 
   const selectedItem = requestedId ? (items.find((item) => item.id === requestedId) ?? null) : null;
 
@@ -398,17 +368,12 @@ export function NotificationsPage() {
               <div className="min-w-0">
                 <h2
                   id="notification-detail-heading"
-                  className="text-sm font-semibold uppercase tracking-wide text-navy-700"
+                  ref={detailHeadingRef}
+                  tabIndex={-1}
+                  className="text-sm font-semibold uppercase tracking-wide text-navy-700 outline-none"
                 >
                   Notification details
                 </h2>
-                <h3
-                  ref={detailHeadingRef}
-                  tabIndex={-1}
-                  className="mt-2 text-xl font-semibold text-slate-950 outline-none"
-                >
-                  {selectedItem.title}
-                </h3>
               </div>
               <Button
                 variant="ghost"
@@ -418,27 +383,7 @@ export function NotificationsPage() {
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            <p className="mt-3 text-slate-700">{selectedItem.body}</p>
-            <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
-              <div>
-                <dt className="font-medium text-slate-500">Category</dt>
-                <dd className="mt-1 capitalize text-slate-900">
-                  {selectedItem.category.replace('_', ' ')}
-                </dd>
-              </div>
-              <div>
-                <dt className="font-medium text-slate-500">Priority</dt>
-                <dd className="mt-1 capitalize text-slate-900">{selectedItem.severity}</dd>
-              </div>
-              <div>
-                <dt className="font-medium text-slate-500">Received</dt>
-                <dd className="mt-1 text-slate-900">
-                  <time dateTime={selectedItem.occurredAt}>
-                    {new Date(selectedItem.occurredAt).toLocaleString()}
-                  </time>
-                </dd>
-              </div>
-            </dl>
+            <p className="mt-3 font-semibold text-slate-900">{selectedItem.body}</p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Button
                 variant="secondary"
@@ -493,42 +438,15 @@ export function NotificationsPage() {
                 {isRecipientMobile ? (
                   <article>
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.6875rem] font-semibold">
+                      <div className="flex min-w-0 items-start gap-2">
+                        {!item.readAt ? (
                           <span
-                            className={cn(
-                              'inline-flex items-center gap-1.5',
-                              item.severity === 'urgent'
-                                ? 'text-danger-700'
-                                : item.severity === 'warning'
-                                  ? 'text-warning-700'
-                                  : 'text-navy-600',
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                'h-1.5 w-1.5 rounded-full',
-                                item.severity === 'urgent'
-                                  ? 'bg-danger-500'
-                                  : item.severity === 'warning'
-                                    ? 'bg-warning-500'
-                                    : 'bg-navy-500',
-                              )}
-                              data-ui={!item.readAt ? 'notification-unread-dot' : undefined}
-                              aria-hidden
-                            />
-                            {formatEventLabel(item.eventType)}
-                          </span>
-                          <span className="text-slate-400" aria-hidden>
-                            •
-                          </span>
-                          <time className="font-medium text-slate-500" dateTime={item.occurredAt}>
-                            {formatNotificationTime(item.occurredAt)}
-                          </time>
-                        </div>
-                        <h2 className="mt-2 text-sm font-bold leading-5 text-navy-900">
-                          {item.title}
-                        </h2>
+                            className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+                            data-ui="notification-unread-dot"
+                            aria-label="Unread"
+                          />
+                        ) : null}
+                        <h2 className="text-sm font-bold leading-5 text-navy-900">{item.body}</h2>
                       </div>
                       <button
                         type="button"
@@ -539,7 +457,6 @@ export function NotificationsPage() {
                         <X className="h-4 w-4" aria-hidden />
                       </button>
                     </div>
-                    <p className="mt-1.5 text-xs leading-5 text-slate-600">{item.body}</p>
                     <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-2.5">
                       <span className="text-[0.6875rem] font-medium text-slate-500">
                         {item.readAt ? 'Read' : 'New update'}
@@ -548,7 +465,7 @@ export function NotificationsPage() {
                         type="button"
                         className="inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-[#e7f8fb] px-3 text-xs font-semibold text-navy-700 transition-colors hover:bg-[#d8f2f6]"
                         onClick={() => openNotification(item)}
-                        aria-label={`Open notification: ${item.title}`}
+                        aria-label={`Open notification: ${item.body}`}
                       >
                         View update
                         <ArrowRight className="h-3.5 w-3.5" aria-hidden />
@@ -560,10 +477,10 @@ export function NotificationsPage() {
                     <button
                       className="min-w-0 flex-1 text-left"
                       onClick={() => openNotification(item)}
-                      aria-label={`Open notification: ${item.title}`}
+                      aria-label={`Open notification: ${item.body}`}
                     >
                       <span className="flex items-center gap-2">
-                        <span className="font-semibold text-slate-950">{item.title}</span>
+                        <span className="font-semibold text-slate-950">{item.body}</span>
                         {!item.readAt ? (
                           <span
                             className="h-2 w-2 rounded-full"
@@ -572,13 +489,6 @@ export function NotificationsPage() {
                           />
                         ) : null}
                       </span>
-                      <span className="mt-1 block text-sm text-slate-600">{item.body}</span>
-                      <time
-                        className="mt-2 block text-xs text-slate-500"
-                        dateTime={item.occurredAt}
-                      >
-                        {new Date(item.occurredAt).toLocaleString()}
-                      </time>
                     </button>
                     <Button
                       variant="ghost"

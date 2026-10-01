@@ -83,6 +83,8 @@ interface GuardianBusServiceStopRpcRow {
   order: number;
   latitude: number | null;
   longitude: number | null;
+  pickupStudentNames?: unknown;
+  dropoffStudentNames?: unknown;
   plannedArrivalTime: string | null;
   serviceState: GuardianBusStopServiceState;
   etaStatus: GuardianBusStopEtaStatus;
@@ -102,6 +104,7 @@ interface GuardianBusServiceLineRpcRow {
   latitude: number | null;
   longitude: number | null;
   locationRecordedAt: string | null;
+  progressPosition?: number | null;
   progressPercent: number | null;
   progressSource: GuardianBusProgressSource | null;
   nextStopName: string | null;
@@ -117,11 +120,17 @@ function isFiniteCoordinate(value: unknown, minimum: number, maximum: number): v
 }
 
 function mapGuardianBusServiceStop(row: GuardianBusServiceStopRpcRow): GuardianBusServiceStop {
+  const stringArray = (value: unknown): string[] =>
+    Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+      : [];
   return {
     name: row.name,
     order: row.order,
     latitude: isFiniteCoordinate(row.latitude, -90, 90) ? row.latitude : null,
     longitude: isFiniteCoordinate(row.longitude, -180, 180) ? row.longitude : null,
+    pickupStudentNames: stringArray(row.pickupStudentNames),
+    dropoffStudentNames: stringArray(row.dropoffStudentNames),
     plannedArrivalTime: row.plannedArrivalTime,
     serviceState: row.serviceState ?? 'unavailable',
     etaStatus: row.etaStatus ?? 'unavailable',
@@ -145,6 +154,10 @@ export function mapGuardianBusServiceLine(
     latitude: isFiniteCoordinate(row.latitude, -90, 90) ? row.latitude : null,
     longitude: isFiniteCoordinate(row.longitude, -180, 180) ? row.longitude : null,
     locationRecordedAt: row.locationRecordedAt,
+    progressPosition:
+      typeof row.progressPosition === 'number' && Number.isFinite(row.progressPosition)
+        ? Math.max(0, row.progressPosition)
+        : null,
     progressPercent:
       typeof row.progressPercent === 'number' && Number.isFinite(row.progressPercent)
         ? Math.min(100, Math.max(0, row.progressPercent))

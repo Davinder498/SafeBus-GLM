@@ -37,6 +37,10 @@ const notificationSettingsPage = await readFile(
   new URL('../../apps/web/src/pages/NotificationSettingsPage.tsx', import.meta.url),
   'utf8',
 );
+const clarityMigration = await readFile(
+  new URL('../../supabase/migrations/0114_guardian_tracking_alert_clarity.sql', import.meta.url),
+  'utf8',
+);
 const notificationDeliverySettings = await readFile(
   new URL(
     '../../apps/web/src/components/settings/NotificationDeliverySettings.tsx',
@@ -175,6 +179,18 @@ test('FCM payload and diagnostics remain privacy safe and use the current brand'
   assert.match(dispatcherCore, /visibility: 'PRIVATE'/);
   assert.doesNotMatch(dispatcherCore, /studentName|routeName|stopName|latitude|longitude/);
   assert.doesNotMatch(dispatcherCore, /console\.(?:log|error)[\s\S]*outbox_id/);
+});
+
+test('authenticated inbox copy is concise while external previews stay generic', () => {
+  assert.match(clarityMigration, /preferred_name[\s\S]*first_name/i);
+  assert.match(clarityMigration, /was picked up at/i);
+  assert.match(clarityMigration, /was dropped off at/i);
+  assert.match(clarityMigration, /the trip started at/i);
+  assert.match(clarityMigration, /the trip completed at/i);
+  assert.match(clarityMigration, /the trip was cancelled at/i);
+  assert.match(clarityMigration, /tenant\.timezone/i);
+  assert.doesNotMatch(rebrandMigration, /student\.preferred_name|student\.first_name/i);
+  assert.match(rebrandMigration, /Open BusSafe to view this update\./);
 });
 
 test('quiet hours and urgent bypass are fail-closed defaults', () => {
