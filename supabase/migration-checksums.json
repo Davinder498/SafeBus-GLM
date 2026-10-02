@@ -692,6 +692,12 @@
       "filename": "0114_guardian_tracking_alert_clarity.sql",
       "bytes": 31415,
       "sha256": "4abc2f84a1a86ebc28c7be8833af4d4c73b2dd89d71ce829f3d74b6484baa7cd"
+    },
+    {
+      "version": "0115",
+      "filename": "0115_allow_support_audit_actions.sql",
+      "bytes": 2059,
+      "sha256": "c2c659c013a1937d8b501b42e155f0c7aecd7fd05825274e4f6c80cde1be3ae8"
     }
   ]
 }
