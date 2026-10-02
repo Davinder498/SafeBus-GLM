@@ -4,6 +4,14 @@ import test from 'node:test';
 
 const migrationPath = 'supabase/migrations/0107_support_directory.sql';
 const fallbackMigrationPath = 'supabase/migrations/0112_mobile_support_fallback.sql';
+const previousAuditAllowlistPath = 'supabase/migrations/0102_internal_bus_fleet_numbers.sql';
+const supportAuditAllowlistPath = 'supabase/migrations/0115_allow_support_audit_actions.sql';
+
+function auditActions(sql) {
+  const constraint = sql.match(/audit_events_action_check check \(\s*action in \(([\s\S]*?)\)\s*\)/i);
+  assert.ok(constraint, 'expected audit_events_action_check definition');
+  return new Set([...constraint[1].matchAll(/'([^']+)'/g)].map((match) => match[1]));
+}
 
 test('support directory follows the platform-to-tenant-to-user contact chain', async () => {
   const sql = await fs.readFile(migrationPath, 'utf8');
@@ -37,6 +45,21 @@ test('support writes are role restricted, recently authenticated, and audited', 
     sql,
     /grant\s+(?:select|insert|update|delete).*support_contacts.*authenticated/i,
   );
+});
+
+test('support audit actions are admitted without dropping existing actions', async () => {
+  const [previousSql, supportSql] = await Promise.all([
+    fs.readFile(previousAuditAllowlistPath, 'utf8'),
+    fs.readFile(supportAuditAllowlistPath, 'utf8'),
+  ]);
+  const previousActions = auditActions(previousSql);
+  const supportActions = auditActions(supportSql);
+
+  for (const action of previousActions) {
+    assert.ok(supportActions.has(action), `support audit allowlist dropped ${action}`);
+  }
+  assert.ok(supportActions.has('platform_support.updated'));
+  assert.ok(supportActions.has('tenant_support.updated'));
 });
 
 test('support pages are separated by platform, tenant, and mobile audiences', async () => {
