@@ -899,3 +899,26 @@ test('login uses the mobile brand and accessible control sizing', async ({ page 
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('login.png') });
 });
+
+for (const path of ['/privacy', '/account-deletion']) {
+  test('legal app bar respects native insets while scrolling: ' + path, async ({ page }) => {
+    await page.goto(path);
+    await page.evaluate(() => {
+      document.documentElement.style.setProperty('--safe-area-inset-top', '32px');
+    });
+    const header = page.locator('[data-ui="public-app-bar"]');
+    await expect(header).toHaveCSS('position', 'fixed');
+    await expect(header).toHaveCSS('padding-top', '32px');
+    await expect(page.locator('main [data-ui="card"]')).toHaveCSS(
+      'border-top-color',
+      'rgb(141, 183, 201)',
+    );
+    for (const scrollY of [500, 100, 0]) {
+      await page.evaluate((y) => window.scrollTo(0, y), scrollY);
+      expect((await header.boundingBox())?.y).toBe(0);
+      const logo = await header.getByTestId('safebus-brand-mark').boundingBox();
+      expect(logo?.y).toBeGreaterThanOrEqual(32);
+    }
+    await expectNoHorizontalOverflow(page);
+  });
+}

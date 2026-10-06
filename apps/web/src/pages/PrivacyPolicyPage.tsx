@@ -7,7 +7,10 @@ export function PrivacyPolicyPage() {
   return (
     <PublicLayout>
       <main className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
+        <div
+          data-ui="card"
+          className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10"
+        >
           <p className="text-sm font-semibold uppercase tracking-wider text-navy-600">
             Public privacy notice
           </p>
