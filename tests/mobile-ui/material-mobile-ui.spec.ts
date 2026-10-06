@@ -943,3 +943,60 @@ for (const role of ['guardian', 'driver'] as const) {
     });
   }
 }
+
+test('service line separates live GPS from unavailable route progress', async ({ page }) => {
+  const fixture = await installGuardianVisibilityMock(page, {
+    rows: [guardianVisibilityRow()],
+    serviceLines: [
+      guardianBusServiceLine({
+        progressPosition: null,
+        progressPercent: null,
+        progressSource: null,
+        nextStopName: null,
+        nextStopOrder: null,
+        etaUpdatedAt: null,
+        stops: guardianBusServiceLine().stops.map((stop) => ({
+          ...stop,
+          serviceState: 'unavailable',
+          etaStatus: 'unavailable',
+          etaMinMinutes: null,
+          etaMaxMinutes: null,
+          etaLabel: 'ETA unavailable',
+        })),
+      }),
+    ],
+  });
+  await page.goto('/guardian/buses/42');
+  const card = page.locator('[data-ui="guardian-service-line-card"]');
+  await expect(card.getByText('Live', { exact: true })).toBeVisible();
+  await expect(card.getByText('Waiting', { exact: true })).toHaveCount(0);
+  await expect(card).toContainText(
+    'GPS is live, but route position and stop ETAs are unavailable.',
+  );
+  await expect(page.getByTestId('guardian-service-line-bus')).toHaveCount(0);
+  fixture.setServiceLines([guardianBusServiceLine()]);
+  await page.reload();
+  await expect(card.getByText('Live', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('guardian-service-line-bus')).toBeVisible();
+  for (const state of ['invalid', 'missing', 'stale'] as const) {
+    fixture.setServiceLines([
+      guardianBusServiceLine({
+        locationState: state,
+        progressPosition: null,
+        progressPercent: null,
+      }),
+    ]);
+    await page.reload();
+    await expect(
+      card.getByText(
+        state === 'invalid' ? 'Location unavailable' : state === 'missing' ? 'Locating' : 'Delayed',
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await expect(page.getByTestId('guardian-service-line-bus')).toHaveCount(0);
+  }
+  fixture.setServiceLines([guardianBusServiceLine({ tripStatus: 'paused' })]);
+  await page.reload();
+  await expect(card.getByText('Paused', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('guardian-service-line-bus')).toHaveCount(0);
+});
