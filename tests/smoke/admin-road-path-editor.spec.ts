@@ -109,7 +109,7 @@ async function installPathRpcMock(
 
 async function openEditor(page: Page) {
   await page.goto('/admin/routes');
-  await page.locator(`a[href="/admin/routes/${ADMIN_IDS.route}#road-path"]`).click();
+  await page.getByRole('link', { name: 'Open route Route One', exact: true }).click();
   const editor = page.getByTestId('route-path-editor');
   await expect(editor.getByRole('combobox', { name: 'Saved path versions' })).toBeVisible();
   await expect(editor.getByRole('button', { name: 'Draw on map' })).toBeEnabled();

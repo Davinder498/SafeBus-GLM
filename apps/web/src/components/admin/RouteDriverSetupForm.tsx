@@ -1,6 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
-import { setPlannedDriverAssignment } from '@/services/driverAssignmentService';
+import {
+  setPlannedDriverAssignment,
+  updateAssignmentStatus,
+} from '@/services/driverAssignmentService';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import type { BusServiceOption } from '@/services/studentBusAssignmentService';
 import type { DriverRouteAssignment } from '@/types/driverAssignments';
 import type { Driver } from '@/types/transportation';
@@ -19,6 +23,7 @@ export function RouteDriverSetupForm({
   onSaved(): void;
 }) {
   const [existingId, setExistingId] = useState('');
+  const [removing, setRemoving] = useState(false);
   const [driverId, setDriverId] = useState('');
   const [from, setFrom] = useState(service.effective_from ?? new Date().toISOString().slice(0, 10));
   const [to, setTo] = useState(service.effective_to ?? '');
@@ -148,6 +153,38 @@ export function RouteDriverSetupForm({
       <Button type="submit" disabled={busy}>
         {busy ? 'Saving driver' : 'Save driver and dates'}
       </Button>
+      {existingId && (
+        <Button type="button" variant="secondary" disabled={busy} onClick={() => setRemoving(true)}>
+          Remove driver plan
+        </Button>
+      )}
+      <ConfirmDialog
+        open={removing}
+        title="Remove driver plan"
+        description="Remove this driver from the selected bus service plan while preserving its history."
+        confirmLabel="Remove driver plan"
+        destructive
+        busy={busy}
+        onCancel={() => setRemoving(false)}
+        onConfirm={() => {
+          if (busy || !existingId) return;
+          setBusy(true);
+          setError(null);
+          void updateAssignmentStatus(existingId, 'inactive')
+            .then(() => {
+              selectPlan('');
+              setMessage('Driver plan removed.');
+              onSaved();
+            })
+            .catch((cause: unknown) =>
+              setError(cause instanceof Error ? cause.message : 'Unable to remove driver plan.'),
+            )
+            .finally(() => {
+              setBusy(false);
+              setRemoving(false);
+            });
+        }}
+      />
     </form>
   );
 }

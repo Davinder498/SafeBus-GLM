@@ -1,8 +1,5 @@
-import { useParams } from 'react-router';
-import { AdminRoutesPage } from '@/pages/AdminRoutesPage';
-
+import { Navigate, useParams } from 'react-router';
 export function AdminRouteManagePage() {
   const { routeId } = useParams<{ routeId: string }>();
-
-  return <AdminRoutesPage initialRouteId={routeId} />;
+  return <Navigate to={`/admin/routes/${routeId}#route-details`} replace />;
 }

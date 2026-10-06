@@ -155,7 +155,7 @@ test.describe('route corridor and named trips', () => {
     const mock = await mockRoutes(page);
     await page.goto('/admin/routes');
     await expect(page.getByRole('heading', { name: 'Route corridors and trips' })).toBeVisible();
-    await page.getByRole('button', { name: 'Add route' }).click();
+    await page.getByRole('link', { name: 'Add route' }).click();
 
     await page.getByLabel('Route name').fill('Route 1');
     await page.getByLabel('Route code').fill('R-1');
@@ -179,7 +179,7 @@ test.describe('route corridor and named trips', () => {
     await page.getByLabel('Friday').uncheck();
     await page.getByRole('button', { name: 'Save route definition' }).click();
 
-    await expect(page.getByText('Route corridor and trips created.')).toBeVisible();
+    await expect(page).toHaveURL('/admin/routes/33333333-3333-3333-3333-333333333333#setup');
     const payload = mock.savedPayload() as {
       p_stops: Array<{ stopName: string; stopOrder: number }>;
       p_trip_patterns: Array<{ direction: string; displayName: string }>;
@@ -206,7 +206,7 @@ test.describe('route corridor and named trips', () => {
   }) => {
     const mock = await mockRoutes(page);
     await page.goto('/admin/routes');
-    await page.getByRole('button', { name: 'Add route' }).click();
+    await page.getByRole('link', { name: 'Add route' }).click();
 
     await page.getByLabel('Route name').fill('Museum Day');
     await page.getByLabel('Route code').fill('FIELD-1');
@@ -309,16 +309,16 @@ test.describe('route corridor and named trips', () => {
     });
 
     await page.goto('/admin/routes');
-    await page.getByRole('button', { name: 'Edit route' }).click();
-    await expect(page.getByRole('heading', { name: 'Edit DR01' })).toBeVisible();
+    await page.getByRole('link', { name: 'Open route Demo Route 01' }).click();
+    await page.getByRole('button', { name: 'Edit route details and stops' }).click();
     await page.getByRole('button', { name: 'Add stop' }).click();
     await page.getByLabel('Stop name').fill('New stop');
-    await page.getByLabel('Latitude').fill('51.06');
-    await page.getByLabel('Longitude').fill('-114.05');
+    await page.locator('#route-details').getByLabel('Latitude').fill('51.06');
+    await page.locator('#route-details').getByLabel('Longitude').fill('-114.05');
     await page.getByRole('button', { name: 'Save stop details' }).click();
     await page.getByRole('button', { name: 'Save route definition' }).click();
 
-    await expect(page.getByText('Route definition updated.')).toBeVisible();
+    await expect(page.getByText('Route details, stops and regular schedule saved.')).toBeVisible();
     const payload = mock.savedPayload() as {
       p_route: { id?: string; routeCode: string };
       p_stops: Array<{ stopName: string }>;
@@ -335,6 +335,6 @@ test.describe('route corridor and named trips', () => {
     await mockRoutes(page, 'school_admin');
     await page.goto('/admin/routes');
     await expect(page.getByRole('heading', { name: 'Route corridors and trips' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Add route' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Add route' })).toHaveCount(0);
   });
 });

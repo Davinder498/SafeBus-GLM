@@ -51,6 +51,9 @@ async function fixture(
     rejectRoster?: boolean;
     rejectDaysOnce?: boolean;
     rejectServices?: boolean;
+    rejectEnd?: boolean;
+    deleteConflict?: boolean;
+    deleteEmpty?: boolean;
   } = {},
 ) {
   await installAdminWorkflowMock(page);
@@ -63,11 +66,26 @@ async function fixture(
   let daysRejected = false;
   await page.route('**/rest/v1/**', async (request) => {
     const name = new URL(request.request().url()).pathname.split('/').at(-1)!;
-    const args = request.request().method() === 'POST' ? request.request().postDataJSON() : {};
+    const method = request.request().method();
+    const args = ['POST', 'PATCH'].includes(method) ? request.request().postDataJSON() : {};
     const reply = (data: unknown, status = 200) =>
       request.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data) });
     switch (name) {
       case 'routes':
+        if (method === 'DELETE') {
+          writes.push({
+            name: 'delete_route',
+            args: { id: new URL(request.request().url()).searchParams.get('id') },
+          });
+          if (options.deleteConflict)
+            return reply({ code: '23503', message: 'History reference' }, 409);
+          return reply(options.deleteEmpty ? [] : [{ id: record.id }]);
+        }
+        if (method === 'PATCH') {
+          writes.push({ name: 'update_route', args });
+          record = { ...record, ...args };
+          return reply(record);
+        }
         return reply([record]);
       case 'get_admin_paginated_list':
         return reply({ rows: [record], totalCount: 1, page: 1, pageSize: 50 });
@@ -90,6 +108,11 @@ async function fixture(
           })),
         );
       case 'driver_route_assignments':
+        if (method === 'PATCH') {
+          writes.push({ name: 'update_driver_plan', args });
+          assignments = assignments.map((a) => ({ ...a, ...args }));
+          return reply(assignments[0]);
+        }
         return reply(assignments);
       case 'get_admin_bus_services':
         if (options.rejectServices) return reply({ message: 'Service read denied' }, 403);
@@ -149,6 +172,23 @@ async function fixture(
           },
         ];
         return reply(assignments.at(-1));
+      case 'admin_end_bus_route_service':
+        writes.push({ name, args });
+        if (options.rejectEnd)
+          return reply(
+            { code: '55006', message: 'End the active bus run before ending this route service.' },
+            409,
+          );
+        services = services.map((s) =>
+          args.p_assignment_ids.includes(s.id) ? { ...s, status: 'inactive' } : s,
+        );
+        return reply({ busRouteAssignmentIds: args.p_assignment_ids });
+      case 'admin_set_student_bus_service_status':
+        writes.push({ name, args });
+        students = students.map((s) =>
+          args.p_assignment_ids.includes(s.id) ? { ...s, status: args.p_status } : s,
+        );
+        return reply(students);
       case 'admin_set_student_bus_service':
         writes.push({ name, args });
         students = services.map((s) => ({
@@ -179,9 +219,18 @@ async function fixture(
   return writes;
 }
 
-async function open(page: Page) {
+async function open(page: Page, capture = false) {
   await page.goto('/admin/routes');
-  await page.getByRole('link', { name: 'Set up route', exact: true }).click();
+  const card = page.getByRole('link', { name: 'Open route Route One', exact: true });
+  await expect(card).toBeVisible();
+  await expect(card.getByRole('button')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Set up route', exact: true })).toHaveCount(0);
+  if (capture)
+    await page.screenshot({
+      path: test.info().outputPath('route-list.png'),
+      animations: 'disabled',
+    });
+  await page.getByRole('link', { name: 'Open route Route One', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Route setup', exact: true })).toBeVisible();
 }
 async function assignBus(page: Page) {
@@ -197,7 +246,7 @@ test('sets up route details, bus, driver and student stops without leaving the r
   page,
 }, info) => {
   const writes = await fixture(page);
-  await open(page);
+  await open(page, true);
   await page.getByRole('button', { name: 'Edit route details and stops' }).click();
   await page.getByLabel('Route name', { exact: true }).fill('North School');
   await expect(page.locator('#route-details input[type=date]')).toHaveCount(0);
@@ -242,7 +291,8 @@ test('sets up route details, bus, driver and student stops without leaving the r
     p_reverse_pickup_stop_id: 'stop-b',
   });
   await expect(page).toHaveURL(new RegExp(`/admin/routes/${ADMIN_IDS.route}`));
-  await page.getByRole('button', { name: 'Edit student service', exact: true }).click();
+  await page.getByRole('button', { name: 'Student service actions' }).click();
+  await page.getByRole('menuitem', { name: 'Edit student service', exact: true }).click();
   await section.getByLabel('Effective to (optional)').fill('2027-06-30');
   await section.getByRole('button', { name: 'Update assignment' }).click();
   expect(
@@ -250,6 +300,102 @@ test('sets up route details, bus, driver and student stops without leaving the r
       .p_existing_assignment_ids,
   ).toEqual(['student-service-forward', 'student-service-reverse']);
   await page.locator('#route-service').screenshot({ path: info.outputPath('route-service.png') });
+  await section.getByRole('button', { name: 'Student service actions' }).click();
+  await section.getByRole('menuitem', { name: 'End student service' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'End service', exact: true }).click();
+  await expect(section.getByText('Service status: inactive')).toBeVisible();
+  expect(writes.find((w) => w.name === 'admin_set_student_bus_service_status')?.args).toMatchObject(
+    {
+      p_assignment_ids: ['student-service-forward', 'student-service-reverse'],
+      p_status: 'inactive',
+      p_end_service: true,
+    },
+  );
+  await driver.getByRole('button', { name: 'Remove driver plan', exact: true }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Remove driver plan', exact: true })
+    .click();
+  await expect(page.locator('#route-review')).toContainText('0 of 2');
+});
+
+test('route removal confirms intent and explains protected history', async ({ page }) => {
+  const writes = await fixture(page, { deleteConflict: true });
+  await open(page);
+  await expect(page.getByRole('link', { name: 'Manage route' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Route actions' }).click();
+  await page.getByRole('menuitem', { name: 'Delete route' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
+  expect(writes).toHaveLength(0);
+  await page.getByRole('button', { name: 'Route actions' }).click();
+  await page.getByRole('menuitem', { name: 'Delete route' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Delete route', exact: true }).click();
+  await expect(page.getByText(/has saved road paths or operational history/)).toBeVisible();
+  await expect(page).toHaveURL(`/admin/routes/${ADMIN_IDS.route}`);
+  expect(writes[0].args.id).toBe(`eq.${ADMIN_IDS.route}`);
+});
+
+test('empty deletion result is never reported as a successful deletion', async ({ page }) => {
+  await fixture(page, { deleteEmpty: true });
+  await open(page);
+  await page.getByRole('button', { name: 'Route actions' }).click();
+  await page.getByRole('menuitem', { name: 'Delete route' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Delete route', exact: true }).click();
+  await expect(
+    page.getByText('This route was not deleted. Reload and check your access.'),
+  ).toBeVisible();
+  await expect(page).toHaveURL(`/admin/routes/${ADMIN_IDS.route}`);
+});
+
+test('legacy manage link opens the route detail page and unused route deletion returns to the list', async ({
+  page,
+}) => {
+  const writes = await fixture(page);
+  await page.goto(`/admin/routes/${ADMIN_IDS.route}/manage`);
+  await expect(page).toHaveURL(`/admin/routes/${ADMIN_IDS.route}#route-details`);
+  await expect(page.getByLabel('Route name', { exact: true })).toHaveValue('Route One');
+  await page.getByRole('button', { name: 'Route actions' }).click();
+  await page.getByRole('menuitem', { name: 'Delete route' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Delete route', exact: true }).click();
+  await expect(page).toHaveURL('/admin/routes');
+  expect(writes).toEqual([{ name: 'delete_route', args: { id: `eq.${ADMIN_IDS.route}` } }]);
+});
+
+test('archives a route without deleting its history', async ({ page }) => {
+  const writes = await fixture(page);
+  await open(page);
+  await page.getByRole('button', { name: 'Route actions' }).click();
+  await page.getByRole('menuitem', { name: 'Archive route' }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Archive route', exact: true })
+    .click();
+  await expect(page).toHaveURL('/admin/routes');
+  expect(writes).toEqual([{ name: 'update_route', args: { status: 'archived' } }]);
+});
+
+test('ending bus service respects the active run rejection', async ({ page }) => {
+  const writes = await fixture(page, { rejectEnd: true });
+  await open(page);
+  await assignBus(page);
+  await page.getByRole('button', { name: 'Route actions' }).click();
+  await page.getByRole('menuitem', { name: 'Archive route' }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Archive route', exact: true })
+    .click();
+  await expect(page.getByText(/End this route’s active bus service assignments/)).toBeVisible();
+  expect(writes.filter((w) => w.name === 'update_route')).toHaveLength(0);
+  await page.getByRole('button', { name: 'Bus service: Outbound' }).click();
+  await page.getByRole('menuitem', { name: 'End bus service' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'End service', exact: true }).click();
+  await expect(
+    page.getByText('End the active bus run before ending this route service.'),
+  ).toBeVisible();
+  await expect(page.getByRole('form', { name: 'Driver for Outbound bus One' })).toBeVisible();
+  expect(writes.find((w) => w.name === 'admin_end_bus_route_service')?.args).toEqual({
+    p_assignment_ids: ['service-forward'],
+  });
 });
 
 test('a rejected driver save preserves the saved bus and does not claim setup is complete', async ({
@@ -275,7 +421,8 @@ test('edits bus dates against the existing service id', async ({ page }) => {
   await open(page);
   await assignBus(page);
   const section = page.locator('#route-service');
-  await section.getByRole('button', { name: 'Edit bus service: Outbound' }).click();
+  await section.getByRole('button', { name: 'Bus service: Outbound' }).click();
+  await section.getByRole('menuitem', { name: 'Edit bus service: Outbound' }).click();
   await section.getByLabel('Effective to', { exact: true }).fill('2027-06-30');
   await section.getByRole('button', { name: 'Save bus service', exact: true }).click();
   expect(writes.filter((w) => w.name === 'admin_set_bus_route_service').at(-1)?.args).toMatchObject(
@@ -301,7 +448,7 @@ test('failed roster loading blocks student edits and keeps review unverified', a
 test('retrying partial route creation keeps the saved route identity', async ({ page }) => {
   const writes = await fixture(page, { rejectDaysOnce: true });
   await page.goto('/admin/routes');
-  await page.getByRole('button', { name: 'Add route', exact: true }).click();
+  await page.getByRole('link', { name: 'Add route', exact: true }).click();
   await page.getByLabel('Route name', { exact: true }).fill('New route');
   await page.getByLabel('Route code', { exact: true }).fill('NEW');
   for (const [name, latitude, longitude] of [
@@ -323,10 +470,9 @@ test('retrying partial route creation keeps the saved route identity', async ({ 
       .first(),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Save route definition' }).click();
-  await expect(page.getByRole('link', { name: 'Continue route setup' })).toHaveAttribute(
-    'href',
-    `/admin/routes/${ADMIN_IDS.route}#setup`,
-  );
+  await expect(page).toHaveURL(`/admin/routes/${ADMIN_IDS.route}#setup`);
+  await expect(page.getByRole('heading', { name: 'New route', exact: true })).toBeVisible();
+  await expect(page.getByTestId('route-setup')).toBeVisible();
   const routeWrites = writes.filter((w) => w.name === 'admin_save_route_definition');
   expect(routeWrites).toHaveLength(2);
   expect(routeWrites[0].args.p_route).not.toHaveProperty('id');

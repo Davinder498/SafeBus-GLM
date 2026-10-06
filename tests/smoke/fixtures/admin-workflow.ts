@@ -286,6 +286,7 @@ export async function installAdminWorkflowMock(
       schools: [],
       route_trip_patterns: [],
       route_trip_stop_schedules: [],
+      route_service_days: [],
     };
     const table = path.split('/').pop() ?? '';
     if (table === 'get_admin_bus_services') {

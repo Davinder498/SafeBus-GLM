@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
+import { DropdownMenu, DropdownItem } from '@/components/ui/DropdownMenu';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { AdminWriteError } from '@/components/admin/TransportationAdminForms';
 import { AdminRoutesMap } from '@/components/admin/AdminRoutesMap';
 import { RouteSetupPanel } from '@/components/admin/RouteSetupPanel';
 import { useAuth } from '@/contexts/useAuth';
@@ -23,6 +26,8 @@ import {
   getVisibleRouteTripPatterns,
   getVisibleRouteTripStopSchedules,
   getVisibleRoutes,
+  deleteRoute,
+  updateRoute,
 } from '@/services/transportationStructureService';
 import type { OrganizationProfile, School } from '@/types/organization';
 import type { DriverRouteAssignment } from '@/types/driverAssignments';
@@ -51,6 +56,11 @@ interface RouteDetailData {
 }
 
 export function AdminRouteDetailPage() {
+  const navigate = useNavigate();
+  const [removing, setRemoving] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [writeError, setWriteError] = useState<string | null>(null);
   const { profile } = useAuth();
   const { routeId } = useParams<{ routeId: string }>();
   const mapTileConfig = useMapTileConfig();
@@ -89,7 +99,7 @@ export function AdminRouteDetailPage() {
         ]) => {
           if (!mounted) return;
           const route = routes.find((item) => item.id === routeId);
-          if (!route || route.status === 'archived') {
+          if (!route) {
             setError('This route is not available.');
             return;
           }
@@ -175,6 +185,88 @@ export function AdminRouteDetailPage() {
               eyebrow={data.route.route_code}
               title={data.route.route_name}
               description="Set up route details, stops, road path, bus, driver and students here."
+              action={
+                profile?.role === 'tenant_admin' && (
+                  <DropdownMenu
+                    trigger={
+                      <span className="inline-flex rounded-lg border border-navy-200 px-4 py-2 font-semibold text-navy-700">
+                        Route actions
+                      </span>
+                    }
+                  >
+                    {data.route.status !== 'archived' && (
+                      <DropdownItem
+                        onClick={() => {
+                          setWriteError(null);
+                          setArchiving(true);
+                        }}
+                      >
+                        Archive route
+                      </DropdownItem>
+                    )}
+                    <DropdownItem
+                      destructive
+                      onClick={() => {
+                        setWriteError(null);
+                        setRemoving(true);
+                      }}
+                    >
+                      Delete route
+                    </DropdownItem>
+                  </DropdownMenu>
+                )
+              }
+            />
+            <AdminWriteError message={writeError} />
+            <ConfirmDialog
+              open={archiving}
+              title={`Archive ${data.route.route_name}`}
+              description="Archive this route while retaining its road paths and operational history. Review and end its bus service assignments before archiving."
+              confirmLabel="Archive route"
+              busy={busy}
+              onCancel={() => setArchiving(false)}
+              onConfirm={() => {
+                if (busy) return;
+                if (data.busServices.length > 0) {
+                  setWriteError(
+                    'End this route’s active bus service assignments before archiving.',
+                  );
+                  setArchiving(false);
+                  return;
+                }
+                setBusy(true);
+                void updateRoute(data.route.id, { status: 'archived' })
+                  .then(() => navigate('/admin/routes'))
+                  .catch((cause: unknown) => {
+                    setWriteError(
+                      cause instanceof Error ? cause.message : 'Unable to archive route.',
+                    );
+                    setArchiving(false);
+                  })
+                  .finally(() => setBusy(false));
+              }}
+            />
+            <ConfirmDialog
+              open={removing}
+              title={`Delete ${data.route.route_name}`}
+              description="Permanently delete this route and its setup. Routes with saved road paths or operational history cannot be deleted. This action cannot be undone."
+              confirmLabel="Delete route"
+              destructive
+              busy={busy}
+              onCancel={() => setRemoving(false)}
+              onConfirm={() => {
+                if (busy) return;
+                setBusy(true);
+                void deleteRoute(data.route.id)
+                  .then(() => navigate('/admin/routes'))
+                  .catch((cause: unknown) => {
+                    setWriteError(
+                      cause instanceof Error ? cause.message : 'Unable to delete route.',
+                    );
+                    setRemoving(false);
+                  })
+                  .finally(() => setBusy(false));
+              }}
             />
             <section className="grid gap-4 md:grid-cols-3">
               <Card className="p-5">
@@ -314,12 +406,6 @@ export function AdminRouteDetailPage() {
               </Card>
             </section>
             <OperationalNotesPanel targetEntity="route" targetId={data.route.id} />
-            <Link
-              to={`/admin/routes/${data.route.id}/manage`}
-              className="inline-flex rounded-lg bg-navy-700 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-800"
-            >
-              Manage route
-            </Link>
           </>
         )}
       </div>

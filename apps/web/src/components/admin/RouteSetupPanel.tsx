@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { DropdownMenu, DropdownItem } from '@/components/ui/DropdownMenu';
 import type { MapTileConfig } from '@/config/mapTiles';
 import { useAuth } from '@/contexts/useAuth';
 import {
@@ -13,6 +15,8 @@ import {
 } from '@/services/phase6OperationsService';
 import {
   setBusRouteService,
+  endBusRouteService,
+  setStudentBusServiceStatus,
   setStudentBusService,
   type BusServiceOption,
 } from '@/services/studentBusAssignmentService';
@@ -64,7 +68,10 @@ export function RouteSetupPanel({
   onSaved(): void;
 }) {
   const { profile } = useAuth();
-  const [editing, setEditing] = useState(false);
+  const [ending, setEnding] = useState<{ label: string; save(): Promise<void> } | null>(null);
+  const [endingBusy, setEndingBusy] = useState(false);
+  const [endingError, setEndingError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(window.location.hash === '#route-details');
   const [addingBus, setAddingBus] = useState(false);
   const [editingBus, setEditingBus] = useState<BusServiceOption | null>(null);
   const [studentForm, setStudentForm] = useState<AdminBusStudentAssignment[] | null>(null);
@@ -247,16 +254,36 @@ export function RouteSetupPanel({
         )}
         {services.map((service) => (
           <div key={service.id} className="space-y-3">
-            <Button
-              variant="secondary"
-              disabled={!eligible}
-              onClick={() => {
-                setAddingBus(false);
-                setEditingBus(service);
-              }}
+            <DropdownMenu
+              trigger={
+                <span className="inline-flex rounded-lg border border-navy-200 px-3 py-2 font-semibold text-navy-700">
+                  Bus service: {service.trip_name}
+                </span>
+              }
+              align="left"
             >
-              Edit bus service: {service.trip_name}
-            </Button>
+              <DropdownItem
+                disabled={!eligible}
+                onClick={() => {
+                  setAddingBus(false);
+                  setEditingBus(service);
+                }}
+              >
+                Edit bus service: {service.trip_name}
+              </DropdownItem>
+              <DropdownItem
+                destructive
+                onClick={() => {
+                  setEndingError(null);
+                  setEnding({
+                    label: `${service.trip_name} bus service`,
+                    save: () => endBusRouteService([service.id]),
+                  });
+                }}
+              >
+                End bus service
+              </DropdownItem>
+            </DropdownMenu>
             <RouteDriverSetupForm
               service={service}
               drivers={drivers}
@@ -326,13 +353,40 @@ export function RouteSetupPanel({
                       {a.effective_to ?? 'No end date'}
                     </p>
                   ))}
-                  <Button
-                    variant="secondary"
-                    disabled={group.status !== 'active'}
-                    onClick={() => setStudentForm(group.assignments)}
+                  <DropdownMenu
+                    trigger={
+                      <span className="inline-flex rounded-lg border border-navy-200 px-3 py-2 font-semibold text-navy-700">
+                        Student service actions
+                      </span>
+                    }
+                    align="left"
                   >
-                    Edit student service
-                  </Button>
+                    <DropdownItem
+                      disabled={group.status !== 'active'}
+                      onClick={() => setStudentForm(group.assignments)}
+                    >
+                      Edit student service
+                    </DropdownItem>
+                    <DropdownItem
+                      destructive
+                      disabled={group.status !== 'active'}
+                      onClick={() => {
+                        setEndingError(null);
+                        setEnding({
+                          label: `${group.assignments[0].student_name} student service`,
+                          save: async () => {
+                            await setStudentBusServiceStatus(
+                              group.assignments.map((a) => a.id),
+                              'inactive',
+                              true,
+                            );
+                          },
+                        });
+                      }}
+                    >
+                      End student service
+                    </DropdownItem>
+                  </DropdownMenu>
                 </li>
               ))}
             </ul>
@@ -380,6 +434,39 @@ export function RouteSetupPanel({
           original path.
         </p>
       </Card>
+      {endingError && (
+        <p role="alert" className="text-danger-700">
+          {endingError}
+        </p>
+      )}
+      <ConfirmDialog
+        open={!!ending}
+        title={`End ${ending?.label ?? 'service'}`}
+        description="End this assignment while preserving its history. Ending a bus service also ends its linked driver and student assignments."
+        confirmLabel="End service"
+        destructive
+        busy={endingBusy}
+        onCancel={() => setEnding(null)}
+        onConfirm={() => {
+          if (!ending || endingBusy) return;
+          setEndingBusy(true);
+          void ending
+            .save()
+            .then(() => {
+              setEnding(null);
+              setStudentForm(null);
+              setEditingBus(null);
+              setStudentRevision((n) => n + 1);
+              setMessage('Service ended.');
+              onSaved();
+            })
+            .catch((cause: unknown) => {
+              setEnding(null);
+              setEndingError(cause instanceof Error ? cause.message : 'Unable to end service.');
+            })
+            .finally(() => setEndingBusy(false));
+        }}
+      />
     </div>
   );
 }

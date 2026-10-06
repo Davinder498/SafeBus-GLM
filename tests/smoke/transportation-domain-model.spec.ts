@@ -464,7 +464,7 @@ test.describe('Milestone 4E — school optional for transportation', () => {
     ).toBeVisible({ timeout: 10000 });
 
     // Open the add-route form.
-    await page.getByRole('button', { name: 'Add route' }).click();
+    await page.getByRole('link', { name: 'Add route' }).click();
 
     // The School field is labeled optional.
     await expect(page.getByText('Primary school (optional)')).toBeVisible();
@@ -483,9 +483,7 @@ test.describe('Milestone 4E — school optional for transportation', () => {
     await expect(page.getByText('Choose a school')).toHaveCount(0);
 
     // A success message appears (the mock insert returns the route).
-    await expect(page.getByText('Route corridor and trips created.')).toBeVisible({
-      timeout: 10000,
-    });
+    await expect(page).toHaveURL(new RegExp(`/admin/routes/${ADMIN.routeId}#setup`));
   });
 
   test('admin bus form can be submitted with no school selected', async ({ page }) => {

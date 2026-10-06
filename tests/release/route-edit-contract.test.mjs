@@ -8,11 +8,11 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
 test('existing routes can reorder and add stops without becoming creates', () => {
   const migration = read('supabase/migrations/0101_defer_route_stop_order_uniqueness.sql');
-  const page = read('apps/web/src/pages/AdminRoutesPage.tsx');
+  const page = read('apps/web/src/components/admin/RouteSetupPanel.tsx');
   const service = read('apps/web/src/services/transportationStructureService.ts');
 
   assert.match(migration, /unique\s*\(route_id,\s*stop_order\)\s*deferrable initially deferred/i);
-  assert.match(page, /route:\s*\{\s*\.\.\.payload\.route,\s*id:\s*editingRoute\.id\s*\}/i);
+  assert.match(page, /route:\s*\{\s*\.\.\.payload\.route,\s*id:\s*route\.id\s*\}/i);
   assert.match(service, /route_stops_route_order_unique/i);
   assert.doesNotMatch(
     service,

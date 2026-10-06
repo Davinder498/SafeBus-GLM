@@ -16,6 +16,7 @@ import { AdminGuardianDetailPage } from '@/pages/AdminGuardianDetailPage';
 import { AdminLiveTripsPage } from '@/pages/AdminLiveTripsPage';
 import { AdminRoutesPage } from '@/pages/AdminRoutesPage';
 import { AdminRouteDetailPage } from '@/pages/AdminRouteDetailPage';
+import { AdminRouteCreatePage } from '@/pages/AdminRouteCreatePage';
 import { AdminRouteManagePage } from '@/pages/AdminRouteManagePage';
 import { AdminSchoolsPage } from '@/pages/AdminSchoolsPage';
 import { AdminSettingsPage } from '@/pages/AdminSettingsPage';
@@ -301,6 +302,14 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminRouteManagePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/routes/new',
+    element: (
+      <ProtectedRoute allowedRoles={['tenant_admin']}>
+        <AdminRouteCreatePage />
       </ProtectedRoute>
     ),
   },
