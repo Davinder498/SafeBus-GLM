@@ -337,7 +337,7 @@ test('a failed service read blocks setup until a successful reload', async ({ pa
   const options = { rejectServices: true };
   const writes = await fixture(page, options);
   await page.goto(`/admin/routes/${ADMIN_IDS.route}`);
-  await expect(page.getByRole('heading', { name: 'Route unavailable' })).toBeVisible();
+  await expect(page.getByText('Route unavailable', { exact: true })).toBeVisible();
   await expect(page.getByTestId('route-setup')).toHaveCount(0);
   expect(writes).toHaveLength(0);
   options.rejectServices = false;
