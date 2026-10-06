@@ -40,12 +40,30 @@ function args(input: SupportContactInput) {
   };
 }
 
+function supportWriteError(
+  error: { code?: string; message?: string },
+  fallback: string,
+): Error {
+  if (error.code === '55006' && /recent authentication/i.test(error.message ?? '')) {
+    return new Error(
+      'For your security, sign out and sign back in, then save again within 15 minutes.',
+    );
+  }
+  if (error.code === '55006' && /multi-factor authentication/i.test(error.message ?? '')) {
+    return new Error('Complete multi-factor authentication, then save the support details again.');
+  }
+  if (error.code === '22023') {
+    return new Error('Enter valid support contact details and try again.');
+  }
+  return new Error(fallback);
+}
+
 export async function updatePlatformSupportContact(input: SupportContactInput): Promise<void> {
   const { error } = await client().rpc('update_platform_support_contact', args(input));
-  if (error) throw new Error('Platform support details were not saved.');
+  if (error) throw supportWriteError(error, 'Platform support details were not saved.');
 }
 
 export async function updateTenantSupportContact(input: SupportContactInput): Promise<void> {
   const { error } = await client().rpc('update_tenant_support_contact', args(input));
-  if (error) throw new Error('Tenant support details were not saved.');
+  if (error) throw supportWriteError(error, 'Tenant support details were not saved.');
 }
