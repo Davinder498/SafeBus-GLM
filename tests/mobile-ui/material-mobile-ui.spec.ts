@@ -899,3 +899,47 @@ test('login uses the mobile brand and accessible control sizing', async ({ page 
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('login.png') });
 });
+
+for (const path of ['/privacy', '/account-deletion']) {
+  test('legal app bar respects native insets while scrolling: ' + path, async ({ page }) => {
+    await page.goto(path);
+    await page.evaluate(() => {
+      document.documentElement.style.setProperty('--safe-area-inset-top', '32px');
+    });
+    const header = page.locator('[data-ui="public-app-bar"]');
+    await expect(header).toHaveCSS('position', 'fixed');
+    await expect(header).toHaveCSS('padding-top', '32px');
+    await expect(page.locator('main [data-ui="card"]')).toHaveCSS(
+      'border-top-color',
+      'rgb(141, 183, 201)',
+    );
+    for (const scrollY of [500, 100, 0]) {
+      await page.evaluate((y) => window.scrollTo(0, y), scrollY);
+      expect((await header.boundingBox())?.y).toBe(0);
+      const logo = await header.getByTestId('safebus-brand-mark').boundingBox();
+      expect(logo?.y).toBeGreaterThanOrEqual(32);
+    }
+    await expectNoHorizontalOverflow(page);
+  });
+}
+
+for (const role of ['guardian', 'driver'] as const) {
+  for (const path of ['/privacy', '/account-deletion']) {
+    test(role + ' legal page keeps the signed-in app navigation: ' + path, async ({ page }) => {
+      if (role === 'guardian')
+        await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
+      else await installSupabaseMock(page);
+      await page.goto(path);
+      await expect(page.locator('[data-ui="app-bar"]')).toBeVisible();
+      await expect(page.locator('[data-ui="public-app-bar"]')).toHaveCount(0);
+      await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toHaveCount(0);
+      await expect(page.getByRole('link', { name: 'Contact', exact: true })).toHaveCount(0);
+      await expect(page.getByTestId('native-bottom-navigation')).toBeVisible();
+      await page
+        .getByTestId('native-bottom-navigation')
+        .getByRole('link', { name: role === 'guardian' ? 'Home' : 'Scan', exact: true })
+        .click();
+      await expect(page).toHaveURL(role === 'guardian' ? '/parent' : '/driver');
+    });
+  }
+}
