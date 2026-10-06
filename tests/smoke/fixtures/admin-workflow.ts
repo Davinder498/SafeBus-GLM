@@ -284,8 +284,14 @@ export async function installAdminWorkflowMock(
         },
       ],
       schools: [],
+      route_trip_patterns: [],
+      route_trip_stop_schedules: [],
     };
     const table = path.split('/').pop() ?? '';
+    if (table === 'get_admin_bus_services') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+      return;
+    }
     if (table === 'get_admin_paginated_list') {
       const args = route.request().postDataJSON();
       const items = rows[args.p_entity as keyof typeof rows] ?? [];

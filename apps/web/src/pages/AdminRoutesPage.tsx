@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router';
 import { AdminPagination } from '@/components/admin/AdminPagination';
 import {
   AdminWriteError,
@@ -78,6 +79,8 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [savedSetupRouteId, setSavedSetupRouteId] = useState<string | null>(null);
+  const pendingCreatedRouteId = useRef<string | null>(null);
   const openedInitialRoute = useRef(false);
   const [deletingRoute, setDeletingRoute] = useState<Route | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -205,6 +208,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
   }, [assignments]);
 
   function startCreate() {
+    pendingCreatedRouteId.current = null;
     setEditingRoute(null);
     setAssigningBusRoute(null);
     setShowCreateForm(true);
@@ -232,6 +236,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
   }, [initialRouteId, loading, routes]);
 
   function cancelForm() {
+    pendingCreatedRouteId.current = null;
     setShowCreateForm(false);
     setEditingRoute(null);
   }
@@ -280,23 +285,34 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
       // The page owns edit identity. Re-assert it at the mutation boundary so
       // an edit can never fall through to the RPC's create path because of
       // stale or remounted form state.
+      const saveId = editingRoute?.id ?? pendingCreatedRouteId.current;
       const savePayload = editingRoute
         ? { ...payload, route: { ...payload.route, id: editingRoute.id } }
-        : payload;
+        : pendingCreatedRouteId.current
+          ? { ...payload, route: { ...payload.route, id: pendingCreatedRouteId.current } }
+          : payload;
       const result = await saveRouteDefinition(savePayload);
-      if (editingRoute && result.routeId !== editingRoute.id) {
+      if (!editingRoute) pendingCreatedRouteId.current = result.routeId;
+      if (saveId && result.routeId !== saveId) {
         throw new Error('The route update returned an unexpected route. Reload and try again.');
       }
       if (!profile?.tenant_id) throw new Error('An active tenant is required.');
-      await saveRouteServiceDays({
-        tenantId: profile.tenant_id,
-        routeId: result.routeId,
-        activeDays: savePayload.serviceDays,
-      });
+      try {
+        await saveRouteServiceDays({
+          tenantId: profile.tenant_id,
+          routeId: result.routeId,
+          activeDays: savePayload.serviceDays,
+        });
+      } catch {
+        throw new Error(
+          'Route details saved, but operating days were not saved. Retry saving to finish this route.',
+        );
+      }
 
       setSuccessMessage(
         isUpdate ? 'Route definition updated.' : 'Route corridor and trips created.',
       );
+      setSavedSetupRouteId(result.routeId);
       cancelForm();
       await loadRoutes();
       await list.reload();
@@ -317,7 +333,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
         <PageHeader
           eyebrow="Routes"
           title="Route corridors and trips"
-          description="Define each physical route once, then name its forward and reverse trips."
+          description="Create a route, then set up its road path, bus, driver and students in the route workspace."
         />
 
         {canWrite && !showCreateForm && !editingRoute && (
@@ -329,6 +345,14 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
         )}
 
         <AdminWriteMessage message={successMessage} />
+        {successMessage && savedSetupRouteId && (
+          <Link
+            className="inline-flex rounded-lg bg-navy-700 px-4 py-3 font-semibold text-white"
+            to={`/admin/routes/${savedSetupRouteId}#setup`}
+          >
+            Continue route setup
+          </Link>
+        )}
         <AdminWriteError message={writeError} />
 
         {canWrite && showCreateForm && (

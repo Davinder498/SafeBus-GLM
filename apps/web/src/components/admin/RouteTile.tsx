@@ -100,6 +100,12 @@ export function RouteTile({
             Edit route
           </Button>
           <Link
+            to={`/admin/routes/${route.id}#setup`}
+            className="inline-flex min-h-10 items-center rounded-lg bg-navy-700 px-3 py-2 text-sm font-semibold text-white hover:bg-navy-800"
+          >
+            Set up route
+          </Link>
+          <Link
             to={`/admin/routes/${route.id}#road-path`}
             className="inline-flex min-h-10 items-center rounded-lg border border-navy-200 px-3 py-2 text-sm font-semibold text-navy-700 hover:bg-navy-50"
           >
