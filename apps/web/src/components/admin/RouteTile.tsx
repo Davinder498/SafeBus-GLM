@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/Button';
+import { Link } from 'react-router';
 import { Card } from '@/components/ui/Card';
 import type { Route } from '@/types/transportation';
 
@@ -49,7 +50,11 @@ export function RouteTile({
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <span className="h-5 w-5 rounded-full border-2 border-white shadow" style={{ backgroundColor: route.map_color }} aria-label={`Route color ${route.map_color}`} />
+        <span
+          className="h-5 w-5 rounded-full border-2 border-white shadow"
+          style={{ backgroundColor: route.map_color }}
+          aria-label={`Route color ${route.map_color}`}
+        />
         <span className="inline-flex items-center rounded-full bg-navy-50 px-2.5 py-1 text-xs font-semibold text-navy-700 ring-1 ring-navy-100">
           {route.route_kind === 'field_trip' ? 'Field trip' : 'Regular service'}
         </span>
@@ -94,19 +99,19 @@ export function RouteTile({
           <Button type="button" size="sm" variant="secondary" onClick={onEdit}>
             Edit route
           </Button>
+          <Link
+            to={`/admin/routes/${route.id}#road-path`}
+            className="inline-flex min-h-10 items-center rounded-lg border border-navy-200 px-3 py-2 text-sm font-semibold text-navy-700 hover:bg-navy-50"
+          >
+            Road path
+          </Link>
           {canAssignBus && onAssignBus && (
             <Button type="button" size="sm" onClick={onAssignBus}>
               Assign bus
             </Button>
           )}
           {canDelete && onDelete && (
-            <Button
-              type="button"
-              size="sm"
-              variant="danger"
-              className="ml-auto"
-              onClick={onDelete}
-            >
+            <Button type="button" size="sm" variant="danger" className="ml-auto" onClick={onDelete}>
               Delete
             </Button>
           )}

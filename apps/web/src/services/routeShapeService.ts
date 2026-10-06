@@ -32,6 +32,9 @@ export function validateRouteShapeGeoJson(geojson: unknown): void {
   if (!Array.isArray(obj.coordinates) || obj.coordinates.length < 2) {
     throw new Error('Route shape must contain at least two coordinates.');
   }
+  if (obj.coordinates.length > 10000) {
+    throw new Error('Route shape cannot contain more than 10,000 points.');
+  }
   for (const point of obj.coordinates) {
     if (!Array.isArray(point) || point.length < 2) {
       throw new Error('Route shape coordinates must be longitude, latitude pairs.');
@@ -51,6 +54,12 @@ export function validateRouteShapeGeoJson(geojson: unknown): void {
         'Route shape coordinates must be finite longitude, latitude pairs in valid ranges.',
       );
     }
+  }
+  const distinct = new Set(
+    obj.coordinates.map((point: number[]) => `${point[0].toFixed(7)},${point[1].toFixed(7)}`),
+  );
+  if (distinct.size < 2) {
+    throw new Error('Route shape must contain at least two distinct points.');
   }
 }
 
@@ -83,6 +92,15 @@ function mapVersionRow(row: AdminRouteShapeVersionRpcRow): RouteShapeVersion {
     effectiveTo: row.effective_to,
     createdAt: row.created_at ?? null,
   };
+}
+
+// RETURNS TABLE RPCs return an array, including when a write creates one version.
+function mapWrittenVersion(data: unknown): RouteShapeVersion {
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row || !row.id || !row.route_id) {
+    throw new Error('The saved route path was not returned. Reload its versions before retrying.');
+  }
+  return mapVersionRow(row as AdminRouteShapeVersionRpcRow);
 }
 
 /**
@@ -123,7 +141,7 @@ export async function adminCreateRouteShapeVersion(
     if (import.meta.env.DEV) console.error('Failed to create route shape version', error);
     throw new Error(error.message || 'Unable to save the route shape.');
   }
-  return mapVersionRow(data as AdminRouteShapeVersionRpcRow);
+  return mapWrittenVersion(data);
 }
 
 /**
@@ -142,7 +160,7 @@ export async function adminPublishRouteShapeVersion(
     if (import.meta.env.DEV) console.error('Failed to publish route shape version', error);
     throw new Error(error.message || 'Unable to publish the route shape.');
   }
-  return mapVersionRow(data as AdminRouteShapeVersionRpcRow);
+  return mapWrittenVersion(data);
 }
 
 interface CurrentRouteShapeRpcRow extends Omit<AdminRouteShapeVersionRpcRow, 'created_at'> {}
