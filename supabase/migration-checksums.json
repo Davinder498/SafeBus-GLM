@@ -704,6 +704,12 @@
       "filename": "0116_guardian_service_line_gps_state.sql",
       "bytes": 22633,
       "sha256": "c18ed89646f860350b1e81a74acc7b507b8d81f49f672ebd269d4475ee19ab6e"
+    },
+    {
+      "version": "0117",
+      "filename": "0117_fix_route_shape_rpc_column_ambiguity.sql",
+      "bytes": 4373,
+      "sha256": "335d0e93024802b3588c5f29f37d33c1154cb7d040de3b507dc952464526c299"
     }
   ]
 }
