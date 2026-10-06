@@ -1,17 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { AdminPagination } from '@/components/admin/AdminPagination';
-import {
-  AdminWriteError,
-  AdminWriteMessage,
-  InlineFormShell,
-} from '@/components/admin/TransportationAdminForms';
-import { RouteWithStopsForm } from '@/components/admin/RouteWithStopsForm';
 import { RouteTile } from '@/components/admin/RouteTile';
-import { RouteBusAssignmentForm } from '@/components/admin/TransportAssignmentForms';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
-import { Button } from '@/components/ui/Button';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/contexts/useAuth';
@@ -19,54 +10,27 @@ import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
 import { getVisibleProfiles, getVisibleSchools } from '@/services/adminOrganizationService';
 import { fetchAdminAssignments } from '@/services/driverAssignmentService';
 import {
-  getVisibleRouteServiceDays,
-  saveRouteServiceDays,
-} from '@/services/phase6OperationsService';
-import {
   fetchAdminBusServices,
-  setBusRouteService,
   type BusServiceOption,
-  type SetBusRouteServiceInput,
 } from '@/services/studentBusAssignmentService';
 import {
-  deleteRoute,
+  getVisibleRoutes,
   getVisibleBuses,
   getVisibleDrivers,
   getVisibleRouteStops,
-  getVisibleRouteTripPatterns,
-  getVisibleRouteTripStopSchedules,
-  getVisibleRoutes,
-  saveRouteDefinition,
 } from '@/services/transportationStructureService';
 import type { OrganizationProfile, School } from '@/types/organization';
 import type { DriverRouteAssignment } from '@/types/driverAssignments';
-import type {
-  Bus,
-  Driver,
-  Route,
-  RouteStop,
-  RouteServiceDay,
-  RouteTripPattern,
-  RouteTripStopSchedule,
-  SaveRouteDefinitionInput,
-} from '@/types/transportation';
+import type { Bus, Driver, Route, RouteStop } from '@/types/transportation';
 import { activeDriverForBusService } from '@/utils/transportAssignments';
 
-interface AdminRoutesPageProps {
-  initialRouteId?: string;
-}
-
-export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
+export function AdminRoutesPage() {
   const { profile } = useAuth();
-  const [routes, setRoutes] = useState<Route[]>([]);
   const list = usePaginatedAdminList<
     Route & { school_name: string | null; stop_count: number; active_assignment_count: number }
   >('routes');
   const [schools, setSchools] = useState<School[]>([]);
   const [stops, setStops] = useState<RouteStop[]>([]);
-  const [tripPatterns, setTripPatterns] = useState<RouteTripPattern[]>([]);
-  const [tripSchedules, setTripSchedules] = useState<RouteTripStopSchedule[]>([]);
-  const [serviceDays, setServiceDays] = useState<RouteServiceDay[]>([]);
   const [buses, setBuses] = useState<Bus[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [profiles, setProfiles] = useState<OrganizationProfile[]>([]);
@@ -74,19 +38,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
   const [busServices, setBusServices] = useState<BusServiceOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editingRoute, setEditingRoute] = useState<Route | null>(null);
-  const [assigningBusRoute, setAssigningBusRoute] = useState<Route | null>(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [writeError, setWriteError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [savedSetupRouteId, setSavedSetupRouteId] = useState<string | null>(null);
-  const pendingCreatedRouteId = useRef<string | null>(null);
-  const openedInitialRoute = useRef(false);
-  const [deletingRoute, setDeletingRoute] = useState<Route | null>(null);
-  const [deleting, setDeleting] = useState(false);
-
   const canWrite = profile?.role === 'tenant_admin';
-  const canDelete = profile?.role === 'tenant_admin';
 
   const loadRoutes = useCallback(async () => {
     setLoading(true);
@@ -104,10 +56,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
       getVisibleDrivers(),
       getVisibleProfiles(),
       fetchAdminAssignments(),
-      getVisibleRouteTripPatterns(),
-      getVisibleRouteTripStopSchedules(),
       fetchAdminBusServices(),
-      getVisibleRouteServiceDays(),
     ]);
 
     const [
@@ -118,10 +67,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
       driversResult,
       profilesResult,
       assignmentsResult,
-      tripPatternsResult,
-      tripSchedulesResult,
       busServicesResult,
-      serviceDaysResult,
     ] = settled;
 
     if (routesResult.status === 'rejected') {
@@ -141,10 +87,7 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
         'drivers',
         'profiles',
         'driver assignments',
-        'route trip patterns',
-        'route trip schedules',
         'bus route assignments',
-        'route service days',
       ];
       settled.slice(1).forEach((result, index) => {
         if (result.status === 'rejected') {
@@ -156,17 +99,13 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
       });
     }
 
-    setRoutes(routesResult.value);
     setSchools(schoolsResult.status === 'fulfilled' ? schoolsResult.value : []);
     setStops(stopsResult.status === 'fulfilled' ? stopsResult.value : []);
     setBuses(busesResult.status === 'fulfilled' ? busesResult.value : []);
     setDrivers(driversResult.status === 'fulfilled' ? driversResult.value : []);
     setProfiles(profilesResult.status === 'fulfilled' ? profilesResult.value : []);
     setAssignments(assignmentsResult.status === 'fulfilled' ? assignmentsResult.value : []);
-    setTripPatterns(tripPatternsResult.status === 'fulfilled' ? tripPatternsResult.value : []);
-    setTripSchedules(tripSchedulesResult.status === 'fulfilled' ? tripSchedulesResult.value : []);
     setBusServices(busServicesResult.status === 'fulfilled' ? busServicesResult.value : []);
-    setServiceDays(serviceDaysResult.status === 'fulfilled' ? serviceDaysResult.value : []);
     setLoading(false);
   }, []);
 
@@ -207,121 +146,6 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
     return map;
   }, [assignments]);
 
-  function startCreate() {
-    pendingCreatedRouteId.current = null;
-    setEditingRoute(null);
-    setAssigningBusRoute(null);
-    setShowCreateForm(true);
-    setWriteError(null);
-    setSuccessMessage(null);
-  }
-
-  function startEdit(route: Route) {
-    setShowCreateForm(false);
-    setAssigningBusRoute(null);
-    setEditingRoute(route);
-    setWriteError(null);
-    setSuccessMessage(null);
-  }
-
-  useEffect(() => {
-    if (!initialRouteId || loading || openedInitialRoute.current) return;
-    openedInitialRoute.current = true;
-    const route = routes.find((item) => item.id === initialRouteId);
-    if (route && route.status !== 'archived') {
-      startEdit(route);
-    } else {
-      setWriteError('This route is not available to manage.');
-    }
-  }, [initialRouteId, loading, routes]);
-
-  function cancelForm() {
-    pendingCreatedRouteId.current = null;
-    setShowCreateForm(false);
-    setEditingRoute(null);
-  }
-
-  async function handleAssignBus(input: SetBusRouteServiceInput) {
-    setWriteError(null);
-    setSuccessMessage(null);
-    try {
-      await setBusRouteService(input);
-      setAssigningBusRoute(null);
-      setSuccessMessage('Bus assigned to the route service.');
-      await loadRoutes();
-      await list.reload();
-    } catch (assignError) {
-      const message =
-        assignError instanceof Error ? assignError.message : 'Unable to assign this bus.';
-      setWriteError(message);
-      throw assignError;
-    }
-  }
-
-  async function handleDeleteRoute() {
-    if (!deletingRoute || deleting) return;
-    setDeleting(true);
-    setWriteError(null);
-    setSuccessMessage(null);
-    try {
-      await deleteRoute(deletingRoute.id);
-      setDeletingRoute(null);
-      setSuccessMessage('Route deleted.');
-      await loadRoutes();
-      await list.reload();
-    } catch (deleteError) {
-      setWriteError(deleteError instanceof Error ? deleteError.message : 'Unable to delete route.');
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  async function handleSubmit(payload: SaveRouteDefinitionInput) {
-    setWriteError(null);
-    setSuccessMessage(null);
-
-    try {
-      const isUpdate = !!editingRoute;
-      // The page owns edit identity. Re-assert it at the mutation boundary so
-      // an edit can never fall through to the RPC's create path because of
-      // stale or remounted form state.
-      const saveId = editingRoute?.id ?? pendingCreatedRouteId.current;
-      const savePayload = editingRoute
-        ? { ...payload, route: { ...payload.route, id: editingRoute.id } }
-        : pendingCreatedRouteId.current
-          ? { ...payload, route: { ...payload.route, id: pendingCreatedRouteId.current } }
-          : payload;
-      const result = await saveRouteDefinition(savePayload);
-      if (!editingRoute) pendingCreatedRouteId.current = result.routeId;
-      if (saveId && result.routeId !== saveId) {
-        throw new Error('The route update returned an unexpected route. Reload and try again.');
-      }
-      if (!profile?.tenant_id) throw new Error('An active tenant is required.');
-      try {
-        await saveRouteServiceDays({
-          tenantId: profile.tenant_id,
-          routeId: result.routeId,
-          activeDays: savePayload.serviceDays,
-        });
-      } catch {
-        throw new Error(
-          'Route details saved, but operating days were not saved. Retry saving to finish this route.',
-        );
-      }
-
-      setSuccessMessage(
-        isUpdate ? 'Route definition updated.' : 'Route corridor and trips created.',
-      );
-      setSavedSetupRouteId(result.routeId);
-      cancelForm();
-      await loadRoutes();
-      await list.reload();
-    } catch (submitError) {
-      setWriteError(submitError instanceof Error ? submitError.message : 'Unable to save route.');
-      throw submitError;
-    }
-  }
-
   return (
     <DashboardLayout
       title="Admin Dashboard"
@@ -336,73 +160,13 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
           description="Create a route, then set up its road path, bus, driver and students in the route workspace."
         />
 
-        {canWrite && !showCreateForm && !editingRoute && (
-          <div className="flex">
-            <Button type="button" onClick={startCreate}>
-              Add route
-            </Button>
-          </div>
-        )}
-
-        <AdminWriteMessage message={successMessage} />
-        {successMessage && savedSetupRouteId && (
+        {canWrite && (
           <Link
+            to="/admin/routes/new"
             className="inline-flex rounded-lg bg-navy-700 px-4 py-3 font-semibold text-white"
-            to={`/admin/routes/${savedSetupRouteId}#setup`}
           >
-            Continue route setup
+            Add route
           </Link>
-        )}
-        <AdminWriteError message={writeError} />
-
-        {canWrite && showCreateForm && (
-          <InlineFormShell title="Add route">
-            <RouteWithStopsForm
-              key="create-route"
-              route={null}
-              existingStops={[]}
-              existingTripPatterns={[]}
-              existingSchedules={[]}
-              existingServiceDays={[]}
-              existingRoutes={routes}
-              schools={schools}
-              onSubmit={handleSubmit}
-              onCancel={cancelForm}
-            />
-          </InlineFormShell>
-        )}
-
-        {canWrite && editingRoute && (
-          <InlineFormShell title={`Edit ${editingRoute.route_code}`}>
-            <RouteWithStopsForm
-              key={editingRoute.id}
-              route={editingRoute}
-              existingStops={stopsByRoute.get(editingRoute.id) ?? []}
-              existingTripPatterns={tripPatterns.filter(
-                (pattern) => pattern.route_id === editingRoute.id,
-              )}
-              existingSchedules={tripSchedules.filter(
-                (schedule) => schedule.route_id === editingRoute.id,
-              )}
-              existingServiceDays={serviceDays.filter((day) => day.route_id === editingRoute.id)}
-              existingRoutes={routes}
-              schools={schools}
-              onSubmit={handleSubmit}
-              onCancel={cancelForm}
-            />
-          </InlineFormShell>
-        )}
-
-        {canWrite && assigningBusRoute && (
-          <InlineFormShell title={`Assign bus to ${assigningBusRoute.route_code}`}>
-            <RouteBusAssignmentForm
-              route={assigningBusRoute}
-              buses={buses}
-              tripPatterns={tripPatterns}
-              onSubmit={handleAssignBus}
-              onCancel={() => setAssigningBusRoute(null)}
-            />
-          </InlineFormShell>
         )}
 
         <div>
@@ -456,27 +220,6 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
                   schoolName={route.school_id ? (schoolNames.get(route.school_id) ?? null) : null}
                   stopCount={routeStops.length}
                   assignments={tileAssignments}
-                  canWrite={canWrite}
-                  canDelete={canDelete}
-                  canAssignBus={
-                    canWrite && route.status === 'active' && route.definition_status === 'ready'
-                  }
-                  onEdit={() => startEdit(route)}
-                  onAssignBus={() => {
-                    setShowCreateForm(false);
-                    setEditingRoute(null);
-                    setAssigningBusRoute(route);
-                    setWriteError(null);
-                    setSuccessMessage(null);
-                  }}
-                  onDelete={() => {
-                    setEditingRoute(null);
-                    setAssigningBusRoute(null);
-                    setShowCreateForm(false);
-                    setDeletingRoute(route);
-                    setWriteError(null);
-                    setSuccessMessage(null);
-                  }}
                 />
               );
             })}
@@ -491,16 +234,6 @@ export function AdminRoutesPage({ initialRouteId }: AdminRoutesPageProps = {}) {
             </div>
           </section>
         )}
-        <ConfirmDialog
-          open={!!deletingRoute}
-          title={`Delete ${deletingRoute?.route_name ?? ''}`}
-          description="This permanently deletes the route along with its stops, assignments, and student route assignments. This action cannot be undone."
-          confirmLabel="Delete route"
-          destructive
-          busy={deleting}
-          onConfirm={() => void handleDeleteRoute()}
-          onCancel={() => setDeletingRoute(null)}
-        />
       </div>
     </DashboardLayout>
   );

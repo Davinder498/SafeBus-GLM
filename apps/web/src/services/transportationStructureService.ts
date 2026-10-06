@@ -299,12 +299,17 @@ export async function updateRoute(id: string, input: UpdateRouteInput): Promise<
 
 export async function deleteRoute(id: string): Promise<void> {
   const client = requireSupabase();
-  const { error } = await client.from('routes').delete().eq('id', id);
+  const { data, error } = await client.from('routes').delete().eq('id', id).select('id');
 
   if (error) {
     if (import.meta.env.DEV) console.error('Failed to delete route', error);
-    throw new Error('We could not delete the route. Please try again.');
+    throw new Error(
+      error.code === '23503'
+        ? 'This route has saved road paths or operational history and cannot be permanently deleted. Use Archive route instead.'
+        : 'We could not delete the route. Please try again.',
+    );
   }
+  if (!data?.length) throw new Error('This route was not deleted. Reload and check your access.');
 }
 
 export async function getVisibleRouteStops(): Promise<RouteStop[]> {
