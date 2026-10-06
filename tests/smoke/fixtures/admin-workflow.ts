@@ -286,6 +286,21 @@ export async function installAdminWorkflowMock(
       schools: [],
     };
     const table = path.split('/').pop() ?? '';
+    if (table === 'get_admin_paginated_list') {
+      const args = route.request().postDataJSON();
+      const items = rows[args.p_entity as keyof typeof rows] ?? [];
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          rows: items,
+          totalCount: items.length,
+          page: args.p_page,
+          pageSize: args.p_page_size,
+        }),
+      });
+      return;
+    }
     if (table === 'get_admin_dashboard_overview') {
       await route.fulfill({
         status: 200,
