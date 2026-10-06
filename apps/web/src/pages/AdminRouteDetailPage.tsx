@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { AdminRoutesMap } from '@/components/admin/AdminRoutesMap';
+import { RoutePathEditor } from '@/components/admin/RoutePathEditor';
+import { useAuth } from '@/contexts/useAuth';
 import { OperationalNotesPanel } from '@/components/admin/OperationalNotesPanel';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
@@ -49,6 +51,7 @@ interface RouteDetailData {
 }
 
 export function AdminRouteDetailPage() {
+  const { profile } = useAuth();
   const { routeId } = useParams<{ routeId: string }>();
   const mapTileConfig = useMapTileConfig();
   const [data, setData] = useState<RouteDetailData | null>(null);
@@ -191,6 +194,15 @@ export function AdminRouteDetailPage() {
               routes={[{ route: data.route, stops: data.stops }]}
               tileConfig={mapTileConfig}
             />
+
+            {profile?.role === 'tenant_admin' && (
+              <RoutePathEditor
+                key={data.route.id}
+                route={data.route}
+                stops={data.stops}
+                tileConfig={mapTileConfig}
+              />
+            )}
 
             <section className="grid gap-4 lg:grid-cols-2">
               <Card className="p-5">
