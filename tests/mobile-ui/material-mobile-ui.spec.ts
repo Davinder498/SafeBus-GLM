@@ -922,3 +922,24 @@ for (const path of ['/privacy', '/account-deletion']) {
     await expectNoHorizontalOverflow(page);
   });
 }
+
+for (const role of ['guardian', 'driver'] as const) {
+  for (const path of ['/privacy', '/account-deletion']) {
+    test(role + ' legal page keeps the signed-in app navigation: ' + path, async ({ page }) => {
+      if (role === 'guardian')
+        await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
+      else await installSupabaseMock(page);
+      await page.goto(path);
+      await expect(page.locator('[data-ui="app-bar"]')).toBeVisible();
+      await expect(page.locator('[data-ui="public-app-bar"]')).toHaveCount(0);
+      await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toHaveCount(0);
+      await expect(page.getByRole('link', { name: 'Contact', exact: true })).toHaveCount(0);
+      await expect(page.getByTestId('native-bottom-navigation')).toBeVisible();
+      await page
+        .getByTestId('native-bottom-navigation')
+        .getByRole('link', { name: role === 'guardian' ? 'Home' : 'Scan', exact: true })
+        .click();
+      await expect(page).toHaveURL(role === 'guardian' ? '/parent' : '/driver');
+    });
+  }
+}
