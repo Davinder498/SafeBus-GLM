@@ -24,10 +24,12 @@ export function RoutePathEditor({
   route,
   stops,
   tileConfig,
+  onPublishedStateChange,
 }: {
   route: Route;
   stops: RouteStop[];
   tileConfig: MapTileConfig;
+  onPublishedStateChange?: (published: boolean | null) => void;
 }) {
   const id = useId();
   const [versions, setVersions] = useState<RouteShapeVersion[]>([]);
@@ -49,6 +51,14 @@ export function RoutePathEditor({
   const [importText, setImportText] = useState('');
   const [longitude, setLongitude] = useState('');
   const [latitude, setLatitude] = useState('');
+
+  useEffect(() => {
+    onPublishedStateChange?.(
+      loading || loadError
+        ? null
+        : versions.some((v) => v.status === 'published' && !v.effectiveTo),
+    );
+  }, [loading, loadError, versions, onPublishedStateChange]);
 
   useEffect(() => {
     if (window.location.hash === '#road-path')

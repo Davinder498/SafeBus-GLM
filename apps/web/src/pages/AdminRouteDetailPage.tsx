@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { AdminRoutesMap } from '@/components/admin/AdminRoutesMap';
-import { RoutePathEditor } from '@/components/admin/RoutePathEditor';
+import { RouteSetupPanel } from '@/components/admin/RouteSetupPanel';
 import { useAuth } from '@/contexts/useAuth';
 import { OperationalNotesPanel } from '@/components/admin/OperationalNotesPanel';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
@@ -57,9 +57,11 @@ export function AdminRouteDetailPage() {
   const [data, setData] = useState<RouteDetailData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [direction, setDirection] = useState<RouteDirection>('forward');
+  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
     let mounted = true;
+    setError(null);
     void Promise.all([
       getVisibleRoutes(),
       getVisibleRouteStops(),
@@ -68,9 +70,9 @@ export function AdminRouteDetailPage() {
       getVisibleDrivers(),
       fetchAdminAssignments(),
       getVisibleProfiles(),
-      getVisibleRouteTripPatterns().catch(() => []),
-      getVisibleRouteTripStopSchedules().catch(() => []),
-      fetchAdminBusServices().catch(() => []),
+      getVisibleRouteTripPatterns(),
+      getVisibleRouteTripStopSchedules(),
+      fetchAdminBusServices(),
     ])
       .then(
         ([
@@ -117,7 +119,7 @@ export function AdminRouteDetailPage() {
     return () => {
       mounted = false;
     };
-  }, [routeId]);
+  }, [routeId, revision]);
 
   const busNames = useMemo(
     () => new Map(data?.buses.map((bus) => [bus.id, bus.bus_number]) ?? []),
@@ -147,21 +149,32 @@ export function AdminRouteDetailPage() {
     >
       <div className="space-y-6">
         <Link
-          to="/admin"
+          to="/admin/routes"
           className="inline-flex text-sm font-semibold text-navy-700 hover:underline"
         >
-          &larr; Back to overview
+          &larr; Back to routes
         </Link>
         {!data && !error && (
           <DataState title="Loading route" message="Fetching route details and map." />
         )}
-        {error && <DataState title="Route unavailable" message={error} />}
-        {data && (
+        {error && (
+          <>
+            <DataState title="Route unavailable" message={error} />
+            <button
+              type="button"
+              className="rounded-lg bg-navy-700 px-4 py-3 font-semibold text-white"
+              onClick={() => setRevision((n) => n + 1)}
+            >
+              Retry route loading
+            </button>
+          </>
+        )}
+        {data && !error && (
           <>
             <PageHeader
               eyebrow={data.route.route_code}
               title={data.route.route_name}
-              description="Route details, assignments, ordered stops, and map."
+              description="Set up route details, stops, road path, bus, driver and students here."
             />
             <section className="grid gap-4 md:grid-cols-3">
               <Card className="p-5">
@@ -196,11 +209,20 @@ export function AdminRouteDetailPage() {
             />
 
             {profile?.role === 'tenant_admin' && (
-              <RoutePathEditor
+              <RouteSetupPanel
                 key={data.route.id}
                 route={data.route}
                 stops={data.stops}
                 tileConfig={mapTileConfig}
+                schools={data.schools}
+                buses={data.buses}
+                drivers={data.drivers}
+                profiles={data.profiles}
+                tripPatterns={data.tripPatterns}
+                schedules={data.schedules}
+                services={data.busServices}
+                assignments={data.assignments}
+                onSaved={() => setRevision((n) => n + 1)}
               />
             )}
 

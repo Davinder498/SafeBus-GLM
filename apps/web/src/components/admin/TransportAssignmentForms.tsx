@@ -1,7 +1,14 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import type { CreateAssignmentInput } from '@/types/driverAssignments';
-import type { Bus, DirectionScope, Driver, Route, RouteTripPattern } from '@/types/transportation';
+import type {
+  Bus,
+  BusRouteAssignment,
+  DirectionScope,
+  Driver,
+  Route,
+  RouteTripPattern,
+} from '@/types/transportation';
 import type {
   BusServiceOption,
   SetBusRouteServiceInput,
@@ -15,12 +22,14 @@ export function RouteBusAssignmentForm({
   route,
   buses,
   tripPatterns,
+  existingAssignments = [],
   onSubmit,
   onCancel,
 }: {
   route: Route;
   buses: Bus[];
   tripPatterns: RouteTripPattern[];
+  existingAssignments?: BusRouteAssignment[];
   onSubmit: (input: SetBusRouteServiceInput) => Promise<void>;
   onCancel: () => void;
 }) {
@@ -34,10 +43,17 @@ export function RouteBusAssignmentForm({
       ),
     [route.id, tripPatterns],
   );
-  const [directionScope, setDirectionScope] = useState<DirectionScope>('both');
-  const [busId, setBusId] = useState('');
-  const [effectiveFrom, setEffectiveFrom] = useState(new Date().toISOString().slice(0, 10));
-  const [effectiveTo, setEffectiveTo] = useState('');
+  const [directionScope, setDirectionScope] = useState<DirectionScope>(
+    existingAssignments.length === 1
+      ? (tripPatterns.find((p) => p.id === existingAssignments[0].route_trip_pattern_id)
+          ?.direction ?? 'both')
+      : 'both',
+  );
+  const [busId, setBusId] = useState(existingAssignments[0]?.bus_id ?? '');
+  const [effectiveFrom, setEffectiveFrom] = useState(
+    existingAssignments[0]?.effective_from ?? new Date().toISOString().slice(0, 10),
+  );
+  const [effectiveTo, setEffectiveTo] = useState(existingAssignments[0]?.effective_to ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,6 +84,7 @@ export function RouteBusAssignmentForm({
         directionScope,
         effectiveFrom,
         effectiveTo: effectiveTo || null,
+        existingAssignmentIds: existingAssignments.map((a) => a.id),
       });
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Unable to assign this bus.');
@@ -142,7 +159,7 @@ export function RouteBusAssignmentForm({
           type="submit"
           disabled={saving || route.definition_status !== 'ready' || route.status !== 'active'}
         >
-          {saving ? 'Assigning' : 'Assign bus'}
+          {saving ? 'Assigning' : existingAssignments.length ? 'Save bus service' : 'Assign bus'}
         </Button>
         <Button type="button" variant="secondary" onClick={onCancel}>
           Cancel

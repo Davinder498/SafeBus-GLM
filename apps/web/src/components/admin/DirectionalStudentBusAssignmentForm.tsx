@@ -14,9 +14,10 @@ export function DirectionalStudentBusAssignmentForm({
   assignments = [],
   studentLabel,
   fixedStudentId,
-  services,
+  services: suppliedServices,
   stops,
   selectionMode = 'route',
+  fixedRouteId,
   onSubmit,
   onCancel,
 }: {
@@ -26,9 +27,17 @@ export function DirectionalStudentBusAssignmentForm({
   services: BusServiceOption[];
   stops: RouteStop[];
   selectionMode?: 'route' | 'bus-route';
+  fixedRouteId?: string;
   onSubmit: (input: SetStudentBusServiceInput) => Promise<void>;
   onCancel: () => void;
 }) {
+  const services = useMemo(
+    () =>
+      fixedRouteId
+        ? suppliedServices.filter((service) => service.route_id === fixedRouteId)
+        : suppliedServices,
+    [fixedRouteId, suppliedServices],
+  );
   const serviceById = useMemo(
     () => new Map(services.map((service) => [service.id, service])),
     [services],
@@ -40,7 +49,9 @@ export function DirectionalStudentBusAssignmentForm({
     selectionMode === 'bus-route' ? `${service.bus_id}|${service.route_id}` : service.route_id;
   const initialServiceSelection = initialServices[0]
     ? serviceSelectionKey(initialServices[0])
-    : '';
+    : fixedRouteId && services.length > 0 && services.every((s) => s.bus_id === services[0].bus_id)
+      ? serviceSelectionKey(services[0])
+      : '';
   const initialForward = assignments.find(
     (assignment) => serviceById.get(assignment.bus_route_assignment_id)?.direction === 'forward',
   );
@@ -83,9 +94,7 @@ export function DirectionalStudentBusAssignmentForm({
     const options = new Map<string, BusServiceOption>();
     for (const service of services) {
       const key =
-        selectionMode === 'bus-route'
-          ? `${service.bus_id}|${service.route_id}`
-          : service.route_id;
+        selectionMode === 'bus-route' ? `${service.bus_id}|${service.route_id}` : service.route_id;
       if (!options.has(key)) options.set(key, service);
     }
     return [...options.values()];
