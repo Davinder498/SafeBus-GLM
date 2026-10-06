@@ -698,6 +698,12 @@
       "filename": "0115_allow_support_audit_actions.sql",
       "bytes": 2059,
       "sha256": "c2c659c013a1937d8b501b42e155f0c7aecd7fd05825274e4f6c80cde1be3ae8"
+    },
+    {
+      "version": "0116",
+      "filename": "0116_guardian_service_line_gps_state.sql",
+      "bytes": 22633,
+      "sha256": "c18ed89646f860350b1e81a74acc7b507b8d81f49f672ebd269d4475ee19ab6e"
     }
   ]
 }
