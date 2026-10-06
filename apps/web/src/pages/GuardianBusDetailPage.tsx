@@ -47,14 +47,20 @@ function serviceLineStatus(line: GuardianBusServiceLine): {
   if (line.tripStatus === 'paused') {
     return { label: 'Paused', tone: 'warning' };
   }
+  if (line.tripStatus === 'inactive') {
+    return { label: 'Inactive', tone: 'neutral' };
+  }
   if (line.locationState === 'fresh') {
     return { label: 'Live', tone: 'success' };
   }
   if (line.locationState === 'stale') {
     return { label: 'Delayed', tone: 'warning' };
   }
+  if (line.locationState === 'invalid') {
+    return { label: 'Location unavailable', tone: 'warning' };
+  }
   if (line.tripStatus === 'active') {
-    return { label: 'Waiting', tone: 'neutral' };
+    return { label: 'Locating', tone: 'neutral' };
   }
   return { label: 'Inactive', tone: 'neutral' };
 }
@@ -276,7 +282,8 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
     (progress !== null && line.stops.length > 1
       ? (progress / 100) * (line.stops.length - 1)
       : null);
-  const hasLivePosition = line.locationState === 'fresh' && progressPosition !== null;
+  const hasLivePosition =
+    line.tripStatus === 'active' && line.locationState === 'fresh' && progressPosition !== null;
   const serviceLineRef = useRef<HTMLDivElement>(null);
   const [lineLayout, setLineLayout] = useState<{
     start: number;
@@ -430,7 +437,13 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
           className="mt-4 rounded-2xl p-3 text-sm text-gray-600"
           data-ui="guardian-service-line-note"
         >
-          Live position appears when the school run is active and a fresh GPS update is available.
+          {line.tripStatus === 'paused'
+            ? 'The school run is paused. Live route position resumes when the run restarts.'
+            : line.tripStatus === 'active' && line.locationState === 'fresh'
+              ? 'GPS is live, but route position and stop ETAs are unavailable. See the live map for the bus location.'
+              : line.locationState === 'invalid'
+                ? 'The latest location cannot be used for this service line. Check the live map for bus location availability.'
+                : 'Live position appears when the school run is active and a fresh GPS update is available.'}
         </p>
       )}
 

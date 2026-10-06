@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-const migrationPath = 'supabase/migrations/0114_guardian_tracking_alert_clarity.sql';
+const migrationPath = 'supabase/migrations/0116_guardian_service_line_gps_state.sql';
 
 test('guardian ETA service line keeps its guardian-only RPC boundary', async () => {
   const sql = (await readFile(migrationPath, 'utf8')).toLowerCase();
@@ -96,4 +96,14 @@ test('guardian UI uses authoritative progress and honours reduced motion', async
   assert.match(page, /Planned \{plannedTime/);
   assert.match(css, /prefers-reduced-motion: reduce/);
   assert.match(css, /guardian-service-line__travelled/);
+});
+
+test('route projection failure does not relabel valid GPS as invalid', async () => {
+  const sql = await readFile(migrationPath, 'utf8');
+  assert.match(sql, /'locationState', v_service\.location_state/);
+  assert.doesNotMatch(
+    sql,
+    /location_state = 'fresh' and oc\.display_position is null then 'invalid'/,
+  );
+  assert.match(sql, /oc\.display_position is not null/);
 });
