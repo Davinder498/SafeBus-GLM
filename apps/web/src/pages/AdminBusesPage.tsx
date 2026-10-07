@@ -1,4 +1,6 @@
-import { useNavigate } from 'react-router';
+import { useEffect, useMemo, useState } from 'react';
+import { BusFront, ChevronRight } from 'lucide-react';
+import { Link, useNavigate } from 'react-router';
 import { AdminPagination } from '@/components/admin/AdminPagination';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
@@ -9,6 +11,10 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { adminRoles } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 import { usePaginatedAdminList } from '@/hooks/usePaginatedAdminList';
+import {
+  fetchAdminBusServices,
+  type BusServiceOption,
+} from '@/services/studentBusAssignmentService';
 import type { AdminBus } from '@/types/transportation';
 
 function statusLabel(status: AdminBus['status']) {
@@ -25,8 +31,38 @@ export function AdminBusesPage() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const list = usePaginatedAdminList<AdminBus>('buses');
+  const [busServices, setBusServices] = useState<BusServiceOption[] | null>(null);
+  const [routeSummaryUnavailable, setRouteSummaryUnavailable] = useState(false);
 
   const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
+
+  useEffect(() => {
+    let active = true;
+    void fetchAdminBusServices()
+      .then((services) => {
+        if (active) setBusServices(services);
+      })
+      .catch((error: unknown) => {
+        if (active) setRouteSummaryUnavailable(true);
+        if (import.meta.env.DEV) {
+          console.warn('[AdminBusesPage] Unable to load route summaries.', error);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const routeNamesByBus = useMemo(() => {
+    const grouped = new Map<string, string[]>();
+    (busServices ?? []).forEach((service) => {
+      if (service.status !== 'active') return;
+      const routeNames = grouped.get(service.bus_id) ?? [];
+      if (!routeNames.includes(service.route_name)) routeNames.push(service.route_name);
+      grouped.set(service.bus_id, routeNames);
+    });
+    return grouped;
+  }, [busServices]);
 
   return (
     <DashboardLayout
@@ -75,48 +111,84 @@ export function AdminBusesPage() {
           />
         )}
         {!list.loading && !list.error && list.rows.length > 0 && (
-          <section className="grid gap-4">
-            {list.rows.map((bus) => (
-              <Card key={bus.id} className="p-5" data-testid="admin-bus-card">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-xl font-bold text-navy-900">Bus {bus.bus_number}</h2>
+          <section className="space-y-4" aria-label="Buses">
+            <Card className="overflow-hidden">
+              <div
+                aria-hidden="true"
+                className="hidden grid-cols-[minmax(0,1.35fr)_minmax(0,.7fr)_minmax(0,.9fr)_minmax(0,.8fr)_1.25rem] gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 sm:grid"
+              >
+                <span>Bus</span>
+                <span>Fleet number</span>
+                <span>Plate</span>
+                <span>Status</span>
+                <span />
+              </div>
+              {list.rows.map((bus) => {
+                const routeNames = routeNamesByBus.get(bus.id) ?? [];
+                return (
+                  <Link
+                    key={bus.id}
+                    to={`/admin/buses/${bus.id}?tab=details`}
+                    aria-label={`View bus ${bus.bus_number}`}
+                    data-testid="admin-bus-card"
+                    className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-t border-slate-200 px-4 py-4 outline-none transition-colors first:border-t-0 hover:bg-slate-50 focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-500 sm:grid-cols-[minmax(0,1.35fr)_minmax(0,.7fr)_minmax(0,.9fr)_minmax(0,.8fr)_1.25rem] sm:items-center sm:px-5"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <BusFront aria-hidden className="h-5 w-5 shrink-0 text-slate-500" />
+                      <div className="min-w-0">
+                        <h2 className="truncate font-bold text-navy-900" title={bus.bus_number}>
+                          {bus.bus_number}
+                        </h2>
+                        <p className="mt-1 truncate text-sm text-gray-600">
+                          {routeSummaryUnavailable
+                            ? 'Route assignment unavailable'
+                            : busServices === null
+                              ? 'Loading route assignment…'
+                              : routeNames.length
+                                ? routeNames.join(', ')
+                                : 'No active route'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="col-start-1 row-start-2 sm:col-auto sm:row-auto">
+                      <span className="block text-xs font-semibold uppercase tracking-wide text-gray-500 sm:hidden">
+                        Fleet number
+                      </span>
+                      <span
+                        className={
+                          bus.fleet_number
+                            ? 'font-medium text-navy-900'
+                            : 'font-medium text-amber-700'
+                        }
+                      >
+                        {bus.fleet_number ?? 'Not assigned'}
+                      </span>
+                    </div>
+
+                    <div className="col-start-2 row-start-2 text-right sm:col-auto sm:row-auto sm:text-left">
+                      <span className="block text-xs font-semibold uppercase tracking-wide text-gray-500 sm:hidden">
+                        Plate
+                      </span>
+                      <span className="font-medium text-navy-900">
+                        {bus.license_plate ?? 'Not assigned'}
+                      </span>
+                    </div>
+
+                    <div className="col-span-2 sm:col-auto">
                       <StatusPill tone={statusTone(bus.status)} dot>
                         {statusLabel(bus.status)}
                       </StatusPill>
                     </div>
-                    <p className="mt-2 text-sm text-gray-600">
-                      Fleet number:{' '}
-                      <span
-                        className={
-                          bus.fleet_number
-                            ? 'font-semibold text-navy-900'
-                            : 'font-semibold text-amber-700'
-                        }
-                      >
-                        {bus.fleet_number ?? 'Not assigned — complete bus details'}
-                      </span>
-                    </p>
-                    <p className="mt-1 text-sm text-gray-600">
-                      Plate:{' '}
-                      <span className="font-semibold text-navy-900">
-                        {bus.license_plate ?? 'Not assigned'}
-                      </span>
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="w-full sm:w-auto"
-                    aria-label={`View bus ${bus.bus_number}`}
-                    onClick={() => navigate(`/admin/buses/${bus.id}?tab=details`)}
-                  >
-                    View
-                  </Button>
-                </div>
-              </Card>
-            ))}
+
+                    <ChevronRight
+                      aria-hidden
+                      className="col-start-2 row-start-1 h-5 w-5 self-center text-navy-500 sm:col-auto sm:row-auto"
+                    />
+                  </Link>
+                );
+              })}
+            </Card>
             <AdminPagination
               page={list.page}
               pageSize={list.pageSize}
