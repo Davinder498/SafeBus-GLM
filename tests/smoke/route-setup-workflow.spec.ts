@@ -386,7 +386,7 @@ test('ending bus service respects the active run rejection', async ({ page }) =>
     .click();
   await expect(page.getByText(/End this route’s active bus service assignments/)).toBeVisible();
   expect(writes.filter((w) => w.name === 'update_route')).toHaveLength(0);
-  await page.getByRole('button', { name: 'Bus service: Outbound' }).click();
+  await page.getByRole('button', { name: 'Bus One: Outbound', exact: true }).click();
   await page.getByRole('menuitem', { name: 'End bus service' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'End service', exact: true }).click();
   await expect(
@@ -421,7 +421,7 @@ test('edits bus dates against the existing service id', async ({ page }) => {
   await open(page);
   await assignBus(page);
   const section = page.locator('#route-service');
-  await section.getByRole('button', { name: 'Bus service: Outbound' }).click();
+  await section.getByRole('button', { name: 'Bus One: Outbound', exact: true }).click();
   await section.getByRole('menuitem', { name: 'Edit bus service: Outbound' }).click();
   await section.getByLabel('Effective to', { exact: true }).fill('2027-06-30');
   await section.getByRole('button', { name: 'Save bus service', exact: true }).click();
