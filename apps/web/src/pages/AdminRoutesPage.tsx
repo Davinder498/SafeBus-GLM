@@ -194,7 +194,7 @@ export function AdminRoutesPage() {
           />
         )}
         {!loading && !error && list.rows.length > 0 && (
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <section aria-label="Routes" className="space-y-3">
             {list.rows.map((route) => {
               const routeStops = stopsByRoute.get(route.id) ?? [];
               const routeServices = busServices.filter(
@@ -223,7 +223,7 @@ export function AdminRoutesPage() {
                 />
               );
             })}
-            <div className="sm:col-span-2 lg:col-span-3">
+            <div className="pt-2">
               <AdminPagination
                 page={list.page}
                 pageSize={list.pageSize}

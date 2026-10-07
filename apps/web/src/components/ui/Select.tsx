@@ -1,5 +1,4 @@
 import { forwardRef, type SelectHTMLAttributes } from 'react';
-import { ChevronDown } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
@@ -28,10 +27,6 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
       >
         {children}
       </select>
-      <ChevronDown
-        className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-        aria-hidden
-      />
     </div>
   );
 });

@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { RouteSetupSection } from './RouteSetupSection';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import type { MapTileConfig } from '@/config/mapTiles';
 import {
@@ -194,9 +194,8 @@ export function RoutePathEditor({
   }
 
   return (
-    <Card className="scroll-mt-24 space-y-5 p-5" id="road-path" data-testid="route-path-editor">
+    <RouteSetupSection id="road-path" title="2. Road path" testId="route-path-editor">
       <div>
-        <h2 className="text-xl font-bold text-navy-900">Road path</h2>
         <p className="mt-1 text-sm text-gray-600">
           Trace the roads the bus actually follows, including turns and curves. Numbered markers are
           the saved stops. Points are joined directly. Add a point at every road bend; drawing does
@@ -508,6 +507,6 @@ export function RoutePathEditor({
           onConfirm={() => void publish()}
         />
       )}
-    </Card>
+    </RouteSetupSection>
   );
 }

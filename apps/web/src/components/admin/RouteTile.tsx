@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import type { Route } from '@/types/transportation';
 
@@ -22,9 +23,9 @@ export function RouteTile({ route, schoolName, stopCount, assignments }: RouteTi
     <Link
       to={`/admin/routes/${route.id}`}
       aria-label={`Open route ${route.route_name}`}
-      className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-navy-500"
+      className="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-navy-500"
     >
-      <Card className="flex h-full flex-col p-5 transition-shadow hover:shadow-md">
+      <Card className="grid items-center gap-4 p-4 transition-shadow hover:shadow-md sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_auto]">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="truncate text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -36,7 +37,7 @@ export function RouteTile({ route, schoolName, stopCount, assignments }: RouteTi
           </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {route.status !== 'active' && (
             <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold capitalize text-gray-700">
               {route.status}
@@ -58,7 +59,7 @@ export function RouteTile({ route, schoolName, stopCount, assignments }: RouteTi
           </span>
         </div>
 
-        <dl className="mt-4 space-y-2 text-sm">
+        <dl className="space-y-2 text-sm">
           <div className="flex justify-between gap-2">
             <dt className="text-gray-500">School</dt>
             <dd className="truncate text-right font-semibold text-navy-900">
@@ -85,6 +86,7 @@ export function RouteTile({ route, schoolName, stopCount, assignments }: RouteTi
             </dd>
           </div>
         </dl>
+        <ChevronRight aria-hidden className="hidden h-5 w-5 text-navy-500 sm:block" />
       </Card>
     </Link>
   );

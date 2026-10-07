@@ -43,6 +43,14 @@ function FitPath({ points, request }: { points: [number, number][]; request: num
   const map = useMap();
   const lastRequest = useRef(-1);
   useEffect(() => {
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => {
+      if (container.clientWidth && container.clientHeight) map.invalidateSize({ pan: false });
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [map]);
+  useEffect(() => {
     if (request === lastRequest.current || points.length === 0) return;
     lastRequest.current = request;
     map.fitBounds(points, { padding: [36, 36], maxZoom: 16 });
