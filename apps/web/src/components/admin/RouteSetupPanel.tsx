@@ -37,6 +37,7 @@ import { groupDirectionalAssignments } from '@/utils/directionalAssignments';
 import { DirectionalStudentBusAssignmentForm } from './DirectionalStudentBusAssignmentForm';
 import { RouteDriverSetupForm } from './RouteDriverSetupForm';
 import { RoutePathEditor } from './RoutePathEditor';
+import { RouteSetupSection } from './RouteSetupSection';
 import { RouteWithStopsForm } from './RouteWithStopsForm';
 import { RouteBusAssignmentForm } from './TransportAssignmentForms';
 
@@ -169,6 +170,11 @@ export function RouteSetupPanel({
         </p>
         <nav
           aria-label="Route setup sections"
+          onClick={(event) => {
+            const link = (event.target as HTMLElement).closest('a');
+            const section = link && document.getElementById(link.hash.slice(1));
+            if (section instanceof HTMLDetailsElement) section.open = true;
+          }}
           className="mt-4 flex flex-wrap gap-3 text-sm font-semibold text-navy-700"
         >
           <a href="#route-details">1. Details and stops</a>
@@ -183,8 +189,7 @@ export function RouteSetupPanel({
           </p>
         )}
       </Card>
-      <Card id="route-details" className="scroll-mt-24 p-5">
-        <h2 className="text-lg font-bold text-navy-900">1. Route details and stops</h2>
+      <RouteSetupSection id="route-details" title="1. Route details and stops">
         <p className="my-3 text-sm text-gray-600">
           Set the name, directions, stop order, regular operating days and planned stop times. No
           start or end date is attached to the route.
@@ -207,15 +212,14 @@ export function RouteSetupPanel({
             Edit route details and stops
           </Button>
         )}
-      </Card>
+      </RouteSetupSection>
       <RoutePathEditor
         route={route}
         stops={stops}
         tileConfig={tileConfig}
         onPublishedStateChange={setPathPublished}
       />
-      <Card id="route-service" className="scroll-mt-24 space-y-4 p-5">
-        <h2 className="text-lg font-bold text-navy-900">3. Bus, driver and schedule</h2>
+      <RouteSetupSection id="route-service" title="3. Bus, driver and schedule">
         <p className="text-sm text-gray-600">
           Choose a bus for the route directions, then assign its driver here. Set service dates when
           needed; leave the end date blank for ongoing service.
@@ -225,77 +229,137 @@ export function RouteSetupPanel({
             Save complete stops and activate the route in Route details before assigning a bus.
           </p>
         )}
-        {addingBus || editingBus ? (
-          <RouteBusAssignmentForm
-            key={editingBus?.id ?? 'new'}
-            route={route}
-            buses={buses}
-            tripPatterns={tripPatterns}
-            existingAssignments={editingBus ? [editingBus] : []}
-            onCancel={() => {
-              setAddingBus(false);
-              setEditingBus(null);
-            }}
-            onSubmit={async (input) => {
-              await setBusRouteService({ ...input, routeId: route.id });
-              setAddingBus(false);
-              setEditingBus(null);
-              setMessage('Bus service saved. Choose its driver below.');
-              onSaved();
-            }}
-          />
-        ) : (
-          <Button disabled={!eligible} onClick={() => setAddingBus(true)}>
-            Assign bus to route
-          </Button>
-        )}
-        {services.length === 0 && (
-          <p className="text-sm text-gray-600">No bus service has been assigned.</p>
-        )}
-        {services.map((service) => (
-          <div key={service.id} className="space-y-3">
-            <DropdownMenu
-              trigger={
-                <span className="inline-flex rounded-lg border border-navy-200 px-3 py-2 font-semibold text-navy-700">
-                  Bus service: {service.trip_name}
-                </span>
-              }
-              align="left"
-            >
-              <DropdownItem
-                disabled={!eligible}
-                onClick={() => {
-                  setAddingBus(false);
-                  setEditingBus(service);
-                }}
+        <section aria-label="Bus" className="space-y-4 rounded-xl border border-navy-200 p-4">
+          <h3 className="font-bold text-navy-900">Bus</h3>
+          {addingBus || editingBus ? (
+            <RouteBusAssignmentForm
+              key={editingBus?.id ?? 'new'}
+              route={route}
+              buses={buses}
+              tripPatterns={tripPatterns}
+              existingAssignments={editingBus ? [editingBus] : []}
+              onCancel={() => {
+                setAddingBus(false);
+                setEditingBus(null);
+              }}
+              onSubmit={async (input) => {
+                await setBusRouteService({ ...input, routeId: route.id });
+                setAddingBus(false);
+                setEditingBus(null);
+                setMessage('Bus service saved. Choose its driver below.');
+                onSaved();
+              }}
+            />
+          ) : (
+            <Button disabled={!eligible} onClick={() => setAddingBus(true)}>
+              Assign bus to route
+            </Button>
+          )}
+          {services.length === 0 && (
+            <p className="text-sm text-gray-600">No bus service has been assigned.</p>
+          )}
+          {services.map((service) => (
+            <div key={service.id} className="space-y-3">
+              <DropdownMenu
+                trigger={
+                  <span className="inline-flex rounded-lg border border-navy-200 px-3 py-2 font-semibold text-navy-700">
+                    Bus {service.bus_number}: {service.trip_name}
+                  </span>
+                }
+                align="left"
               >
-                Edit bus service: {service.trip_name}
-              </DropdownItem>
-              <DropdownItem
-                destructive
-                onClick={() => {
-                  setEndingError(null);
-                  setEnding({
-                    label: `${service.trip_name} bus service`,
-                    save: () => endBusRouteService([service.id]),
-                  });
-                }}
-              >
-                End bus service
-              </DropdownItem>
-            </DropdownMenu>
+                <DropdownItem
+                  disabled={!eligible}
+                  onClick={() => {
+                    setAddingBus(false);
+                    setEditingBus(service);
+                  }}
+                >
+                  Edit bus service: {service.trip_name}
+                </DropdownItem>
+                <DropdownItem
+                  destructive
+                  onClick={() => {
+                    setEndingError(null);
+                    setEnding({
+                      label: `${service.trip_name} bus service`,
+                      save: () => endBusRouteService([service.id]),
+                    });
+                  }}
+                >
+                  End bus service
+                </DropdownItem>
+              </DropdownMenu>
+            </div>
+          ))}
+        </section>
+        <section aria-label="Driver" className="space-y-4 rounded-xl border border-navy-200 p-4">
+          <h3 className="font-bold text-navy-900">Driver</h3>
+          {services.length === 0 && (
+            <p className="text-sm text-gray-600">Assign a bus to set up its driver.</p>
+          )}
+          {services.map((service) => (
             <RouteDriverSetupForm
+              key={service.id}
               service={service}
               drivers={drivers}
               names={names}
               assignments={assignments}
               onSaved={onSaved}
             />
-          </div>
-        ))}
-      </Card>
-      <Card id="route-students" className="scroll-mt-24 space-y-4 p-5">
-        <h2 className="text-lg font-bold text-navy-900">4. Students and pickup/drop-off stops</h2>
+          ))}
+        </section>
+        <section aria-label="Schedule" className="space-y-3 rounded-xl border border-navy-200 p-4">
+          <h3 className="font-bold text-navy-900">Schedule</h3>
+          <p className="text-sm text-gray-600">
+            Edit regular operating days and stop times in step 1. Edit bus service dates in Bus
+            above, and driver coverage dates in Driver.
+          </p>
+          <Button
+            variant="secondary"
+            disabled={!setup || !!setupError}
+            onClick={() => {
+              setEditing(true);
+              const section = document.getElementById('route-details');
+              if (section instanceof HTMLDetailsElement) section.open = true;
+              section?.scrollIntoView();
+            }}
+          >
+            Edit operating days and stop times
+          </Button>
+          {services.length === 0 && (
+            <p className="text-sm text-gray-600">No bus service dates have been assigned.</p>
+          )}
+          {services.map((service) => (
+            <div
+              key={service.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-navy-50 p-3 text-sm"
+            >
+              <div>
+                <p className="font-semibold text-navy-900">
+                  {service.trip_name} / Bus {service.bus_number}
+                </p>
+                <p>
+                  {service.effective_from ?? 'No start limit'} to{' '}
+                  {service.effective_to ?? 'No end date'}
+                </p>
+              </div>
+              <Button
+                variant="secondary"
+                disabled={!eligible}
+                onClick={() => {
+                  setAddingBus(false);
+                  setEditingBus(service);
+                  document.getElementById('route-service')?.scrollIntoView();
+                }}
+              >
+                Edit service dates
+              </Button>
+            </div>
+          ))}
+        </section>
+      </RouteSetupSection>
+      <RouteSetupSection id="route-students" title="4. Students and pickup/drop-off stops">
         {rosterLoading && <p>Loading student assignments…</p>}
         {rosterError && (
           <div>
@@ -392,9 +456,8 @@ export function RouteSetupPanel({
             </ul>
           </>
         )}
-      </Card>
-      <Card id="route-review" className="scroll-mt-24 p-5">
-        <h2 className="text-lg font-bold text-navy-900">5. Review saved setup</h2>
+      </RouteSetupSection>
+      <RouteSetupSection id="route-review" title="5. Review saved setup">
         <ul className="mt-3 space-y-2 text-sm">
           <li>
             Route: {eligible ? 'Active with complete stops' : 'Needs route details or activation'}
@@ -433,7 +496,7 @@ export function RouteSetupPanel({
           Start a new run to use a newly published road path. Runs already in progress keep their
           original path.
         </p>
-      </Card>
+      </RouteSetupSection>
       {endingError && (
         <p role="alert" className="text-danger-700">
           {endingError}
