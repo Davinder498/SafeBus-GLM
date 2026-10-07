@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { AdminPagination } from '@/components/admin/AdminPagination';
 import { RouteTile } from '@/components/admin/RouteTile';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
+import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/contexts/useAuth';
@@ -194,44 +195,54 @@ export function AdminRoutesPage() {
           />
         )}
         {!loading && !error && list.rows.length > 0 && (
-          <section aria-label="Routes" className="space-y-3">
-            {list.rows.map((route) => {
-              const routeStops = stopsByRoute.get(route.id) ?? [];
-              const routeServices = busServices.filter(
-                (service) => service.route_id === route.id && service.status === 'active',
-              );
-              const tileAssignments = routeServices.map((service) => {
-                const driverAssignment = activeDriverForBusService(
-                  service,
-                  assignmentsByRoute.get(route.id) ?? [],
+          <section aria-label="Routes" className="space-y-4">
+            <Card className="overflow-hidden">
+              <div
+                aria-hidden="true"
+                className="hidden grid-cols-[minmax(0,1.35fr)_minmax(0,.72fr)_minmax(4rem,.35fr)_minmax(0,1.4fr)_1.25rem] gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 sm:grid"
+              >
+                <span>Route</span>
+                <span>School</span>
+                <span>Stops</span>
+                <span>Bus and driver</span>
+                <span />
+              </div>
+              {list.rows.map((route) => {
+                const routeStops = stopsByRoute.get(route.id) ?? [];
+                const routeServices = busServices.filter(
+                  (service) => service.route_id === route.id && service.status === 'active',
                 );
-                const driver = drivers.find((item) => item.id === driverAssignment?.driver_id);
-                return {
-                  busLabel: busLabels.get(service.bus_id) ?? service.bus_number,
-                  driverLabel: driverNames.get(driver?.profile_id ?? '') ?? null,
-                  tripName: service.trip_name,
-                };
-              });
+                const tileAssignments = routeServices.map((service) => {
+                  const driverAssignment = activeDriverForBusService(
+                    service,
+                    assignmentsByRoute.get(route.id) ?? [],
+                  );
+                  const driver = drivers.find((item) => item.id === driverAssignment?.driver_id);
+                  return {
+                    busLabel: busLabels.get(service.bus_id) ?? service.bus_number,
+                    driverLabel: driverNames.get(driver?.profile_id ?? '') ?? null,
+                    tripName: service.trip_name,
+                  };
+                });
 
-              return (
-                <RouteTile
-                  key={route.id}
-                  route={route}
-                  schoolName={route.school_id ? (schoolNames.get(route.school_id) ?? null) : null}
-                  stopCount={routeStops.length}
-                  assignments={tileAssignments}
-                />
-              );
-            })}
-            <div className="pt-2">
-              <AdminPagination
-                page={list.page}
-                pageSize={list.pageSize}
-                totalCount={list.totalCount}
-                onPageChange={list.setPage}
-                onPageSizeChange={list.setPageSize}
-              />
-            </div>
+                return (
+                  <RouteTile
+                    key={route.id}
+                    route={route}
+                    schoolName={route.school_id ? (schoolNames.get(route.school_id) ?? null) : null}
+                    stopCount={routeStops.length}
+                    assignments={tileAssignments}
+                  />
+                );
+              })}
+            </Card>
+            <AdminPagination
+              page={list.page}
+              pageSize={list.pageSize}
+              totalCount={list.totalCount}
+              onPageChange={list.setPage}
+              onPageSizeChange={list.setPageSize}
+            />
           </section>
         )}
       </div>

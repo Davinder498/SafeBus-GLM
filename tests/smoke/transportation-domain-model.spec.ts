@@ -498,17 +498,18 @@ test.describe('Milestone 4E — school optional for transportation', () => {
     // The list stays focused on identity and status. Administrative details and
     // destructive actions belong in the bus workspace.
     const busCard = page.getByTestId('admin-bus-card');
-    await expect(busCard).toContainText('Bus 42');
+    await expect(busCard.getByRole('heading', { name: '42', exact: true })).toBeVisible();
     await expect(busCard).toContainText('Active');
-    await expect(busCard).toContainText('Plate: SB-42');
+    await expect(busCard).toContainText('UNIT-42');
+    await expect(busCard).toContainText('SB-42');
     await expect(busCard).not.toContainText(ADMIN.busId);
     await expect(busCard).not.toContainText('Capacity');
     await expect(busCard).not.toContainText('Created');
     await expect(busCard.getByRole('button', { name: 'Edit' })).toHaveCount(0);
     await expect(busCard.getByRole('button', { name: 'Delete' })).toHaveCount(0);
-    await expect(busCard.getByRole('button', { name: 'View bus 42' })).toBeVisible();
+    await expect(busCard).toHaveAttribute('href', `/admin/buses/${ADMIN.busId}?tab=details`);
 
-    await busCard.getByRole('button', { name: 'View bus 42' }).click();
+    await busCard.click();
     await expect(page).toHaveURL(new RegExp(`/admin/buses/${ADMIN.busId}\\?tab=details`));
     await expect(page.getByRole('heading', { name: 'Bus 42', level: 1 })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Delete bus' })).toBeVisible();
