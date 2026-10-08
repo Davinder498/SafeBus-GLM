@@ -10,7 +10,6 @@ interface AdminSettingsNavProps {
 const settingsItems = [
   {
     label: 'Support',
-    description: 'Platform contact and tenant help details',
     to: '/admin/settings/support',
     end: false,
     icon: CircleHelp,
@@ -18,7 +17,6 @@ const settingsItems = [
   },
   {
     label: 'Organization',
-    description: 'Account and organization context',
     to: '/admin/settings',
     end: true,
     icon: Building2,
@@ -26,7 +24,6 @@ const settingsItems = [
   },
   {
     label: 'Schools',
-    description: 'Tenant school directory',
     to: '/admin/settings/schools',
     end: false,
     icon: School,
@@ -34,7 +31,6 @@ const settingsItems = [
   },
   {
     label: 'Notifications',
-    description: 'Delivery controls and health',
     to: '/admin/settings/notifications',
     end: false,
     icon: Bell,
@@ -42,7 +38,6 @@ const settingsItems = [
   },
   {
     label: 'Subscription & billing',
-    description: 'Contract, usage, and invoices',
     to: '/admin/settings/billing',
     end: false,
     icon: CreditCard,
@@ -56,8 +51,8 @@ export function AdminSettingsNav({ role }: AdminSettingsNavProps) {
   );
 
   return (
-    <nav aria-label="Settings sections" className="overflow-x-auto border-b border-slate-200">
-      <ul className="flex min-w-max gap-6">
+    <nav aria-label="Settings sections" className="border-b border-slate-200">
+      <ul className="flex flex-wrap gap-x-5 gap-y-1">
         {visibleItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -67,20 +62,15 @@ export function AdminSettingsNav({ role }: AdminSettingsNavProps) {
                 end={item.end}
                 className={({ isActive }: NavLinkRenderProps) =>
                   cn(
-                    'group flex min-w-0 items-start gap-3 border-b-2 px-1 pb-3 pt-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 focus-visible:ring-offset-2',
+                    'group flex min-h-11 items-center gap-2 whitespace-nowrap border-b-2 px-1 py-2 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 focus-visible:ring-offset-2',
                     isActive
                       ? 'border-navy-600 text-navy-800'
                       : 'border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-900',
                   )
                 }
               >
-                <Icon className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
-                <span>
-                  <span className="block text-sm font-bold">{item.label}</span>
-                  <span className="mt-0.5 hidden text-xs font-medium text-slate-500 sm:block">
-                    {item.description}
-                  </span>
-                </span>
+                <Icon className="h-5 w-5 shrink-0" aria-hidden />
+                <span>{item.label}</span>
               </NavLink>
             </li>
           );
