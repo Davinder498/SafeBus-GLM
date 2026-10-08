@@ -111,9 +111,7 @@ export function NotificationsPage() {
     ? '/driver/settings'
     : profile?.role === 'guardian'
       ? '/notifications/settings'
-      : profile?.role === 'tenant_admin'
-        ? '/admin/settings/notifications'
-        : null;
+      : null;
 
   const selectedItem = requestedId ? (items.find((item) => item.id === requestedId) ?? null) : null;
 

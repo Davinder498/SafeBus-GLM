@@ -49,6 +49,10 @@ const notificationsPage = await readFile(
   new URL('../../apps/web/src/pages/NotificationsPage.tsx', import.meta.url),
   'utf8',
 );
+const adminSettingsNav = await readFile(
+  new URL('../../apps/web/src/components/settings/AdminSettingsNav.tsx', import.meta.url),
+  'utf8',
+);
 const router = await readFile(
   new URL('../../apps/web/src/routes/router.tsx', import.meta.url),
   'utf8',
@@ -316,10 +320,9 @@ test('tenant notification control center owns policy and health presentation', (
     notificationSettingsPage,
     /profile\?\.role === 'tenant_admin'[\s\S]*to="\/admin\/settings\/notifications"/,
   );
-  assert.match(
-    notificationsPage,
-    /profile\?\.role === 'tenant_admin'[\s\S]*'\/admin\/settings\/notifications'/,
-  );
+  assert.match(adminSettingsNav, /to: '\/admin\/settings\/notifications'[\s\S]*allowedRoles: \['tenant_admin'\]/);
+  assert.match(notificationsPage, /const settingsPath = isDriver[\s\S]*'\/driver\/settings'[\s\S]*profile\?\.role === 'guardian'[\s\S]*'\/notifications\/settings'[\s\S]*: null;/);
+  assert.doesNotMatch(notificationsPage, /'\/admin\/settings\/notifications'/);
   assert.match(notificationsPage, /settingsPath \? \([\s\S]*<Link to=\{settingsPath\}>/);
   assert.doesNotMatch(adminTripsPage, /NotificationDeliverySummaryCard/);
 });

@@ -20,6 +20,8 @@ async function mockRole(page: Page, role: 'tenant_admin' | 'guardian' | 'driver'
     if (!path.startsWith('/rest/v1/')) return route.fallback();
     if (path.includes('/profiles')) { const single = (route.request().headers().accept ?? '').includes('object+json'); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(single ? currentProfile : [currentProfile]) }); }
     if (method === 'HEAD') return route.fulfill({ status: 200, headers: { 'content-range': '0-0/1' }, body: '' });
+    if (path.includes('/rpc/get_user_notification_unread_count')) return route.fulfill({ status: 200, contentType: 'application/json', body: '0' });
+    if (path.includes('/rpc/get_user_notifications')) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
     if (path.includes('/rpc/get_admin_live_fleet_monitoring')) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
     if (path.includes('/rpc/get_admin_trip_overview')) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
     if (path.includes('/rpc/get_tenant_notification_settings')) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ notifications_enabled: true, push_notifications_enabled: true, email_effective: true, push_effective: true, privacy_review_status: 'approved', privacy_approved_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' }) });
@@ -38,6 +40,39 @@ async function mockRole(page: Page, role: 'tenant_admin' | 'guardian' | 'driver'
 }
 
 test.describe('tenant admin notification delivery summary', () => {
+  test('tenant inbox leaves notification settings in administration', async ({ page }) => {
+    await mockRole(page, 'tenant_admin');
+    await page.goto('/notifications');
+    const header = page.locator('[data-ui="page-header"]');
+    await expect(header.getByRole('heading', { name: 'Notifications' })).toBeVisible();
+    await expect(header.getByRole('link', { name: 'Settings' })).toHaveCount(0);
+  });
+
+  test('settings tabs fit without horizontal scrolling and wrap on narrow screens', async ({ page }) => {
+    await mockRole(page, 'tenant_admin');
+    const widths = [1280, 390];
+    for (const width of widths) {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto('/admin/settings/notifications');
+      const nav = page.getByRole('navigation', { name: 'Settings sections' });
+      const links = nav.getByRole('link');
+      await expect(links).toHaveCount(5);
+      await expect(nav.getByRole('link', { name: 'Notifications' })).toHaveAttribute('aria-current', 'page');
+      const measurements = await nav.evaluate((element) => {
+        const linkBounds = Array.from(element.querySelectorAll('a'), (link) => link.getBoundingClientRect());
+        return {
+          scrollWidth: element.scrollWidth,
+          clientWidth: element.clientWidth,
+          rowCount: new Set(linkBounds.map((bounds) => Math.round(bounds.top))).size,
+          linksFit: linkBounds.every((bounds) => bounds.left >= element.getBoundingClientRect().left && bounds.right <= element.getBoundingClientRect().right),
+        };
+      });
+      expect(measurements.scrollWidth).toBeLessThanOrEqual(measurements.clientWidth);
+      expect(measurements.linksFit).toBe(true);
+      expect(measurements.rowCount).toBe(width === 1280 ? 1 : 2);
+    }
+  });
+
   test('tenant admin sees safe operational counts and failure categories', async ({ page }) => {
     await mockRole(page, 'tenant_admin');
     await page.goto('/admin/settings/notifications');
