@@ -39,8 +39,8 @@ describe('AdminSettingsNav', () => {
     const container = await renderSettingsNav('/admin/settings', 'school_admin');
 
     expect(Array.from(container.querySelectorAll('a')).map((link) => link.textContent)).toEqual([
-      'OrganizationAccount and organization context',
-      'SchoolsTenant school directory',
+      'Organization',
+      'Schools',
     ]);
   });
 
@@ -62,7 +62,9 @@ describe('AdminSettingsNav', () => {
 
   it('shows tenant notification controls only to tenant administrators', async () => {
     const tenant = await renderSettingsNav('/admin/settings/notifications', 'tenant_admin');
-    expect(tenant.textContent).toContain('NotificationsDelivery controls and health');
+    expect(tenant.textContent).toContain('Notifications');
+    expect(tenant.querySelector('nav')?.className).not.toContain('overflow-x-auto');
+    expect(tenant.querySelector('ul')?.className).toContain('flex-wrap');
     expect(
       Array.from(tenant.querySelectorAll('a'))
         .find((link) => link.getAttribute('aria-current') === 'page')
