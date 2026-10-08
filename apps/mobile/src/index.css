@@ -16,6 +16,7 @@
     --mobile-on-surface: #172b3a;
     --mobile-muted: #5e6f73;
     --mobile-outline: #8db7c9;
+    --mobile-card-outline: #dce5e4;
     --guardian-yellow: #f2f6f7;
     --guardian-yellow-deep: #e8f0f2;
     --guardian-yellow-card: #ffffff;
@@ -878,7 +879,7 @@
   html[data-app-surface='native-mobile']
     [data-testid='guardian-home-student-card']
     > div:last-child {
-    border-color: var(--mobile-outline);
+    border-color: var(--mobile-card-outline);
   }
 
   html[data-app-surface='native-mobile'] [data-testid='guardian-home-student-card'] li {
@@ -1690,7 +1691,7 @@
   html[data-app-surface='native-mobile']
     [data-ui='guardian-delivery-row']
     + [data-ui='guardian-delivery-row'] {
-    border-top-color: var(--mobile-outline);
+    border-top-color: var(--mobile-card-outline);
   }
 
   html[data-app-surface='native-mobile'] [data-ui='guardian-delivery-row'] input[type='checkbox'] {
@@ -1971,6 +1972,13 @@
 
   html[data-app-surface='native-mobile'] input[type='checkbox'] {
     accent-color: #235c78;
+  }
+
+  /* Keep guardian and driver card edges neutral across their native pages. */
+  html[data-app-surface='native-mobile']
+    :is([data-portal='parent'], [data-portal='driver'])[data-ui='dashboard-shell']
+    :is([data-ui='card'], [data-ui$='-card'], [data-testid$='-card'], [data-ui-state='data-state']) {
+    border-color: var(--mobile-card-outline) !important;
   }
 }
 

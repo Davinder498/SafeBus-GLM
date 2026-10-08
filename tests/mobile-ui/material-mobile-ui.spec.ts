@@ -138,6 +138,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(homeBusCard).not.toContainText('live');
   await expect(homeBusCard).not.toContainText('View bus details');
   await expect(homeBusCard).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(homeBusCard).toHaveCSS('border-color', 'rgb(220, 229, 228)');
   await expect(page.locator('[data-ui="dashboard-shell"]')).toHaveCSS(
     'background-color',
     'rgb(242, 246, 247)',
@@ -146,6 +147,13 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
     'background-color',
     'rgb(255, 255, 255)',
   );
+  await expect(page.getByTestId('guardian-home-student-card')).toHaveCSS(
+    'border-color',
+    'rgb(220, 229, 228)',
+  );
+  await expect(
+    page.getByTestId('guardian-home-student-card').locator(':scope > div:last-child'),
+  ).toHaveCSS('border-top-color', 'rgb(220, 229, 228)');
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
     'rgb(23, 43, 58)',
@@ -668,6 +676,7 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
   await expect(filters.getByRole('checkbox')).toHaveCount(0);
   await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('gap', '16px');
   await expect(notification).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(notification).toHaveCSS('border-color', 'rgb(220, 229, 228)');
   await expect(notification).toHaveCSS('padding', '16px');
   await expect(notification.locator('[data-ui="notification-unread-dot"]')).toHaveCSS(
     'background-color',
@@ -724,6 +733,7 @@ test('driver updates reuse the compact inbox with assignment-only alerts', async
   await expect(filters.locator('[data-ui="notification-filter-controls"]')).toHaveCSS('gap', '8px');
   await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('gap', '16px');
   await expect(notification).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(notification).toHaveCSS('border-color', 'rgb(220, 229, 228)');
   await expect(notification).toHaveCSS('padding', '16px');
   await expect(notification.getByText('Your planned work assignment has changed.')).toHaveCount(1);
   await expect(

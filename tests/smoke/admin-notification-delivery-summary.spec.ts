@@ -48,6 +48,38 @@ test.describe('tenant admin notification delivery summary', () => {
     await expect(header.getByRole('link', { name: 'Settings' })).toHaveCount(0);
   });
 
+  test('tenant inbox uses scrollable filter links and a compact mark-all action', async ({ page }) => {
+    await mockRole(page, 'tenant_admin');
+    await page.route('**/rest/v1/rpc/get_user_notification_unread_count', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: '2' }),
+    );
+    await page.route('**/rest/v1/rpc/mark_all_user_notifications_read', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: '2' }),
+    );
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/notifications');
+
+    const filters = page.locator('[data-ui="notification-filters"]');
+    const scroller = filters.locator(':scope > div').first();
+    await expect(filters.getByRole('combobox')).toHaveCount(0);
+    await expect(filters.getByRole('checkbox')).toHaveCount(0);
+    expect(await scroller.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+
+    const unread = filters.getByRole('button', { name: 'Unread 2' });
+    await unread.click();
+    await expect(unread).toHaveAttribute('aria-pressed', 'true');
+    const trips = filters.getByRole('button', { name: 'Trips' });
+    await trips.click();
+    await expect(trips).toHaveAttribute('aria-pressed', 'true');
+    await expect(unread).toHaveAttribute('aria-pressed', 'false');
+
+    const markAllRead = filters.getByRole('button', { name: 'Mark all read' });
+    await expect(markAllRead).toBeEnabled();
+    const request = page.waitForRequest('**/rest/v1/rpc/mark_all_user_notifications_read');
+    await markAllRead.click();
+    await request;
+  });
+
   test('settings tabs fit without horizontal scrolling and wrap on narrow screens', async ({ page }) => {
     await mockRole(page, 'tenant_admin');
     const widths = [1280, 390];
