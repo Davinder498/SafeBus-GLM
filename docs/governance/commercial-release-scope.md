@@ -94,6 +94,10 @@ exists in source code.
 
 ## 6. Explicitly excluded from CR1
 
+Student QR scanning is now authorized for development under DL-019 (2026-10-08)
+as a separate review-ready milestone. That authorization does not change the
+locked CR1 production approval or permit migration application/deployment.
+
 - Student QR badges or student boarding scans.
 - Per-child GPS or any child-carried tracking device.
 - SMS, iOS push, web push, campaign, digest, or general-messaging notifications.

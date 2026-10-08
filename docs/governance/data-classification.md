@@ -37,7 +37,7 @@ Phase 0/Phase 1 per [`feature-inventory.md`](./feature-inventory.md).
 | `guardians` | Guardian identity and contact | Email/contact tightly scoped. |
 | `student_guardians` | Guardian relationships + notification consent | The authority-to-view link; minimal exposure. |
 | `drivers` | Driver identity and licensing attributes | Licensing fields restricted; contact minimal. |
-| `student_qr_credentials` **(drifted / future-scope)** | Hashed student badge tokens | Currently violates "no student badges" rule. Decision pending in feature inventory. |
+| `student_qr_credentials` **(DL-019 development milestone)** | Hashed opaque student pass tokens and lifecycle metadata | Admin-only issuance and driver active-trip recording. No raw tokens or student details in credential storage. SQL validation and production release pending. |
 | `bus_qr_credentials` **(operational credential)** | Hashed bus QR tokens | Treated as Restricted because compromise enables impersonation. |
 | `bus_tracking_sessions` | Short-lived driver↔bus↔trip binding | Restricted; auto-expires. |
 

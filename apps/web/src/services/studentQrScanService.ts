@@ -1,21 +1,39 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
-import { mapStudentQrError, type StudentQrTripStatus } from '@/utils/studentQr';
+import type { StudentQrTripStatus } from '@/utils/studentQr';
 
-function requireSupabase() { if (!supabase) throw new Error(supabaseConfigError ?? 'Supabase is not configured.'); return supabase; }
-
+export type StudentQrEventType = 'picked_up' | 'dropped_off';
+export type StudentQrOutcome = 'recorded' | 'already_recorded' | 'pickup_required' | 'complete';
 export interface StudentQrScanResult {
   studentId: string;
   studentDisplayName: string;
   pickupStopName: string | null;
   dropoffStopName: string | null;
   studentTripStatus: StudentQrTripStatus;
-  nextEventType: 'picked_up' | 'dropped_off' | null;
-  message: string;
+  outcome: StudentQrOutcome;
 }
-interface RpcRow { student_id: string; student_display_name: string; pickup_stop_name: string | null; dropoff_stop_name: string | null; student_trip_status: StudentQrTripStatus; next_event_type: 'picked_up' | 'dropped_off' | null; message: string }
-export async function resolveStudentQrForActiveTrip(token: string): Promise<StudentQrScanResult> {
-  const { data, error } = await requireSupabase().rpc('resolve_student_qr_for_active_trip', { p_qr_token: token });
-  if (error) throw new Error(mapStudentQrError());
-  const row = (data as RpcRow[])[0];
-  return { studentId: row.student_id, studentDisplayName: row.student_display_name, pickupStopName: row.pickup_stop_name, dropoffStopName: row.dropoff_stop_name, studentTripStatus: row.student_trip_status, nextEventType: row.next_event_type, message: row.message };
+
+/** Authorization and the requested event are checked together against the displayed trip. */
+export async function recordStudentQrEvent(
+  token: string,
+  eventType: StudentQrEventType,
+  tripId: string,
+): Promise<StudentQrScanResult> {
+  if (!supabase) throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
+  const { data, error } = await supabase.rpc('record_student_qr_event_for_active_trip', {
+    p_qr_token: token,
+    p_event_type: eventType,
+    p_driver_trip_id: tripId,
+  });
+  // A transport failure may follow a committed event. Retry the same event:
+  // the server returns already_recorded without sending notifications again.
+  if (error || !data?.[0]) throw new Error('Could not confirm this scan. Retry the same event.');
+  const row = data[0];
+  return {
+    studentId: row.student_id,
+    studentDisplayName: row.student_display_name,
+    pickupStopName: row.pickup_stop_name,
+    dropoffStopName: row.dropoff_stop_name,
+    studentTripStatus: row.student_trip_status as StudentQrTripStatus,
+    outcome: row.outcome as StudentQrOutcome,
+  };
 }

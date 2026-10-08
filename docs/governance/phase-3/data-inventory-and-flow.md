@@ -147,7 +147,7 @@ These are listed for transparency and are **not** part of the approved
 current data inventory. Their handling is decided in
 [`../feature-inventory.md`](../feature-inventory.md):
 
-- `student_qr_credentials` — student badges (D1, quarantined).
+- `student_qr_credentials` — opaque student pass hashes (D1 promoted for development under DL-019, 2026-10-08; production release pending). No student location tracking.
 - Safe ETA helpers (D3) — quarantined from the UI.
 - Bus QR sessions (D2) — promoted-with-milestone, bus not child.
 

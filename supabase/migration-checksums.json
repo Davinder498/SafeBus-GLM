@@ -716,6 +716,12 @@
       "filename": "0118_tenant_notification_control_center.sql",
       "bytes": 7757,
       "sha256": "b254e9a55b3cf62de40d0f46c0317534e6a6d078074d04bcd3d8e6968db1c946"
+    },
+    {
+      "version": "0119",
+      "filename": "0119_student_qr_pickup_dropoff.sql",
+      "bytes": 14956,
+      "sha256": "b21769af4b1e07554756c6f8012e579eee14dc57a1c62588657c0e6663467b33"
     }
   ]
 }

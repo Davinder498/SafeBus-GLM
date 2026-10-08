@@ -110,6 +110,7 @@ async function installWorkspaceMock(
   let deleted = options.missing ?? false;
   let assignmentActive = options.withAssignment ?? true;
   let qrActive = false;
+  let qrGeneration = 0;
 
   const service = {
     id: IDS.service,
@@ -201,41 +202,37 @@ async function installWorkspaceMock(
     if (method === 'GET') {
       if (path.includes('/profiles')) return void (await fulfillRows([profile]));
       if (path.includes('/student_bus_assignments')) {
-        return void (
-          await fulfillRows(assignmentActive ? [assignment(), returnAssignment()] : [])
-        );
+        return void (await fulfillRows(assignmentActive ? [assignment(), returnAssignment()] : []));
       }
       if (path.includes('/student_guardians')) return void (await fulfillRows([]));
       if (path.includes('/bus_route_assignments')) {
         return void (await fulfillRows([service, returnService]));
       }
       if (path.includes('/route_trip_patterns')) {
-        return void (
-          await fulfillRows([
-            {
-              id: IDS.forwardPattern,
-              tenant_id: IDS.tenant,
-              route_id: IDS.route,
-              direction: 'forward',
-              display_name: 'Outbound',
-              status: 'active',
-              schedule_review_required: false,
-              created_at: '2025-01-01T00:00:00.000Z',
-              updated_at: '2025-01-01T00:00:00.000Z',
-            },
-            {
-              id: IDS.reversePattern,
-              tenant_id: IDS.tenant,
-              route_id: IDS.route,
-              direction: 'reverse',
-              display_name: 'Return',
-              status: 'active',
-              schedule_review_required: false,
-              created_at: '2025-01-01T00:00:00.000Z',
-              updated_at: '2025-01-01T00:00:00.000Z',
-            },
-          ])
-        );
+        return void (await fulfillRows([
+          {
+            id: IDS.forwardPattern,
+            tenant_id: IDS.tenant,
+            route_id: IDS.route,
+            direction: 'forward',
+            display_name: 'Outbound',
+            status: 'active',
+            schedule_review_required: false,
+            created_at: '2025-01-01T00:00:00.000Z',
+            updated_at: '2025-01-01T00:00:00.000Z',
+          },
+          {
+            id: IDS.reversePattern,
+            tenant_id: IDS.tenant,
+            route_id: IDS.route,
+            direction: 'reverse',
+            display_name: 'Return',
+            status: 'active',
+            schedule_review_required: false,
+            created_at: '2025-01-01T00:00:00.000Z',
+            updated_at: '2025-01-01T00:00:00.000Z',
+          },
+        ]));
       }
       if (path.includes('/buses')) return void (await fulfillRows([bus]));
       if (path.includes('/routes')) return void (await fulfillRows([routeRecord]));
@@ -335,12 +332,13 @@ async function installWorkspaceMock(
     if (method === 'POST' && path.includes('/rpc/manage_student_qr_credential')) {
       const action = (requestRoute.request().postDataJSON() as { p_action: string }).p_action;
       qrActive = action !== 'revoke';
+      if (qrActive) qrGeneration += 1;
       await fulfillRows([
         {
           student_id: IDS.student,
           credential_id: qrActive ? '66666666-6666-6666-6666-666666666666' : null,
           status: qrActive ? 'active' : 'revoked',
-          raw_token: qrActive ? 'one-time-test-token' : null,
+          raw_token: qrActive ? `sbus_qr_v1_${'A'.repeat(43)}${qrGeneration}` : null,
           created_at: '2025-01-01T00:00:00.000Z',
         },
       ]);
@@ -369,7 +367,11 @@ async function installWorkspaceMock(
 
   await page.addInitScript(() => {
     const session = {
-      access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
+      access_token: [
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+        'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ',
+        'smoke-test-signature',
+      ].join('.'),
       refresh_token: 'x',
       token_type: 'bearer',
       expires_in: 3600,
@@ -473,13 +475,38 @@ test.describe('Admin student workspace', () => {
     );
   });
 
-  test('does not expose the quarantined student QR badge workflow', async ({ page }) => {
+  test('issues, replaces and revokes real student QR passes in the workspace', async ({ page }) => {
     await installWorkspaceMock(page);
     await page.goto(`/admin/students/${IDS.student}`);
 
     await expect(page.getByRole('heading', { name: 'Avery Johnson', level: 1 })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'QR badge', exact: true })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Generate', exact: true })).toHaveCount(0);
+    const qr = page.getByTestId('admin-student-qr-panel');
+    await expect(qr.getByRole('heading', { name: 'Student QR pass', exact: true })).toBeVisible();
+    await qr.getByRole('button', { name: 'Generate', exact: true }).click();
+    const image = qr.getByAltText('Student QR pass');
+    await expect(image).toHaveAttribute('src', /^data:image\/png;base64,/);
+    const firstImage = await image.getAttribute('src');
+    await expect(qr.getByRole('link', { name: 'Download PNG' })).toHaveAttribute(
+      'href',
+      firstImage!,
+    );
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      qr.getByRole('link', { name: 'Download PNG' }).click(),
+    ]);
+    expect(download.suggestedFilename()).toBe('BusSafe-student-pass.png');
+    await page.evaluate(() => {
+      window.print = () => window.dispatchEvent(new Event('afterprint'));
+    });
+    await qr.getByRole('button', { name: 'Print', exact: true }).click();
+    await expect(page.locator('body')).not.toHaveClass(/printing-student-qr/);
+    await qr.getByRole('button', { name: 'Replace', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Replace pass' }).click();
+    await expect(image).not.toHaveAttribute('src', firstImage!);
+    await qr.getByRole('button', { name: 'Revoke', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Revoke pass' }).click();
+    await expect(qr).toContainText('No active QR');
+    await expect(image).toHaveCount(0);
   });
 
   test('gates inactive operations and restores them after reactivation', async ({ page }) => {
@@ -489,7 +516,11 @@ test.describe('Admin student workspace', () => {
     await expect(
       page.getByText('Reactivate the student to manage their transportation.'),
     ).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'QR badge', exact: true })).toHaveCount(0);
+    await expect(
+      page
+        .getByTestId('admin-student-qr-panel')
+        .getByRole('button', { name: 'Generate', exact: true }),
+    ).toBeDisabled();
     await expect(page.getByRole('button', { name: 'Add transportation' })).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Reactivate student' }).click();

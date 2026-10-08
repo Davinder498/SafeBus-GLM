@@ -29,13 +29,13 @@ function mapManage(row: ManageRow): StudentQrCredentialResult {
 
 export async function manageStudentQrCredential(studentId: string, action: 'generate' | 'rotate' | 'revoke'): Promise<StudentQrCredentialResult> {
   const { data, error } = await requireSupabase().rpc('manage_student_qr_credential', { p_student_id: studentId, p_action: action });
-  if (error) throw new Error(error.message || 'Unable to manage QR credential.');
+  if (error || !data || !(data as ManageRow[])[0]) throw new Error('Unable to manage QR credential.');
   return mapManage((data as ManageRow[])[0]);
 }
 
 export async function fetchStudentQrCredentialStatus(studentId: string): Promise<StudentQrCredentialStatus | null> {
   const { data, error } = await requireSupabase().rpc('get_admin_student_qr_credential_status', { p_student_id: studentId });
-  if (error) throw new Error(error.message || 'Unable to load QR credential status.');
+  if (error) throw new Error('Unable to load QR credential status.');
   const row = (data as StatusRow[])[0];
   if (!row) return null;
   return { studentId: row.student_id, hasActiveCredential: row.has_active_credential, credentialStatus: row.credential_status, credentialCreatedAt: row.credential_created_at };
