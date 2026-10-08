@@ -1,3 +1,16 @@
+## Student QR pickup/drop-off — 2026-10-08
+
+Status: implemented for review. Customer-authorized development milestone;
+database migration execution and production release remain gated.
+
+- Admin-only real QR passes with issuance, replacement, revocation, print and PNG download.
+- Explicit driver Pickup/Drop-off modes and atomic, displayed-trip-bound recording with idempotent retries.
+- Boarding-line scanning resumes automatically after confirmed results, retains the mode, and suppresses a pass held in view. Pause permits a mode change; uncertain responses still require retry.
+- Forward migration 0119 repairs surviving legacy authorization and preserves credentials.
+- Local tests and mobile mock journeys accompany executable rollback-only SQL tests awaiting an approved isolated target.
+- Production still lacks the protected release ledger; no migration, production fixture or deployment is performed.
+- Full acceptance and release blockers: [student-qr-pickup-dropoff.md](./student-qr-pickup-dropoff.md).
+
 ## Commercial Readiness Remediation 13 - Point 9 Operational Readiness Gate
 
 Status: Repository evidence gate implemented for review; Point 9 remains open

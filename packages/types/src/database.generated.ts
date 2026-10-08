@@ -4396,6 +4396,21 @@ export interface Database {
           idempotency_key: string;
         }[];
       };
+      record_student_qr_event_for_active_trip: {
+        Args: {
+          p_qr_token: string;
+          p_event_type: string;
+          p_driver_trip_id: string;
+        };
+        Returns: {
+          student_id: string;
+          student_display_name: string;
+          pickup_stop_name: string | null;
+          dropoff_stop_name: string | null;
+          student_trip_status: string;
+          outcome: string;
+        }[];
+      };
       resolve_student_qr_for_active_trip: {
         Args: {
           p_qr_token: string;

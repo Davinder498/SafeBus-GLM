@@ -16,6 +16,7 @@ import {
   markStudentPickedUpForActiveTrip,
 } from '@/services/driverManifestService';
 import type { DriverManifestRow } from '@/types/driverManifest';
+import type { StudentQrScanResult } from '@/services/studentQrScanService';
 
 type LoadState =
   { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; rows: DriverManifestRow[] };
@@ -62,9 +63,13 @@ export function DriverManifestPage() {
         } else {
           await markStudentDroppedOffForActiveTrip(studentId);
         }
-        const rows = await fetchDriverActiveTripStudentManifest();
-        setState({ kind: 'ready', rows });
         setActionSuccess(action === 'pickup' ? 'Pickup recorded.' : 'Drop-off recorded.');
+        try {
+          const rows = await fetchDriverActiveTripStudentManifest();
+          setState({ kind: 'ready', rows });
+        } catch {
+          setActionError('Event recorded. The student list could not refresh; reload the list.');
+        }
         return true;
       } catch {
         setActionError('Could not update student status. Please try again.');
@@ -75,6 +80,29 @@ export function DriverManifestPage() {
     },
     [],
   );
+
+  const refreshAfterScan = useCallback(async (result: StudentQrScanResult) => {
+    // Update the known row immediately. A refresh failure cannot undo a confirmed event.
+    setState((previous) =>
+      previous.kind === 'ready'
+        ? {
+            kind: 'ready',
+            rows: previous.rows.map((row) =>
+              row.studentId === result.studentId
+                ? { ...row, studentTripStatus: result.studentTripStatus }
+                : row,
+            ),
+          }
+        : previous,
+    );
+    try {
+      const rows = await fetchDriverActiveTripStudentManifest();
+      setState({ kind: 'ready', rows });
+      setActionError(null);
+    } catch {
+      setActionError('Scan confirmed. The student list could not refresh; reload the list.');
+    }
+  }, []);
 
   useEffect(() => {
     void load();
@@ -132,6 +160,11 @@ export function DriverManifestPage() {
             data-testid="driver-manifest-action-message"
           >
             {actionError ?? actionSuccess}
+            {actionError?.includes('reload the list') && (
+              <Button variant="secondary" size="sm" className="ml-3" onClick={() => void load()}>
+                Reload list
+              </Button>
+            )}
           </div>
         )}
 
@@ -167,7 +200,7 @@ export function DriverManifestPage() {
 
         {state.kind === 'ready' && activeTrip && (
           <div className="space-y-5">
-            <StudentQrScanner onRecord={updateStudentStatus} busyStudentId={pendingStudentId} />
+            <StudentQrScanner tripId={activeTrip.activeTripId} onRecorded={refreshAfterScan} />
             <Card className="p-5" data-testid="driver-manifest-trip-context">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>

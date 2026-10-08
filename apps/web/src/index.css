@@ -294,20 +294,25 @@
     margin: 12mm;
   }
 
-  body.printing-bus-qr {
+  body.printing-bus-qr,
+  body.printing-student-qr {
     background: white !important;
   }
 
-  body.printing-bus-qr * {
+  body.printing-bus-qr *,
+  body.printing-student-qr * {
     visibility: hidden !important;
   }
 
   body.printing-bus-qr .bus-qr-print-sheet,
-  body.printing-bus-qr .bus-qr-print-sheet * {
+  body.printing-bus-qr .bus-qr-print-sheet *,
+  body.printing-student-qr .student-qr-print-sheet,
+  body.printing-student-qr .student-qr-print-sheet * {
     visibility: visible !important;
   }
 
-  body.printing-bus-qr .bus-qr-print-sheet {
+  body.printing-bus-qr .bus-qr-print-sheet,
+  body.printing-student-qr .student-qr-print-sheet {
     position: fixed;
     inset: 0;
     display: flex;
@@ -324,7 +329,8 @@
     padding: 8mm !important;
   }
 
-  body.printing-bus-qr .bus-qr-print-sheet img {
+  body.printing-bus-qr .bus-qr-print-sheet img,
+  body.printing-student-qr .student-qr-print-sheet img {
     width: 70mm !important;
     height: 70mm !important;
     max-width: 100%;

@@ -1,29 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Camera, CheckCircle2, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Camera, CheckCircle2 } from 'lucide-react';
+import { Button, buttonClass } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import {
-  resolveStudentQrForActiveTrip,
+  recordStudentQrEvent,
+  type StudentQrEventType,
   type StudentQrScanResult,
 } from '@/services/studentQrScanService';
-import { isLikelyStudentQrToken, shouldProcessScan } from '@/utils/studentQr';
-
-type BarcodeDetectorConstructor = new (options?: { formats?: string[] }) => {
-  detect(source: HTMLVideoElement): Promise<Array<{ rawValue?: string }>>;
-};
-
-declare global {
-  interface Window {
-    BarcodeDetector?: BarcodeDetectorConstructor;
-  }
-}
+import { isLikelyStudentQrToken } from '@/utils/studentQr';
+import { createStudentQrDetector } from '@/utils/studentQrDetector';
 
 interface Props {
-  onRecord: (studentId: string, action: 'pickup' | 'dropoff') => Promise<boolean>;
-  busyStudentId: string | null;
+  tripId: string;
+  onRecorded: (result: StudentQrScanResult) => Promise<void>;
 }
-
 type ScannerState =
   | 'idle'
   | 'starting'
@@ -31,140 +22,162 @@ type ScannerState =
   | 'permission-denied'
   | 'no-camera'
   | 'unsupported'
-  | 'resolving'
   | 'recording'
-  | 'recorded'
-  | 'complete'
+  | 'result'
   | 'invalid'
-  | 'record-failed';
-
-function actionForResult(result: StudentQrScanResult | null): 'pickup' | 'dropoff' | null {
-  if (result?.nextEventType === 'picked_up') return 'pickup';
-  if (result?.nextEventType === 'dropped_off') return 'dropoff';
-  return null;
+  | 'record-failed'
+  | 'paused';
+interface PendingScan {
+  token: string;
+  eventType: StudentQrEventType;
+  tripId: string;
 }
+const label = (event: StudentQrEventType) => (event === 'picked_up' ? 'Pickup' : 'Drop-off');
+const NEXT_STUDENT_DELAY_MS = 900;
+const PASS_REMOVED_DELAY_MS = 1000;
 
-function actionLabel(action: 'pickup' | 'dropoff'): string {
-  return action === 'pickup' ? 'pickup' : 'drop-off';
-}
-
-export function StudentQrScanner({ onRecord, busyStudentId }: Props) {
+export function StudentQrScanner({ tripId, onRecorded }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const cameraRequestRef = useRef(0);
   const streamRef = useRef<MediaStream | null>(null);
-  const scanTimerRef = useRef<number | null>(null);
-  const scanningRef = useRef(false);
+  const timerRef = useRef<number | null>(null);
+  const generationRef = useRef(0);
   const processingRef = useRef(false);
-  const clearFrameSinceLastScanRef = useRef(true);
-  const lastRef = useRef<{ value: string | null; at: number }>({ value: null, at: 0 });
+  const pendingRef = useRef<PendingScan | null>(null);
+  const lastPassRef = useRef<{ token: string; lastSeenAt: number } | null>(null);
+  const autoResumeRef = useRef(false);
+  const openButtonRef = useRef<HTMLButtonElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<ScannerState>('idle');
+  const [eventType, setEventType] = useState<StudentQrEventType>('picked_up');
   const [result, setResult] = useState<StudentQrScanResult | null>(null);
-  const [recordedAction, setRecordedAction] = useState<'pickup' | 'dropoff' | null>(null);
   const [manualToken, setManualToken] = useState('');
 
-  const stopCamera = useCallback(() => {
-    scanningRef.current = false;
-    if (scanTimerRef.current !== null) {
-      window.clearTimeout(scanTimerRef.current);
-      scanTimerRef.current = null;
-    }
+  const stopDetection = useCallback(() => {
+    generationRef.current += 1;
+    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+    timerRef.current = null;
+  }, []);
+
+  const releaseCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
   }, []);
 
-  useEffect(
-    () => () => {
-      cameraRequestRef.current += 1;
-      stopCamera();
-    },
-    [stopCamera],
-  );
+  const stopCamera = useCallback(() => {
+    stopDetection();
+    releaseCamera();
+  }, [releaseCamera, stopDetection]);
+
+  useEffect(() => {
+    // A different displayed trip invalidates every outstanding scanner callback.
+    stopCamera();
+    pendingRef.current = null;
+    lastPassRef.current = null;
+    autoResumeRef.current = false;
+    processingRef.current = false;
+    setOpen(false);
+    setState('idle');
+    setResult(null);
+    setManualToken('');
+    return stopCamera;
+  }, [tripId, stopCamera]);
 
   useEffect(() => {
     if (!open) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    closeButtonRef.current?.focus();
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.querySelector<HTMLButtonElement>('[data-testid="driver-open-qr-scanner"]')?.focus();
     };
   }, [open]);
 
   useEffect(() => {
-    const video = videoRef.current;
-    const stream = streamRef.current;
-    if (!video || !stream || (state !== 'starting' && state !== 'scanning')) return;
-    if (video.srcObject !== stream) video.srcObject = stream;
-    void video.play().catch(() => undefined);
-  }, [state]);
+    const pause = () => {
+      autoResumeRef.current = false;
+      if (processingRef.current) {
+        // Release tracks without invalidating the pending server response.
+        releaseCamera();
+      } else if (state === 'starting' || state === 'scanning' || state === 'result') {
+        stopCamera();
+        setState('paused');
+      }
+    };
+    const visibility = () => {
+      if (document.visibilityState === 'hidden') pause();
+    };
+    document.addEventListener('visibilitychange', visibility);
+    window.addEventListener('pagehide', pause);
+    return () => {
+      document.removeEventListener('visibilitychange', visibility);
+      window.removeEventListener('pagehide', pause);
+    };
+  }, [releaseCamera, stopCamera, state]);
 
-  const recordResolvedStudent = useCallback(
-    async (resolved: StudentQrScanResult, action: 'pickup' | 'dropoff') => {
+  const submit = useCallback(
+    async (pending: PendingScan) => {
+      if (processingRef.current) return;
+      processingRef.current = true;
+      // Keep the rear camera warm, but never decode another pass during a write.
+      stopDetection();
+      const generation = generationRef.current;
+      pendingRef.current = pending;
+      setResult(null);
       setState('recording');
-      const recorded = await onRecord(resolved.studentId, action);
-      if (recorded) {
-        setRecordedAction(action);
-        setState('recorded');
-      } else {
-        setState('record-failed');
+      try {
+        const recorded = await recordStudentQrEvent(
+          pending.token,
+          pending.eventType,
+          pending.tripId,
+        );
+        if (generation !== generationRef.current) return;
+        pendingRef.current = null;
+        lastPassRef.current = { token: pending.token, lastSeenAt: Date.now() };
+        setResult(recorded);
+        setState('result');
+        if (recorded.outcome === 'pickup_required') releaseCamera();
+        // Do not reinterpret a successful write as failed if the list cannot refresh.
+        void onRecorded(recorded).catch(() => undefined);
+      } catch {
+        if (generation === generationRef.current) {
+          releaseCamera();
+          setState('record-failed');
+        }
+      } finally {
+        if (generation === generationRef.current) processingRef.current = false;
       }
     },
-    [onRecord],
+    [onRecorded, releaseCamera, stopDetection],
   );
 
   const processToken = useCallback(
-    async (token: string) => {
+    async (raw: string) => {
       if (processingRef.current) return;
-
-      const value = token.trim();
-      const now = Date.now();
-      if (value === lastRef.current.value && !clearFrameSinceLastScanRef.current) {
+      const token = raw.trim();
+      if (!isLikelyStudentQrToken(token)) {
+        stopCamera();
+        setResult(null);
+        pendingRef.current = null;
+        setState('invalid');
         return;
       }
-      if (!shouldProcessScan(lastRef.current.value, value, lastRef.current.at, now)) return;
-
-      lastRef.current = { value, at: now };
-      clearFrameSinceLastScanRef.current = false;
-      processingRef.current = true;
-      stopCamera();
-      setRecordedAction(null);
-
-      if (!isLikelyStudentQrToken(value)) {
-        setResult(null);
-        setState('invalid');
-        processingRef.current = false;
-        return;
-      }
-
-      setState('resolving');
-      try {
-        const resolved = await resolveStudentQrForActiveTrip(value);
-        setResult(resolved);
-        const action = actionForResult(resolved);
-        if (!action) {
-          setState('complete');
-          return;
-        }
-        await recordResolvedStudent(resolved, action);
-      } catch {
-        setResult(null);
-        setState('invalid');
-      } finally {
-        processingRef.current = false;
-      }
+      await submit({ token, eventType, tripId });
     },
-    [recordResolvedStudent, stopCamera],
+    [eventType, tripId, stopCamera, submit],
   );
 
   const start = useCallback(async () => {
-    stopCamera();
-    const cameraRequest = ++cameraRequestRef.current;
+    if (processingRef.current) return;
+    stopDetection();
+    const generation = generationRef.current;
+    autoResumeRef.current = true;
+    pendingRef.current = null;
+    setManualToken('');
     setOpen(true);
-    setResult(null);
-    setRecordedAction(null);
     setState('starting');
-
     if (!window.isSecureContext && window.location.hostname !== 'localhost') {
       setState('unsupported');
       return;
@@ -173,56 +186,63 @@ export function StudentQrScanner({ onRecord, busyStudentId }: Props) {
       setState('no-camera');
       return;
     }
-    if (!window.BarcodeDetector) {
-      setState('unsupported');
-      return;
-    }
-
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
-        audio: false,
-      });
-      if (cameraRequest !== cameraRequestRef.current) {
+      const detector = await createStudentQrDetector();
+      if (generation !== generationRef.current) return;
+      const stream =
+        streamRef.current ??
+        (await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false,
+        }));
+      if (generation !== generationRef.current || document.visibilityState === 'hidden') {
         stream.getTracks().forEach((track) => track.stop());
         return;
       }
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => undefined);
+      // React must mount the video before an immediately resolved camera promise
+      // attaches its stream (also applies to camera mocks and fast WebViews).
+      await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+      if (generation !== generationRef.current) return;
+      const video = videoRef.current;
+      if (!video) {
+        stopCamera();
+        return;
       }
-
-      const detector = new window.BarcodeDetector({
-        formats: ['qr_code', 'code_128', 'code_39', 'ean_13', 'ean_8'],
-      });
-      scanningRef.current = true;
+      video.srcObject = stream;
+      await video.play();
+      if (generation !== generationRef.current) return;
       setState('scanning');
-
       const scan = async () => {
-        if (!scanningRef.current) return;
-        const video = videoRef.current;
+        if (generation !== generationRef.current) return;
         try {
-          if (video && video.readyState >= 2) {
+          if (video.readyState >= 2) {
             const codes = await detector.detect(video);
-            const raw = codes[0]?.rawValue?.trim();
-            if (raw) {
-              void processToken(raw);
-            } else {
-              clearFrameSinceLastScanRef.current = true;
+            if (generation !== generationRef.current) return;
+            const value = codes[0]?.rawValue;
+            if (value) {
+              if (lastPassRef.current?.token === value.trim()) {
+                lastPassRef.current.lastSeenAt = Date.now();
+              } else {
+                void processToken(value);
+                return;
+              }
+            } else if (
+              lastPassRef.current &&
+              Date.now() - lastPassRef.current.lastSeenAt >= PASS_REMOVED_DELAY_MS
+            ) {
+              lastPassRef.current = null;
             }
           }
         } catch {
-          // A transient frame decode failure should not stop the camera loop.
+          /* Frame decode failures do not stop the camera. */
         }
-        if (scanningRef.current) {
-          scanTimerRef.current = window.setTimeout(() => void scan(), 500);
-        }
+        if (generation === generationRef.current)
+          timerRef.current = window.setTimeout(() => void scan(), 350);
       };
-
-      scanTimerRef.current = window.setTimeout(() => void scan(), 500);
+      timerRef.current = window.setTimeout(() => void scan(), 350);
     } catch (error) {
-      if (cameraRequest !== cameraRequestRef.current) return;
+      if (generation !== generationRef.current) return;
       stopCamera();
       setState(
         error instanceof DOMException && error.name === 'NotAllowedError'
@@ -230,256 +250,264 @@ export function StudentQrScanner({ onRecord, busyStudentId }: Props) {
           : 'no-camera',
       );
     }
-  }, [processToken, stopCamera]);
+  }, [processToken, stopCamera, stopDetection]);
 
-  async function retryRecord() {
-    const action = actionForResult(result);
-    if (!result || !action || processingRef.current) return;
-    processingRef.current = true;
-    try {
-      await recordResolvedStudent(result, action);
-    } finally {
-      processingRef.current = false;
-    }
+  useEffect(() => {
+    if (!open || state !== 'result' || !result || result.outcome === 'pickup_required') return;
+    const next = window.setTimeout(() => {
+      if (autoResumeRef.current && document.visibilityState !== 'hidden') void start();
+    }, NEXT_STUDENT_DELAY_MS);
+    return () => window.clearTimeout(next);
+  }, [open, result, start, state]);
+
+  function pauseScanning() {
+    autoResumeRef.current = false;
+    stopCamera();
+    setState('paused');
   }
 
   function close() {
-    cameraRequestRef.current += 1;
     stopCamera();
+    pendingRef.current = null;
+    lastPassRef.current = null;
+    autoResumeRef.current = false;
+    processingRef.current = false;
     setOpen(false);
     setState('idle');
     setResult(null);
-    setRecordedAction(null);
     setManualToken('');
   }
 
-  const activeAction = actionForResult(result);
-  const showVideo = state === 'starting' || state === 'scanning';
+  const busy = state === 'recording' || state === 'starting' || state === 'scanning';
+  const mode = (
+    <fieldset
+      disabled={busy || state === 'record-failed'}
+      className="flex gap-3"
+      data-testid="driver-qr-mode"
+    >
+      <legend className="mb-2 text-sm font-semibold">Scan mode</legend>
+      {(['picked_up', 'dropped_off'] as const).map((value) => (
+        <label
+          key={value}
+          className="flex min-h-11 flex-1 items-center gap-2 rounded-lg border p-3 font-semibold"
+        >
+          <input
+            type="radio"
+            name="student-qr-mode"
+            value={value}
+            checked={eventType === value}
+            onChange={() => {
+              autoResumeRef.current = false;
+              stopCamera();
+              lastPassRef.current = null;
+              setEventType(value);
+              setResult(null);
+              setState('idle');
+            }}
+          />
+          {label(value)}
+        </label>
+      ))}
+    </fieldset>
+  );
+
+  function outcomeMessage() {
+    if (result?.outcome === 'recorded') return `${label(eventType)} recorded.`;
+    if (result?.outcome === 'already_recorded')
+      return `${label(eventType)} already recorded. Nothing new was recorded.`;
+    if (result?.outcome === 'pickup_required')
+      return 'Pickup must be recorded before drop-off. Nothing was recorded.';
+    return 'Pickup and drop-off are complete. Nothing new was recorded.';
+  }
 
   return (
-    <Card className="border-navy-200 p-5 ring-1 ring-navy-100" data-testid="driver-qr-scanner-card">
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-lg font-bold text-navy-900">Scan student pass</h2>
-          <p className="mt-1 text-sm text-gray-600">
-            A valid pass records the next allowed pickup or drop-off for this active trip.
-          </p>
-        </div>
-
-        {!open && (
-          <Button
+    <Card className="p-5" data-testid="driver-qr-scanner-card">
+      <h2 className="text-lg font-bold text-navy-900">Scan student pass</h2>
+      <p className="mb-4 mt-1 text-sm text-gray-600">
+        Choose a mode. Each valid QR records that event for this active trip.
+      </p>
+      {!open && (
+        <>
+          {mode}
+          <button
+            ref={openButtonRef}
             type="button"
-            size="lg"
-            fullWidth
-            leftIcon={<Camera className="h-5 w-5" aria-hidden />}
+            className={`${buttonClass({ size: 'lg' })} mt-4 w-full`}
             onClick={() => void start()}
             data-testid="driver-open-qr-scanner"
           >
+            <Camera className="h-5 w-5" aria-hidden />
             Open QR scanner
-          </Button>
-        )}
-
-        {open &&
-          createPortal(
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="student-pass-scanner-title"
-              className="fixed inset-0 z-50 h-[100dvh] overflow-y-auto bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]"
-              data-testid="driver-student-scanner-fullscreen"
-            >
-              <div className="mx-auto flex min-h-full max-w-3xl flex-col space-y-4">
-                <div className="flex items-center justify-between gap-4">
-                  <h2 id="student-pass-scanner-title" className="text-lg font-bold text-navy-900">
-                    Scan student pass
-                  </h2>
-                  <Button type="button" variant="secondary" onClick={close}>
-                    Close scanner
-                  </Button>
-                </div>
-                {showVideo && (
+          </button>
+        </>
+      )}
+      {open &&
+        createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="student-pass-scanner-title"
+            className="fixed inset-0 z-50 h-[100dvh] overflow-y-auto bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]"
+            data-testid="driver-student-scanner-fullscreen"
+            onKeyDown={(event) => {
+              if (event.key === 'Escape' && state !== 'recording') close();
+              if (event.key === 'Tab') {
+                const controls = Array.from(
+                  event.currentTarget.querySelectorAll<HTMLElement>(
+                    'button:not(:disabled), input:not(:disabled)',
+                  ),
+                ).filter((control) => !control.closest('fieldset:disabled'));
+                const first = controls[0];
+                const last = controls.at(-1);
+                if (event.shiftKey && document.activeElement === first) {
+                  event.preventDefault();
+                  last?.focus();
+                }
+                if (!event.shiftKey && document.activeElement === last) {
+                  event.preventDefault();
+                  first?.focus();
+                }
+              }
+            }}
+          >
+            <div className="mx-auto flex min-h-full max-w-3xl flex-col gap-4">
+              <div className="flex items-center justify-between gap-4">
+                <h2 id="student-pass-scanner-title" className="text-lg font-bold">
+                  {label(eventType)} — scan student pass
+                </h2>
+                <button
+                  ref={closeButtonRef}
+                  type="button"
+                  className={buttonClass({ variant: 'secondary' })}
+                  disabled={state === 'recording'}
+                  onClick={close}
+                >
+                  Close scanner
+                </button>
+              </div>
+              {mode}
+              {(['starting', 'scanning', 'recording', 'result'] as ScannerState[]).includes(
+                state,
+              ) && (
+                <div
+                  className="relative min-h-48 flex-1 overflow-hidden rounded-xl bg-gray-900"
+                  style={{ minHeight: '36dvh' }}
+                >
+                  <video
+                    ref={videoRef}
+                    className="absolute inset-0 h-full w-full object-cover"
+                    muted
+                    playsInline
+                    data-testid="driver-qr-video"
+                  />
                   <div
-                    className="relative min-h-48 flex-1 overflow-hidden rounded-xl bg-gray-900"
-                    style={{ minHeight: '60dvh' }}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 flex items-center justify-center"
                   >
-                    <video
-                      ref={videoRef}
-                      className="absolute inset-0 h-full w-full object-cover"
-                      muted
-                      playsInline
-                      data-testid="driver-qr-video"
-                    />
-                    <div
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-0 flex items-center justify-center"
-                    >
-                      <div className="h-40 w-2/3 max-w-sm rounded-2xl border-4 border-white shadow-lg" />
-                    </div>
+                    <div className="h-48 w-2/3 max-w-sm rounded-2xl border-4 border-white" />
                   </div>
-                )}
-
-                {state === 'starting' && (
-                  <p className="text-sm text-gray-600">Requesting camera permission...</p>
-                )}
+                </div>
+              )}
+              <div role="status" aria-live="polite">
+                {state === 'starting' && <p>Requesting camera access...</p>}
                 {state === 'scanning' && (
-                  <p className="text-sm font-medium text-gray-700">
-                    Point the rear camera at one BusSafe student pass.
-                  </p>
+                  <p>Ready for the next student. Show one pass at a time.</p>
                 )}
-                {state === 'resolving' && (
-                  <p className="text-sm font-semibold text-navy-700">Checking this pass...</p>
-                )}
-                {state === 'recording' && activeAction && (
-                  <p className="text-sm font-semibold text-navy-700">
-                    Recording {actionLabel(activeAction)}...
-                  </p>
-                )}
+                {state === 'recording' && <p>Recording {label(eventType).toLowerCase()}...</p>}
                 {state === 'permission-denied' && (
-                  <p className="text-sm font-semibold text-danger-700">
-                    Camera permission was denied. Allow camera access and try again.
-                  </p>
+                  <p>Camera permission was denied. Allow camera access and try again.</p>
                 )}
                 {state === 'no-camera' && (
-                  <p className="text-sm font-semibold text-danger-700">
-                    No camera was available in this browser.
-                  </p>
+                  <p>No camera is available. Check camera access and try again.</p>
                 )}
                 {state === 'unsupported' && (
-                  <p className="text-sm font-semibold text-warning-700">
-                    This browser cannot scan QR codes here. Use the BusSafe Android app or a
-                    supported secure browser.
+                  <p>A secure connection is required to scan student passes.</p>
+                )}
+                {state === 'paused' && <p>Camera paused. Start camera when ready to continue.</p>}
+                {state === 'invalid' && (
+                  <p>This is not a BusSafe student QR pass. Nothing was recorded.</p>
+                )}
+                {state === 'record-failed' && (
+                  <p>
+                    Could not confirm this scan. It may already have been recorded. Retry the same
+                    event; repeated scans will not create duplicates.
                   </p>
                 )}
-                {state === 'invalid' && (
-                  <div className="space-y-3">
-                    <p className="text-sm font-semibold text-danger-700">
-                      This pass could not be verified for the active trip. Nothing was recorded.
-                    </p>
-                    <Button
-                      type="button"
-                      size="lg"
-                      fullWidth
-                      variant="secondary"
-                      leftIcon={<RefreshCw className="h-5 w-5" aria-hidden />}
-                      onClick={() => void start()}
-                      data-testid="driver-qr-retry-scan"
-                    >
-                      Try scanner again
-                    </Button>
-                  </div>
-                )}
-
-                {(state === 'unsupported' || import.meta.env.DEV) && (
-                  <form
-                    className="flex flex-col gap-2 sm:flex-row"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      void processToken(manualToken);
-                    }}
-                  >
-                    <input
-                      aria-label="Manual QR token for QA"
-                      className="min-h-11 min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm"
-                      value={manualToken}
-                      onChange={(event) => setManualToken(event.target.value)}
-                      placeholder="QA/accessibility token entry"
-                    />
-                    <Button className="w-full sm:w-auto" type="submit" size="md">
-                      Process pass
-                    </Button>
-                  </form>
-                )}
-
-                {result && (
-                  <div
-                    className={`rounded-xl border p-4 ${
-                      state === 'recorded'
-                        ? 'border-success-200 bg-success-50'
-                        : state === 'record-failed'
-                          ? 'border-danger-200 bg-danger-50'
-                          : 'border-blue-200 bg-blue-50'
-                    }`}
-                    data-testid="driver-qr-result"
-                  >
-                    <div className="flex items-start gap-3">
-                      {state === 'recorded' && (
-                        <CheckCircle2
-                          className="mt-0.5 h-5 w-5 shrink-0 text-success-700"
-                          aria-hidden
-                        />
-                      )}
-                      <div className="min-w-0">
-                        <p className="font-bold text-navy-900">{result.studentDisplayName}</p>
-                        <p className="mt-1 text-sm text-gray-700">
-                          Pickup: {result.pickupStopName ?? 'Not assigned'} · Drop-off:{' '}
-                          {result.dropoffStopName ?? 'Not assigned'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {state === 'recorded' && recordedAction && (
-                      <div className="mt-4 space-y-3">
-                        <p
-                          className="text-sm font-bold text-success-800"
-                          data-testid="driver-qr-recorded-message"
-                        >
-                          {recordedAction === 'pickup' ? 'Pickup' : 'Drop-off'} recorded.
-                        </p>
-                        <Button
-                          type="button"
-                          size="lg"
-                          fullWidth
-                          variant="success"
-                          onClick={() => void start()}
-                          data-testid="driver-qr-scan-another"
-                        >
-                          Scan another pass
-                        </Button>
-                      </div>
-                    )}
-
-                    {state === 'record-failed' && (
-                      <div className="mt-4 space-y-3">
-                        <p className="text-sm font-bold text-danger-800">
-                          This event could not be recorded. The student status was not changed.
-                        </p>
-                        <Button
-                          type="button"
-                          size="lg"
-                          fullWidth
-                          variant="secondary"
-                          onClick={() => void retryRecord()}
-                          disabled={busyStudentId === result.studentId}
-                          data-testid="driver-qr-retry-record"
-                        >
-                          Try recording again
-                        </Button>
-                      </div>
-                    )}
-
-                    {state === 'complete' && (
-                      <div className="mt-4 space-y-3">
-                        <p className="text-sm font-semibold text-success-700">
-                          Pickup and drop-off are already complete. Nothing was recorded.
-                        </p>
-                        <Button
-                          type="button"
-                          size="lg"
-                          fullWidth
-                          variant="secondary"
-                          onClick={() => void start()}
-                        >
-                          Scan another pass
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
-            </div>,
-            document.body,
-          )}
-      </div>
+              {result && (
+                <div
+                  className="rounded-xl border border-blue-200 bg-blue-50 p-4"
+                  data-testid="driver-qr-result"
+                >
+                  <p className="flex items-center gap-2 font-bold">
+                    <CheckCircle2 className="h-5 w-5" aria-hidden />
+                    {result.studentDisplayName}
+                  </p>
+                  <p className="mt-1 text-sm">
+                    Pickup: {result.pickupStopName ?? 'Not assigned'} · Drop-off:{' '}
+                    {result.dropoffStopName ?? 'Not assigned'}
+                  </p>
+                  <p className="mt-3 font-semibold" data-testid="driver-qr-recorded-message">
+                    {outcomeMessage()}
+                  </p>
+                  {state === 'result' &&
+                    result.outcome !== 'pickup_required' &&
+                    autoResumeRef.current && (
+                      <p className="mt-2 text-sm">
+                        Getting ready for the next student automatically...
+                      </p>
+                    )}
+                </div>
+              )}
+              {state === 'record-failed' && (
+                <Button
+                  onClick={() => {
+                    const pending = pendingRef.current;
+                    if (pending) void submit(pending);
+                  }}
+                  data-testid="driver-qr-retry-record"
+                >
+                  Retry same event
+                </Button>
+              )}
+              {(state === 'starting' || state === 'scanning' || state === 'result') && (
+                <Button variant="secondary" onClick={pauseScanning}>
+                  Pause scanning
+                </Button>
+              )}
+              {!busy && (
+                <Button
+                  size="lg"
+                  fullWidth
+                  onClick={() => void start()}
+                  data-testid="driver-qr-scan-another"
+                >
+                  {result ? 'Scan next' : 'Start camera'}
+                </Button>
+              )}
+              {import.meta.env.DEV && !busy && state !== 'record-failed' && (
+                <form
+                  className="flex flex-col gap-2 sm:flex-row"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void processToken(manualToken);
+                  }}
+                >
+                  <input
+                    aria-label="Manual QR token for QA"
+                    className="min-h-11 min-w-0 flex-1 rounded-lg border px-3 py-2"
+                    value={manualToken}
+                    onChange={(event) => setManualToken(event.target.value)}
+                    placeholder="QA token entry"
+                    autoComplete="off"
+                  />
+                  <Button type="submit">Process pass</Button>
+                </form>
+              )}
+            </div>
+          </div>,
+          document.body,
+        )}
     </Card>
   );
 }

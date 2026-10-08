@@ -43,9 +43,10 @@ test('authorization surface is exact, unique, and audience-separated', async () 
     'manage_student_qr_credential(uuid,text)',
     'resolve_student_qr_for_active_trip(text)',
   ]) {
-    assert.equal(authenticated.has(studentQrRpc), false);
-    assert.ok(surface.serviceRole.includes(studentQrRpc));
+    assert.equal(authenticated.has(studentQrRpc), true);
+    assert.equal(surface.serviceRole.includes(studentQrRpc), false);
   }
+  assert.ok(authenticated.has('record_student_qr_event_for_active_trip(text,text,uuid)'));
 });
 
 test('migration chain audiences match the reviewed authorization manifest', async () => {
@@ -166,6 +167,42 @@ test('hardening migration removes spare keys and hides internal routines', async
   }
   assert.doesNotMatch(migration, /grant\s+execute[^;]+\bto\s+anon\b/i);
   assert.doesNotMatch(migration, /grant\s+(?:all|select|insert|update|delete)[^;]+\bto\s+anon\b/i);
+});
+
+test('student QR promotion retains private storage and current manifest authorization', async () => {
+  const migration = await fs.readFile(
+    'supabase/migrations/0119_student_qr_pickup_dropoff.sql',
+    'utf8',
+  );
+  assert.match(migration, /alter table public\.student_qr_credentials enable row level security/i);
+  assert.match(
+    migration,
+    /revoke all on public\.student_qr_credentials from public, anon, authenticated, service_role/i,
+  );
+  assert.match(migration, /can_write_student_roster\(s\.tenant_id, s\.school_id\)/);
+  assert.match(migration, /public\.get_driver_active_trip_student_manifest\(\)/);
+  assert.doesNotMatch(migration, /student_route_assignments/);
+  assert.match(migration, /dt\.id = p_driver_trip_id/);
+  assert.match(
+    migration,
+    /perform record_student_trip_event_for_active_trip\(v_context\.student_id, p_event_type\)/,
+  );
+  assert.match(
+    migration,
+    /p_event_type = 'picked_up' and v_context\.student_trip_status = 'picked_up'[\s\S]*?v_outcome := 'already_recorded'/,
+  );
+  assert.match(
+    migration,
+    /revoke all on function safebus_private\.student_qr_context\(text, uuid\) from public, anon, authenticated, service_role/,
+  );
+  assert.doesNotMatch(
+    migration,
+    /\b(?:drop table|disable (?:trigger|row level security)|grant[^;]+to anon)\b/i,
+  );
+  const fixture = await fs.readFile('tests/rls/student-qr-pickup-dropoff-rls.sql', 'utf8');
+  assert.match(fixture, /id uuid not null default gen_random_uuid\(\)/);
+  assert.match(fixture, /rollback;\s*$/i);
+  assert.doesNotMatch(fixture, /\b(?:commit;|disable trigger|delete from)\b/i);
 });
 
 test('authorization audit is read-only and is a protected release gate', async () => {

@@ -427,6 +427,15 @@ production` workflow must not run until a current encrypted backup is
 - Owner: Platform Administrator
 - Approved by: Platform Administrator
 - Status: Accepted on 2026-08-16; operating evidence pending
+### DL-019 — Student QR pickup/drop-off development milestone
+
+- Status: Accepted for implementation on 2026-10-08, by explicit customer request.
+- Promote D1 from quarantine into this named development milestone: admin-only opaque QR passes and explicit Pickup/Drop-off driver scanning on the existing active trip.
+- Preserve bus-first privacy and tenant/school/assignment authorization; no student location tracking or new notification channel.
+- Deliver a review-ready PR. The customer selected PR-first delivery and did not approve an isolated database, migration application, deployment, or merge.
+- Existing production QR objects require a forward authorization repair; do not activate the historical experiment unchanged. Pending SQL validation and missing production release ledger remain blockers.
+- Implementation and acceptance: [Student QR pickup/drop-off](../student-qr-pickup-dropoff.md).
+
 ## 5. Sign-off entries
 
 When a Phase 0 document is signed off, add an entry here:

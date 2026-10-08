@@ -22,6 +22,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { adminRoles } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
+import { StudentQrCredentialPanel } from '@/components/admin/StudentQrCredentialPanel';
 import { getVisibleSchools } from '@/services/adminOrganizationService';
 import {
   deleteStudent,
@@ -46,8 +47,7 @@ import {
   type DirectionalAssignmentGroup,
 } from '@/utils/directionalAssignments';
 
-type StudentTransportationGroup =
-  DirectionalAssignmentGroup<AdminStudentTransportationAssignment>;
+type StudentTransportationGroup = DirectionalAssignmentGroup<AdminStudentTransportationAssignment>;
 
 function studentName(detail: AdminStudentDetail) {
   const { student } = detail;
@@ -101,6 +101,15 @@ export function AdminStudentDetailPage() {
 
   const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
   const canDelete = profile?.role === 'tenant_admin';
+  const canManageQr =
+    !!detail &&
+    !!profile &&
+    profile.tenant_id === detail.student.tenant_id &&
+    (profile.role === 'tenant_admin' ||
+      profile.role === 'transportation_admin' ||
+      (profile.role === 'school_admin' &&
+        profile.school_id !== null &&
+        profile.school_id === detail.student.school_id));
 
   const loadDetail = useCallback(async () => {
     if (!studentId) {
@@ -347,6 +356,15 @@ export function AdminStudentDetailPage() {
                   <DetailItem label="School" value={detail.schoolName ?? 'Not assigned'} />
                 </dl>
               </Card>
+            )}
+
+            {canManageQr && (
+              <StudentQrCredentialPanel
+                key={detail.student.id}
+                studentId={detail.student.id}
+                studentName={`${detail.student.first_name} ${detail.student.last_name}`}
+                disabled={detail.student.status !== 'active'}
+              />
             )}
 
             <Card className="p-5" data-testid="student-guardians-section">
