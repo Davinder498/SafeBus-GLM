@@ -24,8 +24,7 @@ import {
 } from '@/services/notificationService';
 import { cn } from '@/utils/cn';
 
-const categories: Array<{ value: NotificationCategory | ''; label: string }> = [
-  { value: '', label: 'All' },
+const categories: Array<{ value: NotificationCategory; label: string }> = [
   { value: 'trip_status', label: 'Trips' },
   { value: 'operations', label: 'Operations' },
   { value: 'pickup_dropoff', label: 'Pickup & drop-off' },
@@ -184,7 +183,7 @@ export function NotificationsPage() {
     }
   }
 
-  function selectMobileFilter(next: 'all' | 'unread' | NotificationCategory) {
+  function selectFilter(next: 'all' | 'unread' | NotificationCategory) {
     if (next === 'all') {
       setCategory('');
       setUnreadOnly(false);
@@ -270,7 +269,7 @@ export function NotificationsPage() {
                     : 'border-slate-200 bg-white/75 text-slate-600 hover:bg-white',
                 )}
                 aria-pressed={!unreadOnly && !category}
-                onClick={() => selectMobileFilter('all')}
+                onClick={() => selectFilter('all')}
               >
                 All {items.length > 0 ? items.length : ''}
               </button>
@@ -283,7 +282,7 @@ export function NotificationsPage() {
                     : 'border-slate-200 bg-white/75 text-slate-600 hover:bg-white',
                 )}
                 aria-pressed={unreadOnly}
-                onClick={() => selectMobileFilter('unread')}
+                onClick={() => selectFilter('unread')}
               >
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-danger-500" aria-hidden />
@@ -301,7 +300,7 @@ export function NotificationsPage() {
                       : 'border-slate-200 bg-white/75 text-slate-600 hover:bg-white',
                   )}
                   aria-pressed={!unreadOnly && category === option.value}
-                  onClick={() => selectMobileFilter(option.value)}
+                  onClick={() => selectFilter(option.value)}
                 >
                   {option.label}
                 </button>
@@ -310,38 +309,70 @@ export function NotificationsPage() {
           </div>
         ) : (
           <div className="mb-6" data-ui="notification-filters">
-            <div className="grid gap-3" data-ui="notification-filter-controls">
-              <label className="grid gap-2 text-sm font-bold text-navy-900">
-                Show updates
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as NotificationCategory | '')}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2"
+            <div className="overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex w-max items-center gap-2">
+                <div
+                  className="flex items-center gap-2"
+                  role="group"
+                  aria-label="Filter updates"
+                  data-ui="notification-filter-controls"
                 >
+                  <button
+                    type="button"
+                    className={cn(
+                      'min-h-9 rounded-full border px-3 text-xs font-semibold transition-colors',
+                      !unreadOnly && !category
+                        ? 'border-navy-800 bg-navy-800 text-white'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+                    )}
+                    aria-pressed={!unreadOnly && !category}
+                    onClick={() => selectFilter('all')}
+                  >
+                    All
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(
+                      'min-h-9 rounded-full border px-3 text-xs font-semibold transition-colors',
+                      unreadOnly
+                        ? 'border-navy-800 bg-navy-800 text-white'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+                    )}
+                    aria-pressed={unreadOnly}
+                    onClick={() => selectFilter('unread')}
+                  >
+                    Unread {unreadCount > 0 ? unreadCount : ''}
+                  </button>
                   {categories.map((option) => (
-                    <option key={option.value} value={option.value}>
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={cn(
+                        'min-h-9 rounded-full border px-3 text-xs font-semibold transition-colors',
+                        !unreadOnly && category === option.value
+                          ? 'border-navy-800 bg-navy-800 text-white'
+                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+                      )}
+                      aria-pressed={!unreadOnly && category === option.value}
+                      onClick={() => selectFilter(option.value)}
+                    >
                       {option.label}
-                    </option>
+                    </button>
                   ))}
-                </select>
-              </label>
-              <label
-                className="flex min-h-12 items-center justify-between gap-3 text-sm font-semibold text-navy-900"
-                data-ui="notification-filter-toggle"
-              >
-                <span>Unread only</span>
-                <input
-                  type="checkbox"
-                  checked={unreadOnly}
-                  onChange={(e) => setUnreadOnly(e.target.checked)}
-                />
-              </label>
+                </div>
+                <button
+                  type="button"
+                  className="inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-navy-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => void markAllRead()}
+                  disabled={unreadCount === 0}
+                  data-ui="notification-mark-all-read"
+                >
+                  <CheckCheck className="h-3.5 w-3.5" aria-hidden />
+                  Mark all read
+                </button>
+              </div>
             </div>
-            <div className="mt-4 flex flex-col gap-3" data-ui="notification-filter-actions">
-              <Button variant="secondary" onClick={() => void markAllRead()}>
-                <CheckCheck className="h-4 w-4" />
-                Mark all read
-              </Button>
+            <div className="mt-2" data-ui="notification-filter-actions">
               <span className="text-xs font-medium text-slate-600" aria-live="polite">
                 {connectionState === 'connected'
                   ? 'Live updates connected'
