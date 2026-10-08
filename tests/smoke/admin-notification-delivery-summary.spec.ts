@@ -22,6 +22,7 @@ async function mockRole(page: Page, role: 'tenant_admin' | 'guardian' | 'driver'
     if (method === 'HEAD') return route.fulfill({ status: 200, headers: { 'content-range': '0-0/1' }, body: '' });
     if (path.includes('/rpc/get_admin_live_fleet_monitoring')) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
     if (path.includes('/rpc/get_admin_trip_overview')) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+    if (path.includes('/rpc/get_tenant_notification_settings')) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ notifications_enabled: true, push_notifications_enabled: true, email_effective: true, push_effective: true, privacy_review_status: 'approved', privacy_approved_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' }) });
     if (path.includes('/rpc/get_notification_delivery_health_v2')) {
       if (summaryBody === undefined) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ email: { pending: 2, retrying: 1, failed: 1, oldestPendingAt: '2026-01-01T00:00:00Z' }, push: { pending: 3, retrying: 2, failed: 1, oldestPendingAt: '2026-01-01T00:00:00Z', invalidDevices: 4, recentFailureCategories: [{ category: 'temporary_provider_error', count: 1 }] } }) });
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(summaryBody) });
@@ -36,10 +37,10 @@ async function mockRole(page: Page, role: 'tenant_admin' | 'guardian' | 'driver'
   });
 }
 
-test.describe('Phase 15B tenant admin notification delivery summary', () => {
+test.describe('tenant admin notification delivery summary', () => {
   test('tenant admin sees safe operational counts and failure categories', async ({ page }) => {
     await mockRole(page, 'tenant_admin');
-    await page.goto('/admin/trips');
+    await page.goto('/admin/settings/notifications');
     await expect(page.getByRole('heading', { name: 'Notification delivery', level: 2 })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Email' }).getByText('Pending', { exact: true })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Email' })).toBeVisible();
@@ -51,7 +52,7 @@ test.describe('Phase 15B tenant admin notification delivery summary', () => {
 
   test('summary does not expose recipient email or student personal information', async ({ page }) => {
     await mockRole(page, 'tenant_admin');
-    await page.goto('/admin/trips');
+    await page.goto('/admin/settings/notifications');
     // The summary card must never show emails or names
     await expect(page.getByRole('heading', { name: 'Notification delivery' })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Android push' })).toBeVisible();
@@ -61,21 +62,21 @@ test.describe('Phase 15B tenant admin notification delivery summary', () => {
     expect(cardText).toContain('no recipient');
   });
 
-  test('guardian cannot access admin trips page', async ({ page }) => {
+  test('guardian cannot access tenant notification settings', async ({ page }) => {
     await mockRole(page, 'guardian');
-    await page.goto('/admin/trips');
+    await page.goto('/admin/settings/notifications');
     await expect(page.getByRole('heading', { name: 'Use the correct BusSafe app' })).toBeVisible();
   });
 
-  test('driver cannot access admin trips page', async ({ page }) => {
+  test('driver cannot access tenant notification settings', async ({ page }) => {
     await mockRole(page, 'driver');
-    await page.goto('/admin/trips');
+    await page.goto('/admin/settings/notifications');
     await expect(page.getByRole('heading', { name: 'Use the correct BusSafe app' })).toBeVisible();
   });
 
-  test('Platform Super Admin cannot access tenant admin trips page', async ({ page }) => {
+  test('Platform Super Admin cannot access tenant notification settings', async ({ page }) => {
     await mockRole(page, 'platform_super_admin');
-    await page.goto('/admin/trips');
+    await page.goto('/admin/settings/notifications');
     // Platform Super Admin is redirected away from tenant admin pages
     await expect(page.getByText('Wrong portal')).toBeVisible();
   });
@@ -83,7 +84,7 @@ test.describe('Phase 15B tenant admin notification delivery summary', () => {
   test('summary card renders without crashing on mobile viewport', async ({ page }) => {
     await mockRole(page, 'tenant_admin');
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('/admin/trips');
+    await page.goto('/admin/settings/notifications');
     await expect(page.getByRole('heading', { name: 'Notification delivery', level: 2 })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Email' }).getByText('Pending', { exact: true })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Android push' })).toBeVisible();
@@ -91,13 +92,13 @@ test.describe('Phase 15B tenant admin notification delivery summary', () => {
 
   test('handles empty summary gracefully', async ({ page }) => {
     await mockRole(page, 'tenant_admin', { email: { pending: 0, retrying: 0, failed: 0, oldestPendingAt: null }, push: { pending: 0, retrying: 0, failed: 0, oldestPendingAt: null, invalidDevices: 0, recentFailureCategories: [] } });
-    await page.goto('/admin/trips');
+    await page.goto('/admin/settings/notifications');
     await expect(page.getByText('No recent push failures.')).toBeVisible();
   });
 
   test('fails closed when the delivery-health response is malformed', async ({ page }) => {
     await mockRole(page, 'tenant_admin', []);
-    await page.goto('/admin/trips');
+    await page.goto('/admin/settings/notifications');
     await expect(page.getByText('Summary unavailable')).toBeVisible();
   });
 });
