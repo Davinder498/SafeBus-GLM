@@ -105,9 +105,7 @@ test.describe('Simplified tenant admin workflow', () => {
     await page.goto('/admin/trips');
     await expect(page.getByRole('heading', { name: 'Trip history', level: 1 })).toBeVisible();
     await expect(page.getByText('Review recent dated trip executions')).toBeVisible();
-    await expect(
-      page.getByRole('heading', { name: 'Notification delivery', level: 2 }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Notification delivery', level: 2 })).toHaveCount(0);
     await expect(page.getByText('Route One')).toBeVisible();
     await expect(page.getByText('Bus One')).toBeVisible();
     await expect(page.getByText('Test Driver')).toBeVisible();

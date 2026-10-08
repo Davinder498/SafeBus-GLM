@@ -52,10 +52,27 @@ describe('AdminSettingsNav', () => {
       '/admin/settings/support',
       '/admin/settings',
       '/admin/settings/schools',
+      '/admin/settings/notifications',
       '/admin/settings/billing',
     ]);
     expect(
       links.find((link) => link.getAttribute('aria-current') === 'page')?.textContent,
     ).toContain('Subscription & billing');
+  });
+
+  it('shows tenant notification controls only to tenant administrators', async () => {
+    const tenant = await renderSettingsNav('/admin/settings/notifications', 'tenant_admin');
+    expect(tenant.textContent).toContain('NotificationsDelivery controls and health');
+    expect(
+      Array.from(tenant.querySelectorAll('a'))
+        .find((link) => link.getAttribute('aria-current') === 'page')
+        ?.getAttribute('href'),
+    ).toBe('/admin/settings/notifications');
+
+    await act(async () => root?.unmount());
+    root = null;
+    document.body.innerHTML = '';
+    const delegated = await renderSettingsNav('/admin/settings', 'transportation_admin');
+    expect(delegated.textContent).not.toContain('Notifications');
   });
 });

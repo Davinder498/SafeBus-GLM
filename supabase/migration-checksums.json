@@ -710,6 +710,12 @@
       "filename": "0117_fix_route_shape_rpc_column_ambiguity.sql",
       "bytes": 4373,
       "sha256": "335d0e93024802b3588c5f29f37d33c1154cb7d040de3b507dc952464526c299"
+    },
+    {
+      "version": "0118",
+      "filename": "0118_tenant_notification_control_center.sql",
+      "bytes": 7757,
+      "sha256": "b254e9a55b3cf62de40d0f46c0317534e6a6d078074d04bcd3d8e6968db1c946"
     }
   ]
 }

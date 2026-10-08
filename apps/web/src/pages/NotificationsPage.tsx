@@ -107,6 +107,13 @@ export function NotificationsPage() {
   const isRecipientMobile =
     appSurface === 'native-mobile' && (profile?.role === 'guardian' || isDriver);
   const recipientMobileCategories = isDriver ? driverMobileCategories : guardianMobileCategories;
+  const settingsPath = isDriver
+    ? '/driver/settings'
+    : profile?.role === 'guardian'
+      ? '/notifications/settings'
+      : profile?.role === 'tenant_admin'
+        ? '/admin/settings/notifications'
+        : null;
 
   const selectedItem = requestedId ? (items.find((item) => item.id === requestedId) ?? null) : null;
 
@@ -234,12 +241,14 @@ export function NotificationsPage() {
             title="Notifications"
             description="Your authoritative BusSafe inbox. In-app updates remain available regardless of push settings."
             action={
-              <Link to={isDriver ? '/driver/settings' : '/notifications/settings'}>
-                <Button variant="secondary">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </Button>
-              </Link>
+              settingsPath ? (
+                <Link to={settingsPath}>
+                  <Button variant="secondary">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </Button>
+                </Link>
+              ) : undefined
             }
           />
         )}

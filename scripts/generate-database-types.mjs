@@ -132,6 +132,15 @@ const AUTHENTICATED_ONLY_FUNCTIONS = {
     required: new Set(),
   },
   get_tenant_subscription: { properties: {}, required: new Set() },
+  get_tenant_notification_settings: { properties: {}, required: new Set() },
+  set_tenant_notification_delivery_enabled: {
+    properties: { p_enabled: { type: 'boolean' } },
+    required: new Set(['p_enabled']),
+  },
+  set_tenant_push_notifications_enabled: {
+    properties: { p_enabled: { type: 'boolean' } },
+    required: new Set(['p_enabled']),
+  },
   record_student_record_access: {
     properties: { p_student_id: { type: 'string', format: 'uuid' } },
     required: new Set(['p_student_id']),

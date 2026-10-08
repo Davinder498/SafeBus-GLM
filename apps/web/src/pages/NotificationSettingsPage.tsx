@@ -30,9 +30,9 @@ export function NotificationSettingsPage() {
   const isGuardian = profile?.role === 'guardian';
   const isAdmin = Boolean(
     profile?.role &&
-      ['tenant_admin', 'school_admin', 'transportation_admin', 'platform_super_admin'].includes(
-        profile.role,
-      ),
+    ['tenant_admin', 'school_admin', 'transportation_admin', 'platform_super_admin'].includes(
+      profile.role,
+    ),
   );
   const [preferences, setPreferences] = useState<GuardianDeliveryPreferences | null>(null);
   const [permissionState, setPermissionState] = useState<PushPermissionState | null>(null);
@@ -123,6 +123,9 @@ export function NotificationSettingsPage() {
   if (profile?.role === 'driver') {
     return <Navigate to="/driver/settings" replace />;
   }
+  if (profile?.role === 'tenant_admin') {
+    return <Navigate to="/admin/settings/notifications" replace />;
+  }
 
   const nav =
     profile?.role === 'platform_super_admin'
@@ -184,7 +187,10 @@ export function NotificationSettingsPage() {
       navGroups={nav}
     >
       <div className="mx-auto max-w-2xl" data-ui="notification-settings-page">
-        <PageHeader title="Notification settings" description="Choose how BusSafe should reach you." />
+        <PageHeader
+          title="Notification settings"
+          description="Choose how BusSafe should reach you."
+        />
         {isAdmin ? (
           <DataState
             title="No settings needed"
