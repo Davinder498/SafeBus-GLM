@@ -1231,9 +1231,13 @@ export interface Database {
         Row: {
           tenant_id: string;
           notifications_enabled: boolean;
+          push_notifications_enabled: boolean;
+          push_delivery_preference_enabled: boolean;
           privacy_review_status: string;
           tenant_daily_limit: number;
           tenant_per_minute_limit: number;
+          push_tenant_daily_limit: number;
+          push_tenant_per_minute_limit: number;
           privacy_approved_at: string | null;
           privacy_approved_by: string | null;
           updated_at: string;
@@ -1241,9 +1245,13 @@ export interface Database {
         Insert: {
           tenant_id: string;
           notifications_enabled?: boolean;
+          push_notifications_enabled?: boolean;
+          push_delivery_preference_enabled?: boolean;
           privacy_review_status?: string;
           tenant_daily_limit?: number;
           tenant_per_minute_limit?: number;
+          push_tenant_daily_limit?: number;
+          push_tenant_per_minute_limit?: number;
           privacy_approved_at?: string | null;
           privacy_approved_by?: string | null;
           updated_at?: string;
@@ -1251,9 +1259,13 @@ export interface Database {
         Update: {
           tenant_id?: string;
           notifications_enabled?: boolean;
+          push_notifications_enabled?: boolean;
+          push_delivery_preference_enabled?: boolean;
           privacy_review_status?: string;
           tenant_daily_limit?: number;
           tenant_per_minute_limit?: number;
+          push_tenant_daily_limit?: number;
+          push_tenant_per_minute_limit?: number;
           privacy_approved_at?: string | null;
           privacy_approved_by?: string | null;
           updated_at?: string;
@@ -3295,6 +3307,14 @@ export interface Database {
         };
         Returns: Json;
       };
+      set_tenant_notification_delivery_enabled: {
+        Args: { p_enabled: boolean };
+        Returns: unknown;
+      };
+      set_tenant_push_notifications_enabled: {
+        Args: { p_enabled: boolean };
+        Returns: unknown;
+      };
       admin_create_route_shape_version: {
         Args: {
           p_geojson: Json;
@@ -4085,6 +4105,10 @@ export interface Database {
         Args: {
           p_recent_window_hours?: number | null;
         };
+        Returns: unknown;
+      };
+      get_tenant_notification_settings: {
+        Args: Record<PropertyKey, never>;
         Returns: unknown;
       };
       get_tenant_subscription: {

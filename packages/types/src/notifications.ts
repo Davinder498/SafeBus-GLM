@@ -109,3 +109,15 @@ export interface NotificationDeliveryHealthV2 {
     recentFailureCategories: Array<{ category: string; count: number }>;
   };
 }
+
+export type TenantNotificationPrivacyStatus = 'pending' | 'approved' | 'rejected';
+
+export interface TenantNotificationSettings {
+  notificationsEnabled: boolean;
+  pushNotificationsEnabled: boolean;
+  emailEffective: boolean;
+  pushEffective: boolean;
+  privacyReviewStatus: TenantNotificationPrivacyStatus;
+  privacyApprovedAt: string | null;
+  updatedAt: string;
+}

@@ -33,6 +33,26 @@ const channelPreferencesMigration = await readFile(
   ),
   'utf8',
 );
+const tenantControlMigration = await readFile(
+  new URL('../../supabase/migrations/0118_tenant_notification_control_center.sql', import.meta.url),
+  'utf8',
+);
+const tenantNotificationPage = await readFile(
+  new URL('../../apps/web/src/pages/AdminNotificationSettingsPage.tsx', import.meta.url),
+  'utf8',
+);
+const adminTripsPage = await readFile(
+  new URL('../../apps/web/src/pages/AdminTripsPage.tsx', import.meta.url),
+  'utf8',
+);
+const notificationsPage = await readFile(
+  new URL('../../apps/web/src/pages/NotificationsPage.tsx', import.meta.url),
+  'utf8',
+);
+const router = await readFile(
+  new URL('../../apps/web/src/routes/router.tsx', import.meta.url),
+  'utf8',
+);
 const notificationSettingsPage = await readFile(
   new URL('../../apps/web/src/pages/NotificationSettingsPage.tsx', import.meta.url),
   'utf8',
@@ -218,6 +238,90 @@ test('guardian delivery settings expose channel masters and a three-group matrix
   assert.match(notificationSettingsPage, /Operational alerts/);
   assert.doesNotMatch(notificationSettingsPage, /Save notification settings|Manage email choices/);
   assert.match(notificationSettingsPage, /saveGuardianDeliveryPreferences/);
+});
+
+test('tenant notification controls are tenant-derived, role-bound and fail closed', () => {
+  assert.match(tenantControlMigration, /get_tenant_notification_settings\(\)/i);
+  assert.match(
+    tenantControlMigration,
+    /set_tenant_notification_delivery_enabled\([\s\S]*p_enabled boolean/i,
+  );
+  assert.match(
+    tenantControlMigration,
+    /set_tenant_push_notifications_enabled\([\s\S]*p_enabled boolean/i,
+  );
+  assert.match(tenantControlMigration, /security definer[\s\S]*set search_path = ''/i);
+  assert.match(tenantControlMigration, /current_tenant_id\(\)/i);
+  assert.match(tenantControlMigration, /current_user_role\(\) is distinct from 'tenant_admin'/i);
+  assert.doesNotMatch(tenantControlMigration, /p_tenant_id/i);
+  assert.match(
+    tenantControlMigration,
+    /p_enabled and \([\s\S]*privacy_review_status <> 'approved'[\s\S]*privacy_approved_at is null/i,
+  );
+  assert.match(
+    tenantControlMigration,
+    /set notifications_enabled = p_enabled[\s\S]*set push_notifications_enabled = p_enabled/i,
+  );
+  assert.match(tenantControlMigration, /add column push_delivery_preference_enabled boolean not null default false/i);
+  assert.match(tenantControlMigration, /set push_delivery_preference_enabled = push_notifications_enabled/i);
+  assert.match(tenantControlMigration, /when p_enabled then v_policy\.push_delivery_preference_enabled[\s\S]*else false/i);
+  assert.match(tenantControlMigration, /set push_notifications_enabled = p_enabled,[\s\S]*push_delivery_preference_enabled = p_enabled/i);
+  assert.doesNotMatch(
+    tenantControlMigration,
+    /set\s+(?:privacy_review_status|privacy_approved_at|privacy_approved_by|tenant_daily_limit|tenant_per_minute_limit|push_tenant_daily_limit|push_tenant_per_minute_limit)\s*=/i,
+  );
+});
+
+test('tenant notification mutations are audited and narrowly granted', () => {
+  assert.match(
+    tenantControlMigration,
+    /phase5_write_audit_event[\s\S]*'security\.config_changed'/i,
+  );
+  assert.match(tenantControlMigration, /'setting', 'external_delivery'/i);
+  assert.match(tenantControlMigration, /'setting', 'android_push'/i);
+  assert.doesNotMatch(
+    tenantControlMigration,
+    /recipient_email|student_name|guardian_name|email_address/i,
+  );
+  for (const signature of [
+    'get_tenant_notification_settings\\(\\)',
+    'set_tenant_notification_delivery_enabled\\(boolean\\)',
+    'set_tenant_push_notifications_enabled\\(boolean\\)',
+  ]) {
+    assert.match(
+      tenantControlMigration,
+      new RegExp(
+        `revoke all on function public\\.${signature} from public, anon, authenticated`,
+        'i',
+      ),
+    );
+    assert.match(
+      tenantControlMigration,
+      new RegExp(`grant execute on function public\\.${signature} to authenticated`, 'i'),
+    );
+  }
+});
+
+test('tenant notification control center owns policy and health presentation', () => {
+  assert.match(
+    router,
+    /path: '\/admin\/settings\/notifications'[\s\S]*allowedRoles=\{\['tenant_admin'\]\}/i,
+  );
+  assert.match(tenantNotificationPage, /Awaiting privacy approval/);
+  assert.match(tenantNotificationPage, /Privacy approval rejected/);
+  assert.match(tenantNotificationPage, /External delivery is paused/);
+  assert.match(tenantNotificationPage, /External delivery is active/);
+  assert.match(tenantNotificationPage, /NotificationDeliverySummaryCard/);
+  assert.match(
+    notificationSettingsPage,
+    /profile\?\.role === 'tenant_admin'[\s\S]*to="\/admin\/settings\/notifications"/,
+  );
+  assert.match(
+    notificationsPage,
+    /profile\?\.role === 'tenant_admin'[\s\S]*'\/admin\/settings\/notifications'/,
+  );
+  assert.match(notificationsPage, /settingsPath \? \([\s\S]*<Link to=\{settingsPath\}>/);
+  assert.doesNotMatch(adminTripsPage, /NotificationDeliverySummaryCard/);
 });
 
 test('v2 guardian preferences are atomic, fail-closed, and preserve the inbox', () => {

@@ -20,6 +20,7 @@ import { AdminRouteCreatePage } from '@/pages/AdminRouteCreatePage';
 import { AdminRouteManagePage } from '@/pages/AdminRouteManagePage';
 import { AdminSchoolsPage } from '@/pages/AdminSchoolsPage';
 import { AdminSettingsPage } from '@/pages/AdminSettingsPage';
+import { AdminNotificationSettingsPage } from '@/pages/AdminNotificationSettingsPage';
 import { AdminSubscriptionPage } from '@/pages/AdminSubscriptionPage';
 import { AdminStudentDetailPage } from '@/pages/AdminStudentDetailPage';
 import { AdminStudentsPage } from '@/pages/AdminStudentsPage';
@@ -158,6 +159,14 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={['tenant_admin']}>
         <Navigate to="/admin/settings/billing" replace />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/settings/notifications',
+    element: (
+      <ProtectedRoute allowedRoles={['tenant_admin']}>
+        <AdminNotificationSettingsPage />
       </ProtectedRoute>
     ),
   },
