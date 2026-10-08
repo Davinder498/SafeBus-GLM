@@ -75,19 +75,29 @@ afterEach(async () => {
 });
 
 describe('explicit student QR events', () => {
-  it('records pickup once, pauses the camera and retains Pickup for the next pass', async () => {
+  it('automatically scans successive students and suppresses a pass held in view', async () => {
     await click('Open QR scanner');
     await tick();
     expect(mocks.record).toHaveBeenCalledTimes(1);
     expect(mocks.record).toHaveBeenCalledWith(token, 'picked_up', 'trip-1');
-    expect(stops).toHaveBeenCalledTimes(1);
+    expect(stops).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain('Pickup recorded.');
     await tick(5000);
     expect(mocks.record).toHaveBeenCalledTimes(1);
-    mocks.record.mockResolvedValue({ ...recorded, outcome: 'already_recorded' });
-    await click('Scan next');
+    expect(document.body.textContent).toContain('Ready for the next student');
+    const nextToken = `sbus_qr_v1_${'B'.repeat(43)}`;
+    mocks.detect.mockResolvedValue([{ rawValue: nextToken }]);
     await tick();
-    expect(mocks.record).toHaveBeenLastCalledWith(token, 'picked_up', 'trip-1');
+    expect(mocks.record).toHaveBeenLastCalledWith(nextToken, 'picked_up', 'trip-1');
+    expect(mocks.record).toHaveBeenCalledTimes(2);
+    expect(camera).toHaveBeenCalledTimes(1);
+    await tick(2000);
+    mocks.detect.mockResolvedValue([]);
+    await tick(1500);
+    mocks.record.mockResolvedValue({ ...recorded, outcome: 'already_recorded' });
+    mocks.detect.mockResolvedValue([{ rawValue: nextToken }]);
+    await tick();
+    expect(mocks.record).toHaveBeenLastCalledWith(nextToken, 'picked_up', 'trip-1');
     expect(document.body.textContent).toContain('Pickup already recorded.');
     expect(camera).toHaveBeenCalledWith({
       video: { facingMode: { ideal: 'environment' } },
@@ -105,6 +115,11 @@ describe('explicit student QR events', () => {
     expect(mocks.record).toHaveBeenCalledTimes(1);
     expect(mocks.record).toHaveBeenCalledWith(token, 'dropped_off', 'trip-1');
     expect(document.body.textContent).toContain('Drop-off recorded.');
+    await tick(2000);
+    const nextToken = `sbus_qr_v1_${'B'.repeat(43)}`;
+    mocks.detect.mockResolvedValue([{ rawValue: nextToken }]);
+    await tick();
+    expect(mocks.record).toHaveBeenLastCalledWith(nextToken, 'dropped_off', 'trip-1');
   });
 
   it.each(['pickup_required', 'complete'])(
@@ -125,6 +140,9 @@ describe('explicit student QR events', () => {
     await click('Open QR scanner');
     await tick();
     expect(document.body.textContent).toContain('It may already have been recorded');
+    await tick(3000);
+    expect(mocks.record).toHaveBeenCalledTimes(1);
+    expect(camera).toHaveBeenCalledTimes(1);
     expect(
       (document.querySelector('input[value="dropped_off"]') as HTMLInputElement).closest('fieldset')
         ?.disabled,
@@ -143,6 +161,10 @@ describe('explicit student QR events', () => {
     await tick();
     expect(document.body.textContent).toContain('Pickup recorded.');
     expect(document.body.textContent).not.toContain('Could not confirm');
+    await tick(2000);
+    mocks.detect.mockResolvedValue([{ rawValue: `sbus_qr_v1_${'B'.repeat(43)}` }]);
+    await tick();
+    expect(mocks.record).toHaveBeenCalledTimes(2);
   });
 
   it('rejects bus tokens before any write', async () => {
@@ -191,6 +213,9 @@ describe('explicit student QR events', () => {
       finish(recorded);
     });
     expect(document.body.textContent).toContain('Pickup recorded.');
+    await tick(3000);
+    expect(camera).toHaveBeenCalledTimes(1);
+    expect(stops).toHaveBeenCalledTimes(1);
   });
 
   it('discards callbacks from a previous trip and stops its stream', async () => {
@@ -219,5 +244,61 @@ describe('explicit student QR events', () => {
     await act(async () => finish({ getTracks: () => [{ stop: stops }] }));
     expect(stops).toHaveBeenCalledTimes(1);
     expect(mocks.record).not.toHaveBeenCalled();
+  });
+
+  it('does not read another pass while recording is pending', async () => {
+    let finish!: (value: typeof recorded) => void;
+    mocks.record.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    await click('Open QR scanner');
+    await tick();
+    mocks.detect.mockResolvedValue([{ rawValue: `sbus_qr_v1_${'B'.repeat(43)}` }]);
+    await tick(3000);
+    expect(mocks.record).toHaveBeenCalledTimes(1);
+    expect(mocks.detect).toHaveBeenCalledTimes(1);
+    await act(async () => finish(recorded));
+    await tick(1500);
+    expect(mocks.record).toHaveBeenCalledTimes(2);
+  });
+
+  it('cancels automatic resumption when closed after success', async () => {
+    await click('Open QR scanner');
+    await tick();
+    await click('Close scanner');
+    await tick(3000);
+    expect(camera).toHaveBeenCalledTimes(1);
+    expect(stops).toHaveBeenCalledTimes(1);
+    expect(mocks.record).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it('allows pausing the line and changing the event mode', async () => {
+    mocks.detect.mockResolvedValue([]);
+    await click('Open QR scanner');
+    await tick();
+    await click('Pause scanning');
+    expect(stops).toHaveBeenCalledTimes(1);
+    await act(async () =>
+      (document.querySelector('input[value="dropped_off"]') as HTMLInputElement).click(),
+    );
+    await tick(2000);
+    expect(camera).toHaveBeenCalledTimes(1);
+    mocks.detect.mockResolvedValue([{ rawValue: token }]);
+    await click('Start camera');
+    await tick();
+    expect(mocks.record).toHaveBeenCalledWith(token, 'dropped_off', 'trip-1');
+  });
+
+  it('pauses ordering errors instead of silently skipping a missing pickup', async () => {
+    mocks.record.mockResolvedValue({ ...recorded, outcome: 'pickup_required' });
+    await click('Open QR scanner');
+    await tick(3000);
+    expect(mocks.record).toHaveBeenCalledTimes(1);
+    expect(stops).toHaveBeenCalledTimes(1);
+    expect(camera).toHaveBeenCalledTimes(1);
+    expect(document.body.textContent).toContain('Pickup must be recorded');
   });
 });

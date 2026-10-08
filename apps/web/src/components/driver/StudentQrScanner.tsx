@@ -33,6 +33,8 @@ interface PendingScan {
   tripId: string;
 }
 const label = (event: StudentQrEventType) => (event === 'picked_up' ? 'Pickup' : 'Drop-off');
+const NEXT_STUDENT_DELAY_MS = 900;
+const PASS_REMOVED_DELAY_MS = 1000;
 
 export function StudentQrScanner({ tripId, onRecorded }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -41,6 +43,8 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
   const generationRef = useRef(0);
   const processingRef = useRef(false);
   const pendingRef = useRef<PendingScan | null>(null);
+  const lastPassRef = useRef<{ token: string; lastSeenAt: number } | null>(null);
+  const autoResumeRef = useRef(false);
   const openButtonRef = useRef<HTMLButtonElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const [open, setOpen] = useState(false);
@@ -49,19 +53,29 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
   const [result, setResult] = useState<StudentQrScanResult | null>(null);
   const [manualToken, setManualToken] = useState('');
 
-  const stopCamera = useCallback(() => {
+  const stopDetection = useCallback(() => {
     generationRef.current += 1;
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     timerRef.current = null;
+  }, []);
+
+  const releaseCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
   }, []);
 
+  const stopCamera = useCallback(() => {
+    stopDetection();
+    releaseCamera();
+  }, [releaseCamera, stopDetection]);
+
   useEffect(() => {
     // A different displayed trip invalidates every outstanding scanner callback.
     stopCamera();
     pendingRef.current = null;
+    lastPassRef.current = null;
+    autoResumeRef.current = false;
     processingRef.current = false;
     setOpen(false);
     setState('idle');
@@ -83,8 +97,11 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
 
   useEffect(() => {
     const pause = () => {
-      // Keep recording/result feedback intact if an authorized request is in flight.
-      if (!processingRef.current && (state === 'starting' || state === 'scanning')) {
+      autoResumeRef.current = false;
+      if (processingRef.current) {
+        // Release tracks without invalidating the pending server response.
+        releaseCamera();
+      } else if (state === 'starting' || state === 'scanning' || state === 'result') {
         stopCamera();
         setState('paused');
       }
@@ -98,13 +115,14 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
       document.removeEventListener('visibilitychange', visibility);
       window.removeEventListener('pagehide', pause);
     };
-  }, [stopCamera, state]);
+  }, [releaseCamera, stopCamera, state]);
 
   const submit = useCallback(
     async (pending: PendingScan) => {
       if (processingRef.current) return;
       processingRef.current = true;
-      stopCamera();
+      // Keep the rear camera warm, but never decode another pass during a write.
+      stopDetection();
       const generation = generationRef.current;
       pendingRef.current = pending;
       setResult(null);
@@ -117,17 +135,22 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
         );
         if (generation !== generationRef.current) return;
         pendingRef.current = null;
+        lastPassRef.current = { token: pending.token, lastSeenAt: Date.now() };
         setResult(recorded);
         setState('result');
+        if (recorded.outcome === 'pickup_required') releaseCamera();
         // Do not reinterpret a successful write as failed if the list cannot refresh.
         void onRecorded(recorded).catch(() => undefined);
       } catch {
-        if (generation === generationRef.current) setState('record-failed');
+        if (generation === generationRef.current) {
+          releaseCamera();
+          setState('record-failed');
+        }
       } finally {
         if (generation === generationRef.current) processingRef.current = false;
       }
     },
-    [onRecorded, stopCamera],
+    [onRecorded, releaseCamera, stopDetection],
   );
 
   const processToken = useCallback(
@@ -148,12 +171,12 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
 
   const start = useCallback(async () => {
     if (processingRef.current) return;
-    stopCamera();
+    stopDetection();
     const generation = generationRef.current;
+    autoResumeRef.current = true;
     pendingRef.current = null;
     setManualToken('');
     setOpen(true);
-    setResult(null);
     setState('starting');
     if (!window.isSecureContext && window.location.hostname !== 'localhost') {
       setState('unsupported');
@@ -166,10 +189,12 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
     try {
       const detector = await createStudentQrDetector();
       if (generation !== generationRef.current) return;
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
-        audio: false,
-      });
+      const stream =
+        streamRef.current ??
+        (await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false,
+        }));
       if (generation !== generationRef.current || document.visibilityState === 'hidden') {
         stream.getTracks().forEach((track) => track.stop());
         return;
@@ -196,8 +221,17 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
             if (generation !== generationRef.current) return;
             const value = codes[0]?.rawValue;
             if (value) {
-              void processToken(value);
-              return;
+              if (lastPassRef.current?.token === value.trim()) {
+                lastPassRef.current.lastSeenAt = Date.now();
+              } else {
+                void processToken(value);
+                return;
+              }
+            } else if (
+              lastPassRef.current &&
+              Date.now() - lastPassRef.current.lastSeenAt >= PASS_REMOVED_DELAY_MS
+            ) {
+              lastPassRef.current = null;
             }
           }
         } catch {
@@ -216,11 +250,27 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
           : 'no-camera',
       );
     }
-  }, [processToken, stopCamera]);
+  }, [processToken, stopCamera, stopDetection]);
+
+  useEffect(() => {
+    if (!open || state !== 'result' || !result || result.outcome === 'pickup_required') return;
+    const next = window.setTimeout(() => {
+      if (autoResumeRef.current && document.visibilityState !== 'hidden') void start();
+    }, NEXT_STUDENT_DELAY_MS);
+    return () => window.clearTimeout(next);
+  }, [open, result, start, state]);
+
+  function pauseScanning() {
+    autoResumeRef.current = false;
+    stopCamera();
+    setState('paused');
+  }
 
   function close() {
     stopCamera();
     pendingRef.current = null;
+    lastPassRef.current = null;
+    autoResumeRef.current = false;
     processingRef.current = false;
     setOpen(false);
     setState('idle');
@@ -247,6 +297,9 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
             value={value}
             checked={eventType === value}
             onChange={() => {
+              autoResumeRef.current = false;
+              stopCamera();
+              lastPassRef.current = null;
               setEventType(value);
               setResult(null);
               setState('idle');
@@ -333,10 +386,12 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
                 </button>
               </div>
               {mode}
-              {(state === 'starting' || state === 'scanning') && (
+              {(['starting', 'scanning', 'recording', 'result'] as ScannerState[]).includes(
+                state,
+              ) && (
                 <div
                   className="relative min-h-48 flex-1 overflow-hidden rounded-xl bg-gray-900"
-                  style={{ minHeight: '50dvh' }}
+                  style={{ minHeight: '36dvh' }}
                 >
                   <video
                     ref={videoRef}
@@ -355,7 +410,9 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
               )}
               <div role="status" aria-live="polite">
                 {state === 'starting' && <p>Requesting camera access...</p>}
-                {state === 'scanning' && <p>Point the rear camera at one student QR pass.</p>}
+                {state === 'scanning' && (
+                  <p>Ready for the next student. Show one pass at a time.</p>
+                )}
                 {state === 'recording' && <p>Recording {label(eventType).toLowerCase()}...</p>}
                 {state === 'permission-denied' && (
                   <p>Camera permission was denied. Allow camera access and try again.</p>
@@ -366,7 +423,7 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
                 {state === 'unsupported' && (
                   <p>A secure connection is required to scan student passes.</p>
                 )}
-                {state === 'paused' && <p>Camera paused while the app was in the background.</p>}
+                {state === 'paused' && <p>Camera paused. Start camera when ready to continue.</p>}
                 {state === 'invalid' && (
                   <p>This is not a BusSafe student QR pass. Nothing was recorded.</p>
                 )}
@@ -393,6 +450,13 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
                   <p className="mt-3 font-semibold" data-testid="driver-qr-recorded-message">
                     {outcomeMessage()}
                   </p>
+                  {state === 'result' &&
+                    result.outcome !== 'pickup_required' &&
+                    autoResumeRef.current && (
+                      <p className="mt-2 text-sm">
+                        Getting ready for the next student automatically...
+                      </p>
+                    )}
                 </div>
               )}
               {state === 'record-failed' && (
@@ -404,6 +468,11 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
                   data-testid="driver-qr-retry-record"
                 >
                   Retry same event
+                </Button>
+              )}
+              {(state === 'starting' || state === 'scanning' || state === 'result') && (
+                <Button variant="secondary" onClick={pauseScanning}>
+                  Pause scanning
                 </Button>
               )}
               {!busy && (

@@ -5,6 +5,7 @@ import path from 'node:path';
 const requireWeb = createRequire(path.resolve('apps/web/package.json'));
 
 const token = `sbus_qr_v1_${'S'.repeat(43)}`;
+const nextToken = `sbus_qr_v1_${'T'.repeat(43)}`;
 async function install(
   page: Page,
   options: {
@@ -17,6 +18,7 @@ async function install(
 ) {
   await installSupabaseMock(page, { withActiveTrip: !options.noTrip });
   let status = 'not_picked_up';
+  const studentStatuses = new Map<string, string>();
   const calls: Record<string, string>[] = [];
   let didRecord = false;
   await page.route('**/rest/v1/rpc/get_driver_active_trip_student_manifest', async (route) => {
@@ -49,16 +51,22 @@ async function install(
     const body = route.request().postDataJSON();
     calls.push(body);
     expect(body.p_driver_trip_id).toBe(MOCK.tripId);
-    expect(body.p_qr_token).toBe(token);
+    expect([token, nextToken]).toContain(body.p_qr_token);
     const outcome =
-      options.outcome ?? (status === body.p_event_type ? 'already_recorded' : 'recorded');
-    if (outcome === 'recorded') status = body.p_event_type;
+      options.outcome ??
+      (studentStatuses.get(body.p_qr_token) === body.p_event_type
+        ? 'already_recorded'
+        : 'recorded');
+    if (outcome === 'recorded') {
+      status = body.p_event_type;
+      studentStatuses.set(body.p_qr_token, status);
+    }
     didRecord = true;
     await route.fulfill({
       json: [
         {
           student_id: 'aaaaaaaa-0000-0000-0000-000000000001',
-          student_display_name: 'Avery Johnson',
+          student_display_name: body.p_qr_token === token ? 'Avery Johnson' : 'Blair Smith',
           pickup_stop_name: 'Elm',
           dropoff_stop_name: 'School',
           student_trip_status: status,
@@ -69,8 +77,15 @@ async function install(
   });
   await page.addInitScript(
     ({ value, denied, fallbackImage }) => {
-      const runtime = window as unknown as { BarcodeDetector: unknown; __stops: number };
+      const runtime = window as unknown as {
+        BarcodeDetector: unknown;
+        __stops: number;
+        __qrValue: string;
+        __detections: number;
+      };
       runtime.__stops = 0;
+      runtime.__qrValue = value;
+      runtime.__detections = 0;
       Object.defineProperty(navigator, 'mediaDevices', {
         configurable: true,
         value: {
@@ -113,7 +128,8 @@ async function install(
         });
         runtime.BarcodeDetector = class {
           async detect() {
-            return [{ rawValue: value }];
+            runtime.__detections += 1;
+            return runtime.__qrValue ? [{ rawValue: runtime.__qrValue }] : [];
           }
         };
       } else {
@@ -125,7 +141,7 @@ async function install(
   return calls;
 }
 
-test('driver records selected events, repeated pickup stays pickup, and the mobile scanner fits', async ({
+test('boarding line scans successive students automatically and retains the selected mode', async ({
   page,
 }) => {
   const calls = await install(page);
@@ -133,11 +149,18 @@ test('driver records selected events, repeated pickup stays pickup, and the mobi
   await page.getByRole('button', { name: 'Open QR scanner' }).click();
   await expect(page.getByTestId('driver-qr-recorded-message')).toHaveText('Pickup recorded.');
   await expect(page.getByRole('radio', { name: 'Pickup', exact: true })).toBeChecked();
-  await page.getByRole('button', { name: 'Scan next' }).click();
-  await expect(page.getByTestId('driver-qr-recorded-message')).toContainText(
-    'Pickup already recorded.',
+  await expect(page.getByText('Ready for the next student.', { exact: false })).toBeVisible();
+  await page.waitForFunction(
+    () => (window as unknown as { __detections: number }).__detections >= 5,
   );
+  expect(calls).toHaveLength(1);
+  await page.evaluate((value) => {
+    (window as unknown as { __qrValue: string }).__qrValue = value;
+  }, nextToken);
+  await expect(page.getByTestId('driver-qr-result')).toContainText('Blair Smith');
+  await expect(page.getByTestId('driver-qr-recorded-message')).toHaveText('Pickup recorded.');
   expect(calls.map((call) => call.p_event_type)).toEqual(['picked_up', 'picked_up']);
+  await page.getByRole('button', { name: 'Pause scanning' }).click();
   await page.getByRole('radio', { name: 'Drop-off', exact: true }).check();
   await page.getByRole('button', { name: 'Start camera' }).click();
   await expect(page.getByTestId('driver-qr-recorded-message')).toHaveText('Drop-off recorded.');
@@ -147,7 +170,8 @@ test('driver records selected events, repeated pickup stays pickup, and the mobi
       () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
     ),
   ).toBe(true);
-  expect(await page.evaluate(() => (window as unknown as { __stops: number }).__stops)).toBe(3);
+  await page.getByRole('button', { name: 'Close scanner' }).click();
+  expect(await page.evaluate(() => (window as unknown as { __stops: number }).__stops)).toBe(2);
 });
 test('recorded scan stays successful when list refresh fails', async ({ page }) => {
   await install(page, { refreshFailure: true });
