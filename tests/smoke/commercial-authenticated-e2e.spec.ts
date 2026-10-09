@@ -16,9 +16,12 @@ test.describe('Point 10 authenticated CR1 journeys', () => {
     await expect(
       page.getByRole('heading', { name: 'Transportation overview', level: 1 }),
     ).toBeVisible();
-    await expect(page.getByTestId('admin-route-status-tile')).toHaveCount(2);
-
-    await page.getByTestId('admin-route-status-tile').first().click();
+    await expect(page.getByTestId('admin-trip-search')).toBeVisible();
+    const summary = page.getByTestId('transportation-summary');
+    await expect(summary.getByRole('link')).toHaveCount(7);
+    await summary.getByRole('link', { name: /Routes/ }).click();
+    await expect(page).toHaveURL('/admin/routes');
+    await page.getByRole('link', { name: 'Open route Route One', exact: true }).click();
     await expect(page).toHaveURL(`/admin/routes/${ADMIN_IDS.route}`);
     await expect(page.getByRole('heading', { name: 'Route One', level: 1 })).toBeVisible();
 
@@ -27,7 +30,9 @@ test.describe('Point 10 authenticated CR1 journeys', () => {
     await expect(page.getByText('Route One')).toBeVisible();
   });
 
-  test.skip('driver can start and end the assigned bus trip from the QR workflow', async ({ page }) => {
+  test.skip('driver can start and end the assigned bus trip from the QR workflow', async ({
+    page,
+  }) => {
     await page.context().grantPermissions(['geolocation']);
     await page.context().setGeolocation({ latitude: 51.0447, longitude: -114.0719 });
     await installSupabaseMock(page);
