@@ -136,7 +136,7 @@ export function NotificationSettingsPage() {
 
   const updateGroup = (
     group: 'pickupDropoff' | 'tripUpdates' | 'operationalAlerts',
-    channel: 'push' | 'email',
+    channel: 'inApp' | 'push' | 'email',
     checked: boolean,
   ) =>
     queueChange((value) => ({
@@ -152,6 +152,8 @@ export function NotificationSettingsPage() {
           description: 'Recorded boarding and drop-off events',
           icon: <BusFront className="h-5 w-5" aria-hidden />,
           pushChecked: preferences.pickupDropoff.push,
+          inAppChecked: preferences.pickupDropoff.inApp,
+          onInAppChange: (checked) => updateGroup('pickupDropoff', 'inApp', checked),
           emailChecked: preferences.pickupDropoff.email,
           onPushChange: (checked) => updateGroup('pickupDropoff', 'push', checked),
           onEmailChange: (checked) => updateGroup('pickupDropoff', 'email', checked),
@@ -162,6 +164,8 @@ export function NotificationSettingsPage() {
           description: 'Trip starts, completions and cancellations',
           icon: <Route className="h-5 w-5" aria-hidden />,
           pushChecked: preferences.tripUpdates.push,
+          inAppChecked: preferences.tripUpdates.inApp,
+          onInAppChange: (checked) => updateGroup('tripUpdates', 'inApp', checked),
           emailChecked: preferences.tripUpdates.email,
           onPushChange: (checked) => updateGroup('tripUpdates', 'push', checked),
           onEmailChange: (checked) => updateGroup('tripUpdates', 'email', checked),
@@ -172,6 +176,8 @@ export function NotificationSettingsPage() {
           description: 'Delays, disruptions and service changes',
           icon: <TriangleAlert className="h-5 w-5" aria-hidden />,
           pushChecked: preferences.operationalAlerts.push,
+          inAppChecked: preferences.operationalAlerts.inApp,
+          onInAppChange: (checked) => updateGroup('operationalAlerts', 'inApp', checked),
           emailChecked: preferences.operationalAlerts.email,
           onPushChange: (checked) => updateGroup('operationalAlerts', 'push', checked),
           onEmailChange: (checked) => updateGroup('operationalAlerts', 'email', checked),
@@ -207,6 +213,10 @@ export function NotificationSettingsPage() {
           <DataState title="Loading settings" message="Checking your notification choices." />
         ) : (
           <NotificationDeliverySettings
+            inAppEnabled={preferences.inAppEnabled}
+            onInAppEnabledChange={(checked) =>
+              queueChange((value) => ({ ...value, inAppEnabled: checked }))
+            }
             pushEnabled={preferences.pushEnabled}
             emailEnabled={preferences.emailEnabled}
             alerts={alerts}

@@ -722,6 +722,12 @@
       "filename": "0119_student_qr_pickup_dropoff.sql",
       "bytes": 14956,
       "sha256": "b21769af4b1e07554756c6f8012e579eee14dc57a1c62588657c0e6663467b33"
+    },
+    {
+      "version": "0120",
+      "filename": "0120_compact_role_notifications.sql",
+      "bytes": 22945,
+      "sha256": "c9fc7ce6a123c0099688534c2dc8177d81c32f37d222a8646e62aada7c2ff1e0"
     }
   ]
 }

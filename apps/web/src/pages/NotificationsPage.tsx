@@ -18,6 +18,7 @@ import { useAuth } from '@/contexts/useAuth';
 import { useNotifications } from '@/contexts/useNotifications';
 import {
   archiveNotifications,
+  fetchNotificationDetail,
   fetchNotifications,
   markAllNotificationsRead,
   setNotificationsRead,
@@ -60,6 +61,9 @@ export function NotificationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
+  const [detail, setDetail] = useState<UserNotification | null>(null);
+  const [detailLoading, setDetailLoading] = useState(Boolean(requestedId));
+  const [detailError, setDetailError] = useState<string | null>(null);
   const detailHeadingRef = useRef<HTMLHeadingElement>(null);
   const markedFromLink = useRef(new Set<string>());
 
@@ -112,7 +116,34 @@ export function NotificationsPage() {
       ? '/notifications/settings'
       : null;
 
-  const selectedItem = requestedId ? (items.find((item) => item.id === requestedId) ?? null) : null;
+  const selectedItem = requestedId && detail?.id === requestedId ? detail : null;
+
+  useEffect(() => {
+    let cancelled = false;
+    setDetail(null);
+    setDetailError(null);
+    if (!requestedId) {
+      setDetailLoading(false);
+      return;
+    }
+    setDetailLoading(true);
+    void fetchNotificationDetail(requestedId)
+      .then((row) => {
+        if (!cancelled) setDetail(row);
+      })
+      .catch((caught) => {
+        if (!cancelled)
+          setDetailError(
+            caught instanceof Error ? caught.message : 'Unable to load this notification.',
+          );
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [requestedId, profile?.id]);
 
   const setReadState = useCallback(
     async (item: UserNotification, read: boolean) => {
@@ -125,6 +156,11 @@ export function NotificationsPage() {
               ? { ...row, readAt: read ? (row.readAt ?? new Date().toISOString()) : null }
               : row,
           ),
+        );
+        setDetail((current) =>
+          current?.id === item.id
+            ? { ...current, readAt: read ? (current.readAt ?? new Date().toISOString()) : null }
+            : current,
         );
         await refreshNotifications();
       } catch (caught) {
@@ -150,8 +186,16 @@ export function NotificationsPage() {
     navigate(item.destinationPath);
   }
   async function archive(item: UserNotification) {
-    await archiveNotifications([item.id]);
-    await Promise.all([load(), refreshNotifications()]);
+    setActionError(null);
+    try {
+      await archiveNotifications([item.id]);
+      if (item.id === requestedId) navigate('/notifications');
+      await Promise.all([load(), refreshNotifications()]);
+    } catch (caught) {
+      setActionError(
+        caught instanceof Error ? caught.message : 'Unable to archive this notification.',
+      );
+    }
   }
   async function loadMore() {
     const last = items.at(-1);
@@ -207,7 +251,7 @@ export function NotificationsPage() {
         data-ui="notification-inbox-page"
       >
         {isRecipientMobile ? (
-          <header className="mb-3" data-ui="notification-mobile-header">
+          <header className="mb-4" data-ui="notification-mobile-header">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-baseline gap-2">
                 <h1 className="text-xl font-bold tracking-tight text-navy-900">Updates</h1>
@@ -308,7 +352,7 @@ export function NotificationsPage() {
             </div>
           </div>
         ) : (
-          <div className="mb-6" data-ui="notification-filters">
+          <div className="mt-6 mb-4" data-ui="notification-filters">
             <div className="overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex w-max items-center gap-2">
                 <div
@@ -436,7 +480,13 @@ export function NotificationsPage() {
             </div>
           </Card>
         ) : null}
-        {!loading && !error && requestedId && !items.some((item) => item.id === requestedId) ? (
+        {requestedId && detailLoading ? (
+          <DataState title="Loading notification" message="Checking this update." />
+        ) : null}
+        {requestedId && detailError ? (
+          <DataState title="Notification unavailable" message={detailError} />
+        ) : null}
+        {requestedId && !detailLoading && !detailError && !selectedItem ? (
           <Card
             className="mb-4 border-amber-200 bg-amber-50 p-5"
             data-ui="notification-unavailable-card"
@@ -456,17 +506,14 @@ export function NotificationsPage() {
         ) : items.length === 0 ? (
           <DataState title="You’re all caught up" message="No notifications match these filters." />
         ) : (
-          <div
-            className={cn('space-y-5', isRecipientMobile && 'space-y-3')}
-            data-ui="notification-list"
-          >
+          <div className="space-y-2" data-ui="notification-list">
             {items.map((item) => (
               <Card
                 key={item.id}
                 className={cn(
-                  'p-5',
+                  'px-4 py-3',
                   isRecipientMobile &&
-                    'border-slate-200 bg-white !p-4 shadow-[0_2px_10px_rgb(15_42_68_/_0.05)]',
+                    'border-slate-200 bg-white shadow-[0_2px_10px_rgb(15_42_68_/_0.05)]',
                 )}
                 data-ui="notification-card"
                 data-unread={!item.readAt}
@@ -488,20 +535,20 @@ export function NotificationsPage() {
                       </div>
                       <button
                         type="button"
-                        className="-mr-1 -mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                        className="-mr-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
                         onClick={() => void archive(item)}
                         aria-label={`Archive ${item.title}`}
                       >
                         <X className="h-4 w-4" aria-hidden />
                       </button>
                     </div>
-                    <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-2.5">
+                    <div className="mt-2 flex items-center justify-between gap-3 border-t border-slate-100 pt-1">
                       <span className="text-[0.6875rem] font-medium text-slate-500">
                         {item.readAt ? 'Read' : 'New update'}
                       </span>
                       <button
                         type="button"
-                        className="inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-[#e7f8fb] px-3 text-xs font-semibold text-navy-700 transition-colors hover:bg-[#d8f2f6]"
+                        className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-[#e7f8fb] px-3 text-xs font-semibold text-navy-700 transition-colors hover:bg-[#d8f2f6]"
                         onClick={() => openNotification(item)}
                         aria-label={`Open notification: ${item.body}`}
                       >
@@ -513,15 +560,15 @@ export function NotificationsPage() {
                 ) : (
                   <div className="flex items-start justify-between gap-4">
                     <button
-                      className="min-w-0 flex-1 text-left"
+                      className="min-h-11 min-w-0 flex-1 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-600"
                       onClick={() => openNotification(item)}
                       aria-label={`Open notification: ${item.body}`}
                     >
-                      <span className="flex items-center gap-2">
+                      <span className="flex items-start gap-2">
                         <span className="font-semibold text-slate-950">{item.body}</span>
                         {!item.readAt ? (
                           <span
-                            className="h-2 w-2 rounded-full"
+                            className="mt-2 h-2 w-2 shrink-0 rounded-full"
                             data-ui="notification-unread-dot"
                             aria-label="Unread"
                           />
@@ -530,6 +577,7 @@ export function NotificationsPage() {
                     </button>
                     <Button
                       variant="ghost"
+                      className="min-h-11 min-w-11"
                       onClick={() => void archive(item)}
                       aria-label={`Archive ${item.title}`}
                     >

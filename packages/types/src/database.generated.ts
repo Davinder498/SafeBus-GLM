@@ -3175,6 +3175,11 @@ export interface Database {
         Args: Record<PropertyKey, never>;
         Returns: Json;
       };
+      /** Pending migration 0120; v2 remains supported for existing clients. */
+      get_guardian_delivery_preferences_v3: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       get_driver_delivery_preferences: {
         Args: Record<PropertyKey, never>;
         Returns: Json;
@@ -3182,6 +3187,11 @@ export interface Database {
       get_notification_delivery_health_v2: { Args: Record<PropertyKey, never>; Returns: Json };
       get_notification_preferences: { Args: Record<PropertyKey, never>; Returns: Json };
       get_user_notification_unread_count: { Args: Record<PropertyKey, never>; Returns: number };
+      /** Pending migration 0120; includes authorized external-alert details. */
+      get_user_notification_detail: {
+        Args: { p_id: string };
+        Returns: Database['public']['Functions']['get_user_notifications']['Returns'];
+      };
       get_user_notifications: {
         Args: {
           p_limit?: number;
@@ -3287,6 +3297,11 @@ export interface Database {
         Returns: Json;
       };
       set_guardian_delivery_preferences_v2: {
+        Args: { p_preferences: Json };
+        Returns: Json;
+      };
+      /** Pending migration 0120. */
+      set_guardian_delivery_preferences_v3: {
         Args: { p_preferences: Json };
         Returns: Json;
       };

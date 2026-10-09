@@ -72,6 +72,29 @@ interface NotificationRow {
   destination_path: string;
 }
 
+function mapNotification(row: NotificationRow): UserNotification {
+  return {
+    id: row.id,
+    eventType: row.event_type,
+    category: row.category,
+    severity: row.severity,
+    title: row.title,
+    body: row.body,
+    occurredAt: row.occurred_at,
+    createdAt: row.created_at,
+    readAt: row.read_at,
+    archivedAt: row.archived_at,
+    destinationPath: row.destination_path,
+  };
+}
+
+export async function fetchNotificationDetail(id: string): Promise<UserNotification | null> {
+  const rows = assertData<NotificationRow[]>(
+    await clientRpc()('get_user_notification_detail', { p_id: id }),
+  );
+  return rows[0] ? mapNotification(rows[0]) : null;
+}
+
 export async function fetchNotifications(
   options: {
     limit?: number;
@@ -87,19 +110,7 @@ export async function fetchNotifications(
     p_unread_only: options.unreadOnly ?? false,
     p_category: options.category ?? null,
   });
-  return assertData<NotificationRow[]>(result).map((row) => ({
-    id: row.id,
-    eventType: row.event_type,
-    category: row.category,
-    severity: row.severity,
-    title: row.title,
-    body: row.body,
-    occurredAt: row.occurred_at,
-    createdAt: row.created_at,
-    readAt: row.read_at,
-    archivedAt: row.archived_at,
-    destinationPath: row.destination_path,
-  }));
+  return assertData<NotificationRow[]>(result).map(mapNotification);
 }
 
 export async function fetchUnreadNotificationCount(): Promise<number> {
@@ -141,29 +152,36 @@ export async function saveNotificationPreferences(
   );
 }
 
-interface GuardianDeliveryPreferencesRowV2 {
+interface GuardianDeliveryPreferencesRowV3 {
+  in_app_enabled: boolean;
   push_enabled: boolean;
   email_enabled: boolean;
-  pickup_dropoff: { push: boolean; email: boolean };
-  trip_updates: { push: boolean; email: boolean };
-  operational_alerts: { push: boolean; email: boolean };
+  pickup_dropoff: { in_app: boolean; push: boolean; email: boolean };
+  trip_updates: { in_app: boolean; push: boolean; email: boolean };
+  operational_alerts: { in_app: boolean; push: boolean; email: boolean };
 }
 
 function mapGuardianDeliveryPreferences(
-  value: GuardianDeliveryPreferencesRowV2,
+  value: GuardianDeliveryPreferencesRowV3,
 ): GuardianDeliveryPreferences {
+  const channel = (group: GuardianDeliveryPreferencesRowV3['pickup_dropoff']) => ({
+    inApp: group.in_app,
+    push: group.push,
+    email: group.email,
+  });
   return {
+    inAppEnabled: value.in_app_enabled,
     pushEnabled: value.push_enabled,
     emailEnabled: value.email_enabled,
-    pickupDropoff: value.pickup_dropoff,
-    tripUpdates: value.trip_updates,
-    operationalAlerts: value.operational_alerts,
+    pickupDropoff: channel(value.pickup_dropoff),
+    tripUpdates: channel(value.trip_updates),
+    operationalAlerts: channel(value.operational_alerts),
   };
 }
 
 export async function fetchGuardianDeliveryPreferences(): Promise<GuardianDeliveryPreferences> {
-  const value = assertData<GuardianDeliveryPreferencesRowV2>(
-    await clientRpc()('get_guardian_delivery_preferences_v2'),
+  const value = assertData<GuardianDeliveryPreferencesRowV3>(
+    await clientRpc()('get_guardian_delivery_preferences_v3'),
   );
   return mapGuardianDeliveryPreferences(value);
 }
@@ -171,14 +189,20 @@ export async function fetchGuardianDeliveryPreferences(): Promise<GuardianDelive
 export async function saveGuardianDeliveryPreferences(
   value: GuardianDeliveryPreferences,
 ): Promise<GuardianDeliveryPreferences> {
-  const result = assertData<GuardianDeliveryPreferencesRowV2>(
-    await clientRpc()('set_guardian_delivery_preferences_v2', {
+  const channel = (group: GuardianDeliveryPreferences['pickupDropoff']) => ({
+    in_app: group.inApp,
+    push: group.push,
+    email: group.email,
+  });
+  const result = assertData<GuardianDeliveryPreferencesRowV3>(
+    await clientRpc()('set_guardian_delivery_preferences_v3', {
       p_preferences: {
+        in_app_enabled: value.inAppEnabled,
         push_enabled: value.pushEnabled,
         email_enabled: value.emailEnabled,
-        pickup_dropoff: value.pickupDropoff,
-        trip_updates: value.tripUpdates,
-        operational_alerts: value.operationalAlerts,
+        pickup_dropoff: channel(value.pickupDropoff),
+        trip_updates: channel(value.tripUpdates),
+        operational_alerts: channel(value.operationalAlerts),
       },
     }),
   );

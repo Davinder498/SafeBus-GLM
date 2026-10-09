@@ -195,11 +195,12 @@ export async function installGuardianVisibilityMock(
   let deliveryPreferenceSaves = 0;
   let deliveryPreferenceSaveFails = false;
   let deliveryPreferences = {
+    in_app_enabled: true,
     push_enabled: true,
     email_enabled: false,
-    pickup_dropoff: { push: true, email: false },
-    trip_updates: { push: true, email: false },
-    operational_alerts: { push: true, email: false },
+    pickup_dropoff: { in_app: true, push: true, email: false },
+    trip_updates: { in_app: true, push: true, email: false },
+    operational_alerts: { in_app: true, push: true, email: false },
   };
 
   await page.route('**/*', async (requestRoute: Route) => {
