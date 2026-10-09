@@ -41,17 +41,16 @@ test.describe('Simplified tenant admin workflow', () => {
     ).toBeVisible();
     await expect(page.getByRole('link', { name: 'platform@example.test' })).toBeVisible();
   });
-  test('overview shows active and inactive clickable route tiles that open route detail', async ({
-    page,
-  }) => {
+  test('overview summary opens the route directory and route details', async ({ page }) => {
     await mockAdmin(page);
     await installMapProviderAvailable(page);
     await page.goto('/admin');
-    const tiles = page.getByTestId('admin-route-status-tile');
-    await expect(tiles).toHaveCount(2);
-    await expect(tiles.nth(0)).toContainText('active');
-    await expect(tiles.nth(1)).toContainText('inactive');
-    await tiles.nth(0).click();
+    await page
+      .getByTestId('transportation-summary')
+      .getByRole('link', { name: /Routes/ })
+      .click();
+    await expect(page).toHaveURL('/admin/routes');
+    await page.getByRole('link', { name: 'Open route Route One', exact: true }).click();
     await expect(page).toHaveURL(`/admin/routes/${ids.route}`);
     await expect(page.getByRole('heading', { name: 'Route One', level: 1 })).toBeVisible();
     await expect(page.getByText('Pickup Stop')).toBeVisible();
@@ -83,14 +82,18 @@ test.describe('Simplified tenant admin workflow', () => {
       page.locator('#route-details').getByRole('button', { name: 'Retry map' }),
     ).toBeVisible();
   });
-  test('legacy setup link returns admins to the route overview', async ({ page }) => {
+  test('legacy setup link returns admins to the transportation overview', async ({ page }) => {
     await mockAdmin(page);
     await page.goto('/admin/setup');
     await expect(page).toHaveURL('/admin');
     await expect(
       page.getByRole('heading', { name: 'Transportation overview', level: 1 }),
     ).toBeVisible();
-    await expect(page.getByTestId('admin-route-status-tile')).toHaveCount(2);
+    await expect(page.getByTestId('admin-route-status-tile')).toHaveCount(0);
+    await expect(page.getByTestId('transportation-summary')).toBeVisible();
+    await expect(
+      page.getByTestId('transportation-summary').getByRole('link', { name: /Routes/ }),
+    ).toHaveAttribute('href', '/admin/routes');
     await expect(page.getByRole('link', { name: 'Stops', exact: true })).toHaveCount(0);
   });
   test('legacy assignment links return admins to the record-based workflows', async ({ page }) => {
@@ -105,7 +108,9 @@ test.describe('Simplified tenant admin workflow', () => {
     await page.goto('/admin/trips');
     await expect(page.getByRole('heading', { name: 'Trip history', level: 1 })).toBeVisible();
     await expect(page.getByText('Review recent dated trip executions')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Notification delivery', level: 2 })).toHaveCount(0);
+    await expect(
+      page.getByRole('heading', { name: 'Notification delivery', level: 2 }),
+    ).toHaveCount(0);
     await expect(page.getByText('Route One')).toBeVisible();
     await expect(page.getByText('Bus One')).toBeVisible();
     await expect(page.getByText('Test Driver')).toBeVisible();

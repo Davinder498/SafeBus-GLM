@@ -24,9 +24,11 @@ const NOTE_TYPES: Array<{ value: OperationalNoteType; label: string }> = [
 export function OperationalNotesPanel({
   targetEntity,
   targetId,
+  timeZone,
 }: {
   targetEntity: OperationalNoteTarget;
   targetId: string;
+  timeZone?: string;
 }) {
   const { profile } = useAuth();
   const [notes, setNotes] = useState<OperationalNote[]>([]);
@@ -147,7 +149,7 @@ export function OperationalNotesPanel({
                 </p>
                 <p className="mt-1 whitespace-pre-wrap text-gray-700">{note.note_text}</p>
                 <p className="mt-2 text-xs text-gray-500">
-                  {new Date(note.created_at).toLocaleString()}
+                  {new Date(note.created_at).toLocaleString(undefined, { timeZone })}
                 </p>
               </li>
             ))}

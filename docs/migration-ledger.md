@@ -111,6 +111,10 @@ archiving is needed; the collision is documented here and asserted by
 | 0097–0109   | Guardian bus service, assignments, subscriptions, schools, stops, support, ETA, and simplified delivery preferences | Canonical, pending isolated validation | Additive mobile and operations contracts; production activation remains protected.                                                                                                                                                                                                                                              |
 | 0110        | `0110_cool_cloud_notification_preferences.sql`                                                                      | Canonical, unapplied                   | Atomic guardian push/email masters and category selections, guardian operational push, and privacy-safe canonical trip/operational email outbox references. Must use protected release workflow after human approval.                                                                                                           |
 
+Migration `0121_admin_trip_search.sql` is prepared and unapplied: a read-only,
+RLS-preserving recorded-trip search for Tenant Overview. See
+[acceptance and adoption checks](qa/tenant-overview-search-acceptance.md).
+
 ## 4. Fresh-rebuild proof
 
 A fresh database must be built from `0001` through

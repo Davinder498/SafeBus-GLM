@@ -117,6 +117,7 @@
     "search_admin_guardians(text,integer)",
     "search_admin_routes(text,integer)",
     "search_admin_students(text,integer)",
+    "search_admin_trips(date,date,text,integer,integer)",
     "set_driver_delivery_preferences(jsonb)",
     "set_guardian_delivery_preferences(boolean,boolean)",
     "set_guardian_delivery_preferences_v2(jsonb)",

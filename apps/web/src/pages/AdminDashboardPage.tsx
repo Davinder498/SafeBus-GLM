@@ -1,34 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
+import { AdminTripSearchSection } from '@/components/admin/AdminTripSearchSection';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
-import { AdminRouteStatusTile } from '@/components/admin/AdminRouteStatusTile';
-import { AdminTripsOverview } from '@/components/admin/AdminTripsOverview';
-import { Card } from '@/components/ui/Card';
+import { Button, buttonClass } from '@/components/ui/Button';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { fetchAdminLiveTrips } from '@/services/adminLiveMonitoringService';
-import {
-  fetchBoundedAdminOverview,
-  type AdminOverviewRoute,
-} from '@/services/adminDashboardOverviewService';
 import { fetchAdminSetupSnapshot, type AdminSetupSnapshot } from '@/services/adminSetupService';
-import { fetchAdminTripOverview } from '@/services/adminTripOverviewService';
-import type { AdminLiveTrip } from '@/types/adminLiveMonitoring';
-import type { AdminTripOverviewItem } from '@/types/adminTripOverview';
 
-const emptySetupSnapshot: AdminSetupSnapshot = {
-  buses: 0,
-  drivers: 0,
-  routes: 0,
-  stops: 0,
-  students: 0,
-  guardians: 0,
-  guardianLinks: 0,
-  studentAssignments: 0,
-  driverAssignments: 0,
-};
-
-const setupKeys: Array<{ label: string; key: keyof AdminSetupSnapshot; to: string }> = [
+const summaryItems: Array<{ label: string; key: keyof AdminSetupSnapshot; to: string }> = [
   { label: 'Buses', key: 'buses', to: '/admin/buses' },
   { label: 'Drivers', key: 'drivers', to: '/admin/drivers' },
   { label: 'Routes', key: 'routes', to: '/admin/routes' },
@@ -38,65 +17,29 @@ const setupKeys: Array<{ label: string; key: keyof AdminSetupSnapshot; to: strin
   { label: 'Student bus assignments', key: 'studentAssignments', to: '/admin/students' },
 ];
 
-interface OverviewData {
-  setup: AdminSetupSnapshot;
-  trips: AdminLiveTrip[];
-  tripOverview: AdminTripOverviewItem[];
-  tripOverviewFailed: boolean;
-  routes: AdminOverviewRoute[];
-}
+type SummaryState =
+  { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; snapshot: AdminSetupSnapshot };
 
 export function AdminDashboardPage() {
-  const [data, setData] = useState<OverviewData | null>(null);
-  const [error, setError] = useState(false);
-
-  const load = useCallback(async () => {
-    // Overview degrades gracefully: the setup snapshot and live trips feed
-    // the top status cards, while the rest enrich the routes map. If any
-    // single query fails (e.g., an RLS hiccup on one supporting table),
-    // we still show the rest of the overview instead of blanking the page.
-    const [setupResult, tripsResult, overviewResult, tripOverviewResult] = await Promise.allSettled(
-      [
-        fetchAdminSetupSnapshot(),
-        fetchAdminLiveTrips(),
-        fetchBoundedAdminOverview(),
-        fetchAdminTripOverview(25),
-      ],
-    );
-
-    if (import.meta.env.DEV) {
-      const names = ['setup snapshot', 'live trips', 'bounded route overview', 'trip overview'];
-      [setupResult, tripsResult, overviewResult, tripOverviewResult].forEach((result, index) => {
-        if (result.status === 'rejected') {
-          console.warn(
-            `[AdminDashboardPage] Non-fatal failure loading ${names[index]}.`,
-            result.reason,
-          );
-        }
-      });
+  const [summary, setSummary] = useState<SummaryState>({ kind: 'loading' });
+  const sequence = useRef(0);
+  const loadSummary = useCallback(async () => {
+    const request = ++sequence.current;
+    setSummary({ kind: 'loading' });
+    try {
+      const snapshot = await fetchAdminSetupSnapshot();
+      if (request === sequence.current) setSummary({ kind: 'ready', snapshot });
+    } catch {
+      if (request === sequence.current) setSummary({ kind: 'error' });
     }
-
-    setData({
-      setup: setupResult.status === 'fulfilled' ? setupResult.value : emptySetupSnapshot,
-      trips: tripsResult.status === 'fulfilled' ? tripsResult.value : [],
-      routes: overviewResult.status === 'fulfilled' ? overviewResult.value.routes : [],
-      tripOverview: tripOverviewResult.status === 'fulfilled' ? tripOverviewResult.value : [],
-      tripOverviewFailed: tripOverviewResult.status === 'rejected',
-    });
   }, []);
 
   useEffect(() => {
-    void load().catch(() => setError(true));
-  }, [load]);
-
-  const setupComplete = useMemo(() => {
-    if (!data) return 0;
-    return setupKeys.filter((item) => data.setup[item.key] > 0).length;
-  }, [data]);
-
-  const activeTrips = data?.trips.length ?? 0;
-  const staleTrips = data?.trips.filter((t) => t.locationStatus === 'stale').length ?? 0;
-  const missingTrips = data?.trips.filter((t) => t.locationStatus === 'missing').length ?? 0;
+    void loadSummary();
+    return () => {
+      sequence.current += 1;
+    };
+  }, [loadSummary]);
 
   return (
     <DashboardLayout
@@ -109,141 +52,63 @@ export function AdminDashboardPage() {
         <PageHeader
           eyebrow="Overview"
           title="Transportation overview"
-          description="Live operations, route status, and setup readiness at a glance."
+          description="Review trips and your transportation records at a glance."
+          action={
+            <Link to="/admin/live-trips" className={buttonClass({ variant: 'secondary' })}>
+              Open Live Operations
+            </Link>
+          }
         />
 
-        {error && (
-          <DataState
-            title="Overview unavailable"
-            message="Use the navigation to continue working with students, guardians, drivers, buses, or routes."
-          />
-        )}
-        {!data && !error && (
-          <DataState
-            title="Loading overview"
-            message="Checking transportation readiness and live operations."
-          />
-        )}
+        <AdminTripSearchSection />
 
-        {data && (
-          <>
-            <section className="rounded-2xl border border-navy-200 bg-white p-4 shadow-sm sm:p-5">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-navy-950">Operational attention</h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Existing live-trip and setup signals shown without adding new backend data.
-                  </p>
-                </div>
-                <Link
-                  to="/admin/live-trips"
-                  className="inline-flex rounded-lg border border-navy-200 px-3 py-2 text-sm font-semibold text-navy-800 hover:bg-navy-50 focus:outline-none focus:ring-2 focus:ring-navy-500 focus:ring-offset-2"
-                >
-                  View live trips
-                </Link>
-              </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <Card className="p-5">
-                  <p className="text-sm font-semibold text-slate-600">Active trips</p>
-                  <p className="mt-1 text-3xl font-bold text-navy-900">{activeTrips}</p>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Driver-started trips currently operating.
-                  </p>
-                </Card>
-                <Card className="p-5">
-                  <p className="text-sm font-semibold text-slate-600">Stale locations</p>
-                  <p className="mt-1 text-3xl font-bold text-warning-700">{staleTrips}</p>
-                  <p className="mt-2 text-sm text-slate-600">Buses with GPS not updated recently.</p>
-                </Card>
-                <Card className="p-5">
-                  <p className="text-sm font-semibold text-slate-600">Missing locations</p>
-                  <p className="mt-1 text-3xl font-bold text-danger-600">{missingTrips}</p>
-                  <p className="mt-2 text-sm text-slate-600">Active trips without GPS data.</p>
-                </Card>
-                <Card className="p-5">
-                  <p className="text-sm font-semibold text-slate-600">Setup readiness</p>
-                  <p className="mt-1 text-3xl font-bold text-navy-900">
-                    {setupComplete} of {setupKeys.length}
-                  </p>
-                  <p className="mt-2 text-sm text-slate-600">Core setup steps complete.</p>
-                </Card>
-              </div>
-            </section>
-
-            <AdminTripsOverview trips={data.tripOverview} failed={data.tripOverviewFailed} />
-
-            {/* Clickable route tiles */}
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-              <div>
-                <h2 className="text-xl font-bold text-navy-900">Routes</h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  Active and inactive routes are shown below. Select any tile to open its details
-                  and map.
-                </p>
-              </div>
-
-              {data.routes.length === 0 ? (
+        <section
+          className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+          aria-labelledby="transportation-summary-heading"
+          data-testid="transportation-summary"
+        >
+          <h2 id="transportation-summary-heading" className="text-xl font-bold text-navy-900">
+            Transportation summary
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Active records and links in your transportation network.
+          </p>
+          <div className="mt-4" aria-live="polite" aria-busy={summary.kind === 'loading'}>
+            {summary.kind === 'loading' && (
+              <DataState
+                title="Loading transportation summary"
+                message="Checking your active transportation records."
+              />
+            )}
+            {summary.kind === 'error' && (
+              <div data-testid="transportation-summary-error">
                 <DataState
-                  title="No routes yet"
-                  message="Create your first route with stops to see it here."
+                  title="Transportation summary unavailable"
+                  message="Try loading this section again."
                 />
-              ) : (
-                <div className="mt-4 grid gap-3">
-                  {data.routes
-                    .filter((r) => r.status !== 'archived')
-                    .map((route) => {
-                      return (
-                        <AdminRouteStatusTile
-                          key={route.id}
-                          route={route}
-                          schoolName={null}
-                          stopCount={route.stop_count}
-                          assignments={[]}
-                          to={`/admin/routes/${route.id}`}
-                        />
-                      );
-                    })}
-                </div>
-              )}
-
-              <Link
-                to="/admin/routes"
-                className="mt-4 inline-flex rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-navy-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-navy-500 focus:ring-offset-2"
-              >
-                View all routes &rarr;
-              </Link>
-            </section>
-
-            {/* Setup checklist */}
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-              <h2 className="text-xl font-bold text-navy-900">Setup checklist</h2>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {setupKeys.map((item) => {
-                  const count = data.setup[item.key];
-                  const complete = count > 0;
-                  return (
-                    <Link
-                      key={item.key}
-                      to={item.to}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm hover:border-navy-200 hover:bg-navy-50/50 focus:outline-none focus:ring-2 focus:ring-navy-500 focus:ring-offset-2"
-                    >
-                      <span className="font-semibold text-navy-900">{item.label}</span>
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          complete
-                            ? 'bg-success-50 text-success-700'
-                            : 'bg-warning-50 text-warning-700'
-                        }`}
-                      >
-                        {complete ? `${count} active` : 'Needs setup'}
-                      </span>
-                    </Link>
-                  );
-                })}
+                <Button type="button" variant="secondary" onClick={() => void loadSummary()}>
+                  Retry summary
+                </Button>
               </div>
-            </section>
-          </>
-        )}
+            )}
+            {summary.kind === 'ready' && (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {summaryItems.map((item) => (
+                  <Link
+                    key={item.key}
+                    to={item.to}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm hover:border-navy-200 hover:bg-navy-50/50 focus:outline-none focus:ring-2 focus:ring-navy-500 focus:ring-offset-2"
+                  >
+                    <span className="font-semibold text-navy-900">{item.label}</span>
+                    <span className="shrink-0 whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-sm font-semibold text-slate-700">
+                      {summary.snapshot[item.key]} active
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
       </div>
     </DashboardLayout>
   );

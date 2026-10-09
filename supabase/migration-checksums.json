@@ -728,6 +728,12 @@
       "filename": "0120_compact_role_notifications.sql",
       "bytes": 22945,
       "sha256": "c9fc7ce6a123c0099688534c2dc8177d81c32f37d222a8646e62aada7c2ff1e0"
+    },
+    {
+      "version": "0121",
+      "filename": "0121_admin_trip_search.sql",
+      "bytes": 3716,
+      "sha256": "6e9f7704b49c1ad4536eaf442a2ebe5885e1a6908b907e1700113202d364d55e"
     }
   ]
 }

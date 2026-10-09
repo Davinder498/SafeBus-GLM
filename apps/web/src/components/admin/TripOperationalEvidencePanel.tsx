@@ -8,7 +8,13 @@ import {
   type TripException,
 } from '@/services/phase6OperationsService';
 
-export function TripOperationalEvidencePanel({ tripId }: { tripId: string }) {
+export function TripOperationalEvidencePanel({
+  tripId,
+  timeZone,
+}: {
+  tripId: string;
+  timeZone?: string;
+}) {
   const [confirmation, setConfirmation] = useState<PreTripConfirmation | null>(null);
   const [exceptions, setExceptions] = useState<TripException[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +56,7 @@ export function TripOperationalEvidencePanel({ tripId }: { tripId: string }) {
             <p className="mt-3 text-sm text-gray-700">
               Pre-trip:{' '}
               {confirmation
-                ? `Confirmed ${new Date(confirmation.confirmed_at).toLocaleString()}`
+                ? `Confirmed ${new Date(confirmation.confirmed_at).toLocaleString(undefined, { timeZone })}`
                 : 'Not recorded'}
             </p>
             <h3 className="mt-5 font-bold text-navy-900">Exceptions</h3>
@@ -67,7 +73,7 @@ export function TripOperationalEvidencePanel({ tripId }: { tripId: string }) {
                       <p className="mt-1 text-gray-700">{exception.exception_detail}</p>
                     )}
                     <p className="mt-1 text-xs text-gray-500">
-                      {new Date(exception.occurred_at).toLocaleString()}
+                      {new Date(exception.occurred_at).toLocaleString(undefined, { timeZone })}
                     </p>
                   </li>
                 ))}
@@ -76,7 +82,7 @@ export function TripOperationalEvidencePanel({ tripId }: { tripId: string }) {
           </>
         )}
       </Card>
-      <OperationalNotesPanel targetEntity="trip" targetId={tripId} />
+      <OperationalNotesPanel targetEntity="trip" targetId={tripId} timeZone={timeZone} />
     </div>
   );
 }

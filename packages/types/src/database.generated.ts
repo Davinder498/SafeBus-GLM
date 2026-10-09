@@ -4543,6 +4543,16 @@ export interface Database {
         };
         Returns: unknown;
       };
+      search_admin_trips: {
+        Args: {
+          p_from_date?: string | null;
+          p_to_date?: string | null;
+          p_status?: string | null;
+          p_page?: number;
+          p_page_size?: number;
+        };
+        Returns: Json;
+      };
       send_guardian_tracking_invalidation: {
         Args: {
           p_profile_id: string;

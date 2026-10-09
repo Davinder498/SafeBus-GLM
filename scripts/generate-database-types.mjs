@@ -20,6 +20,17 @@ const schemaKey = process.env.SUPABASE_SECRET_KEY;
 // from service_role and are therefore completed from their canonical migration
 // definitions when the OpenAPI fallback is used.
 const AUTHENTICATED_ONLY_FUNCTIONS = {
+  // Prepared from 0121; retain the typed contract while adoption is pending.
+  search_admin_trips: {
+    properties: {
+      p_from_date: { type: 'string', format: 'date', description: 'nullable', default: null },
+      p_to_date: { type: 'string', format: 'date', description: 'nullable', default: null },
+      p_status: { type: 'string', format: 'text', description: 'nullable', default: null },
+      p_page: { type: 'integer', default: 1 },
+      p_page_size: { type: 'integer', default: 25 },
+    },
+    required: new Set(),
+  },
   get_guardian_delivery_preferences_v3: { properties: {}, required: new Set() },
   set_guardian_delivery_preferences_v3: {
     properties: { p_preferences: { type: 'object' } },
