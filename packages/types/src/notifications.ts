@@ -66,11 +66,16 @@ export interface NotificationPreferences {
 }
 
 export interface GuardianDeliveryPreferences {
+  inAppEnabled: boolean;
   pushEnabled: boolean;
   emailEnabled: boolean;
-  pickupDropoff: GuardianDeliveryChannelPreferences;
-  tripUpdates: GuardianDeliveryChannelPreferences;
-  operationalAlerts: GuardianDeliveryChannelPreferences;
+  pickupDropoff: GuardianInboxChannelPreferences;
+  tripUpdates: GuardianInboxChannelPreferences;
+  operationalAlerts: GuardianInboxChannelPreferences;
+}
+
+export interface GuardianInboxChannelPreferences extends GuardianDeliveryChannelPreferences {
+  inApp: boolean;
 }
 
 export interface GuardianDeliveryChannelPreferences {

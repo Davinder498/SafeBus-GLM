@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
-import { Bell, ExternalLink, Mail } from 'lucide-react';
+import { Bell, ExternalLink, Mail, Smartphone } from 'lucide-react';
 import type { PushPermissionState } from '@safebus/types';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { GuardianIconTile } from '@/components/ui/GuardianIconTile';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 
 export interface NotificationAlertChoice {
   key?: string;
@@ -14,6 +15,8 @@ export interface NotificationAlertChoice {
   onEmailChange: (checked: boolean) => void;
   onPushChange: (checked: boolean) => void;
   pushChecked: boolean;
+  inAppChecked?: boolean;
+  onInAppChange?: (checked: boolean) => void;
 }
 
 interface NotificationDeliverySettingsProps {
@@ -27,88 +30,82 @@ interface NotificationDeliverySettingsProps {
   pendingSaves: number;
   permissionState: PushPermissionState | null;
   pushEnabled: boolean;
+  inAppEnabled?: boolean;
+  onInAppEnabledChange?: (checked: boolean) => void;
 }
 
-function ChannelCard({
-  checked,
+type Channel = 'in-app' | 'email' | 'push';
+
+function ChannelSection({
+  channel,
+  label,
   description,
   icon,
-  label,
+  enabled,
   onChange,
+  alerts,
 }: {
-  checked: boolean;
+  channel: Channel;
+  label: string;
   description: string;
   icon: ReactNode;
-  label: string;
+  enabled: boolean;
   onChange: (checked: boolean) => void;
+  alerts: NotificationAlertChoice[];
 }) {
   return (
-    <Card className="p-0" data-card-type={`notification-${label.toLowerCase()}`}>
-      <label
-        className="grid min-h-24 cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-4"
-        data-ui="notification-channel-control"
-      >
-        <GuardianIconTile>{icon}</GuardianIconTile>
-        <span className="min-w-0">
-          <b className="block text-navy-900">{label}</b>
-          <span className="mt-1 block text-sm leading-5 text-slate-600">{description}</span>
-        </span>
-        <input
-          type="checkbox"
-          role="switch"
-          checked={checked}
-          aria-label={label}
-          onChange={(event) => onChange(event.target.checked)}
-        />
-      </label>
+    <Card className="overflow-hidden p-0" data-card-type={`notification-${channel}`}>
+      <section aria-label={label}>
+        <div
+          className="flex items-center gap-3 border-b border-slate-200 px-4 py-3"
+          data-ui="notification-channel-control"
+        >
+          <GuardianIconTile>{icon}</GuardianIconTile>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-bold text-navy-900">{label}</h2>
+            <p className="mt-1 text-sm leading-5 text-slate-600">{description}</p>
+          </div>
+          <ToggleSwitch label={label} checked={enabled} onChange={onChange} />
+        </div>
+        <h3 className="px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Event alert types
+        </h3>
+        <div className="divide-y divide-slate-100 px-4">
+          {alerts.map((alert) => {
+            const checked =
+              channel === 'in-app'
+                ? (alert.inAppChecked ?? true)
+                : channel === 'email'
+                  ? alert.emailChecked
+                  : alert.pushChecked;
+            const change =
+              channel === 'in-app'
+                ? alert.onInAppChange
+                : channel === 'email'
+                  ? alert.onEmailChange
+                  : alert.onPushChange;
+            return (
+              <div
+                key={alert.key ?? alert.label}
+                className="flex items-center gap-3 py-2"
+                data-ui="notification-alert-row"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-navy-900">{alert.label}</p>
+                  <p className="mt-0.5 text-xs leading-4 text-slate-600">{alert.description}</p>
+                </div>
+                <ToggleSwitch
+                  label={`${alert.label} ${channel}`}
+                  checked={checked}
+                  disabled={!enabled}
+                  onChange={(value) => change?.(value)}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </section>
     </Card>
-  );
-}
-
-function AlertRow({
-  description,
-  emailChecked,
-  icon,
-  label,
-  onEmailChange,
-  onPushChange,
-  pushChecked,
-}: NotificationAlertChoice) {
-  return (
-    <div
-      className="grid min-h-20 grid-cols-[auto_minmax(0,1fr)_3.5rem_3.5rem] items-center gap-2 px-4 py-3"
-      data-ui="notification-alert-row"
-    >
-      <GuardianIconTile>{icon}</GuardianIconTile>
-      <span className="min-w-0 pr-1">
-        <b className="block text-sm text-navy-900">{label}</b>
-        <span className="mt-0.5 block text-xs leading-4 text-slate-600">{description}</span>
-      </span>
-      <label
-        className="grid min-h-12 min-w-12 cursor-pointer place-items-center"
-        data-ui="notification-alert-channel-control"
-      >
-        <span className="sr-only">{label} push</span>
-        <input
-          type="checkbox"
-          checked={pushChecked}
-          aria-label={`${label} push`}
-          onChange={(event) => onPushChange(event.target.checked)}
-        />
-      </label>
-      <label
-        className="grid min-h-12 min-w-12 cursor-pointer place-items-center"
-        data-ui="notification-alert-channel-control"
-      >
-        <span className="sr-only">{label} email</span>
-        <input
-          type="checkbox"
-          checked={emailChecked}
-          aria-label={`${label} email`}
-          onChange={(event) => onEmailChange(event.target.checked)}
-        />
-      </label>
-    </div>
   );
 }
 
@@ -123,44 +120,42 @@ export function NotificationDeliverySettings({
   pendingSaves,
   permissionState,
   pushEnabled,
+  inAppEnabled,
+  onInAppEnabledChange,
 }: NotificationDeliverySettingsProps) {
   return (
-    <div data-ui="notification-settings-page">
-      <div className="grid gap-3 sm:grid-cols-2" data-ui="notification-delivery-cards">
-        <ChannelCard
-          label="Push notifications"
-          description="Alerts on your Android devices."
-          checked={pushEnabled}
-          icon={<Bell className="h-5 w-5" aria-hidden />}
-          onChange={onPushEnabledChange}
-        />
-        <ChannelCard
+    <div className="mt-6" data-ui="notification-delivery-settings">
+      <div className="space-y-4" data-ui="notification-delivery-cards">
+        {inAppEnabled !== undefined && onInAppEnabledChange ? (
+          <ChannelSection
+            channel="in-app"
+            label="In-app notifications"
+            description="Choose future inbox updates. Existing notifications remain available."
+            icon={<Bell className="h-5 w-5" aria-hidden />}
+            enabled={inAppEnabled}
+            onChange={onInAppEnabledChange}
+            alerts={alerts}
+          />
+        ) : null}
+        <ChannelSection
+          channel="email"
           label="Email notifications"
-          description="Updates sent to your account email."
-          checked={emailEnabled}
+          description="Updates sent to your account email. Your event choices are saved when email is off."
           icon={<Mail className="h-5 w-5" aria-hidden />}
+          enabled={emailEnabled}
           onChange={onEmailEnabledChange}
+          alerts={alerts}
+        />
+        <ChannelSection
+          channel="push"
+          label="Push notifications"
+          description="Phone alerts on your Android devices, independent of your inbox and email choices."
+          icon={<Smartphone className="h-5 w-5" aria-hidden />}
+          enabled={pushEnabled}
+          onChange={onPushEnabledChange}
+          alerts={alerts}
         />
       </div>
-
-      <Card className="mt-4 overflow-hidden p-0" data-card-type="notification-alert-matrix">
-        <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] items-end border-b border-slate-200 px-4 py-3">
-          <div>
-            <h2 className="font-bold text-navy-900">Alert types</h2>
-            <p className="mt-0.5 text-xs text-slate-600">
-              Choose each delivery channel independently.
-            </p>
-          </div>
-          <span className="text-center text-xs font-semibold text-slate-600">Push</span>
-          <span className="text-center text-xs font-semibold text-slate-600">Email</span>
-        </div>
-        <div className="divide-y divide-slate-200">
-          {alerts.map(({ key, ...alert }) => (
-            <AlertRow key={key ?? alert.label} {...alert} />
-          ))}
-        </div>
-      </Card>
-
       <div className="mt-3 min-h-12" aria-live="polite" aria-atomic="true">
         {pendingSaves > 0 || message ? (
           <p
@@ -178,7 +173,9 @@ export function NotificationDeliverySettings({
             variant="secondary"
             className="mt-2 w-full"
             rightIcon={<ExternalLink className="h-4 w-4" aria-hidden />}
-            onClick={onOpenSystemSettings ?? (() => void window.SafeBusNativePush?.openSystemSettings())}
+            onClick={
+              onOpenSystemSettings ?? (() => void window.SafeBusNativePush?.openSystemSettings())
+            }
           >
             Open Android notification settings
           </Button>

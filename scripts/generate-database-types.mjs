@@ -20,6 +20,15 @@ const schemaKey = process.env.SUPABASE_SECRET_KEY;
 // from service_role and are therefore completed from their canonical migration
 // definitions when the OpenAPI fallback is used.
 const AUTHENTICATED_ONLY_FUNCTIONS = {
+  get_guardian_delivery_preferences_v3: { properties: {}, required: new Set() },
+  set_guardian_delivery_preferences_v3: {
+    properties: { p_preferences: { type: 'object' } },
+    required: new Set(['p_preferences']),
+  },
+  get_user_notification_detail: {
+    properties: { p_id: { type: 'string', format: 'uuid' } },
+    required: new Set(['p_id']),
+  },
   get_support_directory: { properties: {}, required: new Set() },
   update_platform_support_contact: {
     properties: {

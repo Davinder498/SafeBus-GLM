@@ -73,7 +73,7 @@ async function installNotificationInboxMock(
         category: 'trip_status',
         severity: 'urgent',
         title: 'Trip cancelled',
-        body: 'The trip was cancelled at 6:00 AM.',
+        body: 'Trip “Afternoon” for Bus 01 on Route 01 was cancelled by Alex Singh at 6:00 AM on Sep 1, 2026.',
         occurred_at: '2026-09-01T12:00:00Z',
         created_at: '2026-09-01T12:00:00Z',
         read_at: readAt,
@@ -519,7 +519,7 @@ test('guardian bus detail remains useful while the route contract is unavailable
   await expect(page.getByRole('link', { name: 'See live map' })).toBeVisible();
 });
 
-test('mobile notification settings use Cool Cloud cards and autosave the channel matrix', async ({
+test('mobile notification settings autosave independent channel sections with switches', async ({
   page,
 }, testInfo) => {
   const mock = await installGuardianVisibilityMock(page, {
@@ -534,13 +534,16 @@ test('mobile notification settings use Cool Cloud cards and autosave the channel
   const email = page.getByRole('switch', { name: 'Email notifications' });
   await expect(push).toBeVisible();
   await expect(email).toBeVisible();
-  await expect(page.getByText('Alert types', { exact: true })).toBeVisible();
-  await expect(page.locator('[data-ui="notification-alert-row"]')).toHaveCount(3);
+  await expect(page.getByRole('switch', { name: 'In-app notifications' })).toBeVisible();
+  await expect(page.getByText('Event alert types', { exact: true })).toHaveCount(3);
+  await expect(page.locator('[data-ui="notification-alert-row"]')).toHaveCount(9);
   for (const label of ['Pickup & drop-off', 'Trip updates', 'Operational alerts']) {
-    await expect(page.getByText(label, { exact: true })).toBeVisible();
-    await expect(page.getByRole('checkbox', { name: `${label} push` })).toBeVisible();
-    await expect(page.getByRole('checkbox', { name: `${label} email` })).toBeVisible();
+    await expect(page.getByText(label, { exact: true })).toHaveCount(3);
+    await expect(page.getByRole('switch', { name: `${label} in-app` })).toBeVisible();
+    await expect(page.getByRole('switch', { name: `${label} push` })).toBeVisible();
+    await expect(page.getByRole('switch', { name: `${label} email` })).toBeVisible();
   }
+  await expect(page.getByRole('checkbox')).toHaveCount(0);
   await expect(page.getByText('Lock-screen privacy', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Save notification settings' })).toHaveCount(0);
   await expect(page.locator('[data-ui="dashboard-shell"]')).toHaveCSS(
@@ -551,21 +554,22 @@ test('mobile notification settings use Cool Cloud cards and autosave the channel
     page.locator('[data-ui="notification-delivery-cards"] [data-ui="card"]').first(),
   ).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expectTouchTargets(page.locator('[data-ui="notification-channel-control"]'));
-  await expectTouchTargets(page.locator('[data-ui="notification-alert-channel-control"]'));
-  await email.check();
+  await expectTouchTargets(page.locator('[data-ui="notification-toggle"]'));
+  await email.click();
   await expect(email).toBeChecked();
   await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(1);
   await expect(page.getByRole('status')).toHaveText('Saved');
-  const pickupEmail = page.getByRole('checkbox', { name: 'Pickup & drop-off email' });
-  await pickupEmail.check();
+  const pickupEmail = page.getByRole('switch', { name: 'Pickup & drop-off email' });
+  await pickupEmail.click();
   await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(2);
-  await push.uncheck();
+  await push.click();
   await expect(push).not.toBeChecked();
   await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(3);
-  await expect(page.getByRole('checkbox', { name: 'Trip updates push' })).toBeChecked();
+  await expect(page.getByRole('switch', { name: 'Trip updates push' })).toBeChecked();
+  await expect(page.getByRole('switch', { name: 'Trip updates push' })).toBeDisabled();
   await expect(page.getByRole('status')).toHaveText('Saved');
   mock.setDeliveryPreferenceSaveFailure(true);
-  const tripEmail = page.getByRole('checkbox', { name: 'Trip updates email' });
+  const tripEmail = page.getByRole('switch', { name: 'Trip updates email' });
   // The controlled checkbox can roll back before Playwright's `check()` verifies
   // its intermediate state. Click it and assert the observable save + rollback.
   await tripEmail.click();
@@ -590,6 +594,7 @@ test('mobile notification settings use Cool Cloud cards and autosave the channel
   expect(mock.getDeviceCallCount()).toBe(0);
 
   await expectNoHorizontalOverflow(page);
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: testInfo.outputPath('notification-settings.png'), fullPage: true });
 
   await page.locator('[data-ui="dropdown"] > button').click();
@@ -629,7 +634,7 @@ test('Android push permission denial rolls back and offers system settings recov
   await page.goto('/notifications/settings');
 
   const push = page.getByRole('switch', { name: 'Push notifications' });
-  await push.uncheck();
+  await push.click();
   await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(1);
   await push.click();
   await expect(push).not.toBeChecked();
@@ -648,6 +653,35 @@ test('Android push permission denial rolls back and offers system settings recov
       ),
     )
     .toBe(1);
+});
+
+test('guardian in-app switches support keyboard use and retain independent choices after reload', async ({
+  page,
+}) => {
+  await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
+  await page.goto('/notifications/settings');
+  const inbox = page.getByRole('switch', { name: 'In-app notifications', exact: true });
+  const trip = page.getByRole('switch', { name: 'Trip updates in-app', exact: true });
+  await expect(inbox).toBeChecked();
+  await trip.focus();
+  await expect(trip).toBeFocused();
+  await trip.press('Space');
+  await expect(trip).not.toBeChecked();
+  await expect(page.getByRole('status')).toHaveText('Saved');
+  await inbox.focus();
+  await inbox.press('Enter');
+  await expect(inbox).not.toBeChecked();
+  await expect(trip).toBeDisabled();
+  await expect(page.getByRole('switch', { name: 'Pickup & drop-off in-app' })).toBeChecked();
+  await expect(page.getByRole('switch', { name: 'Push notifications', exact: true })).toBeChecked();
+  await expect(page.getByRole('status')).toHaveText('Saved');
+  await page.reload();
+  await expect(inbox).not.toBeChecked();
+  await expect(trip).not.toBeChecked();
+  await inbox.click();
+  await expect(trip).toBeEnabled();
+  await expect(trip).not.toBeChecked();
+  await expect(page.getByRole('switch', { name: 'Pickup & drop-off in-app' })).toBeChecked();
 });
 
 test('guardian updates prioritize compact filters and alert cards', async ({ page }, testInfo) => {
@@ -674,10 +708,10 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
   await expect(page.getByRole('button', { name: 'Service alerts' })).toBeVisible();
   await expect(filters.getByRole('combobox')).toHaveCount(0);
   await expect(filters.getByRole('checkbox')).toHaveCount(0);
-  await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('gap', '16px');
+  await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('gap', '8px');
   await expect(notification).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(notification).toHaveCSS('border-color', 'rgb(220, 229, 228)');
-  await expect(notification).toHaveCSS('padding', '16px');
+  await expect(notification).toHaveCSS('padding', '12px 16px');
   await expect(notification.locator('[data-ui="notification-unread-dot"]')).toHaveCSS(
     'background-color',
     'rgb(207, 89, 99)',
@@ -690,10 +724,14 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
   await expect(page.locator('[data-ui="avatar"]')).toHaveAttribute('data-tone', 'native-nav');
   await expect(
     notification.getByRole('button', {
-      name: 'Open notification: The trip was cancelled at 6:00 AM.',
+      name: 'Open notification: Trip “Afternoon” for Bus 01 on Route 01 was cancelled by Alex Singh at 6:00 AM on Sep 1, 2026.',
     }),
   ).toHaveText('View update');
-  await expect(notification.getByText('The trip was cancelled at 6:00 AM.')).toHaveCount(1);
+  await expect(
+    notification.getByText(
+      'Trip “Afternoon” for Bus 01 on Route 01 was cancelled by Alex Singh at 6:00 AM on Sep 1, 2026.',
+    ),
+  ).toHaveCount(1);
   await expect(notification.getByText('Category', { exact: true })).toHaveCount(0);
   await expect(notification.getByText('Priority', { exact: true })).toHaveCount(0);
   await expect(notification.getByText('Received', { exact: true })).toHaveCount(0);
@@ -731,10 +769,10 @@ test('driver updates reuse the compact inbox with assignment-only alerts', async
   await expect(page.getByRole('button', { name: 'Service alerts' })).toHaveCount(0);
   await expect(filters).toHaveCSS('margin-bottom', '16px');
   await expect(filters.locator('[data-ui="notification-filter-controls"]')).toHaveCSS('gap', '8px');
-  await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('gap', '16px');
+  await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('gap', '8px');
   await expect(notification).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(notification).toHaveCSS('border-color', 'rgb(220, 229, 228)');
-  await expect(notification).toHaveCSS('padding', '16px');
+  await expect(notification).toHaveCSS('padding', '12px 16px');
   await expect(notification.getByText('Your planned work assignment has changed.')).toHaveCount(1);
   await expect(
     notification.getByRole('button', {
@@ -848,9 +886,10 @@ test('driver settings combines assignment delivery and device guidance', async (
   await expect(page.getByRole('heading', { name: 'Driver settings', level: 1 })).toBeVisible();
   await expect(page.getByRole('switch', { name: 'Push notifications' })).toBeVisible();
   await expect(page.getByRole('switch', { name: 'Email notifications' })).toBeVisible();
-  await expect(page.getByText('Assignment alerts', { exact: true })).toBeVisible();
-  await expect(page.getByRole('checkbox', { name: 'Assignment alerts push' })).toBeVisible();
-  await expect(page.getByRole('checkbox', { name: 'Assignment alerts email' })).toBeVisible();
+  await expect(page.getByText('Assignment alerts', { exact: true })).toHaveCount(2);
+  await expect(page.getByRole('switch', { name: 'Assignment alerts push' })).toBeVisible();
+  await expect(page.getByRole('switch', { name: 'Assignment alerts email' })).toBeVisible();
+  await expect(page.getByRole('switch', { name: 'In-app notifications' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Location access' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Driver safety' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'View notifications' })).toHaveAttribute(

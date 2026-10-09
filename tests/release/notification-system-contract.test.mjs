@@ -233,10 +233,11 @@ test('quiet hours and urgent bypass are fail-closed defaults', () => {
   );
 });
 
-test('guardian delivery settings expose channel masters and a three-group matrix', () => {
+test('guardian delivery settings expose separate channel sections and three event groups', () => {
   assert.match(notificationDeliverySettings, /label="Push notifications"/);
   assert.match(notificationDeliverySettings, /label="Email notifications"/);
-  assert.match(notificationDeliverySettings, /Alert types/);
+  assert.match(notificationDeliverySettings, /label="In-app notifications"/);
+  assert.match(notificationDeliverySettings, /Event alert types/);
   assert.match(notificationSettingsPage, /Pickup & drop-off/);
   assert.match(notificationSettingsPage, /Trip updates/);
   assert.match(notificationSettingsPage, /Operational alerts/);

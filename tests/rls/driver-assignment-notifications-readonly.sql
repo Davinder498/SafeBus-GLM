@@ -43,7 +43,14 @@ begin
     and policyname = 'user_notifications_recipient_select';
   if v_policy is null
     or v_policy not like '%auth.uid()%'
-    or v_policy not like '%driver_can_access_notification%' then
+    or (
+      v_policy not like '%driver_can_access_notification%'
+      and (
+        v_policy not like '%notification_recipient_can_access%'
+        or coalesce(pg_get_functiondef(to_regprocedure('safebus_private.notification_recipient_can_access(public.user_notifications)')), '')
+          not like '%driver_can_access_notification(n)%'
+      )
+    ) then
     raise exception 'Driver inbox policy is not assignment-only and recipient-bound';
   end if;
 
