@@ -5,7 +5,7 @@ import type {
   AdminTripStatus,
 } from '@/types/adminTripOverview';
 
-interface AdminTripOverviewRpcRow {
+export interface AdminTripOverviewRpcRow {
   trip_id: string;
   service_date: string;
   status: AdminTripStatus;
@@ -33,7 +33,11 @@ export async function fetchAdminTripOverview(limit = 50): Promise<AdminTripOverv
   const { data, error } = await supabase.rpc('get_admin_trip_overview', { p_limit: limit });
   if (error) throw new Error('Unable to load trip summaries. Please try again.');
 
-  return ((data ?? []) as AdminTripOverviewRpcRow[]).map((row) => ({
+  return ((data ?? []) as AdminTripOverviewRpcRow[]).map(mapAdminTripOverviewRow);
+}
+
+export function mapAdminTripOverviewRow(row: AdminTripOverviewRpcRow): AdminTripOverviewItem {
+  return {
     id: row.trip_id,
     serviceDate: row.service_date,
     status: row.status,
@@ -45,5 +49,5 @@ export async function fetchAdminTripOverview(limit = 50): Promise<AdminTripOverv
     direction: mapDirection(row.direction),
     busLabel: row.bus_label,
     driverLabel: row.driver_label,
-  }));
+  };
 }

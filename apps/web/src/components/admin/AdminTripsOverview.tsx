@@ -1,10 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { Card } from '@/components/ui/Card';
-import { TripOperationalEvidencePanel } from '@/components/admin/TripOperationalEvidencePanel';
+import { AdminTripTable } from '@/components/admin/AdminTripTable';
 import { DataState } from '@/components/ui/DataState';
-import { StatusPill } from '@/components/ui/StatusPill';
-import { directionLabel } from '@/services/adminTripOverviewService';
 import type { AdminTripFilter, AdminTripOverviewItem } from '@/types/adminTripOverview';
 import { filterAdminTrips, isNonActiveTrip } from '@/utils/adminTripOverview';
 
@@ -35,7 +33,6 @@ export function AdminTripsOverview({
   initialFilter?: AdminTripFilter;
 }) {
   const [filter, setFilter] = useState<AdminTripFilter>(initialFilter);
-  const [notesTripId, setNotesTripId] = useState<string | null>(null);
   const filteredTrips = useMemo(() => filterAdminTrips(trips, filter), [filter, trips]);
   const counts = {
     active: trips.filter((trip) => trip.status === 'active').length,
@@ -131,92 +128,10 @@ export function AdminTripsOverview({
               />
             </div>
           ) : (
-            <div className="mt-4 overflow-x-auto" data-testid="admin-trips-table">
-              <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
-                <caption className="sr-only">Recent dated trip executions</caption>
-                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-gray-600">
-                  <tr>
-                    {[
-                      'Route and direction',
-                      'Bus',
-                      'Driver',
-                      'Service date',
-                      'Start',
-                      'End',
-                      'Status',
-                      'Notes',
-                    ].map((heading) => (
-                      <th key={heading} scope="col" className="px-3 py-3">
-                        {heading}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filteredTrips.map((trip) => (
-                    <tr key={trip.id}>
-                      <td className="px-3 py-3">
-                        <span className="font-semibold text-navy-900">{trip.routeName}</span>
-                        <span className="block text-gray-600">
-                          {trip.routeCode} · {directionLabel(trip.direction)} ·{' '}
-                          {trip.tripPatternName}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3 text-gray-700">{trip.busLabel}</td>
-                      <td className="px-3 py-3 text-gray-700">{trip.driverLabel}</td>
-                      <td className="px-3 py-3 text-gray-700">{formatDate(trip.serviceDate)}</td>
-                      <td className="px-3 py-3 text-gray-700">{formatTime(trip.startedAt)}</td>
-                      <td className="px-3 py-3 text-gray-700">
-                        {trip.endedAt ? formatTime(trip.endedAt) : 'In progress'}
-                      </td>
-                      <td className="px-3 py-3">
-                        <StatusPill tone={trip.status === 'active' ? 'success' : 'neutral'}>
-                          {statusLabel(trip.status)}
-                        </StatusPill>
-                      </td>
-                      <td className="px-3 py-3">
-                        <button
-                          type="button"
-                          className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-navy-700 hover:bg-gray-50"
-                          aria-expanded={notesTripId === trip.id}
-                          onClick={() =>
-                            setNotesTripId((current) => (current === trip.id ? null : trip.id))
-                          }
-                        >
-                          {notesTripId === trip.id ? 'Hide notes' : 'View notes'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {notesTripId && (
-                <div className="mt-4">
-                  <TripOperationalEvidencePanel tripId={notesTripId} />
-                </div>
-              )}
-            </div>
+            <AdminTripTable trips={filteredTrips} />
           )}
         </>
       )}
     </section>
   );
-}
-
-function statusLabel(status: AdminTripOverviewItem['status']): string {
-  return status.charAt(0).toUpperCase() + status.slice(1);
-}
-
-function formatDate(value: string): string {
-  const date = new Date(`${value}T12:00:00`);
-  return Number.isNaN(date.getTime())
-    ? value
-    : date.toLocaleDateString(undefined, { dateStyle: 'medium' });
-}
-
-function formatTime(value: string): string {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? value
-    : date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }

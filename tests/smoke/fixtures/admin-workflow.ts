@@ -112,7 +112,11 @@ export async function installAdminWorkflowMock(
       return;
     }
     if (method === 'HEAD') {
-      await route.fulfill({ status: 200, headers: { 'content-range': '0-0/1' }, body: '' });
+      await route.fulfill({
+        status: 200,
+        headers: { 'content-range': '0-0/1', 'access-control-expose-headers': 'content-range' },
+        body: '',
+      });
       return;
     }
     if (path.includes('/rpc/get_support_directory')) {
@@ -144,6 +148,14 @@ export async function installAdminWorkflowMock(
     }
     if (path.includes('/rpc/get_admin_live_fleet_monitoring')) {
       await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+      return;
+    }
+    if (path.includes('/rpc/search_admin_trips')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ rows: [], totalCount: 0 }),
+      });
       return;
     }
     if (path.includes('/rpc/get_admin_trip_overview')) {
