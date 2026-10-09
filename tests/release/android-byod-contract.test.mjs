@@ -1,10 +1,45 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 async function source(path) {
   return readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
 }
+
+test('Android build cache hashes the shared student scanner and mobile sources', () => {
+  const plan = JSON.parse(
+    execFileSync(
+      process.execPath,
+      [
+        fileURLToPath(new URL('../../node_modules/turbo/bin/turbo', import.meta.url)),
+        'run',
+        'build',
+        '--filter=@safebus/mobile',
+        '--dry=json',
+      ],
+      {
+        cwd: fileURLToPath(new URL('../../', import.meta.url)),
+        encoding: 'utf8',
+        maxBuffer: 20 * 1024 * 1024,
+      },
+    ),
+  );
+  const mobile = plan.tasks.find((task) => task.taskId === '@safebus/mobile#build');
+  assert.ok(mobile, 'mobile build is planned');
+  const inputs = Object.keys(mobile.inputs).map((path) => path.replaceAll('\\', '/'));
+  assert.ok(
+    inputs.includes('../web/src/components/driver/StudentQrScanner.tsx'),
+    'shared scanner is hashed',
+  );
+  assert.ok(inputs.includes('../web/src/index.css'), 'shared styles are hashed');
+  assert.ok(inputs.includes('src/main.tsx'), 'default mobile inputs remain hashed');
+  assert.ok(
+    mobile.resolvedTaskDefinition.outputs.includes('dist/**'),
+    'mobile output caching is retained',
+  );
+});
 
 test('Android uses the reviewed personal-device registration contract', async () => {
   const [migration, bridge, types] = await Promise.all([

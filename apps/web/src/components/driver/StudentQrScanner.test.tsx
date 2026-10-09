@@ -77,20 +77,35 @@ afterEach(async () => {
 describe('explicit student QR events', () => {
   it('automatically scans successive students and suppresses a pass held in view', async () => {
     await click('Open QR scanner');
+    const video = document.querySelector('[data-testid="driver-qr-video"]');
     await tick();
     expect(mocks.record).toHaveBeenCalledTimes(1);
     expect(mocks.record).toHaveBeenCalledWith(token, 'picked_up', 'trip-1');
     expect(stops).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain('Pickup recorded.');
+    expect(document.body.textContent).toContain('Avery Johnson');
+    expect(document.body.textContent).toContain('Ready for the next student');
+    expect(document.querySelector('[data-testid="driver-qr-start-camera"]')).toBeNull();
+    expect(document.body.textContent).not.toContain('Scan next');
     await tick(5000);
     expect(mocks.record).toHaveBeenCalledTimes(1);
     expect(document.body.textContent).toContain('Ready for the next student');
     const nextToken = `sbus_qr_v1_${'B'.repeat(43)}`;
+    mocks.record.mockResolvedValue({
+      ...recorded,
+      studentId: 'student-2',
+      studentDisplayName: 'Blair Smith',
+    });
     mocks.detect.mockResolvedValue([{ rawValue: nextToken }]);
     await tick();
     expect(mocks.record).toHaveBeenLastCalledWith(nextToken, 'picked_up', 'trip-1');
     expect(mocks.record).toHaveBeenCalledTimes(2);
     expect(camera).toHaveBeenCalledTimes(1);
+    expect(mocks.detector).toHaveBeenCalledTimes(1);
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[data-testid="driver-qr-video"]')).toBe(video);
+    expect(document.body.textContent).toContain('Blair Smith');
+    expect(document.querySelector('[data-testid="driver-qr-start-camera"]')).toBeNull();
     await tick(2000);
     mocks.detect.mockResolvedValue([]);
     await tick(1500);
@@ -264,7 +279,7 @@ describe('explicit student QR events', () => {
     expect(mocks.record).toHaveBeenCalledTimes(2);
   });
 
-  it('cancels automatic resumption when closed after success', async () => {
+  it('ends the continuous session when closed after success', async () => {
     await click('Open QR scanner');
     await tick();
     await click('Close scanner');
@@ -300,5 +315,28 @@ describe('explicit student QR events', () => {
     expect(stops).toHaveBeenCalledTimes(1);
     expect(camera).toHaveBeenCalledTimes(1);
     expect(document.body.textContent).toContain('Pickup must be recorded');
+  });
+
+  it('keeps the last student and event visible while recording the next student', async () => {
+    await click('Open QR scanner');
+    await tick();
+    let finish!: (value: typeof recorded) => void;
+    mocks.record.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    mocks.detect.mockResolvedValue([{ rawValue: `sbus_qr_v1_${'B'.repeat(43)}` }]);
+    await tick();
+    expect(document.body.textContent).toContain('Recording pickup');
+    expect(document.body.textContent).toContain('Avery Johnson');
+    expect(document.body.textContent).toContain('Pickup recorded.');
+    await act(async () =>
+      finish({ ...recorded, studentId: 'student-2', studentDisplayName: 'Blair Smith' }),
+    );
+    expect(document.body.textContent).toContain('Blair Smith');
+    expect(document.body.textContent).toContain('Ready for the next student');
+    expect(camera).toHaveBeenCalledTimes(1);
+    expect(document.body.textContent).not.toContain('Scan next');
   });
 });

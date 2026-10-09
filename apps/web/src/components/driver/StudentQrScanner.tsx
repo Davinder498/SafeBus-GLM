@@ -33,7 +33,6 @@ interface PendingScan {
   tripId: string;
 }
 const label = (event: StudentQrEventType) => (event === 'picked_up' ? 'Pickup' : 'Drop-off');
-const NEXT_STUDENT_DELAY_MS = 900;
 const PASS_REMOVED_DELAY_MS = 1000;
 
 export function StudentQrScanner({ tripId, onRecorded }: Props) {
@@ -121,11 +120,10 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
     async (pending: PendingScan) => {
       if (processingRef.current) return;
       processingRef.current = true;
-      // Keep the rear camera warm, but never decode another pass during a write.
-      stopDetection();
+      // The camera and decoder stay in one session. The scan loop awaits this
+      // request before it reads another frame, so only one event is in flight.
       const generation = generationRef.current;
       pendingRef.current = pending;
-      setResult(null);
       setState('recording');
       try {
         const recorded = await recordStudentQrEvent(
@@ -137,10 +135,19 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
         pendingRef.current = null;
         lastPassRef.current = { token: pending.token, lastSeenAt: Date.now() };
         setResult(recorded);
-        setState('result');
-        if (recorded.outcome === 'pickup_required') releaseCamera();
+        const continueScanning =
+          recorded.outcome !== 'pickup_required' &&
+          autoResumeRef.current &&
+          document.visibilityState !== 'hidden';
+        if (recorded.outcome === 'pickup_required') {
+          releaseCamera();
+          setState('result');
+        } else {
+          setState(continueScanning && streamRef.current ? 'scanning' : 'paused');
+        }
         // Do not reinterpret a successful write as failed if the list cannot refresh.
         void onRecorded(recorded).catch(() => undefined);
+        return continueScanning;
       } catch {
         if (generation === generationRef.current) {
           releaseCamera();
@@ -150,7 +157,7 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
         if (generation === generationRef.current) processingRef.current = false;
       }
     },
-    [onRecorded, releaseCamera, stopDetection],
+    [onRecorded, releaseCamera],
   );
 
   const processToken = useCallback(
@@ -224,8 +231,7 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
               if (lastPassRef.current?.token === value.trim()) {
                 lastPassRef.current.lastSeenAt = Date.now();
               } else {
-                void processToken(value);
-                return;
+                await processToken(value);
               }
             } else if (
               lastPassRef.current &&
@@ -237,7 +243,7 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
         } catch {
           /* Frame decode failures do not stop the camera. */
         }
-        if (generation === generationRef.current)
+        if (generation === generationRef.current && streamRef.current && autoResumeRef.current)
           timerRef.current = window.setTimeout(() => void scan(), 350);
       };
       timerRef.current = window.setTimeout(() => void scan(), 350);
@@ -251,14 +257,6 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
       );
     }
   }, [processToken, stopCamera, stopDetection]);
-
-  useEffect(() => {
-    if (!open || state !== 'result' || !result || result.outcome === 'pickup_required') return;
-    const next = window.setTimeout(() => {
-      if (autoResumeRef.current && document.visibilityState !== 'hidden') void start();
-    }, NEXT_STUDENT_DELAY_MS);
-    return () => window.clearTimeout(next);
-  }, [open, result, start, state]);
 
   function pauseScanning() {
     autoResumeRef.current = false;
@@ -439,6 +437,7 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
                   className="rounded-xl border border-blue-200 bg-blue-50 p-4"
                   data-testid="driver-qr-result"
                 >
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide">Last scan</p>
                   <p className="flex items-center gap-2 font-bold">
                     <CheckCircle2 className="h-5 w-5" aria-hidden />
                     {result.studentDisplayName}
@@ -450,20 +449,13 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
                   <p className="mt-3 font-semibold" data-testid="driver-qr-recorded-message">
                     {outcomeMessage()}
                   </p>
-                  {state === 'result' &&
-                    result.outcome !== 'pickup_required' &&
-                    autoResumeRef.current && (
-                      <p className="mt-2 text-sm">
-                        Getting ready for the next student automatically...
-                      </p>
-                    )}
                 </div>
               )}
               {state === 'record-failed' && (
                 <Button
-                  onClick={() => {
+                  onClick={async () => {
                     const pending = pendingRef.current;
-                    if (pending) void submit(pending);
+                    if (pending && (await submit(pending))) void start();
                   }}
                   data-testid="driver-qr-retry-record"
                 >
@@ -475,14 +467,22 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
                   Pause scanning
                 </Button>
               )}
-              {!busy && (
+              {[
+                'idle',
+                'paused',
+                'invalid',
+                'permission-denied',
+                'no-camera',
+                'unsupported',
+                'result',
+              ].includes(state) && (
                 <Button
                   size="lg"
                   fullWidth
                   onClick={() => void start()}
-                  data-testid="driver-qr-scan-another"
+                  data-testid="driver-qr-start-camera"
                 >
-                  {result ? 'Scan next' : 'Start camera'}
+                  Start camera
                 </Button>
               )}
               {import.meta.env.DEV && !busy && state !== 'record-failed' && (

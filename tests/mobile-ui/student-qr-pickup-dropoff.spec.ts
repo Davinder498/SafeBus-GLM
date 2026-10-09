@@ -82,14 +82,19 @@ async function install(
         __stops: number;
         __qrValue: string;
         __detections: number;
+        __cameraRequests: number;
+        __plays: number;
       };
       runtime.__stops = 0;
       runtime.__qrValue = value;
       runtime.__detections = 0;
+      runtime.__cameraRequests = 0;
+      runtime.__plays = 0;
       Object.defineProperty(navigator, 'mediaDevices', {
         configurable: true,
         value: {
           getUserMedia: async () => {
+            runtime.__cameraRequests += 1;
             if (denied) throw new DOMException('Denied', 'NotAllowedError');
             if (fallbackImage) {
               const image = new Image();
@@ -120,7 +125,9 @@ async function install(
           configurable: true,
           get: () => 4,
         });
-        HTMLMediaElement.prototype.play = async () => undefined;
+        HTMLMediaElement.prototype.play = async () => {
+          runtime.__plays += 1;
+        };
         Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', {
           configurable: true,
           get: () => null,
@@ -150,6 +157,8 @@ test('boarding line scans successive students automatically and retains the sele
   await expect(page.getByTestId('driver-qr-recorded-message')).toHaveText('Pickup recorded.');
   await expect(page.getByRole('radio', { name: 'Pickup', exact: true })).toBeChecked();
   await expect(page.getByText('Ready for the next student.', { exact: false })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Scan next', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Start camera', exact: true })).toHaveCount(0);
   await page.waitForFunction(
     () => (window as unknown as { __detections: number }).__detections >= 5,
   );
@@ -159,6 +168,12 @@ test('boarding line scans successive students automatically and retains the sele
   }, nextToken);
   await expect(page.getByTestId('driver-qr-result')).toContainText('Blair Smith');
   await expect(page.getByTestId('driver-qr-recorded-message')).toHaveText('Pickup recorded.');
+  await expect(page.getByText('Ready for the next student.', { exact: false })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start camera', exact: true })).toHaveCount(0);
+  expect(
+    await page.evaluate(() => (window as unknown as { __cameraRequests: number }).__cameraRequests),
+  ).toBe(1);
+  expect(await page.evaluate(() => (window as unknown as { __plays: number }).__plays)).toBe(1);
   expect(calls.map((call) => call.p_event_type)).toEqual(['picked_up', 'picked_up']);
   await page.getByRole('button', { name: 'Pause scanning' }).click();
   await page.getByRole('radio', { name: 'Drop-off', exact: true }).check();
