@@ -1,5 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { installAdminWorkflowMock } from './fixtures/admin-workflow';
+import { ADMIN_IDS, installAdminWorkflowMock } from './fixtures/admin-workflow';
 import { expectNoWcagAaViolations } from './fixtures/accessibility';
 
 interface SearchArgs {
@@ -57,7 +57,7 @@ function searchResult(args: SearchArgs) {
 
 async function installOverviewMock(
   page: Page,
-  options: { tripError?: boolean; summaryError?: boolean } = {},
+  options: { tripError?: boolean; summaryError?: boolean; missingRpc?: boolean } = {},
 ) {
   await page.clock.setFixedTime(new Date('2026-10-09T05:30:00Z'));
   await installAdminWorkflowMock(page);
@@ -66,17 +66,79 @@ async function installOverviewMock(
     tripError: !!options.tripError,
     summaryError: !!options.summaryError,
     requests,
+    missingRpc: !!options.missingRpc,
+    compatibilityRequests: [] as URL[],
   };
   await page.route('**/rest/v1/**', async (route: Route) => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/rpc/search_admin_trips')) {
       const args = route.request().postDataJSON() as SearchArgs;
       requests.push(args);
+      if (controls.missingRpc)
+        return route.fulfill({
+          status: 404,
+          contentType: 'application/json',
+          body: JSON.stringify({ code: 'PGRST202', message: 'Function unavailable' }),
+        });
       return route.fulfill({
         status: controls.tripError ? 500 : 200,
         contentType: 'application/json',
         body: JSON.stringify(
           controls.tripError ? { message: 'Mock unavailable' } : searchResult(args),
+        ),
+      });
+    }
+    if (url.pathname.endsWith('/driver_trips')) {
+      controls.compatibilityRequests.push(url);
+      const params = url.searchParams;
+      const offset = Number(params.get('offset') ?? 0);
+      const pageSize = Number(params.get('limit') ?? 25);
+      const matches = searchResult({
+        p_from_date:
+          params
+            .getAll('service_date')
+            .find((value) => value.startsWith('gte.'))
+            ?.slice(4) ?? null,
+        p_to_date:
+          params
+            .getAll('service_date')
+            .find((value) => value.startsWith('lte.'))
+            ?.slice(4) ?? null,
+        p_status:
+          params
+            .getAll('status')
+            .find((value) => value.startsWith('eq.'))
+            ?.slice(3) ?? null,
+        p_page: offset / pageSize + 1,
+        p_page_size: pageSize,
+      });
+      return route.fulfill({
+        status: controls.tripError ? 500 : 200,
+        contentType: 'application/json',
+        headers: {
+          'content-range': `${offset}-${offset + matches.rows.length - 1}/${matches.totalCount}`,
+          'access-control-expose-headers': 'content-range',
+        },
+        body: JSON.stringify(
+          controls.tripError
+            ? { message: 'Mock unavailable' }
+            : matches.rows.map((row) => ({
+                id: row.trip_id,
+                route_id: ADMIN_IDS.route,
+                service_date: row.service_date,
+                status: row.status,
+                started_at: row.started_at,
+                ended_at: row.ended_at,
+                trip_name_snapshot: row.trip_pattern_name,
+                route: { route_name: row.route_name, route_code: row.route_code },
+                pattern: {
+                  route_id: ADMIN_IDS.route,
+                  display_name: row.trip_pattern_name,
+                  direction: row.direction,
+                },
+                bus: { bus_number: row.bus_label },
+                driver: { profile: { full_name: row.driver_label } },
+              })),
         ),
       });
     }
@@ -211,7 +273,9 @@ test('all dates paginate on the server and date/status/page-size changes reset t
   await expect(page.getByRole('button', { name: 'Next', exact: true })).toBeDisabled();
 });
 
-test('section errors stay independent and retry does not display false zeros', async ({ page }) => {
+test('section errors stay independent and one reload action does not display false zeros', async ({
+  page,
+}, testInfo) => {
   const controls = await installOverviewMock(page, { summaryError: true });
   await page.goto('/admin');
   await expect(page.getByTestId('admin-trips-table')).toBeVisible();
@@ -223,10 +287,50 @@ test('section errors stay independent and retry does not display false zeros', a
   controls.tripError = true;
   await page.getByRole('button', { name: 'Refresh trips' }).click();
   await expect(page.getByTestId('trip-search-error')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Refresh trips' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Retry trips' })).toHaveCount(1);
+  await expectNoWcagAaViolations(page, 'Tenant overview trip error');
+  await page.screenshot({ path: testInfo.outputPath('tenant-overview-error.png'), fullPage: true });
   await expect(page.getByTestId('transportation-summary').getByRole('link')).toHaveCount(7);
   controls.tripError = false;
   await page.getByRole('button', { name: 'Retry trips' }).click();
   await expect(page.getByTestId('admin-trips-table')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Retry trips' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Refresh trips' })).toHaveCount(1);
+});
+
+test('unapplied RPC uses existing secure tables for active trips, history and pages', async ({
+  page,
+}) => {
+  const controls = await installOverviewMock(page, { missingRpc: true });
+  await page.goto('/admin');
+  await expect(page.getByTestId('admin-trips-table')).toContainText('Route active');
+  const params = controls.compatibilityRequests[0].searchParams;
+  for (const field of [
+    'tenant_id',
+    'route.tenant_id',
+    'pattern.tenant_id',
+    'bus.tenant_id',
+    'driver.tenant_id',
+    'driver.profile.tenant_id',
+  ])
+    expect(params.get(field)).toBe(`eq.${ADMIN_IDS.tenant}`);
+  expect(params.get('order')).toBe('service_date.desc,started_at.desc,id.asc');
+  await page.getByRole('button', { name: 'Active', exact: true }).click();
+  await expect(page.getByTestId('admin-trips-table').locator('tbody tr')).toHaveCount(1);
+  await page.getByRole('button', { name: 'All', exact: true }).click();
+  await page.getByLabel('Dates', { exact: true }).selectOption('range');
+  await page.getByLabel('From date').fill('2025-01-14');
+  await page.getByLabel('To date').fill('2025-01-15');
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+  await expect(page.getByTestId('admin-trips-table').locator('tbody tr')).toHaveCount(2);
+  await expect(page.getByTestId('admin-trips-table')).toContainText('Route historical-1');
+  await page.getByLabel('Dates', { exact: true }).selectOption('all');
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+  await expect(page.getByTestId('admin-pagination')).toContainText('Showing 1-25 of 231');
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await expect(page.getByTestId('admin-pagination')).toContainText('Showing 26-50 of 231');
+  expect(controls.compatibilityRequests.at(-1)?.searchParams.get('offset')).toBe('25');
 });
 
 for (const lateError of [false, true]) {

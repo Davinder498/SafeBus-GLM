@@ -122,11 +122,11 @@ export function AdminTripSearchSection() {
           onClick={() => void load()}
           disabled={state.kind === 'loading'}
         >
-          Refresh trips
+          {state.kind === 'error' ? 'Retry trips' : 'Refresh trips'}
         </Button>
       </div>
 
-      <form className="mt-5" onSubmit={applyDates} noValidate>
+      <form className="mt-4" onSubmit={applyDates} noValidate>
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
           <Field label="Dates" htmlFor="trip-date-mode">
             <Select
@@ -204,22 +204,24 @@ export function AdminTripSearchSection() {
         )}
       </form>
 
-      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filter trips by status">
-        {statuses.map((status) => (
-          <button
-            key={status.label}
-            type="button"
-            aria-pressed={query.status === status.value}
-            onClick={() => updateQuery({ status: status.value })}
-            className={`rounded-full px-3 py-1.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 focus-visible:ring-offset-2 ${query.status === status.value ? 'bg-navy-900 text-white' : 'bg-slate-100 text-gray-700 hover:bg-slate-200'}`}
-          >
-            {status.label}
-          </button>
-        ))}
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter trips by status">
+          {statuses.map((status) => (
+            <button
+              key={status.label}
+              type="button"
+              aria-pressed={query.status === status.value}
+              onClick={() => updateQuery({ status: status.value })}
+              className={`rounded-full px-3 py-1.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 focus-visible:ring-offset-2 ${query.status === status.value ? 'bg-navy-900 text-white' : 'bg-slate-100 text-gray-700 hover:bg-slate-200'}`}
+            >
+              {status.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-sm font-medium text-gray-600" data-testid="trip-search-date-label">
+          {dateLabel}
+        </p>
       </div>
-      <p className="mt-4 text-sm font-medium text-gray-600" data-testid="trip-search-date-label">
-        {dateLabel}
-      </p>
       <div className="mt-3" aria-live="polite" aria-busy={state.kind === 'loading'}>
         {state.kind === 'loading' && (
           <DataState
@@ -229,10 +231,12 @@ export function AdminTripSearchSection() {
         )}
         {state.kind === 'error' && (
           <div data-testid="trip-search-error">
-            <DataState title="Could not load trips" message="Try loading this section again." />
-            <Button type="button" variant="secondary" onClick={() => void load()}>
-              Retry trips
-            </Button>
+            <div className="rounded-xl border border-danger-200 bg-danger-50 p-4" role="alert">
+              <p className="text-sm font-semibold text-danger-700">Could not load trips</p>
+              <p className="mt-1 text-sm text-gray-700">
+                Use Retry trips above to load this section again.
+              </p>
+            </div>
           </div>
         )}
         {state.kind === 'ready' && (

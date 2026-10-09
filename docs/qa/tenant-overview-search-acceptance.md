@@ -16,9 +16,20 @@ existing workflows.
 ## Database adoption gate
 
 Migration `0121_admin_trip_search.sql` is prepared and **unapplied**. Apply it only
-through the approved adoption/release workflow. The feature needs this RPC before
-frontend activation; a missing RPC displays a retryable Trips error, never an
-incomplete recent-results fallback. Existing APIs and Live Operations still work.
+through the approved adoption/release workflow. Until then, a missing-function
+response (`PGRST202` or `42883`) uses a compatibility query of the existing
+operational tables through the authenticated Data API. It verifies the active
+administrator profile, retains caller RLS, tenant filters on every joined table,
+and the school restriction. Dates and status filter before server pagination
+with an exact matching count; it never uses the 200-run legacy overview fallback.
+Other errors remain explicit and retryable. Existing APIs and Live Operations
+still work. There is one header reload control: Refresh trips normally, Retry
+trips after a failure. The failure message uses a compact inline alert.
+
+Read-only existing-database verification on 2026-10-09 confirmed that the search
+RPC was absent and one active trip for today was visible through the equivalent
+joins under an existing active tenant administrator. The check used transaction-
+local claims/role, statement/lock timeouts and rollback; no database writes.
 
 The migration uses security-invoker execution, existing RLS, explicit role/tenant/
 school restrictions, authenticated-only execution, inclusive service dates and
