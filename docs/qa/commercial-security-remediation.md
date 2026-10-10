@@ -6,11 +6,20 @@ a launch approval, deployment approval, or evidence that the target load passes.
 
 ## Current milestone: authorization and session security
 
-The feature branch contains forward migration **0122**, application integration,
+Merged PR #252 contains forward migration **0122**, application integration,
 server boundary tests and expanded protected authorization-audit checks. Existing
 migrations and the production-adoption baseline remain immutable. Migration 0122
 requires a reconciled private-helper baseline and refuses the drifted public-helper
 layout found in production. It also refuses to silently replace another API hook.
+
+On 2026-10-10, the customer confirmed that there are no external users or
+commercial tenants and approved controlled verification on the existing project.
+The target remains production-designated; a second project is optional for this
+milestone. The follow-up branch prepares snapshot reconciliation **0123** and a
+protected rollback-only rehearsal. See
+[existing-project-security-rehearsal.md](existing-project-security-rehearsal.md).
+No database patch has been applied. Protected GitHub environment review and human
+PR merge review remain required.
 
 | Finding | Prepared change | Closure still required |
 | --- | --- | --- |
@@ -31,7 +40,7 @@ TypeScript contract includes a forward declaration pending regeneration against
 the validated migrated target. The deployed frontend must not be released before
 the database/API migration and schema cache are validated.
 
-## Security acceptance on the approved isolated target
+## Security acceptance on the approved existing project
 
 1. Reconstruct/reconcile the intended baseline and apply migration 0122 through
    the guarded migration workflow. Run the security advisor and exact RPC audit.
@@ -81,8 +90,8 @@ records are changed by this milestone. Unresolved findings remain launch blocker
 ## Validation record
 
 Local code checks and SQL syntax parsing are recorded in the PR. Database migration
-execution and real-role authorization acceptance remain pending an approved isolated
-target. Parsing SQL does not validate deployed privileges, PL/pgSQL type resolution,
+execution and real-role authorization acceptance remain pending the protected
+existing-project rehearsal and release. Parsing SQL does not validate deployed privileges, PL/pgSQL type resolution,
 function ownership, Auth schema compatibility, or actual API hook operation.
 
 Completed locally: uncached `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test`
