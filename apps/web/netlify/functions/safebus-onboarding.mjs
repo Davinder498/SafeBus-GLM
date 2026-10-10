@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { verifyActiveCallerSession } from './session-security.mjs';
 
 const json = (statusCode, body) => ({
   statusCode,
@@ -92,6 +93,10 @@ async function requireCaller(event, allowedRoles) {
   const c = clients(token);
   const { data: userData, error: userError } = await c.user.auth.getUser();
   if (userError || !userData.user) return { error: json(401, { error: 'Invalid session.' }) };
+  const sessionFailure = await verifyActiveCallerSession(c.user);
+  if (sessionFailure) {
+    return { error: json(sessionFailure.statusCode, { error: sessionFailure.message }) };
+  }
   const { data: profile, error: profileError } = await c.admin
     .from('profiles')
     .select('id, tenant_id, role, status, full_name, email')

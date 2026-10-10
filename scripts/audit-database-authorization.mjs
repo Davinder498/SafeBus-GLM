@@ -301,6 +301,46 @@ try {
   `);
   assertNoRows('Client roles can create objects in public', schemaCreate);
 
+  const privateGuardianColumns = await client.query(`
+    select column_name as object_name
+      from (values ('admin_note'), ('status_comment')) private_columns(column_name)
+     where has_column_privilege('authenticated', 'public.student_guardians', column_name, 'SELECT')
+  `);
+  assertNoRows('Private guardian notes are directly readable by client roles', privateGuardianColumns);
+
+  const missingSessionPolicies = await client.query(`
+    select format('%I.%I', n.nspname, c.relname) as object_name
+      from pg_class c join pg_namespace n on n.oid = c.relnamespace
+     where (n.nspname in ('public', 'safebus_private')
+            or (n.nspname = 'realtime' and c.relname = 'messages'))
+       and c.relkind in ('r', 'p') and c.relrowsecurity
+       and not exists (
+         select 1 from pg_policy p
+          where p.polrelid = c.oid and p.polname = 'safebus_active_session'
+            and not p.polpermissive and p.polcmd = '*'
+       )
+  `);
+  assertNoRows('Restrictive session policies are missing', missingSessionPolicies);
+
+  const missingSchoolLocationPolicies = await client.query(`
+    select table_name as object_name
+      from (values ('public.driver_trip_current_locations'),
+                   ('public.driver_trip_location_updates')) locations(table_name)
+     where not exists (
+       select 1 from pg_policy p where p.polrelid = table_name::regclass
+         and p.polname = 'safebus_school_location_scope'
+         and not p.polpermissive and p.polcmd = 'r'
+     )
+  `);
+  assertNoRows('Restrictive school location policies are missing', missingSchoolLocationPolicies);
+
+  const sessionHook = await client.query(`
+    select 1 from pg_db_role_setting s join pg_roles r on r.oid = s.setrole
+     where r.rolname = 'authenticator'
+       and 'pgrst.db_pre_request=safebus_private.enforce_active_api_session' = any(s.setconfig)
+  `);
+  if (sessionHook.rowCount === 0) throw new Error('The approved PostgREST session hook is missing.');
+
   const response = await fetch(new URL('/rest/v1/', supabaseUrl), {
     headers: {
       apikey: secretKey,

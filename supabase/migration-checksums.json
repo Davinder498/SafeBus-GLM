@@ -734,6 +734,12 @@
       "filename": "0121_admin_trip_search.sql",
       "bytes": 3716,
       "sha256": "6e9f7704b49c1ad4536eaf442a2ebe5885e1a6908b907e1700113202d364d55e"
+    },
+    {
+      "version": "0122",
+      "filename": "0122_commercial_authorization_boundaries.sql",
+      "bytes": 15076,
+      "sha256": "b5ce421b6decc16255d935758bdf6d3add241e68fed01ffd972d23a67eb399ab"
     }
   ]
 }

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { verifyActiveCallerSession } from './session-security.mjs';
 
 export const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -91,6 +92,10 @@ export async function requireBillingCaller(
   const { data: userData, error: userError } = await clients.user.auth.getUser();
   if (userError || !userData.user) {
     return { error: json(401, { error: 'Invalid session.' }) };
+  }
+  const sessionFailure = await verifyActiveCallerSession(clients.user);
+  if (sessionFailure) {
+    return { error: json(sessionFailure.statusCode, { error: sessionFailure.message }) };
   }
 
   const { data: profile, error: profileError } = await clients.admin

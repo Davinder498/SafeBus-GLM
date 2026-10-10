@@ -3926,6 +3926,11 @@ export interface Database {
         };
         Returns: unknown;
       };
+      // Forward contract for migration 0122; regenerate on the validated release target.
+      get_admin_student_guardian_links: {
+        Args: { p_student_id: string };
+        Returns: Database['public']['Tables']['student_guardians']['Row'][];
+      };
       get_admin_live_fleet_monitoring: {
         Args: {};
         Returns: unknown;

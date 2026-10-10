@@ -283,6 +283,10 @@ async function installWorkspaceMock(
       await fulfillRows([assignment()]);
       return;
     }
+    if (method === 'POST' && path === '/rest/v1/rpc/get_admin_student_guardian_links') {
+      await fulfillRows([]);
+      return;
+    }
     if (method === 'POST' && path.includes('/rpc/get_admin_bus_services')) {
       await fulfillRows([
         {
@@ -398,6 +402,20 @@ async function installWorkspaceMock(
 }
 
 test.describe('Admin student workspace', () => {
+  test('blocks the workspace when session registration cannot be verified', async ({ page }) => {
+    await installWorkspaceMock(page);
+    await page.route('**/rest/v1/rpc/register_current_user_session', async (route) => {
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Session verification unavailable' }),
+      });
+    });
+    await page.goto(`/admin/students/${IDS.student}`);
+    await expect(page.getByText('We could not verify this BusSafe session. Sign in again or retry shortly.')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Avery Johnson', level: 1 })).toHaveCount(0);
+  });
+
   test('shows every management section and keeps transportation in its own card', async ({
     page,
   }) => {

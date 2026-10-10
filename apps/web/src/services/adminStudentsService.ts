@@ -117,10 +117,7 @@ export async function fetchAdminStudentDetail(studentId: string): Promise<AdminS
       .eq('student_id', student.id)
       .eq('status', 'active')
       .order('effective_from', { ascending: true }),
-    client
-      .from('student_guardians')
-      .select('id, tenant_id, student_id, guardian_id, relationship, can_receive_notifications, status, admin_note, status_comment, created_at, updated_at')
-      .eq('student_id', student.id),
+    client.rpc('get_admin_student_guardian_links', { p_student_id: student.id }),
   ]);
 
   if (schoolResult.error || assignmentResult.error || guardianLinksResult.error) {

@@ -143,10 +143,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const registerSession = useCallback(async () => {
     if (!supabase) return;
-    await supabase.rpc('register_current_user_session', {
+    const { error } = await supabase.rpc('register_current_user_session', {
       p_device_label: 'BusSafe web',
       p_user_agent: typeof navigator === 'undefined' ? null : navigator.userAgent,
     });
+    if (error) throw new Error('We could not verify this BusSafe session. Sign in again or retry shortly.');
   }, []);
 
   const loadProfile = useCallback(async (userId: string): Promise<Profile> => {
