@@ -58,6 +58,7 @@ function setupClients({
   inviteError = null,
   deleteUserError = null,
   resetPasswordError = null,
+  sessionResult = { data: true, error: null },
   authUser = {
     id: 'guardian-auth-1',
     email: 'guardian@example.test',
@@ -123,6 +124,7 @@ function setupClients({
     ...userClient,
     from: adminClient.from,
     rpc: async (name, args) => {
+      if (name === 'is_current_user_session_active') return sessionResult;
       if (name === 'check_rate_limit') return { data: true, error: null };
       if (name === 'is_allowed_redirect_origin') return { data: true, error: null };
       return userClient.rpc(name, args);
@@ -165,6 +167,18 @@ function createTenantEvent(body = {}) {
 describe('BusSafe member onboarding', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it.each([
+    [{ data: false, error: null }, 401],
+    [{ data: null, error: { message: 'database unavailable' } }, 503],
+  ])('denies inactive or unverifiable sessions before service-role work', async (sessionResult, status) => {
+    const { adminClient } = setupClients({ sessionResult });
+    const response = await handler(event({ email: 'guardian@example.test', firstName: 'Test', lastName: 'Parent' }));
+    expect(response.statusCode).toBe(status);
+    expect(adminClient.from).not.toHaveBeenCalled();
+    expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
+    expect(adminClient.rpc).not.toHaveBeenCalled();
   });
 
   it('returns a clear server configuration error when the secret key is missing', async () => {

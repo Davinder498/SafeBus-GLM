@@ -51,6 +51,7 @@
     "get_admin_route_shape_versions(uuid)",
     "get_admin_route_stop_options(uuid)",
     "get_admin_student_bus_assignments_page(integer,integer,text,text)",
+    "get_admin_student_guardian_links(uuid)",
     "get_admin_student_qr_credential_status(uuid)",
     "get_admin_students_page(integer,integer,text,text,uuid)",
     "get_admin_trip_overview(integer)",

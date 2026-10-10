@@ -207,6 +207,16 @@ export async function blockUnexpectedSupabaseRestAccess(
   method: string,
   path: string,
 ) {
+  // Shared signed-in fixtures explicitly support the real session lifecycle.
+  // A scenario can intercept these first to simulate revocation or an outage.
+  if (method === 'POST' && path === '/rest/v1/rpc/register_current_user_session') {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: 'null' });
+    return;
+  }
+  if (method === 'POST' && path === '/rest/v1/rpc/is_current_user_session_active') {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: 'true' });
+    return;
+  }
   await route.fulfill({
     status: 500,
     contentType: 'application/json',

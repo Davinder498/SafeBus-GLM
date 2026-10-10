@@ -41,12 +41,16 @@ export async function getVisibleStudentGuardianLinks(): Promise<StudentGuardian[
   const { data, error } = await client
     .from('student_guardians')
     .select(
-      'id, tenant_id, student_id, guardian_id, relationship, can_receive_notifications, status, admin_note, status_comment, created_at, updated_at',
+      'id, tenant_id, student_id, guardian_id, relationship, can_receive_notifications, status, created_at, updated_at',
     )
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as StudentGuardian[];
+  return (data ?? []).map((link) => ({
+    ...link,
+    admin_note: null,
+    status_comment: null,
+  })) as StudentGuardian[];
 }
 
 export async function getMyLinkedStudents(): Promise<Student[]> {
