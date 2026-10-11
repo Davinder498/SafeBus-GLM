@@ -746,6 +746,12 @@
       "filename": "0123_existing_project_security_reconciliation.sql",
       "bytes": 23030,
       "sha256": "cc79763aca81d27467f724384625fb1bf37a6d880d1f15ba1bc5012ff3f5c3e3"
+    },
+    {
+      "version": "0124",
+      "filename": "0124_session_claim_validation.sql",
+      "bytes": 2026,
+      "sha256": "0ac1323247ceac19bf120cb7a25f2db3c5fb2e3121ad74ea3f70441be9d3bbfa"
     }
   ]
 }

@@ -43,7 +43,12 @@ function fakeDatabase({ failure, drift = false } = {}) {
 }
 
 const acceptedSql = "begin transaction read only;\nselect 'PASS' as result;\nrollback;\n";
-const input = { reconciliation: 'reconcile', security: 'security', acceptance: acceptedSql };
+const input = {
+  reconciliation: 'reconcile',
+  security: 'security',
+  sessionValidation: 'claim-validation',
+  acceptance: acceptedSql,
+};
 
 test('private schema boundary requires a real API rejection, not an invalid key or outage', async () => {
   const url = validTarget.supabaseUrl;
@@ -158,6 +163,11 @@ test('successful rehearsal runs reconciliation before security and always rolls 
   const result = await runRollbackRehearsal(client, input);
   assert.equal(result.restored, true);
   assert.ok(client.queries.indexOf('reconcile') < client.queries.indexOf('security'));
+  assert.ok(client.queries.indexOf('security') < client.queries.indexOf('claim-validation'));
+  assert.ok(
+    client.queries.indexOf('claim-validation') <
+      client.queries.indexOf(acceptanceWithinTransaction(acceptedSql)),
+  );
   assert.equal(client.queries.filter((sql) => sql === 'rollback').length, 2);
   assert.equal(
     client.queries.some((sql) => /\bcommit\b/i.test(sql)),
@@ -165,7 +175,16 @@ test('successful rehearsal runs reconciliation before security and always rolls 
   );
 });
 
-for (const failure of ['reconcile', 'security']) {
+test('missing session correction refuses rehearsal before any SQL executes', async () => {
+  const client = fakeDatabase();
+  await assert.rejects(
+    runRollbackRehearsal(client, { ...input, sessionValidation: '' }),
+    /correction is required/,
+  );
+  assert.equal(client.queries.length, 0);
+});
+
+for (const failure of ['reconcile', 'security', 'claim-validation']) {
   test('failure during ' + failure + ' rolls back and returns no success evidence', async () => {
     const client = fakeDatabase({ failure });
     await assert.rejects(runRollbackRehearsal(client, input), (error) => {

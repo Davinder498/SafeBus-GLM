@@ -8,6 +8,7 @@ import {
   ACCEPTANCE_FILE,
   RECONCILIATION_FILE,
   SECURITY_FILE,
+  SESSION_VALIDATION_FILE,
   digest,
   assertPrivateApiSchemaHidden,
   formatRehearsalFailure,
@@ -42,7 +43,9 @@ if (JSON.stringify(await buildMigrationManifest()) !== JSON.stringify(manifest))
   throw new Error('Migration files differ from the committed checksums.');
 }
 const inputs = await Promise.all(
-  [RECONCILIATION_FILE, SECURITY_FILE, ACCEPTANCE_FILE].map((file) => fs.readFile(file, 'utf8')),
+  [RECONCILIATION_FILE, SECURITY_FILE, SESSION_VALIDATION_FILE, ACCEPTANCE_FILE].map((file) =>
+    fs.readFile(file, 'utf8'),
+  ),
 );
 const client = new pg.Client({
   connectionString: process.env.SAFEBUS_DATABASE_URL,
@@ -65,7 +68,8 @@ try {
   result = await runRollbackRehearsal(client, {
     reconciliation: inputs[0],
     security: inputs[1],
-    acceptance: inputs[2],
+    sessionValidation: inputs[2],
+    acceptance: inputs[3],
   });
 } catch (error) {
   // Never log connection strings, raw SQL, provider details, or credentials.
@@ -94,10 +98,12 @@ if (result) {
     persistentMigrationApplied: false,
     fixtureWrites: false,
     realApiAcceptance: false,
-    inputs: [RECONCILIATION_FILE, SECURITY_FILE, ACCEPTANCE_FILE].map((file, i) => ({
-      file,
-      sha256: digest(inputs[i].replaceAll('\r\n', '\n')),
-    })),
+    inputs: [RECONCILIATION_FILE, SECURITY_FILE, SESSION_VALIDATION_FILE, ACCEPTANCE_FILE].map(
+      (file, i) => ({
+        file,
+        sha256: digest(inputs[i].replaceAll('\r\n', '\n')),
+      }),
+    ),
     catalogSha256: digest(JSON.stringify(result.before)),
   };
   await fs.writeFile(path.join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n', {

@@ -21,13 +21,21 @@ protected rollback-only rehearsal. See
 No database patch has been applied. Protected GitHub environment review and human
 PR merge review remain required.
 
-| Finding | Prepared change | Closure still required |
-| --- | --- | --- |
-| S1: school administrators can read other schools' GPS rows | Restrictive school/route SELECT policies on current and history tables, combined with existing tenant/role policies | Direct REST positive and negative tests across two schools/two tenants, including NULL-school routes |
-| S2: guardians can select private admin notes | Revoke direct SELECT on private note columns; grant explicit safe columns; admin-only, student/school-scoped notes RPC; update admin detail caller | Authorized admin notes read, guardian direct-column and composite-RPC denial; test expired/inactive links |
-| S3: revoked sessions can retain API access | Auth-session existence/expiry and mirror check; restrictive table/realtime RLS; role helpers; PostgREST pre-request; revocation deletes real Auth sessions; registration cannot clear a revoked mirror; server onboarding/billing check before privileged work | Real signed JWT and refresh-token tests, socket revocation/rejoin, offline Android behavior, races and legacy fixture adaptation |
-| S4: anonymous bus/route membership lookup | Private baseline precondition and explicit anonymous execution revocation | Validate forward production reconciliation and verify anonymous API denial |
-| S5: caller-controlled limiter actor/window | Bind authenticated actor to auth.uid(); fixed action ceilings/windows; bounded identifiers/counts; trusted service-role exception for actor only | Parallel writes, cross-actor denial, fixed-window/cap enforcement, service worker compatibility |
+The first hosted SQL rehearsal completed reconciliation and 0122 before its
+malformed-session acceptance check exposed 22P02 in the SQL session function.
+The transaction rolled back and the catalog was restored. Forward migration
+**0124** replaces that function with procedural validation before UUID casts;
+embedded PostgreSQL tests exercise the actual migration and both allow/deny
+cases. The protected rehearsal now includes 0124 before acceptance. No security
+finding is closed by these unit tests or by a failed rehearsal.
+
+| Finding                                                    | Prepared change                                                                                                                                                                                                                                                | Closure still required                                                                                                           |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| S1: school administrators can read other schools' GPS rows | Restrictive school/route SELECT policies on current and history tables, combined with existing tenant/role policies                                                                                                                                            | Direct REST positive and negative tests across two schools/two tenants, including NULL-school routes                             |
+| S2: guardians can select private admin notes               | Revoke direct SELECT on private note columns; grant explicit safe columns; admin-only, student/school-scoped notes RPC; update admin detail caller                                                                                                             | Authorized admin notes read, guardian direct-column and composite-RPC denial; test expired/inactive links                        |
+| S3: revoked sessions can retain API access                 | Auth-session existence/expiry and mirror check; restrictive table/realtime RLS; role helpers; PostgREST pre-request; revocation deletes real Auth sessions; registration cannot clear a revoked mirror; server onboarding/billing check before privileged work | Real signed JWT and refresh-token tests, socket revocation/rejoin, offline Android behavior, races and legacy fixture adaptation |
+| S4: anonymous bus/route membership lookup                  | Private baseline precondition and explicit anonymous execution revocation                                                                                                                                                                                      | Validate forward production reconciliation and verify anonymous API denial                                                       |
+| S5: caller-controlled limiter actor/window                 | Bind authenticated actor to auth.uid(); fixed action ceilings/windows; bounded identifiers/counts; trusted service-role exception for actor only                                                                                                               | Parallel writes, cross-actor denial, fixed-window/cap enforcement, service worker compatibility                                  |
 
 Invited accounts keep their real Auth session so password setup and account
 activation remain possible. Role helpers still require an active profile/tenant;
@@ -42,7 +50,7 @@ the database/API migration and schema cache are validated.
 
 ## Security acceptance on the approved existing project
 
-1. Reconstruct/reconcile the intended baseline and apply migration 0122 through
+1. Reconstruct/reconcile the intended baseline and apply migrations 0122 and 0124 through
    the guarded migration workflow. Run the security advisor and exact RPC audit.
    Confirm private schemas are not exposed and the actual PostgREST hook executes.
 2. Provision synthetic tenants A/B, schools A1/A2, platform/tenant/transportation/
@@ -75,13 +83,13 @@ existing-session lifecycle checks. Other API products must be verified explicitl
 
 ## Subsequent milestones (not implemented early)
 
-| Milestone / findings | Required work | External decision or evidence |
-| --- | --- | --- |
-| Release integrity: R1, search-path/privilege advisor items | Bounded live catalog comparison; reviewed forward reconciliation; protected production baseline adoption; schema fingerprint, exact manifest, drift/rollback proof | Approved isolated target, human release/adoption review; do not replay all migrations |
-| Operations/pilot: R2-R4 | Paid compute/provider quotas; monitoring and routed alerts; authenticated synthetic checks; backup/restore and incident exercises; support/on-call ownership | Service budgets, vendor configuration, named owners, measured RPO/RTO and pilot authorization |
-| Privacy/commercial/Android/maps | PIA/contracts/subprocessor/residency decisions; signed-device rural/offline/battery testing; map key/plan restrictions; billing/tax acceptance | Legal/privacy/customer approval and real-device/vendor evidence; never invent signatures or approvals |
-| Scale: C1-C5 | Decouple synchronous GPS fan-out, authorized coalesced delivery, history partition/retention, notification deadlines/concurrency/fairness, bounded/jittered Android catch-up | Agreed retention and delivery semantics; isolated 10,000-device load, concurrency assumptions, soak/outage/reconnect and cost evidence |
-| Secondary frontend/test work | Route splitting/rural first-load measurement; reproduce and fix intermittent browser failures; replace skipped critical journeys with real end-to-end coverage | Measured regression and signed Android field acceptance |
+| Milestone / findings                                       | Required work                                                                                                                                                                | External decision or evidence                                                                                                          |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Release integrity: R1, search-path/privilege advisor items | Bounded live catalog comparison; reviewed forward reconciliation; protected production baseline adoption; schema fingerprint, exact manifest, drift/rollback proof           | Approved isolated target, human release/adoption review; do not replay all migrations                                                  |
+| Operations/pilot: R2-R4                                    | Paid compute/provider quotas; monitoring and routed alerts; authenticated synthetic checks; backup/restore and incident exercises; support/on-call ownership                 | Service budgets, vendor configuration, named owners, measured RPO/RTO and pilot authorization                                          |
+| Privacy/commercial/Android/maps                            | PIA/contracts/subprocessor/residency decisions; signed-device rural/offline/battery testing; map key/plan restrictions; billing/tax acceptance                               | Legal/privacy/customer approval and real-device/vendor evidence; never invent signatures or approvals                                  |
+| Scale: C1-C5                                               | Decouple synchronous GPS fan-out, authorized coalesced delivery, history partition/retention, notification deadlines/concurrency/fairness, bounded/jittered Android catch-up | Agreed retention and delivery semantics; isolated 10,000-device load, concurrency assumptions, soak/outage/reconnect and cost evidence |
+| Secondary frontend/test work                               | Route splitting/rural first-load measurement; reproduce and fix intermittent browser failures; replace skipped critical journeys with real end-to-end coverage               | Measured regression and signed Android field acceptance                                                                                |
 
 Account password protection and provider limits are hosted configuration decisions.
 No paid plans, production data, deployed functions, retention latches, or approval
