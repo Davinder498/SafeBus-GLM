@@ -6,6 +6,10 @@ export const RECONCILIATION_FILE =
   'supabase/migrations/0123_existing_project_security_reconciliation.sql';
 export const SECURITY_FILE = 'supabase/migrations/0122_commercial_authorization_boundaries.sql';
 export const ACCEPTANCE_FILE = 'tests/rls/commercial-security-existing-database-readonly.sql';
+// The gateway reserves the OpenAPI root for secret keys. A nonexistent relation
+// exercises schema selection with a public key without reading application rows.
+export const PRIVATE_API_PROBE_PATH =
+  '/rest/v1/__safebus_security_schema_probe__?select=id&limit=0';
 
 // Catalog only: no auth rows, app records, connection strings, or API keys.
 export const CATALOG_SNAPSHOT_SQL = [
@@ -48,16 +52,83 @@ export function digest(value) {
 }
 
 export async function assertPrivateApiSchemaHidden(supabaseUrl, apiKey, fetchImpl = fetch) {
-  if (!apiKey)
-    throw new Error('A valid publishable/anon key is required for the API boundary check.');
-  const response = await fetchImpl(supabaseUrl + '/rest/v1/', {
-    headers: { apikey: apiKey, 'Accept-Profile': 'safebus_private' },
-    signal: AbortSignal.timeout(10000),
-  });
-  const body = await response.json();
-  if (response.status !== 406 || body.code !== 'PGRST106') {
-    throw new Error('Private API schema isolation could not be confirmed; refusing rehearsal.');
+  const fail = (code, status, apiCode) => {
+    const error = new Error(
+      'Private API schema isolation could not be confirmed; refusing rehearsal.',
+    );
+    error.stage = 'api-boundary';
+    error.code = code;
+    error.httpStatus = status;
+    error.apiCode = apiCode;
+    return error;
+  };
+  if (!apiKey) {
+    const error = fail('REHEARSAL_API_KEY_MISSING');
+    error.message = 'A valid publishable/anon key is required for the API boundary check.';
+    throw error;
   }
+  let response;
+  try {
+    response = await fetchImpl(supabaseUrl + PRIVATE_API_PROBE_PATH, {
+      method: 'GET',
+      headers: { apikey: apiKey, 'Accept-Profile': 'safebus_private' },
+      signal: AbortSignal.timeout(10000),
+    });
+  } catch {
+    throw fail('REHEARSAL_API_NETWORK');
+  }
+  let body;
+  try {
+    body = await response.json();
+  } catch {
+    throw fail('REHEARSAL_API_RESPONSE', response.status);
+  }
+  if (response.status !== 406 || body?.code !== 'PGRST106') {
+    throw fail('REHEARSAL_API_REJECTED', response.status, body?.code);
+  }
+}
+
+export function formatRehearsalFailure(error, fallbackStage) {
+  const stages = new Set([
+    'api-boundary',
+    'database-connection',
+    'rollback-rehearsal',
+    'catalog',
+    'reconciliation',
+    'security',
+    'acceptance',
+  ]);
+  const stage = stages.has(error?.stage)
+    ? error.stage
+    : stages.has(fallbackStage)
+      ? fallbackStage
+      : 'unknown';
+  const codes = new Set([
+    'REHEARSAL_API_KEY_MISSING',
+    'REHEARSAL_API_NETWORK',
+    'REHEARSAL_API_RESPONSE',
+    'REHEARSAL_API_REJECTED',
+    'REHEARSAL_FAILED',
+    'ECONNREFUSED',
+    'ECONNRESET',
+    'ENOTFOUND',
+    'EHOSTUNREACH',
+    'ENETUNREACH',
+    'ETIMEDOUT',
+    'SELF_SIGNED_CERT_IN_CHAIN',
+    'DEPTH_ZERO_SELF_SIGNED_CERT',
+    'CERT_HAS_EXPIRED',
+    'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+  ]);
+  const code =
+    codes.has(error?.code) || /^[0-9A-Z]{5}$/.test(error?.code ?? '') ? error.code : 'ERROR';
+  const details = ['stage=' + stage, 'code=' + code];
+  if (stage === 'api-boundary') {
+    if (Number.isInteger(error?.httpStatus) && error.httpStatus >= 100 && error.httpStatus <= 599)
+      details.push('HTTP=' + error.httpStatus);
+    if (/^PGRST[0-9]{3}$/.test(error?.apiCode ?? '')) details.push('API=' + error.apiCode);
+  }
+  return 'Rollback rehearsal did not pass (' + details.join('; ') + ').';
 }
 
 export function validateRehearsalTarget({ environment, databaseUrl, supabaseUrl, confirmation }) {
