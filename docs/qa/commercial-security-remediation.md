@@ -29,6 +29,16 @@ embedded PostgreSQL tests exercise the actual migration and both allow/deny
 cases. The protected rehearsal now includes 0124 before acceptance. No security
 finding is closed by these unit tests or by a failed rehearsal.
 
+The protected hosted run [38101560000](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38101560000)
+now passed the full 0123 → 0122 → 0124 rollback sequence and restored its inspected
+catalog; downloaded evidence hashes were verified. These changes remain
+uninstalled. A guarded installation/export workflow is prepared with an actual
+off-site backup/full restore receipt gate and a separate ledger recording only
+the three executed security migrations. See
+[existing-security-installation.md](existing-security-installation.md).
+No backup or restore evidence exists yet; no commercial finding is closed by this
+catalog/negative-check rehearsal.
+
 | Finding                                                    | Prepared change                                                                                                                                                                                                                                                | Closure still required                                                                                                           |
 | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | S1: school administrators can read other schools' GPS rows | Restrictive school/route SELECT policies on current and history tables, combined with existing tenant/role policies                                                                                                                                            | Direct REST positive and negative tests across two schools/two tenants, including NULL-school routes                             |

@@ -1,0 +1,84 @@
+name: Capture encrypted security recovery export
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: Full 40-character reviewed current main commit SHA
+        required: true
+      confirmation:
+        description: Type BACKUP_EXISTING_SECURITY_ENCRYPTED
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'BACKUP_EXISTING_SECURITY_ENCRYPTED'
+    uses: ./.github/workflows/validate-security-install.yml
+    with:
+      git_ref: ${{ inputs.git_ref }}
+
+  backup:
+    needs: validate
+    name: Protected read-only encrypted export
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      CI: true
+      SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
+      SAFEBUS_DEPLOY_ENV: production
+      SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      SAFEBUS_REHEARSAL_API_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      SAFEBUS_DATABASE_CA_CERT: ${{ vars.SAFEBUS_DATABASE_CA_CERT }}
+      SAFEBUS_BACKUP_CONFIRM: ${{ inputs.confirmation }}
+      SAFEBUS_BACKUP_PUBLIC_KEY: ${{ vars.SAFEBUS_BACKUP_PUBLIC_KEY }}
+    steps:
+      - name: Validate reviewed SHA syntax before checkout
+        env:
+          REQUESTED_SHA: ${{ inputs.git_ref }}
+        run: |
+          [[ "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$REQUESTED_SHA" = "$GITHUB_SHA"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.git_ref }}
+          fetch-depth: 0
+      - name: Require exact reviewed checkout
+        env:
+          REQUESTED_SHA: ${{ inputs.git_ref }}
+        run: |
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          test "$REQUESTED_SHA" = "$ACTUAL_SHA"
+          git merge-base --is-ancestor "$ACTUAL_SHA" origin/main
+          echo "SAFEBUS_RELEASE_SHA=$ACTUAL_SHA" >> "$GITHUB_ENV"
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install native PostgreSQL 17 tools without Docker
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl --silent --show-error --fail --output /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          source /etc/os-release
+          printf 'Types: deb\nURIs: https://apt.postgresql.org/pub/repos/apt\nSuites: %s-pgdg\nArchitectures: amd64\nComponents: main\nSigned-By: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc\n' "$VERSION_CODENAME" | sudo tee /etc/apt/sources.list.d/pgdg.sources > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Export directly into authenticated encryption
+        run: node scripts/backup-existing-security.mjs
+      - name: Retain encrypted export temporarily for owner download
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: existing-security-backup-${{ env.SAFEBUS_RELEASE_SHA }}
+          path: .safebus-release/existing-security-backup/
+          retention-days: 7
+          if-no-files-found: error
