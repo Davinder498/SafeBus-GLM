@@ -51,6 +51,24 @@ reviewed, bounded verification only:
 - This authorization does not authorize resets, destructive/load testing, blanket
   migration replay, or bypass of the protected production release workflow.
 
+### Customer-authorized prelaunch security verification (2026-10-10)
+
+The customer confirms there are no external users or commercial tenants and
+explicitly approves using the existing BusSafe project for the reviewed security
+fixes and controlled tests. An additional test project is optional for this work.
+This supersedes the isolated-target requirement for this security milestone.
+
+- Keep the project production-designated and preserve its existing data.
+- Prepare and review the hosted-schema reconciliation before applying changes.
+- Rehearse schema changes in a bounded rollback-only transaction first.
+- Persistent changes still require verified recovery evidence and the protected,
+  approved workflow. GitHub environment protection and human merge review remain.
+- Inspect fixtures and triggers before test writes; use scoped synthetic accounts.
+- Do not reset the database, replay all migrations, alter existing identities as
+  fixtures, send notifications as QA, or perform uncontrolled load testing.
+- This approval is not commercial launch approval or authorization to merge a new
+  pull request without review.
+
 ## Frontend Environment
 
 Frontend may only use:
