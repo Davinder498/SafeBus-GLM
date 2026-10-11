@@ -85,6 +85,12 @@ protected release workflow when executing these schema changes.
 
 ## Evidence still required before persistent application
 
+The [run at merge commit 1283e858](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38101560000)
+passed 0123 → 0122 → 0124 and SQL acceptance; its catalog was restored and its
+downloaded hashes were verified. No migrations were permanently installed.
+The protected installation and recovery procedure is prepared in
+[existing-security-installation.md](existing-security-installation.md).
+
 - Successful hosted rollback rehearsal and reviewed findings.
 - A verified recoverable backup/export; the catalog artifact is NOT a complete
   database backup and does not establish full restoration.
@@ -92,9 +98,11 @@ protected release workflow when executing these schema changes.
   handling. Current production adoption records only the 0088 historical
   baseline; later hosted effects must not be falsely recorded as replayed.
 - A reviewed persistent release mechanism with backup evidence and exact commits.
-- Real signed JWT/refresh-token, positive/negative role, tenant/school, native
-  ingestion, invitation activation, and realtime lifecycle acceptance. These
-  cannot be proven by this rollback-only catalog rehearsal.
+
+After persistent installation, real signed JWT/refresh-token, positive/negative
+role, tenant/school, native ingestion, invitation activation, and realtime lifecycle
+acceptance must pass before the security milestone closes or the frontend is
+deployed. These cannot be proven by this rollback-only catalog rehearsal.
 
 No separate project or paid upgrade is required for this rehearsal. The Free
 project is not a capacity benchmark for 10,000 buses or commercial launch approval.
