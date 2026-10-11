@@ -174,3 +174,35 @@ test('protected rehearsal refuses unmerged code before dependency or test execut
   assert.match(workflow, /group: production-release/);
   assert.doesNotMatch(workflow, /deploy --prod|environment: (?:development|staging)/);
 });
+
+test('build validation cannot dirty or access credentials in the database checkout', async () => {
+  const workflow = await fs.readFile('.github/workflows/rehearse-existing-security.yml', 'utf8');
+  const [validation, rehearsal] = workflow
+    .slice(workflow.indexOf('\n  validate:'))
+    .split('\n  rehearse:');
+  assert.ok(validation && rehearsal, 'validation and rehearsal must use separate jobs');
+  assert.doesNotMatch(validation, /secrets\.|environment: production|SAFEBUS_DATABASE_URL/);
+  for (const command of [
+    'pnpm migrations:verify',
+    'pnpm typecheck',
+    'pnpm lint',
+    'pnpm build',
+    'pnpm test',
+  ]) {
+    assert.ok(validation.includes(command), 'validation must complete ' + command);
+    assert.ok(!rehearsal.includes(command), 'database checkout must not run ' + command);
+  }
+  for (const job of [validation, rehearsal]) {
+    assert.match(job, /actions\/checkout@[^\n]+\n\s+with:\n\s+ref: \$\{\{ inputs.git_ref \}\}/);
+    assert.ok(job.indexOf('git merge-base --is-ancestor') < job.indexOf('pnpm install'));
+  }
+  assert.match(rehearsal, /needs: validate/);
+  assert.match(rehearsal, /runs-on: ubuntu-latest/);
+  assert.doesNotMatch(rehearsal, /download-artifact|git (?:reset|restore|checkout --)/);
+  const runner = await fs.readFile('scripts/rehearse-existing-security.mjs', 'utf8');
+  assert.ok(
+    runner.indexOf('Tracked files changed after checkout.') <
+      runner.indexOf('await client.connect()'),
+  );
+  assert.match(runner, /'status', '--porcelain', '--untracked-files=no'/);
+});

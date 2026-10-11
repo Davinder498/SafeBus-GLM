@@ -34,6 +34,13 @@ account creation, historical checksum adoption, or frontend deployment.
 Statements have local timeouts; the workflow shares the production release
 concurrency group and uses the protected production environment.
 
+Code validation runs first in a separate job without database credentials. The
+mobile build regenerates tracked brand PNGs, whose output can differ by platform.
+The protected database job therefore checks out the same reviewed SHA on a fresh
+runner after validation passes; it never runs the build or tests there. The
+script still rejects every tracked change before connecting. Do not ignore asset
+changes in that guard or reset tracked files to conceal unexpected modifications.
+
 Before connecting for DDL, the script requires an actual Data API PGRST106
 rejection of safebus_private using the project's valid anon/publishable key.
 An invalid key, an outage, or a reachable private schema fails closed.
