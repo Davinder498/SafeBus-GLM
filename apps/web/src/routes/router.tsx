@@ -1,49 +1,141 @@
+import { lazy } from 'react';
 import type { RouteObject } from 'react-router';
 import { Navigate } from 'react-router';
-import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
-import { AdminBusesPage } from '@/pages/AdminBusesPage';
-import { AdminBusWorkspacePage } from '@/pages/AdminBusWorkspacePage';
-import { LandingPage } from '@/pages/LandingPage';
-import { ContactPage } from '@/pages/ContactPage';
-import { LoginPage } from '@/pages/LoginPage';
-import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
-import { UpdatePasswordPage } from '@/pages/UpdatePasswordPage';
-import { AdminDriversPage } from '@/pages/AdminDriversPage';
-import { AdminDriverDetailPage } from '@/pages/AdminDriverDetailPage';
-import { AdminDashboardPage } from '@/pages/AdminDashboardPage';
-import { AdminGuardiansPage } from '@/pages/AdminGuardiansPage';
-import { AdminGuardianDetailPage } from '@/pages/AdminGuardianDetailPage';
-import { AdminLiveTripsPage } from '@/pages/AdminLiveTripsPage';
-import { AdminRoutesPage } from '@/pages/AdminRoutesPage';
-import { AdminRouteDetailPage } from '@/pages/AdminRouteDetailPage';
-import { AdminRouteCreatePage } from '@/pages/AdminRouteCreatePage';
-import { AdminRouteManagePage } from '@/pages/AdminRouteManagePage';
-import { AdminSchoolsPage } from '@/pages/AdminSchoolsPage';
-import { AdminSettingsPage } from '@/pages/AdminSettingsPage';
-import { AdminNotificationSettingsPage } from '@/pages/AdminNotificationSettingsPage';
-import { AdminSubscriptionPage } from '@/pages/AdminSubscriptionPage';
-import { AdminStudentDetailPage } from '@/pages/AdminStudentDetailPage';
-import { AdminStudentsPage } from '@/pages/AdminStudentsPage';
-import { AdminTripsPage } from '@/pages/AdminTripsPage';
-import { AdminUsersPage } from '@/pages/AdminUsersPage';
-import { AdminAdministratorsPage } from '@/pages/AdminAdministratorsPage';
-import { AdminBulkImportPage } from '@/pages/AdminBulkImportPage';
-import { AdminAuditSearchPage } from '@/pages/AdminAuditSearchPage';
-import { NotificationsPage } from '@/pages/NotificationsPage';
-import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
-import { PlatformTenantsPage } from '@/pages/PlatformTenantsPage';
-import { PlatformTenantDetailPage } from '@/pages/PlatformTenantDetailPage';
-import { NotFoundPage } from '@/pages/NotFoundPage';
-import { MfaPage } from '@/pages/MfaPage';
-import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage';
-import { AccountDeletionPage } from '@/pages/AccountDeletionPage';
-import { SupportPage } from '@/pages/SupportPage';
-import { AdminSupportPage } from '@/pages/AdminSupportPage';
-import { PlatformSupportPage } from '@/pages/PlatformSupportPage';
 import { ProtectedRoute } from './ProtectedRoute';
 import { PublicOnlyRoute } from './PublicOnlyRoute';
 import { InvitationEntryRoute } from './InvitationEntryRoute';
 import { adminRoles } from '@/contexts/AuthContext';
+
+const AcceptInvitationPage = lazy(() =>
+  import('@/pages/AcceptInvitationPage').then((page) => ({ default: page.AcceptInvitationPage })),
+);
+const AdminBusesPage = lazy(() =>
+  import('@/pages/AdminBusesPage').then((page) => ({ default: page.AdminBusesPage })),
+);
+const AdminBusWorkspacePage = lazy(() =>
+  import('@/pages/AdminBusWorkspacePage').then((page) => ({ default: page.AdminBusWorkspacePage })),
+);
+const LandingPage = lazy(() =>
+  import('@/pages/LandingPage').then((page) => ({ default: page.LandingPage })),
+);
+const ContactPage = lazy(() =>
+  import('@/pages/ContactPage').then((page) => ({ default: page.ContactPage })),
+);
+const LoginPage = lazy(() =>
+  import('@/pages/LoginPage').then((page) => ({ default: page.LoginPage })),
+);
+const ResetPasswordPage = lazy(() =>
+  import('@/pages/ResetPasswordPage').then((page) => ({ default: page.ResetPasswordPage })),
+);
+const UpdatePasswordPage = lazy(() =>
+  import('@/pages/UpdatePasswordPage').then((page) => ({ default: page.UpdatePasswordPage })),
+);
+const AdminDriversPage = lazy(() =>
+  import('@/pages/AdminDriversPage').then((page) => ({ default: page.AdminDriversPage })),
+);
+const AdminDriverDetailPage = lazy(() =>
+  import('@/pages/AdminDriverDetailPage').then((page) => ({ default: page.AdminDriverDetailPage })),
+);
+const AdminDashboardPage = lazy(() =>
+  import('@/pages/AdminDashboardPage').then((page) => ({ default: page.AdminDashboardPage })),
+);
+const AdminGuardiansPage = lazy(() =>
+  import('@/pages/AdminGuardiansPage').then((page) => ({ default: page.AdminGuardiansPage })),
+);
+const AdminGuardianDetailPage = lazy(() =>
+  import('@/pages/AdminGuardianDetailPage').then((page) => ({
+    default: page.AdminGuardianDetailPage,
+  })),
+);
+const AdminLiveTripsPage = lazy(() =>
+  import('@/pages/AdminLiveTripsPage').then((page) => ({ default: page.AdminLiveTripsPage })),
+);
+const AdminRoutesPage = lazy(() =>
+  import('@/pages/AdminRoutesPage').then((page) => ({ default: page.AdminRoutesPage })),
+);
+const AdminRouteDetailPage = lazy(() =>
+  import('@/pages/AdminRouteDetailPage').then((page) => ({ default: page.AdminRouteDetailPage })),
+);
+const AdminRouteCreatePage = lazy(() =>
+  import('@/pages/AdminRouteCreatePage').then((page) => ({ default: page.AdminRouteCreatePage })),
+);
+const AdminRouteManagePage = lazy(() =>
+  import('@/pages/AdminRouteManagePage').then((page) => ({ default: page.AdminRouteManagePage })),
+);
+const AdminSchoolsPage = lazy(() =>
+  import('@/pages/AdminSchoolsPage').then((page) => ({ default: page.AdminSchoolsPage })),
+);
+const AdminSettingsPage = lazy(() =>
+  import('@/pages/AdminSettingsPage').then((page) => ({ default: page.AdminSettingsPage })),
+);
+const AdminNotificationSettingsPage = lazy(() =>
+  import('@/pages/AdminNotificationSettingsPage').then((page) => ({
+    default: page.AdminNotificationSettingsPage,
+  })),
+);
+const AdminSubscriptionPage = lazy(() =>
+  import('@/pages/AdminSubscriptionPage').then((page) => ({ default: page.AdminSubscriptionPage })),
+);
+const AdminStudentDetailPage = lazy(() =>
+  import('@/pages/AdminStudentDetailPage').then((page) => ({
+    default: page.AdminStudentDetailPage,
+  })),
+);
+const AdminStudentsPage = lazy(() =>
+  import('@/pages/AdminStudentsPage').then((page) => ({ default: page.AdminStudentsPage })),
+);
+const AdminTripsPage = lazy(() =>
+  import('@/pages/AdminTripsPage').then((page) => ({ default: page.AdminTripsPage })),
+);
+const AdminUsersPage = lazy(() =>
+  import('@/pages/AdminUsersPage').then((page) => ({ default: page.AdminUsersPage })),
+);
+const AdminAdministratorsPage = lazy(() =>
+  import('@/pages/AdminAdministratorsPage').then((page) => ({
+    default: page.AdminAdministratorsPage,
+  })),
+);
+const AdminBulkImportPage = lazy(() =>
+  import('@/pages/AdminBulkImportPage').then((page) => ({ default: page.AdminBulkImportPage })),
+);
+const AdminAuditSearchPage = lazy(() =>
+  import('@/pages/AdminAuditSearchPage').then((page) => ({ default: page.AdminAuditSearchPage })),
+);
+const NotificationsPage = lazy(() =>
+  import('@/pages/NotificationsPage').then((page) => ({ default: page.NotificationsPage })),
+);
+const NotificationSettingsPage = lazy(() =>
+  import('@/pages/NotificationSettingsPage').then((page) => ({
+    default: page.NotificationSettingsPage,
+  })),
+);
+const PlatformTenantsPage = lazy(() =>
+  import('@/pages/PlatformTenantsPage').then((page) => ({ default: page.PlatformTenantsPage })),
+);
+const PlatformTenantDetailPage = lazy(() =>
+  import('@/pages/PlatformTenantDetailPage').then((page) => ({
+    default: page.PlatformTenantDetailPage,
+  })),
+);
+const NotFoundPage = lazy(() =>
+  import('@/pages/NotFoundPage').then((page) => ({ default: page.NotFoundPage })),
+);
+const MfaPage = lazy(() => import('@/pages/MfaPage').then((page) => ({ default: page.MfaPage })));
+const PrivacyPolicyPage = lazy(() =>
+  import('@/pages/PrivacyPolicyPage').then((page) => ({ default: page.PrivacyPolicyPage })),
+);
+const AccountDeletionPage = lazy(() =>
+  import('@/pages/AccountDeletionPage').then((page) => ({ default: page.AccountDeletionPage })),
+);
+const SupportPage = lazy(() =>
+  import('@/pages/SupportPage').then((page) => ({ default: page.SupportPage })),
+);
+const AdminSupportPage = lazy(() =>
+  import('@/pages/AdminSupportPage').then((page) => ({ default: page.AdminSupportPage })),
+);
+const PlatformSupportPage = lazy(() =>
+  import('@/pages/PlatformSupportPage').then((page) => ({ default: page.PlatformSupportPage })),
+);
 
 export const appRoutes: RouteObject[] = [
   {

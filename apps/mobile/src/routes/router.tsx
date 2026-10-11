@@ -1,3 +1,4 @@
+import { lazy } from 'react';
 import type { RouteObject } from 'react-router';
 import { Navigate } from 'react-router';
 /*
@@ -5,31 +6,8 @@ import { Navigate } from 'react-router';
  * shared web app source (via the `@` → apps/web/src alias). This guarantees
  * zero logic drift: the mobile app renders the exact same components.
  */
-import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
-import { DriverDashboardPage } from '@/pages/DriverDashboardPage';
-import { DriverManifestPage } from '@/pages/DriverManifestPage';
-import { DriverProfilePage } from '@/pages/DriverProfilePage';
-import { DriverSettingsPage } from '@/pages/DriverSettingsPage';
-import { DriverTripHistoryPage } from '@/pages/DriverTripHistoryPage';
-import { GuardianLiveMapPage } from '@/pages/GuardianLiveMapPage';
-import { GuardianLiveTripsPage } from '@/pages/GuardianLiveTripsPage';
-import { GuardianBusDetailPage } from '@/pages/GuardianBusDetailPage';
-import { NotificationsPage } from '@/pages/NotificationsPage';
-import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
-import { GuardianRoutesPage } from '@/pages/GuardianRoutesPage';
-import { GuardianTripEventsPage } from '@/pages/GuardianTripEventsPage';
-import { LoginPage } from '@/pages/LoginPage';
-import { NotFoundPage } from '@/pages/NotFoundPage';
-import { ParentDashboardPage } from '@/pages/ParentDashboardPage';
-import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
-import { UpdatePasswordPage } from '@/pages/UpdatePasswordPage';
-import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage';
-import { AccountDeletionPage } from '@/pages/AccountDeletionPage';
-import { AccountSettingsPage } from '@/pages/AccountSettingsPage';
-import { MobileSupportPage } from '@/pages/MobileSupportPage';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { PublicOnlyRoute } from '@/routes/PublicOnlyRoute';
-import { AdminNotAvailablePage } from '../pages/AdminNotAvailablePage';
 
 /**
  * Mobile route table — a SUBSET of the web app routes.
@@ -41,6 +19,82 @@ import { AdminNotAvailablePage } from '../pages/AdminNotAvailablePage';
  * app registers /admin/* catch-all → AdminNotAvailablePage so admin users see
  * a helpful message instead of a 404.
  */
+const AcceptInvitationPage = lazy(() =>
+  import('@/pages/AcceptInvitationPage').then((page) => ({ default: page.AcceptInvitationPage })),
+);
+const DriverDashboardPage = lazy(() =>
+  import('@/pages/DriverDashboardPage').then((page) => ({ default: page.DriverDashboardPage })),
+);
+const DriverManifestPage = lazy(() =>
+  import('@/pages/DriverManifestPage').then((page) => ({ default: page.DriverManifestPage })),
+);
+const DriverProfilePage = lazy(() =>
+  import('@/pages/DriverProfilePage').then((page) => ({ default: page.DriverProfilePage })),
+);
+const DriverSettingsPage = lazy(() =>
+  import('@/pages/DriverSettingsPage').then((page) => ({ default: page.DriverSettingsPage })),
+);
+const DriverTripHistoryPage = lazy(() =>
+  import('@/pages/DriverTripHistoryPage').then((page) => ({ default: page.DriverTripHistoryPage })),
+);
+const GuardianLiveMapPage = lazy(() =>
+  import('@/pages/GuardianLiveMapPage').then((page) => ({ default: page.GuardianLiveMapPage })),
+);
+const GuardianLiveTripsPage = lazy(() =>
+  import('@/pages/GuardianLiveTripsPage').then((page) => ({ default: page.GuardianLiveTripsPage })),
+);
+const GuardianBusDetailPage = lazy(() =>
+  import('@/pages/GuardianBusDetailPage').then((page) => ({ default: page.GuardianBusDetailPage })),
+);
+const NotificationsPage = lazy(() =>
+  import('@/pages/NotificationsPage').then((page) => ({ default: page.NotificationsPage })),
+);
+const NotificationSettingsPage = lazy(() =>
+  import('@/pages/NotificationSettingsPage').then((page) => ({
+    default: page.NotificationSettingsPage,
+  })),
+);
+const GuardianRoutesPage = lazy(() =>
+  import('@/pages/GuardianRoutesPage').then((page) => ({ default: page.GuardianRoutesPage })),
+);
+const GuardianTripEventsPage = lazy(() =>
+  import('@/pages/GuardianTripEventsPage').then((page) => ({
+    default: page.GuardianTripEventsPage,
+  })),
+);
+const LoginPage = lazy(() =>
+  import('@/pages/LoginPage').then((page) => ({ default: page.LoginPage })),
+);
+const NotFoundPage = lazy(() =>
+  import('@/pages/NotFoundPage').then((page) => ({ default: page.NotFoundPage })),
+);
+const ParentDashboardPage = lazy(() =>
+  import('@/pages/ParentDashboardPage').then((page) => ({ default: page.ParentDashboardPage })),
+);
+const ResetPasswordPage = lazy(() =>
+  import('@/pages/ResetPasswordPage').then((page) => ({ default: page.ResetPasswordPage })),
+);
+const UpdatePasswordPage = lazy(() =>
+  import('@/pages/UpdatePasswordPage').then((page) => ({ default: page.UpdatePasswordPage })),
+);
+const PrivacyPolicyPage = lazy(() =>
+  import('@/pages/PrivacyPolicyPage').then((page) => ({ default: page.PrivacyPolicyPage })),
+);
+const AccountDeletionPage = lazy(() =>
+  import('@/pages/AccountDeletionPage').then((page) => ({ default: page.AccountDeletionPage })),
+);
+const AccountSettingsPage = lazy(() =>
+  import('@/pages/AccountSettingsPage').then((page) => ({ default: page.AccountSettingsPage })),
+);
+const MobileSupportPage = lazy(() =>
+  import('@/pages/MobileSupportPage').then((page) => ({ default: page.MobileSupportPage })),
+);
+const AdminNotAvailablePage = lazy(() =>
+  import('../pages/AdminNotAvailablePage').then((page) => ({
+    default: page.AdminNotAvailablePage,
+  })),
+);
+
 export const appRoutes: RouteObject[] = [
   { path: '/', element: <Navigate to="/login" replace /> },
   {
