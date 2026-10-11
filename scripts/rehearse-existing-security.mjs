@@ -10,6 +10,7 @@ import {
   SECURITY_FILE,
   digest,
   assertPrivateApiSchemaHidden,
+  formatRehearsalFailure,
   runRollbackRehearsal,
   validateRehearsalTarget,
 } from './lib/existing-security-rehearsal.mjs';
@@ -49,12 +50,18 @@ const client = new pg.Client({
   connectionTimeoutMillis: 10000,
 });
 let result;
+let stage = 'api-boundary';
 try {
+  console.log('Checking private API schema isolation with the public API key.');
   await assertPrivateApiSchemaHidden(
     process.env.SUPABASE_URL,
     process.env.SAFEBUS_REHEARSAL_API_KEY,
   );
+  console.log('PASS: private schema rejected with HTTP 406 / PGRST106.');
+  stage = 'database-connection';
   await client.connect();
+  console.log('Database connected; starting rollback-only rehearsal.');
+  stage = 'rollback-rehearsal';
   result = await runRollbackRehearsal(client, {
     reconciliation: inputs[0],
     security: inputs[1],
@@ -62,7 +69,7 @@ try {
   });
 } catch (error) {
   // Never log connection strings, raw SQL, provider details, or credentials.
-  console.error('Rollback rehearsal did not pass (' + (error.code ?? 'ERROR') + ').');
+  console.error(formatRehearsalFailure(error, stage));
   process.exitCode = 1;
 } finally {
   await client.end();

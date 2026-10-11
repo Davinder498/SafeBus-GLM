@@ -10,6 +10,8 @@ import {
   runRollbackRehearsal,
   validateRehearsalTarget,
   assertPrivateApiSchemaHidden,
+  PRIVATE_API_PROBE_PATH,
+  formatRehearsalFailure,
 } from '../../scripts/lib/existing-security-rehearsal.mjs';
 
 const validTarget = {
@@ -46,7 +48,9 @@ const input = { reconciliation: 'reconcile', security: 'security', acceptance: a
 test('private schema boundary requires a real API rejection, not an invalid key or outage', async () => {
   const url = validTarget.supabaseUrl;
   await assertPrivateApiSchemaHidden(url, 'anon-test', async (requested, options) => {
-    assert.equal(requested, url + '/rest/v1/');
+    assert.equal(requested, url + PRIVATE_API_PROBE_PATH);
+    assert.match(requested, /\/rest\/v1\/__safebus_security_schema_probe__\?select=id&limit=0$/);
+    assert.equal(options.method, 'GET');
     assert.equal(options.headers['Accept-Profile'], 'safebus_private');
     return { status: 406, json: async () => ({ code: 'PGRST106' }) };
   });
@@ -60,6 +64,71 @@ test('private schema boundary requires a real API rejection, not an invalid key 
     );
   }
   await assert.rejects(assertPrivateApiSchemaHidden(url, ''), /valid publishable/);
+});
+
+test('API failures are classified without logging response bodies or network credentials', async () => {
+  const sensitive = 'postgresql://user:secret@host/database';
+  for (const [status, body, code] of [
+    [401, { message: sensitive }, 'REHEARSAL_API_REJECTED'],
+    [200, null, 'REHEARSAL_API_REJECTED'],
+    [404, { code: 'PGRST205', message: sensitive }, 'REHEARSAL_API_REJECTED'],
+    [406, { code: 'PGRST116', message: sensitive }, 'REHEARSAL_API_REJECTED'],
+    [502, undefined, 'REHEARSAL_API_RESPONSE'],
+  ]) {
+    await assert.rejects(
+      assertPrivateApiSchemaHidden(validTarget.supabaseUrl, 'anon-test', async () => ({
+        status,
+        json: async () => {
+          if (body === undefined) throw new Error(sensitive);
+          return body;
+        },
+      })),
+      (error) => {
+        assert.equal(error.code, code);
+        assert.equal(error.httpStatus, status);
+        const formatted = formatRehearsalFailure(error, 'rollback-rehearsal');
+        assert.match(formatted, /stage=api-boundary/);
+        assert.ok(formatted.includes('HTTP=' + status));
+        assert.ok(!formatted.includes(sensitive));
+        return true;
+      },
+    );
+  }
+  await assert.rejects(
+    assertPrivateApiSchemaHidden(validTarget.supabaseUrl, 'anon-test', async () => {
+      throw new Error(sensitive);
+    }),
+    (error) => {
+      assert.match(formatRehearsalFailure(error, 'api-boundary'), /code=REHEARSAL_API_NETWORK/);
+      assert.ok(!error.message.includes(sensitive));
+      return true;
+    },
+  );
+});
+
+test('failure diagnostics retain safe stages and error codes and redact arbitrary provider text', () => {
+  assert.equal(
+    formatRehearsalFailure({ code: '28P01' }, 'database-connection'),
+    'Rollback rehearsal did not pass (stage=database-connection; code=28P01).',
+  );
+  assert.match(
+    formatRehearsalFailure({ stage: 'reconciliation', code: '42501' }, 'rollback-rehearsal'),
+    /stage=reconciliation; code=42501/,
+  );
+  const sensitive = 'postgresql://user:secret@host/database';
+  const formatted = formatRehearsalFailure(
+    {
+      stage: sensitive,
+      code: sensitive,
+      httpStatus: sensitive,
+      apiCode: sensitive,
+      message: sensitive,
+      detail: sensitive,
+      stack: sensitive,
+    },
+    'api-boundary',
+  );
+  assert.equal(formatted, 'Rollback rehearsal did not pass (stage=api-boundary; code=ERROR).');
 });
 
 test('rehearsal accepts only the explicitly approved production project', () => {

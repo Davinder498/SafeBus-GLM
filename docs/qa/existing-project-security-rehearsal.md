@@ -44,6 +44,11 @@ changes in that guard or reset tracked files to conceal unexpected modifications
 Before connecting for DDL, the script requires an actual Data API PGRST106
 rejection of safebus_private using the project's valid anon/publishable key.
 An invalid key, an outage, or a reachable private schema fails closed.
+The request uses GET on a deliberately nonexistent REST relation with limit=0;
+it reads no application rows. The OpenAPI root /rest/v1/ is not a suitable public
+key probe because the hosted gateway reserves that endpoint for secret keys.
+Failures report the bounded stage, error code, HTTP status, and PostgREST code
+when available. Raw response bodies, SQL details, and credentials stay out of logs.
 
 ## Run after human review and merge
 
