@@ -20,6 +20,7 @@ export default defineConfig({
   // Driver and guardian operational journeys run through the mobile-entry
   // suite. The website suite is limited to public and administrative surfaces.
   testIgnore: [
+    /route-loading/,
     /release-assets/,
     /mobile-ui/,
     /driver-active-trip-student-manifest\.spec\.ts/,

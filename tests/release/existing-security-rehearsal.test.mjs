@@ -264,7 +264,9 @@ test('protected rehearsal refuses unmerged code before dependency or test execut
 });
 
 test('build validation cannot dirty or access credentials in the database checkout', async () => {
-  const workflow = await fs.readFile('.github/workflows/rehearse-existing-security.yml', 'utf8');
+  const workflow = (
+    await fs.readFile('.github/workflows/rehearse-existing-security.yml', 'utf8')
+  ).replaceAll('\r\n', '\n');
   const [validation, rehearsal] = workflow
     .slice(workflow.indexOf('\n  validate:'))
     .split('\n  rehearse:');

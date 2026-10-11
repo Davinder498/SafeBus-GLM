@@ -4,7 +4,19 @@ Requested target: 10,000 buses, 1,000,000 registered users, 2,000 tenants.
 Origin: commercial review dated 2026-10-09. This record tracks closure; it is not
 a launch approval, deployment approval, or evidence that the target load passes.
 
-## Current milestone: authorization and session security
+## Current milestone: frontend page loading
+
+On 2026-10-11 the customer deferred the full backup restore check and requested
+work on an independent commercial finding. Page loading is the next bounded
+milestone: defer page code until navigation, preserve authorization guards, show
+loading and recovery states, and measure production-build downloads.
+Prepared changes and local production-preview measurements are recorded in
+[frontend-page-loading.md](frontend-page-loading.md). Review and merge are pending.
+
+The database security milestone below remains open. Neither this deferral nor
+frontend improvements authorize deployment or commercial launch.
+
+## Deferred milestone: authorization and session security
 
 Merged PR #252 contains forward migration **0122**, application integration,
 server boundary tests and expanded protected authorization-audit checks. Existing
@@ -36,8 +48,20 @@ uninstalled. A guarded installation/export workflow is prepared with an actual
 off-site backup/full restore receipt gate and a separate ledger recording only
 the three executed security migrations. See
 [existing-security-installation.md](existing-security-installation.md).
-No backup or restore evidence exists yet; no commercial finding is closed by this
-catalog/negative-check rehearsal.
+Encrypted backup run [38162842141](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38162842141)
+succeeded. Local authenticated decryption and archive decoding passed; the owner
+reported a matching original artifact checksum on a second laptop at a separate
+Canadian location. Those checks do not prove a database restore.
+
+The approved free Canadian hosted recovery project was provisioned with its Data
+API disabled. Its TLS connection passed. A rollback-only check confirmed that its
+`postgres` role cannot create archived partitions in the protected `realtime`
+schema (42501). No backup data was loaded. A separate native recovery instance has
+been proposed, but not approved or created. The customer deferred restoration on
+2026-10-11. Before resuming installation, complete a compatible full restore and
+human review, renewing backup/rehearsal evidence if the 24-hour window has expired.
+Migrations 0122, 0123 and 0124 remain uninstalled; no commercial security finding
+is closed by the rehearsal or backup export.
 
 | Finding                                                    | Prepared change                                                                                                                                                                                                                                                | Closure still required                                                                                                           |
 | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |

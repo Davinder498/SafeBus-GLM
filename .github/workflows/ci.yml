@@ -68,6 +68,10 @@ jobs:
         run: pnpm exec playwright test --workers=4
       - name: Native mobile UI suite
         run: pnpm test:mobile-ui
+      - name: Production builds for page-loading checks
+        run: pnpm build
+      - name: Production page loading and failure recovery
+        run: pnpm test:route-loading
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: failure()
         with:
