@@ -20,12 +20,28 @@ implementation becomes a separately named private legacy implementation to
 avoid a collision or recursion. The exact function definitions and grants are
 pinned to the reviewed hosted snapshot. A changed snapshot fails closed.
 
-The rehearsal runs 0123 first, then immutable 0122, then the reviewed SQL
+The rehearsal runs 0123 first, then immutable 0122, then correction 0124, then the reviewed SQL
 catalog/negative checks, in ONE bounded transaction that ALWAYS ROLLBACKs.
 That special bootstrap order is limited to this unadopted hosted snapshot.
 On normally hardened databases, 0123 leaves the existing baseline unchanged.
 This is not authorization to bypass the chronological migration ledger in a
 persistent release or to pretend earlier migrations were applied.
+
+The hosted run at commit abd8d29 reached acceptance after both schema steps, but
+the malformed-session check raised 22P02 inside the SQL session function. The
+rehearsal rolled back and its post-rollback catalog comparison matched. A bounded
+read-only query reproduced the same cast error on the existing database.
+Migration 0124 validates claims in PL/pgSQL before casting and passes typed UUIDs
+to the Auth/mirror queries. It preserves active-session ownership, expiry,
+revocation, and execute grants; 0122 remains immutable. The rehearsal applies the
+correction before acceptance and includes its checksum in the evidence.
+
+The normal test suite also runs the exact old and corrected functions on
+embedded, in-memory PostgreSQL with synthetic Auth fixtures. These tests require
+no Docker, hosted credentials, or additional Supabase project. They reproduce
+22P02 before the fix and cover malformed claims, successful active sessions,
+expiry, revocation, wrong ownership, anonymous denial, and the API hook. They do
+not substitute for hosted signed-session, tenant, or realtime acceptance.
 
 The script verifies the catalog after rollback, including private/public function
 definitions and grants, policies, triggers, column grants, schema grants, and the

@@ -1,4 +1,4 @@
--- Read-only post-release acceptance. Does not apply migration 0122 or create
+-- Read-only post-release acceptance. Does not apply schema changes or create
 -- fixtures. Run only after reviewed adoption/release; no customer data returned.
 begin transaction read only;
 set local statement_timeout = '5s';
@@ -42,6 +42,7 @@ begin
   ) then raise exception 'FAIL: PostgREST session hook missing'; end if;
 end $$;
 
+select set_config('request.jwt.claim', '', true);
 select set_config('request.jwt.claim.sub', '', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claims', '{"role":"authenticated"}', true);
@@ -67,10 +68,27 @@ select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000000
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000000","role":"authenticated","session_id":"invalid"}', true);
 set local role authenticated;
 do $$
+declare v_claims text;
 begin
-  if public.is_current_user_session_active() then
+  if public.is_current_user_session_active() is distinct from false then
     raise exception 'FAIL: malformed session ID accepted';
   end if;
+  perform set_config('request.jwt.claim.sub', '', true);
+  for v_claims in select value from (values
+    ('{"role":"authenticated"}'),
+    ('{"sub":"invalid","role":"authenticated","session_id":"invalid"}'),
+    ('{"sub":"00000000-0000-0000-0000-000000000000","role":"authenticated","session_id":""}'),
+    ('{"sub":"00000000-0000-0000-0000-000000000000","role":"authenticated","session_id":null}'),
+    ('{"sub":"00000000-0000-0000-0000-000000000000","role":"authenticated","session_id":123}'),
+    ('{invalid-json')
+  ) scenarios(value) loop
+    perform set_config('request.jwt.claims', v_claims, true);
+    if public.is_current_user_session_active() is distinct from false then
+      raise exception 'FAIL: invalid identity/session claims accepted';
+    end if;
+  end loop;
+  perform set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000000', true);
+  perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000000","role":"authenticated","session_id":"invalid"}', true);
   perform set_config('request.path', '/rpc/get_admin_student_guardian_links', true);
   perform set_config('request.method', 'POST', true);
   begin

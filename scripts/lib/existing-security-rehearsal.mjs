@@ -5,6 +5,7 @@ export const APPROVED_PROJECT = 'ckrkfylsyihwouvesypm';
 export const RECONCILIATION_FILE =
   'supabase/migrations/0123_existing_project_security_reconciliation.sql';
 export const SECURITY_FILE = 'supabase/migrations/0122_commercial_authorization_boundaries.sql';
+export const SESSION_VALIDATION_FILE = 'supabase/migrations/0124_session_claim_validation.sql';
 export const ACCEPTANCE_FILE = 'tests/rls/commercial-security-existing-database-readonly.sql';
 // The gateway reserves the OpenAPI root for secret keys. A nonexistent relation
 // exercises schema selection with a public key without reading application rows.
@@ -96,6 +97,7 @@ export function formatRehearsalFailure(error, fallbackStage) {
     'catalog',
     'reconciliation',
     'security',
+    'session-validation',
     'acceptance',
   ]);
   const stage = stages.has(error?.stage)
@@ -167,7 +169,12 @@ export async function snapshot(client) {
   return result.rows[0].snapshot;
 }
 
-export async function runRollbackRehearsal(client, { reconciliation, security, acceptance }) {
+export async function runRollbackRehearsal(
+  client,
+  { reconciliation, security, sessionValidation, acceptance },
+) {
+  if (!sessionValidation?.trim())
+    throw new Error('Reviewed session validation correction is required.');
   const acceptanceSql = acceptanceWithinTransaction(acceptance);
   await client.query('begin');
   let before;
@@ -186,6 +193,8 @@ export async function runRollbackRehearsal(client, { reconciliation, security, a
     await client.query(reconciliation);
     stage = 'security';
     await client.query(security);
+    stage = 'session-validation';
+    await client.query(sessionValidation);
     stage = 'acceptance';
     const accepted = await client.query(acceptanceSql);
     const results = Array.isArray(accepted) ? accepted : [accepted];
