@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
 import { ADMIN_IDS, installAdminWorkflowMock } from './fixtures/admin-workflow';
-import {
-  guardianVisibilityRow,
-  installGuardianVisibilityMock,
-} from './fixtures/guardian-bus-visibility';
 import { installMapProviderAvailable } from './fixtures/map-provider';
-import { installSupabaseMock, MOCK } from './fixtures/supabase-mock';
+import { installSupabaseMock } from './fixtures/supabase-mock';
+import { installLocalOnlyBoundary } from './fixtures/local-only';
+
+test.beforeEach(async ({ page }) => {
+  await installLocalOnlyBoundary(page);
+});
 
 test.describe('Point 10 authenticated CR1 journeys', () => {
   test('tenant administrator can review transportation and trip operations', async ({ page }) => {
@@ -30,53 +31,24 @@ test.describe('Point 10 authenticated CR1 journeys', () => {
     await expect(page.getByText('Route One')).toBeVisible();
   });
 
-  test.skip('driver can start and end the assigned bus trip from the QR workflow', async ({
-    page,
-  }) => {
-    await page.context().grantPermissions(['geolocation']);
-    await page.context().setGeolocation({ latitude: 51.0447, longitude: -114.0719 });
-    await installSupabaseMock(page);
-
-    await page.goto('/driver');
-    await page.getByTestId('driver-scan-bus-qr').click();
-    await page.getByLabel('Manual bus QR token for QA').fill(MOCK.busQrToken);
-    await page.getByRole('button', { name: 'Connect' }).click();
-    await page.getByRole('button', { name: /North Ridge Outbound/ }).click();
-    await page.getByLabel(/I confirm the pre-trip inspection/).check();
-    await page.getByTestId('driver-confirm-inspection-start').click();
-
-    await expect(page.getByRole('heading', { name: 'Bus 12', level: 1 })).toBeVisible();
-    await expect(page.getByText('This phone is now its GPS.')).toBeVisible();
-
-    await page
-      .getByTestId('driver-active-trip-only')
-      .getByRole('button', { name: 'End trip' })
-      .click();
-    await page.getByRole('dialog').getByRole('button', { name: 'End trip' }).click();
-    await expect(page.getByText('Trip ended. Location sharing stopped.')).toBeVisible();
-  });
-
-  test.skip('guardian sees only the linked-student bus status contract', async ({ page }) => {
-    await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
-
-    await page.goto('/guardian/live');
-    await expect(page.getByRole('heading', { name: 'Live Bus Status', level: 1 })).toBeVisible();
-    await expect(page.getByTestId('guardian-live-student-card')).toContainText('Avery Johnson');
-    await expect(page.getByTestId('guardian-live-student-card')).toContainText('Bus 42');
-    await expect(page.getByText('School run active')).toBeVisible();
-    await expect(page.getByText('51.0447')).toHaveCount(0);
-  });
-
-  test.skip('role guards keep guardian and driver accounts out of admin and guardian portals', async ({
-    page,
-  }) => {
-    await installAdminWorkflowMock(page, 'guardian');
-    await page.goto('/admin');
-    await expect(page.getByRole('heading', { name: 'Wrong portal', level: 1 })).toBeVisible();
-
-    const driverPage = await page.context().newPage();
-    await installGuardianVisibilityMock(driverPage, { role: 'driver' });
-    await driverPage.goto('/guardian/live');
-    await expect(driverPage.getByRole('heading', { name: 'Wrong portal', level: 1 })).toBeVisible();
-  });
+  for (const role of ['guardian', 'driver'] as const) {
+    test(`website rejects a ${role} account before loading admin operations`, async ({ page }) => {
+      const adminRequests: string[] = [];
+      page.on('request', (request) => {
+        if (/\/rest\/v1\/(buses|routes|driver_trips)(\?|$)/.test(request.url()))
+          adminRequests.push(request.url());
+      });
+      if (role === 'guardian') await installAdminWorkflowMock(page, 'guardian');
+      else await installSupabaseMock(page);
+      await page.goto('/admin');
+      await expect(
+        page.getByRole('heading', { name: 'Use the correct BusSafe app', level: 1 }),
+      ).toBeVisible();
+      await expect(page.getByTestId('transportation-summary')).toHaveCount(0);
+      await expect
+        .poll(() => page.evaluate(() => localStorage.getItem('sb-placeholder-auth-token')))
+        .toBeNull();
+      expect(adminRequests).toEqual([]);
+    });
+  }
 });

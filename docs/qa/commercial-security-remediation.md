@@ -4,14 +4,28 @@ Requested target: 10,000 buses, 1,000,000 registered users, 2,000 tenants.
 Origin: commercial review dated 2026-10-09. This record tracks closure; it is not
 a launch approval, deployment approval, or evidence that the target load passes.
 
-## Current milestone: frontend page loading
+## Current milestone: commercial browser verification
+
+PR [#258](https://github.com/Davinder498/SafeBus-GLM/pull/258) merged on
+2026-10-11 with required CI checks passing. Page loading is recorded in
+[frontend-page-loading.md](frontend-page-loading.md).
+
+The next bounded milestone restores the skipped critical commercial browser
+checks against the current app surfaces: administrators on the website, drivers
+and guardians in the mobile entry point. It covers synthetic journeys, denial,
+safe degraded behavior and automated accessibility. Hosted Auth/RLS, capacity
+and signed-device field acceptance still require separate evidence.
+Coverage and local verification are recorded in
+[commercial-browser-verification.md](commercial-browser-verification.md).
+
+## Completed implementation: frontend page loading
 
 On 2026-10-11 the customer deferred the full backup restore check and requested
 work on an independent commercial finding. Page loading is the next bounded
 milestone: defer page code until navigation, preserve authorization guards, show
 loading and recovery states, and measure production-build downloads.
 Prepared changes and local production-preview measurements are recorded in
-[frontend-page-loading.md](frontend-page-loading.md). Review and merge are pending.
+[frontend-page-loading.md](frontend-page-loading.md). PR #258 is merged.
 
 The database security milestone below remains open. Neither this deferral nor
 frontend improvements authorize deployment or commercial launch.

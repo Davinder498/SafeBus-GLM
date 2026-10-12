@@ -10,6 +10,7 @@ export default defineConfig({
   reporter: 'list',
   use: {
     baseURL: `http://localhost:${port}`,
+    serviceWorkers: 'block',
     browserName: 'chromium',
     viewport: { width: 390, height: 844 },
     colorScheme: 'light',

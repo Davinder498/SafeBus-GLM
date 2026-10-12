@@ -16,6 +16,9 @@ const playwrightBaseUrl = `http://localhost:${playwrightPort}`;
  */
 export default defineConfig({
   testDir: './tests',
+  // Node release contracts run via pnpm test; importing them during browser
+  // discovery executes unrelated node:test suites and embedded Postgres work.
+  testMatch: '**/*.spec.ts',
   // Native UI tests require the mobile entry point and its dedicated config.
   // Driver and guardian operational journeys run through the mobile-entry
   // suite. The website suite is limited to public and administrative surfaces.
@@ -42,6 +45,7 @@ export default defineConfig({
   reporter: process.env.CI ? [['github'], ['list']] : 'list',
   use: {
     baseURL: playwrightBaseUrl,
+    serviceWorkers: 'block',
     trace: 'on-first-retry',
   },
   projects: [

@@ -1,18 +1,18 @@
 import { expect, test } from '@playwright/test';
 import { ADMIN_IDS, installAdminWorkflowMock } from './fixtures/admin-workflow';
-import {
-  guardianVisibilityRow,
-  installGuardianVisibilityMock,
-} from './fixtures/guardian-bus-visibility';
 import { installMapProviderOutage } from './fixtures/map-provider';
-import { installSupabaseMock } from './fixtures/supabase-mock';
+import { installLocalOnlyBoundary } from './fixtures/local-only';
+
+test.beforeEach(async ({ page }) => {
+  await installLocalOnlyBoundary(page);
+});
 
 test.describe('Point 10 safe degraded behavior', () => {
-  test.skip('profile-service failure is generic and does not expose backend details', async ({
+  test('profile-service failure is generic and does not expose backend details', async ({
     page,
   }) => {
     const rawBackendError = 'permission denied for relation profiles; request-id=private-123';
-    await installSupabaseMock(page);
+    await installAdminWorkflowMock(page);
     await page.route('**/rest/v1/profiles*', async (route) => {
       await route.fulfill({
         status: 500,
@@ -21,7 +21,7 @@ test.describe('Point 10 safe degraded behavior', () => {
       });
     });
 
-    await page.goto('/driver');
+    await page.goto('/admin');
     await expect(
       page.getByRole('heading', { name: 'Profile setup needed', level: 1 }),
     ).toBeVisible();
@@ -30,22 +30,6 @@ test.describe('Point 10 safe degraded behavior', () => {
         'Your account is signed in, but no BusSafe profile was found. Ask an administrator to finish your profile setup.',
       ),
     ).toBeVisible();
-    await expect(page.getByText(rawBackendError)).toHaveCount(0);
-  });
-
-  test.skip('guardian data failure hides backend details and linked-student data', async ({ page }) => {
-    const rawBackendError = 'row-level security policy leaked private guardian identifier';
-    await installGuardianVisibilityMock(page, {
-      rows: [guardianVisibilityRow()],
-      fail: true,
-      rawError: rawBackendError,
-    });
-
-    await page.goto('/guardian/live');
-    await expect(page.getByTestId('guardian-live-error')).toContainText(
-      'We could not load bus status right now.',
-    );
-    await expect(page.getByTestId('guardian-live-student-card')).toHaveCount(0);
     await expect(page.getByText(rawBackendError)).toHaveCount(0);
   });
 
