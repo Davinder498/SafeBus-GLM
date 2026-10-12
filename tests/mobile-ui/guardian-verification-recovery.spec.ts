@@ -3,10 +3,12 @@ import {
   guardianVisibilityRow,
   installGuardianVisibilityMock,
 } from '../smoke/fixtures/guardian-bus-visibility';
+import { installLocalOnlyBoundary } from '../smoke/fixtures/local-only';
 
 test('a bus detail refresh failure clears previously verified student and route data', async ({
   page,
 }) => {
+  await installLocalOnlyBoundary(page);
   const fixture = await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
   await page.clock.install();
   await page.goto('/guardian/buses/42');

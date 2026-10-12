@@ -21,8 +21,8 @@ The gate covers:
 - authenticated tenant-administrator transportation and trip review;
 - driver QR bus start, active tracking state, and confirmed trip end;
 - guardian linked-student bus status and role isolation;
-- automated WCAG 2.2 A/AA scans on representative public, admin, driver, and
-  guardian surfaces at desktop and mobile viewports;
+- automated WCAG 2.2 A/AA scans on public and admin website surfaces at desktop
+  and phone viewports, and driver/guardian surfaces in the mobile entry point;
 - safe profile, guardian-data, map-provider, and unauthenticated failure states;
   and
 - a bounded local release-shell load guard: 60 requests, concurrency 10, no
@@ -30,9 +30,26 @@ The gate covers:
 
 All authenticated browser scenarios intercept Supabase at the Playwright
 boundary with deterministic synthetic accounts. Unexpected table access fails
-closed. The load guard accepts only the Playwright localhost origin. Raw
-backend errors, response bodies, credentials, real identifiers, and personal
-information are not retained as evidence.
+closed. The load guard accepts only the Playwright localhost origin. Production
+credentials, customer records and real identifiers are never used. Failure traces
+can contain synthetic fixture responses and synthetic error strings.
+
+The command runs the website checks first, then the commercial mobile checks
+using `playwright.mobile-ui.config.ts`. The full CI website suite and mobile UI
+suite include the same checks. Operational pages are tested in their actual
+mobile entry point rather than in retired website routes. Critical commercial
+journey files must not contain `test.skip`, `test.fixme` or focused-only tests;
+a release contract rejects those markers. The local load test intentionally runs
+once on desktop and skips the duplicate phone invocation.
+`pnpm test:accessibility` likewise runs website scans followed by mobile scans.
+Unhandled external HTTP and websocket connections are blocked by the local test
+boundary; service workers are disabled so they cannot bypass request interception.
+
+The mobile gate also checks pre-trip confirmation before the first start request,
+one confirmed trip-end request, unauthorized bus URLs, session-registration
+failure, guardian error recovery, and removal of previously verified data after
+a failed bus-detail refresh. Barcode results and video capture are synthetic;
+the trip-start journey uses the camera flow rather than a manual QA token field.
 
 ## Evidence boundary
 
@@ -70,14 +87,14 @@ isolated-target procedure.
 
 ## Evidence record
 
-| Evidence                         | Reference                                | Owner                  | Date | Result |
-| -------------------------------- | ---------------------------------------- | ---------------------- | ---- | ------ |
-| Repository browser gate          | `Browser smoke tests` on the reviewed PR | Engineering            |      |        |
-| Authenticated synthetic journeys | `commercial-authenticated-e2e.spec.ts`   | Engineering / QA       |      |        |
-| Automated WCAG scans             | `commercial-accessibility.spec.ts`       | Engineering / QA       |      |        |
-| Synthetic resilience             | `commercial-resilience.spec.ts`          | Engineering / QA       |      |        |
-| Bounded local load guard         | `product-load.spec.ts`                   | Engineering / QA       |      |        |
-| Hosted authenticated E2E         | _pending approved isolated target_       | Security / QA          |      |        |
-| Manual accessibility             | _pending_                                | Accessibility / QA     |      |        |
-| Capacity exercise                | _pending target and threshold approval_  | Operations / QA        |      |        |
-| Final Point 10 approval          | _pending_                                | Platform Administrator |      |        |
+| Evidence                         | Reference                                                                                                                 | Owner                  | Date | Result |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ---- | ------ |
+| Repository browser gate          | `Browser smoke tests` on the reviewed PR                                                                                  | Engineering            |      |        |
+| Authenticated synthetic journeys | Website `commercial-authenticated-e2e.spec.ts`, mobile `commercial-product.spec.ts`                                       | Engineering / QA       |      |        |
+| Automated WCAG scans             | Website `commercial-accessibility.spec.ts`, mobile `commercial-product.spec.ts`                                           | Engineering / QA       |      |        |
+| Synthetic resilience             | Website `commercial-resilience.spec.ts`, mobile `commercial-product.spec.ts` and `guardian-verification-recovery.spec.ts` | Engineering / QA       |      |        |
+| Bounded local load guard         | `product-load.spec.ts`                                                                                                    | Engineering / QA       |      |        |
+| Hosted authenticated E2E         | _pending approved isolated target_                                                                                        | Security / QA          |      |        |
+| Manual accessibility             | _pending_                                                                                                                 | Accessibility / QA     |      |        |
+| Capacity exercise                | _pending target and threshold approval_                                                                                   | Operations / QA        |      |        |
+| Final Point 10 approval          | _pending_                                                                                                                 | Platform Administrator |      |        |

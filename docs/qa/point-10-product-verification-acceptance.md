@@ -8,8 +8,10 @@ issues, or test artifacts.
 ## Repository-controlled gate
 
 - [ ] Run `pnpm test:product-verification` from the reviewed commit.
-- [ ] Confirm authenticated admin, driver, and guardian journeys pass on
-      desktop and mobile Chromium.
+- [ ] Confirm administrator journeys pass on the website at desktop and phone
+      Chromium viewports, and driver/guardian journeys pass in the mobile entry
+      point at its phone viewport. Do not count skipped obsolete website
+      driver/guardian scenarios as evidence.
 - [ ] Confirm role-denial checks pass and no guardian receives an administrator
       or driver surface.
 - [ ] Confirm WCAG scans report no automated A/AA violation.

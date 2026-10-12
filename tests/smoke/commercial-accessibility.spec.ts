@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { expectNoWcagAaViolations } from './fixtures/accessibility';
 import { installAdminWorkflowMock } from './fixtures/admin-workflow';
-import {
-  guardianVisibilityRow,
-  installGuardianVisibilityMock,
-} from './fixtures/guardian-bus-visibility';
-import { installSupabaseMock } from './fixtures/supabase-mock';
+import { installLocalOnlyBoundary } from './fixtures/local-only';
+
+test.beforeEach(async ({ page }) => {
+  await installLocalOnlyBoundary(page);
+});
 
 test.describe('Commercial WCAG 2.2 AA gate', () => {
   test.describe.configure({ timeout: 60_000 });
@@ -35,28 +35,5 @@ test.describe('Commercial WCAG 2.2 AA gate', () => {
     await page.goto('/admin/trips');
     await expect(page.getByRole('heading', { name: 'Trip history', level: 1 })).toBeVisible();
     await expectNoWcagAaViolations(page, 'Tenant-admin trip history');
-  });
-
-  test.skip('driver bus-scan surface', async ({ page }) => {
-    await installSupabaseMock(page);
-    await page.goto('/driver');
-    await expect(
-      page.getByRole('heading', { name: 'Scan the bus to start', level: 1 }),
-    ).toBeVisible();
-    await expectNoWcagAaViolations(page, 'Driver bus scan');
-  });
-
-  test.skip('driver active-trip surface', async ({ page }) => {
-    await installSupabaseMock(page, { withActiveTrip: true });
-    await page.goto('/driver');
-    await expect(page.getByRole('heading', { name: 'Bus 12', level: 1 })).toBeVisible();
-    await expectNoWcagAaViolations(page, 'Driver active trip');
-  });
-
-  test.skip('guardian live bus surface', async ({ page }) => {
-    await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
-    await page.goto('/guardian/live');
-    await expect(page.getByRole('heading', { name: 'Live Bus Status', level: 1 })).toBeVisible();
-    await expectNoWcagAaViolations(page, 'Guardian live bus status');
   });
 });
