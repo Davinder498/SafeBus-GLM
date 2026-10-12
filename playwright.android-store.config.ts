@@ -5,6 +5,7 @@ const baseURL = `http://localhost:${port}`;
 
 export default defineConfig({
   testDir: './tests/release-assets',
+  outputDir: './test-results/android-store',
   fullyParallel: false,
   workers: 1,
   reporter: 'list',

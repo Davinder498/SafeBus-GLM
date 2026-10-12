@@ -55,6 +55,7 @@ const driverRow = {
 
 const busRow = {
   id: MOCK.busId,
+  school_id: null,
   bus_number: '12',
   license_plate: 'SB-12',
   capacity: 48,
@@ -63,6 +64,7 @@ const busRow = {
 
 const routeRow = {
   id: MOCK.routeId,
+  school_id: null,
   route_name: 'North Ridge Morning',
   route_code: 'NR-AM',
   route_type: 'morning',
