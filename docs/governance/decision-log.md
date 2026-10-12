@@ -427,6 +427,7 @@ production` workflow must not run until a current encrypted backup is
 - Owner: Platform Administrator
 - Approved by: Platform Administrator
 - Status: Accepted on 2026-08-16; operating evidence pending
+
 ### DL-019 — Student QR pickup/drop-off development milestone
 
 - Status: Accepted for implementation on 2026-10-08, by explicit customer request.
@@ -435,6 +436,28 @@ production` workflow must not run until a current encrypted backup is
 - Deliver a review-ready PR. The customer selected PR-first delivery and did not approve an isolated database, migration application, deployment, or merge.
 - Existing production QR objects require a forward authorization repair; do not activate the historical experiment unchanged. Pending SQL validation and missing production release ledger remain blockers.
 - Implementation and acceptance: [Student QR pickup/drop-off](../student-qr-pickup-dropoff.md).
+
+### DL-020 — Capacity planning and local workload simulation
+
+- Date: 2026-10-12 (America/Edmonton).
+- Decision: Prepare a capacity specification and bounded local workload tooling
+  for 10,000 active buses, 1,000,000 registered accounts and 2,000 tenants. The
+  customer selected 100,000 concurrent users as the planning peak.
+- Context: Customer authorized this preparation after discussing how capacity
+  must be measured. The older DL-004 draft used different fleet/account targets.
+  Current native GPS cadence is three seconds, not the five seconds in older docs.
+- Consequences: Supersedes DL-004's draft workload targets for this specification.
+  Roles, traffic mix, retention sensitivity and performance objectives remain
+  proposals. Local reports never certify app capacity. Existing pilot/commercial
+  authorizations, production release protections and privacy controls remain.
+- Scope: Model arithmetic and an owned, rate-bounded loopback HTTP fixture only.
+  No hosted stress test, real identities, provider deliveries, paid configuration,
+  database migration, runtime scaling change or launch is authorized here.
+- Owner: Product Owner / Engineering Lead.
+- Status: Customer accepted the planning target and implementation scope;
+  infrastructure budget, other assumptions and service objectives pending review.
+- Specification: [capacity-assumptions.md](capacity-assumptions.md).
+- Tooling: [capacity-workload-harness.md](../qa/capacity-workload-harness.md).
 
 ## 5. Sign-off entries
 
