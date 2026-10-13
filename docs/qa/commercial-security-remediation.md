@@ -4,13 +4,22 @@ Requested target: 10,000 buses, 1,000,000 registered users, 2,000 tenants.
 Origin: commercial review dated 2026-10-09. This record tracks closure; it is not
 a launch approval, deployment approval, or evidence that the target load passes.
 
-## Current milestone: commercial browser verification
+## Current milestone: remaining mobile journeys
+
+PR [#259](https://github.com/Davinder498/SafeBus-GLM/pull/259) merged on
+2026-10-12 with required CI checks passing. The remaining six obsolete website
+scenario declarations are being replaced by active mobile checks for assigned-bus
+navigation, scoped presentation, empty/error states, unauthenticated deep-link
+denial and the NULL-school driver scan surface. Active administrator coverage
+remains on the website. Recovery and hosted security acceptance remain deferred.
+
+## Completed implementation: commercial browser verification
 
 PR [#258](https://github.com/Davinder498/SafeBus-GLM/pull/258) merged on
 2026-10-11 with required CI checks passing. Page loading is recorded in
 [frontend-page-loading.md](frontend-page-loading.md).
 
-The next bounded milestone restores the skipped critical commercial browser
+This milestone restored the skipped critical commercial browser
 checks against the current app surfaces: administrators on the website, drivers
 and guardians in the mobile entry point. It covers synthetic journeys, denial,
 safe degraded behavior and automated accessibility. Hosted Auth/RLS, capacity

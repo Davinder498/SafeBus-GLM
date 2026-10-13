@@ -16,6 +16,7 @@ const playwrightBaseUrl = `http://localhost:${playwrightPort}`;
  */
 export default defineConfig({
   testDir: './tests',
+  outputDir: './test-results/website',
   // Node release contracts run via pnpm test; importing them during browser
   // discovery executes unrelated node:test suites and embedded Postgres work.
   testMatch: '**/*.spec.ts',

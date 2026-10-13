@@ -7,7 +7,7 @@ import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
  * Verifies that school is no longer required for core transportation operations:
  *   - Admin route form can be submitted with no school selected.
  *   - Admin bus form can be submitted with no school selected.
- *   - Driver dashboard can start a trip with a bus + route that have no school.
+ * Mobile NULL-school scan coverage lives in assigned-bus-journeys.spec.ts.
  *
  * Uses a mocked Supabase layer (no production credentials, no backdoors). All
  * Supabase traffic is intercepted via page.route. The mock pattern follows the
@@ -33,18 +33,6 @@ const adminProfile = {
   full_name: 'Test Admin',
   email: 'admin@smoke-test.local',
   role: 'tenant_admin',
-  status: 'active',
-  created_at: '2025-01-01T00:00:00.000Z',
-  updated_at: '2025-01-01T00:00:00.000Z',
-};
-
-const driverProfileRow = {
-  id: ADMIN.driverProfileId,
-  tenant_id: ADMIN.tenantId,
-  school_id: null,
-  full_name: 'Test Driver',
-  email: 'driver@smoke-test.local',
-  role: 'driver',
   status: 'active',
   created_at: '2025-01-01T00:00:00.000Z',
   updated_at: '2025-01-01T00:00:00.000Z',
@@ -533,61 +521,5 @@ test.describe('Milestone 4E — school optional for transportation', () => {
 
     await expect(page).toHaveURL(new RegExp(`/admin/buses/${ADMIN.busId}\\?tab=routes`));
     await expect(page.getByRole('button', { name: 'Assign route' })).toBeVisible();
-  });
-});
-
-test.describe.skip('Milestone 4E — driver trip start with no-school bus + route', () => {
-  test('driver receives the bus scan workflow without a school selector', async ({ page }) => {
-    // Use a driver profile for this test. The init script seeds a session with
-    // the driver's profile id.
-    await installTransportMock(page, driverProfileRow);
-
-    // Override the seeded session user id to match the driver profile.
-    await page.addInitScript(() => {
-      const fakeSession = {
-        access_token: [
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
-          'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ',
-          'smoke-test-signature',
-        ].join('.'),
-        refresh_token: 'mock-refresh',
-        token_type: 'bearer',
-        expires_in: 3600,
-        expires_at: Math.floor(Date.now() / 1000) + 3600,
-        user: {
-          id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
-          email: 'driver@smoke-test.local',
-          aud: 'authenticated',
-          role: 'authenticated',
-          app_metadata: { provider: 'email' },
-          user_metadata: {},
-          created_at: '2025-01-01T00:00:00.000Z',
-        },
-      };
-      for (const k of [
-        'supabase.auth.token',
-        'sb-placeholder-auth-token',
-        'sb-bppmqykkbhrmotcybxrh-auth-token',
-        'sb-localhost-auth-token',
-      ]) {
-        try {
-          window.localStorage.setItem(k, JSON.stringify(fakeSession));
-        } catch {
-          /* ignore */
-        }
-      }
-    });
-
-    await page.goto('/driver');
-
-    // The driver dashboard renders.
-    await expect(
-      page.getByRole('heading', { name: 'Scan the bus to start', level: 1 }),
-    ).toBeVisible({
-      timeout: 10000,
-    });
-
-    await expect(page.getByTestId('driver-scan-bus-qr')).toBeVisible();
-    await expect(page.getByLabel('School')).toHaveCount(0);
   });
 });

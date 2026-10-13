@@ -41,6 +41,8 @@ mobile entry point rather than in retired website routes. Critical commercial
 journey files must not contain `test.skip`, `test.fixme` or focused-only tests;
 a release contract rejects those markers. The local load test intentionally runs
 once on desktop and skips the duplicate phone invocation.
+`assigned-bus-journeys.spec.ts` covers the remaining guardian list navigation,
+empty/error/retry states, logged-out denial and NULL-school driver scan behavior.
 `pnpm test:accessibility` likewise runs website scans followed by mobile scans.
 Unhandled external HTTP and websocket connections are blocked by the local test
 boundary; service workers are disabled so they cannot bypass request interception.
