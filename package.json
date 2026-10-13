@@ -15,7 +15,7 @@
     "test:smoke": "playwright test",
     "test:route-loading": "playwright test --config playwright.route-loading.config.ts",
     "test:accessibility": "playwright test tests/smoke/commercial-accessibility.spec.ts && playwright test --config playwright.mobile-ui.config.ts tests/mobile-ui/commercial-product.spec.ts --grep \"Commercial mobile WCAG\"",
-    "test:product-verification": "playwright test tests/smoke/commercial-authenticated-e2e.spec.ts tests/smoke/commercial-resilience.spec.ts tests/smoke/commercial-accessibility.spec.ts tests/release/product-load.spec.ts && playwright test --config playwright.mobile-ui.config.ts tests/mobile-ui/commercial-product.spec.ts tests/mobile-ui/guardian-verification-recovery.spec.ts",
+    "test:product-verification": "playwright test tests/smoke/commercial-authenticated-e2e.spec.ts tests/smoke/commercial-resilience.spec.ts tests/smoke/commercial-accessibility.spec.ts tests/release/product-load.spec.ts && playwright test --config playwright.mobile-ui.config.ts tests/mobile-ui/commercial-product.spec.ts tests/mobile-ui/guardian-verification-recovery.spec.ts tests/mobile-ui/assigned-bus-journeys.spec.ts",
     "test:smoke:release": "playwright test tests/release/release-smoke.spec.ts",
     "android:store:capture": "playwright test --config playwright.android-store.config.ts",
     "test:mobile-ui": "playwright test --config playwright.mobile-ui.config.ts",

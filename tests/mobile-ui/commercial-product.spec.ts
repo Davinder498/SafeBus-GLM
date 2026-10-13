@@ -72,6 +72,7 @@ test.describe('Commercial mobile journeys and degraded behavior', () => {
     });
 
     await page.goto('/driver');
+    await expect(page.getByLabel('School', { exact: true })).toHaveCount(0);
     await page.getByTestId('driver-scan-bus-qr').click();
     await page.getByRole('button', { name: /North Ridge Outbound/ }).click();
     await expect(page.getByTestId('driver-confirm-inspection-start')).toBeDisabled();

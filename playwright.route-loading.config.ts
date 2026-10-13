@@ -4,6 +4,7 @@ import { defineConfig, devices } from '@playwright/test';
 // Browser requests to Supabase are blocked by the tests; no hosted fixtures run.
 export default defineConfig({
   testDir: './tests/route-loading',
+  outputDir: './test-results/route-loading',
   fullyParallel: false,
   workers: 1,
   retries: 0,

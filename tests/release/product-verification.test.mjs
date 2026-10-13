@@ -1,8 +1,39 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import test from 'node:test';
 
 const read = (file) => fs.readFile(file, 'utf8');
+
+test('browser runners cannot clean another runner artifact directory', async () => {
+  assert.match(await read('.github/workflows/ci.yml'), /^\s+test-results\/\s*$/m);
+  const outputs = [];
+  for (const file of [
+    'playwright.config.ts',
+    'playwright.mobile-ui.config.ts',
+    'playwright.route-loading.config.ts',
+    'playwright.android-store.config.ts',
+  ]) {
+    const match = (await read(file)).match(/outputDir:\s*'([^']+)'/);
+    assert.ok(match, `${file} requires an explicit output directory`);
+    outputs.push(path.resolve(match[1]));
+  }
+  for (const [index, output] of outputs.entries()) {
+    for (const other of outputs.slice(index + 1)) {
+      assert.notEqual(output, other);
+      for (const [parent, child] of [
+        [output, other],
+        [other, output],
+      ]) {
+        const relative = path.relative(parent, child);
+        assert.ok(
+          relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative),
+          'Runner output directories must not contain each other',
+        );
+      }
+    }
+  }
+});
 
 test('Point 10 is a named, blocking browser verification gate', async () => {
   const [packageJson, workflow, browserConfig, mobileConfig] = await Promise.all([
@@ -21,6 +52,7 @@ test('Point 10 is a named, blocking browser verification gate', async () => {
     /&& playwright test --config playwright\.mobile-ui\.config\.ts/,
   );
   assert.match(packageJson.scripts['test:product-verification'], /commercial-product\.spec\.ts/);
+  assert.match(packageJson.scripts['test:product-verification'], /assigned-bus-journeys\.spec\.ts/);
   assert.match(
     packageJson.scripts['test:product-verification'],
     /guardian-verification-recovery\.spec\.ts/,
@@ -70,6 +102,9 @@ test('critical commercial browser journeys cannot silently become skipped eviden
     'tests/smoke/commercial-accessibility.spec.ts',
     'tests/mobile-ui/commercial-product.spec.ts',
     'tests/mobile-ui/guardian-verification-recovery.spec.ts',
+    'tests/mobile-ui/assigned-bus-journeys.spec.ts',
+    'tests/smoke/guardian-route-visibility.spec.ts',
+    'tests/smoke/transportation-domain-model.spec.ts',
   ]) {
     assert.doesNotMatch(await read(file), /\b(?:test|describe)\.(?:skip|fixme|only)\s*\(/, file);
   }
