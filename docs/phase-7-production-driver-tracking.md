@@ -45,22 +45,19 @@ For a lost, stolen, replaced, or compromised phone, a tenant administrator uses 
 
 Queued fixes recorded during an authorized window may be recovered for 24 hours, including after a trip is completed. A fix recorded outside the server-known trip window is never promoted to current location.
 
-## Adaptive cadence
+## Current cadence
 
-Cadence is the slowest interval required by any active condition:
+As inspected on 2026-10-12, `TrackingCadence.ACTIVE_TRIP_INTERVAL_MS` is
+`3_000L`. The native service requests location at that interval and captures no
+more frequently than every three seconds during an authorized active trip.
+Its current collection interval does not change for stationary/offline/battery
+conditions. Pause/end/cancel/expired authorization still stops collection.
 
-| Condition                                             |                    Minimum interval |
-| ----------------------------------------------------- | ----------------------------------: |
-| Moving at 2 m/s or faster, connected, healthy battery |                           5 seconds |
-| Stationary                                            |                          30 seconds |
-| Offline                                               |                          30 seconds |
-| Battery at or below 20%                               |                          60 seconds |
-| Battery at or below 10%                               |                         120 seconds |
-| Android power-save mode                               |                          90 seconds |
-| Server-requested backoff                              | Server interval, at least 3 seconds |
-| Paused/completed/cancelled/expired authorization      |                       No collection |
-
-The service requests a new GNSS cadence after each captured fix instead of keeping a continuous high-frequency watcher.
+The previous five-second/adaptive table was stale documentation. It is not
+evidence that downsampling or server-requested collection backoff is currently
+implemented. The native FIFO drains in a connected loop; bounded catch-up and
+jitter need separate implementation and physical-device acceptance. The current
+[capacity specification](governance/capacity-assumptions.md) uses three seconds.
 
 ## Driver privacy and off-shift behaviour
 

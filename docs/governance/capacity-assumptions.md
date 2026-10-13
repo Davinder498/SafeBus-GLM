@@ -1,111 +1,144 @@
-# SafeBus Alberta — Capacity Assumptions
+# SafeBus capacity specification
 
-**Status:** Draft — awaiting product-owner and engineering sign-off
-**Owner:** Engineering Lead
-**Phase:** 0 — Product and governance baseline
-**Last updated:** 2026-08-12
+Status: customer-selected planning target; remaining assumptions and service
+objectives proposed. No demonstrated application capacity or launch approval.
+Updated: 2026-10-12 (America/Edmonton). Decision: [DL-020](decision-log.md#dl-020--capacity-planning-and-local-workload-simulation).
 
----
+## Target and meaning
 
-## 1. Purpose
+| Metric                         | Planning value | Basis                                                               |
+| ------------------------------ | -------------: | ------------------------------------------------------------------- |
+| Registered accounts            |      1,000,000 | Customer's requested target; not concurrent or monthly active users |
+| Tenant organizations           |          2,000 | Customer's requested target                                         |
+| Simultaneously reporting buses |         10,000 | Customer's requested fleet, conservatively treated as all active    |
+| Concurrent active users        |        100,000 | Customer selected on 2026-10-12 for capacity planning               |
+| Normal concurrent active users |         30,000 | Provisional sensitivity case from the earlier draft                 |
 
-Phase 0 requires **written capacity assumptions**, including a precise
-definition of "500,000 users" and a worst-case 20,000-bus design target.
-These numbers drive Phases 4, 9, and 12. They are assumptions, not measured
-production capacity — measurement happens in Phase 9 load tests.
+These replace DL-004's older draft of 20,000 buses / 500,000 accounts for this
+workload specification. Statements that the app is already architected or proven
+for those older numbers are withdrawn. Existing commercial/pilot authorization
+and expansion approvals are unchanged.
 
-## 2. Precise definition of "500,000 users"
+For the peak model, the 100,000 total includes 10,000 active drivers, 2,000 admins
+(one per tenant) and 88,000 guardian clients. Roles sum to the chosen concurrency;
+drivers are not added on top of it. This role mix is proposed, not a forecast.
+If the intended target is 100,000 guardians plus drivers/admins, revise the model
+and repeat the calculations before selecting infrastructure.
 
-"500,000 users" alone is ambiguous. SafeBus commits to the following
-precise, separately designed numbers:
+## Workload inputs
 
-| Metric                             | Definition                                                             | Target                      | Notes                                                      |
-| ---------------------------------- | ---------------------------------------------------------------------- | --------------------------- | ---------------------------------------------------------- |
-| **Registered accounts**            | Distinct auth users across all tenants                                 | 500,000                     | Storage/auth design target; not concurrency.               |
-| **Daily active users (DAU)**       | Distinct users with ≥1 authenticated action in a day                   | 150,000 (30% of registered) | Conservative engagement estimate.                          |
-| **Expected concurrent users**      | Simultaneously authenticated sessions during a normal operating window | 30,000                      | Mostly guardians checking bus status during AM/PM windows. |
-| **Emergency peak concurrency**     | Concurrent load during a weather/incident event                        | 100,000                     | Drives realtime + API backplane design (Phase 9).          |
-| **Simultaneously reporting buses** | Buses actively streaming location during operating peaks               | 20,000                      | Worst-case architectural design target.                    |
+The machine-readable input is [capacity-workload.json](capacity-workload.json).
+`pnpm capacity:model` calculates the same scenarios without network activity.
 
-These are four different problems. Conflating "registered" with "concurrent"
-under-designs the system; this table separates them.
+| Input                        |                               Value | Evidence or qualification                                                                         |
+| ---------------------------- | ----------------------------------: | ------------------------------------------------------------------------------------------------- |
+| Active GPS interval          |                           3 seconds | Current Android `TrackingCadence.ACTIVE_TRIP_INTERVAL_MS`; web fallback minimum is also 3 seconds |
+| Guardian polling             |                          15 seconds | Current `useVerifiedGuardianData` interval                                                        |
+| Guardian calls per refresh   |                                   2 | Proposed map/detail workload; actual page mix and additional calls must be measured               |
+| Admin refresh                |                2 calls / 30 seconds | Proposed workload assumption                                                                      |
+| Operating time               |                         8 hours/day | All buses active for all eight hours; conservative volume projection                              |
+| Linked buses per guardian    |                                   1 | Proposed fan-out assumption; test additional linked buses before commitment                       |
+| Largest tenant share         |                                 20% | Proposed skew in bus traffic; never less than the average share in small scenarios                |
+| Peak login burst             |                       10,000/minute | Proposed one-minute burst, not sustained throughout the operating day                             |
+| Peak notification deliveries |                          100/second | Proposed channel delivery demand, not just notification source events                             |
+| Reconnect event              | 50% of buses offline for 15 minutes | Current 3-second collection remains the model while offline                                       |
+| Recovery window              |                           5 minutes | Proposed backlog-drain objective; current native FIFO pacing is not bounded by this model         |
+| History sensitivity          |                             30 days | Existing draft retention schedule; not approved or proven to be executing                         |
 
-## 3. Worst-case bus-reporting model
+The older Phase 7 documentation's five-second/adaptive table did not match the
+current native collector. This milestone corrects the documentation and workload
+input; it does not change device cadence or implement pacing/downsampling.
 
-SafeBus is **architected for 20,000 simultaneously reporting buses**, while
-commercial commitments remain staged (see §4). Assumed per-bus location
-characteristics:
+## Derived peak demand
 
-| Parameter                        | Assumption                                                                  |
-| -------------------------------- | --------------------------------------------------------------------------- |
-| Update source                    | Driver phone via secured session-bound RPC (`update_bus_tracking_location`) |
-| Update frequency, moving bus     | 1 update / 5 s                                                              |
-| Update frequency, stationary bus | Downsampled (Phase 7 adaptivity)                                            |
-| Payload per update               | ~1 current-location row + 1 location-history row                            |
-| Active window                    | Operating day (~8 h), tracking only during an authorized active trip        |
-| Offline queue                    | Durable, ordered, deduped (Phase 7)                                         |
+| Demand                                                  | Calculation / result                                                           |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| New GPS events                                          | 10,000 / 3 = **3,333.33 events/second**                                        |
+| Raw history per operating day                           | 10,000 × 8 × 3,600 / 3 = **96 million events**                                 |
+| Raw history at draft 30-day sensitivity                 | **2.88 billion events**, excluding indexes, WAL and replicas                   |
+| Guardian polling calls                                  | 88,000 × 2 / 15 = **11,733.33 calls/second**                                   |
+| Admin calls                                             | 2,000 × 2 / 30 = **133.33 calls/second**                                       |
+| Login burst                                             | 10,000 / 60 = **166.67 requests/second**                                       |
+| Notification deliveries                                 | **100/second**, with channel/provider semantics still to be specified          |
+| Baseline mixed request/delivery work                    | **15,466.67/second** during the combined stress window                         |
+| Uncoalesced per-guardian GPS invalidations              | 88,000 / 3 = **29,333.33 delivered messages/second**                           |
+| Guardian calls if every invalidation triggers two calls | Polling + refetch = **70,400/second** upper-bound model                        |
+| Hottest tenant GPS share                                | **666.67 new events/second** at 20%                                            |
+| Reconnect backlog                                       | 5,000 buses × 900 / 3 = **1.5 million events**                                 |
+| Extra evenly spread catch-up                            | 1.5 million / 300 = **5,000 events/second**, in addition to ongoing collection |
 
-Implied steady-state write load at 20,000 buses × 1/5s = **4,000
-location writes/s**, plus current-location upserts. This is the headline
-number for Phase 9 ingestion design (separate ingestion path from app DB,
-durable stream, optimized current-location store, time-partitioned history,
-backpressure/circuit breakers).
+Events are not SQL-operation counts. Ingestion also updates current location,
+history, authorization, progress and notifications; write amplification must be
+measured. The refetch calculation is an uncoalesced upper-bound model: client
+coalescing and latency affect actual rates. Neither bound is a benchmark result.
 
-## 4. Staged commercial ceilings (Phase 12)
+The Android service currently drains its FIFO in a connected loop. Evenly
+spreading catch-up over five minutes is a proposed test workload, not implemented
+device behavior. Reconnect burst timing and queue durability require separate
+native tests. Disk estimates need actual tuple/index/WAL sizes and a verified
+retention policy; raw event count alone does not establish storage GB or cost.
 
-Commercial commitments grow in defined stages. Each stage requires its own
-capacity, security, privacy, support, and commercial review, and expansion
-**stops automatically** if reliability/security thresholds are breached.
+## Synthetic test stages
 
-| Stage                                   | Target                                               | Notes                                                                                                              |
-| --------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| CR1 controlled pilot                    | Up to 100 buses                                      | One to three approved public-school-authority tenants; high-touch; at least 60 operating days; governed by DL-010. |
-| Stage A — Early commercial availability | 101–250 buses                                        | Expansion beyond the CR1 pilot requires a new decision backed by measured pilot evidence.                          |
-| Stage B — Regional expansion            | Up to 1,000 buses                                    | Multiple independent tenants; proven support/billing.                                                              |
-| Stage C — Large-customer readiness      | Up to 5,000 buses                                    | Repeat DR/peak-load exercises; enterprise vendor agreements.                                                       |
-| Stage D — Provincial-scale capacity     | Up to 20,000 active buses / 500,000 registered users | 24/7 critical-incident capability during operating periods.                                                        |
+| Scenario  | Active buses | Tenants | Concurrent users | Purpose                                                               |
+| --------- | -----------: | ------: | ---------------: | --------------------------------------------------------------------- |
+| pilot     |          100 |       3 |            1,000 | Small fixture/traffic stage; no authorization to operate a real pilot |
+| regional  |        1,000 |     200 |           10,000 | Intermediate query and tenant-distribution model                      |
+| normal    |       10,000 |   2,000 |           30,000 | Full fleet, lower viewer concurrency                                  |
+| peak      |       10,000 |   2,000 |          100,000 | Customer-selected planning peak                                       |
+| reconnect |       10,000 |   2,000 |          100,000 | Peak plus accumulated offline fixes and reconnect demand              |
 
-A successful CR1 pilot does **not** automatically authorize Stage A or a
-20,000-bus launch.
+The local simulator samples rates only. It does not instantiate this many
+clients, sessions or database rows. Hosted test stages and their durations must
+be approved separately; they are not new commercial stage ceilings.
 
-## 5. Guardian concurrency model
+## Proposed acceptance criteria for a future hosted run
 
-The emergency-peak concurrency target (100,000) assumes a major service
-disruption causes a broad guardian reconnect. Phase 9 must:
+These are review proposals, not promises or observed results. Fix thresholds
+before a paid run rather than changing them to pass afterwards.
 
-- Remove per-guardian database fan-out from every bus update.
-- Aggregate realtime updates by authorized route/trip channels.
-- Add connection and message budgets.
-- Test peak guardian reconnection after a simulated disruption.
+| Measure                                           | Proposed criterion                                                                                                         |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Authorized API round trip from the test region    | p95 ≤ 1 second; p99 ≤ 2 seconds; report per role, operation and tenant class                                               |
+| Fresh GPS visibility with a healthy online client | p95 recorded-fix age ≤ 20 seconds; p99 ≤ 30 seconds; measure end to end separately from API latency                        |
+| Unexpected HTTP failures / throttling             | < 0.1% during steady load; intentional denial/fault tests counted separately                                               |
+| Durability / correctness                          | Zero acknowledged unique events lost; duplicate retries do not create extra history or regress current position            |
+| Authorization                                     | Zero cross-tenant, cross-school, unlinked-guardian or unassigned-driver disclosures, including under load                  |
+| Reconnect backlog                                 | Drain the stated 1.5-million-event workload within five minutes while fresh traffic still meets its objectives             |
+| Notifications                                     | Proposed p95 ≤ 60 seconds for ordinary deliveries; urgent deadlines and provider failure behavior require product approval |
+| Tenant fairness                                   | Hot tenant does not cause other tenant classes to breach the agreed thresholds; report each separately                     |
+| Sustained operation                               | Proposed eight-hour soak; no growing backlog, connection leak, uncontrolled disk growth or progressive slowdown            |
+| Spare capacity                                    | Propose a separately budgeted 2× peak stress run; record saturation and safe degradation, not a guaranteed 2× SLA          |
 
-## 6. Storage growth model (Phase 9 input)
+A future run must report offered, sent, admitted, rejected, unsent, completed and
+persisted work. Closed-loop clients that merely slow down are insufficient proof
+that the offered target was reached. A generator-limited run is inconclusive.
 
-| Source                  | Growth driver                 | Assumption                                                |
-| ----------------------- | ----------------------------- | --------------------------------------------------------- |
-| Raw location history    | 20,000 buses × 1/5s × 8 h/day | Time-partition and downsample; auto-delete per retention. |
-| Audit records (Phase 2) | Every sensitive action        | Append-only; retention per Phase 3.                       |
-| Notification outbox     | Pickup/drop-off events        | Retention per Phase 3.                                    |
-| Trip records            | Daily trips                   | Operational retention.                                    |
+## Evidence required before capacity can be certified
 
-Unbounded growth is explicitly disallowed by the Phase 9 exit gate.
+1. An approved isolated Canadian environment with production-equivalent schema,
+   Auth, RLS, functions, indexes, extensions, provider limits and network path.
+   Keep security controls enabled. Migrations 0122–0124 and their security
+   acceptance remain deferred and must be resolved for final capacity evidence.
+2. Synthetic volume equivalent to one million accounts and 2,000 tenants, plus
+   representative aged history, skew and indexes. Accounts/auth setup requires a
+   reviewed fixture plan; no signup flood, customer data or external notifications.
+3. Explicit region, compute, disk, IOPS, pool limits, Realtime quotas and cost
+   ceiling; approved duration and stop conditions. A paid plan name alone is not
+   a capacity specification. [Supabase compute](https://supabase.com/docs/guides/platform/compute-and-disk)
+   and [Realtime limits](https://supabase.com/docs/guides/realtime/limits) must be
+   verified for the selected configuration.
+4. Real synthetic JWT/session/role behavior, independent denial cases, real
+   HTTP/WebSocket workload and provider tests or clearly labelled provider stubs.
+   Include sign-in/refresh, query/history/admin work and emergency reconnects.
+5. Warm-up, staged load, soak, saturation, outage/restart and recovery runs.
+   Capture generator utilization and achieved arrival rates, API percentiles,
+   locks, slow queries, CPU, memory, I/O, connections, WAL, history growth,
+   Realtime delivery/lag, queue age, fairness and accepted-event reconciliation.
+6. An immutable report naming the code/schema/workload digests, infrastructure,
+   quotas, generator topology, time window, cost, errors and bottlenecks. Obtain
+   human acceptance and a separate controlled-pilot decision.
 
-## 7. What these numbers are not
-
-- They are **not** measured production capacity — that is Phase 9.
-- They are **not** a launch commitment — staging is governed by Phase 12.
-- They are **not** vendor SLAs — enterprise limits are negotiated in Phase 9.
-
-## 8. Changes to this document
-
-Capacity assumptions change through a `decision-log.md` entry and must be
-re-tested in the relevant phase (Phase 9 for load, Phase 12 for stage
-ceilings).
-
----
-
-**Sign-off**
-
-| Role             | Name      | Date | Signature |
-| ---------------- | --------- | ---- | --------- |
-| Product Owner    | _pending_ |      |           |
-| Engineering Lead | _pending_ |      |           |
+Changes to rate, role mix, retention or service objectives require an updated
+decision entry and re-testing. [Local tooling and evidence checklist](../qa/capacity-workload-harness.md)
+describes the current preparation milestone and its limitations.

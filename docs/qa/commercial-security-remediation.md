@@ -149,6 +149,12 @@ existing-session lifecycle checks. Other API products must be verified explicitl
 | Secondary frontend/test work                               | Route splitting/rural first-load measurement; reproduce and fix intermittent browser failures; replace skipped critical journeys with real end-to-end coverage               | Measured regression and signed Android field acceptance                                                                                |
 
 Account password protection and provider limits are hosted configuration decisions.
+The customer authorized a capacity specification/local generator milestone on
+2026-10-12 and selected 100,000 concurrent users for planning. The updated
+[capacity specification](../governance/capacity-assumptions.md) and
+[local harness](capacity-workload-harness.md) prepare that work without claiming
+measured capacity. Hosted load, runtime scaling changes, budget and commercial
+acceptance remain pending.
 No paid plans, production data, deployed functions, retention latches, or approval
 records are changed by this milestone. Unresolved findings remain launch blockers.
 

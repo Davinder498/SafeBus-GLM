@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "planningOnly": true,
+  "target": {
+    "registeredUsers": 1000000,
+    "tenants": 2000,
+    "activeBuses": 10000,
+    "peakConcurrentUsers": 100000
+  },
+  "assumptions": {
+    "gpsSeconds": 3,
+    "guardianPollSeconds": 15,
+    "guardianRpcsPerRefresh": 2,
+    "adminPollSeconds": 30,
+    "adminRpcsPerRefresh": 2,
+    "activeHoursPerDay": 8,
+    "historyDaysForSensitivity": 30,
+    "linkedBusesPerGuardian": 1,
+    "largestTenantShare": 0.2,
+    "offlineSeconds": 900,
+    "reconnectingBusShare": 0.5,
+    "recoverySeconds": 300
+  },
+  "scenarios": {
+    "pilot": {
+      "buses": 100,
+      "tenants": 3,
+      "concurrentUsers": 1000,
+      "admins": 3,
+      "loginsPerMinute": 1000,
+      "notificationDeliveriesPerSecond": 5
+    },
+    "regional": {
+      "buses": 1000,
+      "tenants": 200,
+      "concurrentUsers": 10000,
+      "admins": 200,
+      "loginsPerMinute": 3000,
+      "notificationDeliveriesPerSecond": 20
+    },
+    "normal": {
+      "buses": 10000,
+      "tenants": 2000,
+      "concurrentUsers": 30000,
+      "admins": 2000,
+      "loginsPerMinute": 3000,
+      "notificationDeliveriesPerSecond": 50
+    },
+    "peak": {
+      "buses": 10000,
+      "tenants": 2000,
+      "concurrentUsers": 100000,
+      "admins": 2000,
+      "loginsPerMinute": 10000,
+      "notificationDeliveriesPerSecond": 100
+    },
+    "reconnect": {
+      "buses": 10000,
+      "tenants": 2000,
+      "concurrentUsers": 100000,
+      "admins": 2000,
+      "loginsPerMinute": 10000,
+      "notificationDeliveriesPerSecond": 100
+    }
+  }
+}

@@ -51,6 +51,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
+      - name: Validate the owned local workload generator (not application capacity)
+        run: pnpm capacity:simulate
 
   browser-smoke:
     name: Browser smoke tests
