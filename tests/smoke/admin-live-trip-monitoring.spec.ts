@@ -1,6 +1,7 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
 import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
 import { installMapProviderOutage } from './fixtures/map-provider';
+import { installLocalOnlyBoundary } from './fixtures/local-only';
 
 const IDS = {
   adminProfileId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
@@ -163,6 +164,7 @@ async function installMock(page: Page, opts: { role?: 'tenant_admin' | 'guardian
 }
 
 test.describe('Admin live fleet monitoring', () => {
+  test.beforeEach(async ({ page }) => installLocalOnlyBoundary(page));
   test('unauthenticated user cannot access admin live fleet page', async ({ page }) => {
     await installMock(page, { session: false });
     await page.goto('/admin/live-trips');

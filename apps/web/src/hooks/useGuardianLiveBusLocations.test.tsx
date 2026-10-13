@@ -11,14 +11,16 @@ const mocks = vi.hoisted(() => ({
   user: { id: 'guardian-a' } as { id: string } | null,
   fetch: vi.fn(),
   disconnect: () => {},
+  invalidate: () => {},
 }));
 vi.mock('@/contexts/useAuth', () => ({ useAuth: () => ({ user: mocks.user }) }));
 vi.mock('@/services/guardianLiveBusLocationService', () => ({
   fetchGuardianLiveBusLocations: mocks.fetch,
 }));
 vi.mock('@/hooks/useTrackingInvalidations', () => ({
-  useTrackingInvalidations: (options: { onDisconnected: () => void }) => {
+  useTrackingInvalidations: (options: { onDisconnected: () => void; onInvalidate: () => void }) => {
     mocks.disconnect = options.onDisconnected;
+    mocks.invalidate = options.onInvalidate;
     return 'connected';
   },
 }));
@@ -93,6 +95,102 @@ afterEach(async () => {
 });
 
 describe('guardian location verification lifecycle', () => {
+  it('refreshes on each three-second live update without an extra fixed-interval poll', async () => {
+    await render();
+    for (let i = 0; i < 5; i++) {
+      await advance(3_000);
+      await act(async () => mocks.invalidate());
+    }
+    // One initial verification and five real change signals; no sixth refresh at 15 seconds.
+    expect(mocks.fetch).toHaveBeenCalledTimes(6);
+    await advance(14_999);
+    expect(mocks.fetch).toHaveBeenCalledTimes(6);
+    await advance(1);
+    expect(mocks.fetch).toHaveBeenCalledTimes(7);
+  });
+
+  it('schedules fallback from a completed verification rather than page mount', async () => {
+    const slow = deferred();
+    mocks.fetch.mockReturnValueOnce(slow.promise);
+    await render();
+    await advance(5_000);
+    await act(async () => slow.resolve([location]));
+    await advance(14_999);
+    expect(mocks.fetch).toHaveBeenCalledTimes(1);
+    await advance(1);
+    expect(mocks.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('retains exactly one follow-up for live changes during an active request', async () => {
+    await render();
+    const slow = deferred();
+    mocks.fetch.mockReturnValueOnce(slow.promise);
+    await act(async () => mocks.invalidate());
+    for (let i = 0; i < 3; i++) {
+      await advance(1_000);
+      await act(async () => mocks.invalidate());
+    }
+    expect(mocks.fetch).toHaveBeenCalledTimes(2);
+    mocks.fetch.mockResolvedValue([]);
+    await act(async () => slow.resolve([location]));
+    await advance(0);
+    expect(mocks.fetch).toHaveBeenCalledTimes(3);
+    expect(result.state).toEqual({ kind: 'ready', locations: [] });
+  });
+
+  it('clears data on a failed live verification and retries after the fallback interval', async () => {
+    await render();
+    mocks.fetch.mockRejectedValueOnce(new Error('synthetic revoked access'));
+    await act(async () => mocks.invalidate());
+    expect(result.state.kind).toBe('error');
+    await advance(14_999);
+    expect(mocks.fetch).toHaveBeenCalledTimes(2);
+    mocks.fetch.mockResolvedValue([]);
+    await advance(1);
+    expect(result.state).toEqual({ kind: 'ready', locations: [] });
+  });
+
+  it('does not keep a successful response when a queued authorization recheck fails', async () => {
+    const slow = deferred();
+    mocks.fetch.mockReturnValueOnce(slow.promise);
+    await render();
+    await act(async () => mocks.invalidate());
+    mocks.fetch.mockRejectedValueOnce(new Error('synthetic expired guardian link'));
+    await act(async () => slow.resolve([location]));
+    await advance(0);
+    expect(result.state.kind).toBe('error');
+  });
+
+  it('does not fetch live signals while hidden and verifies immediately on return', async () => {
+    await render();
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    await act(async () => document.dispatchEvent(new Event('visibilitychange')));
+    for (let i = 0; i < 5; i++) {
+      await advance(3_000);
+      await act(async () => mocks.invalidate());
+    }
+    expect(result.state.kind).toBe('error');
+    expect(mocks.fetch).toHaveBeenCalledTimes(1);
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    await act(async () => document.dispatchEvent(new Event('visibilitychange')));
+    expect(mocks.fetch).toHaveBeenCalledTimes(2);
+    expect(result.state.kind).toBe('ready');
+  });
+
+  it('cancels polling while a live verification is in progress', async () => {
+    await render();
+    await advance(14_000);
+    const slow = deferred();
+    mocks.fetch.mockReturnValueOnce(slow.promise);
+    await act(async () => mocks.invalidate());
+    await advance(2_000);
+    await act(async () => slow.resolve([location]));
+    await advance(0);
+    expect(mocks.fetch).toHaveBeenCalledTimes(2);
+    await advance(15_000);
+    expect(mocks.fetch).toHaveBeenCalledTimes(3);
+  });
+
   it('clears previously fresh data when a refresh hangs, and permits recovery', async () => {
     await render();
     expect(result.state.kind).toBe('ready');

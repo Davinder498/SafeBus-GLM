@@ -20,19 +20,21 @@ export function useVerifiedGuardianData<T>(
     refreshing: boolean;
     lastRefreshedAt: string | null;
   }>({ userId, scope, state: { kind: 'loading' }, refreshing: false, lastRefreshedAt: null });
-  const loadRef = useRef<() => void>(() => {});
+  const loadRef = useRef<(source?: 'live' | 'poll') => void>(() => {});
   const clearRef = useRef<() => void>(() => {});
   const refresh = useCallback(() => loadRef.current(), []);
   const clear = useCallback(() => clearRef.current(), []);
+  const invalidate = useCallback(() => loadRef.current('live'), []);
   const connectionState = useTrackingInvalidations({
     topic: userId ? `safebus:guardian:${userId}` : null,
-    onInvalidate: refresh,
+    onInvalidate: invalidate,
     onDisconnected: clear,
   });
 
   useEffect(() => {
     let disposed = false;
     let queued = false;
+    let pollTimer: ReturnType<typeof setTimeout> | null = null;
     let request: { controller: AbortController; timeout: ReturnType<typeof setTimeout> } | null =
       null;
     setSnapshot({
@@ -44,6 +46,8 @@ export function useVerifiedGuardianData<T>(
     });
 
     const cancel = () => {
+      if (pollTimer !== null) clearTimeout(pollTimer);
+      pollTimer = null;
       const previous = request;
       request = null;
       queued = false;
@@ -57,16 +61,28 @@ export function useVerifiedGuardianData<T>(
       if (!disposed)
         setSnapshot((previous) => ({ ...previous, state: { kind: 'error' }, refreshing: false }));
     };
-    const load = () => {
+    const schedulePoll = () => {
+      if (disposed) return;
+      if (pollTimer !== null) clearTimeout(pollTimer);
+      pollTimer = setTimeout(() => {
+        pollTimer = null;
+        load('poll');
+      }, REFRESH_INTERVAL_MS);
+    };
+    const load = (source?: 'live' | 'poll') => {
       if (disposed || !userId) return;
       if (!navigator.onLine || document.visibilityState !== 'visible') {
         clearData();
         return;
       }
       if (request) {
-        queued = true;
+        // A periodic check cannot make an active verification obsolete. A live
+        // event/manual request can, so retain exactly one follow-up for those.
+        if (source !== 'poll') queued = true;
         return;
       }
+      if (pollTimer !== null) clearTimeout(pollTimer);
+      pollTimer = null;
 
       const controller = new AbortController();
       const current = {
@@ -96,7 +112,7 @@ export function useVerifiedGuardianData<T>(
         if (queued) {
           queued = false;
           queueMicrotask(load);
-        }
+        } else schedulePoll();
       }
       void Promise.resolve()
         .then(() => {
@@ -111,9 +127,6 @@ export function useVerifiedGuardianData<T>(
     loadRef.current = load;
     clearRef.current = clearData;
     load();
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') load();
-    }, REFRESH_INTERVAL_MS);
     const visibilityChanged = () => {
       if (document.visibilityState === 'visible') load();
       else clearData();
@@ -121,14 +134,14 @@ export function useVerifiedGuardianData<T>(
     document.addEventListener('visibilitychange', visibilityChanged);
     // Clear offline data even when realtime is unavailable.
     window.addEventListener('offline', clearData);
-    window.addEventListener('online', load);
+    const online = () => load();
+    window.addEventListener('online', online);
     return () => {
       disposed = true;
       cancel();
-      clearInterval(interval);
       document.removeEventListener('visibilitychange', visibilityChanged);
       window.removeEventListener('offline', clearData);
-      window.removeEventListener('online', load);
+      window.removeEventListener('online', online);
     };
   }, [fetchData, scope, userId]);
 

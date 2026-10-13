@@ -167,6 +167,14 @@ devices, fleet admission/fairness, fresh-position lag and measured recovery rema
 pending. The other scale findings and deferred security/recovery release gates
 are not closed by local native tests.
 
+The next customer-authorized milestone coordinates guardian live refreshes:
+one private subscription owner per client/topic and a fallback poll 15 seconds
+after verification, with prompt live/authorization/trip rechecks preserved.
+[Guardian refresh coordination](guardian-refresh-coordination.md) records the
+client tests and limits. This addresses part of C2; synchronous server broadcast
+fan-out and measured fleet capacity remain open. No security installation,
+backup restore, SQL change or launch approval is implied.
+
 ## Validation record
 
 Local code checks and SQL syntax parsing are recorded in the PR. Database migration
