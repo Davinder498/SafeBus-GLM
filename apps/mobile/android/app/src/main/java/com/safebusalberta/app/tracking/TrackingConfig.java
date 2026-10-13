@@ -34,7 +34,7 @@ final class TrackingConfig {
         this.collecting = collecting;
     }
 
-    static TrackingConfig load(TrackingCryptoStore store) {
+    static synchronized TrackingConfig load(TrackingCryptoStore store) {
         String raw = store.get(STORE_KEY);
         if (raw == null) return null;
         try {
@@ -52,16 +52,18 @@ final class TrackingConfig {
     }
 
     void save(TrackingCryptoStore store) throws Exception {
-        JSONObject value = new JSONObject();
-        value.put("supabaseUrl", supabaseUrl);
-        value.put("anonKey", anonKey);
-        value.put("accessToken", accessToken);
-        value.put("refreshToken", refreshToken);
-        value.put("trackingToken", trackingToken);
-        value.put("deviceCredential", deviceCredential);
-        value.put("authorizedUntil", authorizedUntil);
-        value.put("collecting", collecting);
-        store.put(STORE_KEY, value.toString());
+        synchronized (TrackingConfig.class) {
+            JSONObject value = new JSONObject();
+            value.put("supabaseUrl", supabaseUrl);
+            value.put("anonKey", anonKey);
+            value.put("accessToken", accessToken);
+            value.put("refreshToken", refreshToken);
+            value.put("trackingToken", trackingToken);
+            value.put("deviceCredential", deviceCredential);
+            value.put("authorizedUntil", authorizedUntil);
+            value.put("collecting", collecting);
+            store.put(STORE_KEY, value.toString());
+        }
     }
 
     TrackingConfig withTokens(String nextAccessToken, String nextRefreshToken) {

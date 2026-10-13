@@ -152,16 +152,18 @@ public class DriverTrackingPlugin extends Plugin {
     private void updateCollection(PluginCall call, boolean collecting, String action) {
         try {
             TrackingCryptoStore store = new TrackingCryptoStore(getContext());
-            TrackingConfig config = TrackingConfig.load(store);
-            if (config == null) {
-                call.resolve(statusObject(store));
-                return;
-            }
-            config.withCollecting(collecting).save(store);
-            if (DriverTrackingService.ACTION_STOP_COLLECTION.equals(action)) {
-                store.put("finish_after_flush", "true");
-            } else if (collecting) {
-                store.remove("finish_after_flush");
+            synchronized (TrackingConfig.class) {
+                TrackingConfig config = TrackingConfig.load(store);
+                if (config == null) {
+                    call.resolve(statusObject(store));
+                    return;
+                }
+                config.withCollecting(collecting).save(store);
+                if (DriverTrackingService.ACTION_STOP_COLLECTION.equals(action)) {
+                    store.put("finish_after_flush", "true");
+                } else if (collecting) {
+                    store.remove("finish_after_flush");
+                }
             }
             Intent intent = new Intent(getContext(), DriverTrackingService.class).setAction(action);
             ContextCompat.startForegroundService(getContext(), intent);

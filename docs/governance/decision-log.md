@@ -459,6 +459,24 @@ production` workflow must not run until a current encrypted backup is
 - Specification: [capacity-assumptions.md](capacity-assumptions.md).
 - Tooling: [capacity-workload-harness.md](../qa/capacity-workload-harness.md).
 
+### DL-021 — Android paced upload and retry recovery
+
+- Date: 2026-10-12 (America/Edmonton).
+- Decision: Implement randomized per-device pacing and bounded retry scheduling
+  for the existing Android encrypted GPS FIFO, including recovery after pause/end
+  without another GPS fix. Customer explicitly authorized this next fix.
+- Scope: Native upload scheduling, temporary transport/refresh failure handling,
+  protected retry deadlines, regression tests and documentation. Preserve the
+  three-second collection cadence and existing event/authorization contract.
+- Consequences: One worker, one scheduled task, a 500–750 ms healthy gap after
+  completion, 0–3 s startup jitter, 10–15 s offline checks and exponential local
+  retry capped at 120 s; valid server Retry-After floors can be longer. Authorization
+  expiry still stops recovery. This is not server/fleet admission control or proof
+  of the five-minute fleet recovery objective.
+- Status: Customer authorized implementation and a review-ready PR. Human merge,
+  physical-device acceptance, hosted capacity evidence and launch remain pending.
+- Evidence and limits: [Android upload recovery](../qa/android-upload-recovery.md).
+
 ## 5. Sign-off entries
 
 When a Phase 0 document is signed off, add an entry here:
