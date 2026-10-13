@@ -39,7 +39,9 @@ final class TrackingCryptoStore {
     }
 
     synchronized void put(String key, String value) throws Exception {
-        preferences.edit().putString(key, encrypt(value)).commit();
+        if (!preferences.edit().putString(key, encrypt(value)).commit()) {
+            throw new IllegalStateException("Protected tracking state could not be saved");
+        }
     }
 
     synchronized void remove(String key) {

@@ -28,18 +28,11 @@ import com.safebusalberta.app.R;
 
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Native foreground location collector. Collection is authorized only by an
@@ -57,8 +50,11 @@ public final class DriverTrackingService extends Service implements LocationList
     private TrackingCryptoStore store;
     private EncryptedLocationQueue queue;
     private LocationManager locationManager;
-    private final ExecutorService networkExecutor = Executors.newSingleThreadExecutor();
-    private final AtomicBoolean flushing = new AtomicBoolean(false);
+    private final ScheduledThreadPoolExecutor networkExecutor = new ScheduledThreadPoolExecutor(1);
+    private LocationUploadPump uploadPump;
+    private final TrackingHttpClient httpClient = new TrackingHttpClient();
+    private volatile boolean destroyed;
+    private static final String RETRY_NOT_BEFORE = "upload_retry_not_before";
     private long lastCapturedAt;
     private static final long LOCATION_PING_INTERVAL_MS = TrackingCadence.ACTIVE_TRIP_INTERVAL_MS;
 
@@ -68,6 +64,32 @@ public final class DriverTrackingService extends Service implements LocationList
         store = new TrackingCryptoStore(this);
         queue = new EncryptedLocationQueue(this, store);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        networkExecutor.setRemoveOnCancelPolicy(true);
+        uploadPump = new LocationUploadPump(new LocationUploadPump.Backend() {
+            @Override public long authorizationDeadlineMs() {
+                TrackingConfig config = TrackingConfig.load(store);
+                if (config == null || config.authorizedUntil > System.currentTimeMillis() + MAX_AUTHORIZATION_MS + 60_000L) return 0;
+                return config.authorizedUntil;
+            }
+            @Override public boolean hasPending() { return queue.size() > 0; }
+            @Override public boolean connected() { return isConnected(); }
+            @Override public LocationUploadPump.Result uploadHead() throws Exception { return uploadQueuedHead(); }
+            @Override public long retryNotBeforeMs() {
+                try { return Math.max(0, Long.parseLong(store.get(RETRY_NOT_BEFORE))); }
+                catch (NumberFormatException ignored) { return 0; }
+            }
+            @Override public void saveRetryNotBeforeMs(long value) throws Exception {
+                if (value == 0) store.remove(RETRY_NOT_BEFORE);
+                else store.put(RETRY_NOT_BEFORE, Long.toString(value));
+            }
+            @Override public void onIdle() {
+                finishIfQueueEmpty("true".equals(store.get("finish_after_flush")));
+            }
+            @Override public void onExpired() { stopForExpiredAuthorization(); }
+        }, (task, delay) -> {
+            java.util.concurrent.ScheduledFuture<?> future = networkExecutor.schedule(task, delay, TimeUnit.MILLISECONDS);
+            return () -> future.cancel(false);
+        }, System::currentTimeMillis, bound -> ThreadLocalRandom.current().nextInt(bound));
         createNotificationChannel();
     }
 
@@ -84,6 +106,16 @@ public final class DriverTrackingService extends Service implements LocationList
         }
 
         if (ACTION_STOP_COLLECTION.equals(action)) {
+            try {
+                synchronized (TrackingConfig.class) {
+                    TrackingConfig current = TrackingConfig.load(store);
+                    if (current != null) current.withCollecting(false).save(store);
+                    store.put("finish_after_flush", "true");
+                }
+            } catch (Exception ignored) {
+                stopForExpiredAuthorization();
+                return START_NOT_STICKY;
+            }
             stopLocationUpdates();
             updateNotification("Trip ended — securely sending queued locations");
             flushQueue();
@@ -113,6 +145,8 @@ public final class DriverTrackingService extends Service implements LocationList
 
     @Override
     public void onDestroy() {
+        destroyed = true;
+        uploadPump.close();
         stopLocationUpdates();
         networkExecutor.shutdownNow();
         super.onDestroy();
@@ -122,10 +156,12 @@ public final class DriverTrackingService extends Service implements LocationList
     public void onLocationChanged(Location location) {
         TrackingConfig config = TrackingConfig.load(store);
         long now = System.currentTimeMillis();
-        if (config == null || !config.collecting || config.authorizedUntil <= now) {
+        if (config == null || config.authorizedUntil <= now) {
             stopForExpiredAuthorization();
             return;
         }
+        // A late GPS callback after pause/end must not remove recovery authorization.
+        if (!config.collecting) return;
         if (now - lastCapturedAt < LOCATION_PING_INTERVAL_MS) return;
         if (!location.hasAccuracy() || location.getAccuracy() > 250f
             || Math.abs(now - location.getTime()) > 120_000L) return;
@@ -155,10 +191,16 @@ public final class DriverTrackingService extends Service implements LocationList
         } catch (Exception exception) {
             stopLocationUpdates();
             try {
-                config.withCollecting(false).save(store);
-                store.put("finish_after_flush", "true");
+                synchronized (TrackingConfig.class) {
+                    TrackingConfig current = TrackingConfig.load(store);
+                    if (current != null && current.trackingToken.equals(config.trackingToken)) {
+                        current.withCollecting(false).save(store);
+                        store.put("finish_after_flush", "true");
+                    }
+                }
             } catch (Exception ignored) {}
             updateNotification("Tracking stopped — secure queue unavailable");
+            flushQueue();
         }
     }
 
@@ -193,111 +235,101 @@ public final class DriverTrackingService extends Service implements LocationList
     }
 
     private void flushQueue() {
-        if (!isConnected() || !flushing.compareAndSet(false, true)) return;
-        networkExecutor.execute(() -> {
-            try {
-                while (isConnected()) {
-                    EncryptedLocationQueue.Entry entry = queue.peek();
-                    if (entry == null) break;
-                    TrackingConfig config = TrackingConfig.load(store);
-                    if (config == null) break;
-                    HttpResult result = postEvent(config, entry.payload);
-                    if (result.statusCode == 401) {
-                        TrackingConfig refreshed = refreshSession(config);
-                        if (refreshed == null) {
-                            stopFromServer("Authentication expired — reopen BusSafe");
-                            break;
-                        }
-                        config = refreshed;
-                        result = postEvent(config, entry.payload);
-                    }
-                    if (result.statusCode >= 500 || result.statusCode == 429) break;
-                    if (result.statusCode < 200 || result.statusCode >= 300) {
-                        stopFromServer("Tracking authorization was rejected");
-                        break;
-                    }
-                    JSONObject response = new JSONObject(result.body);
-                    boolean accepted = response.optBoolean("accepted", false);
-                    String reason = response.optString("rejectionReason", "");
-                    boolean discardable = accepted || reason.equals("stale_fix")
-                        || reason.equals("invalid_fix") || reason.equals("impossible_jump")
-                        || reason.equals("out_of_order") || response.optBoolean("stopTracking", false);
-                    if (!discardable) break;
-                    queue.remove(entry.sequence);
-                    if (accepted) {
-                        String recordedAt = response.optString("recordedAt", null);
-                        if (recordedAt != null) store.put("last_accepted_at", recordedAt);
-                    }
-                    if (response.optBoolean("stopTracking", false)) {
-                        if ("paused".equals(response.optString("tripState"))) {
-                            pauseFromServer();
-                        } else {
-                            stopFromServer("Trip is no longer active — tracking stopped");
-                        }
-                    }
-                }
-            } catch (Exception ignored) {
-                // The encrypted FIFO remains intact and retries on the next fix/restart.
-            } finally {
-                flushing.set(false);
-                boolean finishing = "true".equals(store.get("finish_after_flush"));
-                finishIfQueueEmpty(finishing);
-                if (queue.size() > 0 && !isConnected()) {
-                    updateNotification("Bus location saved securely — waiting for network");
-                }
-            }
-        });
+        if (!destroyed) uploadPump.wake();
     }
 
-    private HttpResult postEvent(TrackingConfig config, JSONObject payload) throws Exception {
+    private LocationUploadPump.Result uploadQueuedHead() throws Exception {
+        EncryptedLocationQueue.Entry entry = queue.peek();
+        if (entry == null) return LocationUploadPump.Result.progress();
+        TrackingConfig config = TrackingConfig.load(store);
+        if (!maySend(config)) return LocationUploadPump.Result.halted();
+        TrackingHttpClient.Result result = postEvent(config, entry.payload);
+        if (result.statusCode == 401) {
+            if (!maySend(TrackingConfig.load(store))) return LocationUploadPump.Result.halted();
+            if (!isCurrentAuthorization(config)) return LocationUploadPump.Result.retry(0);
+            TrackingHttpClient.Result refresh = request(
+                config.supabaseUrl + "/auth/v1/token?grant_type=refresh_token",
+                config.anonKey, null, new JSONObject().put("refresh_token", config.refreshToken).toString()
+            );
+            if (UploadHttpPolicy.retryable(refresh.statusCode)) return LocationUploadPump.Result.retry(refresh.retryAfterMs);
+            if (refresh.statusCode < 200 || refresh.statusCode >= 300) {
+                return haltUploadsIfCurrent(config, "Authentication expired — reopen BusSafe");
+            }
+            JSONObject body = new JSONObject(refresh.body);
+            // Preserve a concurrent pause/end and do not overwrite a replacement trip's configuration.
+            synchronized (TrackingConfig.class) {
+                TrackingConfig current = TrackingConfig.load(store);
+                if (!maySend(current)) return LocationUploadPump.Result.halted();
+                if (!current.trackingToken.equals(config.trackingToken)
+                    || !current.refreshToken.equals(config.refreshToken)) return LocationUploadPump.Result.retry(0);
+                config = current.withTokens(body.getString("access_token"), body.optString("refresh_token", current.refreshToken));
+                config.save(store);
+            }
+            // A refreshed ingestion is a separate, paced attempt; never issue a second event POST here.
+            return LocationUploadPump.Result.retry(0);
+        }
+        if (UploadHttpPolicy.retryable(result.statusCode)) return LocationUploadPump.Result.retry(result.retryAfterMs);
+        if (result.statusCode < 200 || result.statusCode >= 300) {
+            return haltUploadsIfCurrent(config, "Tracking authorization was rejected");
+        }
+        JSONObject response = new JSONObject(result.body);
+        boolean accepted = response.optBoolean("accepted", false);
+        String reason = response.optString("rejectionReason", "");
+        boolean discardable = accepted || reason.equals("stale_fix")
+            || reason.equals("invalid_fix") || reason.equals("impossible_jump")
+            || reason.equals("out_of_order") || response.optBoolean("stopTracking", false);
+        if (!discardable) return LocationUploadPump.Result.retry(0);
+        queue.remove(entry.sequence);
+        if (accepted) {
+            String recordedAt = response.optString("recordedAt", null);
+            if (recordedAt != null) store.put("last_accepted_at", recordedAt);
+        }
+        synchronized (TrackingConfig.class) {
+            TrackingConfig current = TrackingConfig.load(store);
+            if (current != null && current.trackingToken.equals(config.trackingToken)
+                && response.optBoolean("stopTracking", false)) {
+                if ("paused".equals(response.optString("tripState"))) pauseFromServer();
+                else stopFromServer("Trip is no longer active — tracking stopped");
+            }
+        }
+        return LocationUploadPump.Result.progress();
+    }
+
+    private boolean maySend(TrackingConfig config) {
+        if (destroyed) return false;
+        if (config == null || config.authorizedUntil <= System.currentTimeMillis()
+            || config.authorizedUntil > System.currentTimeMillis() + MAX_AUTHORIZATION_MS + 60_000L) {
+            stopForExpiredAuthorization();
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isCurrentAuthorization(TrackingConfig sent) {
+        TrackingConfig current = TrackingConfig.load(store);
+        return current != null && current.trackingToken.equals(sent.trackingToken)
+            && current.refreshToken.equals(sent.refreshToken);
+    }
+
+    private LocationUploadPump.Result haltUploadsIfCurrent(TrackingConfig sent, String message) {
+        synchronized (TrackingConfig.class) {
+            if (!isCurrentAuthorization(sent)) return LocationUploadPump.Result.retry(0);
+            stopFromServer(message);
+            stopForeground(STOP_FOREGROUND_REMOVE);
+            stopSelf();
+            return LocationUploadPump.Result.halted();
+        }
+    }
+
+    private TrackingHttpClient.Result postEvent(TrackingConfig config, JSONObject payload) throws Exception {
         return request(
             config.supabaseUrl + "/rest/v1/rpc/ingest_driver_location_event",
             config.anonKey, config.accessToken, payload.toString()
         );
     }
 
-    private TrackingConfig refreshSession(TrackingConfig config) {
-        try {
-            JSONObject requestBody = new JSONObject().put("refresh_token", config.refreshToken);
-            HttpResult response = request(
-                config.supabaseUrl + "/auth/v1/token?grant_type=refresh_token",
-                config.anonKey, null, requestBody.toString()
-            );
-            if (response.statusCode < 200 || response.statusCode >= 300) return null;
-            JSONObject body = new JSONObject(response.body);
-            TrackingConfig refreshed = config.withTokens(
-                body.getString("access_token"), body.optString("refresh_token", config.refreshToken)
-            );
-            refreshed.save(store);
-            return refreshed;
-        } catch (Exception ignored) {
-            return null;
-        }
-    }
-
-    private HttpResult request(String urlValue, String anonKey, String bearer, String body) throws Exception {
-        HttpURLConnection connection = (HttpURLConnection) new URL(urlValue).openConnection();
-        connection.setRequestMethod("POST");
-        connection.setConnectTimeout(15_000);
-        connection.setReadTimeout(20_000);
-        connection.setDoOutput(true);
-        connection.setRequestProperty("Content-Type", "application/json");
-        connection.setRequestProperty("apikey", anonKey);
-        if (bearer != null) connection.setRequestProperty("Authorization", "Bearer " + bearer);
-        try (OutputStream output = connection.getOutputStream()) {
-            output.write(body.getBytes(StandardCharsets.UTF_8));
-        }
-        int status = connection.getResponseCode();
-        InputStream stream = status >= 400 ? connection.getErrorStream() : connection.getInputStream();
-        StringBuilder response = new StringBuilder();
-        if (stream != null) {
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) response.append(line);
-            }
-        }
-        connection.disconnect();
-        return new HttpResult(status, response.toString());
+    private TrackingHttpClient.Result request(String urlValue, String anonKey, String bearer, String body) throws Exception {
+        return httpClient.request(urlValue, anonKey, bearer, body);
     }
 
     private void stopFromServer(String message) {
@@ -329,15 +361,18 @@ public final class DriverTrackingService extends Service implements LocationList
     }
 
     private void finishIfQueueEmpty(boolean removeConfiguration) {
-        if (queue.size() != 0) return;
-        TrackingConfig config = TrackingConfig.load(store);
-        if (!removeConfiguration && config != null && config.collecting) return;
-        if (removeConfiguration) {
-            store.remove(TrackingConfig.STORE_KEY);
-            store.remove("finish_after_flush");
+        synchronized (TrackingConfig.class) {
+            if (queue.size() != 0) return;
+            TrackingConfig config = TrackingConfig.load(store);
+            // A newly resumed/replaced trip takes precedence over an old completion flag.
+            if (config != null && config.collecting) return;
+            if (removeConfiguration) {
+                store.remove(TrackingConfig.STORE_KEY);
+                store.remove("finish_after_flush");
+            }
+            stopForeground(STOP_FOREGROUND_REMOVE);
+            stopSelf();
         }
-        stopForeground(STOP_FOREGROUND_REMOVE);
-        stopSelf();
     }
 
     private boolean isConnected() {
@@ -395,12 +430,4 @@ public final class DriverTrackingService extends Service implements LocationList
         getSystemService(NotificationManager.class).notify(NOTIFICATION_ID, buildNotification(content));
     }
 
-    private static final class HttpResult {
-        final int statusCode;
-        final String body;
-        HttpResult(int statusCode, String body) {
-            this.statusCode = statusCode;
-            this.body = body;
-        }
-    }
 }

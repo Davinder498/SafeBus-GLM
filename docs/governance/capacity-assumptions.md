@@ -42,7 +42,7 @@ The machine-readable input is [capacity-workload.json](capacity-workload.json).
 | Peak login burst             |                       10,000/minute | Proposed one-minute burst, not sustained throughout the operating day                             |
 | Peak notification deliveries |                          100/second | Proposed channel delivery demand, not just notification source events                             |
 | Reconnect event              | 50% of buses offline for 15 minutes | Current 3-second collection remains the model while offline                                       |
-| Recovery window              |                           5 minutes | Proposed backlog-drain objective; current native FIFO pacing is not bounded by this model         |
+| Recovery window              |                           5 minutes | Proposed backlog-drain objective; per-device pacing does not establish this fleet recovery time   |
 | History sensitivity          |                             30 days | Existing draft retention schedule; not approved or proven to be executing                         |
 
 The older Phase 7 documentation's five-second/adaptive table did not match the
@@ -72,10 +72,11 @@ history, authorization, progress and notifications; write amplification must be
 measured. The refetch calculation is an uncoalesced upper-bound model: client
 coalescing and latency affect actual rates. Neither bound is a benchmark result.
 
-The Android service currently drains its FIFO in a connected loop. Evenly
-spreading catch-up over five minutes is a proposed test workload, not implemented
+The Android service now uses bounded, randomized per-device upload scheduling
+([implementation and limits](../qa/android-upload-recovery.md)). Evenly spreading
+catch-up over five minutes remains a proposed fleet workload, not demonstrated
 device behavior. Reconnect burst timing and queue durability require separate
-native tests. Disk estimates need actual tuple/index/WAL sizes and a verified
+physical-device tests. Disk estimates need actual tuple/index/WAL sizes and a verified
 retention policy; raw event count alone does not establish storage GB or cost.
 
 ## Synthetic test stages

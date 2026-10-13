@@ -39,7 +39,7 @@ For a lost, stolen, replaced, or compromised phone, a tenant administrator uses 
 2. Before Android requests location permission, SafeBus displays the versioned personal-device disclosure. The installation then registers a rotated device credential and acknowledgment version. The server binds that device to the QR tracking session and authenticated driver.
 3. Android starts a `location` foreground service and shows a non-dismissible “SafeBus trip tracking” operating-system notification. The service deliberately does not declare `dataSync`, which is time-limited on current Android versions and would interrupt an eight-hour operating day.
 4. Every fix is assigned a UUID and monotonic sequence, encrypted with an Android Keystore AES-256-GCM key, and committed to a SQLite FIFO before network transmission.
-5. The service sends FIFO entries one at a time. Accepted and server-confirmed duplicate events are removed. Network/server failures leave ciphertext queued for retry after restart or reboot.
+5. The service sends FIFO entries one at a time with a 500–750 millisecond gap after completion and randomized startup/retry delays. Accepted and permitted server rejections advance the queue. Network/server failures leave ciphertext queued for scheduled retry, independent of GPS callbacks, while authorization remains valid.
 6. The server derives tenant, driver, trip, bus, and route; the device cannot nominate any of them. It rejects another driver's device/session, revoked credentials, inaccurate or stale fixes, out-of-order events, duplicate identity reuse, and physically impossible jumps.
 7. Ending/cancelling a trip stops collection immediately and keeps the foreground service only while required queued events recover. Pausing stops collection; resuming re-enables it. A remote server transition stops the service on its next successful exchange. The encrypted authorization also expires after 18 hours as an offline safety limit.
 
@@ -55,8 +55,9 @@ conditions. Pause/end/cancel/expired authorization still stops collection.
 
 The previous five-second/adaptive table was stale documentation. It is not
 evidence that downsampling or server-requested collection backoff is currently
-implemented. The native FIFO drains in a connected loop; bounded catch-up and
-jitter need separate implementation and physical-device acceptance. The current
+implemented. The native FIFO now uses a single-flight scheduled worker with
+bounded per-device pacing and jitter; physical-device and fleet acceptance
+remain pending. See [upload recovery](qa/android-upload-recovery.md). The current
 [capacity specification](governance/capacity-assumptions.md) uses three seconds.
 
 ## Driver privacy and off-shift behaviour

@@ -158,6 +158,15 @@ acceptance remain pending.
 No paid plans, production data, deployed functions, retention latches, or approval
 records are changed by this milestone. Unresolved findings remain launch blockers.
 
+The customer subsequently authorized the Android pacing/retry fix. The native
+FIFO now uses a single scheduled worker, randomized startup and retry waits,
+persisted server delay floors and independent recovery after pause/end. See
+[Android upload recovery](android-upload-recovery.md) for behavior, local tests and
+limits. This addresses the device-side catch-up implementation in C5; physical
+devices, fleet admission/fairness, fresh-position lag and measured recovery remain
+pending. The other scale findings and deferred security/recovery release gates
+are not closed by local native tests.
+
 ## Validation record
 
 Local code checks and SQL syntax parsing are recorded in the PR. Database migration
