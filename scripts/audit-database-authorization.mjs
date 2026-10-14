@@ -3,6 +3,7 @@
 import fs from 'node:fs/promises';
 import process from 'node:process';
 import pg from 'pg';
+import { assertPrivateApiSchemaHidden } from './lib/existing-security-rehearsal.mjs';
 import {
   assertEnvironmentIdentity,
   createEnvironmentBinding,
@@ -66,6 +67,9 @@ const client = new Client({
 try {
   await client.connect();
   await client.query('begin transaction read only');
+  await client.query('set transaction isolation level repeatable read');
+  await client.query("set local statement_timeout = '15s'");
+  await client.query("set local lock_timeout = '3s'");
   await assertEnvironmentIdentity(client, binding);
 
   const publicFunctions = await client.query(`
@@ -306,7 +310,10 @@ try {
       from (values ('admin_note'), ('status_comment')) private_columns(column_name)
      where has_column_privilege('authenticated', 'public.student_guardians', column_name, 'SELECT')
   `);
-  assertNoRows('Private guardian notes are directly readable by client roles', privateGuardianColumns);
+  assertNoRows(
+    'Private guardian notes are directly readable by client roles',
+    privateGuardianColumns,
+  );
 
   const missingSessionPolicies = await client.query(`
     select format('%I.%I', n.nspname, c.relname) as object_name
@@ -339,7 +346,8 @@ try {
      where r.rolname = 'authenticator'
        and 'pgrst.db_pre_request=safebus_private.enforce_active_api_session' = any(s.setconfig)
   `);
-  if (sessionHook.rowCount === 0) throw new Error('The approved PostgREST session hook is missing.');
+  if (sessionHook.rowCount === 0)
+    throw new Error('The approved PostgREST session hook is missing.');
 
   const response = await fetch(new URL('/rest/v1/', supabaseUrl), {
     headers: {
@@ -347,6 +355,7 @@ try {
       Authorization: `Bearer ${secretKey}`,
       Accept: 'application/openapi+json',
     },
+    signal: AbortSignal.timeout(10000),
   });
   if (!response.ok) throw new Error(`Supabase OpenAPI audit failed with HTTP ${response.status}.`);
   const openApi = await response.json();
@@ -360,17 +369,9 @@ try {
   );
   assertExactSurface('Advertised Data API RPC names', advertised, expectedNames);
 
-  const privateSchemaResponse = await fetch(new URL('/rest/v1/', supabaseUrl), {
-    headers: {
-      apikey: secretKey,
-      Authorization: `Bearer ${secretKey}`,
-      Accept: 'application/openapi+json',
-      'Accept-Profile': 'safebus_private',
-    },
-  });
-  if (privateSchemaResponse.ok) {
-    throw new Error('safebus_private is exposed through the Supabase Data API.');
-  }
+  // Only a real PGRST106 schema rejection is isolation evidence. A bad key,
+  // timeout or provider outage must not make this release gate pass.
+  await assertPrivateApiSchemaHidden(supabaseUrl, secretKey);
 
   await client.query('rollback');
   console.log(
