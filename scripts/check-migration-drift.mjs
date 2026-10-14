@@ -27,6 +27,10 @@ const client = new Client({
 
 try {
   await client.connect();
+  await client.query('begin transaction read only');
+  await client.query('set transaction isolation level repeatable read');
+  await client.query("set local statement_timeout = '15s'");
+  await client.query("set local lock_timeout = '3s'");
   await assertDatabaseEnvironmentIdentity(client, {
     environment,
     databaseUrl,
@@ -55,13 +59,18 @@ try {
   const fingerprint = await calculateSchemaFingerprint(client);
   if (fingerprint !== releases.rows[0].schema_fingerprint) {
     throw new Error(
-      'Authoritative public schema drift detected. Deploy a reviewed forward migration.',
+      'Authoritative application schema or authorization drift detected. ' +
+        'Use a reviewed forward reconciliation; do not replace the stored fingerprint.',
     );
   }
 
+  await client.query('rollback');
   console.log(
     `Drift check passed for ${environment}: ${actual.size} migrations and schema fingerprint match.`,
   );
+} catch (error) {
+  await client.query('rollback').catch(() => {});
+  throw error;
 } finally {
   await client.end().catch(() => {});
 }
