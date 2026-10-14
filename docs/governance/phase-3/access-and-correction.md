@@ -1,89 +1,81 @@
-# SafeBus Alberta — Phase 3 Access and Correction Procedure
+﻿# SafeBus Access, Correction and Account-Deletion Procedure — Draft
 
-**Status:** Draft for counsel confirmation
-**Owner:** Privacy Lead
-**Phase:** 3 — Alberta privacy and legal readiness
-**Last updated:** 2026-08-07
+**Status:** Prepared procedure; contacts and operational validation pending
+**Owner:** Business Privacy Lead / relevant customer privacy office
+**Last updated:** 2026-10-13
 
----
+## Intake and routing
 
-## 1. Purpose
+Accept requests at `[PRIVACY_EMAIL]` and the published postal/contact channel.
+An active app account is not required. Ask for enough detail to identify the
+person, relationship and requested records, without unnecessary sensitive ID or
+student information. Offer an alternative verification route for a lost account;
+email plus an unavailable second factor must not be an absolute barrier.
 
-Individuals have rights to access and correct their personal information
-under Alberta law. This procedure defines how SafeBus honors those rights
-while protecting other people's data and the platform's tenant isolation.
+Classify the request immediately:
 
-## 2. Who can make a request
+| Record/purpose                                                        | Decision-maker                                                                | SafeBus action                                                                               |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| SafeBus's own business contact, billing, support or staff information | Business Privacy Lead under applicable PIPA/PIPEDA rules                      | Acknowledge, verify, search and respond directly                                             |
+| School-authority-controlled transportation information                | Authorized customer privacy office under applicable POPA/ATIA/education rules | Route promptly, preserve responsive records and assist within the agreed deadline            |
+| Mixed request                                                         | Each appropriate decision-maker for its part                                  | Coordinate without abandoning own-business response duties or exposing another person's data |
 
-- **Guardians** — about their own personal information.
-- **Drivers** — about their own personal information.
-- **Students / independent students** — see [`student-processes.md`](./student-processes.md).
-- **Tenant administrators** — about their own account information.
-- **Authorized representatives** — with verifiable written authority
-  (guardian-authority verification, not custody narratives — see
-  [`guardian-authority-verification.md`](./guardian-authority-verification.md)).
+Customer-specific contact/delegation information is supplied at onboarding;
+it is not needed to prepare this business procedure. A guardian's app link alone
+does not establish authority for every student record. Verify representation,
+minor/independent-student context and scope with the customer without importing
+custody narratives or court evidence into SafeBus.
 
-## 3. How to submit a request
+## Time tracking
 
-Requests are submitted to the tenant administrator first (the customer is
-the responsible party for their transportation data). If the tenant cannot
-resolve the request, it escalates to SafeBus through the support channel
-defined in the customer agreement and the privacy notice.
+Record receipt date, applicable law, responsible party, legal due date, approved
+extension grounds/notice if applicable and the next action. Proposed business
+service target: acknowledge within five business days and route customer requests
+without waiting for non-resolution. That target must not extend statutory time.
 
-Required information:
+Alberta guidance describes a PIPA response period of 45 days unless appropriately
+extended. Do not reuse the older draft's universal 30-day response assumption
+for all laws. For customer access, apply ATIA; for public-sector correction,
+apply POPA. Set the actual deadline from the applicable provision and receipt
+circumstances before processing. [Alberta PIPA access/correction guidance](https://www.alberta.ca/accessing-your-personal-information),
+[Alberta correction guidance](https://www.alberta.ca/correction-of-personal-information).
 
-- Identity verification (account email + a second factor).
-- The personal information at issue.
-- The correction requested, or the scope of access requested.
+## Search, disclosure and correction
 
-## 4. Handling timeline (draft — counsel confirms)
+Search the approved relevant systems, including business email/support/billing
+and supplier-held records where necessary; a database-only search may be
+incomplete. Use authorized tenant/person-scoped retrieval and review exemptions,
+other individuals' information and any applicable privilege. Do not bypass RLS
+or grant public exports to satisfy a request. Give a reasoned response and any
+applicable review/complaint route; redaction is a decision under the relevant law,
+not a blanket denial of all operational records.
 
-| Step | Target (draft) | Owner |
-| --- | --- | --- |
-| Acknowledge request | 5 business days | Tenant Admin / Privacy Lead |
-| Fulfill access request | 30 days | Tenant Admin |
-| Fulfill correction request | 30 days | Tenant Admin |
-| Escalation to SafeBus | 15 days after tenant non-resolution | Privacy Lead |
-| Record outcome in audit trail | Same day as action | System (audit event) |
+Correct an established error through the approved authorized workflow and notify
+relevant recipients where required. Where correction is refused, apply the
+relevant annotation/reason/complaint process. Record an actual authorized action
+and audit outcome; this draft does not create new correction RPCs or audit events.
 
-## 5. What access includes
+## Deletion and account closure
 
-An access response discloses the personal information SafeBus holds about
-the requester, subject to:
+Verify the instruction and identify account access, Auth sessions, device
+registrations, links, transport records, financial/security records and backups
+separately. A delete-account button or disabled profile is not verified full
+erasure. Check mandatory retention and [legal holds](legal-hold-procedure.md).
+Use the reviewed deletion/revocation workflows and retain execution evidence.
+Explain remaining categories, reasons, expiry and any offline-device limits.
+Do not guarantee immediate erasure from immutable backups or a remote phone.
 
-- **Tenant isolation** — no data from other tenants.
-- **Third-party protection** — information that would identify another
-  student/guardian/driver is withheld or anonymized.
-- **Scope** — limited to the requester's own information, not operational
-  data about other people on the same route.
+For customer records, seek the customer's authorized instruction. Requests
+about SafeBus's own business processing remain the business's responsibility.
+The [return/destruction schedule](business-pack/data-return-destruction.md)
+and [retention schedule](retention-schedule.md) govern accepted disposal duties.
 
-## 6. Corrections
+## Complaint and evidence
 
-Corrections are made through tenant-scoped admin action. If SafeBus and
-the tenant disagree about a correction, the requester is told that a
-statement of disagreement may be attached, and the process follows the
-applicable statute.
-
-Every correction writes an audit event (`student.record_accessed` style
-outcome or a dedicated correction event agreed with counsel).
-
-## 7. What SafeBus will not do
-
-- **No bulk export to guardians.** Access is individual-scoped.
-- **No custody-narrative collection.** Guardian authority is verified
-  operationally, not by storing sensitive family-court details.
-- **No bypass of RLS.** All access goes through the same authorized paths
-  used by the live application.
-
-## 8. Records
-
-Each request and its outcome is recorded. The audit trail shows who acted,
-when, what was disclosed/corrected, and the outcome, without storing the
-personal data itself in the audit row.
-
-## 9. Counsel confirmation items
-
-- [ ] Confirm the timelines in §4 satisfy the applicable statute(s).
-- [ ] Confirm the statement-of-disagreement mechanism in §6.
-- [ ] Confirm guardian-authority verification approach
-  ([`guardian-authority-verification.md`](./guardian-authority-verification.md)).
+Escalate unresolved concerns to the Privacy Lead/backup; explain the applicable
+regulator route. Keep receipt, verification method, authority, search scope,
+deadline/extension, disclosures/redactions, correction/deletion evidence and
+response securely outside Git. Preserve responsive records under a scoped hold
+when necessary. Do not log access tokens or copies of the disclosed personal data
+in public audit details. Operational acceptance requires a completed synthetic
+request exercise on an approved target and working contact/backup channels.

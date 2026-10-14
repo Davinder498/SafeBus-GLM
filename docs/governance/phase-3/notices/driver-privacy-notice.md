@@ -1,75 +1,53 @@
-# SafeBus Alberta — Driver Privacy Notice (Draft)
+﻿# SafeBus Driver and Personal-Android Privacy Notice — Draft
 
-**Status:** Draft for Alberta privacy counsel and customer approval — not legal advice
-**Owner:** Privacy Lead
-**Last updated:** 2026-08-15
+**Status:** Participant/BYOD notice draft; customer adaptation, device evidence and publication pending
+**Operator:** `[PROVIDER_LEGAL_NAME]` / SafeBus Alberta (BusSafe)
+**Customer/employer privacy contact:** `[CUSTOMER_PRIVACY_CONTACT]`
+**SafeBus privacy contact:** `[PRIVACY_EMAIL]`
 
-## What SafeBus is
+SafeBus supports your assigned bus trips. Your customer/employer must identify
+its lawful transport/employee information purpose and applicable notice:
+`[CUSTOMER_COLLECTION_USE_DISCLOSURE_AUTHORITY]`. SafeBus's business owner does not
+become your employer by supplying the software. BYOD eligibility, training,
+support, reimbursement and alternatives belong in the customer's agreed policy.
 
-SafeBus supports school-transportation operations and live bus visibility.
-It tracks an authorized bus trip, not a child or a driver's personal activity.
+Your account, minimum driver identity, assignment and device/session information
+support authorized work. When you confirm an assigned trip and the necessary
+permissions, the Android app collects bus location from your phone, including
+coordinates, timestamps, accuracy and movement information, at the configured
+active-trip cadence. In the current source that cadence is three seconds.
+These records can identify your work/location even though the bus is the tracked
+unit. The employer and SafeBus must not use them for unrelated driver profiling.
 
-## Information used
+Collection can continue in the background or with the screen locked, using the
+Android foreground-service notification. Pausing or ending collection stops
+new fixes. Previously recorded payloads may remain in protected local storage
+and transmit during permitted recovery after pause/end. The source bounds offline
+authorization at 18 hours; this is not a guarantee of immediate offline revocation
+or a promise that every queued record expires at that time. Exact queue purge,
+permission withdrawal, reboot and lost-device effects must be validated and
+explained against the signed release before operation.
 
-SafeBus may use a driver's name and work contact details, employment or
-contract identifier, licence/compliance fields required by the customer,
-assigned bus and route, trip actions, device/session metadata, and bus
-location reported during an authorized active trip. It does not require an
-Alberta Student Number, student home address, health data, or location outside
-an authorized trip.
+The camera supports authorized bus QR start. Verify handling of transient frames
+and the released permissions before publication; this does not enable student
+QR boarding or child tracking. Guardian visibility does not require guardians'
+own GPS. Optional FCM push is separately gated and is not activated by this notice.
 
-When a driver uses a personal Android phone, SafeBus also uses an app-generated
-installation identifier, device model, app version, permission state, encrypted
-device credential, connectivity category, and battery percentage needed to
-operate and support active-trip tracking. SafeBus does not read personal
-contacts, messages, photos, microphone content, browser history, or information
-from other applications. SafeBus does not provide the employer with remote-wipe
-or general device-management access.
+Authorized customer staff see operational records; linked guardians receive
+limited active-bus visibility, rather than your full identity or other manifests.
+Providers process needed Auth/hosting/map/email/request data. Publish actual
+supplier countries, support access and retained metadata before service begins.
+Canadian primary database configuration alone does not describe all processing.
 
-## Why it is used
+Use available permissions/settings to manage your phone. Withdrawal can interrupt
+required driver tracking; discuss an alternative arrangement with your employer.
+Report loss/compromise promptly to `[CUSTOMER_INCIDENT_CONTACT]` or SafeBus's
+working urgent contact. No instant remote wipe of a personal offline phone is
+promised. Do not share credentials or use the phone unsafely while driving.
 
-The information supports account security, driver eligibility, assignments,
-trip dispatch and completion, operational bus visibility, incident review,
-and legal/security audit obligations. SafeBus does not use driver or student
-information for advertising or cross-customer profiling.
-
-## Who can see it
-
-Authorized transportation and tenant administrators can access the minimum
-information required for their own organization. A driver sees only their own
-or assigned operational data. Guardians receive scoped bus visibility for a
-linked student's active trip; they do not receive driver licensing details,
-personal contact details, or the full manifest. SafeBus platform staff do not
-receive direct access to tenant operational records through the platform-admin
-role.
-
-## Location and retention
-
-Location collection is bound to an authorized bus-tracking session and active
-trip. It may continue when SafeBus is closed or the screen is locked so the
-active bus remains visible. A persistent Android notification indicates when
-collection or required offline recovery is active. Collection ends when the
-trip ends or is cancelled, the server rejects the session, or the 18-hour
-offline authorization expires. Raw history is subject to the draft 30-day ceiling in
-[`../retention-schedule.md`](../retention-schedule.md). Inactive driver
-operational identity fields are anonymized under the approved schedule;
-deleting the associated Auth account is a separate authorized workflow.
-Retention periods remain subject to counsel and customer approval.
-
-## Access, correction, and concerns
-
-Drivers submit access or correction requests to their employer/customer's
-designated privacy contact. SafeBus assists the customer under the procedure in
-[`../access-and-correction.md`](../access-and-correction.md). Suspected privacy
-incidents should be reported immediately through the customer's incident
-channel; the breach procedure is in
-[`../breach-response.md`](../breach-response.md).
-
-## Approval checklist
-
-- [ ] Counsel confirms the applicable statute and SafeBus/customer roles.
-- [ ] Customer supplies its legal name, privacy contact, and request channel.
-- [ ] Retention periods and subprocessors are approved.
-- [ ] Notice is made available to drivers before production collection.
-- [ ] Customer approves its personal-device policy, support, data-plan, and reimbursement terms.
-- [ ] Android in-app notice and public privacy-policy wording are confirmed as consistent.
+Request transport-record access/correction/deletion through your employer/customer
+privacy office. SafeBus assists and accepts concerns or requests about its own
+business records at `[PRIVACY_EMAIL]`, including if you cannot sign in. Before
+publication insert approved record/device/backup periods, hold exceptions,
+`[DELETION_URL]` and `[PUBLIC_POLICY_URL]`. This draft does not state that deletion,
+session revocation, signed-device testing or legal/customer approval has passed.
