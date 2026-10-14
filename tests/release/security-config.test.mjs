@@ -215,8 +215,9 @@ test('dependency automation defers incompatible toolchain major upgrades', async
       ),
     );
   }
-  assert.equal(mobilePackage.dependencies['@capacitor/geolocation'], '8.2.2');
-  assert.match(lockfile, /'@capacitor\/geolocation@8\.2\.2'/);
+  const geolocationVersion = mobilePackage.dependencies['@capacitor/geolocation'];
+  assert.match(geolocationVersion, /^8\.\d+\.\d+$/);
+  assert.ok(lockfile.includes(`'@capacitor/geolocation@${geolocationVersion}'`));
   assert.doesNotMatch(lockfile, /'@capacitor\/geolocation@6\./);
 });
 
