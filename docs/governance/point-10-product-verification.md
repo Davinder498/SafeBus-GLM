@@ -43,6 +43,10 @@ a release contract rejects those markers. The local load test intentionally runs
 once on desktop and skips the duplicate phone invocation.
 `assigned-bus-journeys.spec.ts` covers the remaining guardian list navigation,
 empty/error/retry states, logged-out denial and NULL-school driver scan behavior.
+`guardian-refresh-coordination.spec.ts` exercises the real browser client against
+synthetic private realtime frames for shared subscription ownership, live updates,
+polling fallback, authorization denial and trip end. It never forwards a socket
+to the provider and is included in the explicit product-verification command.
 `pnpm test:accessibility` likewise runs website scans followed by mobile scans.
 Unhandled external HTTP and websocket connections are blocked by the local test
 boundary; service workers are disabled so they cannot bypass request interception.

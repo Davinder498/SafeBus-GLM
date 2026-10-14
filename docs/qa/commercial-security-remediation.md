@@ -4,7 +4,18 @@ Requested target: 10,000 buses, 1,000,000 registered users, 2,000 tenants.
 Origin: commercial review dated 2026-10-09. This record tracks closure; it is not
 a launch approval, deployment approval, or evidence that the target load passes.
 
-## Current milestone: remaining mobile journeys
+## Current milestone: release schema integrity
+
+The customer authorized release integrity and server scaling on 2026-10-14,
+with one milestone at a time. The first bounded R1 fix expands schema/authorization
+drift coverage, bounds read-only audits and stops obsolete historical adoption
+before connection. [Release schema integrity](release-schema-integrity.md)
+records the hosted catalog-only observation, local SQL tests and evidence limits.
+Recovery, security installation/acceptance and a reviewed historical adoption
+contract remain required. Server scaling is the next separate engineering
+milestone; no fleet capacity claim or hosted load is implied.
+
+## Completed implementation: remaining mobile journeys
 
 PR [#259](https://github.com/Davinder498/SafeBus-GLM/pull/259) merged on
 2026-10-12 with required CI checks passing. The remaining six obsolete website
@@ -166,6 +177,14 @@ limits. This addresses the device-side catch-up implementation in C5; physical
 devices, fleet admission/fairness, fresh-position lag and measured recovery remain
 pending. The other scale findings and deferred security/recovery release gates
 are not closed by local native tests.
+
+The next customer-authorized milestone coordinates guardian live refreshes:
+one private subscription owner per client/topic and a fallback poll 15 seconds
+after verification, with prompt live/authorization/trip rechecks preserved.
+[Guardian refresh coordination](guardian-refresh-coordination.md) records the
+client tests and limits. This addresses part of C2; synchronous server broadcast
+fan-out and measured fleet capacity remain open. No security installation,
+backup restore, SQL change or launch approval is implied.
 
 ## Validation record
 

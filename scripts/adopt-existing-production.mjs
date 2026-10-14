@@ -17,6 +17,14 @@ import {
 } from './lib/migrations.mjs';
 import { calculateSchemaFingerprint } from './lib/schema-fingerprint.mjs';
 
+// The 0088 checksum list describes repository files, not the observed hosted
+// execution history. Do not stamp it onto the current drifted database. A
+// reviewed replacement must bind recovery and explicit historical provenance.
+throw new Error(
+  'Historical production adoption is blocked pending reviewed schema reconciliation, ' +
+    'verified recovery, and an honest migration-provenance contract. No database connection was made.',
+);
+
 const { Client } = pg;
 const databaseUrl = process.env.SAFEBUS_DATABASE_URL;
 const supabaseUrl = process.env.SUPABASE_URL;
