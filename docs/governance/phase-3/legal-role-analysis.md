@@ -1,140 +1,163 @@
-# SafeBus Alberta — Phase 3 Legal-Role and Statutory Analysis
+﻿# SafeBus Alberta — Legal Roles and Alberta Statutory Mapping
 
-**Status:** Draft for Alberta privacy counsel — not a legal determination
+**Status:** Draft for Alberta privacy counsel and customer review; not approved
 **Owner:** Privacy Lead / Counsel
-**Phase:** 3 — Alberta privacy and legal readiness
-**Last updated:** 2026-08-07
+**Readiness point:** 6 — Privacy and commercial terms, item 1
+**Last checked:** 2026-10-13 (America/Edmonton)
 
----
+## 1. Purpose and known facts
 
-## 1. Purpose
+This is the first item in the sequential Point 6 work. It supplies the role
+assumptions and questions that the PIA and customer agreements must resolve.
+It does not establish that SafeBus or its hosted services already comply with
+the proposed obligations.
 
-This document replaces the obsolete **FOIP** references identified in
-[`../risk-register.md`](../risk-register.md) R-006 and supplies the
-statutory framework that the PIA, retention schedule, access/correction
-procedures, breach workflow, and contract pack depend on.
+The owner confirmed on 2026-10-13 that the contracting business is registered
+in Alberta, Canada, and privacy counsel has not yet been appointed. Its exact
+legal identity, business form, signing authority and registration evidence are
+not established by that confirmation. Record those details in the restricted
+contract file, with only a non-secret evidence reference in Git.
 
-It is written by engineering as **evidence and a draft analysis**. The
-legal conclusions ("SafeBus acts as X") must be confirmed by Alberta
-privacy counsel before they are relied upon.
+The approved first customer type is an Alberta public school authority. CR1
+permits a controlled pilot of one to three tenants and 25–100 buses; no customer
+agreement, representative's authority or launch permission is established by
+that product decision. See [first-customer profile](../first-customer-profile.md)
+and [CR1 scope](../commercial-release-scope.md).
 
-## 2. Statutes in scope
+The [review worksheet](legal-role-review.md) identifies the missing evidence and
+closure criteria. Appointment of counsel and customer review remain open.
 
-SafeBus operates in Alberta and processes personal information about
-students, guardians, drivers, and administrative users. The statutes that
-counsel must map SafeBus against are:
+## 2. Statutory map for review
 
-| Statute | Scope | Why it may apply to SafeBus |
-| --- | --- | --- |
-| **POPA** — protection-of-privacy principles under Alberta's public-sector privacy regime | Public bodies and their service providers | When a customer is a public school authority, SafeBus may handle personal information on behalf of a public body. |
-| **ATIA** — access-to-information principles under Alberta's public-sector regime | Public bodies | Drives access, correction, and records-handling obligations that flow down to service providers by contract. |
-| **PIPA** — Personal Information Protection Act | Private organizations and their service providers | When a customer is a private school or private transportation contractor, SafeBus may be subject to or acting under PIPA. |
-| **Education Act** — student records | Schools and those handling student-record information | Constrains what student data may be collected, retained, and disclosed; reinforces the prohibition on ASN and the minimal-manifest rule. |
-| **Canada — PIPEDA** and provincial private-sector law interplay | Organizations that handle personal information in commercial activity | Counsel determines whether PIPEDA or PIPA governs a given customer relationship. |
+| Framework                                                | Relevant part of the proposed relationship                                                                           | Decision still required                                                                                                    |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Protection of Privacy Act (POPA) and its regulations     | Personal information handled for the public school authority; collection, use, disclosure, correction and safeguards | Confirm the customer's public-body status, relevant provisions and responsibilities for each processing activity           |
+| Access to Information Act (ATIA)                         | Access to records in the public body's custody or control, including records held by a supplier                      | Specify how SafeBus assists the authority with retrieval and preserves records pending a request                           |
+| Alberta Personal Information Protection Act (PIPA)       | SafeBus's own private-sector activities, where applicable                                                            | Classify business-account, billing, support and staff information separately from customer-directed transportation records |
+| Federal PIPEDA                                           | Potential federal or cross-border commercial processing                                                              | Determine application to actual activities and transfers; Alberta registration alone does not settle it                    |
+| Education Act and applicable student-record requirements | Customer authority for minimum transportation information and disclosure                                             | Identify applicable provisions and records; do not assume every transport record is legally a student record               |
 
-> The earlier `README.md` reference to **FOIP** is **obsolete** for
-> SafeBus. FOIP is no longer the correct shorthand for SafeBus's analysis
-> and is removed from this repository's user-facing privacy statements.
+POPA and its regulations took effect on June 11, 2025, replacing the privacy
+portion of the former FOIP framework. POPA governs correction; ATIA governs
+public-sector access. [Alberta POPA overview](https://www.alberta.ca/about-the-protection-of-privacy-act),
+[Alberta correction guidance](https://www.alberta.ca/correction-of-personal-information),
+[OIPC access-law overview](https://oipc.ab.ca/resource/access-to-information-laws-in-alberta/).
 
-Authoritative starting points for counsel are the Alberta OIPC's
-[public-sector access-law overview](https://oipc.ab.ca/resource/access-to-information-laws-in-alberta/),
-the Alberta government's [PIPA overview](https://www.alberta.ca/personal-information-protection-act),
-the OIPC's [POPA service-provider guidance](https://oipc.ab.ca/resource/popa-guidance-service-providers/),
-and the OIPC's [POPA PIA guide](https://oipc.ab.ca/resource/popa-pia-template-completion-guide/).
-The OIPC identifies school boards and charter schools as public bodies under
-ATIA; private-school status must be assessed separately for each customer.
+PIPA is Alberta's private-sector privacy law for provincially regulated
+organizations. PIPEDA requires a separate assessment of federal jurisdiction
+and interprovincial or international commercial flows. Neither statute should
+be presented as replacing the school authority's public-sector obligations.
+[Alberta PIPA overview](https://www.alberta.ca/personal-information-protection-act),
+[OPC summary of Canadian privacy laws](https://www.priv.gc.ca/en/privacy-topics/privacy-laws-in-canada/02_05_d_15/).
 
-## 3. SafeBus legal role — candidate models
+Counsel must verify the actual statutes, regulations and provisions for the
+relationship. The table is a proposed map, not a statutory determination.
+For the education-law review, use the current
+[Alberta education legislation and regulations index](https://www.alberta.ca/k-12-education-legislation-and-regulations)
+to identify the school transportation and student-record rules that apply.
 
-SafeBus's role depends on the **customer type** (see
-[`../first-customer-profile.md`](../first-customer-profile.md) and
-[`../product-scope.md`](../product-scope.md) §4). Counsel must confirm one
-of the following for each customer relationship:
+## 3. Proposed role for school-authority transportation records
 
-### 3.1 Service provider / processor
+The working model is that SafeBus supplies transportation operations and bus
+visibility on the public school authority's documented instructions. The
+customer decides the permitted purposes and authorized participants. SafeBus
+implements the agreed service and supports the customer's privacy duties.
 
-SafeBus processes personal information **on behalf of** a customer (the
-controller/organization) and **on the customer's documented instructions**.
-Indicators:
+OIPC guidance explains that a contracted service provider can fall within POPA's
+statutory definition of an employee for activities performed for the public
+body. This does not make it an employee for labour-relations purposes. The
+public body retains accountability for information handled on its behalf.
+[OIPC service-provider guidance](https://oipc.ab.ca/resource/popa-guidance-service-providers/).
 
-- SafeBus collects only the data the customer's transportation operations
-  require.
-- SafeBus does not use the data for its own unrelated commercial purposes.
-- SafeBus's product scope (`../product-scope.md`) is fixed and narrow.
-- Retention, access, and deletion are governed by contract and this PIA.
+Use the statutory role and negotiated responsibilities in the agreement.
+"Controller" and "processor" may explain the operating model, but do not replace
+Alberta's legal terms or supply a legal authority to collect information.
 
-### 3.2 Organization subject to PIPA
+Proposed wording for counsel to refine:
 
-If SafeBus is determined to collect, use, or disclose personal information
-for its **own commercial purposes** (e.g., product analytics, cross-customer
-benchmarking), it may be an **organization** under PIPA with its own
-obligations, including a published privacy policy and consent management.
+> SafeBus provides the transportation operations and bus visibility service
+> for the school authority on its documented instructions. Customer-directed
+> personal information is used only for agreed transportation purposes and
+> disclosed only to authorized recipients and approved service providers.
+> The authority retains its public-body responsibilities. SafeBus's assistance,
+> safeguards, retention, incident, access, correction and return obligations
+> will be specified in the executed agreement and its schedules.
 
-### 3.3 Contracted operator on behalf of a public body
+This paragraph is a drafting starting point, not an executed DPA or a promise
+that any security or operational acceptance gate has passed.
 
-Where the customer is a **public school authority**, SafeBus is expected to
-be a **contracted operator / service provider** handling personal
-information **on behalf of a public body**. This is the model the
-[`first-customer-profile.md`](../first-customer-profile.md) anticipates and
-the one the capacity assumptions and pilot envelope are built around.
+## 4. Separate roles for separate activities
 
-## 4. Working assumption (for the PIA draft)
+| Activity                                                      | Proposed allocation to test with counsel and the customer                                                                                                                  |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Minimum roster, guardian links and transportation assignments | Customer directs purpose and authority; SafeBus implements scoped processing                                                                                               |
+| Active-trip bus location and operational events               | Customer authorizes the transport purpose; SafeBus limits collection and visibility; evaluate identification of the driver and linked individuals                          |
+| Guardian authority and access to a bus                        | Customer determines the verified relationship; SafeBus enforces linked access without custody narratives                                                                   |
+| Driver's personal Android phone                               | Determine customer/driver/SafeBus responsibilities for employment-related information and BYOD; driver permission is not a substitute for the required statutory authority |
+| Access, correction and complaints about customer records      | Proposed customer-led decisions, with SafeBus assisting under agreed instructions; confirm delegation and response responsibilities                                        |
+| SafeBus business-account, billing and support records         | Assess SafeBus's own purpose, necessary fields, applicable PIPA/PIPEDA obligations and vendors separately; exclude transportation records from unrelated commercial uses   |
+| Supplier metadata and support access                          | Review IP addresses, map viewport requests, logs, delivery metadata and remote access as actual flows, rather than assuming they are anonymous                             |
 
-For the **first customer** (an Alberta public school authority), the
-working assumption is:
+Access and correction assistance must be allocated explicitly in the contract;
+OIPC guidance recommends that the public body generally retain responsibility
+for those decisions. [OIPC service-provider guidance](https://oipc.ab.ca/resource/popa-guidance-service-providers/).
 
-> SafeBus acts as a **contracted operator / service provider on behalf of a
-> public body**. SafeBus collects, uses, and discloses personal information
-> only as necessary to provide the transportation-operations and live
-> bus-visibility service, on the customer's instructions, under a written
-> agreement that flows down POPA/ATIA/Education Act obligations.
+A bus location can still reveal information about a driver or linked people.
+"Track the bus, not the child" limits the product purpose; it does not make the
+records non-personal or exempt them from privacy review.
 
-**This is not a legal determination.** It is the basis on which the PIA,
-retention schedule, and contract pack are drafted until counsel confirms or
-replaces it.
+## 5. Collection authority and boundaries for the next documents
 
-## 5. Consequences for the system
+The later field inventory must identify the proposed legal provision, necessity,
+source, authorized recipients and purpose for each class of information.
+Existing labels such as "contract performance", "consent" or "legitimate
+interest" are draft shorthand; they do not demonstrate authority under POPA.
+The customer must assess the collection grounds and applicable notice rules.
+[Alberta collection guidance](https://www.alberta.ca/collection-of-personal-information).
 
-Whichever role counsel confirms, the engineering controls must support all
-candidate models so the platform is safe under any of them. That means:
+Preserve the locked CR1 restrictions: no student identifiers prohibited by
+AGENTS.md, student home addresses, health data, custody narratives or child GPS;
+no unrelated guardian visibility; and no advertising, sale or cross-customer
+profiling of transportation personal information. Student QR and Android FCM
+are not activated by this legal-role work; their separate scope and privacy
+gates still apply.
 
-1. **No secondary use.** The system does not perform analytics, advertising,
-   or cross-tenant profiling on personal data. (Reinforced by RLS tenant
-   isolation and platform-isolation rules.)
-2. **Instruction-bound data collection.** Only the fields in
-   [`data-inventory-and-flow.md`](./data-inventory-and-flow.md) §3 are
-   collected, each with a documented business purpose and legal basis.
-3. **Retention limits.** [`retention-schedule.md`](./retention-schedule.md)
-   defines the maximum retention per data class, enforced by migration
-   `0069` automated deletion.
-4. **Access and correction.** [`access-and-correction.md`](./access-and-correction.md)
-   defines the procedure individuals use to exercise rights.
-5. **Subprocessor control.** [`subprocessors.md`](./subprocessors.md)
-   names every vendor that touches personal data and tracks the contract
-   status.
-6. **Canadian processing.** Production personal data stays in ca-central-1
-   unless counsel approves an exception.
+Canadian processing and backup approval is a CR1 requirement. It is not evidence
+that every supplier flow stays in Canada. Verify the database, backups, web and
+function processing, email, maps, billing, monitoring, support access and any
+optional delivery service individually. Do not promise Canadian-only processing
+or approved exceptions before the vendor/residency item passes.
 
-## 6. Items requiring counsel confirmation
+The draft retention scheduler and security controls require their own hosted
+acceptance. Do not describe retention as enabled, legal deadlines as implemented,
+or isolation as proven based on repository code alone.
 
-- [ ] Confirm POPA/ATIA applies (vs. PIPA) for the public-authority customer
-  and define SafeBus's exact obligations as a contracted operator.
-- [ ] Confirm whether SafeBus is ever a PIPA "organization" for any data
-  flow (e.g., support metadata, billing).
-- [ ] Confirm the lawful basis for each collected field in
-  [`data-inventory-and-flow.md`](./data-inventory-and-flow.md) §3.
-- [ ] Confirm retention periods in
-  [`retention-schedule.md`](./retention-schedule.md) satisfy the relevant
-  statute(s) and the Education Act.
-- [ ] Confirm the breach-notification thresholds and timelines in
-  [`breach-response.md`](./breach-response.md).
-- [ ] Confirm the access-and-correction workflow satisfies ATIA-style and
-  PIPA-style rights.
-- [ ] Approve the customer contract pack (MSA, DPA, SLA, AUP, privacy
-  policy) listed in [`contract-checklist.md`](./contract-checklist.md).
+## 6. PIA responsibility to carry into the next item
 
-## 7. Sign-off
+The school authority and counsel must decide which POPA PIA preparation and
+submission requirements apply. Where required, the public-body head or an
+appropriately delegated person signs the PIA; internal SafeBus review alone
+cannot supply that authority. OIPC submission or review must not be inferred
+from a Markdown draft. [OIPC POPA PIA guide](https://oipc.ab.ca/resource/popa-pia-template-completion-guide/).
 
-| Role | Name | Date | Notes |
-| --- | --- | --- | --- |
-| Privacy Lead / Counsel | _pending_ | | Legal-role determination recorded in `decision-log.md` |
+This item identifies that dependency. Preparing the full PIA is the next item,
+not a completed outcome of this role analysis.
+
+## 7. Review and evidence status
+
+| Record                                     | Current state                                                          |
+| ------------------------------------------ | ---------------------------------------------------------------------- |
+| Alberta registration and Canadian business | Owner-confirmed; formal identity and registration evidence pending     |
+| Privacy counsel                            | Not appointed as of 2026-10-13                                         |
+| Statutory mapping                          | Updated research draft; counsel decision pending                       |
+| SafeBus/customer roles                     | Proposed; counsel and customer confirmation pending                    |
+| Customer authority                         | Participating authority and authorized decision-maker evidence pending |
+| PIA, agreements and other Point 6 items    | Separate work and approval required                                    |
+
+Keep legal advice, executed agreements, registration documents, customer names
+and individual contact details in the approved restricted evidence system.
+Only non-secret references belong in the readiness record. The legal fields in
+`privacy-readiness.json` remain null until their real evidence is approved.
+
+Point 6 remains open. Preparing or merging this analysis cannot activate the
+privacy gate or authorize commercial operation.

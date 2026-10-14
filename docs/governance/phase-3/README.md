@@ -25,6 +25,13 @@ This phase closes the two Phase-3-tracked risks in
 
 ## 2. Workstreams
 
+Point 6 work resumed on 2026-10-13 with item 1: statutory mapping and legal-role
+review. Start with [the updated analysis](legal-role-analysis.md) and
+[the review worksheet](legal-role-review.md). Counsel appointment and customer
+authority remain pending. The sequential plan is recorded in
+[Point 6](../point-6-privacy-readiness.md#sequential-work-starting-2026-10-13);
+existing workstream drafts below are not completed or approved by this step.
+
 | #   | Workstream                                              | Lead                         | Document                                                                                                                                               |
 | --- | ------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 1   | Statutory mapping (FOIP → POPA/ATIA/PIPA)               | Counsel                      | [`legal-role-analysis.md`](./legal-role-analysis.md)                                                                                                   |
