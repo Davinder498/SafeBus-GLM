@@ -477,6 +477,22 @@ production` workflow must not run until a current encrypted backup is
   physical-device acceptance, hosted capacity evidence and launch remain pending.
 - Evidence and limits: [Android upload recovery](../qa/android-upload-recovery.md).
 
+### DL-022 — Guardian live refresh coordination
+
+- Date: 2026-10-12 (America/Edmonton).
+- Decision: Customer authorized the frontend guardian refresh fix after reviewing
+  current-position upserts and the live-message/15-second polling paths.
+- Scope: One private tracking subscription owner per client/topic, coordinated
+  fallback polling, privacy/lifecycle regression tests and browser verification.
+  Preserve three-second GPS collection and prompt live/authorization/trip updates.
+- Consequences: Consumers share signals only and still fetch their existing
+  secured RPCs. No coordinate/authorization cache, SQL change, hosted load,
+  infrastructure purchase or production deployment is included. Server broadcast
+  work and fleet capacity remain separate milestones.
+- Status: Customer authorized implementation and a review-ready PR. Human merge
+  and real provider/device/hosted capacity evidence remain pending.
+- Behavior and evidence: [Guardian refresh coordination](../qa/guardian-refresh-coordination.md).
+
 ## 5. Sign-off entries
 
 When a Phase 0 document is signed off, add an entry here:

@@ -191,6 +191,7 @@ export async function installGuardianVisibilityMock(
   const studentStops = options.studentStops ?? [];
   let fail = options.fail ?? false;
   let calls = 0;
+  let serviceLineCalls = 0;
   let deviceCalls = 0;
   let deliveryPreferenceSaves = 0;
   let deliveryPreferenceSaveFails = false;
@@ -324,6 +325,7 @@ export async function installGuardianVisibilityMock(
       });
     }
     if (method === 'POST' && path.includes('/rpc/get_guardian_bus_service_lines')) {
+      serviceLineCalls += 1;
       const requestedBus = String(
         (requestRoute.request().postDataJSON() as { p_bus_number?: unknown } | null)
           ?.p_bus_number ?? '',
@@ -381,6 +383,9 @@ export async function installGuardianVisibilityMock(
     },
     getCallCount() {
       return calls;
+    },
+    getServiceLineCallCount() {
+      return serviceLineCalls;
     },
     getDeviceCallCount() {
       return deviceCalls;

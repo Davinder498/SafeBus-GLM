@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import {
+  subscribeToTrackingInvalidations,
+  type TrackingConnectionState,
+} from '@/lib/trackingInvalidations';
 
-export type TrackingConnectionState =
-  | 'connecting'
-  | 'connected'
-  | 'reconnecting'
-  | 'offline'
-  | 'unavailable';
+export type { TrackingConnectionState } from '@/lib/trackingInvalidations';
 
 interface UseTrackingInvalidationsOptions {
   topic: string | null;
@@ -14,103 +13,35 @@ interface UseTrackingInvalidationsOptions {
   onDisconnected?: () => void;
 }
 
-const INVALIDATION_COALESCE_MS = 150;
-
-/** Subscribe to a receive-only private topic. Payloads are never trusted. */
+/** Receive-only private signals; each consumer still performs its own secured RPC. */
 export function useTrackingInvalidations({
   topic,
   onInvalidate,
   onDisconnected,
 }: UseTrackingInvalidationsOptions): TrackingConnectionState {
-  const [state, setState] = useState<TrackingConnectionState>(
-    typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'connecting',
-  );
+  const initialState: TrackingConnectionState =
+    typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'connecting';
+  const [snapshot, setSnapshot] = useState<{
+    topic: string | null;
+    state: TrackingConnectionState;
+  }>({ topic, state: initialState });
   const invalidateRef = useRef(onInvalidate);
   const disconnectedRef = useRef(onDisconnected);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const wasConnectedRef = useRef(false);
-
   invalidateRef.current = onInvalidate;
   disconnectedRef.current = onDisconnected;
-
-  const scheduleInvalidate = useCallback(() => {
-    if (debounceRef.current) return;
-    debounceRef.current = setTimeout(() => {
-      debounceRef.current = null;
-      invalidateRef.current();
-    }, INVALIDATION_COALESCE_MS);
-  }, []);
 
   useEffect(() => {
     const client = supabase;
     if (!client || !topic) {
-      setState('unavailable');
+      setSnapshot({ topic, state: 'unavailable' });
       return;
     }
+    return subscribeToTrackingInvalidations(client, topic, {
+      onState: (state) => setSnapshot({ topic, state }),
+      onInvalidate: () => invalidateRef.current(),
+      onDisconnected: () => disconnectedRef.current?.(),
+    });
+  }, [topic]);
 
-    let disposed = false;
-    let stableConnectionTimer: ReturnType<typeof setTimeout> | null = null;
-    setState(navigator.onLine ? 'connecting' : 'offline');
-
-    const markDisconnected = (nextState: TrackingConnectionState) => {
-      if (disposed) return;
-      setState(nextState);
-      disconnectedRef.current?.();
-      scheduleInvalidate();
-    };
-    const handleOffline = () => markDisconnected('offline');
-    const handleOnline = () => {
-      if (disposed) return;
-      setState(wasConnectedRef.current ? 'reconnecting' : 'connecting');
-      scheduleInvalidate();
-    };
-
-    window.addEventListener('offline', handleOffline);
-    window.addEventListener('online', handleOnline);
-
-    const channel = client
-      .channel(topic, { config: { private: true } })
-      .on('broadcast', { event: 'tracking_changed' }, scheduleInvalidate)
-      .subscribe((status) => {
-        if (disposed) return;
-        if (status === 'SUBSCRIBED') {
-          scheduleInvalidate();
-          stableConnectionTimer = setTimeout(() => {
-            if (disposed) return;
-            wasConnectedRef.current = true;
-            setState('connected');
-          }, 1_000);
-        } else if (
-          status === 'CHANNEL_ERROR' ||
-          status === 'TIMED_OUT' ||
-          status === 'CLOSED'
-        ) {
-          if (stableConnectionTimer) {
-            clearTimeout(stableConnectionTimer);
-            stableConnectionTimer = null;
-          }
-          if (wasConnectedRef.current) {
-            markDisconnected(navigator.onLine ? 'reconnecting' : 'offline');
-          } else {
-            // Realtime may be unavailable or disabled for an environment. The
-            // secured polling path remains authoritative and usable.
-            setState(navigator.onLine ? 'unavailable' : 'offline');
-          }
-        }
-      });
-
-    return () => {
-      disposed = true;
-      window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('online', handleOnline);
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-        debounceRef.current = null;
-      }
-      if (stableConnectionTimer) clearTimeout(stableConnectionTimer);
-      void client.removeChannel(channel);
-    };
-  }, [scheduleInvalidate, topic]);
-
-  return state;
+  return snapshot.topic === topic ? snapshot.state : initialState;
 }
