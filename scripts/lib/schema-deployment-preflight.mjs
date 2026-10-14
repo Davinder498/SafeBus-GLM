@@ -71,7 +71,9 @@ export async function inspectSchemaDeployment(client, manifest, binding) {
   if (lastRelease.rowCount === 1) {
     const currentFingerprint = await calculateSchemaFingerprint(client);
     if (currentFingerprint !== lastRelease.rows[0].schema_fingerprint) {
-      throw new Error('Refusing deploy: out-of-band public schema drift was detected.');
+      throw new Error(
+        'Refusing deploy: out-of-band application schema or authorization drift was detected.',
+      );
     }
   }
 

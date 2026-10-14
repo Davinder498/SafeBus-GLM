@@ -55,6 +55,13 @@ replay historical migrations, run hosted RLS tests against it, or seed QA data.
 
 ## 4. Adopt without rebuilding
 
+**Current stop:** The legacy adoption entry point is disabled before database
+connection. The steps below describe the older path, not authorization to
+dispatch it. Prepare a reviewed replacement with verified recovery and honest
+schema/migration provenance first. Never stamp the 0088 checksum prefix onto the
+current hosted schema from file checksums alone. See
+[release schema integrity](../../qa/release-schema-integrity.md).
+
 1. Run **Adopt existing database as production** for the exact reviewed SHA.
 2. Enter `ADOPT_EXISTING_PRODUCTION`, `BACKUP_VERIFIED`,
    `FREE_PRELAUNCH_ONLY`, the non-secret backup evidence reference, and

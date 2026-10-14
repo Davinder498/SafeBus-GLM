@@ -58,9 +58,14 @@ school's real operational use or a paid availability/recovery commitment.
 - The adoption baseline is cryptographically pinned through migration `0088`.
   Migrations added while adoption is deferred remain pending and cannot be
   recorded as applied by the adoption workflow.
-- The schema fingerprint covers relations, columns, constraints, indexes, RLS,
-  policies, functions, triggers, grants, schema grants, enums, and Realtime
-  publication controls.
+- Fingerprint format 2 covers public/private application metadata, column and
+  default grants, ownership/view options, all realtime message policies,
+  relevant publications, PostgREST settings and role inheritance/attributes.
+  It intentionally rejects older fingerprints; do not refresh a stored digest
+  to conceal drift. See [release schema integrity](../../qa/release-schema-integrity.md).
+- The old adoption entry point is disabled before connection until a reviewed
+  historical schema/provenance contract and verified recovery are available.
+  The immutable 0088 checksum prefix is not proof of hosted execution history.
 
 ### Schema-change stop condition
 
