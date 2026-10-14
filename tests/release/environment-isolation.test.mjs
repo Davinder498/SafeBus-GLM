@@ -195,9 +195,9 @@ test('schema fingerprints include authorization and SafeBus realtime controls', 
 
   assert.match(fingerprint, /aclexplode\(coalesce\(p\.proacl/);
   assert.match(fingerprint, /aclexplode\(coalesce\(n\.nspacl/);
-  assert.match(fingerprint, /join pg_enum/);
+  assert.match(fingerprint, /from pg_enum/);
   assert.match(fingerprint, /safebus tracking broadcast receive/);
-  assert.match(fingerprint, /table_schema = 'realtime'/);
+  assert.match(fingerprint, /n\.nspname = 'realtime' and c\.relname = 'messages'/);
 });
 
 test('Point 4 conversion decision is approved and recorded', async () => {
