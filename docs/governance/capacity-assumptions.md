@@ -33,7 +33,7 @@ The machine-readable input is [capacity-workload.json](capacity-workload.json).
 | Input                        |                               Value | Evidence or qualification                                                                         |
 | ---------------------------- | ----------------------------------: | ------------------------------------------------------------------------------------------------- |
 | Active GPS interval          |                           3 seconds | Current Android `TrackingCadence.ACTIVE_TRIP_INTERVAL_MS`; web fallback minimum is also 3 seconds |
-| Guardian polling             |                          15 seconds | Current `useVerifiedGuardianData` interval                                                        |
+| Guardian polling             |                          15 seconds | Fallback after verification; continuous successful live refreshes postpone this check             |
 | Guardian calls per refresh   |                                   2 | Proposed map/detail workload; actual page mix and additional calls must be measured               |
 | Admin refresh                |                2 calls / 30 seconds | Proposed workload assumption                                                                      |
 | Operating time               |                         8 hours/day | All buses active for all eight hours; conservative volume projection                              |
@@ -71,6 +71,15 @@ Events are not SQL-operation counts. Ingestion also updates current location,
 history, authorization, progress and notifications; write amplification must be
 measured. The refetch calculation is an uncoalesced upper-bound model: client
 coalescing and latency affect actual rates. Neither bound is a benchmark result.
+
+The [guardian coordinator](../qa/guardian-refresh-coordination.md) now postpones
+fallback polling after successful live verification and shares one subscription
+owner across consumers of a private topic. The model's polling rate represents
+a fallback/poll-only case. Its sum with every live invalidation remains a
+conservative legacy bound, not the steady healthy behavior of this implementation.
+Two calls per three-second live signal would still be approximately 58,667
+calls/second for the proposed 88,000-guardian population; this is arithmetic,
+not demonstrated traffic or capacity. Server per-guardian broadcasts remain.
 
 The Android service now uses bounded, randomized per-device upload scheduling
 ([implementation and limits](../qa/android-upload-recovery.md)). Evenly spreading
