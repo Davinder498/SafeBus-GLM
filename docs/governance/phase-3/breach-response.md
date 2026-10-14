@@ -1,99 +1,81 @@
-# SafeBus Alberta — Phase 3 Privacy-Breach Assessment and Notification
+﻿# SafeBus Privacy Incident and Breach Response — Draft
 
-**Status:** Draft for counsel confirmation — thresholds are not legal advice
-**Owner:** Privacy Lead
-**Phase:** 3 — Alberta privacy and legal readiness
-**Last updated:** 2026-08-07
+**Status:** Prepared procedure; staffed routing and tabletop evidence pending
+**Owner:** Business Privacy Lead / Security Lead and affected customer
+**Last updated:** 2026-10-13
 
----
+## Intake and immediate action
 
-## 1. Purpose
+Accept suspected incidents through `[PRIVACY_EMAIL]`, `[SUPPORT_EMAIL]` and the
+agreed urgent channel. Report suspected cross-tenant/school access, revoked-session
+access, misdirected email, device loss, secret exposure or supplier incidents
+immediately. Investigation and containment must not wait for counsel appointment
+or proof of significant harm. Do not send credentials or unnecessary customer
+records in an ordinary report.
 
-Phase 3 requires a **privacy-breach assessment and notification procedure**.
-This document defines how SafeBus identifies, contains, assesses, notifies,
-and reviews a privacy breach. A tabletop exercise against this procedure is
-a Phase 3 exit-gate requirement.
+The incident lead records awareness time, reporter/channel, affected scope and
+next action; restricts the affected path using reviewed controls; preserves
+necessary evidence under a scoped hold; and contacts the Privacy Lead/backup.
+Session revocation and Android/realtime handling must use verified workflows;
+a code function name alone is not proof that a token has ceased to work.
+Do not disable RLS, erase evidence, reset production or conduct uncontrolled
+notifications/testing to investigate.
 
-## 2. Definition of a privacy breach
+## Assess operational severity and legal harm separately
 
-A privacy breach is the loss of, unauthorized access to, or unauthorized
-disclosure of personal information. Examples relevant to SafeBus:
+| Operational priority | Typical SafeBus trigger                                                                                           | Response                                                                  |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Critical / P1        | Suspected cross-tenant disclosure, exposed privileged credential or unauthorized active-bus visibility            | Immediate containment and senior/customer escalation                      |
+| High                 | Suspected inappropriate internal access, material device/supplier compromise or repeated wrong-recipient delivery | Prompt investigation and scoped protective action                         |
+| Other                | Suspected limited processing error or concern with unclear exposure                                               | Document and assess promptly; do not dismiss on an initial severity label |
 
-- An RLS failure that exposes another tenant's students, guardians, or
-  drivers.
-- A service-role key exposed in frontend code, logs, or a screenshot.
-- A lost or compromised admin account.
-- A subprocessor incident affecting SafeBus personal data.
-- A misconfigured notification that sends a pickup/drop-off email to the
-  wrong guardian.
+A critical operational event is not automatically a completed statutory
+significant-harm finding. Assess sensitivity, minors/driver location, number
+and vulnerability of people, recipient, duration, likelihood of misuse,
+linkability, effective encryption/key access, recoverability and harm. Record
+known facts, uncertainties, reasoned notification decisions and reassessment.
+Authorized account access can still be improper if used for an unauthorized
+purpose; an access log alone does not make it acceptable.
 
-## 3. Severity assessment (draft matrix — counsel confirms)
+## Notify under the applicable framework
 
-| Factor | Real risk of significant harm? | Severity |
-| --- | --- | --- |
-| Student/guardian/driver identity exposed to another tenant or public | Yes | Critical |
-| Live location exposed beyond an active trip / authorized guardian | Yes | Critical |
-| Service-role key or auth secret exposed | Yes | Critical |
-| Audit/personal data exposed to a platform admin beyond the allowed subset | Likely | High |
-| Single misdirected notification to a wrong-but-linked guardian | Possible | Medium |
-| Internal-only access by an authorized role, properly audited | No | Low / not a breach |
+| Information/relationship                             | Responsibility and reviewed guidance                                                                                                                                                                                                                                                                |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public-body customer transportation records          | Promptly inform the customer under the accepted DPA and provide facts/support. POPA significant-harm notification duties for the public body include affected individuals, OIPC and the responsible Minister; do not omit the Minister or presume SafeBus's notice discharges the customer's duties |
+| SafeBus own-business personal information under PIPA | Privacy Lead assesses the significant-harm reporting requirement and the actual statutory timing, informs OIPC where required and handles individual notification requirements/decisions                                                                                                            |
+| Cross-border/federal or mixed processing             | Assess additional applicable PIPEDA or other obligations per actual activity; record who performs each notification without contracting away a legal duty                                                                                                                                           |
 
-## 4. Response procedure
+[Alberta POPA incident guidance](https://www.alberta.ca/report-a-privacy-incident-public-bodies)
+and [Alberta PIPA breach guidance](https://www.alberta.ca/organization-responsibilities-for-protecting-personal-information)
+are review inputs; verify the actual provision and notice content for the case.
 
-1. **Detect and contain** — Security Lead isolates the cause (revoke
-   sessions via `revoke_all_user_sessions()`, rotate exposed secrets,
-   quarantine the affected path).
-2. **Preserve evidence** — snapshot `audit_events`, affected rows, and
-   logs. Do **not** delete evidence; retain per `retention-schedule.md`.
-3. **Assess scope and harm** — Privacy Lead applies the §3 matrix with
-   counsel.
-4. **Notify** — per §5.
-5. **Remediate** — fix the root cause; add regression RLS test.
-6. **Post-incident review** — record lessons in `decision-log.md` and
-   `risk-register.md`; update the PIA if material.
-7. **Record** — every breach and its outcome is logged whether or not
-   external notification occurs.
+Proposed business contract target: initial customer notice without undue delay
+and within 24 hours of awareness of an incident affecting its information,
+or sooner where required. This is a proposed contractual target, not a universal
+statutory deadline. Do not wait 24 hours when prompt notice is necessary. Do not
+wait for a complete investigation. Initial notice states known timing/scope,
+categories, containment, contact, uncertainties and next update. Further
+updates explain findings, harms, remedies and cooperation.
 
-## 5. Notification thresholds (draft — counsel confirms)
+## Evidence, remediation and review
 
-| Severity | Notify | Target timeline (draft) |
-| --- | --- | --- |
-| Critical | Affected individuals + the customer + the Privacy Commissioner as required by statute | Without unreasonable delay; counsel confirms the statutory deadline |
-| High | The customer + Privacy Lead + counsel | 24 hours internal; external per statute |
-| Medium | The customer + Privacy Lead | 72 hours internal |
-| Low / not a breach | Internal record only | At review |
+Keep the restricted incident log, legal-harm assessment, preserved evidence,
+authority/hold, affected customer scope, decisions/notices and delivery proof.
+Avoid customer rows in GitHub issues, public traces or support screenshots.
+Record access and integrity of evidence, supplier communications and relevant
+backup effects. Confirm notification recipients independently to prevent a
+second disclosure.
 
-> Engineering cannot determine statutory notification deadlines. Counsel
-> sets the binding timelines and the recipient definitions.
+Fix the cause through reviewed changes, validate with authorized bounded tests,
+review suppliers/controls and update the PIA/risks/notices if necessary. The
+incident lead obtains release/return-to-service approval after evidence, not
+merely after a patch is merged. Review lessons and revise contact/backup coverage.
 
-## 6. Roles during a breach
+## Exercise record — not yet completed
 
-- **Incident Commander** — Security Lead (or named deputy).
-- **Privacy decision-maker** — Privacy Lead / Counsel.
-- **Comms** — Product Owner with the customer.
-- **Engineering** — containment, evidence, regression test.
-
-## 7. Tabletop exercise (exit gate)
-
-Before Phase 3 exits, the team completes a recorded tabletop walkthrough
-of a hypothetical critical breach (e.g., RLS regression exposing student
-identity cross-tenant). The exercise validates:
-
-- Detection path (audit anomaly or external report).
-- Containment actions and their RPCs.
-- Assessment against the §3 matrix.
-- Notification decisions recorded for counsel.
-- Post-incident review and risk-register update.
-
-The walkthrough outcome is summarized in this document's appendix when run.
-
-## 8. Counsel confirmation items
-
-- [ ] Confirm the §3 severity matrix.
-- [ ] Confirm the §5 notification thresholds and statutory deadlines.
-- [ ] Confirm who counts as an "affected individual" for each breach type.
-- [ ] Confirm records-retention for breach evidence.
-
-## 9. Appendix — Tabletop record
-
-_To be completed when the exercise is run._
+Before operation, run a tabletop using a hypothetical school-location disclosure,
+revoked session and misdirected email. Exercise detection, owner absence, containment,
+customer coordination, PIPA/POPA recipient distinctions, time tracking, evidence,
+holds and follow-up. No actual student data or external notifications are used.
+Retain date, participants, scenario, decisions, gaps and assigned actions outside
+Git. This drafted procedure is not a passed exercise or Point 6 approval.

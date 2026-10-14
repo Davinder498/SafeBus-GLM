@@ -1,0 +1,3 @@
+# Reviewed false positive: privacy-program responsibility prose, not a credential.
+# Keep the exception limited to this finding in the original scanned commit.
+cfbc50ac90e5ec77c5637b9787383b987645cfa4:docs/governance/phase-3/privacy-management-program.md:generic-api-key:29
