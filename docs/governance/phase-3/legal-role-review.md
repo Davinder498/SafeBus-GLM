@@ -14,6 +14,11 @@ The owner confirmed an Alberta-registered Canadian business and no appointed
 privacy counsel. No legal business name, business form, first customer,
 representative's delegated authority or executed agreement has been verified.
 The next steps below request evidence, not customer or student data in Git.
+They are review/closure steps rather than prerequisites to writing the business
+documents. The owner requested the [draft pack](business-pack/README.md) and
+PIA now. Customer-specific inputs are completed during onboarding; counsel
+appointment is not presented as a general statutory obligation, while the
+existing internal counsel-approval launch gate remains unchanged.
 
 ## Owner preparation
 

@@ -13,13 +13,21 @@ This repository control does not constitute legal advice.
 
 ## Sequential work, starting 2026-10-13
 
-The customer selected privacy and commercial terms as the next readiness point,
-with its items completed one at a time. Item 1 is the statutory mapping and
-SafeBus/customer legal-role determination. Its updated
-[analysis](phase-3/legal-role-analysis.md) and
-[review worksheet](phase-3/legal-role-review.md) are prepared for review. The owner
-confirmed an Alberta-registered Canadian business; counsel is not yet appointed.
-No legal decision or customer approval is claimed.
+The owner selected privacy and commercial terms as the next readiness point.
+After clarifying that customer authorization concerns customer data rather than
+ownership of SafeBus, the owner explicitly requested the business privacy
+documents, commercial terms and PIA draft before counsel appointment or customer
+selection. The [business pack](phase-3/business-pack/README.md),
+[PIA](phase-3/privacy-impact-assessment.md) and supporting procedures are prepared
+as drafts with identity/contact placeholders. Review the
+[owner decisions](phase-3/business-pack/owner-decisions.md) one at a time.
+
+The owner confirmed an Alberta-registered Canadian business; counsel is not yet
+appointed. The reviewed PIPA/POPA guidance does not establish a general legal
+obligation to hire Alberta privacy counsel. The existing `privacyCounsel` launch
+approval is an internal safeguard and remains unchanged. Draft preparation is
+independent of that approval. Customer-specific authority and signatures are
+completed at onboarding. No legal, customer or operational approval is claimed.
 
 | Order      | Item                                                     | Completion requirement                                                               |
 | ---------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------ |
@@ -34,7 +42,8 @@ No legal decision or customer approval is claimed.
 Existing drafts remain inputs to their later items. This sequence does not
 approve them or remove dependencies: contract and PIA drafts must be reconciled
 with later vendor, retention and operational decisions before final approval.
-Item 1 remains open until its worksheet closure evidence is reviewed.
+The legal-role determination remains open until its required evidence is
+reviewed, but does not block preparation of the other business drafts.
 
 ## Fail-closed evidence contract
 

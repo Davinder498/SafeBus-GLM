@@ -1,85 +1,36 @@
-# SafeBus Alberta — Phase 3 Student and Independent-Student Processes
+﻿# SafeBus Student and Independent-Student Procedure — Draft
 
-**Status:** Draft for counsel confirmation
-**Owner:** Privacy Lead
-**Phase:** 3 — Alberta privacy and legal readiness
-**Last updated:** 2026-08-07
+**Status:** Proposed customer-adaptation procedure; authority and acceptance pending
+**Owner:** Business Privacy Lead with the customer's privacy office
+**Last updated:** 2026-10-13
 
----
+A SafeBus student record is the minimum transportation identity and assignment,
+not a Student Information System record or a child GPS feed. Collect only the
+approved roster/assignment fields. Do not import student home addresses, health
+information, custody narratives, prohibited government student identifiers,
+attendance/academic records or personal-device location.
 
-## 1. Purpose
+The customer determines student/independent-student status, representative
+rights and guardian authority under applicable law. SafeBus does not decide
+those rights from a guardian app link, age guess or a custody narrative. Record
+only the authorized operational instruction/link needed for transport; sensitive
+supporting evidence stays with the customer or an approved restricted records
+process. Do not add a new status field merely because this procedure mentions it.
 
-Phase 3 requires appropriate **student** and **independent-student**
-processes. SafeBus handles student information only for transportation
-operations under the "track the bus, not the child" rule, so the student
-processes are deliberately narrow.
+For a request, verify scope and authority proportionately, route promptly to
+the customer for its records, preserve responsive information where required
+and assist through authorized scoped workflows. Apply the
+[access/correction procedure](access-and-correction.md); protect third parties
+without automatically refusing all transport-related information. Own-business
+SafeBus requests have a direct route to `[PRIVACY_EMAIL]`.
 
-## 2. Students in SafeBus
+Enabled recorded pickup/drop-off email may contain first name, event and time;
+recipients require current permitted scope and channel settings. A recorded
+transport event is not a child's present location. FCM/student QR and other
+CR1 exclusions need separate scope/privacy activation. The customer must review
+any change affecting a student's authority or recipients promptly.
 
-A "student" in SafeBus is a transportation record: the minimum identity
-needed to assign a student to a route/stop and to let a linked guardian see
-the assigned bus. SafeBus stores:
-
-- Name fields (first, last, preferred, structured) — for manifest and roster.
-- Grade and school — for routing/manifest context.
-- Route/stop assignments — transportation linkage only.
-
-SafeBus does **not** store:
-
-- Alberta Student Number / ASN.
-- Home address.
-- Health data.
-- Custody narratives or family-court details.
-- Attendance, grades, enrollment, or any SIS data.
-
-## 3. Independent students
-
-An "independent student" generally means a student who exercises their own
-education-records rights. SafeBus's processes:
-
-- SafeBus does **not** determine independent-student status; that is the
-  customer's responsibility (the school authority).
-- The customer tells SafeBus, through the tenant administrator, how to
-  treat a given student's access/correction and notification routing.
-- SafeBus never assumes a student is or is not independent; it follows the
-  customer's documented instruction and records it.
-
-## 4. Guardian linkage (authority to view the bus)
-
-Guardian↔student linkage is the operational authority that lets a guardian
-see the bus assigned to a student. The linkage is established by the tenant
-administrator based on the customer's verification process — **not** by
-collecting custody narratives in SafeBus. See
-[`guardian-authority-verification.md`](./guardian-authority-verification.md).
-
-## 5. Notifications about students
-
-Notifications use a guardian's consent flag (`can_receive_notifications`)
-and contain only first-name + event type + recorded timestamp in the
-tenant's timezone. They never contain location, ASN, address, or health
-data, and they describe a recorded transportation event, not live tracking.
-
-## 6. Retention of student records
-
-Student records are retained per [`retention-schedule.md`](./retention-schedule.md)
-(while active + grace period, then anonymization/hard delete). Counsel
-confirms the period against the Education Act.
-
-## 7. Access and correction for/ about students
-
-Access and correction requests about a student follow
-[`access-and-correction.md`](./access-and-correction.md):
-
-- The guardian linked to the student (per the customer's authority) acts
-  for a minor student.
-- An independent student acts for themselves, per the customer's
-  instruction.
-- SafeBus never discloses one student's information to an unrelated
-  guardian; RLS enforces this.
-
-## 8. Counsel confirmation items
-
-- [ ] Confirm the independent-student handling model in §3.
-- [ ] Confirm student-record retention against the Education Act.
-- [ ] Confirm guardian-authority verification approach
-  ([`guardian-authority-verification.md`](./guardian-authority-verification.md)).
+Approved retention, holds and account/dependent record disposal require actual
+operator tests and customer/legal decisions. This draft is not a representation
+that RLS, realtime revocation, retention or notification authorization has been
+proven on the hosted system. Keep actual request/authority evidence outside Git.

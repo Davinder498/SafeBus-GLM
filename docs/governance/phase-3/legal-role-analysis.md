@@ -26,6 +26,11 @@ and [CR1 scope](../commercial-release-scope.md).
 
 The [review worksheet](legal-role-review.md) identifies the missing evidence and
 closure criteria. Appointment of counsel and customer review remain open.
+The owner subsequently requested the [business drafts](business-pack/README.md)
+and PIA before those reviews. Preparing them does not require a customer or
+counsel appointment. The reviewed PIPA/POPA guidance does not establish a general
+statutory duty to hire Alberta privacy counsel; the repository's separate
+`privacyCounsel` release approval remains an internal requirement.
 
 ## 2. Statutory map for review
 

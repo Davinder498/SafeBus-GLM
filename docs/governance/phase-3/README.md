@@ -25,12 +25,16 @@ This phase closes the two Phase-3-tracked risks in
 
 ## 2. Workstreams
 
-Point 6 work resumed on 2026-10-13 with item 1: statutory mapping and legal-role
-review. Start with [the updated analysis](legal-role-analysis.md) and
-[the review worksheet](legal-role-review.md). Counsel appointment and customer
-authority remain pending. The sequential plan is recorded in
-[Point 6](../point-6-privacy-readiness.md#sequential-work-starting-2026-10-13);
-existing workstream drafts below are not completed or approved by this step.
+Point 6 work resumed on 2026-10-13. The owner subsequently requested the business
+privacy documents, commercial terms and PIA draft before counsel appointment or
+customer selection. Start with the [business pack](business-pack/README.md),
+[owner decisions](business-pack/owner-decisions.md) and updated
+[PIA](privacy-impact-assessment.md). Legal decisions, customer authority,
+operational evidence and launch approval remain pending. The
+[Point 6 plan](../point-6-privacy-readiness.md#sequential-work-starting-2026-10-13)
+distinguishes draft preparation from later approval. No general statutory
+lawyer-appointment obligation is claimed; the existing internal counsel approval
+gate remains unchanged.
 
 | #   | Workstream                                              | Lead                         | Document                                                                                                                                               |
 | --- | ------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -62,11 +66,13 @@ Phase 3 exits only when **all** of the following are true:
    retention controls, access/correction path).
 3. **Contracts and notices approved by counsel** (MSA, DPA, SLA, AUP,
    privacy policy, and guardian/driver notices).
-4. **Retention and deletion controls tested** (migration `0069` applied to
-   hosted DEV; `tests/rls/phase3-retention-rls.sql` executed with evidence).
-5. **Canadian processing requirements verified** contractually and
-   technically (ca-central-1; no cross-border personal-data flows except as
-   approved by counsel).
+4. **Retention and deletion controls tested** under an explicitly approved
+   target/workflow, with reviewed fixture/trigger statements and retained
+   evidence; no reset, migration replay or destructive production test is
+   authorized by drafting this package.
+5. **Canadian processing and any permitted cross-border arrangement verified**
+   per actual supplier/database/backup/CDN/function/email/map/billing/support
+   flow. A Canadian database alone does not prove Canadian-only processing.
 6. **Privacy-breach exercise completed** (tabletop walkthrough recorded).
 
 ## 4. Engineering artifacts produced in this phase
