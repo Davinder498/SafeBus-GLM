@@ -188,6 +188,15 @@ backup restore, SQL change or launch approval is implied.
 
 ## Validation record
 
+The customer authorized C1 server engineering on 2026-10-14 while explicitly
+keeping full-restore recovery deferred. The
+[asynchronous tracking worker](async-tracking-invalidations.md) is implemented as
+a pending forward migration with embedded PostgreSQL execution tests. It removes
+guardian fan-out from GPS ingestion when activated, uses current bus-service
+eligibility and bounds delivery pages. It has not been promoted to the active
+manifest or applied. Recovery/security/adoption guards remain intact; C1 and
+measured fleet capacity stay open until protected installation and acceptance.
+
 Local code checks and SQL syntax parsing are recorded in the PR. Database migration
 execution and real-role authorization acceptance remain pending the protected
 existing-project rehearsal and release. Parsing SQL does not validate deployed privileges, PL/pgSQL type resolution,

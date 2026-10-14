@@ -11,6 +11,40 @@ Engineering can preserve and verify that evidence. Engineering cannot make the
 legal determinations, execute customer/vendor agreements, or approve the PIA.
 This repository control does not constitute legal advice.
 
+## Sequential work, starting 2026-10-13
+
+The owner selected privacy and commercial terms as the next readiness point.
+After clarifying that customer authorization concerns customer data rather than
+ownership of SafeBus, the owner explicitly requested the business privacy
+documents, commercial terms and PIA draft before counsel appointment or customer
+selection. The [business pack](phase-3/business-pack/README.md),
+[PIA](phase-3/privacy-impact-assessment.md) and supporting procedures are prepared
+as drafts with identity/contact placeholders. Review the
+[owner decisions](phase-3/business-pack/owner-decisions.md) one at a time.
+
+The owner confirmed an Alberta-registered Canadian business; counsel is not yet
+appointed. The reviewed PIPA/POPA guidance does not establish a general legal
+obligation to hire Alberta privacy counsel. The existing `privacyCounsel` launch
+approval is an internal safeguard and remains unchanged. Draft preparation is
+independent of that approval. Customer-specific authority and signatures are
+completed at onboarding. No legal, customer or operational approval is claimed.
+
+| Order      | Item                                                     | Completion requirement                                                               |
+| ---------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 1 — active | Statutory mapping, legal roles and customer authority    | Reviewed legal determination, identity and customer-authority evidence               |
+| 2          | PIA and current data/field inventory                     | Complete assessment, authority and appropriate customer sign-off/submission decision |
+| 3          | Privacy operating procedures and accountable roles       | Approved procedures, owners and exercise evidence                                    |
+| 4          | Customer commercial and privacy contract pack            | Reviewed terms and actual customer execution; billing/tax terms reviewed separately  |
+| 5          | Retention, deletion and backup handling                  | Approved schedule and authorized execution evidence                                  |
+| 6          | Vendors, processing locations and cross-border decisions | Actual supplier, contract, security and residency evidence                           |
+| 7          | Participant/public notices and final Point 6 approval    | Approved publication and all required approvals bound to final source                |
+
+Existing drafts remain inputs to their later items. This sequence does not
+approve them or remove dependencies: contract and PIA drafts must be reconciled
+with later vendor, retention and operational decisions before final approval.
+The legal-role determination remains open until its required evidence is
+reviewed, but does not block preparation of the other business drafts.
+
 ## Fail-closed evidence contract
 
 `privacy-readiness.json` is the machine-readable Point 6 record.

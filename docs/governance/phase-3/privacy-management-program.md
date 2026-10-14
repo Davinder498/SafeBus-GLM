@@ -1,78 +1,101 @@
-# SafeBus Alberta — Phase 3 Privacy-Management Program
+﻿# SafeBus Business Privacy-Management Program — Draft
 
-**Status:** Draft for privacy-professional operationalization
-**Owner:** Privacy Lead
-**Phase:** 3 — Alberta privacy and legal readiness
-**Last updated:** 2026-08-07
+**Status:** Prepared policy; appointment, training, exercises and operational evidence pending
+**Owner:** Business owner / appointed Privacy Lead
+**Last updated:** 2026-10-13
 
----
+## Accountability and review
 
-## 1. Purpose
+The owner is responsible for the business and may appoint themselves as the
+accountable privacy lead. Record that appointment and a capable backup in
+restricted business records; publish the agreed working privacy contact.
+Owner authority is distinct from legal qualifications and from a customer's
+public-body authority. Hiring Alberta privacy counsel is not established as a
+general statutory requirement by the reviewed PIPA/POPA guidance. The existing
+repository nonetheless requires a privacy-counsel approval before launch;
+drafting can proceed now. [OIPC PIPA implementation guidance](https://oipc.ab.ca/resource/pipa-implementation/).
 
-Phase 3 requires an operational **privacy-management program**, not just
-documents. This program defines the roles, responsibilities, controls, and
-review cadence that keep SafeBus compliant after the PIA is signed.
+The owner approves business policy and resources. Customer-specific transport
+instructions, school authority and contract signatures are completed during
+onboarding. Do not record an appointment, counsel review or customer signature
+as completed merely because this policy lists a role.
 
-## 2. Roles and responsibilities
+## Responsibilities
 
-| Role | Privacy responsibilities | Backup |
-| --- | --- | --- |
-| **Privacy Lead / Counsel** | Owns PIA, retention schedule, breach workflow, vendor reviews, access/correction decisions | Named deputy required |
-| **Security Lead** | Owns RLS matrix, data classification, incident detection, audit review | Named deputy required |
-| **Engineering Lead** | Implements retention controls, access paths, deletion jobs, audit events | Named deputy required |
-| **Product Owner** | Approves scope changes that affect privacy; sign-off on notices and contracts | — |
-| **Platform Super Admin** | Runs retention deletion; reads platform-wide audit; does **not** see tenant operational/personal data | — |
-| **Tenant Admin** | Handles access/correction requests for their tenant; reads their own audit trail | — |
+| Role                                                | Responsibility                                                                     | Evidence before operation                                                |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Business owner / Privacy Lead                       | Own-business purposes, policies, requests, suppliers, PIA and privacy decisions    | Recorded appointment, training, resources and monitored privacy channel  |
+| Privacy backup                                      | Receive urgent reports and cover absence                                           | Named capable person and exercised handoff                               |
+| Security / incident lead                            | Access controls, vulnerability/incident triage, evidence and containment           | Access authorization, primary/backup routing and exercise                |
+| Engineering / operations                            | Implement reviewed safeguards, retention/recovery and release checks               | Tested scoped workflows, change approval and operational evidence        |
+| Customer privacy office / authorized representative | Customer authority, notices, access/correction decisions and relevant PIA sign-off | Collected during onboarding; public-body duties remain with the customer |
+| Customer administrators                             | Maintain accurate assignments and verified guardian links                          | Role approval, training and lifecycle process                            |
+| External legal/privacy adviser, when retained       | Applicable-law and contract review                                                 | Actual advice/review references; not automatically a business employee   |
 
-Every privacy-sensitive role requires a **named backup** so the program
-survives staff changes.
+One person may hold internal business roles where practical, but must be trained,
+resourced and able to obtain assistance. Backup and review duties cannot be
+satisfied by inventing a second reviewer. Existing human merge and independent
+security review requirements remain separate.
 
-## 3. Controls inventory
+## Processing and records policy
 
-| Control | Owner | Evidence |
-| --- | --- | --- |
-| PIA maintained and current | Privacy Lead | `privacy-impact-assessment.md` |
-| Retention schedule enforced | Engineering Lead | migration `0069`; `tests/rls/phase3-retention-rls.sql` |
-| Data classification current | Security Lead | `../data-classification.md` |
-| Field inventory current | Engineering Lead | `data-inventory-and-flow.md` |
-| Subprocessor list and agreements | Privacy Lead + Product Owner | `subprocessors.md`, `contract-checklist.md` |
-| Access/correction procedure | Privacy Lead | `access-and-correction.md` |
-| Breach response procedure | Privacy Lead | `breach-response.md` |
-| Audit trail of sensitive actions | Security Lead | migration `0066` `audit_events` |
-| MFA for admin accounts | Security Lead | migration `0067` |
-| RLS regression coverage | Engineering Lead | `tests/rls/*.sql` |
+Collect only the approved necessary information for an identified purpose.
+Keep own-business inquiry/billing/support processing separate from customer
+transport instructions. Do not use customer personal information for advertising,
+resale, unrelated profiling or AI training. Evaluate optional collection before
+activation; legal authority, notices and permission/consent are not interchangeable.
 
-## 4. Operational cadence
+Maintain the current inventory, PIA, supplier/country list and retention schedule.
+The business contract pack is in [business-pack](business-pack/README.md).
+Use [access/correction](access-and-correction.md),
+[breach response](breach-response.md) and [legal holds](legal-hold-procedure.md)
+for individual matters. Secure request/incident logs and executed contracts
+outside Git, not in customer student notes. Retain only non-secret evidence
+references in launch records.
 
-| Activity | Frequency | Owner |
-| --- | --- | --- |
-| Retention deletion run | At least monthly (draft; counsel confirms) | Platform Super Admin via scheduled job |
-| Audit-trail review (anomaly sweep) | Monthly | Security Lead |
-| PIA re-review | Annually, or on any material scope/retention/subprocessor change | Privacy Lead |
-| Subprocessor re-review | Annually, or on any new vendor | Privacy Lead + Product Owner |
-| Breach-response tabletop | Annually | Privacy Lead |
-| RLS regression execution | Every migration affecting access | Engineering Lead |
+## People and access
 
-## 5. Training
+Authorize access by need, keep personnel confidentiality duties, train before
+access and on material changes, and promptly remove unneeded access. Review
+privileged access at least quarterly as a proposed cadence, and after departures
+or incidents. The platform owner does not receive blanket operational-data
+browsing entitlement. Support investigations require a separate authorized,
+scoped and audited process rather than bypassing RLS.
 
-All personnel with access to production data or admin functions complete
-privacy and security training before access is granted and annually
-thereafter. The Privacy Lead records completion outside the codebase.
+Train staff/contractors in minimal collection, account/guardian scope, device
+loss, private data in email/logs, incident reporting and secure disposal.
+Document completion, backup contacts and exceptions in controlled records.
 
-## 6. Records
+## Proposed operating cadence
 
-The program keeps the following records (most live in this repository;
-training completion lives outside it):
+| Activity                        | Proposed cadence                                                                      | Closure evidence                                           |
+| ------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Monitor privacy/request channel | Each staffed business day; urgent incidents use separately staffed routing            | Delivery/backup checks and intake record                   |
+| Request/hold tracking           | On receipt and before statutory deadlines; review holds by their recorded date        | Timely routing, authority, outcome and hold review         |
+| Retention                       | Daily scheduled dry-run currently prepared; destructive execution only after approval | Approved periods and safe enforcement/hold/restore results |
+| Audit/access review             | Monthly anomalies; quarterly access review                                            | Sanitized review, assigned findings and removal evidence   |
+| Supplier/PIA review             | At least annually and before material changes                                         | Actual decisions, updated inventory and notices            |
+| Incident/recovery exercise      | Before launch, then at least annually or after material change                        | Real exercise record; not a template checkbox              |
+| Training                        | Before access and annually                                                            | Attendance and content record outside Git                  |
 
-- PIA and sign-off.
-- Decision log entries for every privacy-relevant decision.
-- Retention run logs (`retention_deletion_runs` + `audit_events`).
-- Access/correction request records.
-- Breach records and post-incident reviews.
-- Subprocessor agreements and review notes.
+The owner must approve feasible hours and frequencies. A schedule written here
+is not evidence that monitoring, deletion or response has occurred.
 
-## 7. Continuous improvement
+## Change and publication
 
-Lessons from audits, access requests, and incidents flow into the risk
-register and decision log. The Privacy Lead owns follow-up actions and
-tracks them to closure at the next phase exit gate.
+Before a new purpose, field, supplier, country, retention period or feature,
+assess necessity, authority, controls, contractual effects and notices. Update
+the PIA/risk record and obtain the required approvals. Reconcile public privacy,
+account-deletion, Android and Play wording with verified practices before
+publication. The existing public pages require that review; these drafts do not
+replace them automatically.
+
+## Open exit evidence
+
+Appointment/contact and backup; training; finalized purpose/authority and supplier
+countries; contract/policy acceptance; retention/hold/deletion testing; breach
+and recovery exercises; request/complaint handling; legal/customer review where
+required by the accepted launch policy. Point 6 remains open until real evidence
+and approval pass. A PIPA private-business PIA may be voluntary, while public-body
+POPA PIA duties depend on the deployment; that distinction is addressed in the
+[PIA draft](privacy-impact-assessment.md).
