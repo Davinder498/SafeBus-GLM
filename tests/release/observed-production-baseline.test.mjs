@@ -8,6 +8,11 @@ import { recoverySnapshot } from '../../scripts/lib/existing-security-install.mj
 import { assertBackupReleaseState } from '../../scripts/lib/backup-release-state.mjs';
 import { inspectSchemaDeployment } from '../../scripts/lib/schema-deployment-preflight.mjs';
 import {
+  assertObservedCatalog,
+  inspectReconciledPartitions,
+} from '../../scripts/lib/observed-catalog-reconciliation.mjs';
+import { safeSecurityFailure } from '../../scripts/lib/security-workflow-evidence.mjs';
+import {
   validateObservedContract,
   contractDigest,
   registerObservedBaseline,
@@ -18,7 +23,7 @@ import {
   assertObservedSource,
 } from '../../scripts/lib/observed-production-baseline.mjs';
 
-async function fixture(t) {
+async function fixture(t, { providerPartitions = false } = {}) {
   const db = new PGlite();
   t.after(() => db.close());
   await db.exec(`create role anon;create role authenticated;create role service_role;create role authenticator;
@@ -29,6 +34,12 @@ async function fixture(t) {
       recovery_receipt_sha256 text,source_catalog_sha256 text,installed_catalog_sha256 text,
       executed_migrations jsonb,installed_at timestamptz);
     alter table safebus_release.security_installations enable row level security;`);
+  if (providerPartitions)
+    await db.exec(`create role supabase_realtime_admin; create role dashboard_user;
+    create schema realtime authorization supabase_realtime_admin;
+    create table realtime.messages(id uuid,inserted_at timestamp not null) partition by range(inserted_at);
+    alter table realtime.messages owner to supabase_realtime_admin;
+    alter table realtime.messages enable row level security;`);
   const client = {
     async query(sql, args) {
       const result = args ? await db.query(sql, args) : (await db.exec(sql)).at(-1);
@@ -380,5 +391,83 @@ test('protected registration retains canonical types, recovery, and human enviro
   assert.ok(
     legacy.indexOf('Historical production adoption is blocked') <
       legacy.indexOf('await client.connect()'),
+  );
+});
+
+test('reviewed provider partition additions reproduce the exact original catalog and still rehearse', async (t) => {
+  const { db, client, args } = await fixture(t, { providerPartitions: true });
+  const original = await recoverySnapshot(client);
+  await db.exec(`set role supabase_realtime_admin;
+    create table realtime.messages_2026_10_17 partition of realtime.messages
+      for values from ('2026-10-17') to ('2026-10-18');
+    grant all on realtime.messages_2026_10_17 to postgres;
+    grant select,insert on realtime.messages_2026_10_17 to postgres with grant option;
+    grant all on realtime.messages_2026_10_17 to dashboard_user;
+    reset role;`);
+  const current = await recoverySnapshot(client);
+  assert.equal(original.publicFingerprint, current.publicFingerprint);
+  await assert.rejects(
+    assertObservedSource(client, args.contract),
+    /Observed schema or authorization changed/,
+  );
+  const additions = current.authorization.relations.filter(
+    (r) => r.schema === 'realtime' && r.name === 'messages_2026_10_17',
+  );
+  const contract = structuredClone(args.contract);
+  contract.sourceCatalogSha256 = sha256(JSON.stringify(current));
+  contract.sourceCatalogReconciliation = {
+    format: 1,
+    kind: 'reviewed-realtime-partition-additions',
+    previousCatalogSha256: sha256(JSON.stringify(original)),
+    observedCatalogSha256: contract.sourceCatalogSha256,
+    addedRelations: additions,
+  };
+  assertObservedCatalog(current, contract);
+  await inspectReconciledPartitions(client, contract);
+  await registerObservedBaseline(client, { ...args, contract, mode: 'rehearse' });
+  assert.equal(
+    (await db.query("select to_regclass('safebus_release.observed_baselines') as name")).rows[0]
+      .name,
+    null,
+  );
+  const bad = structuredClone(contract);
+  bad.sourceCatalogReconciliation.previousCatalogSha256 = '0'.repeat(64);
+  assert.throws(() => assertObservedCatalog(current, bad), /reviewed exact/);
+  const hidden = structuredClone(current);
+  hidden.authorization.schemas.push({ name: 'hidden-change' });
+  const forged = structuredClone(contract);
+  forged.sourceCatalogSha256 = sha256(JSON.stringify(hidden));
+  forged.sourceCatalogReconciliation.observedCatalogSha256 = forged.sourceCatalogSha256;
+  assert.throws(() => assertObservedCatalog(hidden, forged), /does not reproduce/);
+  await db.exec('begin');
+  try {
+    await db.exec('alter table realtime.messages_2026_10_17 owner to postgres');
+    await assert.rejects(
+      inspectReconciledPartitions(client, contract),
+      /structure or authorization/,
+    );
+  } finally {
+    await db.exec('rollback');
+  }
+  await db.exec(`create table realtime.messages_2026_10_18 partition of realtime.messages
+    for values from ('2026-10-18') to ('2026-10-19')`);
+  await assert.rejects(
+    assertObservedSource(client, contract),
+    /Observed schema or authorization changed/,
+  );
+});
+
+test('observed source failures have safe diagnostic codes without printing arbitrary details', () => {
+  assert.match(
+    safeSecurityFailure(
+      new Error('Observed schema or authorization changed; review a forward reconciliation.'),
+      'observed-metadata-transaction',
+    ),
+    /OBSERVED_SOURCE_DRIFT/,
+  );
+  assert.ok(
+    !safeSecurityFailure(new Error('postgresql://synthetic-secret'), 'observed-contract').includes(
+      'synthetic-secret',
+    ),
   );
 });

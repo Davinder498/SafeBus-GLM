@@ -85,6 +85,20 @@ export async function downloadWorkflowEvidence({ repository, workflow, runId, pr
 
 export function safeSecurityFailure(error, stage) {
   const knownReasons = new Map([
+    [
+      'Observed schema or authorization changed; review a forward reconciliation.',
+      'OBSERVED_SOURCE_DRIFT',
+    ],
+    ['A reviewed exact catalog reconciliation is required.', 'OBSERVED_RECONCILIATION_REQUIRED'],
+    ['Catalog additions differ from reviewed evidence.', 'OBSERVED_RECONCILIATION_ADDITIONS'],
+    [
+      'Catalog reconciliation does not reproduce original installation evidence.',
+      'OBSERVED_RECONCILIATION_PROOF',
+    ],
+    ['Reviewed Realtime partitions are missing.', 'OBSERVED_PARTITIONS_MISSING'],
+    ['Reviewed Realtime partition date is invalid.', 'OBSERVED_PARTITION_DATE'],
+    ['Reviewed Realtime partition structure or authorization differs.', 'OBSERVED_PARTITION_SHAPE'],
+    ['Provider DDL hooks changed after review.', 'OBSERVED_DDL_HOOK_DRIFT'],
     ['Backup RSA public key is required.', 'BACKUP_PUBLIC_KEY_MISSING'],
     ['The approved database CA certificate is required.', 'DATABASE_CA_MISSING'],
     [

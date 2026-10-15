@@ -4,6 +4,11 @@ import { sha256 } from './migrations.mjs';
 import { SCHEMA_FINGERPRINT_FORMAT, calculateSchemaFingerprint } from './schema-fingerprint.mjs';
 import { recoverySnapshot, verifyRecovery, assertRecent } from './existing-security-install.mjs';
 import { registerEnvironmentIdentity, assertEnvironmentIdentity } from './environment-identity.mjs';
+import {
+  validateCatalogReconciliation,
+  assertObservedCatalog,
+  inspectReconciledPartitions,
+} from './observed-catalog-reconciliation.mjs';
 
 export const OBSERVED_CONTRACT_PATH = 'config/production-observed-baseline.json';
 const executionFields = ['filename', 'version', 'bytes', 'sha256'];
@@ -56,13 +61,14 @@ export function validateObservedContract(contract, manifest, binding) {
   if (
     !event ||
     event.environment !== 'production' ||
-    event.installedCatalogSha256 !== contract.sourceCatalogSha256 ||
+    !/^[0-9a-f]{64}$/.test(event.installedCatalogSha256 ?? '') ||
     !/^[1-9][0-9]*$/.test(event.installationRunId ?? '') ||
     !Number.isFinite(Date.parse(event.installedAt)) ||
     !/^[0-9a-f]{40}$/.test(event.releaseSha ?? '') ||
     event.executedMigrations?.length !== 3
   )
     throw new Error('Verified security installation provenance is missing.');
+  validateCatalogReconciliation(contract);
   const expectedOrder = [
     '0123_existing_project_security_reconciliation.sql',
     '0122_commercial_authorization_boundaries.sql',
@@ -178,11 +184,8 @@ export async function assertObservedSource(client, contract) {
     throw new Error('Unexpected release metadata; inspect before adopting.');
   await inspectSecurityInstallation(client, contract);
   const snapshot = await recoverySnapshot(client);
-  if (
-    snapshot.publicFingerprint !== contract.schemaFingerprint ||
-    sha256(JSON.stringify(snapshot)) !== contract.sourceCatalogSha256
-  )
-    throw new Error('Observed schema or authorization changed; review a forward reconciliation.');
+  assertObservedCatalog(snapshot, contract);
+  await inspectReconciledPartitions(client, contract);
   return snapshot;
 }
 
@@ -374,6 +377,7 @@ export function verifyAdoptionRecovery({
     throw new Error(
       'Adoption requires a restored backup of the installed source, not the older pre-security backup.',
     );
+  assertObservedCatalog(catalog, contract);
   assertRecent(rehearsal?.createdAt, now);
   if (
     rehearsal?.mode !== 'observed-baseline-rehearsal' ||
