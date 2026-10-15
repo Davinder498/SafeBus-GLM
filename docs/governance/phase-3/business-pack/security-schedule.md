@@ -20,7 +20,7 @@ driver information and active-trip location. The accepted service must include:
 - Device controls appropriate for personal Android phones, an encrypted offline
   queue, active-trip-only collection, disclosed recovery limits and lost-device
   handling. Do not collect new locations during paused/ended collection.
-- Verified backups and recovery, approved retention and legal holds, supplier
+- Approved retention and legal holds, supplier
   oversight, routed monitoring/incident contacts and tested response procedures.
 
 The Customer supplies current assignments, guardian authority, trained users,
@@ -33,11 +33,11 @@ to browse the transport data of all tenants.
 
 | Control                                     | Repository evidence                                               | Acceptance still needed                                                                                 |
 | ------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Scoped access and revoked-session hardening | Reviewed migrations 0122–0124 and application boundary work       | Recovery-gated installation; real signed-session, REST/RPC, cross-school/tenant and realtime acceptance |
+| Scoped access and revoked-session hardening | Reviewed migrations 0122–0124 and application boundary work       | Installation verified; real signed-session, REST/RPC, cross-school/tenant and realtime acceptance |
 | Android protected queue and paced recovery  | Native encryption/pacing implementation and local tests           | Signed physical-device, offline, pause/end, lost-device and battery/recovery evidence                   |
 | Guardian fail-closed refresh                | Client coordination and local browser checks                      | Hosted authorization/revocation and provider/device behavior                                            |
-| Retention and audit minimization            | Migration 0069 and scheduler draft controls                       | Approved periods, safe enforcement and hold/restore handling evidence                                   |
-| Recovery                                    | Encrypted export/decryption record; application rollback exercise | Compatible full database restore and complete service recovery exercise                                 |
+| Retention and audit minimization            | Migration 0069 and scheduler draft controls                       | Approved periods, safe enforcement and hold handling evidence                                   |
+| Recovery (outside launch scope)              | Historical encrypted export/full-restore and rollback evidence retained separately | No new recovery exercise is required for launch; no RPO/RTO promise is made |
 | Alerts, providers and capacity              | Engineering gates and planning model                              | Staffed routing, paid plans/quotas, observation and measured supported load                             |
 
 This schedule does not represent these pending items as passed. Source tests,

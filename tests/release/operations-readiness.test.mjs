@@ -60,13 +60,14 @@ test('application rollback evidence records measured recovery and verified resto
   ]);
 
   assert.equal(readiness.status, 'not_approved');
-  assert.deepEqual(readiness.exercises.applicationRollback, {
+  assert.deepEqual(readiness.historicalRecoveryEvidence.applicationRollback, {
     decision: 'approved',
     approvedAt: '2026-08-24T23:41:31.000Z',
     evidenceReference: 'OPS/EXERCISE/ROLLBACK-001',
     recoveryTimeMinutes: 40,
   });
-  assert.equal(readiness.exercises.backupRestore, null);
+  assert.equal(readiness.exercises.backupRestore, undefined);
+  assert.equal(readiness.historicalRecoveryEvidence.backupRestore, null);
   assert.match(operations, /run 32789963139/);
   assert.match(operations, /run 32790241039/);
   assert.match(operations, /made no database, migration, fixture, RLS-test/);

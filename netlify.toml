@@ -18,7 +18,7 @@
   schedule = "*/5 * * * *"
 
 # Phase 3: daily retention orchestration. The function defaults to dry-run;
-# SAFEBUS_RETENTION_EXECUTE=true is set only after counsel approves the periods.
+# SAFEBUS_RETENTION_EXECUTE=true requires approved retention/privacy evidence.
 [functions."safebus-retention-scheduled"]
   schedule = "@daily"
 

@@ -1,5 +1,9 @@
 # Supabase support request draft: managed default privileges
 
+**Optional technical-assistance route, not a launch/legal prerequisite (DL-023).**
+Review effective access and app-controlled corrections first. This draft neither
+establishes that provider assistance is the only safe solution nor waives a finding.
+
 **Draft only. Not sent. No production change requested without an agreed window
 and the customer's protected recovery/change approval.**
 

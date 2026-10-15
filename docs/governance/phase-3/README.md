@@ -33,8 +33,11 @@ customer selection. Start with the [business pack](business-pack/README.md),
 operational evidence and launch approval remain pending. The
 [Point 6 plan](../point-6-privacy-readiness.md#sequential-work-starting-2026-10-13)
 distinguishes draft preparation from later approval. No general statutory
-lawyer-appointment obligation is claimed; the existing internal counsel approval
-gate remains unchanged.
+lawyer-appointment obligation is claimed. DL-023 replaces the blanket internal
+counsel signature with sourced requirements evidence and excludes recovery drills.
+Customer agreements/authority/PIA applicability are checked during activation;
+they are separate from ownership of SafeBus. Review owners may seek specialist
+advice where the particular law, uncertainty or contract calls for it.
 
 | #   | Workstream                                              | Lead                         | Document                                                                                                                                               |
 | --- | ------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |

@@ -73,13 +73,15 @@ reference and be reviewed in the dedicated authorization PR.
 ## Entry criteria
 
 - [ ] Points 4 through 10 have final approval and linked evidence.
-- [ ] Counsel and the customer authority approve the legal role, privacy terms,
+- [ ] Accountable privacy owners and the customer authority approve the legal role, privacy terms,
       residency, retention, breach process, and vendor/subprocessor terms.
 - [ ] The selected schools, drivers, guardians, routes, buses, support hours,
       training, and communications are documented outside the repository in an
       approved privacy-controlled system.
-- [ ] On-call routing, provider quota alerts, rollback, recovery, and incident
-      drills pass.
+- [ ] On-call routing, provider quota alerts, suspension/rollback authority and
+      incident-response checks pass. Recovery drills are excluded by DL-023.
+- [ ] Record `scope.privacyAssessmentReference` for customer processing authority,
+      PIA applicability, required signatures/submission and contractual requirements.
 - [ ] Signed Android, real-device, Google Play, map-provider, authenticated E2E,
       accessibility, and capacity evidence pass.
 - [ ] Baseline metrics, stop thresholds, evidence retention, and customer
@@ -98,7 +100,7 @@ The primary or backup authority suspends the pilot immediately for:
   beyond the approved threshold;
 - loss of required vendor service, quota, residency, insurance, contract, or
   legal approval;
-- loss of on-call or recovery capability;
+- loss of on-call or required incident-response capability;
 - operation beyond the approved participants, tenant count, bus ceiling, dates,
   or product scope; or
 - withdrawal by the customer authority or Final Decision Holder.
@@ -113,7 +115,8 @@ must never be rehearsed destructively against the sole production database.
 - [ ] Resolve every critical/high security, privacy, reliability, accessibility,
       and support finding.
 - [ ] Meet the approved availability, GPS freshness, notification, incident,
-      recovery, support, adoption, and capacity thresholds.
+      support, adoption, and capacity thresholds. Recovery exercises are excluded
+      under DL-023; any separately contracted recovery promise needs its own evidence.
 - [ ] Complete customer and internal post-pilot reviews with evidence references.
 - [ ] Decide in writing to stop, extend within 180 days, or propose a separately
       reviewed expansion. No automatic continuation is permitted.

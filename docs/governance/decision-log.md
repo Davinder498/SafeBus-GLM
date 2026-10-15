@@ -493,6 +493,28 @@ production` workflow must not run until a current encrypted backup is
   and real provider/device/hosted capacity evidence remain pending.
 - Behavior and evidence: [Guardian refresh coordination](../qa/guardian-refresh-coordination.md).
 
+### DL-023 — Commercial readiness evidence review
+
+- Date: 2026-10-15 (America/Edmonton).
+- Owner decision: Review business logic, UI/UX, security, applicable law/privacy,
+  application reliability and the agreed capacity architecture. Implement the
+  revised acceptance rules and produce one evidence-based findings report.
+- Excluded launch gates: backup/full-restore/disaster-recovery and rollback
+  exercises, mandatory supplier-support contact, and unconditional privacy-counsel
+  signature. Retain historical evidence and protected production-change controls.
+- Legal review: use sourced applicability/compliance evidence; customer agreements,
+  processing authority and customer PIA applicability are activation requirements,
+  distinct from ownership of SafeBus. Optional advice is not proof of compliance.
+- Capacity decision: owner selected **review only for now**. Targets remain 10,000
+  active buses, 100,000 concurrent users, one million accounts and 2,000 organizations.
+  No measured-capacity claim, hosted load, provisioning, purchase or deployment.
+- Consequences: operations/privacy/customer-activation formats advance to 2; all
+  actual records remain unapproved/not authorized. Candidate digests are not
+  approval. Device reconnects, offline behavior and incident response remain in scope.
+- Evidence: [classification](commercial-readiness-requirements.md) and
+  [findings](../qa/commercial-readiness-review-2026-10-15.md). Fix findings one
+  correction milestone at a time after this review; human PR review remains.
+
 ## 5. Sign-off entries
 
 When a Phase 0 document is signed off, add an entry here:

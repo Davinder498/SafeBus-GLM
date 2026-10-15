@@ -11,6 +11,9 @@ import {
 const read = (file) => fs.readFile(file, 'utf8');
 
 const requiredFiles = {
+  'docs/governance/commercial-readiness-requirements.md': 'synthetic review evidence',
+  'docs/qa/commercial-readiness-review-2026-10-15.md': 'synthetic review evidence',
+  'docs/qa/commercial-readiness-hosted-observation-2026-10-15.json': 'synthetic review evidence',
   'apps/web/netlify/functions/guardian-notification-email.mjs':
     'export const notification = true;\n',
   'apps/web/src/services/adminLiveMonitoringService.ts': 'export const monitoring = true;\n',
@@ -83,7 +86,7 @@ function approvedEntries(keys, prefix) {
 async function approvedFixture(root) {
   const evidence = await collectOperationsReleaseEvidence(root);
   return {
-    format: 1,
+    format: 2,
     status: 'approved',
     approvalId: 'CR1-OPS-ALBERTA-001',
     approvedEvidenceDigest: evidence.digest,
@@ -93,12 +96,6 @@ async function approvedFixture(root) {
     thresholds: approvedEntries(thresholdKeys, 'OPS/THRESHOLD'),
     alerting: approvedEntries(alertKeys, 'OPS/ALERT'),
     exercises: {
-      applicationRollback: approved('OPS/EXERCISE/ROLLBACK', { recoveryTimeMinutes: 12 }),
-      backupRestore: approved('OPS/EXERCISE/RESTORE', {
-        recoveryTimeMinutes: 45,
-        recoveryPointMinutes: 15,
-        isolatedCanadianTarget: true,
-      }),
       p1OutageTabletop: approved('OPS/EXERCISE/P1'),
       privacyIncidentTabletop: approved('OPS/EXERCISE/PRIVACY'),
     },
@@ -142,7 +139,11 @@ test('Point 9 fails closed when open or expired', async (t) => {
 
   await assert.rejects(
     verifyOperationsReadiness({
-      readiness: { ...readiness, status: 'not_approved' },
+      readiness: {
+        ...readiness,
+        status: 'not_approved',
+        candidateEvidenceDigest: readiness.approvedEvidenceDigest,
+      },
       root,
       now,
     }),
@@ -158,7 +159,7 @@ test('Point 9 fails closed when open or expired', async (t) => {
   );
 });
 
-test('Point 9 rejects evidence gaps, unsafe restore evidence, short observation, and source drift', async (t) => {
+test('Point 9 rejects evidence gaps, missing incident response, short observation, and source drift', async (t) => {
   const root = await fixtureRoot();
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const readiness = await approvedFixture(root);
@@ -181,16 +182,13 @@ test('Point 9 rejects evidence gaps, unsafe restore evidence, short observation,
         ...readiness,
         exercises: {
           ...readiness.exercises,
-          backupRestore: {
-            ...readiness.exercises.backupRestore,
-            isolatedCanadianTarget: false,
-          },
+          privacyIncidentTabletop: null,
         },
       },
       root,
       now,
     }),
-    /isolated Canadian target/,
+    /Privacy incident tabletop/,
   );
   await assert.rejects(
     verifyOperationsReadiness({
@@ -212,6 +210,41 @@ test('Point 9 rejects evidence gaps, unsafe restore evidence, short observation,
     verifyOperationsReadiness({ readiness, root, now }),
     /does not match the current release-controlled source/,
   );
+});
+
+test('Point 9 v2 needs no restore, rollback drill or recovery-time evidence, but retains operating safeguards', async (t) => {
+  const root = await fixtureRoot();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const readiness = await approvedFixture(root);
+  const now = Date.parse('2026-08-23T12:00:00.000Z');
+  assert.equal(readiness.exercises.backupRestore, undefined);
+  assert.equal(readiness.exercises.applicationRollback, undefined);
+  await verifyOperationsReadiness({ readiness, root, now });
+  for (const [group, key] of [
+    ['onCall', 'primaryOwner'],
+    ['thresholds', 'errorRate'],
+    ['alerting', 'applicationErrorMonitoring'],
+    ['support', 'intakeProcess'],
+    ['approvals', 'securityLead'],
+  ]) {
+    await assert.rejects(
+      verifyOperationsReadiness({
+        readiness: { ...readiness, [group]: { ...readiness[group], [key]: null } },
+        root,
+        now,
+      }),
+      /evidence is missing/,
+    );
+  }
+  await assert.rejects(
+    verifyOperationsReadiness({ readiness: { ...readiness, format: 1 }, root, now }),
+    /unsupported format/,
+  );
+  await fs.appendFile(
+    path.join(root, 'docs/qa/commercial-readiness-review-2026-10-15.md'),
+    'changed findings',
+  );
+  await assert.rejects(verifyOperationsReadiness({ readiness, root, now }), /does not match/);
 });
 
 test('production release verifies Point 9 before pilot, database, or application actions', async () => {

@@ -11,9 +11,10 @@ accountable privacy lead. Record that appointment and a capable backup in
 restricted business records; publish the agreed working privacy contact.
 Owner authority is distinct from legal qualifications and from a customer's
 public-body authority. Hiring Alberta privacy counsel is not established as a
-general statutory requirement by the reviewed PIPA/POPA guidance. The existing
-repository nonetheless requires a privacy-counsel approval before launch;
-drafting can proceed now. [OIPC PIPA implementation guidance](https://oipc.ab.ca/resource/pipa-implementation/).
+general statutory requirement by the reviewed PIPA/POPA guidance. DL-023
+replaces blanket counsel signoff with sourced applicability/compliance evidence;
+specific issues or customer terms can still warrant specialist advice.
+[OIPC PIPA implementation guidance](https://oipc.ab.ca/resource/pipa-implementation/).
 
 The owner approves business policy and resources. Customer-specific transport
 instructions, school authority and contract signatures are completed during
@@ -72,10 +73,10 @@ Document completion, backup contacts and exceptions in controlled records.
 | ------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
 | Monitor privacy/request channel | Each staffed business day; urgent incidents use separately staffed routing            | Delivery/backup checks and intake record                   |
 | Request/hold tracking           | On receipt and before statutory deadlines; review holds by their recorded date        | Timely routing, authority, outcome and hold review         |
-| Retention                       | Daily scheduled dry-run currently prepared; destructive execution only after approval | Approved periods and safe enforcement/hold/restore results |
+| Retention                       | Daily scheduled dry-run currently prepared; destructive execution only after approval | Approved periods and safe enforcement/hold results; no restore drill required |
 | Audit/access review             | Monthly anomalies; quarterly access review                                            | Sanitized review, assigned findings and removal evidence   |
 | Supplier/PIA review             | At least annually and before material changes                                         | Actual decisions, updated inventory and notices            |
-| Incident/recovery exercise      | Before launch, then at least annually or after material change                        | Real exercise record; not a template checkbox              |
+| Incident-response exercise      | Before launch, then at least annually or after material change                        | Response/communications record; recovery drills excluded by DL-023 |
 | Training                        | Before access and annually                                                            | Attendance and content record outside Git                  |
 
 The owner must approve feasible hours and frequencies. A schedule written here
@@ -94,7 +95,7 @@ replace them automatically.
 
 Appointment/contact and backup; training; finalized purpose/authority and supplier
 countries; contract/policy acceptance; retention/hold/deletion testing; breach
-and recovery exercises; request/complaint handling; legal/customer review where
+exercises; request/complaint handling; legal/customer review where
 required by the accepted launch policy. Point 6 remains open until real evidence
 and approval pass. A PIPA private-business PIA may be voluntary, while public-body
 POPA PIA duties depend on the deployment; that distinction is addressed in the

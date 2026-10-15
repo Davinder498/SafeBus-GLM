@@ -76,10 +76,14 @@ checking; the protected workflow has not been run from this branch.
 
 ## Required forward correction
 
-1. Obtain Supabase's supported procedure for the managed-owner defaults and assess
+1. Assess each creator's effective permissions and supported hardening options.
+   Supplier contact is optional under DL-023, not a launch prerequisite. If needed,
+   ask Supabase about the managed-owner defaults and assess
    the effect of global function revocation on future provider-created routines.
    A [support request draft](../operations/supabase-default-privilege-support-request.md)
-   is ready; it has not been sent.
+   is available; it has not been sent. Provider-managed ownership does not by
+   itself justify accepting unsafe access. See the current
+   [commercial readiness review](commercial-readiness-review-2026-10-15.md).
 2. Review the exact SQL and any required provider exceptions. Revoke unsafe
    schema client defaults for each applicable creator; global PUBLIC function
    execution requires a global revocation, not an `IN SCHEMA` revocation.

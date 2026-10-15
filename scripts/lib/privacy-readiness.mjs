@@ -3,12 +3,15 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { hashDirectory } from './release-attestation.mjs';
 
-export const PRIVACY_READINESS_FORMAT = 1;
+export const PRIVACY_READINESS_FORMAT = 2;
 export const DEFAULT_PRIVACY_READINESS_PATH = 'docs/governance/privacy-readiness.json';
 
 const EVIDENCE_DIRECTORIES = ['docs/governance/phase-3'];
 
 const EVIDENCE_FILES = [
+  'docs/governance/commercial-readiness-requirements.md',
+  'docs/qa/commercial-readiness-review-2026-10-15.md',
+  'docs/qa/commercial-readiness-hosted-observation-2026-10-15.json',
   '.github/workflows/release-production.yml',
   'apps/web/netlify/functions/safebus-retention-scheduled.mjs',
   'apps/web/src/lib/driverLocationDisclosure.ts',
@@ -40,7 +43,7 @@ const EVIDENCE_FILES = [
 const REQUIRED_LEGAL_EVIDENCE = [
   'statutoryMapping',
   'safeBusRole',
-  'customerAuthority',
+  'requirementsAssessment',
   'privacyImpactAssessment',
 ];
 
@@ -78,6 +81,7 @@ const REQUIRED_SUBPROCESSORS = [
   'emailDelivery',
   'errorMonitoring',
   'firebaseCloudMessaging',
+  'stripeBilling',
 ];
 
 const REQUIRED_RESIDENCY_EVIDENCE = [
@@ -96,14 +100,61 @@ const REQUIRED_NOTICES = [
   'googlePlayDataSafety',
 ];
 
-const REQUIRED_APPROVALS = [
-  'platformAdministrator',
-  'productOwner',
-  'securityLead',
-  'privacyLead',
-  'privacyCounsel',
-  'customerAuthority',
-];
+const REQUIRED_APPROVALS = ['platformAdministrator', 'productOwner', 'securityLead', 'privacyLead'];
+
+// An evidence-backed applicability review replaces the blanket counsel signature.
+// This validates the record, not the truth of a legal conclusion. Customer
+// authority/agreement/PIA applicability are enforced by customer activation.
+function requireLegalAssessment(assessment) {
+  const requiredFrameworks = [
+    'albertaPrivateSector',
+    'albertaPublicSector',
+    'federalPrivacy',
+    'educationAndCommercial',
+  ];
+  if (
+    !Array.isArray(assessment?.frameworks) ||
+    assessment.frameworks.length !== requiredFrameworks.length
+  )
+    throw new Error('Legal requirements assessment must cover all four applicable-law frameworks.');
+  for (const framework of requiredFrameworks) {
+    const entries = assessment.frameworks.filter((entry) => entry.framework === framework);
+    if (
+      entries.length !== 1 ||
+      !['applicable', 'not_applicable'].includes(entries[0].applicability)
+    )
+      throw new Error(`Legal requirements assessment is incomplete: ${framework}.`);
+    const entry = entries[0];
+    requireNonSecretReference(entry.rationaleReference, `${framework} applicability rationale`);
+    requireNonSecretReference(entry.evidenceReference, `${framework} compliance evidence`);
+    let source;
+    try {
+      source = new URL(entry.sourceUrl);
+    } catch {
+      /* Invalid/missing sources fail below. */
+    }
+    const domains = [
+      'alberta.ca',
+      'oipc.ab.ca',
+      'priv.gc.ca',
+      'justice.gc.ca',
+      'canada.ca',
+      'assembly.ab.ca',
+    ];
+    if (
+      !source ||
+      source.protocol !== 'https:' ||
+      source.username ||
+      source.password ||
+      !domains.some(
+        (domain) => source.hostname === domain || source.hostname.endsWith('.' + domain),
+      )
+    )
+      throw new Error(
+        `${framework} must cite an HTTPS Canadian government or privacy-regulator source.`,
+      );
+  }
+}
 
 function digest(value) {
   return createHash('sha256').update(value).digest('hex');
@@ -176,6 +227,7 @@ export async function verifyPrivacyReadiness({ readiness, root, now = Date.now()
   for (const item of REQUIRED_LEGAL_EVIDENCE) {
     requireApprovedEvidence(readiness.legal?.[item], `Legal ${item}`, approvedAt, now);
   }
+  requireLegalAssessment(readiness.legal.requirementsAssessment);
   for (const item of REQUIRED_PROGRAM_EVIDENCE) {
     requireApprovedEvidence(
       readiness.privacyProgram?.[item],

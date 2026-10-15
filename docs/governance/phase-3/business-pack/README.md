@@ -46,11 +46,11 @@ privacy practices; the owner can take the business privacy-lead role. This is an
 assessment of the reviewed framework, not a guarantee about a particular future
 procurement or contract. [OIPC PIPA implementation guidance](https://oipc.ab.ca/resource/pipa-implementation/).
 
-The existing repository release policy separately requires `privacyCounsel`
-approval. That internal safeguard remains in force; these drafts neither remove
-it nor represent it as a statutory lawyer-appointment rule. Any future proposal
-to change that gate needs explicit owner direction and a reviewed governance
-change. Draft preparation is not blocked by the appointment.
+DL-023 replaces the former unconditional `privacyCounsel` signature with sourced
+applicability/compliance evidence. Legal/privacy review remains necessary;
+appointing counsel is optional unless an applicable requirement or customer term
+requires it. Supplier-support contact and recovery drills are not launch gates.
+Customer processing authority and signatures remain customer-onboarding inputs.
 
 A private organization's PIA is not mandatory under PIPA, according to the OIPC.
 Public-body POPA preparation/submission requirements depend on the circumstances.

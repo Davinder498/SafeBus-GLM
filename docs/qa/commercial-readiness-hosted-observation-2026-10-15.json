@@ -1,0 +1,52 @@
+{
+  "format": 1,
+  "reviewDate": "2026-10-15",
+  "reviewBaseSha": "df216b72593e0e294422df42a4fcf5ce0029d33d",
+  "observedAtUtc": "2026-10-15 17:41:00 UTC",
+  "method": "Catalog metadata only; BEGIN TRANSACTION READ ONLY; local statement_timeout=15s, lock_timeout=3s; final ROLLBACK.",
+  "productionWritesPerformed": false,
+  "customerOrAuthRowsRead": false,
+  "catalogChecks": {
+    "server_version": "17.6",
+    "public_tables_without_rls": 0,
+    "anonymous_public_policies": 0,
+    "anonymous_relation_grants": 0,
+    "missing_session_policies": 0,
+    "session_hook_configured": true,
+    "client_schema_creators": 0,
+    "guardian_admin_notes_readable": false,
+    "guardian_status_comments_readable": false
+  },
+  "securityAdvisorGroups": [
+    {
+      "name": "rls_enabled_no_policy",
+      "level": "INFO",
+      "count": 6
+    },
+    {
+      "name": "authenticated_security_definer_function_executable",
+      "level": "WARN",
+      "count": 129
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "level": "WARN",
+      "count": 1
+    }
+  ],
+  "priorProtectedIntegrityRun": {
+    "runId": "38769699367",
+    "sourceSha": "df216b72593e0e294422df42a4fcf5ce0029d33d",
+    "manifest": "passed",
+    "registeredDrift": "passed",
+    "schemaPreflight": "passed",
+    "authoritativeTypes": "passed",
+    "authorization": "failed",
+    "unsafeDefaultPrivilegeEntries": 51
+  },
+  "limitations": [
+    "Catalog checks do not establish signed-session or end-to-end authorization acceptance.",
+    "Advisor warnings need individual review; counts are not counts of demonstrated exploitable endpoints.",
+    "Capacity and physical-device behavior were not measured."
+  ]
+}

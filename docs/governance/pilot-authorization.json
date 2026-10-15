@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "status": "not_authorized",
   "pilotId": null,
   "approvedEvidenceDigest": null,
@@ -12,7 +12,8 @@
     "supportOperatingDays": 60,
     "schoolScopeReference": null,
     "participantSelectionReference": null,
-    "agreementReference": null
+    "agreementReference": null,
+    "privacyAssessmentReference": null
   },
   "launchGates": {
     "point4": "open",
@@ -38,5 +39,7 @@
     "immediateApplicationRollback": true,
     "primaryContactReference": "OPS/ONCALL/PRIMARY-001",
     "backupContactReference": "OPS/ONCALL/BACKUP-001"
-  }
+  },
+  "candidateEvidenceDigest": "54062e389d46e1b3634f8b6932b2fcb444199b06bfca3cb85809aeb4b6d81fa0",
+  "candidateEvidenceBasis": "local-review-worktree; regenerate in the exact release checkout before approval"
 }

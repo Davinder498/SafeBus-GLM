@@ -13,6 +13,9 @@ const read = (file) => fs.readFile(file, 'utf8');
 async function fixtureRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'safebus-pilot-'));
   const files = {
+    'docs/governance/commercial-readiness-requirements.md': 'synthetic review evidence',
+    'docs/qa/commercial-readiness-review-2026-10-15.md': 'synthetic review evidence',
+    'docs/qa/commercial-readiness-hosted-observation-2026-10-15.json': 'synthetic review evidence',
     'apps/web/index.ts': 'export const web = true;\n',
     'apps/mobile/index.ts': 'export const mobile = true;\n',
     'packages/types/index.ts': 'export interface Contract {}\n',
@@ -44,7 +47,7 @@ function approval(reference) {
 async function authorizedFixture(root) {
   const evidence = await collectPilotReleaseEvidence(root);
   return {
-    format: 1,
+    format: 2,
     status: 'authorized',
     pilotId: 'CR1-PILOT-ALBERTA-001',
     approvedEvidenceDigest: evidence.digest,
@@ -58,6 +61,7 @@ async function authorizedFixture(root) {
       schoolScopeReference: 'PILOT/SCHOOLS/001',
       participantSelectionReference: 'PILOT/PARTICIPANTS/001',
       agreementReference: 'PILOT/AGREEMENT/001',
+      privacyAssessmentReference: 'PILOT/CUSTOMER-AUTHORITY-PIA/001',
     },
     launchGates: Object.fromEntries(
       Array.from({ length: 7 }, (_, index) => [`point${index + 4}`, 'approved']),
@@ -139,6 +143,33 @@ test('pilot authorization rejects missing approvals, gates, rollback authority, 
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const authorization = await authorizedFixture(root);
   const now = Date.parse('2026-08-23T12:00:00.000Z');
+
+  await assert.rejects(
+    verifyPilotAuthorization({
+      authorization: {
+        ...authorization,
+        scope: { ...authorization.scope, privacyAssessmentReference: null },
+      },
+      root,
+      now,
+    }),
+    /Customer legal authority and PIA/,
+  );
+  await assert.rejects(
+    verifyPilotAuthorization({
+      authorization: {
+        ...authorization,
+        scope: { ...authorization.scope, agreementReference: null },
+      },
+      root,
+      now,
+    }),
+    /Pilot agreement/,
+  );
+  await assert.rejects(
+    verifyPilotAuthorization({ authorization: { ...authorization, format: 1 }, root, now }),
+    /unsupported format/,
+  );
 
   await assert.rejects(
     verifyPilotAuthorization({

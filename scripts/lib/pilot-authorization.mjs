@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { hashDirectory } from './release-attestation.mjs';
 
-export const PILOT_AUTHORIZATION_FORMAT = 1;
+export const PILOT_AUTHORIZATION_FORMAT = 2;
 export const DEFAULT_PILOT_AUTHORIZATION_PATH = 'docs/governance/pilot-authorization.json';
 
 const EVIDENCE_DIRECTORIES = [
@@ -15,6 +15,9 @@ const EVIDENCE_DIRECTORIES = [
 ];
 
 const EVIDENCE_FILES = [
+  'docs/governance/commercial-readiness-requirements.md',
+  'docs/qa/commercial-readiness-review-2026-10-15.md',
+  'docs/qa/commercial-readiness-hosted-observation-2026-10-15.json',
   '.github/workflows/release-production.yml',
   'package.json',
   'pnpm-lock.yaml',
@@ -117,6 +120,7 @@ export async function verifyPilotAuthorization({ authorization, root, now = Date
     ['schoolScopeReference', 'School scope'],
     ['participantSelectionReference', 'Participant selection'],
     ['agreementReference', 'Pilot agreement'],
+    ['privacyAssessmentReference', 'Customer legal authority and PIA applicability assessment'],
   ]) {
     requireNonSecretReference(scope[key], label);
   }
@@ -128,10 +132,7 @@ export async function verifyPilotAuthorization({ authorization, root, now = Date
   }
 
   for (const role of REQUIRED_APPROVALS) {
-    requireNonSecretReference(
-      authorization.approvalAssignments?.[role],
-      `${role} assignment`,
-    );
+    requireNonSecretReference(authorization.approvalAssignments?.[role], `${role} assignment`);
     const approval = authorization.approvals?.[role];
     const approvalTime = Date.parse(approval?.approvedAt);
     if (

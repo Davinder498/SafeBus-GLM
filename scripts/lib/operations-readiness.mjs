@@ -3,12 +3,15 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { hashDirectory } from './release-attestation.mjs';
 
-export const OPERATIONS_READINESS_FORMAT = 1;
+export const OPERATIONS_READINESS_FORMAT = 2;
 export const DEFAULT_OPERATIONS_READINESS_PATH = 'docs/governance/operations-readiness.json';
 
 const EVIDENCE_DIRECTORIES = ['apps/web/netlify/functions', 'apps/web/src/services'];
 
 const EVIDENCE_FILES = [
+  'docs/governance/commercial-readiness-requirements.md',
+  'docs/qa/commercial-readiness-review-2026-10-15.md',
+  'docs/qa/commercial-readiness-hosted-observation-2026-10-15.json',
   '.github/workflows/production-health.yml',
   '.github/workflows/release-production.yml',
   'docs/governance/phase-3/breach-response.md',
@@ -94,17 +97,6 @@ function requireApprovedEvidence(evidence, label, approvedAt, now) {
   requireNonSecretReference(evidence.evidenceReference, label);
 }
 
-function requireMeasuredExercise(exercise, label, approvedAt, now) {
-  requireApprovedEvidence(exercise, label, approvedAt, now);
-  if (
-    !Number.isInteger(exercise.recoveryTimeMinutes) ||
-    exercise.recoveryTimeMinutes < 0 ||
-    exercise.recoveryTimeMinutes > 480
-  ) {
-    throw new Error(`${label} must include a recovery time from 0 to 480 minutes.`);
-  }
-}
-
 export async function collectOperationsReleaseEvidence(root = process.cwd()) {
   const directories = {};
   for (const directory of EVIDENCE_DIRECTORIES) {
@@ -164,28 +156,8 @@ export async function verifyOperationsReadiness({ readiness, root, now = Date.no
     requireApprovedEvidence(readiness.support?.[item], `Support ${item}`, approvedAt, now);
   }
 
-  requireMeasuredExercise(
-    readiness.exercises?.applicationRollback,
-    'Application rollback exercise',
-    approvedAt,
-    now,
-  );
-  requireMeasuredExercise(
-    readiness.exercises?.backupRestore,
-    'Backup restore exercise',
-    approvedAt,
-    now,
-  );
-  if (
-    readiness.exercises.backupRestore.isolatedCanadianTarget !== true ||
-    !Number.isInteger(readiness.exercises.backupRestore.recoveryPointMinutes) ||
-    readiness.exercises.backupRestore.recoveryPointMinutes < 0 ||
-    readiness.exercises.backupRestore.recoveryPointMinutes > 1_440
-  ) {
-    throw new Error(
-      'Backup restore evidence requires an isolated Canadian target and a 0 to 1440 minute recovery point.',
-    );
-  }
+  // Owner decision 2026-10-15: backup/restore and recovery drills are outside
+  // commercial readiness. Protected database-change recovery guards are separate.
   requireApprovedEvidence(
     readiness.exercises?.p1OutageTabletop,
     'P1 outage tabletop',

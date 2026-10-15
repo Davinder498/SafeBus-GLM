@@ -23,7 +23,7 @@ customer-specific values and signed copies outside Git.
 | `[GENERAL_LIABILITY_CAP]`, `[PRIVACY_LIABILITY_CAP]`                    | No selected amounts                                                                 | Owner risk/insurance review, customer negotiation and legal review of exclusions                                                          |
 | Insurance                                                               | No certification or policy assertion                                                | Required types/limits, policy evidence and contractual representations                                                                    |
 | `[SUPPORT_HOURS]`, timezone and holidays                                | Unfilled                                                                            | Staffed hours, emergency channel and backup coverage; do not promise 24/7 service by default                                              |
-| Availability, latency, GPS freshness, notification and recovery targets | All unapproved                                                                      | Measured supported scope, paid supplier plans/quotas, monitoring and capacity evidence                                                    |
+| Availability, latency, GPS freshness and notification targets | All unapproved; recovery commitments excluded from this launch review | Evidence for any selected promise; architecture review does not establish measured capacity |
 | Credit rates/cap                                                        | Unfilled                                                                            | Commercial remedy and claim process after service targets are approved                                                                    |
 | Incident notification                                                   | Proposed initial customer notice within 24 hours of awareness, sooner when required | Operational capability and applicable legal/contract deadlines; never wait for final forensics or counsel appointment to contain/escalate |
 | Supplier/cross-border list                                              | Known/proposed suppliers; locations unverified                                      | Actual agreements, countries, retention/logging, security review, customer approval and required notices                                  |
@@ -39,8 +39,9 @@ customer-specific values and signed copies outside Git.
 4. Complete service targets only after operational evidence supports them.
 5. Adapt the PIA and participant notices for each customer; review supplier and
    retention decisions before signing or publication.
-6. Record approvals with real evidence. Counsel review remains a separate
-   internal release requirement, not a prerequisite to drafting.
+6. Record approvals with real evidence. Under DL-023 a sourced legal assessment
+   replaces blanket counsel signoff; any customer-specific specialist-review term
+   is addressed at onboarding.
 
 Owner approval of a draft business position does not record a customer signature,
 make a technical safeguard pass, or activate the Point 6 launch record.
