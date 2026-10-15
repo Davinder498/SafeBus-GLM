@@ -2,9 +2,17 @@
 
 **Status:** Draft prepared before customer onboarding; not approved or submitted
 **Operator:** `[PROVIDER_LEGAL_NAME]`, Alberta-registered Canadian business
-**Responsible business contact:** `[PRIVACY_LEAD]` / `[PRIVACY_EMAIL]`
+**Responsible business contact:** Business owner, selected Privacy Lead 2026-10-15 / `[PRIVACY_EMAIL]`
 **Prepared:** 2026-10-13 (America/Edmonton)
 **Scope reference:** CR1 product boundary and source based on merged PR 263
+
+**2026-10-15 implementation addendum:** Role-specific notices are now prepared at
+`/privacy#tenant-administrators`, `/privacy#guardians` and `/privacy#drivers`, with
+account-menu and signed-out access. The owner remains Privacy Lead; identity and
+direct contact are unresolved. The [current legal/privacy record](legal-privacy-completion-2026-10-15.md)
+adds primary supplier/legal sources and bounded hosted evidence: retention is
+disabled and eight dry-run branches fail with SQLSTATE 42702. No disposal,
+supplier, customer PIA or final privacy approval is inferred from notice access.
 
 ## 1. Assessment purpose, ownership and evidence
 
@@ -197,7 +205,9 @@ dependencies/triggers, anonymization linkability, failure handling and approved
 enforcement on the authorized target. Account/link removal, Auth revocation,
 primary deletion, provider disposal and backup expiry are different outcomes.
 Before a restore returns to service, reapply verified deletion/revocation.
-The encrypted export/decryption evidence is not a compatible full restore.
+Existing stored backup copies still need approved expiry, access and location
+decisions. Restore exercises are excluded from launch acceptance under DL-023;
+historical recovery evidence is preserved separately.
 
 Contract exit proposes secure, authorized tenant-scoped return and scoped
 completion evidence; its format/capability and 30/60-day proposed windows need
@@ -223,20 +233,20 @@ commercial applicability, notices and any permitted exception remain decisions.
 Initial ratings are engineering prioritization, not a legal harm determination.
 Residual risk is not accepted while required evidence remains open.
 
-| ID / initial priority | Risk                                                                      | Prepared/proposed control                                               | Closure evidence / owner                                                                                      |
-| --------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| PIA-01 / High         | School admins read other schools' location; cross-tenant disclosure       | Scoped restrictive policies and exact authorization manifest            | Security: installed catalog plus real REST/RPC allow/deny tests, including NULL-school routes; open S1        |
-| PIA-02 / High         | Guardian reads private notes or unrelated students                        | Explicit safe columns and scoped admin-notes RPC                        | Security: positive admin/negative guardian and inactive/expired-link tests; open S2                           |
-| PIA-03 / High         | Revoked user retains JWT, refresh, realtime or native access              | Prepared Auth-session, mirror, hook and lifecycle hardening             | Security/device QA: recovery-gated installation and real signed-session, socket and Android tests; open S3/S4 |
-| PIA-04 / High         | Device/off-trip data or delayed recovery leaks location                   | Native encrypted queue, collection state and bounded authorization      | Device QA: physical lost/revoked/offline/ended-trip, purge, latency and disclosure tests                      |
-| PIA-05 / High         | Deletion/backup/hold representations exceed actual behavior               | Draft scheduler, reviewed recovery workflow and scoped holds            | Privacy/operations: accepted periods, compatible restore, tested disposal/holds and supplier windows          |
-| PIA-06 / High         | Unexpected foreign provider/log/artifact processing                       | Supplier inventory, minimization, encryption and country review         | Privacy/vendor owner: actual countries/contracts/notices and approved decisions                               |
-| PIA-07 / High         | Wrong-recipient email or optional feature activation                      | Authorized recipient checks, minimal content and activation gates       | Security/privacy: enabled-scope review, direct recipient/expiry tests and supplier acceptance                 |
-| PIA-08 / High         | Unverified guardian/student authority or overcollection in free text      | Customer verification and minimum fields/notices                        | Customer/privacy: onboarding authority, field review, free-text handling and independent-student procedure    |
-| PIA-09 / High         | Business policy misses inquiries, payments or customer-independent rights | Separate business inventory, Stripe disclosure and direct request route | Business privacy lead: purpose/authority, finance/vendor and request exercise evidence                        |
-| PIA-10 / High         | Contract promises unavailable capacity, uptime or recovery                | Unfilled targets and activation/acceptance conditions                   | Product/operations: paid plans/quotas, measured workload/device/monitoring/recovery and approved SLA          |
-| PIA-11 / Medium       | Owner absence, weak incident/request routing or missed legal notice       | Named backup, breach/request/hold procedures                            | Privacy/operations: appointed resources, routing and tabletop incl. applicable POPA recipients                |
-| PIA-12 / High         | Public/app/Play notices conflict with practices or excluded scope         | Reconciliation and publication gate                                     | Privacy/product: approved consistent texts, working contacts/URLs and store/privacy evidence                  |
+| ID / initial priority | Risk                                                                      | Prepared/proposed control                                               | Closure evidence / owner                                                                                                                   |
+| --------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| PIA-01 / High         | School admins read other schools' location; cross-tenant disclosure       | Scoped restrictive policies and exact authorization manifest            | Security: installed catalog plus real REST/RPC allow/deny tests, including NULL-school routes; open S1                                     |
+| PIA-02 / High         | Guardian reads private notes or unrelated students                        | Explicit safe columns and scoped admin-notes RPC                        | Security: positive admin/negative guardian and inactive/expired-link tests; open S2                                                        |
+| PIA-03 / High         | Revoked user retains JWT, refresh, realtime or native access              | Prepared Auth-session, mirror, hook and lifecycle hardening             | Security/device QA: recovery-gated installation and real signed-session, socket and Android tests; open S3/S4                              |
+| PIA-04 / High         | Device/off-trip data or delayed recovery leaks location                   | Native encrypted queue, collection state and bounded authorization      | Device QA: physical lost/revoked/offline/ended-trip, purge, latency and disclosure tests                                                   |
+| PIA-05 / High         | Deletion/backup/hold representations exceed actual behavior               | Draft scheduler, approved disposal procedure and scoped holds           | Privacy/operations: correct confirmed dry-run failures, accept periods, test disposal/holds and supplier windows; recovery drills excluded |
+| PIA-06 / High         | Unexpected foreign provider/log/artifact processing                       | Supplier inventory, minimization, encryption and country review         | Privacy/vendor owner: actual countries/contracts/notices and approved decisions                                                            |
+| PIA-07 / High         | Wrong-recipient email or optional feature activation                      | Authorized recipient checks, minimal content and activation gates       | Security/privacy: enabled-scope review, direct recipient/expiry tests and supplier acceptance                                              |
+| PIA-08 / High         | Unverified guardian/student authority or overcollection in free text      | Customer verification and minimum fields/notices                        | Customer/privacy: onboarding authority, field review, free-text handling and independent-student procedure                                 |
+| PIA-09 / High         | Business policy misses inquiries, payments or customer-independent rights | Separate business inventory, Stripe disclosure and direct request route | Business privacy lead: purpose/authority, finance/vendor and request exercise evidence                                                     |
+| PIA-10 / High         | Contract promises unavailable capacity, uptime or recovery                | Unfilled targets and activation/acceptance conditions                   | Product/operations: paid plans/quotas, measured workload/device/monitoring/recovery and approved SLA                                       |
+| PIA-11 / Medium       | Owner absence, weak incident/request routing or missed legal notice       | Named backup, breach/request/hold procedures                            | Privacy/operations: appointed resources, routing and tabletop incl. applicable POPA recipients                                             |
+| PIA-12 / High         | Public/app/Play notices conflict with practices or excluded scope         | Reconciliation and publication gate                                     | Privacy/product: approved consistent texts, working contacts/URLs and store/privacy evidence                                               |
 
 Assess impact/likelihood again after evidence and record actual remaining risks,
 dispositions, accountable reviewer, deadlines and expiry outside public Git.
@@ -263,15 +273,15 @@ of submission requirements for the actual service. No OIPC acceptance is claimed
 
 ## 12. Review and approval record
 
-| Review                                                           | Status                                           |
-| ---------------------------------------------------------------- | ------------------------------------------------ |
-| Owner review of business purposes, contacts and terms            | Pending                                          |
-| Statutory/role and field authority review                        | Draft; sourced applicability/compliance review pending |
-| Customer-specific public-body/collection/notice/PIA authority    | Deferred until onboarding                        |
-| Supplier/country, retention/holds and contract decisions         | Pending                                          |
-| Installed security, signed-device and service evidence          | Security installation verified; runtime/device/service acceptance open; recovery drills excluded by DL-023 |
-| Required internal/customer Point 6 approvals                     | Not recorded                                     |
-| PIA submission where required                                    | Not assessed for a named customer; not submitted |
+| Review                                                        | Status                                                                                                     |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Owner review of business purposes, contacts and terms         | Pending                                                                                                    |
+| Statutory/role and field authority review                     | Draft; sourced applicability/compliance review pending                                                     |
+| Customer-specific public-body/collection/notice/PIA authority | Deferred until onboarding                                                                                  |
+| Supplier/country, retention/holds and contract decisions      | Pending                                                                                                    |
+| Installed security, signed-device and service evidence        | Security installation verified; runtime/device/service acceptance open; recovery drills excluded by DL-023 |
+| Required internal/customer Point 6 approvals                  | Not recorded                                                                                               |
+| PIA submission where required                                 | Not assessed for a named customer; not submitted                                                           |
 
 Record version, reviewer role, date, evidence reference, findings and actual
 approval decision in controlled records. Only non-secret references enter the

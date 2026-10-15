@@ -143,7 +143,8 @@ or unrelated collection merely because it is updated.
 
 ## Contact and accountability
 
-Address privacy questions to `[PRIVACY_LEAD]` at `[PRIVACY_EMAIL]` or
-`[PROVIDER_BUSINESS_ADDRESS]`. The owner may serve as the accountable privacy
-lead; it is not necessary for that business role to be a lawyer. Legal-review
+Address privacy questions to the business owner, the appointed Privacy Lead,
+at `[PRIVACY_EMAIL]` or `[PROVIDER_BUSINESS_ADDRESS]`. The owner selected this
+role on 2026-10-15; the contact details remain unresolved. It is not necessary
+for that business role to be a lawyer. Legal-review
 and customer-specific approval obligations are handled separately.

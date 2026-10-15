@@ -1,7 +1,7 @@
 ﻿# SafeBus Alberta — Legal Roles and Alberta Statutory Mapping
 
-**Status:** Draft for Alberta privacy counsel and customer review; not approved
-**Owner:** Privacy Lead / Counsel
+**Status:** Sourced assessment for accountable business/customer review; not approved
+**Owner:** Business owner / Privacy Lead; specialist advice when needed
 **Readiness point:** 6 — Privacy and commercial terms, item 1
 **Last checked:** 2026-10-13 (America/Edmonton)
 
@@ -25,7 +25,7 @@ that product decision. See [first-customer profile](../first-customer-profile.md
 and [CR1 scope](../commercial-release-scope.md).
 
 The [review worksheet](legal-role-review.md) identifies the missing evidence and
-closure criteria. Appointment of counsel and customer review remain open.
+closure criteria. Specialist advice is optional; customer review occurs at onboarding.
 The owner subsequently requested the [business drafts](business-pack/README.md)
 and PIA before those reviews. Preparing them does not require a customer or
 counsel appointment. The reviewed PIPA/POPA guidance does not establish a general
@@ -140,8 +140,9 @@ or isolation as proven based on repository code alone.
 
 ## 6. PIA responsibility to carry into the next item
 
-The school authority and counsel must decide which POPA PIA preparation and
-submission requirements apply. Where required, the public-body head or an
+The customer's accountable privacy representative determines which POPA PIA
+preparation and submission requirements apply, using specialist advice where
+needed. Where required, the public-body head or an
 appropriately delegated person signs the PIA; internal SafeBus review alone
 cannot supply that authority. OIPC submission or review must not be inferred
 from a Markdown draft. [OIPC POPA PIA guide](https://oipc.ab.ca/resource/popa-pia-template-completion-guide/).
@@ -151,14 +152,14 @@ not a completed outcome of this role analysis.
 
 ## 7. Review and evidence status
 
-| Record                                     | Current state                                                          |
-| ------------------------------------------ | ---------------------------------------------------------------------- |
-| Alberta registration and Canadian business | Owner-confirmed; formal identity and registration evidence pending     |
-| Privacy counsel                            | Not appointed as of 2026-10-13                                         |
+| Record                                     | Current state                                                             |
+| ------------------------------------------ | ------------------------------------------------------------------------- |
+| Alberta registration and Canadian business | Owner-confirmed; formal identity and registration evidence pending        |
+| Privacy counsel                            | Not appointed as of 2026-10-13                                            |
 | Statutory mapping                          | Updated research draft; sourced applicability/compliance decision pending |
-| SafeBus/customer roles                     | Proposed; accountable review and customer-specific confirmation pending |
-| Customer authority                         | Participating authority and authorized decision-maker evidence pending |
-| PIA, agreements and other Point 6 items    | Separate work and approval required                                    |
+| SafeBus/customer roles                     | Proposed; accountable review and customer-specific confirmation pending   |
+| Customer authority                         | Participating authority and authorized decision-maker evidence pending    |
+| PIA, agreements and other Point 6 items    | Separate work and approval required                                       |
 
 Keep legal advice, executed agreements, registration documents, customer names
 and individual contact details in the approved restricted evidence system.

@@ -217,6 +217,12 @@ export function AcceptInvitationPage() {
               </Button>
             </form>
           )}
+          <Link
+            to="/privacy"
+            className="mt-6 inline-flex text-sm font-semibold text-navy-700 underline underline-offset-4"
+          >
+            Read the privacy notice
+          </Link>
         </Card>
       </main>
     </PublicLayout>

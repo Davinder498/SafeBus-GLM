@@ -2,7 +2,17 @@
 
 **Status:** Proposed periods; legal/purpose approval and safe enforcement pending
 **Owner:** Business Privacy Lead with Customer / Engineering / Operations
-**Last updated:** 2026-10-13
+**Last updated:** 2026-10-15
+
+**Observed execution gap:** The bounded read-only
+[2026-10-15 observation](retention-observation-2026-10-15.json) confirmed the
+database's destructive control is disabled, with no recorded completed
+enforcement runs. Eight policy branches have recorded ambiguous-column dry-run
+failures. A guarded forward correction is prepared and tested in owned local
+PostgreSQL; it remains pending, uninstalled and does not enable deletion. See
+the [correction record](legal-privacy-completion-2026-10-15.md).
+Configured periods do not establish actual deletion. No flag or database change
+is authorized or applied by this notice/document work.
 
 ## Purpose and acceptance boundary
 

@@ -13,17 +13,17 @@ not an approved public statement. Differentiate transport subprocessors from
 SafeBus own-business financial, inquiry and support suppliers. Record the actual
 legal vendor and role in the executed appendix, not just a product brand.
 
-| Service                       | Information/risks to inspect                                                                   | Current decision                                                                                        |
-| ----------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Supabase database/Auth        | Customer records/sessions; primary region, backups, support/managed logs and downstream access | Canadian primary region intended; full evidence/agreement pending                                       |
-| Netlify website/CDN/functions | Personal request content and IP/log metadata; execution/CDN/log countries and stored copies    | Country, contract and log/retention review pending; no blanket no-at-rest claim                         |
-| Email vendor                  | Invites, event emails, business inquiries, recipient/content and provider delivery history     | Actual enabled service and country/DPA/retention decisions pending                                      |
-| Geoapify                      | Viewport tile coordinates, IP/referrer/metadata, quota/key controls                            | Selected provider; contract, restricted key, paid SLA and privacy/country evidence pending              |
-| Stripe                        | Contract/billing contact, PO/subscription/invoice/payment details and provider metadata        | Own-business/financial role review pending; SafeBus projection excludes card/bank details               |
-| GitHub artifact transfer      | Encrypted database/role exports and schema evidence; repository/build/release metadata         | Restricted artifact/country/retention review pending; transfer is not durable Canadian recovery storage |
-| Owner recovery storage        | Off-site encrypted copies and separate private key custody                                     | Reported Canadian copy/checksum; custody/window/full restoration evidence needs review                  |
-| Google FCM                    | Optional token and privacy-limited push/metadata                                               | Outside CR1 activation; default off until separate approved gates                                       |
-| Monitoring/support tools      | Potential diagnostic/ticket personal data and access                                           | Selection and review pending; no new tooling approved here                                              |
+| Service                       | Information/risks to inspect                                                                   | Current decision                                                                                                       |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Supabase database/Auth        | Customer records/sessions; primary region, backups, support/managed logs and downstream access | Canadian primary region intended; full evidence/agreement pending                                                      |
+| Netlify website/CDN/functions | Personal request content and IP/log metadata; execution/CDN/log countries and stored copies    | Country, contract and log/retention review pending; no blanket no-at-rest claim                                        |
+| Email vendor                  | Invites, event emails, business inquiries, recipient/content and provider delivery history     | Actual enabled service and country/DPA/retention decisions pending                                                     |
+| Geoapify                      | Viewport tile coordinates, IP/referrer/metadata, quota/key controls                            | Selected provider; contract, restricted key, paid SLA and privacy/country evidence pending                             |
+| Stripe                        | Contract/billing contact, PO/subscription/invoice/payment details and provider metadata        | Own-business/financial role review pending; SafeBus projection excludes card/bank details                              |
+| GitHub artifact transfer      | Encrypted database/role exports and schema evidence; repository/build/release metadata         | Restricted artifact/country/retention review pending; transfer is not durable Canadian recovery storage                |
+| Owner recovery storage        | Off-site encrypted copies and separate private key custody                                     | Owner-reported Canadian copy; privacy custody/access/window decisions remain; historical recovery evidence is separate |
+| Google FCM                    | Optional token and privacy-limited push/metadata                                               | Outside CR1 activation; default off until separate approved gates                                                      |
+| Monitoring/support tools      | Potential diagnostic/ticket personal data and access                                           | Selection and review pending; no new tooling approved here                                                             |
 
 ## Per-supplier evidence checklist
 

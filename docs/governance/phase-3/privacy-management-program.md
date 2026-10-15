@@ -1,13 +1,15 @@
 ﻿# SafeBus Business Privacy-Management Program — Draft
 
-**Status:** Prepared policy; appointment, training, exercises and operational evidence pending
+**Status:** Owner appointed Privacy Lead; contact, backup, training and operational evidence pending
 **Owner:** Business owner / appointed Privacy Lead
-**Last updated:** 2026-10-13
+**Last updated:** 2026-10-15
 
 ## Accountability and review
 
-The owner is responsible for the business and may appoint themselves as the
-accountable privacy lead. Record that appointment and a capable backup in
+On 2026-10-15 the business owner explicitly appointed themselves as the
+accountable Privacy Lead (owner reply: "me"). This records the role decision,
+not completed training, working contact channels or overall privacy approval.
+Record a capable backup and any necessary confidential appointment details in
 restricted business records; publish the agreed working privacy contact.
 Owner authority is distinct from legal qualifications and from a customer's
 public-body authority. Hiring Alberta privacy counsel is not established as a
@@ -69,15 +71,15 @@ Document completion, backup contacts and exceptions in controlled records.
 
 ## Proposed operating cadence
 
-| Activity                        | Proposed cadence                                                                      | Closure evidence                                           |
-| ------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Monitor privacy/request channel | Each staffed business day; urgent incidents use separately staffed routing            | Delivery/backup checks and intake record                   |
-| Request/hold tracking           | On receipt and before statutory deadlines; review holds by their recorded date        | Timely routing, authority, outcome and hold review         |
+| Activity                        | Proposed cadence                                                                      | Closure evidence                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Monitor privacy/request channel | Each staffed business day; urgent incidents use separately staffed routing            | Delivery/backup checks and intake record                                      |
+| Request/hold tracking           | On receipt and before statutory deadlines; review holds by their recorded date        | Timely routing, authority, outcome and hold review                            |
 | Retention                       | Daily scheduled dry-run currently prepared; destructive execution only after approval | Approved periods and safe enforcement/hold results; no restore drill required |
-| Audit/access review             | Monthly anomalies; quarterly access review                                            | Sanitized review, assigned findings and removal evidence   |
-| Supplier/PIA review             | At least annually and before material changes                                         | Actual decisions, updated inventory and notices            |
-| Incident-response exercise      | Before launch, then at least annually or after material change                        | Response/communications record; recovery drills excluded by DL-023 |
-| Training                        | Before access and annually                                                            | Attendance and content record outside Git                  |
+| Audit/access review             | Monthly anomalies; quarterly access review                                            | Sanitized review, assigned findings and removal evidence                      |
+| Supplier/PIA review             | At least annually and before material changes                                         | Actual decisions, updated inventory and notices                               |
+| Incident-response exercise      | Before launch, then at least annually or after material change                        | Response/communications record; recovery drills excluded by DL-023            |
+| Training                        | Before access and annually                                                            | Attendance and content record outside Git                                     |
 
 The owner must approve feasible hours and frequencies. A schedule written here
 is not evidence that monitoring, deletion or response has occurred.

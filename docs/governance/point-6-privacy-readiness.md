@@ -2,6 +2,19 @@
 
 **Status: Repository evidence gate implemented; Point 6 remains open.**
 
+## Current notice implementation — 2026-10-15
+
+The owner selected legal/privacy next, required accessible notices for tenant
+admins, guardians and drivers, retained unresolved identity/contact details and
+appointed themselves Privacy Lead. The
+[implementation and remaining evidence](phase-3/legal-privacy-completion-2026-10-15.md)
+records role notices, signed-out/in-app access, sourced legal/supplier review and
+new read-only retention evidence. Notice code and both browser acceptance suites
+are bound into the privacy evidence digest. The shared public-policy approval
+covers its tenant/guardian/driver sections; no customer signature is invented.
+Overall Point 6 remains open, particularly the direct contact, actual suppliers,
+retention correction/enforcement and commercial choices.
+
 Commercial Readiness Point 6 requires approved legal roles, a Privacy Impact
 Assessment, operating privacy procedures, customer contracts, retention and
 deletion evidence, vendor/subprocessor reviews, residency decisions, public and
@@ -31,15 +44,15 @@ applicable obligation or negotiated customer term requires it. Draft preparation
 independent of that approval. Customer-specific authority and signatures are
 completed at onboarding. No legal, customer or operational approval is claimed.
 
-| Order      | Item                                                     | Completion requirement                                                               |
-| ---------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Order      | Item                                                             | Completion requirement                                                                |
+| ---------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | 1 — active | Statutory mapping, legal roles and customer-onboarding procedure | Sourced platform review and identity; actual customer authority checked at activation |
-| 2          | PIA and current data/field inventory                     | Complete assessment, authority and appropriate customer sign-off/submission decision |
-| 3          | Privacy operating procedures and accountable roles       | Approved procedures, owners and exercise evidence                                    |
-| 4          | Customer commercial and privacy contract pack            | Reviewed templates and billing/tax terms; actual customer execution at activation |
-| 5          | Retention, deletion and backup handling                  | Approved schedule and authorized execution evidence                                  |
-| 6          | Vendors, processing locations and cross-border decisions | Actual supplier, contract, security and residency evidence                           |
-| 7          | Participant/public notices and final Point 6 approval    | Approved publication and all required approvals bound to final source                |
+| 2          | PIA and current data/field inventory                             | Complete assessment, authority and appropriate customer sign-off/submission decision  |
+| 3          | Privacy operating procedures and accountable roles               | Approved procedures, owners and exercise evidence                                     |
+| 4          | Customer commercial and privacy contract pack                    | Reviewed templates and billing/tax terms; actual customer execution at activation     |
+| 5          | Retention, deletion and backup handling                          | Approved schedule and authorized execution evidence                                   |
+| 6          | Vendors, processing locations and cross-border decisions         | Actual supplier, contract, security and residency evidence                            |
+| 7          | Participant/public notices and final Point 6 approval            | Approved publication and all required approvals bound to final source                 |
 
 Existing drafts remain inputs to their later items. This sequence does not
 approve them or remove dependencies: contract and PIA drafts must be reconciled
@@ -117,15 +130,15 @@ approved isolated target and reviewed by accountable privacy owners.
 
 ## Exit record
 
-| Evidence group                             | Current state                             | Owner                           |
-| ------------------------------------------ | ----------------------------------------- | ------------------------------- |
+| Evidence group                             | Current state                                        | Owner                                    |
+| ------------------------------------------ | ---------------------------------------------------- | ---------------------------------------- |
 | Legal role and PIA                         | Draft; sourced review/customer applicability pending | Privacy Lead; optional specialist advice |
-| Privacy program and tabletop               | Draft; operational evidence pending       | Privacy / Security / Operations |
-| Customer contract pack                     | Draft checklist; execution pending        | Counsel / Product / Customer    |
-| Retention schedule and enforcement         | Draft; isolated execution pending         | Privacy / Engineering           |
-| Vendors, residency, and cross-border flows | Vendor decisions and agreements pending   | Privacy / Product / Security    |
-| Notices and public policy                  | Drafts pending approval and publication   | Privacy / Customer              |
-| Final Point 6 approval                     | Pending                                   | Required approval roles         |
+| Privacy program and tabletop               | Draft; operational evidence pending                  | Privacy / Security / Operations          |
+| Customer contract pack                     | Draft checklist; execution pending                   | Counsel / Product / Customer             |
+| Retention schedule and enforcement         | Draft; isolated execution pending                    | Privacy / Engineering                    |
+| Vendors, residency, and cross-border flows | Vendor decisions and agreements pending              | Privacy / Product / Security             |
+| Notices and public policy                  | Drafts pending approval and publication              | Privacy / Customer                       |
+| Final Point 6 approval                     | Pending                                              | Required approval roles                  |
 
 Generate the digest after the approved source package is final:
 

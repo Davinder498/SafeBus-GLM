@@ -19,11 +19,19 @@ const requiredFiles = {
   'apps/web/netlify/functions/safebus-retention-scheduled.mjs': 'export const retention = true;\n',
   'apps/web/src/lib/driverLocationDisclosure.ts': 'export const disclosure = true;\n',
   'apps/web/src/components/layout/DashboardLayout.tsx': 'export const dashboard = true;\n',
+  'apps/web/src/components/layout/LegalPageLayout.tsx': 'export const legalLayout = true;\n',
+  'apps/web/src/components/privacy/RolePrivacyNotices.tsx': 'export const roleNotices = true;\n',
+  'apps/web/src/components/driver/BusQrStartScanner.tsx': 'export const scanner = true;\n',
   'apps/web/src/components/layout/PublicLayout.tsx': 'export const publicLayout = true;\n',
   'apps/web/src/pages/AccountDeletionPage.tsx': 'export const deletion = true;\n',
   'apps/web/src/pages/AccountSettingsPage.tsx': 'export const settings = true;\n',
   'apps/web/src/pages/PrivacyPolicyPage.tsx': 'export const policy = true;\n',
+  'apps/web/src/pages/LoginPage.tsx': 'export const login = true;\n',
+  'apps/web/src/pages/AcceptInvitationPage.tsx': 'export const invitation = true;\n',
   'apps/web/src/routes/router.tsx': 'export const router = true;\n',
+  'apps/mobile/src/routes/router.tsx': 'export const router = true;\n',
+  'tests/smoke/privacy-notice-access.spec.ts': '// local browser acceptance\n',
+  'tests/mobile-ui/privacy-notice-access.spec.ts': '// local mobile acceptance\n',
   'docs/governance/commercial-release-scope.md': '# CR1\n',
   'docs/governance/data-classification.md': '# Classification\n',
   'docs/governance/google-play-data-safety-notifications.md': '# Data safety\n',
@@ -33,13 +41,18 @@ const requiredFiles = {
   'package.json': '{}\n',
   'pnpm-lock.yaml': 'lockfileVersion: 9\n',
   'scripts/check-privacy-readiness.mjs': 'export const check = true;\n',
+  'scripts/check-android-publication-preflight.mjs': 'export const check = true;\n',
   'scripts/lib/privacy-readiness.mjs': 'export const readiness = true;\n',
   'scripts/print-privacy-release-digest.mjs': 'export const digest = true;\n',
   'supabase/migrations/0069_phase3_retention_foundation.sql': 'select 69;\n',
+  'supabase/migrations/pending/20261015212746_fix_retention_column_qualification.sql':
+    'select 1;\n',
   'supabase/migrations/0090_phase7_byod_android_tracking.sql': 'select 90;\n',
   'supabase/migrations/0092_end_to_end_notification_system.sql': 'select 92;\n',
   'docs/qa/end-to-end-notification-acceptance.md': '# Notifications\n',
   'tests/release/privacy-readiness.test.mjs': 'export const contract = true;\n',
+  'tests/release/retention-qualification-postgres.test.mjs': '// owned PostgreSQL acceptance\n',
+  'tests/release/fixtures/retention-installed-function.sql': '-- observed function definition\n',
   'tests/rls/phase3-retention-rls.sql': 'select 1;\n',
 };
 
@@ -287,6 +300,27 @@ test('Point 6 rejects vendor gaps, non-HTTPS policy, approvals, and source drift
   );
 });
 
+test('Point 6 binds role notices and their web/mobile access paths to approval', async (t) => {
+  const root = await fixtureRoot();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const readiness = await approvedFixture(root);
+  const now = Date.parse('2026-08-23T12:00:00.000Z');
+  for (const file of [
+    'apps/web/src/components/privacy/RolePrivacyNotices.tsx',
+    'apps/web/src/components/layout/LegalPageLayout.tsx',
+    'apps/web/src/pages/LoginPage.tsx',
+    'apps/mobile/src/routes/router.tsx',
+  ]) {
+    await fs.appendFile(path.join(root, file), 'changed notice or access\n');
+    await assert.rejects(
+      verifyPrivacyReadiness({ readiness, root, now }),
+      /does not match the current release-controlled source/,
+    );
+    await fs.writeFile(path.join(root, file), requiredFiles[file]);
+  }
+  await verifyPrivacyReadiness({ readiness, root, now });
+});
+
 test('Point 6 v2 uses sourced legal evidence without requiring counsel, support contact or a customer signature', async (t) => {
   const root = await fixtureRoot();
   t.after(() => fs.rm(root, { recursive: true, force: true }));
@@ -379,7 +413,7 @@ test('production release verifies Point 6 before every deploy or database action
   assert.equal(currentReadiness.status, 'not_approved');
 });
 
-test('Point 6 records keep counsel, vendor, customer, retention, and publication evidence open', async () => {
+test('Point 6 records keep actual legal, vendor, customer, retention, and publication evidence open', async () => {
   const [governance, phase, milestone] = await Promise.all([
     read('docs/governance/point-6-privacy-readiness.md'),
     read('docs/governance/phase-3/README.md'),
@@ -389,6 +423,7 @@ test('Point 6 records keep counsel, vendor, customer, retention, and publication
   assert.match(governance, /Point 6 remains open/);
   assert.match(governance, /does not constitute legal advice/i);
   assert.match(governance, /does not publish an unapproved privacy policy/i);
-  assert.match(phase, /Drafted for counsel and privacy-professional review/);
+  assert.match(phase, /final evidence\/approval pending/);
+  assert.doesNotMatch(phase, /Contracts and notices approved by counsel/);
   assert.match(milestone, /Commercial Readiness Remediation 11/);
 });

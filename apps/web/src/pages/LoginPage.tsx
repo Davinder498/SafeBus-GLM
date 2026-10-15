@@ -165,6 +165,12 @@ export function LoginPage() {
               Back to site
             </button>
           </div>
+          <Link
+            to="/privacy"
+            className="mt-6 inline-flex text-sm font-semibold text-navy-700 underline underline-offset-4"
+          >
+            Privacy notice
+          </Link>
         </div>
       </div>
     </div>
