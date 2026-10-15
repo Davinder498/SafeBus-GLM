@@ -11,7 +11,14 @@ with one milestone at a time. The first bounded R1 fix expands schema/authorizat
 drift coverage, bounds read-only audits and stops obsolete historical adoption
 before connection. [Release schema integrity](release-schema-integrity.md)
 records the hosted catalog-only observation, local SQL tests and evidence limits.
-Recovery, security installation/acceptance and a reviewed historical adoption
+Full recovery passed technical verification; the owner accepted the evidence and
+confirmed the exact new backup's Canadian offsite copy. The bound receipt
+validated. See
+[full recovery evidence](full-database-recovery-2026-10-14.md).
+The protected security installation committed after separate owner approval;
+independent catalog/ledger and negative SQL verification passed. See
+[installation verification](security-installation-2026-10-14.md).
+Verified types, real security acceptance and a reviewed historical adoption
 contract remain required. Server scaling is the next separate engineering
 milestone; no fleet capacity claim or hosted load is implied.
 
@@ -22,7 +29,8 @@ PR [#259](https://github.com/Davinder498/SafeBus-GLM/pull/259) merged on
 scenario declarations are being replaced by active mobile checks for assigned-bus
 navigation, scoped presentation, empty/error states, unauthenticated deep-link
 denial and the NULL-school driver scan surface. Active administrator coverage
-remains on the website. Recovery and hosted security acceptance remain deferred.
+remains on the website. Hosted security acceptance remains pending; current
+recovery progress is recorded above.
 
 ## Completed implementation: commercial browser verification
 
@@ -50,7 +58,7 @@ Prepared changes and local production-preview measurements are recorded in
 The database security milestone below remains open. Neither this deferral nor
 frontend improvements authorize deployment or commercial launch.
 
-## Deferred milestone: authorization and session security
+## Pending milestone: authorization and session security
 
 Merged PR #252 contains forward migration **0122**, application integration,
 server boundary tests and expanded protected authorization-audit checks. Existing
@@ -64,8 +72,9 @@ The target remains production-designated; a second project is optional for this
 milestone. The follow-up branch prepares snapshot reconciliation **0123** and a
 protected rollback-only rehearsal. See
 [existing-project-security-rehearsal.md](existing-project-security-rehearsal.md).
-No database patch has been applied. Protected GitHub environment review and human
-PR merge review remain required.
+At this preparation stage, no database patch had been applied. The separately
+owner-approved installation and its verification are recorded above; protected
+environment review and human PR merge review remain required for new changes.
 
 The first hosted SQL rehearsal completed reconciliation and 0122 before its
 malformed-session acceptance check exposed 22P02 in the SQL session function.
@@ -77,8 +86,8 @@ finding is closed by these unit tests or by a failed rehearsal.
 
 The protected hosted run [38101560000](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38101560000)
 now passed the full 0123 → 0122 → 0124 rollback sequence and restored its inspected
-catalog; downloaded evidence hashes were verified. These changes remain
-uninstalled. A guarded installation/export workflow is prepared with an actual
+catalog; downloaded evidence hashes were verified. These changes were still
+uninstalled at that stage. A guarded installation/export workflow was prepared with an actual
 off-site backup/full restore receipt gate and a separate ledger recording only
 the three executed security migrations. See
 [existing-security-installation.md](existing-security-installation.md).
@@ -90,12 +99,21 @@ Canadian location. Those checks do not prove a database restore.
 The approved free Canadian hosted recovery project was provisioned with its Data
 API disabled. Its TLS connection passed. A rollback-only check confirmed that its
 `postgres` role cannot create archived partitions in the protected `realtime`
-schema (42501). No backup data was loaded. A separate native recovery instance has
-been proposed, but not approved or created. The customer deferred restoration on
-2026-10-11. Before resuming installation, complete a compatible full restore and
-human review, renewing backup/rehearsal evidence if the 24-hour window has expired.
-Migrations 0122, 0123 and 0124 remain uninstalled; no commercial security finding
-is closed by the rehearsal or backup export.
+schema (42501). No backup data was loaded there. On 2026-10-14 the customer revoked
+the earlier deferral and approved a native recovery cluster on this Canadian
+laptop. Fresh encrypted export 38655618877 was fully restored there: all 110
+archived datasets (57,749 rows), four sequence states and reviewed metadata
+comparisons passed. The six CHECK display-text differences were proven equivalent
+in PostgreSQL; the raw fingerprint difference was retained, not hidden.
+The owner accepted this evidence and confirmed the exact new archive's Canadian
+offsite copy; the human receipt validated and was stored in the protected
+production environment. Before installation, complete fresh protected rehearsal
+evidence; the 24-hour window remains enforced.
+Protected run 38665578510 subsequently installed 0123 → 0122 → 0124 after the
+owner's separate environment approval. Independent read-only verification
+matched the actual ledger, complete catalog digest and exact RPC allowlists;
+negative SQL acceptance passed. No commercial security finding is closed by
+catalog checks alone; real signed-session/API acceptance remains required.
 
 | Finding                                                    | Prepared change                                                                                                                                                                                                                                                | Closure still required                                                                                                           |
 | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -188,8 +206,9 @@ backup restore, SQL change or launch approval is implied.
 
 ## Validation record
 
-The customer authorized C1 server engineering on 2026-10-14 while explicitly
-keeping full-restore recovery deferred. The
+The customer initially authorized C1 server engineering on 2026-10-14 while
+keeping full-restore recovery deferred, then resumed R1 and authorized the
+completed technical restore recorded above. The
 [asynchronous tracking worker](async-tracking-invalidations.md) is implemented as
 a pending forward migration with embedded PostgreSQL execution tests. It removes
 guardian fan-out from GPS ingestion when activated, uses current bus-service
