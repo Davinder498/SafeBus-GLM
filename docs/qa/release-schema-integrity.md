@@ -101,9 +101,9 @@ The new PostgreSQL checks run from `pnpm test` in the existing CI gate.
 
 ## Remaining R1 work, then server scaling
 
-1. Finalize human review and the exact new backup's offsite-copy attestation for
-   the [completed full recovery](full-database-recovery-2026-10-14.md), then create
-   the bound receipt and renew protected rehearsal evidence.
+1. Complete fresh protected rehearsal evidence bound to the
+   [owner-accepted full recovery](full-database-recovery-2026-10-14.md) and validated
+   receipt. Keep the 24-hour evidence window enforced.
 2. Install and accept the reviewed security reconciliation through its protected
    workflow; confirm actual ledger/catalog outcome rather than workflow colour.
 3. Prepare the historical adoption contract from observed evidence. Distinguish

@@ -13,8 +13,9 @@ The inspected catalog was restored after rollback. Its evidence checksums match
 the committed SQL. This was not a persistent installation or signed-session test.
 On 2026-10-14, a fresh protected export was fully restored on the owner's approved
 Canadian WSL recovery destination. Data and metadata verification passed;
-human evidence review and the new backup's offsite-copy attestation remain
-pending. See [full recovery evidence](full-database-recovery-2026-10-14.md).
+the owner accepted the evidence and confirmed the new backup's Canadian offsite
+copy. The bound human receipt validated. See
+[full recovery evidence](full-database-recovery-2026-10-14.md).
 The older rehearsal still needs renewal within the installation evidence window.
 
 ## Owner setup before the first backup

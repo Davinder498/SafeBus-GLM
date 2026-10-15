@@ -11,8 +11,9 @@ with one milestone at a time. The first bounded R1 fix expands schema/authorizat
 drift coverage, bounds read-only audits and stops obsolete historical adoption
 before connection. [Release schema integrity](release-schema-integrity.md)
 records the hosted catalog-only observation, local SQL tests and evidence limits.
-Full recovery has now passed technical verification; human evidence acceptance
-and confirmation of the new backup's offsite copy remain pending. See
+Full recovery passed technical verification; the owner accepted the evidence and
+confirmed the exact new backup's Canadian offsite copy. The bound receipt
+validated. See
 [full recovery evidence](full-database-recovery-2026-10-14.md).
 Security installation/acceptance and a reviewed historical adoption
 contract remain required. Server scaling is the next separate engineering
@@ -100,8 +101,9 @@ laptop. Fresh encrypted export 38655618877 was fully restored there: all 110
 archived datasets (57,749 rows), four sequence states and reviewed metadata
 comparisons passed. The six CHECK display-text differences were proven equivalent
 in PostgreSQL; the raw fingerprint difference was retained, not hidden.
-Human evidence review and the new archive's offsite attestation remain pending.
-Before installation, finalize the bound receipt and renew protected rehearsal
+The owner accepted this evidence and confirmed the exact new archive's Canadian
+offsite copy; the human receipt validated and was stored in the protected
+production environment. Before installation, complete fresh protected rehearsal
 evidence; the 24-hour window remains enforced.
 Migrations 0122, 0123 and 0124 remain uninstalled; no commercial security finding
 is closed by the rehearsal or backup export.

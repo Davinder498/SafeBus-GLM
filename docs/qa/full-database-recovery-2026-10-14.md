@@ -1,7 +1,8 @@
 # Full database recovery: 2026-10-14
 
-**Status:** Technical restore and verification passed; human evidence review and
-the new backup's offsite-copy attestation remain pending.
+**Status:** Technical restore and verification passed. The owner accepted the
+evidence and confirmed the exact new backup's Canadian offsite copy. The bound
+human recovery receipt validated; protected installation remains pending.
 
 ## Source and approved destination
 
@@ -100,8 +101,20 @@ The new encrypted transfer package is
 `3b2f08e1ccf0512fce074ad98acde4a66ce8a1b6453c902f5efbf34d44750822`.
 The earlier backup's offsite confirmation does not cover this new package.
 
-Human evidence acceptance and confirmation of this exact backup's Canadian
-offsite copy are still required before generating the human recovery receipt.
+The owner subsequently confirmed: "Evidence accepted; new backup copied offsite."
+The confirmation refers to this exact new archive and the Canadian offsite
+destination in the review question; no specific site identifier was supplied.
+The owner-local approval record retains that distinction. The validated receipt
+SHA256 is `40a383c69411790daf3931012b857cfdc081383b53e5dec321d3d6781e0d6370`.
+The receipt was stored as the protected environment secret
+`SAFEBUS_SECURITY_RECOVERY_RECEIPT`, without exposing recovery keys.
+The reviewed verification ZIP SHA256 is
+`c2f2633c74184398c1babd99bc357bd87a8c1fe4c95cec7e3b8cfd3c92d81842`.
+The original evidence package still describes review as pending at collection;
+the later owner approval and receipt are separate records, not edits to that
+reviewed package. Auth verification here covers restored records and permissions;
+live signed-session/API acceptance remains a separate requirement.
+
 The installation's 24-hour backup/restore/rehearsal window remains enforced;
 expired evidence must be renewed. See
 [existing security installation](existing-security-installation.md).
