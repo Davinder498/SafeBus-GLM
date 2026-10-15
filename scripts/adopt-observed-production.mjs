@@ -19,7 +19,8 @@ import {
 } from './lib/security-workflow-evidence.mjs';
 
 let client,
-  committed = false;
+  committed = false,
+  stage = 'reviewed-checkout';
 try {
   const releaseSha = process.env.SAFEBUS_RELEASE_SHA;
   assertReviewedCheckout(releaseSha);
@@ -34,6 +35,7 @@ try {
     throw new Error('Explicit observed-baseline confirmation required.');
   if (process.env.SAFEBUS_DEPLOY_ENV !== 'production')
     throw new Error('Keep BusSafe production designated.');
+  stage = 'observed-contract';
   const binding = createEnvironmentBinding({
     environment: 'production',
     databaseUrl: process.env.SAFEBUS_DATABASE_URL,
@@ -48,6 +50,7 @@ try {
   const programFiles = [
     'scripts/adopt-observed-production.mjs',
     'scripts/lib/observed-production-baseline.mjs',
+    'scripts/lib/observed-catalog-reconciliation.mjs',
     'scripts/lib/environment-identity.mjs',
     'scripts/lib/existing-security-install.mjs',
     'scripts/lib/existing-security-rehearsal.mjs',
@@ -69,6 +72,7 @@ try {
   );
   let recovery;
   if (mode === 'adopt') {
+    stage = 'recovery-evidence';
     const directory = path.resolve('.safebus-release/observed-backup');
     const backup = await downloadWorkflowEvidence({
       repository: process.env.GITHUB_REPOSITORY,
@@ -103,16 +107,19 @@ try {
     };
     verifyRecovery({ ...recovery, binding });
   }
+  stage = 'api-boundary';
   await assertPrivateApiSchemaHidden(
     process.env.SUPABASE_URL,
     process.env.SAFEBUS_REHEARSAL_API_KEY,
   );
+  stage = 'database-connection';
   client = verifiedDatabaseClient(
     process.env.SAFEBUS_DATABASE_URL,
     process.env.SAFEBUS_DATABASE_CA_CERT,
     'safebus-observed-baseline',
   );
   await client.connect();
+  stage = 'observed-metadata-transaction';
   const evidence = await registerObservedBaseline(client, {
     contract,
     manifest,
@@ -124,6 +131,7 @@ try {
     programSha256,
   });
   committed = mode === 'adopt';
+  stage = 'evidence-write';
   const directory = path.resolve('.safebus-release/observed-production-baseline');
   await fs.mkdir(directory, { recursive: true });
   await fs.writeFile(
@@ -138,7 +146,7 @@ try {
   );
   console.log('No historical migration replay, frontend deployment or commercial launch approval.');
 } catch (error) {
-  console.error(safeSecurityFailure(error, 'observed-baseline'));
+  console.error(safeSecurityFailure(error, stage));
   if (committed || error?.metadataCommitted)
     console.error('Metadata committed; a later check failed. Inspect before retrying.');
   if (error?.message?.includes('commit outcome unknown'))

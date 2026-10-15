@@ -13,7 +13,7 @@
   "observedFromReleaseSha": "a5e36452a2579a502030eca12da2062d295a4e14",
   "schemaFingerprintFormat": 2,
   "schemaFingerprint": "067a93c5812bca1f8976d4f836d4d8d59f2aab054ea79fbff8dba0f425ce773c",
-  "sourceCatalogSha256": "32c147489fa426d58eadad7ef75103a55fcfef9d82339573a794b35ab5e928c4",
+  "sourceCatalogSha256": "a5dbca69aaff8380318ce4709d57b7608226b5f124ba93f7cb071ec78c2dfb4f",
   "sourceSecurityInstallation": {
     "releaseSha": "7bf7b47a0e300d0e7f316f837d898e81f3edd6a8",
     "backupRunId": "38655618877",
@@ -1241,5 +1241,35 @@
       "function_owner": "supabase_admin",
       "definition_md5": "4357772baf5cfcd5c6d7049585b3a537"
     }
-  ]
+  ],
+  "sourceCatalogReconciliation": {
+    "format": 1,
+    "kind": "reviewed-realtime-partition-additions",
+    "previousCatalogSha256": "32c147489fa426d58eadad7ef75103a55fcfef9d82339573a794b35ab5e928c4",
+    "observedCatalogSha256": "a5dbca69aaff8380318ce4709d57b7608226b5f124ba93f7cb071ec78c2dfb4f",
+    "addedRelations": [
+      {
+        "acl": [
+          "supabase_realtime_admin=arwdDxtm/supabase_realtime_admin",
+          "postgres=a*r*wdDxtm/supabase_realtime_admin",
+          "dashboard_user=arwdDxtm/supabase_realtime_admin"
+        ],
+        "rls": false,
+        "name": "messages_2026_10_17",
+        "schema": "realtime",
+        "force_rls": false
+      },
+      {
+        "acl": [
+          "supabase_realtime_admin=arwdDxtm/supabase_realtime_admin",
+          "postgres=a*r*wdDxtm/supabase_realtime_admin",
+          "dashboard_user=arwdDxtm/supabase_realtime_admin"
+        ],
+        "rls": false,
+        "name": "messages_2026_10_18",
+        "schema": "realtime",
+        "force_rls": false
+      }
+    ]
+  }
 }

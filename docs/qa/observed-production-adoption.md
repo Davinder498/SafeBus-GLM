@@ -37,10 +37,12 @@ file remains unchanged and its original content hash is checked independently.
 
 The accepted observed application fingerprint is format 2,
 `067a93c5812bca1f8976d4f836d4d8d59f2aab054ea79fbff8dba0f425ce773c`.
-The full source recovery catalog digest is
+The original installed recovery catalog digest is
 `32c147489fa426d58eadad7ef75103a55fcfef9d82339573a794b35ab5e928c4`.
-A fresh bounded catalog-only observation on 2026-10-15 matched both exactly;
-authorization metadata and default privileges also matched installation evidence.
+A subsequent [two-partition catalog reconciliation](observed-catalog-reconciliation-2026-10-15.md)
+pins the exact observed current catalog separately and proves its relationship
+to the original event. The application fingerprint remains unchanged. Runtime
+checks reject any additional unreviewed difference.
 This covers the reviewed authorization surface and observed definitions, not
 unrecorded historical executions or real signed-session acceptance.
 
