@@ -50,6 +50,8 @@ ACL for creators able to create in `public` and owners of its explicit defaults.
 When a global row is absent, `acldefault` supplies the actual built-in behavior.
 Diagnostics identify creator, global/schema scope, object type, recipient and
 privilege. No owner exemption or warning-only conversion was introduced.
+The standalone schema preflight also uses repeatable-read isolation with local
+statement/lock timeouts before inspecting the registered baseline.
 
 Owned in-memory PostgreSQL tests execute real default-grant changes and prove:
 
