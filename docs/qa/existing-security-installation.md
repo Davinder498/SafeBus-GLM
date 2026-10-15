@@ -16,7 +16,12 @@ Canadian WSL recovery destination. Data and metadata verification passed;
 the owner accepted the evidence and confirmed the new backup's Canadian offsite
 copy. The bound human receipt validated. See
 [full recovery evidence](full-database-recovery-2026-10-14.md).
-The older rehearsal still needs renewal within the installation evidence window.
+Fresh matching rehearsal
+[38665120891](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38665120891)
+passed after human environment approval. Downloaded catalog/checksum bindings
+match the new backup. Installation run
+[38665578510](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38665578510)
+passed validation and awaits its separate human environment approval.
 
 ## Owner setup before the first backup
 

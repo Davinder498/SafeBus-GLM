@@ -119,6 +119,14 @@ The installation's 24-hour backup/restore/rehearsal window remains enforced;
 expired evidence must be renewed. See
 [existing security installation](existing-security-installation.md).
 
+Fresh protected rehearsal [38665120891](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38665120891)
+passed after human environment approval. Its downloaded evidence binds to the
+same source commit, project, SQL checksums and backup authorization snapshot.
+The inspected catalog matched after rollback; private API isolation passed.
+Installation run [38665578510](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38665578510)
+passed code validation and is waiting for the required production-environment
+review. No persistent installation is claimed at this checkpoint.
+
 This verifies logical SQL and role recovery. Role passwords, Storage object
 bytes, provider configuration/signing keys, Vault root keys and external services
 are separate recovery items. Migrations 0123, 0122 and 0124 remain uninstalled.
