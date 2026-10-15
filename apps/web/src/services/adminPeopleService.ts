@@ -72,5 +72,8 @@ export async function revokeDriverTrackingDevices(profileId: string): Promise<nu
     p_profile_id: profileId,
   });
   if (error) throw new Error(error.message);
-  return data ?? 0;
+  if (typeof data !== 'number' || !Number.isSafeInteger(data) || data < 0) {
+    throw new Error('Could not confirm device revocation. Refresh and try again.');
+  }
+  return data;
 }

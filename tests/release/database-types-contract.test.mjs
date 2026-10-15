@@ -2,10 +2,80 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
+import { generateFromOpenApi } from '../../scripts/lib/openapi-database-types.mjs';
 
 const root = process.cwd();
 const generatedPath = path.join(root, 'packages/types/src/database.generated.ts');
 const generated = fs.readFileSync(generatedPath, 'utf8');
+
+test('OpenAPI RPC nullability preserves required arguments and unknown results', () => {
+  const source = generateFromOpenApi({
+    definitions: {},
+    paths: {
+      '/rpc/update_platform_support_contact': {
+        post: {
+          parameters: [
+            {
+              in: 'body',
+              schema: {
+                properties: {
+                  p_display_name: { type: 'string' },
+                  p_email: { type: 'string' },
+                  p_phone: { type: 'string' },
+                  p_website_url: { type: 'string' },
+                  p_support_hours: { type: 'string' },
+                  p_instructions: { type: 'string' },
+                },
+                required: [
+                  'p_display_name',
+                  'p_email',
+                  'p_phone',
+                  'p_website_url',
+                  'p_support_hours',
+                  'p_instructions',
+                ],
+              },
+            },
+          ],
+        },
+      },
+    },
+  });
+  const contact = source.slice(source.indexOf('update_platform_support_contact:'));
+  assert.match(contact, /p_phone: string \| null/);
+  assert.doesNotMatch(contact, /p_phone\?:/);
+  assert.match(contact, /Returns: unknown/);
+});
+
+test('OpenAPI default arguments can be omitted without making required nullable arguments optional', () => {
+  const source = generateFromOpenApi({
+    definitions: {},
+    paths: {
+      '/rpc/metadata_probe': {
+        post: {
+          parameters: [
+            {
+              in: 'body',
+              schema: {
+                properties: {
+                  p_required: { type: 'string', description: 'nullable' },
+                  p_default: { type: 'integer', default: 10 },
+                },
+                required: ['p_required'],
+              },
+            },
+          ],
+        },
+      },
+    },
+  });
+  const probe = source.slice(
+    source.indexOf('metadata_probe:'),
+    source.indexOf('record_student_record_access:'),
+  );
+  assert.match(probe, /p_required: string \| null/);
+  assert.match(probe, /p_default\?: number \| null/);
+});
 
 function sourceFiles(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -33,7 +103,8 @@ test('every TypeScript Supabase client is parameterized by the generated Databas
     if (!source.includes("from '@supabase/supabase-js'")) continue;
 
     if (/createClient\s*\(/.test(source)) offenders.push(path.relative(root, file));
-    if (/\bSupabaseClient\s*(?:[|&;,)=]|$)/m.test(source)) offenders.push(path.relative(root, file));
+    if (/\bSupabaseClient\s*(?:[|&;,)=]|$)/m.test(source))
+      offenders.push(path.relative(root, file));
   }
 
   assert.deepEqual([...new Set(offenders)], []);
@@ -48,7 +119,9 @@ test('every Netlify Supabase client declares the generated Database contract', (
     .filter((file) => {
       const source = fs.readFileSync(file, 'utf8');
       const clients = [...source.matchAll(/createClient\s*\(/g)].length;
-      const contracts = [...source.matchAll(/SupabaseClient<import\('@safebus\/types\/database'\)\.Database>/g)].length;
+      const contracts = [
+        ...source.matchAll(/SupabaseClient<import\('@safebus\/types\/database'\)\.Database>/g),
+      ].length;
       return clients !== contracts;
     })
     .map((file) => path.relative(root, file));
