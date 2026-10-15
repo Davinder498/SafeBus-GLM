@@ -1,6 +1,17 @@
 # Observed production schema adoption
 
-**Status: prepared for human review; not applied.**
+**Status: committed and independently verified; authorization default-privilege gate remains open.**
+
+Merged PRs #274/#275 are bound to successful protected rehearsal
+[38761500916](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38761500916).
+The [fresh full restore and Canadian offsite confirmation](full-database-recovery-2026-10-15.md)
+were verified and owner accepted. Protected registration
+[38764375653](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38764375653)
+committed with those exact backup, rehearsal and receipt bindings. Separate
+read-only inspection verified the actual records, private grants, original
+timestamps and unchanged application fingerprint. See the
+[registration evidence](observed-production-registration-2026-10-15.md) and
+[subsequent authorization audit failure](default-privilege-audit-2026-10-15.md).
 
 The security installation is verified and the merged generated types passed the
 fresh protected canonical run
@@ -12,9 +23,9 @@ that missing history.
 
 ## Historical input disposition
 
-This is a proposal to accept the **observed current schema**, not a claim that it
-is equivalent to replaying all historical migrations. Human review must accept
-that distinction before merging or registering the proposed contract.
+The approved contract accepts the **observed schema**, without claiming that it
+is equivalent to replaying all historical migrations. The following contract and
+runbook describe the reviewed procedure used by the registration above.
 
 `config/production-observed-baseline.json` lists every one of the 125 active
 manifest files, keyed by full filename, with immutable checksum/size/version and
