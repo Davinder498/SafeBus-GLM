@@ -7,11 +7,30 @@ Human PR merge review and the protected GitHub `production` environment remain.
 
 ## What has passed
 
+The owner-approved protected installation
+[38665578510](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38665578510)
+committed 0123 → 0122 → 0124. Independent read-only ledger, exact catalog/RPC
+allowlist and negative SQL acceptance checks passed. See
+[installation verification](security-installation-2026-10-14.md).
+The procedure below remains a record of the guarded first installation; its
+existing-ledger guard now prevents rerunning it. Historical adoption and real
+signed-session/API acceptance remain pending.
+
 The [hosted rehearsal at merge commit 1283e858](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38101560000)
 passed code validation and 0123 → 0122 → 0124 plus SQL catalog/negative acceptance.
 The inspected catalog was restored after rollback. Its evidence checksums match
 the committed SQL. This was not a persistent installation or signed-session test.
-The customer confirmed that no recoverable backup has yet been verified.
+On 2026-10-14, a fresh protected export was fully restored on the owner's approved
+Canadian WSL recovery destination. Data and metadata verification passed;
+the owner accepted the evidence and confirmed the new backup's Canadian offsite
+copy. The bound human receipt validated. See
+[full recovery evidence](full-database-recovery-2026-10-14.md).
+Fresh matching rehearsal
+[38665120891](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38665120891)
+passed after human environment approval. Downloaded catalog/checksum bindings
+match the new backup. Installation run
+[38665578510](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38665578510)
+passed validation and then committed after its separate human environment approval.
 
 ## Owner setup before the first backup
 
