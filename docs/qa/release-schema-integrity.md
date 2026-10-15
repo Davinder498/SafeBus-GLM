@@ -1,7 +1,13 @@
 # Release Integrity: Schema and Authorization Drift
 
-**Status:** First R1 engineering milestone; production adoption and server scaling remain open
-**Date:** 2026-10-14 (America/Edmonton)
+**Status:** Observed adoption verified; authorization default-privilege gate and runtime acceptance remain open
+**Date:** 2026-10-15 (America/Edmonton)
+
+The [fresh full restore](full-database-recovery-2026-10-15.md) was verified and
+owner accepted, and [production registration](observed-production-registration-2026-10-15.md)
+committed through protected approval. The subsequent authorization audit failed
+on [unsafe default privileges](default-privilege-audit-2026-10-15.md). R1 remains
+open; no server scaling or commercial-launch acceptance is claimed.
 
 ## Problem and change
 
@@ -40,8 +46,8 @@ Format 2 deliberately changes the digest preimage. A stored format-1 digest must
 fail comparison, including where a formerly omitted object changes. Never update
 a stored release fingerprint merely to make drift checks pass. The operator must
 review the schema/provenance and use a separately approved reconciliation/adoption
-procedure. Current production is unadopted, so no existing release record is
-migrated by this PR.
+procedure. Production was unadopted when this fingerprint change was introduced;
+the later reviewed registration is recorded in the evidence linked above.
 
 The new format also changes recovery snapshot fingerprints. Existing backup/
 restore/rehearsal artifacts must be renewed and bound to the new reviewed source;
@@ -54,7 +60,7 @@ claim that every PostgreSQL object type is modeled. It does not prove lawful
 access, recovery or fleet capacity. Hosted signed-session acceptance, advisors,
 exact RPC/Data API audits and actual migration provenance are still required.
 
-## Bounded hosted observation
+## Initial bounded hosted observation (2026-10-14)
 
 A catalog-only transaction on the approved BusSafe project used `BEGIN TRANSACTION
 READ ONLY`, local statement/lock timeouts and final `ROLLBACK`. It returned only
@@ -75,7 +81,9 @@ project is not treated as DEV/staging or a capacity-test approval. Check current
 provider patch/extension advisories before recovery/release; the observed version
 is not evidence that the provider's later 17.11 security update has been applied.
 [Supabase PostgreSQL update guidance](https://supabase.com/changelog/postgres-15-19-17-11-breaking-changes).
-No engine upgrade, migration, fixture, paid change or deployment was performed.
+No engine upgrade, migration, fixture, paid change or deployment was performed
+by that initial observation. Subsequent security installation and observed
+registration are separately documented in the linked evidence.
 
 A read-only Security Advisor retrieval still reported categories for RLS-enabled
 tables without policies, mutable function search paths, anonymous and authenticated
@@ -102,28 +110,31 @@ The new PostgreSQL checks run from `pnpm test` in the existing CI gate.
 
 ## Remaining R1 work, then server scaling
 
-1. Complete required security signed-session/API acceptance. The generated type
+1. Remediate the confirmed default-privilege gap through a reviewed forward
+   process. Supabase-managed owner privileges and effective global defaults
+   require review; retain the failed audit as evidence and do not relax it.
+2. Complete required security signed-session/API acceptance. The generated type
    contract was refreshed in PR #273 and the protected canonical run
    [38672206649](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38672206649)
    passed without a diff. The
    [owner-approved installation](security-installation-2026-10-14.md) committed;
    independent ledger/catalog, RPC allowlist and negative SQL checks passed.
-2. Retain the [accepted recovery evidence](full-database-recovery-2026-10-14.md)
-   and installation bindings; renew evidence for subsequent protected writes
-   according to the reviewed recovery procedure.
-3. Review the [prepared observed-schema adoption contract](observed-production-adoption.md).
-   It distinguishes observed schema from actual recorded execution and proposes
-   an explicit frozen-input disposition for every historical file, without
-   claiming historical effect equivalence. Do not replay all migrations,
-   extend the old baseline silently or stamp unsupported applied timestamps.
-4. Rehearse the replacement metadata/reconciliation workflow in a bounded rollback
-   transaction, review independently, then apply only through protected approval.
-5. Regenerate verified types, run exact authorization/advisor/drift checks and
-   retain source/schema/checksum/provenance evidence.
+3. Retain the [accepted fresh recovery evidence](full-database-recovery-2026-10-15.md)
+   and installation/registration bindings. The last backup predates registration;
+   subsequent writes need a fresh backup that also covers current private release
+   metadata, verified recovery and a protected forward-change workflow.
+4. Observed adoption is complete: 122 frozen historical inputs and only three
+   verified security executions. Preserve those immutable facts when recording
+   any future security correction. Do not replay historical migrations or rewrite
+   the registered baseline as though corrected defaults were already present.
+5. Run the canonical drift, preflight, types and complete authorization gates on
+   the final reviewed main SHA. A standalone protected read-only verification
+   workflow is prepared; it must not report success while any gate fails.
 6. Proceed with the next separately reviewed server milestone: remove synchronous
    per-guardian GPS broadcast work and provide authorized bounded/coalesced
    delivery. History/retention, notification concurrency/fairness and measured
    reconnect/capacity follow their own milestones and acceptance evidence.
 
-Preparing this first R1 fix does not finish release integrity, install security,
-prove a restore or certify the 10,000-bus/100,000-concurrent-user planning target.
+Security installation, full restoration and observed adoption have separate
+verified evidence. The failed authorization gate and runtime acceptance still
+prevent closure of R1. No measured fleet/concurrency capacity is certified.

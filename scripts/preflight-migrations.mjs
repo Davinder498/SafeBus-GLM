@@ -30,6 +30,9 @@ const client = new Client({
 try {
   await client.connect();
   await client.query('begin transaction read only');
+  await client.query('set transaction isolation level repeatable read');
+  await client.query("set local statement_timeout='15s'");
+  await client.query("set local lock_timeout='3s'");
   const result = await inspectSchemaDeployment(client, manifest, binding);
   if (result.pending.length > 0) {
     throw new Error(

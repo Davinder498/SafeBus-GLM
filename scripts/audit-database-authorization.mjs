@@ -3,6 +3,7 @@
 import fs from 'node:fs/promises';
 import process from 'node:process';
 import pg from 'pg';
+import { UNSAFE_PUBLIC_DEFAULT_PRIVILEGES_SQL } from './lib/default-privilege-audit.mjs';
 import { assertPrivateApiSchemaHidden } from './lib/existing-security-rehearsal.mjs';
 import {
   assertEnvironmentIdentity,
@@ -284,17 +285,7 @@ try {
   `);
   assertNoRows('Authorization references editable user metadata', editableMetadataReferences);
 
-  const unsafeDefaults = await client.query(`
-    select format('%s:%s:%s', owner_role.rolname, d.defaclobjtype, acl.privilege_type) as object_name
-      from pg_default_acl d
-      join pg_roles owner_role on owner_role.oid = d.defaclrole
-      cross join lateral aclexplode(d.defaclacl) acl
-      left join pg_roles grantee_role on grantee_role.oid = acl.grantee
-     where d.defaclnamespace = 'public'::regnamespace
-       and d.defaclobjtype in ('r', 'S', 'f')
-       and (acl.grantee = 0 or grantee_role.rolname in ('anon', 'authenticated'))
-     order by object_name
-  `);
+  const unsafeDefaults = await client.query(UNSAFE_PUBLIC_DEFAULT_PRIVILEGES_SQL);
   assertNoRows('Unsafe default privileges are present', unsafeDefaults);
 
   const schemaCreate = await client.query(`
