@@ -25,7 +25,7 @@
 | Permitted data/instructions and supplier countries                | Completed DPA processing appendix and approved supplier disclosure                                     |
 | Retention, backup and exit windows                                | Accepted schedules and tested mechanisms; holds and restore handling                                   |
 | Customer PIA/notice decision                                      | Authority, sign-off/submission assessment, participant notices and BYOD arrangements                   |
-| Acceptance/activation conditions                                  | Applicable security/recovery, privacy, Android, maps, operations and pilot gates                       |
+| Acceptance/activation conditions                                  | Applicable security, privacy, Android, maps, operations and customer-activation gates; recovery drills excluded |
 
 Provider and Customer sign the final completed form through authorized
 representatives. Record signature dates and any delegations with the executed

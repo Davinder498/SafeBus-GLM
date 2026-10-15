@@ -11,6 +11,9 @@ import {
 const read = (file) => fs.readFile(file, 'utf8');
 
 const requiredFiles = {
+  'docs/governance/commercial-readiness-requirements.md': 'synthetic review evidence',
+  'docs/qa/commercial-readiness-review-2026-10-15.md': 'synthetic review evidence',
+  'docs/qa/commercial-readiness-hosted-observation-2026-10-15.json': 'synthetic review evidence',
   'docs/governance/phase-3/README.md': '# Privacy phase\n',
   '.github/workflows/release-production.yml': 'name: Release production\n',
   'apps/web/netlify/functions/safebus-retention-scheduled.mjs': 'export const retention = true;\n',
@@ -43,7 +46,7 @@ const requiredFiles = {
 const legalKeys = [
   'statutoryMapping',
   'safeBusRole',
-  'customerAuthority',
+  'requirementsAssessment',
   'privacyImpactAssessment',
 ];
 const programKeys = [
@@ -116,13 +119,30 @@ async function approvedFixture(root) {
   });
 
   return {
-    format: 1,
+    format: 2,
     status: 'approved',
     approvalId: 'CR1-PRIVACY-ALBERTA-001',
     approvedEvidenceDigest: evidence.digest,
     approvedAt: '2026-08-22T12:00:00.000Z',
     expiresAt: '2027-08-20T12:00:00.000Z',
-    legal: entries(legalKeys, 'LEGAL'),
+    legal: {
+      ...entries(legalKeys, 'LEGAL'),
+      requirementsAssessment: {
+        ...approved('LEGAL/REQUIREMENTS-ASSESSMENT'),
+        frameworks: [
+          'albertaPrivateSector',
+          'albertaPublicSector',
+          'federalPrivacy',
+          'educationAndCommercial',
+        ].map((framework) => ({
+          framework,
+          applicability: 'applicable',
+          sourceUrl: 'https://www.alberta.ca/personal-information-protection-act',
+          rationaleReference: `LEGAL/${framework}/RATIONALE`,
+          evidenceReference: `LEGAL/${framework}/EVIDENCE`,
+        })),
+      },
+    },
     privacyProgram: entries(programKeys, 'PROGRAM'),
     contracts: entries(contractKeys, 'CONTRACT'),
     retention: entries(retentionKeys, 'RETENTION'),
@@ -133,6 +153,7 @@ async function approvedFixture(root) {
       emailDelivery: processor('EMAIL'),
       errorMonitoring: processor('MONITORING'),
       firebaseCloudMessaging: processor('FCM'),
+      stripeBilling: processor('STRIPE'),
     },
     residency: entries(residencyKeys, 'RESIDENCY'),
     notices: {
@@ -147,8 +168,6 @@ async function approvedFixture(root) {
       productOwner: approved('APPROVAL/PRODUCT'),
       securityLead: approved('APPROVAL/SECURITY'),
       privacyLead: approved('APPROVAL/PRIVACY'),
-      privacyCounsel: approved('APPROVAL/COUNSEL'),
-      customerAuthority: approved('APPROVAL/CUSTOMER'),
     },
   };
 }
@@ -175,7 +194,15 @@ test('Point 6 fails closed when open, expired, or missing legal and contract evi
   const now = Date.parse('2026-08-23T12:00:00.000Z');
 
   await assert.rejects(
-    verifyPrivacyReadiness({ readiness: { ...readiness, status: 'not_approved' }, root, now }),
+    verifyPrivacyReadiness({
+      readiness: {
+        ...readiness,
+        status: 'not_approved',
+        candidateEvidenceDigest: readiness.approvedEvidenceDigest,
+      },
+      root,
+      now,
+    }),
     /not approved/,
   );
   await assert.rejects(
@@ -245,12 +272,12 @@ test('Point 6 rejects vendor gaps, non-HTTPS policy, approvals, and source drift
     verifyPrivacyReadiness({
       readiness: {
         ...readiness,
-        approvals: { ...readiness.approvals, privacyCounsel: null },
+        approvals: { ...readiness.approvals, privacyLead: null },
       },
       root,
       now,
     }),
-    /privacyCounsel/,
+    /privacyLead/,
   );
 
   await fs.appendFile(path.join(root, 'docs/governance/phase-3/README.md'), 'changed\n');
@@ -258,6 +285,80 @@ test('Point 6 rejects vendor gaps, non-HTTPS policy, approvals, and source drift
     verifyPrivacyReadiness({ readiness, root, now }),
     /does not match the current release-controlled source/,
   );
+});
+
+test('Point 6 v2 uses sourced legal evidence without requiring counsel, support contact or a customer signature', async (t) => {
+  const root = await fixtureRoot();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const readiness = await approvedFixture(root);
+  const now = Date.parse('2026-08-23T12:00:00.000Z');
+  assert.equal(readiness.approvals.privacyCounsel, undefined);
+  assert.equal(readiness.approvals.customerAuthority, undefined);
+  await verifyPrivacyReadiness({ readiness, root, now });
+  await assert.rejects(
+    verifyPrivacyReadiness({
+      readiness: {
+        ...readiness,
+        subprocessors: { ...readiness.subprocessors, stripeBilling: null },
+      },
+      root,
+      now,
+    }),
+    /Subprocessor stripeBilling/,
+  );
+  // Contacting a vendor or hiring counsel does not replace actual legal evidence.
+  await assert.rejects(
+    verifyPrivacyReadiness({
+      readiness: {
+        ...readiness,
+        supportTicket: approved('SUPPORT/TICKET'),
+        approvals: { ...readiness.approvals, privacyCounsel: approved('APPROVAL/COUNSEL') },
+        legal: { ...readiness.legal, requirementsAssessment: null },
+      },
+      root,
+      now,
+    }),
+    /Legal requirementsAssessment/,
+  );
+  for (const frameworks of [
+    [],
+    readiness.legal.requirementsAssessment.frameworks.slice(1),
+    readiness.legal.requirementsAssessment.frameworks.map((entry) => ({
+      ...entry,
+      sourceUrl: 'https://example.com/legal',
+    })),
+    readiness.legal.requirementsAssessment.frameworks.map((entry) => ({
+      ...entry,
+      applicability: 'unknown',
+    })),
+  ]) {
+    await assert.rejects(
+      verifyPrivacyReadiness({
+        readiness: {
+          ...readiness,
+          legal: {
+            ...readiness.legal,
+            requirementsAssessment: {
+              ...readiness.legal.requirementsAssessment,
+              frameworks,
+            },
+          },
+        },
+        root,
+        now,
+      }),
+      /requirements assessment|government or privacy-regulator/,
+    );
+  }
+  await assert.rejects(
+    verifyPrivacyReadiness({ readiness: { ...readiness, format: 1 }, root, now }),
+    /unsupported format/,
+  );
+  await fs.appendFile(
+    path.join(root, 'docs/qa/commercial-readiness-review-2026-10-15.md'),
+    'changed findings',
+  );
+  await assert.rejects(verifyPrivacyReadiness({ readiness, root, now }), /does not match/);
 });
 
 test('production release verifies Point 6 before every deploy or database action', async () => {

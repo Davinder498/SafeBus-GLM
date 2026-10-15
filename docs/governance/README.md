@@ -18,7 +18,7 @@ every later phase must obey.
 | [`point-6-privacy-readiness.md`](./point-6-privacy-readiness.md)           | Point 6 legal, contract, vendor, residency, and privacy evidence     |
 | [`point-7-android-readiness.md`](./point-7-android-readiness.md)           | Point 7 signed bundle, field, Play, and BYOD evidence gate           |
 | [`point-8-map-readiness.md`](./point-8-map-readiness.md)                   | Point 8 provider, outage controls, and operating evidence            |
-| [`point-9-operational-readiness.md`](./point-9-operational-readiness.md)   | Point 9 monitoring, incident, support, and recovery evidence         |
+| [`point-9-operational-readiness.md`](./point-9-operational-readiness.md)   | Point 9 monitoring, incident response and support evidence          |
 | [`point-10-product-verification.md`](./point-10-product-verification.md)   | Point 10 authenticated, accessibility, resilience, and load evidence |
 | [`point-11-pilot-authorization.md`](./point-11-pilot-authorization.md)     | Point 11 pilot scope, authorization, stop, and exit evidence         |
 | [`github-actions-supply-chain.md`](./github-actions-supply-chain.md)       | Immutable CI dependency controls and update procedure                |
@@ -34,6 +34,12 @@ every later phase must obey.
 | [`development-workflow.md`](./development-workflow.md)                     | Confirmed development workflow                                       |
 
 ## Reading order
+
+The 2026-10-15 [requirement classification](commercial-readiness-requirements.md)
+and [review findings](../qa/commercial-readiness-review-2026-10-15.md) implement
+DL-023. Recovery drills, unconditional counsel signatures and vendor-support
+tickets are not commercial-launch prerequisites. Unresolved safeguards and
+applicable legal/customer duties remain open.
 
 1. `commercial-release-scope.md` — the proposed CR1 commitment and release gates.
 2. `product-scope.md` — the permanent non-negotiable product boundary.

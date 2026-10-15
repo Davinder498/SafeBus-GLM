@@ -31,16 +31,15 @@ response bodies in screenshots, workflow logs, tickets, or incident records.
       approved response window.
 - [ ] Record the drill evidence reference and remove the drill branch.
 
-## Incident and recovery exercises
+## Incident response and historical recovery evidence
 
 - [ ] Walk through one P1 application outage and one suspected privacy incident
       using synthetic facts.
-- [x] Execute the protected application rollback workflow against an approved
-      release and record time to recovery (`OPS/EXERCISE/ROLLBACK-001`: 40
-      minutes from initial dispatch to verified rollback health; current release
-      restored and verified).
-- [ ] Complete the separately authorized backup/restore exercise in an isolated
-      Canadian recovery target; never restore over the sole production database.
+- Historical only: protected application rollback `OPS/EXERCISE/ROLLBACK-001`
+  completed in 40 minutes, with the current release restored and verified.
+  It is retained without a launch requirement to repeat it.
+- Backup/full-restore/disaster-recovery exercises are excluded from commercial
+  readiness by DL-023. Existing production-change protections remain in force.
 - [ ] Verify customer communication ownership, support intake, escalation, and
       post-incident actions.
 - [ ] Record Operations, Security, Privacy, and Platform Administrator approval.
@@ -48,10 +47,8 @@ response bodies in screenshots, workflow logs, tickets, or incident records.
 ## Authorize the exact reviewed release
 
 - [ ] Complete every field in `docs/governance/operations-readiness.json` with
-      approved, non-secret evidence references and measured recovery values.
-- [ ] Confirm the backup restore used a separately approved isolated Canadian
-      recovery target and did not write to or restore over the sole production
-      Supabase project.
+      approved, non-secret evidence references for the retained operating controls.
+      Format 2 does not require restore evidence, recovery times or recovery points.
 - [ ] Run `pnpm operations:digest` on the exact reviewed commit and record that
       digest as `approvedEvidenceDigest`.
 - [ ] Set an approval validity window no longer than 90 days, then run

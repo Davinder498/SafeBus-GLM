@@ -30,7 +30,8 @@ The owner subsequently requested the [business drafts](business-pack/README.md)
 and PIA before those reviews. Preparing them does not require a customer or
 counsel appointment. The reviewed PIPA/POPA guidance does not establish a general
 statutory duty to hire Alberta privacy counsel; the repository's separate
-`privacyCounsel` release approval remains an internal requirement.
+`privacyCounsel` release approval was an internal requirement, replaced by a
+sourced applicability/compliance assessment under DL-023 on 2026-10-15.
 
 ## 2. Statutory map for review
 
@@ -55,7 +56,7 @@ be presented as replacing the school authority's public-sector obligations.
 [Alberta PIPA overview](https://www.alberta.ca/personal-information-protection-act),
 [OPC summary of Canadian privacy laws](https://www.priv.gc.ca/en/privacy-topics/privacy-laws-in-canada/02_05_d_15/).
 
-Counsel must verify the actual statutes, regulations and provisions for the
+The accountable review must verify the actual statutes, regulations and provisions for the
 relationship. The table is a proposed map, not a statutory determination.
 For the education-law review, use the current
 [Alberta education legislation and regulations index](https://www.alberta.ca/k-12-education-legislation-and-regulations)
@@ -154,8 +155,8 @@ not a completed outcome of this role analysis.
 | ------------------------------------------ | ---------------------------------------------------------------------- |
 | Alberta registration and Canadian business | Owner-confirmed; formal identity and registration evidence pending     |
 | Privacy counsel                            | Not appointed as of 2026-10-13                                         |
-| Statutory mapping                          | Updated research draft; counsel decision pending                       |
-| SafeBus/customer roles                     | Proposed; counsel and customer confirmation pending                    |
+| Statutory mapping                          | Updated research draft; sourced applicability/compliance decision pending |
+| SafeBus/customer roles                     | Proposed; accountable review and customer-specific confirmation pending |
 | Customer authority                         | Participating authority and authorized decision-maker evidence pending |
 | PIA, agreements and other Point 6 items    | Separate work and approval required                                    |
 

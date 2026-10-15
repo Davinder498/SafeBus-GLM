@@ -3,9 +3,16 @@
 **Status: Repository evidence gate implemented; operating and human evidence pending.**
 
 Commercial Readiness Point 9 requires production monitoring, actionable
-alerting, incident response, customer support, backup, and recovery evidence.
+alerting, incident response and customer support evidence.
 This document records what the repository can enforce now and keeps every
 operator, vendor, and exercise-dependent gate explicit.
+
+Under [DL-023](decision-log.md#dl-023--commercial-readiness-evidence-review),
+backup/full-restore/disaster-recovery and application-rollback drills are excluded
+from commercial-launch acceptance. Historical evidence remains below and in
+`historicalRecoveryEvidence`; it is not required by the format-2 validator.
+Protected production-change safeguards remain separate. Device reconnects,
+offline queues and failed-request handling remain application reliability work.
 
 ## Automated public health monitor
 
@@ -63,7 +70,7 @@ must never use the sole production project as a destructive test target.
 Point 9. It is deliberately `not_approved`. `pnpm operations:verify` rejects a
 release until the record contains current, non-secret references for on-call
 coverage, thresholds, alert routing, privacy-safe error monitoring, both map
-quota alerts, support, recovery exercises, seven operating days, and all named
+quota alerts, support, incident-response tabletops, seven operating days, and all named
 approvals.
 
 The approval is bound to the release-controlled monitoring, application
@@ -73,7 +80,7 @@ the candidate digest with `pnpm operations:digest` only after all changes are
 reviewed. The verifier runs after Points 6 and 8 and before pilot authorization,
 database work, or deployment in the protected production release workflow.
 
-The record stores references, decisions, dates, and measured recovery values;
+The record stores references, decisions and dates, plus optional historical evidence;
 it must not contain names, contact details, credentials, personal data, raw
 locations, response bodies, provider secrets, or support-ticket contents.
 
@@ -127,9 +134,8 @@ final Point 9 approvals remain open.
 - [ ] Add privacy-reviewed server/application error monitoring and verify its
       redaction rules with synthetic data.
 - [ ] Configure Geoapify 70% and 90% quota alerts and record evidence for Point 8.
-- [ ] Complete recovery exercises. The protected application rollback passed
-      with a measured 40-minute recovery; backup restore and the remaining
-      evidence are still open.
+- [ ] Complete incident-response and privacy-response tabletops without restore
+      drills. Historical recovery exercises are excluded from launch requirements.
 - [ ] Approve the customer support intake, severity, communication, and ticket
       retention process.
 - [ ] Observe at least seven consecutive operating days and resolve unexplained
@@ -146,6 +152,6 @@ final Point 9 approvals remain open.
 | Error-monitor redaction test  | _pending vendor approval_                    | Security / Privacy              |      |        |
 | Geoapify quota alerts         | _pending_                                    | Operations Lead                 |      |        |
 | Application rollback exercise | `OPS/EXERCISE/ROLLBACK-001`                  | Engineering / Operations        | 2026-08-24 | Pass   |
-| Backup restore exercise       | _pending paid tier or approved equivalent_   | Operations Lead                 |      |        |
+| Backup restore exercise       | Excluded from launch by DL-023; historical evidence retained separately | Operations Lead | | Excluded |
 | Incident tabletop             | _pending_                                    | Security / Privacy / Operations |      |        |
 | Final Point 9 approval        | _pending_                                    | Platform Administrator          |      |        |

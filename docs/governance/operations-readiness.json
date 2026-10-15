@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "status": "not_approved",
   "approvalId": null,
   "approvedEvidenceDigest": null,
@@ -28,13 +28,6 @@
     "geoapifyNinetyPercentAlert": null
   },
   "exercises": {
-    "applicationRollback": {
-      "decision": "approved",
-      "approvedAt": "2026-08-24T23:41:31.000Z",
-      "evidenceReference": "OPS/EXERCISE/ROLLBACK-001",
-      "recoveryTimeMinutes": 40
-    },
-    "backupRestore": null,
     "p1OutageTabletop": null,
     "privacyIncidentTabletop": null
   },
@@ -58,5 +51,16 @@
     "securityLead": null,
     "privacyLead": null,
     "operationsLead": null
-  }
+  },
+  "historicalRecoveryEvidence": {
+    "applicationRollback": {
+      "decision": "approved",
+      "approvedAt": "2026-08-24T23:41:31.000Z",
+      "evidenceReference": "OPS/EXERCISE/ROLLBACK-001",
+      "recoveryTimeMinutes": 40
+    },
+    "backupRestore": null
+  },
+  "candidateEvidenceDigest": "da1860b39ca4f7b28e4fbddb9afa1556a7bee2c30f162e0850f7ceceb605f217",
+  "candidateEvidenceBasis": "local-review-worktree; regenerate in the exact release checkout before approval"
 }

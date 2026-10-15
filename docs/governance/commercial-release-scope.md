@@ -2,6 +2,13 @@
 
 **Status:** Approved and locked; revised by `DL-017`
 
+**Launch-review amendment (2026-10-15):** [DL-023](decision-log.md#dl-023--commercial-readiness-evidence-review)
+and the [requirement classification](commercial-readiness-requirements.md)
+exclude backup/full-restore/disaster-recovery exercises and mandatory supplier
+support contact from commercial readiness. Privacy review uses applicable-law
+evidence rather than an unconditional counsel signature. These changes do not
+approve the remaining gates, enlarge the pilot, or establish measured capacity.
+
 **Decision owner:** Platform Administrator
 
 **Prepared:** 2026-08-12
@@ -85,12 +92,21 @@ approved:
 | Privacy and legal     | Approved PIA, legal role, retention, vendor, residency, and contractual controls                  | Point 6         |
 | Android reliability   | Signed build pipeline and real-device background-tracking evidence                                | Point 7         |
 | Interactive maps      | Approved production map provider and safe degraded fallback                                       | Point 8         |
-| Operations            | Production monitoring, alerting, incident response, support, backup, and recovery evidence        | Point 9         |
+| Operations            | Production monitoring, alerting, incident response and customer support                           | Point 9         |
 | Product verification  | Authenticated end-to-end, accessibility, resilience, and load evidence                            | Point 10        |
 | Pilot authorization   | Signed pilot plan, entry/exit criteria, and rollback authority                                    | Point 11        |
 
 No real-data commercial launch is authorized merely because the capability
 exists in source code.
+
+Classifications, retained evidence and exclusions for every gate are in
+[commercial-readiness-requirements.md](commercial-readiness-requirements.md).
+Customer agreements, processing authority and customer PIA applicability are
+activation requirements, separate from ownership of SafeBus. The current
+production release workflow authorizes a customer pilot and therefore still
+checks customer activation. Capacity targets are 10,000 active buses, 100,000
+concurrent users, one million registered accounts and 2,000 organizations;
+this milestone reviews architecture only and makes no measured-capacity claim.
 
 ## 6. Explicitly excluded from CR1
 

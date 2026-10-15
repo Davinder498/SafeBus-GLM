@@ -80,8 +80,8 @@ collection. No legal authority is marked approved in this draft.
 The OIPC distinguishes voluntary private-business PIPA PIAs from prescribed
 public-body POPA preparation/submission. Hiring a lawyer is not identified as a
 general appointment requirement by the reviewed guidance; accountable business
-privacy ownership is still needed. The repository's counsel-approval field is
-an internal launch safeguard and remains unchanged.
+privacy ownership is still needed. DL-023 replaces the repository's former
+unconditional counsel signature with a sourced legal-requirements assessment.
 [OIPC PIA guidance](https://oipc.ab.ca/privacy-impact-assessments/),
 [OIPC PIPA implementation guidance](https://oipc.ab.ca/resource/pipa-implementation/).
 
@@ -266,10 +266,10 @@ of submission requirements for the actual service. No OIPC acceptance is claimed
 | Review                                                           | Status                                           |
 | ---------------------------------------------------------------- | ------------------------------------------------ |
 | Owner review of business purposes, contacts and terms            | Pending                                          |
-| Statutory/role and field authority review                        | Draft; internal counsel gate unchanged           |
+| Statutory/role and field authority review                        | Draft; sourced applicability/compliance review pending |
 | Customer-specific public-body/collection/notice/PIA authority    | Deferred until onboarding                        |
 | Supplier/country, retention/holds and contract decisions         | Pending                                          |
-| Installed security, signed-device, recovery and service evidence | Open                                             |
+| Installed security, signed-device and service evidence          | Security installation verified; runtime/device/service acceptance open; recovery drills excluded by DL-023 |
 | Required internal/customer Point 6 approvals                     | Not recorded                                     |
 | PIA submission where required                                    | Not assessed for a named customer; not submitted |
 

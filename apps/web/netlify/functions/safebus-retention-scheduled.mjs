@@ -2,7 +2,7 @@
 //
 // The schedule is registered in netlify.toml. Netlify scheduled functions are
 // not addressable by a public production URL. Execution defaults to dry-run;
-// destructive deletion is enabled only after counsel approval by setting the
+// destructive deletion is enabled only after an approved retention/privacy decision by setting the
 // server-only SAFEBUS_RETENTION_EXECUTE value to exactly "true".
 
 import { createClient } from '@supabase/supabase-js';

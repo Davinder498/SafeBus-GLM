@@ -30,7 +30,10 @@ visibility. The first pilot must remain within one to three approved tenants
 and 25–100 buses in total.
 
 Service activation requires the agreed acceptance and launch gates. Signing or
-paying does not waive unresolved security, privacy, recovery or operating gates.
+paying does not waive unresolved security, privacy or operating gates.
+Backup/full-restore/disaster-recovery exercises are outside the launch gate;
+no recovery-time or data-loss guarantee is included unless separately agreed
+and supported by evidence.
 No paid availability or recovery promise begins before the agreed service start.
 The service does not replace dispatch judgement, school emergency procedures,
 a Student Information System or emergency services. Displayed location may be
