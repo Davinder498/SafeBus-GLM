@@ -67,6 +67,36 @@ function cleanText(value: string | null | undefined): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+export function parseAdminGuardianLinks(
+  value: unknown,
+  studentId: string,
+  tenantId: string,
+): StudentGuardian[] {
+  const invalid = () => new Error('The linked guardians could not be loaded.');
+  if (!Array.isArray(value)) throw invalid();
+  return value.map((item: unknown) => {
+    if (!item || typeof item !== 'object') throw invalid();
+    const row = item as Record<string, unknown>;
+    if (
+      ['id', 'guardian_id', 'created_at', 'updated_at'].some(
+        (key) => typeof row[key] !== 'string' || row[key] === '',
+      ) ||
+      row.student_id !== studentId ||
+      row.tenant_id !== tenantId ||
+      typeof row.can_receive_notifications !== 'boolean' ||
+      typeof row.relationship !== 'string' ||
+      !['mother', 'father', 'guardian', 'caregiver', 'other'].includes(row.relationship) ||
+      typeof row.status !== 'string' ||
+      !['active', 'inactive', 'archived'].includes(row.status) ||
+      ![row.admin_note, row.status_comment].every(
+        (field) => field === null || typeof field === 'string',
+      )
+    )
+      throw invalid();
+    return row as unknown as StudentGuardian;
+  });
+}
+
 /**
  * Fetch all students visible to the current admin (RLS-scoped to their tenant).
  */
@@ -128,7 +158,9 @@ export async function fetchAdminStudentDetail(studentId: string): Promise<AdminS
   let transportationAssignments: AdminStudentTransportationAssignment[] = [];
 
   if (assignments.length > 0) {
-    const serviceIds = [...new Set(assignments.map((assignment) => assignment.bus_route_assignment_id))];
+    const serviceIds = [
+      ...new Set(assignments.map((assignment) => assignment.bus_route_assignment_id)),
+    ];
     const { data: serviceData, error: serviceError } = await client
       .from('bus_route_assignments')
       .select(
@@ -190,11 +222,15 @@ export async function fetchAdminStudentDetail(studentId: string): Promise<AdminS
 
     const serviceById = new Map(services.map((service) => [service.id, service]));
     const busById = new Map(((busResult.data ?? []) as Bus[]).map((bus) => [bus.id, bus]));
-    const routeById = new Map(((routeResult.data ?? []) as Route[]).map((route) => [route.id, route]));
+    const routeById = new Map(
+      ((routeResult.data ?? []) as Route[]).map((route) => [route.id, route]),
+    );
     const patternById = new Map(
       ((patternResult.data ?? []) as RouteTripPattern[]).map((pattern) => [pattern.id, pattern]),
     );
-    const stopById = new Map(((stopResult.data ?? []) as RouteStop[]).map((stop) => [stop.id, stop]));
+    const stopById = new Map(
+      ((stopResult.data ?? []) as RouteStop[]).map((stop) => [stop.id, stop]),
+    );
 
     transportationAssignments = assignments.map((assignment) => {
       const service = serviceById.get(assignment.bus_route_assignment_id) ?? null;
@@ -218,9 +254,12 @@ export async function fetchAdminStudentDetail(studentId: string): Promise<AdminS
     });
   }
 
-  const guardianIds = (guardianLinksResult.data ?? []).map(
-    (link) => (link as { guardian_id: string }).guardian_id,
+  const scopedGuardianLinks = parseAdminGuardianLinks(
+    guardianLinksResult.data,
+    student.id,
+    student.tenant_id,
   );
+  const guardianIds = scopedGuardianLinks.map((link) => link.guardian_id);
   let guardians: Guardian[] = [];
   let guardianLinks: AdminStudentDetail['guardianLinks'] = [];
   if (guardianIds.length > 0) {
@@ -236,16 +275,20 @@ export async function fetchAdminStudentDetail(studentId: string): Promise<AdminS
     const profileIds = guardians.map((guardian) => guardian.profile_id).filter(Boolean);
     const profileStatuses = new Map<string, string>();
     if (profileIds.length > 0) {
-      const profilesResult = await client.from('profiles').select('id, status').in('id', profileIds);
+      const profilesResult = await client
+        .from('profiles')
+        .select('id, status')
+        .in('id', profileIds);
       if (profilesResult.error) throw new Error('Guardian invitation status could not be loaded.');
       for (const profile of profilesResult.data ?? []) {
         profileStatuses.set(profile.id, profile.status);
       }
     }
-    guardianLinks = (guardianLinksResult.data ?? []).flatMap((row) => {
-      const link = row as StudentGuardian;
+    guardianLinks = scopedGuardianLinks.flatMap((link) => {
       const guardian = guardians.find((item) => item.id === link.guardian_id);
-      return guardian ? [{ ...link, guardian, profileStatus: profileStatuses.get(guardian.profile_id) ?? null }] : [];
+      return guardian
+        ? [{ ...link, guardian, profileStatus: profileStatuses.get(guardian.profile_id) ?? null }]
+        : [];
     });
   }
 
@@ -253,7 +296,9 @@ export async function fetchAdminStudentDetail(studentId: string): Promise<AdminS
     p_student_id: student.id,
   });
   if (auditError) {
-    throw new Error('The student record was loaded but its required access audit could not be recorded.');
+    throw new Error(
+      'The student record was loaded but its required access audit could not be recorded.',
+    );
   }
 
   return {
@@ -355,10 +400,7 @@ export async function deleteStudent(studentId: string): Promise<void> {
 /**
  * Set a student's status (active/inactive). Used for deactivate/reactivate.
  */
-export async function setStudentStatus(
-  studentId: string,
-  status: StudentStatus,
-): Promise<Student> {
+export async function setStudentStatus(studentId: string, status: StudentStatus): Promise<Student> {
   const client = requireSupabase();
   const { data, error } = await client
     .from('students')

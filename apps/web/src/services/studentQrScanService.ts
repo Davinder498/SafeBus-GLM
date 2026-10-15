@@ -26,14 +26,32 @@ export async function recordStudentQrEvent(
   });
   // A transport failure may follow a committed event. Retry the same event:
   // the server returns already_recorded without sending notifications again.
-  if (error || !data?.[0]) throw new Error('Could not confirm this scan. Retry the same event.');
-  const row = data[0];
+  const invalid = () => new Error('Could not confirm this scan. Retry the same event.');
+  if (error || !Array.isArray(data) || data.length !== 1 || !data[0] || typeof data[0] !== 'object')
+    throw invalid();
+  const row = data[0] as Record<string, unknown>;
+  const status = row.student_trip_status;
+  const outcome = row.outcome;
+  if (
+    typeof row.student_id !== 'string' ||
+    !row.student_id ||
+    typeof row.student_display_name !== 'string' ||
+    ![row.pickup_stop_name, row.dropoff_stop_name].every(
+      (name) => name === null || typeof name === 'string',
+    ) ||
+    (status !== 'not_picked_up' && status !== 'picked_up' && status !== 'dropped_off') ||
+    (outcome !== 'recorded' &&
+      outcome !== 'already_recorded' &&
+      outcome !== 'pickup_required' &&
+      outcome !== 'complete')
+  )
+    throw invalid();
   return {
     studentId: row.student_id,
     studentDisplayName: row.student_display_name,
-    pickupStopName: row.pickup_stop_name,
-    dropoffStopName: row.dropoff_stop_name,
-    studentTripStatus: row.student_trip_status as StudentQrTripStatus,
-    outcome: row.outcome as StudentQrOutcome,
+    pickupStopName: row.pickup_stop_name as string | null,
+    dropoffStopName: row.dropoff_stop_name as string | null,
+    studentTripStatus: status,
+    outcome,
   };
 }

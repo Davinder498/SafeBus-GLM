@@ -3586,10 +3586,10 @@ export interface Database {
       admin_create_bus: {
         Args: {
           p_bus_number: string
-          p_capacity: number
+          p_capacity: number | null
           p_fleet_number: string
-          p_license_plate: string
-          p_school_id: string
+          p_license_plate: string | null
+          p_school_id: string | null
           p_status?: string | null
         }
         Returns: unknown
@@ -3711,7 +3711,7 @@ export interface Database {
       }
       admin_set_guardian_access_expiry: {
         Args: {
-          p_access_expires_at?: string | null
+          p_access_expires_at: string | null
           p_student_guardian_id: string
         }
         Returns: unknown
@@ -3752,10 +3752,10 @@ export interface Database {
       admin_update_bus: {
         Args: {
           p_bus_id: string
-          p_capacity: number
+          p_capacity: number | null
           p_fleet_number: string
-          p_license_plate: string
-          p_school_id: string
+          p_license_plate: string | null
+          p_school_id: string | null
           p_status: string
         }
         Returns: unknown
@@ -3764,7 +3764,7 @@ export interface Database {
         Args: {
           p_bus_route_assignment_id: string
           p_effective_from: string
-          p_effective_to?: string | null
+          p_effective_to: string | null
           p_route_id: string
           p_route_trip_pattern_id: string
           p_trip_type: string
@@ -3774,10 +3774,10 @@ export interface Database {
       admin_update_bus_with_fleet_number: {
         Args: {
           p_bus_id: string
-          p_capacity: number
+          p_capacity: number | null
           p_fleet_number: string
-          p_license_plate: string
-          p_school_id: string
+          p_license_plate: string | null
+          p_school_id: string | null
           p_status: string
         }
         Returns: unknown
@@ -4902,10 +4902,10 @@ export interface Database {
         Args: {
           p_display_name: string
           p_email: string
-          p_instructions: string
-          p_phone: string
-          p_support_hours: string
-          p_website_url: string
+          p_instructions: string | null
+          p_phone: string | null
+          p_support_hours: string | null
+          p_website_url: string | null
         }
         Returns: unknown
       }
@@ -4913,10 +4913,10 @@ export interface Database {
         Args: {
           p_display_name: string
           p_email: string
-          p_instructions: string
-          p_phone: string
-          p_support_hours: string
-          p_website_url: string
+          p_instructions: string | null
+          p_phone: string | null
+          p_support_hours: string | null
+          p_website_url: string | null
         }
         Returns: unknown
       }

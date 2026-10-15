@@ -29,6 +29,35 @@ it('sends the selected event and displayed trip in one authenticated RPC', async
 it.each([
   { data: null, error: { message: 'sensitive internal error' } },
   { data: [], error: null },
+  { data: {}, error: null },
+  { data: [null], error: null },
+  { data: [{}], error: null },
+  {
+    data: [
+      {
+        student_id: 's',
+        student_display_name: 'Avery',
+        pickup_stop_name: null,
+        dropoff_stop_name: null,
+        student_trip_status: 'unexpected',
+        outcome: 'recorded',
+      },
+    ],
+    error: null,
+  },
+  {
+    data: [
+      {
+        student_id: 's',
+        student_display_name: 'Avery',
+        pickup_stop_name: null,
+        dropoff_stop_name: null,
+        student_trip_status: 'picked_up',
+        outcome: 'unexpected',
+      },
+    ],
+    error: null,
+  },
 ])(
   'does not display raw backend errors or treat an empty response as success',
   async (response) => {
