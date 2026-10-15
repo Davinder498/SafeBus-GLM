@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createEnvironmentBinding } from './environment-identity.mjs';
 
-export const ATTESTATION_FORMAT = 3;
+export const ATTESTATION_FORMAT = 4;
 export const DEFAULT_ATTESTATION_PATH = '.safebus-release/preflight.json';
 export const REQUIRED_PREFLIGHT_GATES = [
   'migration_manifest',
@@ -60,6 +60,12 @@ export async function collectReleaseEvidence(root = process.cwd()) {
   }
   return {
     files,
+    observedBaselineContract: await hashFile(
+      path.join(root, 'config/production-observed-baseline.json'),
+    ).catch((error) => {
+      if (error.code === 'ENOENT') return null;
+      throw error;
+    }),
     migrations: await hashDirectory(path.join(root, 'supabase/migrations')),
     webArtifact: await hashDirectory(path.join(root, 'apps/web/dist')),
   };

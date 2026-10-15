@@ -58,3 +58,11 @@ Formatting and `git diff --check` passed. Existing build chunk warnings remain.
 
 Historical adoption, real security acceptance and the final protected canonical
 type check remain open. Pending migration 0125 is unchanged and unapplied.
+
+## Subsequent protected verification
+
+After human merge of PR #273, protected run
+[38672206649](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38672206649)
+completed successfully on `a5e36452a2579a502030eca12da2062d295a4e14` and reported
+"Database types are already current." The required fresh canonical byte check
+therefore passed. Historical adoption and real security acceptance remain open.

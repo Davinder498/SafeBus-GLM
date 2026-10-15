@@ -1,0 +1,1245 @@
+{
+  "format": 1,
+  "kind": "observed-schema-only",
+  "id": "bussafe-observed-2026-10-15",
+  "reviewDecision": "accept-observed-state-with-unverified-historical-execution",
+  "historicalExecutionClaimed": false,
+  "historicalEffectEquivalenceClaimed": false,
+  "historicalReplayAuthorized": false,
+  "environment": "production",
+  "projectRefHash": "8df1bfa174b96727c344df67dbd08babe4803565624a19a152edaf2601fee27d",
+  "databaseTarget": "4c5f662e8ac11d03f02f7d26ac3408a3b6d8ad157bd1541acab75684d7e5f0f4",
+  "publicApiOriginHash": "8553e55fff3b57c4305524317061b1d39f749aea77194d24b4598bc0323dd2a3",
+  "observedFromReleaseSha": "a5e36452a2579a502030eca12da2062d295a4e14",
+  "schemaFingerprintFormat": 2,
+  "schemaFingerprint": "067a93c5812bca1f8976d4f836d4d8d59f2aab054ea79fbff8dba0f425ce773c",
+  "sourceCatalogSha256": "32c147489fa426d58eadad7ef75103a55fcfef9d82339573a794b35ab5e928c4",
+  "sourceSecurityInstallation": {
+    "releaseSha": "7bf7b47a0e300d0e7f316f837d898e81f3edd6a8",
+    "backupRunId": "38655618877",
+    "environment": "production",
+    "installedAt": "2026-10-15T01:31:19.978617+00:00",
+    "rehearsalRunId": "38665120891",
+    "installationRunId": "38665578510",
+    "executedMigrations": [
+      {
+        "bytes": 23030,
+        "sha256": "cc79763aca81d27467f724384625fb1bf37a6d880d1f15ba1bc5012ff3f5c3e3",
+        "version": "0123",
+        "filename": "0123_existing_project_security_reconciliation.sql"
+      },
+      {
+        "bytes": 15076,
+        "sha256": "b5ce421b6decc16255d935758bdf6d3add241e68fed01ffd972d23a67eb399ab",
+        "version": "0122",
+        "filename": "0122_commercial_authorization_boundaries.sql"
+      },
+      {
+        "bytes": 2026,
+        "sha256": "0ac1323247ceac19bf120cb7a25f2db3c5fb2e3121ad74ea3f70441be9d3bbfa",
+        "version": "0124",
+        "filename": "0124_session_claim_validation.sql"
+      }
+    ],
+    "sourceCatalogSha256": "2dfd6c62f2b774bd98e31168dc7eeea17921f705a6f4bccc6332fc1073351e67",
+    "recoveryReceiptSha256": "40a383c69411790daf3931012b857cfdc081383b53e5dec321d3d6781e0d6370",
+    "installedCatalogSha256": "32c147489fa426d58eadad7ef75103a55fcfef9d82339573a794b35ab5e928c4"
+  },
+  "immutableLegacyBaselineSha256": "b7d6f71b8a13b27b63764ccd22c23b74367bccb207c0a473d47d7acc8237d1ee",
+  "migrationManifestSha256": "d7778f0dbd921a9a24f4391d960c5c299f95919d8ec4d7cb847b1f204ab80ab9",
+  "dispositions": [
+    {
+      "version": "0001",
+      "filename": "0001_auth_profile_foundation.sql",
+      "bytes": 6292,
+      "sha256": "7b9756d73d218baf5c42560db1c1d9c59dfe698b59eabaff15dc5d7493968e2d",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0002",
+      "filename": "0002_foundation_read_grants.sql",
+      "bytes": 418,
+      "sha256": "e63087873d6b1c0b5e02e2947c09cb5fd754f6e4b7a12dcdd845aaea2e0a2742",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0003",
+      "filename": "0003_students_guardians_foundation.sql",
+      "bytes": 7235,
+      "sha256": "030ea0f434b0450489f2f2046130aecacbef352d856622965e869ec01112bf95",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0004",
+      "filename": "0004_transportation_structure_foundation.sql",
+      "bytes": 10581,
+      "sha256": "10a98918b98d4cf1933458dcb08ef3f6c1bc37828c91b3a67dad98bd8a210c0e",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0005",
+      "filename": "0005_transportation_admin_write_foundation.sql",
+      "bytes": 8590,
+      "sha256": "49f724923747412cd44ed93fa4bc75636e07ef37c8ced86e0e8392fd1f0b0bdd",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0006",
+      "filename": "0006_driver_trips_foundation.sql",
+      "bytes": 14044,
+      "sha256": "e56921bb27864f1aad6f25d0ab685058ad7e3e508044622482b8febf2b8688fe",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0007",
+      "filename": "0007_driver_location_update_foundation.sql",
+      "bytes": 14710,
+      "sha256": "33472740ed22a4cdfe44f6139d05054b3b8ad29b1b4c41fa592d6afc25701676",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0008",
+      "filename": "0008_fix_driver_location_update_rpc.sql",
+      "bytes": 5758,
+      "sha256": "0bf929bbce6c9f270fe803b385d7967fd6cfcebed10ceb5aeaca4765a16bea07",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0009",
+      "filename": "0009_admin_live_trip_monitoring_foundation.sql",
+      "bytes": 4097,
+      "sha256": "1e3ff48d6e021683d347594d483f5461be0eeca4e8a6007ac1ba394cd71a4f28",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0010",
+      "filename": "0010_harden_admin_live_trip_monitoring_rpc.sql",
+      "bytes": 4869,
+      "sha256": "619fd74499007ce8b4619a27e6ddce08885de3c6d0dec474a5b7522116701f73",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0011",
+      "filename": "0011_make_school_optional_for_transportation_operations.sql",
+      "bytes": 2073,
+      "sha256": "9232241585a60bf0f19c90f15f3d339860e70b49e64603a2bdcc92a02c3f2963",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0012",
+      "filename": "0012_align_route_write_policies_optional_school.sql",
+      "bytes": 6403,
+      "sha256": "b939aa4b8e99366320a541358fc014216efbb00c60e15e86731b69d41324b935",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0013",
+      "filename": "0013_driver_assignment_foundation.sql",
+      "bytes": 11868,
+      "sha256": "e546bee2d24804a55b8b7d19be724c918e22ec7f47e6d6cec204617df7606d45",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0014",
+      "filename": "0014_enforce_assignment_only_trip_start.sql",
+      "bytes": 2159,
+      "sha256": "0c44d4b2e7f9bdf47e95ffb7b71b9310a18392a7aecb6f430aa269ddd2ab2bc7",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0015",
+      "filename": "0015_guardian_student_route_visibility_foundation.sql",
+      "bytes": 4938,
+      "sha256": "3c2802d923a02c0fd10a8f4345566d09aee1a5649642486f98438115344c3361",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0016",
+      "filename": "0016_student_roster_admin_write_foundation.sql",
+      "bytes": 2535,
+      "sha256": "6a29d5c23b50692bdb26d10587d924d917b52f6a0d651776e7c3d817df6117c6",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0017",
+      "filename": "0017_fix_student_roster_school_scope.sql",
+      "bytes": 4243,
+      "sha256": "645fa2d6f5a2f50afa18f0cebac8597e8dabd143cf21167d33d82ff8faf9f29a",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0018",
+      "filename": "0018_fix_students_rls_update_recursion.sql",
+      "bytes": 2320,
+      "sha256": "dd48c3f9ce65e94547310b59f5d865042e553e5d239af25f4ff11b28acf74211",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0019",
+      "filename": "0019_secure_guardian_student_linking_rpc.sql",
+      "bytes": 8017,
+      "sha256": "a2e982b2cfbbae62f8ccbbee87d24ff0524f06fba542defe0e2c055b9639b7ef",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0020",
+      "filename": "0020_guardian_live_trip_visibility_foundation.sql",
+      "bytes": 6707,
+      "sha256": "0235246b488f9bdc7d0a6f81716cb176e8d7562f4cabf4cb1859630b13566ca8",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0021",
+      "filename": "0021_harden_guardian_live_trip_visibility_rpc.sql",
+      "bytes": 7698,
+      "sha256": "9394f0cd7bfd4c52fdcd654321a2980b90a07e8eee5acd230a9827d5ab007e18",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0022",
+      "filename": "0022_driver_active_trip_student_manifest.sql",
+      "bytes": 4163,
+      "sha256": "b2334a996a17bb01c2c0102bc0c47816bd303ae6b7124fa68ca3a3068c31cec4",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0023",
+      "filename": "0023_driver_student_trip_events_foundation.sql",
+      "bytes": 11637,
+      "sha256": "d017e4a400ca3783fd2ef02b99a69bb1adc5b524574e1434b9418c39067a8a72",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0024",
+      "filename": "0024_guardian_student_trip_event_visibility.sql",
+      "bytes": 4363,
+      "sha256": "4f9e43ec67a8e376244ee81e1e3e9abfe327dafd8581371b2bfca9270220e2e7",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0025",
+      "filename": "0025_guardian_notification_outbox_foundation.sql",
+      "bytes": 8429,
+      "sha256": "23ddc89f7cdcb0a62f7b34867ca4dbbe35f0ae9fccbe47be9cc0afbf6a77524e",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0026",
+      "filename": "0026_admin_live_fleet_monitoring.sql",
+      "bytes": 3381,
+      "sha256": "1f0dd89f5c65f3252117f08bc2b4b7ad474d66334902ec5736ed1d33dccb15ce",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0027",
+      "filename": "0027_guardian_live_bus_location_security_foundation.sql",
+      "bytes": 8509,
+      "sha256": "f0045fea1613e3460d9c6ea6ee7c692aecad64ebdb78cac3fc357039e0694403",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0028",
+      "filename": "0028_fix_student_route_assignment_optional_school.sql",
+      "bytes": 2280,
+      "sha256": "063a1f13d9b1bf61f40273c7c5894da2cd540dd9319658d20a4da1a530a3c518",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0029",
+      "filename": "0029_align_driver_assignment_platform_admin_write.sql",
+      "bytes": 1752,
+      "sha256": "ef7399d86282cfc72b04f81d377bd2e8820d8de0e87c430599df893a108f39c7",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0030",
+      "filename": "0030_secure_trip_tracking_realtime.sql",
+      "bytes": 12280,
+      "sha256": "817dde5ab2ce68c5648631b0dd9ae8a36ea33f51a4d0a7d6da2e22be283287ca",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0031",
+      "filename": "0031_admin_list_scalability.sql",
+      "bytes": 11565,
+      "sha256": "508402078cc029af29114bc4454e3405154f7389628601b4e4fb1844495eb292",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0032",
+      "filename": "0032_student_bus_service_assignments.sql",
+      "bytes": 19895,
+      "sha256": "ca1e594a4a8a83cabfdfdffd01d997da541ad5fa662f119f590c90017df3f42c",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0033",
+      "filename": "0033_student_bus_assignment_in_student_roster.sql",
+      "bytes": 3162,
+      "sha256": "55cdbd4ac986e4533ba52133e88d3ea46bbf64a14f24252c16b9f8d1cfab82b2",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0034",
+      "filename": "0034_safe_eta_foundation.sql",
+      "bytes": 14274,
+      "sha256": "d53d2ef7698a12c8a8430c16d36ec3658e1782e5fb2992ef4d8f97f362155532",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0035",
+      "filename": "0035_platform_tenant_onboarding.sql",
+      "bytes": 4976,
+      "sha256": "b58fdd973f454b36c38ca4639fbc65525d71dd141223d00ec0e587e5a507ec00",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0036",
+      "filename": "0036_platform_tenant_privacy_boundary.sql",
+      "bytes": 11888,
+      "sha256": "f6e0ab96f1c36f8fca310437c580577a0ad5b6d0ce56b98bc012231f2660bac7",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0037",
+      "filename": "0037_safe_eta_validation_hardening.sql",
+      "bytes": 9219,
+      "sha256": "e4e490093a163d8a37557d85897f0474cec7937fc5afcd51aca9908539093118",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0038",
+      "filename": "0038_guardian_email_notification_delivery_foundation.sql",
+      "bytes": 10780,
+      "sha256": "8d87d9916c217b14da1915ef30611fd1d4fed5b5c2541fde4bcc69380cd7285e",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0039",
+      "filename": "0039_notification_delivery_hardening_tenant_timezone_summary.sql",
+      "bytes": 8294,
+      "sha256": "9514eb43afb4d8d3479e07efe22026220c05aee995de4d60b9f29e9dae1fa789",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0040",
+      "filename": "0040_tenant_admin_delete_foundation.sql",
+      "bytes": 2929,
+      "sha256": "d13555069091636704c85eb2814ee4a1b3990b7cb83c900e5ac78ed211f2ebb1",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0041",
+      "filename": "0041_fix_route_delete_assignment_cascades.sql",
+      "bytes": 1780,
+      "sha256": "4310f6f3f6cfdf4d68e1d9314dc4344d636315256a5f103ef2dda4cb09d7b944",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0042",
+      "filename": "0042_secure_student_onboarding_workflow.sql",
+      "bytes": 17503,
+      "sha256": "e2c9eccbd547ead82c6e36706a44b2261b848fc95b1ab6a0857c419fed17bdae",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0043",
+      "filename": "0043_people_directory_and_student_identifier_retirement.sql",
+      "bytes": 13859,
+      "sha256": "7b50e84e65f7b34dcaacd0729558d4031ac16242df01f0f4eba1fd94f1e92f9e",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0044",
+      "filename": "0044_tenant_admin_student_csv_import.sql",
+      "bytes": 13226,
+      "sha256": "f69f7c5833136bc8a4676dbe54133318567be2b16352dfa35187bf046455a5bc",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0045",
+      "filename": "0045_route_trip_pattern_foundation.sql",
+      "bytes": 61106,
+      "sha256": "e456a812f5ab9ca03f96b107d0dc243190bb55b4c342db5da84fc600886bf918",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0046",
+      "filename": "0046_route_trip_pattern_cutover.sql",
+      "bytes": 3290,
+      "sha256": "c418b6c542cfd85d12268c74434ce2e7dde389096fc4e4323d7b94370ed0adb7",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0047",
+      "filename": "0047_route_definition_rls_and_route_stop_fk_repair.sql",
+      "bytes": 3085,
+      "sha256": "9a1ef8f37db1be9f222f45b214b47170bb14267550b30ae375b9fd02a668d4ab",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0048",
+      "filename": "0048_invitation_password_activation.sql",
+      "bytes": 6222,
+      "sha256": "a971e5536263b0147ea663a79894d9b3e7b90d0870985451e3faafc5baadcd90",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0049",
+      "filename": "0049_atomic_platform_tenant_invitation.sql",
+      "bytes": 9415,
+      "sha256": "e05c8e37ee0fdb938a362a6667b494e34fe0106a12b6d9c5c6e20e66b78caf45",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0050",
+      "filename": "0050_atomic_tenant_member_invitation.sql",
+      "bytes": 12193,
+      "sha256": "dfd9c193531a11daf185c0da202d7c9b795af6257125c1694cc8f3c8bcfc0ee7",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0051",
+      "filename": "0051_transportation_duplicate_identifier_protection.sql",
+      "bytes": 12245,
+      "sha256": "98e45deb02a2f8317c681b9affa939b19fbc584b4139dc8813e21bad60dcef7b",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0052",
+      "filename": "0052_student_guardian_admin_notes.sql",
+      "bytes": 2692,
+      "sha256": "f01828941458ef45f26934ef965049e4961e8ab9549c3528e5aa77b51ee96831",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0053",
+      "filename": "0053_bus_first_driver_tracking.sql",
+      "bytes": 8281,
+      "sha256": "0c3630f34150aeff392f0f86602690f85df7edca675f7c8f4bf51a17cea338c6",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0054",
+      "filename": "0054_assignment_selected_driver_trips.sql",
+      "bytes": 28961,
+      "sha256": "2ee9cadd1395ae7e985b48ba20a8d6f2f55474c5f5516c37be86096b482ecbc5",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0055",
+      "filename": "0055_driver_completed_trip_history.sql",
+      "bytes": 2413,
+      "sha256": "ed1bd6bf411419598533d0bf17640e819169314f8e20f0f65006f451ad329635",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0056",
+      "filename": "0056_postgis_spatial_foundation.sql",
+      "bytes": 13902,
+      "sha256": "51698a8f6d0620f370cfa41607bbdf6bdccdab1fe9cf1c1f10a090e7cc4d4914",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0057",
+      "filename": "0057_versioned_route_geometry.sql",
+      "bytes": 24163,
+      "sha256": "9d93a21493f5fc44ae591349adb3d6a844c7608b7ad6e3b271f932c1b17dd810",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0058",
+      "filename": "0058_admin_trip_overview.sql",
+      "bytes": 2582,
+      "sha256": "bc2dcfb3d143f1cc21bfca6b8ee319c2dcbb423000d5a4924f70a74f3540ff7f",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0058",
+      "filename": "0058_unified_bus_management_workspace.sql",
+      "bytes": 11274,
+      "sha256": "ef6438a88bb43f2dcf2433d80bfd8b3423da754930ef64b4ee759d01d0336f62",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0059",
+      "filename": "0059_bus_qr_tracking_sessions.sql",
+      "bytes": 27930,
+      "sha256": "e55837419dc18c698382710241585e291c74ff6c4313f23f411c06c06f541132",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0060",
+      "filename": "0060_server_enforced_bus_route_assignment_operations.sql",
+      "bytes": 8953,
+      "sha256": "bca3374c1416e83950ad3c2f0ee444ecfb5cfc00e81818662dda7c29620fe2bf",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0061",
+      "filename": "0061_guardian_bus_first_visibility.sql",
+      "bytes": 10829,
+      "sha256": "f834051967b1093fc4022776c3cf7c4e203f40e01f417439ef17dd3a25c674b0",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0062",
+      "filename": "0062_enforce_qr_only_driver_trip_start.sql",
+      "bytes": 971,
+      "sha256": "aa040dbfd8b63fa3733a791305db7befc75938db96913b3cc8af709b6ac978ce",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0063",
+      "filename": "0063_unified_direction_assignments_and_qr_selection.sql",
+      "bytes": 30870,
+      "sha256": "b534de23be23ba26236338fa157ae56de08023734c7bf2d3c4f99fd36b21ad16",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0064",
+      "filename": "0064_platform_tenant_admin_account_deletion.sql",
+      "bytes": 4475,
+      "sha256": "3d4b7e6b5369905bea2556e62c413ae37efd1a31035ee4886617243271105ae3",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0065",
+      "filename": "0065_phase1_authorization_reconciliation.sql",
+      "bytes": 13218,
+      "sha256": "bf9bd8908e45ea351ac8d21f68f275103876eb5799a5e07f93d27237113a7439",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0066",
+      "filename": "0066_phase2_audit_system_foundation.sql",
+      "bytes": 8832,
+      "sha256": "575dd0304b8004d56dd229fe2146868be4ea9e8b24ae79f4c26bc52c90e6ca26",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0067",
+      "filename": "0067_phase2_mfa_recent_auth_allowlist_ratelimit.sql",
+      "bytes": 14132,
+      "sha256": "66b5e6db545f94536778a0334ee626f22f54e8d8e0333221ba20c4507498fe7d",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0068",
+      "filename": "0068_phase2_password_sessions_idempotency.sql",
+      "bytes": 25692,
+      "sha256": "9f7c52833825f1910d8b46bd9279b5f068cfa040c7bfbde66c386f9708d317b6",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0069",
+      "filename": "0069_phase3_retention_foundation.sql",
+      "bytes": 19090,
+      "sha256": "b43e18292ff50f32bce6048da6c7d689d54ae3ae925f3d13fa3a954988f3400b",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0070",
+      "filename": "0070_phase0_3_hosted_validation_reconciliation.sql",
+      "bytes": 2314,
+      "sha256": "8f95700f0cbc1a7abea02ca191b3a7806cbb478d9cd256a2937f115008302ea4",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0071",
+      "filename": "0071_phase2_auth_rpc_hosted_reconciliation.sql",
+      "bytes": 2830,
+      "sha256": "772ebd92c88baa1972b282fad988dfe8efe245c9e46377951c94602a685cf87f",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0072",
+      "filename": "0072_hosted_platform_helper_and_audit_sanitizer.sql",
+      "bytes": 3410,
+      "sha256": "d50f119740675e40239661ff7cef35020df072477972eb260666ca5efb892982",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0073",
+      "filename": "0073_hosted_rls_execution_context_reconciliation.sql",
+      "bytes": 3007,
+      "sha256": "cf4d4f7c83c93f4d397d747f53a87d9db96eaeeffefb9ba867da48de1882ea93",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0074",
+      "filename": "0074_phase2_3_hosted_constraint_password_reconciliation.sql",
+      "bytes": 3722,
+      "sha256": "fe328f6fe949dd181712385183cb6765d31539f2fd30c45788321090c8ab19f8",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0075",
+      "filename": "0075_phase5_tenant_administration_foundation.sql",
+      "bytes": 42590,
+      "sha256": "835f92d9c65a708d7ce3fd5f392f97e8bb204dc39e52685ee629db51d0ac9d1e",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0076",
+      "filename": "0076_phase5_bulk_onboarding_foundation.sql",
+      "bytes": 32920,
+      "sha256": "e2de06e74cabcb68725eaf3a49e2ceb6a6c67752deddc30bc2e8551157b9b072",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0077",
+      "filename": "0077_phase5_invitation_lifecycle.sql",
+      "bytes": 22216,
+      "sha256": "30401d57de1d9605e6e4e3b07843c29c8c3db3db4da5fb7018747752da53aa3a",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0078",
+      "filename": "0078_phase5_account_restoration_bulk_invitations.sql",
+      "bytes": 5816,
+      "sha256": "5da2be24aa889e081a0d7cb8ca69754203382c458362c63172f8ef0edd65c36f",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0079",
+      "filename": "0079_phase6_transportation_operations_completion.sql",
+      "bytes": 55124,
+      "sha256": "0467315e699066f2f37aba9bf8fb8683da5017c1de0319b6751b8b148b93995a",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0080",
+      "filename": "0080_restore_student_roster_school_scope.sql",
+      "bytes": 1795,
+      "sha256": "ae4628814cf910dce9aab6bc27644469a8decc4d8eada08ba0b54b9c46f387a5",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0081",
+      "filename": "0081_reconcile_guardian_bus_first_execute_grants.sql",
+      "bytes": 1241,
+      "sha256": "dcfaa06f114c85e9d9208eca7b981aaba3dcc256458320bf1f9c52626f861e16",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0082",
+      "filename": "0082_restore_guardian_outbox_on_current_driver_events.sql",
+      "bytes": 5558,
+      "sha256": "32dd0b4039ecbbb71241d88eb5f2067420b65e1035201559c8a8d3f3b4484f4e",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0083",
+      "filename": "0083_reconcile_realtime_receive_only_grants.sql",
+      "bytes": 810,
+      "sha256": "224bbac0b578bc2f772bf842f73cbd9e9f4b1b735563078f16711737f3e45b59",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0084",
+      "filename": "0084_break_route_trip_rls_recursion.sql",
+      "bytes": 2420,
+      "sha256": "3f82efda7a8eda8063bad6596062ff4d1d01e273b7b9fd19f3dd925c110a83ad",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0085",
+      "filename": "0085_reconcile_verified_mfa_helper.sql",
+      "bytes": 651,
+      "sha256": "b916e43012a9e9a31d0cf2c3a4a6485c034a8512c112e2314a8f1b1c0b80b2ad",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0086",
+      "filename": "0086_phase7_production_driver_tracking.sql",
+      "bytes": 20733,
+      "sha256": "a3d1c021cf51176f3f159064ee404a8c1b89c425dd1e5f5c60ae55a88e8d4089",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0087",
+      "filename": "0087_phase8_guardian_experience_notifications.sql",
+      "bytes": 35626,
+      "sha256": "e451737f05f556a50c202cc46ef788618629feabfcebeb3acf868cf743b2ca96",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0088",
+      "filename": "0088_fix_phase8_guardian_student_rls_recursion.sql",
+      "bytes": 2052,
+      "sha256": "d1936e1be4cd0751f43513c9fb40314f3d17d428b5c43f2001a4687d797e07fd",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0089",
+      "filename": "0089_authorization_surface_hardening.sql",
+      "bytes": 19982,
+      "sha256": "eaebb082b90378fe4ed7b005c478b3789fdb6d4d701fe401b94f3c73f17e3c45",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0090",
+      "filename": "0090_phase7_byod_android_tracking.sql",
+      "bytes": 7146,
+      "sha256": "df8a8e14608bf48632706762052ccd7cc50c195e50c9e010a538643a93d39f52",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0091",
+      "filename": "0091_fix_sensitive_admin_audit_trigger_record_fields.sql",
+      "bytes": 2981,
+      "sha256": "6ed652b2fc213b9a2f8661bae778612299b131c1a2195750e8efc5a91628479e",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0092",
+      "filename": "0092_end_to_end_notification_system.sql",
+      "bytes": 72272,
+      "sha256": "36bbe24178596ec7cada9d6ef0bea21dc21dd712e5dab95a92b9c8bf9d963e6d",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0093",
+      "filename": "0093_planned_driver_bus_assignments.sql",
+      "bytes": 7718,
+      "sha256": "23a069bc40af5f9979d64480c530234213f8b39401a99f34ec6fbe7dc2853355",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0094",
+      "filename": "0094_schedule_push_notification_dispatcher.sql",
+      "bytes": 1407,
+      "sha256": "90101634dc476b0a8eb37f6a84896722258e5f4cca38c9c0db52e04ebe2495c9",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0095",
+      "filename": "0095_fix_idempotent_push_registration.sql",
+      "bytes": 4876,
+      "sha256": "c7fd381bfabc8a956d20f9259f85cb03af3c52e64f0d90635fb405009e9ec87d",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0096",
+      "filename": "0096_bussafe_notification_copy.sql",
+      "bytes": 8762,
+      "sha256": "d0d210f3ec692e02c6b0aebbc875e137e86fedba6384c82798eca15eb1fc7e8e",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0097",
+      "filename": "0097_guardian_bus_service_line.sql",
+      "bytes": 7458,
+      "sha256": "a6757b18c1b53f30a4b7e9e0a3b379618ab09a92117958c870b06fe149022126",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0098",
+      "filename": "0098_fix_planned_driver_assignment_context.sql",
+      "bytes": 7364,
+      "sha256": "94d74dab316df55cfe203de55d41a73ce5944ea6395594976247f14849b1502b",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0099",
+      "filename": "0099_annual_per_bus_subscription_management.sql",
+      "bytes": 29878,
+      "sha256": "bd61f7aac2859a9edfb2c915fb9fd25d1200c27714e748e8501ac034c6406ca5",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0100",
+      "filename": "0100_tenant_school_directory.sql",
+      "bytes": 14056,
+      "sha256": "6c82fa4aef0fbad38e674d0f1cb72e882202f78ec71d33029f5b676841cbdc2d",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0101",
+      "filename": "0101_defer_route_stop_order_uniqueness.sql",
+      "bytes": 839,
+      "sha256": "1479a3bab00ef806cc2eff74b51fef73b44ba66df8e56dba493a1bd7dc3c3ce4",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0102",
+      "filename": "0102_internal_bus_fleet_numbers.sql",
+      "bytes": 25871,
+      "sha256": "38119a6161115dc58594078a7e5193cbc7d6675812de2aca61a462295c90e8ed",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0103",
+      "filename": "0103_refresh_fleet_number_api_schema.sql",
+      "bytes": 426,
+      "sha256": "a73d56ce7c562d67efa20c4e6aa8b45c6aeef62c6b06dc4e5eeca5a251bf3613",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0104",
+      "filename": "0104_version_fleet_number_bus_update_rpc.sql",
+      "bytes": 1292,
+      "sha256": "db21e6b449e093ed88b3b61e6fe29e9bff2676f0dd983c04487a435defd51bca",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0105",
+      "filename": "0105_fix_bus_fleet_audit_helper.sql",
+      "bytes": 1124,
+      "sha256": "703bb08b8c47223c603929b4ed05ba0923e41ca2576e1203c3433afc94e27f72",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0106",
+      "filename": "0106_guardian_student_stops.sql",
+      "bytes": 3133,
+      "sha256": "2cae71eb487536611ee50894aa93732031d6844ac621f42c2a974a5392ffb94e",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0107",
+      "filename": "0107_support_directory.sql",
+      "bytes": 8125,
+      "sha256": "4650b90142c8fea31b7f16e7b726f6fd1e74911f21f6ef78b448848dc705a916",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0108",
+      "filename": "0108_guardian_eta_service_line.sql",
+      "bytes": 19784,
+      "sha256": "3ed16121ac7de212b58750e77ad58da391980b2bf3db3713617784b79c53e9f2",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0109",
+      "filename": "0109_guardian_delivery_preferences.sql",
+      "bytes": 10766,
+      "sha256": "7763ea6ce757267403b93324d015bef64f973f81a57e686950c5279f5a735a33",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0110",
+      "filename": "0110_cool_cloud_notification_preferences.sql",
+      "bytes": 36026,
+      "sha256": "df5299f9cb3a5a3c5118d721ae3d9dd76fef32c8a81420e02df7c71ef1736487",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0111",
+      "filename": "0111_driver_assignment_notifications.sql",
+      "bytes": 27783,
+      "sha256": "8a03583baa00b0983271cc111c8ba690c5807e3f63bac9b4596644064f0cf897",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0112",
+      "filename": "0112_mobile_support_fallback.sql",
+      "bytes": 2898,
+      "sha256": "849bebeedf854403bde43f86a1884292bdbb8802700276386620e905f8e5c35d",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0113",
+      "filename": "0113_fixed_three_second_driver_location_cadence.sql",
+      "bytes": 1398,
+      "sha256": "74c058922aa7a8282ca25e1cc41b420d54c33be0b378ce4e3f18bcd42a33823a",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0114",
+      "filename": "0114_guardian_tracking_alert_clarity.sql",
+      "bytes": 31415,
+      "sha256": "4abc2f84a1a86ebc28c7be8833af4d4c73b2dd89d71ce829f3d74b6484baa7cd",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0115",
+      "filename": "0115_allow_support_audit_actions.sql",
+      "bytes": 2059,
+      "sha256": "c2c659c013a1937d8b501b42e155f0c7aecd7fd05825274e4f6c80cde1be3ae8",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0116",
+      "filename": "0116_guardian_service_line_gps_state.sql",
+      "bytes": 22633,
+      "sha256": "c18ed89646f860350b1e81a74acc7b507b8d81f49f672ebd269d4475ee19ab6e",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0117",
+      "filename": "0117_fix_route_shape_rpc_column_ambiguity.sql",
+      "bytes": 4373,
+      "sha256": "335d0e93024802b3588c5f29f37d33c1154cb7d040de3b507dc952464526c299",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0118",
+      "filename": "0118_tenant_notification_control_center.sql",
+      "bytes": 7757,
+      "sha256": "b254e9a55b3cf62de40d0f46c0317534e6a6d078074d04bcd3d8e6968db1c946",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0119",
+      "filename": "0119_student_qr_pickup_dropoff.sql",
+      "bytes": 14956,
+      "sha256": "b21769af4b1e07554756c6f8012e579eee14dc57a1c62588657c0e6663467b33",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0120",
+      "filename": "0120_compact_role_notifications.sql",
+      "bytes": 22945,
+      "sha256": "c9fc7ce6a123c0099688534c2dc8177d81c32f37d222a8646e62aada7c2ff1e0",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0121",
+      "filename": "0121_admin_trip_search.sql",
+      "bytes": 3716,
+      "sha256": "6e9f7704b49c1ad4536eaf442a2ebe5885e1a6908b907e1700113202d364d55e",
+      "disposition": "historical_input_not_replayed",
+      "evidenceReference": "docs/qa/observed-production-adoption.md#historical-input-disposition",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0122",
+      "filename": "0122_commercial_authorization_boundaries.sql",
+      "bytes": 15076,
+      "sha256": "b5ce421b6decc16255d935758bdf6d3add241e68fed01ffd972d23a67eb399ab",
+      "disposition": "executed_security_installation",
+      "evidenceReference": "https://github.com/Davinder498/SafeBus-GLM/actions/runs/38665578510",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0123",
+      "filename": "0123_existing_project_security_reconciliation.sql",
+      "bytes": 23030,
+      "sha256": "cc79763aca81d27467f724384625fb1bf37a6d880d1f15ba1bc5012ff3f5c3e3",
+      "disposition": "executed_security_installation",
+      "evidenceReference": "https://github.com/Davinder498/SafeBus-GLM/actions/runs/38665578510",
+      "effectEquivalenceClaimed": false
+    },
+    {
+      "version": "0124",
+      "filename": "0124_session_claim_validation.sql",
+      "bytes": 2026,
+      "sha256": "0ac1323247ceac19bf120cb7a25f2db3c5fb2e3121ad74ea3f70441be9d3bbfa",
+      "disposition": "executed_security_installation",
+      "evidenceReference": "https://github.com/Davinder498/SafeBus-GLM/actions/runs/38665578510",
+      "effectEquivalenceClaimed": false
+    }
+  ],
+  "providerDdlHooks": [
+    {
+      "evtname": "issue_graphql_placeholder",
+      "evtevent": "sql_drop",
+      "evtenabled": "O",
+      "event_owner": "supabase_admin",
+      "tags": "{\"DROP EXTENSION\"}",
+      "function_schema": "extensions",
+      "proname": "set_graphql_placeholder",
+      "function_owner": "supabase_admin",
+      "definition_md5": "8da9dff6b2ae47498209d341acaeb60b"
+    },
+    {
+      "evtname": "issue_pg_cron_access",
+      "evtevent": "ddl_command_end",
+      "evtenabled": "O",
+      "event_owner": "supabase_admin",
+      "tags": "{\"CREATE EXTENSION\"}",
+      "function_schema": "extensions",
+      "proname": "grant_pg_cron_access",
+      "function_owner": "supabase_admin",
+      "definition_md5": "53a44336da0ac1dd62d89dbd988e6d1d"
+    },
+    {
+      "evtname": "issue_pg_graphql_access",
+      "evtevent": "ddl_command_end",
+      "evtenabled": "O",
+      "event_owner": "supabase_admin",
+      "tags": "{\"CREATE EXTENSION\"}",
+      "function_schema": "extensions",
+      "proname": "grant_pg_graphql_access",
+      "function_owner": "supabase_admin",
+      "definition_md5": "4e6d7efe4aed1b3b92063b648aa7a0cf"
+    },
+    {
+      "evtname": "issue_pg_net_access",
+      "evtevent": "ddl_command_end",
+      "evtenabled": "O",
+      "event_owner": "supabase_admin",
+      "tags": "{\"CREATE EXTENSION\"}",
+      "function_schema": "extensions",
+      "proname": "grant_pg_net_access",
+      "function_owner": "supabase_admin",
+      "definition_md5": "1d06ef4fb47bb0ab6e6f8818a62013bb"
+    },
+    {
+      "evtname": "pgrst_ddl_watch",
+      "evtevent": "ddl_command_end",
+      "evtenabled": "O",
+      "event_owner": "supabase_admin",
+      "tags": null,
+      "function_schema": "extensions",
+      "proname": "pgrst_ddl_watch",
+      "function_owner": "supabase_admin",
+      "definition_md5": "afaad7193dcf8f81e728d2bedb85e43e"
+    },
+    {
+      "evtname": "pgrst_drop_watch",
+      "evtevent": "sql_drop",
+      "evtenabled": "O",
+      "event_owner": "supabase_admin",
+      "tags": null,
+      "function_schema": "extensions",
+      "proname": "pgrst_drop_watch",
+      "function_owner": "supabase_admin",
+      "definition_md5": "4357772baf5cfcd5c6d7049585b3a537"
+    }
+  ]
+}

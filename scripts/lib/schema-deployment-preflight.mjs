@@ -1,18 +1,26 @@
 import { calculateSchemaFingerprint } from './schema-fingerprint.mjs';
 import { assertEnvironmentIdentity } from './environment-identity.mjs';
+import { inspectObservedBaseline } from './observed-production-baseline.mjs';
 
-export async function inspectSchemaDeployment(client, manifest, binding) {
+export async function inspectSchemaDeployment(client, manifest, binding, options = {}) {
   const ledgerState = await client.query(`
     select
       to_regclass('safebus_release.migration_checksums') is not null as has_checksums,
       to_regclass('safebus_release.releases') is not null as has_releases,
       to_regclass('safebus_release.environment_identity') is not null as has_identity,
+      to_regclass('safebus_release.observed_baselines') is not null as has_observed_baseline,
       (select count(*)::integer
          from pg_class c
          join pg_namespace n on n.oid = c.relnamespace
         where n.nspname = 'public' and c.relkind in ('r', 'p')) as public_table_count
   `);
   const state = ledgerState.rows[0];
+  if (state.has_observed_baseline) {
+    if (!state.has_identity || !state.has_checksums || !state.has_releases)
+      throw new Error('Observed baseline metadata is incomplete.');
+    await assertEnvironmentIdentity(client, binding);
+    return inspectObservedBaseline(client, manifest, binding, options.observedContract);
+  }
   if (state.has_checksums !== state.has_releases) {
     throw new Error('Release ledger is incomplete. Repair it through an approved forward process.');
   }
