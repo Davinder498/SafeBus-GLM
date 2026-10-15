@@ -1,9 +1,17 @@
-import { Link } from 'react-router';
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router';
 import { LegalPageLayout } from '@/components/layout/LegalPageLayout';
+import { RolePrivacyNotices } from '@/components/privacy/RolePrivacyNotices';
 
-const effectiveDate = 'September 20, 2026';
+const updatedDate = 'October 15, 2026';
 
 export function PrivacyPolicyPage() {
+  const { hash } = useLocation();
+  useEffect(() => {
+    const section = document.getElementById(hash.slice(1));
+    section?.scrollIntoView();
+  }, [hash]);
+
   return (
     <LegalPageLayout title="Privacy policy">
       <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
@@ -17,9 +25,10 @@ export function PrivacyPolicyPage() {
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
             BusSafe Alberta privacy policy
           </h1>
-          <p className="mt-3 text-sm text-slate-500">Effective {effectiveDate}</p>
+          <p className="mt-3 text-sm text-slate-500">Last updated {updatedDate}</p>
 
           <div className="mt-8 space-y-8 text-base leading-7 text-slate-700">
+            <RolePrivacyNotices />
             <section>
               <h2 className="text-xl font-bold text-slate-950">What BusSafe does</h2>
               <p className="mt-2">
@@ -46,7 +55,8 @@ export function PrivacyPolicyPage() {
                 <li>Bus, route, assignment, trip, pickup, drop-off, and security audit records.</li>
                 <li>
                   Bus location reported by an authorized driver during an active trip, including
-                  required offline recovery. Collection stops when the trip ends or is cancelled.
+                  authorized delivery of previously collected offline records. New collection stops
+                  when the trip ends or is cancelled.
                 </li>
                 <li>
                   Notification choices and, after opt-in, an Android installation identifier, device
@@ -69,9 +79,9 @@ export function PrivacyPolicyPage() {
               <p className="mt-2">
                 We use the information only to authenticate invited users, operate transportation,
                 maintain authorized bus visibility, deliver notifications users have enabled,
-                respond to prospective-tenant inquiries, support the service, and meet security,
-                audit, and legal obligations. We do not sell personal information, serve
-                advertising, or build advertising profiles.
+                respond to business inquiries, administer subscriptions and billing, support the
+                service, and meet security, audit, and legal obligations. We do not sell personal
+                information, serve advertising, or build advertising profiles.
               </p>
             </section>
 
@@ -96,10 +106,12 @@ export function PrivacyPolicyPage() {
               <p className="mt-2">
                 Core application records are intended to be stored in Canada. Some supporting
                 providers may process limited request or delivery metadata outside Canada. Raw bus
-                location history is scheduled for deletion after 30 days, notifications after 90
-                days, and operational identity or trip records according to the issuing school
-                authority&apos;s approved retention schedule. Records may be retained longer when
-                required by law, an active investigation, or a legal hold.
+                location, notifications and operational records are retained for their authorized
+                purposes under the applicable business or issuing organization&apos;s retention
+                schedule. Retention depends on the record and its purpose, including applicable
+                legal requirements and scoped legal holds. Contact the responsible privacy office
+                for the periods that apply to your records. Closing an account does not necessarily
+                erase transportation, financial or security records that must still be retained.
               </p>
             </section>
 
@@ -110,7 +122,9 @@ export function PrivacyPolicyPage() {
                 them off and revoke registered devices from notification settings. To access,
                 correct, or delete an account or associated information, start with the school
                 authority that issued the invitation. BusSafe assists the authority after identity
-                and legal-retention requirements are verified.
+                and legal-retention requirements are verified. For SafeBus&apos;s own business,
+                billing or correspondence records, direct your request or concern to SafeBus. You do
+                not need an active account to make a request.
               </p>
               <Link
                 to="/account-deletion"
@@ -138,6 +152,19 @@ export function PrivacyPolicyPage() {
                 developer contact displayed on the BusSafe Alberta Google Play listing and include
                 the name of your school authority. Do not send student health, address, custody, or
                 other unnecessary sensitive information.
+              </p>
+              <p className="mt-3">
+                The business owner is SafeBus&apos;s privacy lead. Questions about SafeBus&apos;s
+                own business records or privacy practices can be raised directly with the business,
+                even when the school cannot respond. If a privacy concern remains unresolved, you
+                can contact the{' '}
+                <a
+                  className="font-semibold underline underline-offset-4"
+                  href="https://oipc.ab.ca/"
+                >
+                  Office of the Information and Privacy Commissioner of Alberta
+                </a>{' '}
+                or the regulator responsible for your information.
               </p>
             </section>
           </div>

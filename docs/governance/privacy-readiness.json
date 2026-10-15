@@ -64,6 +64,6 @@
     "securityLead": null,
     "privacyLead": null
   },
-  "candidateEvidenceDigest": "75acaae1c1a37511ce557d7d0594c679a18d3270a31eed8cac5cf7d8926ec432",
-  "candidateEvidenceBasis": "local-review-worktree; regenerate in the exact release checkout before approval"
+  "candidateEvidenceDigest": "5558ab9415d9067e621175305bb53b58e4951646031c556f31cefffcb324ee53",
+  "candidateEvidenceBasis": "local-legal-privacy-worktree; regenerate in the exact release checkout before approval"
 }

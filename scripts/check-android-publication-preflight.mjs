@@ -95,12 +95,18 @@ export async function verifyAndroidPublicationFiles(root = process.cwd()) {
     /SystemBars:[\s\S]*insetsHandling: 'css'/.test(capacitorConfig),
     'Capacitor SystemBars CSS inset handling is required.',
   );
-  invariant(/appName: 'BusSafe Alberta'/.test(capacitorConfig), 'Capacitor appName must use BusSafe Alberta.');
+  invariant(
+    /appName: 'BusSafe Alberta'/.test(capacitorConfig),
+    'Capacitor appName must use BusSafe Alberta.',
+  );
   invariant(
     /<string name="app_name">BusSafe Alberta<\/string>/.test(androidStrings),
     'Android app_name must use BusSafe Alberta.',
   );
-  invariant(/<title>BusSafe Alberta<\/title>/.test(mobileIndex), 'The mobile title must use BusSafe Alberta.');
+  invariant(
+    /<title>BusSafe Alberta<\/title>/.test(mobileIndex),
+    'The mobile title must use BusSafe Alberta.',
+  );
 
   const envNames = [...envExample.matchAll(/^\s*(VITE_[A-Z0-9_]+)\s*=/gm)].map((match) => match[1]);
   invariant(
@@ -128,7 +134,10 @@ export async function verifyAndroidPublicationFiles(root = process.cwd()) {
     'The mobile account-deletion route is missing.',
   );
   for (const href of ['/privacy', '/privacy#contact', '/account-deletion']) {
-    invariant(accountSettings.includes(`href="${href}"`), `Account settings is missing ${href}.`);
+    invariant(
+      accountSettings.includes(`href="${href}"`) || accountSettings.includes(`to="${href}"`),
+      `Account settings is missing ${href}.`,
+    );
   }
 
   const images = {};

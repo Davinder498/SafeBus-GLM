@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { CircleHelp, ExternalLink, ShieldCheck, Trash2 } from 'lucide-react';
 import {
   DashboardLayout,
@@ -66,14 +67,12 @@ export function AccountSettingsPage() {
                 Learn what BusSafe handles, how bus location is limited to active trips, and how to
                 exercise privacy choices.
               </p>
-              <a
+              <Link
                 className="mt-3 inline-flex items-center gap-1.5 font-semibold text-navy-700 underline underline-offset-4"
-                href="/privacy"
-                target="_blank"
-                rel="noreferrer"
+                to="/privacy"
               >
                 Open privacy policy <ExternalLink className="h-4 w-4" aria-hidden />
-              </a>
+              </Link>
             </div>
           </div>
         </Card>
@@ -89,14 +88,12 @@ export function AccountSettingsPage() {
                 BusSafe accounts are issued by participating school authorities. The public request
                 page remains available even after you sign out or remove the app.
               </p>
-              <a
+              <Link
                 className="mt-3 inline-flex items-center gap-1.5 font-semibold text-navy-700 underline underline-offset-4"
-                href="/account-deletion"
-                target="_blank"
-                rel="noreferrer"
+                to="/account-deletion"
               >
                 View deletion instructions <ExternalLink className="h-4 w-4" aria-hidden />
-              </a>
+              </Link>
             </div>
           </div>
         </Card>

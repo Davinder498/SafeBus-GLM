@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router';
 import { Bus, Camera, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -446,6 +447,12 @@ export function BusQrStartScanner({
                         defect prevents service. You are starting Bus {pendingOption.busNumber} on{' '}
                         {pendingOption.tripName}.
                       </p>
+                      <Link
+                        to="/privacy#drivers"
+                        className="mt-3 inline-flex text-sm font-semibold text-navy-700 underline underline-offset-4"
+                      >
+                        Read the driver privacy notice
+                      </Link>
                     </div>
                     <div className="grid gap-2 sm:grid-cols-2">
                       <label className="flex items-start gap-3 rounded-xl border border-blue-200 bg-white p-4 sm:col-span-2">
@@ -503,6 +510,12 @@ export function BusQrStartScanner({
                         cancelled, or the authorization expires. BusSafe does not use this location
                         for advertising or off-shift monitoring.
                       </p>
+                      <Link
+                        to="/privacy#drivers"
+                        className="mt-3 inline-flex text-sm font-semibold text-navy-700 underline underline-offset-4"
+                      >
+                        Read the driver privacy notice
+                      </Link>
                     </div>
                     <div className="grid gap-2 sm:grid-cols-2">
                       <Button

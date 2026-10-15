@@ -5,6 +5,11 @@
 **Customer/employer privacy contact:** `[CUSTOMER_PRIVACY_CONTACT]`
 **SafeBus privacy contact:** `[PRIVACY_EMAIL]`
 
+**In-app reading:** `/privacy#drivers`, accessible from the account menu,
+Privacy and account settings, sign-in and the pre-trip/location disclosure.
+The public role explanation is implemented; actual employer notice/authority,
+contact, supplier/retention and signed-device evidence remain pending.
+
 SafeBus supports your assigned bus trips. Your customer/employer must identify
 its lawful transport/employee information purpose and applicable notice:
 `[CUSTOMER_COLLECTION_USE_DISCLOSURE_AUTHORITY]`. SafeBus's business owner does not

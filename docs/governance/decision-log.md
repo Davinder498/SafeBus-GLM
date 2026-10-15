@@ -515,6 +515,24 @@ production` workflow must not run until a current encrypted backup is
   [findings](../qa/commercial-readiness-review-2026-10-15.md). Fix findings one
   correction milestone at a time after this review; human PR review remains.
 
+### DL-024 — Prioritize legal/privacy and accessible participant notices
+
+- Date: 2026-10-15
+- Decision: Work on legal/privacy before security corrections; expose the privacy
+  notice to tenant administrators, guardians and drivers. The business owner is
+  the Privacy Lead; business identity and direct contact remain unresolved.
+- Context: Following PR #277, the owner requested legal/privacy first, explicitly
+  required role access, answered "unresolved" for final business/contact details
+  and "me" for the accountable Privacy Lead.
+- Consequences: Implement public and in-app notice paths and role explanations;
+  retain placeholders in business documents and do not infer publication or full
+  privacy approval. Customer authority/PIA requirements remain at onboarding.
+  New read-only retention findings are recorded and require a reviewed correction;
+  no production deletion or settings changes occur in this notice milestone.
+- Evidence: [Legal/privacy implementation record](phase-3/legal-privacy-completion-2026-10-15.md).
+- Supersedes: The correction ordering after the 2026-10-15 review; DL-023 scope
+  exclusions and protected production/merge controls continue.
+
 ## 5. Sign-off entries
 
 When a Phase 0 document is signed off, add an entry here:

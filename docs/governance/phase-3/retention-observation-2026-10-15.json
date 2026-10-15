@@ -1,0 +1,39 @@
+{
+  "observationDate": "2026-10-15",
+  "project": "BusSafe production",
+  "method": "Two bounded read-only transactions; 15-second statement / 3-second lock timeouts; final rollback; configuration and per-policy aggregates only",
+  "destructiveEnabled": false,
+  "hasApprovalReference": false,
+  "hasApprovalDate": false,
+  "configuredPolicies": 12,
+  "rawLocationDays": 30,
+  "terminalEmailMetadataDays": 90,
+  "recordedPolicyAttempts": 1956,
+  "completedDryRuns": 652,
+  "failedDryRuns": 1304,
+  "completedEnforcementRuns": 0,
+  "failureSqlstate": "42702",
+  "failuresPerAffectedPolicy": 163,
+  "affectedPolicies": [
+    "invitations",
+    "student_records",
+    "guardian_relationships",
+    "driver_records",
+    "bus_tracking_sessions",
+    "bus_run_dispatches",
+    "trip_records",
+    "notifications"
+  ],
+  "completedDryRunPolicies": [
+    "audit_records",
+    "rate_limit_buckets",
+    "raw_location_history",
+    "user_sessions"
+  ],
+  "limitations": [
+    "No retention RPC or destructive execution was invoked.",
+    "Run counters do not establish scope, hold safety, complete deletion, supplier disposal or every independent cleanup mechanism.",
+    "Netlify runtime environment flag and account-specific supplier settings were not inspected.",
+    "Configured periods are not approved legal periods or proof of actual enforcement."
+  ]
+}

@@ -40,10 +40,11 @@ export function AccountDeletionPage() {
             <li className="rounded-xl border border-slate-200 p-5">
               <p className="font-bold text-slate-950">3. Receive confirmation</p>
               <p className="mt-2 leading-7 text-slate-700">
-                The account, active sessions, device registrations, and personal information will be
-                deleted or anonymized according to the approved retention process. The authority
-                will explain any record that must be retained for transportation, audit, legal, or
-                security obligations and will confirm when the request is complete.
+                The request must address account access, active sessions, device registrations and
+                personal information separately. Applicable records are deleted or anonymized under
+                the authorized retention process. The authority will explain any record that must be
+                retained for transportation, audit, legal, or security obligations and will confirm
+                when the request is complete.
               </p>
             </li>
           </ol>
@@ -53,6 +54,13 @@ export function AccountDeletionPage() {
             contact on the BusSafe Alberta Google Play listing. Include only your account email and
             school authority name so the request can be routed safely.
           </div>
+
+          <p className="mt-5 leading-7 text-slate-700">
+            For SafeBus&apos;s own business, billing or correspondence records, contact SafeBus
+            directly using the privacy contact described in the privacy notice. You can also raise a
+            privacy concern without an active account. The issuing organization handles its
+            transportation records; SafeBus assists with routing and authorized action.
+          </p>
 
           <Link
             to="/privacy"

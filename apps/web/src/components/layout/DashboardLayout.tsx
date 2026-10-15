@@ -451,6 +451,12 @@ export function DashboardLayout({
                 </>
               )}
               <DropdownItem
+                icon={<ShieldCheck className="h-4 w-4" />}
+                onClick={() => navigate('/privacy')}
+              >
+                Privacy notice
+              </DropdownItem>
+              <DropdownItem
                 destructive
                 icon={<LogOut className="h-4 w-4" />}
                 onClick={handleLogout}
@@ -604,6 +610,17 @@ function SidebarNav({
           ))}
         </div>
       ))}
+      <div className="border-t border-slate-200 pt-4">
+        <NavListItem
+          item={{
+            label: 'Privacy notice',
+            to: '/privacy',
+            icon: <ShieldCheck className="h-4 w-4" />,
+          }}
+          portal={portal}
+          onNavigate={onNavigate}
+        />
+      </div>
     </nav>
   );
 }

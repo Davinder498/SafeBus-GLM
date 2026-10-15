@@ -1,3 +1,20 @@
+## Legal/privacy notice access — 2026-10-15
+
+Owner-selected correction milestone after PR #277. Tenant admins, guardians and
+drivers have public role-specific notices and consistent in-app/account-menu
+access, including signed-out sign-in/invitation paths. Native links stay in-app.
+The owner appointed themselves Privacy Lead and retained unresolved legal
+identity/contact details. Public automatic-deletion promises were removed;
+actual retention still requires correction and verified enforcement.
+
+See [current privacy evidence](governance/phase-3/legal-privacy-completion-2026-10-15.md).
+Bounded read-only configuration/counter checks confirmed deletion disabled and
+eight policies with ambiguous-column dry-run errors. A narrowly scoped forward
+correction is prepared/tested locally and remains outside the active manifest.
+No production writes,
+deletion/flag changes, feature activation or launch approval occurred. Point 6
+remains open; the earlier review below remains historical evidence.
+
 ## Commercial readiness review — 2026-10-15
 
 Owner-authorized DL-023 updates launch acceptance and reviews security, business

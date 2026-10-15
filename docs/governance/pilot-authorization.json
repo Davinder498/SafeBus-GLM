@@ -40,6 +40,6 @@
     "primaryContactReference": "OPS/ONCALL/PRIMARY-001",
     "backupContactReference": "OPS/ONCALL/BACKUP-001"
   },
-  "candidateEvidenceDigest": "54062e389d46e1b3634f8b6932b2fcb444199b06bfca3cb85809aeb4b6d81fa0",
-  "candidateEvidenceBasis": "local-review-worktree; regenerate in the exact release checkout before approval"
+  "candidateEvidenceDigest": "2eb65d2eb69dfba55a0f40dacea2eefe8fd057def0a21eb14c525d730e6b2cf2",
+  "candidateEvidenceBasis": "local-legal-privacy-worktree; regenerate in the exact release checkout before approval"
 }

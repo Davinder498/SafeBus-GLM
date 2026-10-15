@@ -5,6 +5,11 @@
 **Authority/contact:** `[CUSTOMER_LEGAL_NAME]` / `[CUSTOMER_PRIVACY_CONTACT]`
 **SafeBus privacy contact:** `[PRIVACY_EMAIL]`
 
+**In-app reading:** `/privacy#guardians`, accessible from the account menu,
+Privacy and account settings, and sign-in page. The public role explanation is
+implemented; this customer template still needs actual authority/contact,
+supplier-country and retention details before customer publication.
+
 SafeBus helps your school authority operate transportation and show you the
 bus assigned through your active authorized student link. It tracks the bus,
 not your child, and does not require your own GPS for this view.

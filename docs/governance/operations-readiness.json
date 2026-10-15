@@ -61,6 +61,6 @@
     },
     "backupRestore": null
   },
-  "candidateEvidenceDigest": "da1860b39ca4f7b28e4fbddb9afa1556a7bee2c30f162e0850f7ceceb605f217",
-  "candidateEvidenceBasis": "local-review-worktree; regenerate in the exact release checkout before approval"
+  "candidateEvidenceDigest": "4f77163a9487fc782b4fa82e3f52cf67974169c6eea40dc9f6cb8f30e2f6a6bc",
+  "candidateEvidenceBasis": "local-legal-privacy-worktree; regenerate in the exact release checkout before approval"
 }
