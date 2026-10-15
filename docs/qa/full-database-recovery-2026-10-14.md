@@ -2,7 +2,8 @@
 
 **Status:** Technical restore and verification passed. The owner accepted the
 evidence and confirmed the exact new backup's Canadian offsite copy. The bound
-human recovery receipt validated; protected installation remains pending.
+human recovery receipt validated. The subsequent protected security installation
+also committed; see [installation verification](security-installation-2026-10-14.md).
 
 ## Source and approved destination
 
@@ -124,12 +125,14 @@ passed after human environment approval. Its downloaded evidence binds to the
 same source commit, project, SQL checksums and backup authorization snapshot.
 The inspected catalog matched after rollback; private API isolation passed.
 Installation run [38665578510](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38665578510)
-passed code validation and is waiting for the required production-environment
-review. No persistent installation is claimed at this checkpoint.
+subsequently passed after its separate human approval and committed the three
+security migrations. [Independent installation verification](security-installation-2026-10-14.md)
+records the actual ledger and exact post-install catalog match.
 
 This verifies logical SQL and role recovery. Role passwords, Storage object
 bytes, provider configuration/signing keys, Vault root keys and external services
-are separate recovery items. Migrations 0123, 0122 and 0124 remain uninstalled.
+are separate recovery items. Migrations 0123, 0122 and 0124 were subsequently
+installed through the protected, owner-approved workflow.
 Signed-session/API acceptance, historical adoption, verified types and final
 drift/advisor checks still remain for R1. This result does not approve commercial
 launch or prove fleet capacity.

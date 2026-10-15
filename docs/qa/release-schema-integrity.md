@@ -101,11 +101,13 @@ The new PostgreSQL checks run from `pnpm test` in the existing CI gate.
 
 ## Remaining R1 work, then server scaling
 
-1. Complete human approval of protected installation, using the
-   [owner-accepted full recovery and matching fresh rehearsal](full-database-recovery-2026-10-14.md).
-   The bound receipt validated; keep the 24-hour evidence window enforced.
-2. Verify and accept the reviewed security reconciliation through its protected
-   workflow; confirm actual ledger/catalog outcome rather than workflow colour.
+1. Refresh the stale generated type contract and complete required security
+   signed-session/API acceptance. The
+   [owner-approved installation](security-installation-2026-10-14.md) committed;
+   independent ledger/catalog, RPC allowlist and negative SQL checks passed.
+2. Retain the [accepted recovery evidence](full-database-recovery-2026-10-14.md)
+   and installation bindings; renew evidence for subsequent protected writes
+   according to the reviewed recovery procedure.
 3. Prepare the historical adoption contract from observed evidence. Distinguish
    inherited/observed schema from actual recorded execution and give every
    historical discrepancy a reviewed disposition. Do not replay all migrations,

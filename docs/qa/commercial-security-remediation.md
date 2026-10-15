@@ -15,7 +15,10 @@ Full recovery passed technical verification; the owner accepted the evidence and
 confirmed the exact new backup's Canadian offsite copy. The bound receipt
 validated. See
 [full recovery evidence](full-database-recovery-2026-10-14.md).
-Security installation/acceptance and a reviewed historical adoption
+The protected security installation committed after separate owner approval;
+independent catalog/ledger and negative SQL verification passed. See
+[installation verification](security-installation-2026-10-14.md).
+Verified types, real security acceptance and a reviewed historical adoption
 contract remain required. Server scaling is the next separate engineering
 milestone; no fleet capacity claim or hosted load is implied.
 
@@ -69,8 +72,9 @@ The target remains production-designated; a second project is optional for this
 milestone. The follow-up branch prepares snapshot reconciliation **0123** and a
 protected rollback-only rehearsal. See
 [existing-project-security-rehearsal.md](existing-project-security-rehearsal.md).
-No database patch has been applied. Protected GitHub environment review and human
-PR merge review remain required.
+At this preparation stage, no database patch had been applied. The separately
+owner-approved installation and its verification are recorded above; protected
+environment review and human PR merge review remain required for new changes.
 
 The first hosted SQL rehearsal completed reconciliation and 0122 before its
 malformed-session acceptance check exposed 22P02 in the SQL session function.
@@ -82,8 +86,8 @@ finding is closed by these unit tests or by a failed rehearsal.
 
 The protected hosted run [38101560000](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38101560000)
 now passed the full 0123 → 0122 → 0124 rollback sequence and restored its inspected
-catalog; downloaded evidence hashes were verified. These changes remain
-uninstalled. A guarded installation/export workflow is prepared with an actual
+catalog; downloaded evidence hashes were verified. These changes were still
+uninstalled at that stage. A guarded installation/export workflow was prepared with an actual
 off-site backup/full restore receipt gate and a separate ledger recording only
 the three executed security migrations. See
 [existing-security-installation.md](existing-security-installation.md).
@@ -105,8 +109,11 @@ The owner accepted this evidence and confirmed the exact new archive's Canadian
 offsite copy; the human receipt validated and was stored in the protected
 production environment. Before installation, complete fresh protected rehearsal
 evidence; the 24-hour window remains enforced.
-Migrations 0122, 0123 and 0124 remain uninstalled; no commercial security finding
-is closed by the rehearsal or backup export.
+Protected run 38665578510 subsequently installed 0123 → 0122 → 0124 after the
+owner's separate environment approval. Independent read-only verification
+matched the actual ledger, complete catalog digest and exact RPC allowlists;
+negative SQL acceptance passed. No commercial security finding is closed by
+catalog checks alone; real signed-session/API acceptance remains required.
 
 | Finding                                                    | Prepared change                                                                                                                                                                                                                                                | Closure still required                                                                                                           |
 | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
