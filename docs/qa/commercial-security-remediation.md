@@ -25,7 +25,8 @@ PR [#259](https://github.com/Davinder498/SafeBus-GLM/pull/259) merged on
 scenario declarations are being replaced by active mobile checks for assigned-bus
 navigation, scoped presentation, empty/error states, unauthenticated deep-link
 denial and the NULL-school driver scan surface. Active administrator coverage
-remains on the website. Recovery and hosted security acceptance remain deferred.
+remains on the website. Hosted security acceptance remains pending; current
+recovery progress is recorded above.
 
 ## Completed implementation: commercial browser verification
 
@@ -53,7 +54,7 @@ Prepared changes and local production-preview measurements are recorded in
 The database security milestone below remains open. Neither this deferral nor
 frontend improvements authorize deployment or commercial launch.
 
-## Deferred milestone: authorization and session security
+## Pending milestone: authorization and session security
 
 Merged PR #252 contains forward migration **0122**, application integration,
 server boundary tests and expanded protected authorization-audit checks. Existing
@@ -196,8 +197,9 @@ backup restore, SQL change or launch approval is implied.
 
 ## Validation record
 
-The customer authorized C1 server engineering on 2026-10-14 while explicitly
-keeping full-restore recovery deferred. The
+The customer initially authorized C1 server engineering on 2026-10-14 while
+keeping full-restore recovery deferred, then resumed R1 and authorized the
+completed technical restore recorded above. The
 [asynchronous tracking worker](async-tracking-invalidations.md) is implemented as
 a pending forward migration with embedded PostgreSQL execution tests. It removes
 guardian fan-out from GPS ingestion when activated, uses current bus-service
