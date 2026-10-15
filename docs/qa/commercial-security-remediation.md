@@ -11,7 +11,10 @@ with one milestone at a time. The first bounded R1 fix expands schema/authorizat
 drift coverage, bounds read-only audits and stops obsolete historical adoption
 before connection. [Release schema integrity](release-schema-integrity.md)
 records the hosted catalog-only observation, local SQL tests and evidence limits.
-Recovery, security installation/acceptance and a reviewed historical adoption
+Full recovery has now passed technical verification; human evidence acceptance
+and confirmation of the new backup's offsite copy remain pending. See
+[full recovery evidence](full-database-recovery-2026-10-14.md).
+Security installation/acceptance and a reviewed historical adoption
 contract remain required. Server scaling is the next separate engineering
 milestone; no fleet capacity claim or hosted load is implied.
 
@@ -90,10 +93,15 @@ Canadian location. Those checks do not prove a database restore.
 The approved free Canadian hosted recovery project was provisioned with its Data
 API disabled. Its TLS connection passed. A rollback-only check confirmed that its
 `postgres` role cannot create archived partitions in the protected `realtime`
-schema (42501). No backup data was loaded. A separate native recovery instance has
-been proposed, but not approved or created. The customer deferred restoration on
-2026-10-11. Before resuming installation, complete a compatible full restore and
-human review, renewing backup/rehearsal evidence if the 24-hour window has expired.
+schema (42501). No backup data was loaded there. On 2026-10-14 the customer revoked
+the earlier deferral and approved a native recovery cluster on this Canadian
+laptop. Fresh encrypted export 38655618877 was fully restored there: all 110
+archived datasets (57,749 rows), four sequence states and reviewed metadata
+comparisons passed. The six CHECK display-text differences were proven equivalent
+in PostgreSQL; the raw fingerprint difference was retained, not hidden.
+Human evidence review and the new archive's offsite attestation remain pending.
+Before installation, finalize the bound receipt and renew protected rehearsal
+evidence; the 24-hour window remains enforced.
 Migrations 0122, 0123 and 0124 remain uninstalled; no commercial security finding
 is closed by the rehearsal or backup export.
 
