@@ -39,7 +39,8 @@ try {
   }
   await client.query('rollback');
   console.log(
-    `Schema preflight passed for ${environment}: ${result.applied.size} applied, ` +
+    `Schema preflight passed for ${environment}: ${result.applied.size} executed, ` +
+      `${result.inherited?.size ?? 0} frozen historical inputs, ` +
       `${result.pending.length} pending. No database changes were made.`,
   );
 } catch (error) {

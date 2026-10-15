@@ -1,12 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import {
-  installBinding,
-  readInstallInputs,
-  recoverySnapshot,
-  RELEASE_STATE_SQL,
-} from './lib/existing-security-install.mjs';
+import { installBinding, readInstallInputs } from './lib/existing-security-install.mjs';
+import { assertBackupReleaseState } from './lib/backup-release-state.mjs';
 import { digest, assertPrivateApiSchemaHidden } from './lib/existing-security-rehearsal.mjs';
 import {
   captureEncryptedDump,
@@ -63,15 +59,12 @@ try {
     await client.query("set local statement_timeout='30s'");
     await client.query("set local lock_timeout='2s'");
     await client.query("set local idle_in_transaction_session_timeout='17min'");
-    const state = (await client.query(RELEASE_STATE_SQL)).rows[0];
-    if (Object.values(state).some((v) => v !== false))
-      throw new Error('This backup path is limited to the unadopted security snapshot.');
     const server = await client.query(
       "select current_setting('server_version_num')::integer as version, pg_export_snapshot() as id",
     );
     if (Math.floor(server.rows[0].version / 10000) !== 17)
       throw new Error('Review backup tools for this server version.');
-    const catalog = await recoverySnapshot(client);
+    const catalog = await assertBackupReleaseState(client);
     capturedCatalog = catalog;
     const createdAt = new Date().toISOString();
     const output = path.resolve('.safebus-release/existing-security-backup');
@@ -129,11 +122,9 @@ try {
   try {
     await client.query("set local statement_timeout='30s'");
     await client.query("set local lock_timeout='2s'");
-    const state = (await client.query(RELEASE_STATE_SQL)).rows[0];
     if (
-      Object.values(state).some((v) => v !== false) ||
-      digest(JSON.stringify(await recoverySnapshot(client))) !==
-        digest(JSON.stringify(capturedCatalog))
+      digest(JSON.stringify(await assertBackupReleaseState(client))) !==
+      digest(JSON.stringify(capturedCatalog))
     )
       throw new Error('Database schema changed during export; capture a fresh backup.');
   } finally {

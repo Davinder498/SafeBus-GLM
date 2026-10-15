@@ -31,7 +31,8 @@ a bad key, outage or timeout cannot serve as proof of isolation.
 The obsolete adoption entry point is stopped before any database connection.
 It must not label the pinned 0088 repository checksum prefix as the current
 project's execution history. The existing baseline remains immutable; there is
-no override or replacement adoption contract in this milestone.
+no override of the legacy baseline. The separately prepared observed-schema
+contract below requires its own human review and protected registration.
 
 ## Compatibility and evidence boundaries
 
@@ -101,16 +102,19 @@ The new PostgreSQL checks run from `pnpm test` in the existing CI gate.
 
 ## Remaining R1 work, then server scaling
 
-1. Refresh the stale generated type contract and complete required security
-   signed-session/API acceptance. The
+1. Complete required security signed-session/API acceptance. The generated type
+   contract was refreshed in PR #273 and the protected canonical run
+   [38672206649](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38672206649)
+   passed without a diff. The
    [owner-approved installation](security-installation-2026-10-14.md) committed;
    independent ledger/catalog, RPC allowlist and negative SQL checks passed.
 2. Retain the [accepted recovery evidence](full-database-recovery-2026-10-14.md)
    and installation bindings; renew evidence for subsequent protected writes
    according to the reviewed recovery procedure.
-3. Prepare the historical adoption contract from observed evidence. Distinguish
-   inherited/observed schema from actual recorded execution and give every
-   historical discrepancy a reviewed disposition. Do not replay all migrations,
+3. Review the [prepared observed-schema adoption contract](observed-production-adoption.md).
+   It distinguishes observed schema from actual recorded execution and proposes
+   an explicit frozen-input disposition for every historical file, without
+   claiming historical effect equivalence. Do not replay all migrations,
    extend the old baseline silently or stamp unsupported applied timestamps.
 4. Rehearse the replacement metadata/reconciliation workflow in a bounded rollback
    transaction, review independently, then apply only through protected approval.

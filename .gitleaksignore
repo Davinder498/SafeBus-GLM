@@ -1,3 +1,6 @@
 # Reviewed false positive: privacy-program responsibility prose, not a credential.
 # Keep the exception limited to this finding in the original scanned commit.
 cfbc50ac90e5ec77c5637b9787383b987645cfa4:docs/governance/phase-3/privacy-management-program.md:generic-api-key:29
+# Reviewed false positive: SHA-256 of the public Supabase HTTPS origin, not a key.
+# Recomputed using createEnvironmentBinding; scope to this original finding only.
+655ed83a6988e05a194302f8f8df50786a11f5ca:config/production-observed-baseline.json:generic-api-key:12

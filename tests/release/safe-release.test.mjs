@@ -72,6 +72,34 @@ test('release attestation is bound to every gate, migration, input, and web arti
   );
 });
 
+test('release evidence rejects an observed contract replacement after preflight', async (t) => {
+  const root = await fixtureRoot();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await fs.mkdir(path.join(root, 'config'));
+  const file = path.join(root, 'config/production-observed-baseline.json');
+  await fs.writeFile(file, '{"review":"first"}\n');
+  const releaseSha = 'a'.repeat(40);
+  const options = {
+    environment: 'production',
+    releaseSha,
+    commitSha: releaseSha,
+    databaseUrl,
+    supabaseUrl,
+    root,
+  };
+  const attestation = await createReleaseAttestation(options);
+  await verifyReleaseAttestation({ ...options, attestation });
+  await fs.writeFile(file, '{"review":"replacement"}\n');
+  await assert.rejects(
+    verifyReleaseAttestation({ ...options, attestation }),
+    /changed after preflight/,
+  );
+  await assert.rejects(
+    verifyReleaseAttestation({ ...options, attestation: { ...attestation, format: 3 } }),
+    /unsupported format/,
+  );
+});
+
 test('release attestation rejects stale evidence and a different commit', async (t) => {
   const root = await fixtureRoot();
   t.after(() => fs.rm(root, { recursive: true, force: true }));

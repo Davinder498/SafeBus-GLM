@@ -1,72 +1,52 @@
 #!/usr/bin/env node
-
 import process from 'node:process';
 import pg from 'pg';
-import { assertDatabaseEnvironmentIdentity } from './lib/environment-identity.mjs';
-import { calculateSchemaFingerprint } from './lib/schema-fingerprint.mjs';
+import {
+  assertDatabaseEnvironmentIdentity,
+  databaseTargetId,
+} from './lib/environment-identity.mjs';
 import { readCommittedManifest } from './lib/migrations.mjs';
+import { inspectSchemaDeployment } from './lib/schema-deployment-preflight.mjs';
 
-const { Client } = pg;
 const databaseUrl = process.env.SAFEBUS_DATABASE_URL;
 const environment = process.env.SAFEBUS_DEPLOY_ENV;
-
 if (!databaseUrl) throw new Error('SAFEBUS_DATABASE_URL is required.');
-if (!['development', 'staging', 'production'].includes(environment)) {
-  throw new Error('SAFEBUS_DEPLOY_ENV must be development, staging, or production.');
-}
-if (environment === 'production' && process.env.GITHUB_ACTIONS !== 'true') {
+if (!['development', 'staging', 'production'].includes(environment))
+  throw new Error('Valid deployment environment required.');
+if (environment === 'production' && process.env.GITHUB_ACTIONS !== 'true')
   throw new Error('Production drift checks may run only in protected GitHub Actions.');
-}
-
 const manifest = await readCommittedManifest();
-const expected = new Map(manifest.migrations.map((migration) => [migration.filename, migration]));
-const client = new Client({
+const client = new pg.Client({
   connectionString: databaseUrl,
   application_name: 'safebus-drift-check',
 });
-
 try {
   await client.connect();
   await client.query('begin transaction read only');
   await client.query('set transaction isolation level repeatable read');
-  await client.query("set local statement_timeout = '15s'");
-  await client.query("set local lock_timeout = '3s'");
-  await assertDatabaseEnvironmentIdentity(client, {
+  await client.query("set local statement_timeout='15s'");
+  await client.query("set local lock_timeout='3s'");
+  await assertDatabaseEnvironmentIdentity(client, { environment, databaseUrl });
+  const identity = (
+    await client.query(
+      'select project_ref_hash,public_api_origin_hash from safebus_release.environment_identity where singleton=true',
+    )
+  ).rows[0];
+  const result = await inspectSchemaDeployment(client, manifest, {
     environment,
-    databaseUrl,
+    databaseTarget: databaseTargetId(databaseUrl),
+    projectRefHash: identity.project_ref_hash,
+    publicApiOriginHash: identity.public_api_origin_hash,
   });
-  const ledger = await client.query(
-    `select filename, checksum from safebus_release.migration_checksums order by filename`,
-  );
-  const actual = new Map(ledger.rows.map((row) => [row.filename, row.checksum]));
-
-  for (const [filename, migration] of expected) {
-    if (!actual.has(filename)) throw new Error(`Database is missing migration ${filename}.`);
-    if (actual.get(filename) !== migration.sha256) {
-      throw new Error(`Checksum drift detected for ${filename}.`);
-    }
-  }
-  for (const filename of actual.keys()) {
-    if (!expected.has(filename)) throw new Error(`Database has unknown migration ${filename}.`);
-  }
-
-  const releases = await client.query(
-    `select schema_fingerprint from safebus_release.releases
-      where status = 'deployed' order by deployed_at desc limit 1`,
-  );
-  if (releases.rowCount !== 1) throw new Error('No deployed release fingerprint is recorded.');
-
-  const fingerprint = await calculateSchemaFingerprint(client);
-  if (fingerprint !== releases.rows[0].schema_fingerprint) {
-    throw new Error(
-      'Authoritative application schema or authorization drift detected. ' +
-        'Use a reviewed forward reconciliation; do not replace the stored fingerprint.',
-    );
-  }
-
+  if (result.pending.length)
+    throw new Error('Database is missing reviewed migration dispositions or executions.');
   await client.query('rollback');
   console.log(
-    `Drift check passed for ${environment}: ${actual.size} migrations and schema fingerprint match.`,
+    'Drift check passed: ' +
+      result.applied.size +
+      ' verified executions; ' +
+      (result.inherited?.size ?? 0) +
+      ' frozen historical inputs; schema fingerprint matches.',
   );
 } catch (error) {
   await client.query('rollback').catch(() => {});
