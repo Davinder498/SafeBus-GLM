@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
-import { AdminSettingsNav } from '@/components/settings/AdminSettingsNav';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -171,7 +170,7 @@ export function AdminSchoolsPage() {
     >
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Settings"
+          eyebrow="Organization"
           title="Schools"
           description="Maintain the nominal school directory for your tenant. Directory changes do not start, stop, or delete transportation operations or tenant access."
           action={
@@ -186,8 +185,6 @@ export function AdminSchoolsPage() {
             ) : undefined
           }
         />
-
-        <AdminSettingsNav role={profile?.role} />
 
         <Card className="border-navy-100 bg-navy-50 p-4">
           <p className="text-sm font-semibold text-navy-900">

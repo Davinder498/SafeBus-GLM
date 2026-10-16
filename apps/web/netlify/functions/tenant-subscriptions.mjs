@@ -126,6 +126,7 @@ async function startCheckout(ctx, stripe, state, input) {
       integration_identifier: 'safebus_checkout_hqrzftkm',
       line_items: [{ price: input.priceId, quantity: input.quantity }],
       payment_method_collection: 'always',
+      allow_promotion_codes: true,
       subscription_data: trial
         ? {
             trial_period_days: 14,
@@ -203,6 +204,10 @@ async function changeSubscription(ctx, stripe, sub, input, retry = false) {
       { idempotencyKey: `safebus:${input.requestId}:schedule` },
     );
     const phase = schedule.phases[0];
+    // Reuse existing discount instances so duration/redemption is never restarted.
+    const discounts = (sub.discounts ?? []).map((d) => ({
+      discount: typeof d === 'string' ? d : d.id,
+    }));
     await stripe.subscriptionSchedules.update(
       schedule.id,
       {
@@ -213,6 +218,7 @@ async function changeSubscription(ctx, stripe, sub, input, retry = false) {
             start_date: phase.start_date,
             end_date: phase.end_date,
             items: [{ price: sub.items.data[0].price.id, quantity: sub.items.data[0].quantity }],
+            discounts,
             ...(sub.status === 'trialing' ? { trial_end: sub.trial_end } : {}),
           },
           {
@@ -224,6 +230,7 @@ async function changeSubscription(ctx, stripe, sub, input, retry = false) {
               interval_count: 1,
             },
             items: [{ price: input.priceId, quantity: input.quantity }],
+            discounts,
             proration_behavior: 'none',
           },
         ],
@@ -267,12 +274,20 @@ export async function handler(event) {
     });
     if (ctx.error) return ctx.error;
     if (!ctx.caller.tenant_id) return json(403, { error: 'Tenant assignment required.' });
-    const stripe = createStripeClient();
     if (input.action === 'list_prices')
-      return json(200, { prices: await approvedPrices(stripe, ctx.config.stripeProductId) });
+      return json(200, {
+        prices: await approvedPrices(createStripeClient(), ctx.config.stripeProductId),
+      });
     let state = await getInternalBillingState(ctx.admin, ctx.caller.tenant_id);
     if (state.tenant_status !== 'active')
       return json(403, { error: 'Tenant access is suspended.' });
+    if (state.bus_access?.exempt && ['checkout', 'preview', 'change'].includes(input.action))
+      return json(409, {
+        error: 'This test tenant does not require a subscription.',
+        retryable: false,
+      });
+    if (state.bus_access?.exempt && input.action === 'refresh') return json(200, { ok: true });
+    const stripe = createStripeClient();
     if (input.action === 'pending_request')
       return json(200, {
         pending: await rpc(ctx.admin, 'billing_get_pending_request', {

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, supabaseConfigError } from '@/lib/supabase';
+import { safeBusDisplayText } from '@/utils/brand';
 import { useAppSurface, type AppSurface } from '@/contexts/AppSurfaceContext';
 import {
   getPasswordResetRedirect,
@@ -147,7 +148,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       p_device_label: 'SafeBus web',
       p_user_agent: typeof navigator === 'undefined' ? null : navigator.userAgent,
     });
-    if (error) throw new Error('We could not verify this SafeBus session. Sign in again or retry shortly.');
+    if (error)
+      throw new Error('We could not verify this SafeBus session. Sign in again or retry shortly.');
   }, []);
 
   const loadProfile = useCallback(async (userId: string): Promise<Profile> => {
@@ -171,7 +173,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       );
     }
 
-    return data as Profile;
+    return {
+      ...data,
+      full_name: data.full_name ? safeBusDisplayText(data.full_name) : data.full_name,
+    } as Profile;
   }, []);
 
   const refreshProfile = useCallback(async () => {

@@ -40,7 +40,6 @@ describe('AdminSettingsNav', () => {
 
     expect(Array.from(container.querySelectorAll('a')).map((link) => link.textContent)).toEqual([
       'Organization',
-      'Schools',
     ]);
   });
 
@@ -51,7 +50,6 @@ describe('AdminSettingsNav', () => {
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
       '/admin/settings/support',
       '/admin/settings',
-      '/admin/settings/schools',
       '/admin/settings/notifications',
       '/admin/settings/billing',
     ]);

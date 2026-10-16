@@ -1,4 +1,5 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
+import { safeBusDisplayText } from '@/utils/brand';
 import type {
   OrganizationContext,
   OrganizationProfile,
@@ -22,7 +23,7 @@ export async function getVisibleTenants(): Promise<Tenant[]> {
     .order('name', { ascending: true });
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as Tenant[];
+  return (data ?? []).map((row) => ({ ...row, name: safeBusDisplayText(row.name) })) as Tenant[];
 }
 
 export async function getVisibleSchools(options?: {
@@ -36,7 +37,7 @@ export async function getVisibleSchools(options?: {
   const { data, error } = await request.order('name', { ascending: true });
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as School[];
+  return (data ?? []).map((row) => ({ ...row, name: safeBusDisplayText(row.name) })) as School[];
 }
 
 export interface SchoolDetailsInput {
@@ -100,7 +101,10 @@ export async function getVisibleProfiles(): Promise<OrganizationProfile[]> {
     .order('full_name', { ascending: true });
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as OrganizationProfile[];
+  return (data ?? []).map((row) => ({
+    ...row,
+    full_name: row.full_name ? safeBusDisplayText(row.full_name) : row.full_name,
+  })) as OrganizationProfile[];
 }
 
 export async function getVisibleDriverProfiles(): Promise<OrganizationProfile[]> {
@@ -128,7 +132,7 @@ export async function getCurrentTenant(tenantId: string | null): Promise<Tenant 
     .maybeSingle();
 
   if (error) throw new Error(error.message);
-  return data as Tenant | null;
+  return data ? ({ ...data, name: safeBusDisplayText(data.name) } as Tenant) : null;
 }
 
 export async function getCurrentSchool(schoolId: string | null): Promise<School | null> {
@@ -142,7 +146,7 @@ export async function getCurrentSchool(schoolId: string | null): Promise<School 
     .maybeSingle();
 
   if (error) throw new Error(error.message);
-  return data as School | null;
+  return data ? ({ ...data, name: safeBusDisplayText(data.name) } as School) : null;
 }
 
 export async function getOrganizationContext(

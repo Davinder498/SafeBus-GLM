@@ -36,7 +36,7 @@ describe('guardian preference v3 service', () => {
   });
 });
 describe('recipient-scoped notification detail', () => {
-  it('displays legacy platform copy as SafeBus without editing custom text or records', async () => {
+  it('displays the current SafeBus brand without rewriting stored records', async () => {
     const row = {
       id: 'event-legacy',
       title: 'BusSafe update',
@@ -53,7 +53,7 @@ describe('recipient-scoped notification detail', () => {
       error: null,
     });
     expect(await fetchNotificationDetail(row.id)).toMatchObject({
-      body: 'BusSafe School route change',
+      body: 'SafeBus School route change',
     });
   });
 

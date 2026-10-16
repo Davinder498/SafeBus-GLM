@@ -56,7 +56,9 @@ export function PlatformTenantsPage() {
         .toLowerCase()
         .includes(search.toLowerCase().trim()) &&
       (invitation === 'all' || t.latest_invitation_status === invitation) &&
-      (subscription === 'all' || (b ? (b.status ?? 'none') : 'unknown') === subscription) &&
+      (subscription === 'all' ||
+        (b ? (b.subscriptionExempt ? 'exempt' : (b.status ?? 'none')) : 'unknown') ===
+          subscription) &&
       (setup === 'all' || t.setup_readiness === setup)
     );
   });
@@ -134,6 +136,7 @@ export function PlatformTenantsPage() {
                   {[
                     'all',
                     'none',
+                    'exempt',
                     'trialing',
                     'active',
                     'past_due',
@@ -249,12 +252,16 @@ export function PlatformTenantsPage() {
                               tone={b?.warning ? 'warning' : b?.configured ? 'info' : 'neutral'}
                             >
                               {b
-                                ? (b.status?.replaceAll('_', ' ') ?? 'Not subscribed')
+                                ? b.subscriptionExempt
+                                  ? 'Testing · exempt'
+                                  : (b.status?.replaceAll('_', ' ') ?? 'Not subscribed')
                                 : 'Unavailable'}
                             </StatusPill>
                           </td>
                           <td className="px-5 py-5 font-semibold">
-                            {b ? `${b.activeBusCount} / ${b.licensedBusCount ?? '—'}` : '—'}
+                            {b
+                              ? `${b.activeBusCount} / ${b.subscriptionExempt ? 'Unlimited' : (b.licensedBusCount ?? '—')}`
+                              : '—'}
                           </td>
                           <td className="px-5 py-5">
                             <p className="text-xs text-slate-500">

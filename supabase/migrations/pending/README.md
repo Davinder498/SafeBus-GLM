@@ -12,6 +12,11 @@ with other prepared work, reconcile the hosted catalog, review recovery evidence
 and rehearse the approved migration in one bounded rollback-only transaction.
 See [subscription reconciliation](../../../docs/qa/tenant-subscription-reconciliation-2026-10-16.md).
 
+`20261016223500_pricing_catalog_and_test_tenants.sql` follows that subscription
+migration. It adds the private, audited catalog operation ledger and exactly two
+customer-approved test tenant exemptions. It does not change the active ledger
+or authorize applying either migration. See [pricing and test-access review](../../../docs/qa/pricing-navigation-test-access-2026-10-16.md).
+
 `0125_async_tracking_invalidations.sql` implements the first server-scaling
 milestone (C1). Recovery is deferred at the customer's request on 2026-10-14.
 The current security installation remains limited to reviewed 0123 → 0122 → 0124.

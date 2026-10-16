@@ -1,4 +1,5 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
+import { safeBusDisplayText } from '@/utils/brand';
 import type {
   PlatformBillingSummary,
   PlatformSubscriptionAction,
@@ -7,6 +8,8 @@ import type {
   TenantSubscription,
   BusSubscriptionAccess,
   BillingPreview,
+  PricingCatalog,
+  PendingCatalogRequest,
 } from '@/types/subscription';
 
 function client() {
@@ -30,12 +33,13 @@ function normalizeSubscription(value: unknown): TenantSubscription {
   const data = record(value);
   return {
     configured: data.configured === true,
+    subscriptionExempt: data.subscription_exempt === true,
     tenantId: text(data.tenant_id) ?? '',
-    tenantName: text(data.tenant_name) ?? 'Tenant',
+    tenantName: safeBusDisplayText(text(data.tenant_name) ?? 'Tenant'),
     tenantType: text(data.tenant_type) ?? 'school',
     tenantStatus: text(data.tenant_status) ?? 'active',
-    productName: text(data.product_name),
-    priceNickname: text(data.price_nickname),
+    productName: data.product_name ? safeBusDisplayText(String(data.product_name)) : null,
+    priceNickname: data.price_nickname ? safeBusDisplayText(String(data.price_nickname)) : null,
     priceId: text(data.price_id),
     subscriptionStatus: text(data.subscription_status) as SubscriptionStatus | null,
     licensedBusCount: number(data.licensed_bus_count),
@@ -89,6 +93,7 @@ export async function fetchPlatformBillingSummaries(): Promise<PlatformBillingSu
   return ((data ?? []) as Array<Record<string, unknown>>).map((row) => ({
     tenantId: text(row.tenant_id) ?? '',
     configured: row.configured === true,
+    subscriptionExempt: row.subscription_exempt === true,
     status: text(row.subscription_status) as SubscriptionStatus | null,
     licensedBusCount: number(row.licensed_bus_count),
     activeBusCount: number(row.active_bus_count) ?? 0,
@@ -126,6 +131,7 @@ function normalizeBusAccess(value: unknown): BusSubscriptionAccess {
   const data = record(value);
   return {
     eligible: data.eligible === true,
+    exempt: data.exempt === true,
     limit: number(data.limit),
     active: number(data.active) ?? 0,
   };
@@ -147,6 +153,24 @@ export async function fetchTenantPrices(): Promise<SubscriptionPrice[]> {
 
 export async function refreshTenantBilling(): Promise<void> {
   await callBillingFunction('tenant-subscriptions', { action: 'refresh' });
+}
+
+export async function fetchPricingCatalog(
+  cursors: { priceCursor?: string | null; discountCursor?: string | null } = {},
+): Promise<PricingCatalog> {
+  return callBillingFunction('platform-pricing', { action: 'list', ...cursors });
+}
+export async function fetchPendingCatalogRequest(): Promise<PendingCatalogRequest | null> {
+  return (
+    await callBillingFunction<{ pending: PendingCatalogRequest | null }>('platform-pricing', {
+      action: 'pending_request',
+    })
+  ).pending;
+}
+export async function changePricingCatalog(
+  request: PendingCatalogRequest,
+): Promise<{ id: string }> {
+  return callBillingFunction('platform-pricing', { ...request.body, requestId: request.requestId });
 }
 
 export async function previewTenantChange(
