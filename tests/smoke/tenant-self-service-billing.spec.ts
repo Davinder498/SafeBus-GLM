@@ -11,7 +11,11 @@ const user = {
   user_metadata: {},
   created_at: '2026-10-01T00:00:00Z',
 };
-async function installBilling(page: Page, subscribed = false) {
+async function installBilling(
+  page: Page,
+  subscribed = false,
+  pendingRequest: { requestId: string; body: Record<string, unknown> } | null = null,
+) {
   const requests: Array<Record<string, unknown>> = [];
   await page.addInitScript(
     ({ user }) => {
@@ -60,7 +64,7 @@ async function installBilling(page: Page, subscribed = false) {
           : body.action === 'preview'
             ? { timing: 'immediate', dueNow: 1250, currency: 'cad', effectiveAt: null }
             : body.action === 'pending_request'
-              ? { pending: null }
+              ? { pending: pendingRequest }
               : body.action === 'checkout'
                 ? {
                     error: 'Checkout temporarily unavailable. Retry the same request.',
@@ -137,12 +141,39 @@ test('new tenant selects quantity and cycle, retains checkout selection and requ
   const first = requests.find((r) => r.action === 'checkout');
   expect(first).toMatchObject({ quantity: 3, priceId: 'price_year' });
   expect(first).not.toHaveProperty('tenantId');
+  expect(
+    await page.evaluate((id) => sessionStorage.getItem(`safebus-billing-request:${id}`), tenantId),
+  ).toBe(first?.requestId);
   await page.reload();
   await expect(page.getByLabel('Annual', { exact: true })).toBeChecked();
   await expect(page.getByLabel('Active-bus allowance', { exact: false })).toHaveValue('3');
   await page.getByRole('button', { name: 'Continue to trial checkout' }).click();
   await expect(page.getByRole('alert')).toBeVisible();
   expect(requests.filter((r) => r.action === 'checkout')[1].requestId).toBe(first?.requestId);
+});
+
+test('recovers the original server request without persisting financial response data', async ({
+  page,
+}) => {
+  const requestId = '30000000-0000-4000-8000-000000000001';
+  const requests = await installBilling(page, true, {
+    requestId,
+    body: { quantity: 4, priceId: 'price_month', action: 'change' },
+  });
+  await page.goto('/admin/settings/billing');
+  await page.getByRole('button', { name: 'Retry previous billing request' }).click();
+  await expect(page.getByRole('status')).toContainText('Previous billing request confirmed');
+  expect(requests.find((r) => r.action === 'change')).toEqual({
+    action: 'change',
+    priceId: 'price_month',
+    quantity: 4,
+    requestId,
+  });
+  expect(
+    await page.evaluate(() =>
+      Object.keys(sessionStorage).filter((key) => key.startsWith('safebus-billing-')),
+    ),
+  ).toEqual([]);
 });
 
 test('trial tenant previews a change and sees current capacity without platform controls', async ({

@@ -21,6 +21,7 @@ import {
   refreshTenantBilling,
   retryTenantBilling,
   recoverPendingTenantBilling,
+  hasPendingTenantBilling,
 } from '@/services/subscriptionService';
 import type { BillingPreview, SubscriptionPrice, TenantSubscription } from '@/types/subscription';
 import { useAuth } from '@/contexts/useAuth';
@@ -130,17 +131,23 @@ export function AdminSubscriptionPage() {
     subscription?.configured &&
     !['canceled', 'incomplete_expired'].includes(subscription.subscriptionStatus ?? '');
   const legacy = liveContract && subscription?.collectionMethod === 'send_invoice';
-  function saveSelection() {
-    sessionStorage.setItem(
-      selectionKey,
-      JSON.stringify({ priceId: selected?.id, quantity, interval }),
-    );
+  function saveSelection(choice: {
+    priceId?: string;
+    quantity?: number;
+    interval?: 'month' | 'year';
+  }) {
+    // Persist explicit form choices only. Subscription records stay in memory.
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(selectionKey) ?? '{}');
+      sessionStorage.setItem(selectionKey, JSON.stringify({ ...saved, ...choice }));
+    } catch {
+      // Storage may be unavailable; checkout remains usable.
+    }
   }
   async function start() {
     if (!selected || !subscription) return;
     setBusy(true);
     setError(null);
-    saveSelection();
     try {
       if (liveContract) {
         const p = await previewTenantChange(selected.id, quantity);
@@ -236,33 +243,32 @@ export function AdminSubscriptionPage() {
             <p role="alert" className="text-sm text-danger-700">
               {error}
             </p>
-            {subscription &&
-              sessionStorage.getItem(`safebus-billing-request:${subscription.tenantId}`) && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={busy}
-                  onClick={() => {
-                    setBusy(true);
-                    void retryTenantBilling(subscription.tenantId)
-                      .then(async (result) => {
-                        if (result.url?.startsWith('https://checkout.stripe.com/'))
-                          window.location.assign(result.url);
-                        else {
-                          setError(null);
-                          setMessage('Previous billing request confirmed.');
-                          await load();
-                        }
-                      })
-                      .catch((e: unknown) =>
-                        setError(e instanceof Error ? e.message : 'Unable to confirm request.'),
-                      )
-                      .finally(() => setBusy(false));
-                  }}
-                >
-                  Retry previous billing request
-                </Button>
-              )}
+            {subscription && hasPendingTenantBilling(subscription.tenantId) && (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={busy}
+                onClick={() => {
+                  setBusy(true);
+                  void retryTenantBilling(subscription.tenantId)
+                    .then(async (result) => {
+                      if (result.url?.startsWith('https://checkout.stripe.com/'))
+                        window.location.assign(result.url);
+                      else {
+                        setError(null);
+                        setMessage('Previous billing request confirmed.');
+                        await load();
+                      }
+                    })
+                    .catch((e: unknown) =>
+                      setError(e instanceof Error ? e.message : 'Unable to confirm request.'),
+                    )
+                    .finally(() => setBusy(false));
+                }}
+              >
+                Retry previous billing request
+              </Button>
+            )}
           </div>
         )}
         {message && (
@@ -338,6 +344,7 @@ export function AdminSubscriptionPage() {
                               onChange={() => {
                                 setInterval(cycle);
                                 setPriceId('');
+                                saveSelection({ interval: cycle, priceId: '' });
                               }}
                             />
                             {cycle === 'month' ? 'Monthly' : 'Annual'}
@@ -350,7 +357,10 @@ export function AdminSubscriptionPage() {
                         id="tenant-price"
                         className={inputClass}
                         value={selected?.id ?? ''}
-                        onChange={(e) => setPriceId(e.target.value)}
+                        onChange={(e) => {
+                          setPriceId(e.target.value);
+                          saveSelection({ priceId: e.target.value });
+                        }}
                         required
                       >
                         {options.length === 0 && (
@@ -377,7 +387,10 @@ export function AdminSubscriptionPage() {
                         step={1}
                         value={quantity}
                         required
-                        onChange={(e) => setQuantity(Number(e.target.value))}
+                        onChange={(e) => {
+                          setQuantity(Number(e.target.value));
+                          saveSelection({ quantity: Number(e.target.value) });
+                        }}
                       />
                     </Field>
                   </div>

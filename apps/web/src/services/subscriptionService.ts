@@ -161,71 +161,86 @@ export async function previewTenantChange(
   });
 }
 
+type BillingMutation = {
+  action: 'checkout' | 'change' | 'cancel' | 'keep' | 'unschedule';
+  priceId?: string;
+  quantity?: number;
+};
+type PendingBillingRequest = { requestId: string; body: BillingMutation };
+// Financial request payloads remain in memory or in the authenticated server ledger.
+// Browser storage contains only a locally generated, opaque retry identifier.
+const pendingBillingRequests = new Map<string, PendingBillingRequest>();
+
+export function hasPendingTenantBilling(tenantId: string): boolean {
+  return (
+    pendingBillingRequests.has(tenantId) ||
+    sessionStorage.getItem(`safebus-billing-request:${tenantId}`) !== null
+  );
+}
+
 export async function changeTenantBilling(
   tenantId: string,
-  action: 'checkout' | 'change' | 'cancel' | 'keep' | 'unschedule',
+  action: BillingMutation['action'],
   priceId?: string,
   quantity?: number,
 ): Promise<{ url?: string; pendingPayment?: boolean; paymentUrl?: string }> {
   const key = `safebus-billing-request:${tenantId}`;
   const body = { action, ...(priceId ? { priceId, quantity } : {}) };
-  const saved = sessionStorage.getItem(key);
-  const request = saved ? (JSON.parse(saved) as { fingerprint: string; requestId: string }) : null;
-  const fingerprint = JSON.stringify(body);
-  if (request && request.fingerprint !== fingerprint)
+  if (!pendingBillingRequests.has(tenantId) && sessionStorage.getItem(key))
+    await recoverPendingTenantBilling(tenantId);
+  const request = pendingBillingRequests.get(tenantId);
+  if (
+    request &&
+    (request.body.action !== action ||
+      request.body.priceId !== body.priceId ||
+      request.body.quantity !== body.quantity)
+  )
     throw new Error('Retry your previous billing request before making another change.');
-  const requestId = request?.fingerprint === fingerprint ? request.requestId : crypto.randomUUID();
-  sessionStorage.setItem(key, JSON.stringify({ fingerprint, requestId }));
-  let result;
-  try {
-    result = await callBillingFunction<{
-      url?: string;
-      pendingPayment?: boolean;
-      paymentUrl?: string;
-    }>('tenant-subscriptions', { ...body, requestId });
-  } catch (error) {
-    if ((error as { retryable?: boolean }).retryable === false) sessionStorage.removeItem(key);
-    throw error;
+  let localRequestId = sessionStorage.getItem(key);
+  if (!request && !localRequestId) {
+    localRequestId = crypto.randomUUID();
+    sessionStorage.setItem(key, localRequestId);
   }
-  sessionStorage.removeItem(key);
-  return result;
+  pendingBillingRequests.set(tenantId, {
+    requestId: request?.requestId ?? localRequestId!,
+    body,
+  });
+  return retryTenantBilling(tenantId);
 }
 
 export async function retryTenantBilling(
   tenantId: string,
 ): Promise<{ url?: string; pendingPayment?: boolean; paymentUrl?: string }> {
   const key = `safebus-billing-request:${tenantId}`;
-  const saved = JSON.parse(sessionStorage.getItem(key) ?? 'null') as {
-    fingerprint: string;
-    requestId: string;
-  } | null;
-  if (!saved) throw new Error('No billing request is awaiting confirmation.');
+  if (!pendingBillingRequests.has(tenantId)) await recoverPendingTenantBilling(tenantId);
+  const saved = pendingBillingRequests.get(tenantId);
+  if (!saved)
+    throw new Error('The request did not reach billing. Submit your saved selection to retry.');
   let result;
   try {
     result = await callBillingFunction<{
       url?: string;
       pendingPayment?: boolean;
       paymentUrl?: string;
-    }>('tenant-subscriptions', { ...JSON.parse(saved.fingerprint), requestId: saved.requestId });
+    }>('tenant-subscriptions', { ...saved.body, requestId: saved.requestId });
   } catch (error) {
-    if ((error as { retryable?: boolean }).retryable === false) sessionStorage.removeItem(key);
+    if ((error as { retryable?: boolean }).retryable === false) {
+      pendingBillingRequests.delete(tenantId);
+      sessionStorage.removeItem(key);
+    }
     throw error;
   }
   sessionStorage.removeItem(key);
+  pendingBillingRequests.delete(tenantId);
   return result;
 }
 
 export async function recoverPendingTenantBilling(tenantId: string): Promise<boolean> {
   const { pending } = await callBillingFunction<{
-    pending: { requestId: string; body: Record<string, unknown> } | null;
+    pending: { requestId: string; body: BillingMutation } | null;
   }>('tenant-subscriptions', { action: 'pending_request' });
   if (!pending?.body) return false;
-  const body = { ...pending.body };
-  delete body.requestId;
-  sessionStorage.setItem(
-    `safebus-billing-request:${tenantId}`,
-    JSON.stringify({ requestId: pending.requestId, fingerprint: JSON.stringify(body) }),
-  );
+  pendingBillingRequests.set(tenantId, pending);
   return true;
 }
 
