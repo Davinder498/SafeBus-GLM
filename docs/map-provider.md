@@ -31,7 +31,7 @@ They request a provider-neutral XYZ URL and attribution from the
 `GEOAPIFY_API_KEY` setting and returns only the public, restricted client tile
 URL. Web calls use the same origin. The Capacitor Android origin
 (`https://localhost`) calls the production function at
-`https://bussafe.netlify.app/.netlify/functions/map-tile-config`.
+`https://safebus.kids/.netlify/functions/map-tile-config`.
 
 Map requests contain no SafeBus account, student, guardian, driver, bus, or trip
 identifier. Geoapify still receives the requested tile coordinates, device IP,

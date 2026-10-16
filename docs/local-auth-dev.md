@@ -27,8 +27,8 @@ http://localhost:5173/update-password
 Keep the production callbacks too:
 
 ```text
-https://bussafe.netlify.app/accept-invitation
-https://bussafe.netlify.app/update-password
+https://safebus.kids/accept-invitation
+https://safebus.kids/update-password
 ```
 
 In **Authentication → Email Templates**, the action link in both **Invite user**
@@ -53,7 +53,7 @@ SAFEBUS_INVITE_REDIRECT_URL=http://localhost:5173/accept-invitation
 
 # Prospective-tenant inquiry delivery (server-only)
 SAFEBUS_EMAIL_PROVIDER_API_KEY=your-resend-api-key
-SAFEBUS_EMAIL_FROM=verified-sender@example.ca
+SAFEBUS_EMAIL_FROM=no-reply@safebus.kids
 SAFEBUS_EMAIL_FROM_NAME=SafeBus
 SAFEBUS_INQUIRY_TO=private-sales-inbox@example.ca
 ```

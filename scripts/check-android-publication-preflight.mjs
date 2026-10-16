@@ -95,18 +95,12 @@ export async function verifyAndroidPublicationFiles(root = process.cwd()) {
     /SystemBars:[\s\S]*insetsHandling: 'css'/.test(capacitorConfig),
     'Capacitor SystemBars CSS inset handling is required.',
   );
-  invariant(
-    /appName: 'SafeBus'/.test(capacitorConfig),
-    'Capacitor appName must use SafeBus.',
-  );
+  invariant(/appName: 'SafeBus'/.test(capacitorConfig), 'Capacitor appName must use SafeBus.');
   invariant(
     /<string name="app_name">SafeBus<\/string>/.test(androidStrings),
     'Android app_name must use SafeBus.',
   );
-  invariant(
-    /<title>SafeBus<\/title>/.test(mobileIndex),
-    'The mobile title must use SafeBus.',
-  );
+  invariant(/<title>SafeBus<\/title>/.test(mobileIndex), 'The mobile title must use SafeBus.');
 
   const envNames = [...envExample.matchAll(/^\s*(VITE_[A-Z0-9_]+)\s*=/gm)].map((match) => match[1]);
   invariant(
@@ -159,7 +153,7 @@ export async function verifyAndroidPublicationFiles(root = process.cwd()) {
 }
 
 export async function verifyAndroidPublicationOnline({ fetchImpl = fetch } = {}) {
-  const origin = (process.env.SAFEBUS_PUBLIC_WEB_ORIGIN ?? 'https://bussafe.netlify.app').replace(
+  const origin = (process.env.SAFEBUS_PUBLIC_WEB_ORIGIN ?? 'https://safebus.kids').replace(
     /\/$/,
     '',
   );

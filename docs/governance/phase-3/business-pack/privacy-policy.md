@@ -82,12 +82,20 @@ request route if you cannot sign in.
 ## Suppliers and countries
 
 Hosting/authentication uses Supabase; web/function delivery uses Netlify; maps
-use Geoapify; transactional email uses Resend or the selected provider; subscription
+use Geoapify; transactional email uses Resend; subscription
 billing uses Stripe. Maps disclose tile coordinates describing the viewport,
 IP address and ordinary request metadata. Email may include recipient email,
 the student's first name for an enabled recorded pickup/drop-off notice, event
 type and time. Payment methods are provided to Stripe rather than stored in
 SafeBus application records.
+
+The official website is https://safebus.kids. On 2026-10-16 the owner confirmed
+Sachman Gold Inc. is an Alberta corporation doing business as SafeBus. Resend's
+sending domain is configured in North Virginia, United States (`us-east-1`).
+When enabled, email processing includes recipient addresses, message content
+(including invitation/recovery links, inquiries or enabled event notices) and
+delivery metadata in the United States. Domain verification alone does not enable
+these application flows or establish supplier-contract approval.
 
 Before this policy takes effect, publish the final
 [supplier disclosure](supplier-disclosure.md) with actual countries, purposes,
