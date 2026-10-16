@@ -285,4 +285,14 @@ describe('subscription changes', () => {
     await handler(event('keep'));
     expect(stripe.subscriptions.update.mock.calls[1][1].cancel_at_period_end).toBe(false);
   });
+  it('permits cancellation while overdue without unlocking bus expansion', async () => {
+    sub.status = 'past_due';
+    state.bus_access.eligible = false;
+    expect((await handler(event('cancel'))).statusCode).toBe(200);
+    expect(stripe.subscriptions.update.mock.calls[0][1].cancel_at_period_end).toBe(true);
+    expect(
+      (await handler(event('change', { priceId: 'price_month', quantity: 4 }))).statusCode,
+    ).toBe(409);
+    expect(stripe.subscriptions.update).toHaveBeenCalledTimes(1);
+  });
 });

@@ -148,14 +148,24 @@ export function classifyChange(subscription, priceId, quantity) {
   return priceId !== item.price.id || quantity < item.quantity ? 'renewal' : 'immediate';
 }
 
-async function subscriptionForChange(stripe, state, retryPending = false) {
+async function subscriptionForChange(stripe, state, retryPending = false, renewalOnly = false) {
   if (!state.external_subscription_id) throw new Error('billing_subscription_not_configured');
   const sub = await retrieveCanonicalSubscription(stripe, state.external_subscription_id);
   if (sub.collection_method !== 'charge_automatically') throw new Error('billing_legacy_contract');
-  if (!['active', 'trialing'].includes(sub.status))
+  if (
+    !(renewalOnly ? ['active', 'trialing', 'past_due', 'unpaid'] : ['active', 'trialing']).includes(
+      sub.status,
+    )
+  )
     throw new Error('billing_subscription_ineligible');
-  if (sub.pending_update && !retryPending) throw new Error('billing_payment_pending');
-  if (sub.status === 'active' && state.bus_access?.eligible !== true && !retryPending)
+  if (sub.pending_update && !retryPending && !renewalOnly)
+    throw new Error('billing_payment_pending');
+  if (
+    sub.status === 'active' &&
+    state.bus_access?.eligible !== true &&
+    !retryPending &&
+    !renewalOnly
+  )
     throw new Error('billing_subscription_ineligible');
   return sub;
 }
@@ -318,6 +328,7 @@ export async function handler(event) {
         stripe,
         state,
         claim.retry && input.action === 'change',
+        input.action !== 'change',
       );
       if (input.action === 'change')
         sub = await changeSubscription(ctx, stripe, sub, input, claim.retry);
