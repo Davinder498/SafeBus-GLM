@@ -1,7 +1,7 @@
 # SafeBus Business Privacy Policy — Draft
 
 **Review status:** Business draft; not effective or approved for publication
-**Operator:** `[PROVIDER_LEGAL_NAME]`, operating as SafeBus Alberta / BusSafe
+**Operator:** Sachman Gold Inc., doing business as SafeBus
 **Proposed effective date:** `[EFFECTIVE_DATE]`
 **Privacy contact:** `[PRIVACY_EMAIL]`; business address `[PROVIDER_BUSINESS_ADDRESS]`
 

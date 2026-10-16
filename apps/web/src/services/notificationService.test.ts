@@ -36,6 +36,27 @@ describe('guardian preference v3 service', () => {
   });
 });
 describe('recipient-scoped notification detail', () => {
+  it('displays legacy platform copy as SafeBus without editing custom text or records', async () => {
+    const row = {
+      id: 'event-legacy',
+      title: 'BusSafe update',
+      body: 'A BusSafe update was recorded',
+    };
+    mocks.rpc.mockResolvedValue({ data: [row], error: null });
+    expect(await fetchNotificationDetail(row.id)).toMatchObject({
+      title: 'SafeBus update',
+      body: 'A SafeBus update was recorded',
+    });
+    expect(row.title).toBe('BusSafe update');
+    mocks.rpc.mockResolvedValue({
+      data: [{ ...row, body: 'BusSafe School route change' }],
+      error: null,
+    });
+    expect(await fetchNotificationDetail(row.id)).toMatchObject({
+      body: 'BusSafe School route change',
+    });
+  });
+
   it('maps a detail independently of inbox pagination and filters', async () => {
     mocks.rpc.mockResolvedValue({
       data: [

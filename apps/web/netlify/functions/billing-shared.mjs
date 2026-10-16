@@ -69,7 +69,7 @@ export function createStripeClient() {
   return new Stripe(config.stripeSecret, {
     maxNetworkRetries: 2,
     timeout: STRIPE_TIMEOUT_MS,
-    appInfo: { name: 'SafeBus Alberta', version: '1.0.0' },
+    appInfo: { name: 'SafeBus', version: '1.0.0' },
   });
 }
 

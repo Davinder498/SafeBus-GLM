@@ -1,4 +1,4 @@
-# SafeBus Alberta Supabase Auth Setup
+# SafeBus Supabase Auth Setup
 
 This is a clean pre-production migration baseline for Milestone 2A/2B authentication and profile access only. It intentionally does not include transportation business tables or student records.
 
@@ -144,4 +144,4 @@ Do not add real student data in this milestone.
 
 Do not use Alberta Student Number in QR payloads, mock data, profile records, or test records.
 
-SafeBus Alberta tracks the bus, not the child.
+SafeBus tracks the bus, not the child.

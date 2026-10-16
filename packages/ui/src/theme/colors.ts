@@ -1,5 +1,5 @@
 /**
- * SafeBus Alberta — Color tokens.
+ * SafeBus — Color tokens.
  *
  * Per UI Plan §3.2:
  *   - Deep navy / dark blue → trust, navigation, primary buttons, active route

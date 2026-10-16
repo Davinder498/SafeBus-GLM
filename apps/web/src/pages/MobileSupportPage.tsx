@@ -45,7 +45,7 @@ export function MobileSupportPage() {
         <PageHeader
           eyebrow="Help"
           title="Support"
-          description="Contact your tenant administrator for help with your BusSafe account or transportation service."
+          description="Contact your tenant administrator for help with your SafeBus account or transportation service."
         />
         {loading && (
           <DataState
@@ -62,7 +62,7 @@ export function MobileSupportPage() {
         {!loading && !error && !contact && (
           <DataState
             title="Contact your transportation administrator"
-            message="Use the verified contact from your invitation or school authority directory. You can also review the BusSafe privacy contact instructions."
+            message="Use the verified contact from your invitation or school authority directory. You can also review the SafeBus privacy contact instructions."
             action={
               <Link to="/privacy#contact">
                 <Button variant="secondary">View contact instructions</Button>

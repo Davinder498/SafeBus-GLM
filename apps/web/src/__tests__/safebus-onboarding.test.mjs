@@ -164,7 +164,7 @@ function createTenantEvent(body = {}) {
   };
 }
 
-describe('BusSafe member onboarding', () => {
+describe('SafeBus member onboarding', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

@@ -1,5 +1,5 @@
 /**
- * SafeBus Alberta — Zod validation schemas.
+ * SafeBus — Zod validation schemas.
  *
  * These mirror the API contracts in @safebus/types/api-contracts and validate
  * client input before approved server operations.

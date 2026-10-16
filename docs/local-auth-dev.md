@@ -54,7 +54,7 @@ SAFEBUS_INVITE_REDIRECT_URL=http://localhost:5173/accept-invitation
 # Prospective-tenant inquiry delivery (server-only)
 SAFEBUS_EMAIL_PROVIDER_API_KEY=your-resend-api-key
 SAFEBUS_EMAIL_FROM=verified-sender@example.ca
-SAFEBUS_EMAIL_FROM_NAME=BusSafe Alberta
+SAFEBUS_EMAIL_FROM_NAME=SafeBus
 SAFEBUS_INQUIRY_TO=private-sales-inbox@example.ca
 ```
 

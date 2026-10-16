@@ -17,7 +17,7 @@ test('privacy notice is reachable before sign-in and explains all three roles', 
   });
   await page.goto('/login');
   await page.getByRole('link', { name: 'Privacy notice', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'BusSafe Alberta privacy policy' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'SafeBus privacy policy' })).toBeVisible();
   const sections = page.getByRole('navigation', { name: 'Privacy notice sections' });
   for (const [name, heading, fragment] of [
     ['Tenant administrators', 'Tenant administrator privacy notice', 'tenant-administrators'],
@@ -32,7 +32,7 @@ test('privacy notice is reachable before sign-in and explains all three roles', 
   expect(operationalRequests).toEqual([]);
   await page.getByRole('link', { name: 'Account deletion instructions', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: 'Request BusSafe account deletion' }),
+    page.getByRole('heading', { name: 'Request SafeBus account deletion' }),
   ).toBeVisible();
 });
 

@@ -1,5 +1,5 @@
 /**
- * SafeBus Alberta — Auth helpers.
+ * SafeBus — Auth helpers.
  */
 
 import type { AcceptInvitationRequest, AuthSession, LoginRequest } from '@safebus/types';

@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Shared ESLint flat config base for SafeBus Alberta.
+ * Shared ESLint flat config base for SafeBus.
  * Apps extend this with framework-specific rules.
  */
 import tseslint from 'typescript-eslint';

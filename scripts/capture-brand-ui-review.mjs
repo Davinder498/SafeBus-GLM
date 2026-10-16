@@ -46,7 +46,7 @@ try {
     await route.abort();
   });
   await loadingPage.goto(`${baseUrl}/support`, { waitUntil: 'domcontentloaded' });
-  await loadingPage.getByText('Loading BusSafe', { exact: true }).waitFor({ state: 'visible' });
+  await loadingPage.getByText('Loading SafeBus', { exact: true }).waitFor({ state: 'visible' });
   await loadingPage.screenshot({
     path: resolve(outputDirectory, 'web-loading.png'),
     fullPage: true,

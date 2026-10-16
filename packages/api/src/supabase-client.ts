@@ -1,5 +1,5 @@
 /**
- * SafeBus Alberta — Supabase client factory.
+ * SafeBus — Supabase client factory.
  *
  * Creates a typed Supabase client. The URL and anon key are read from
  * environment variables. Each app (web, mobile) provides its own env.

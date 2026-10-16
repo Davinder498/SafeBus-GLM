@@ -16,8 +16,8 @@ describe('guardian notification email template', () => {
       tenantTimezone: 'America/Edmonton',
     });
 
-    expect(email.subject).toBe('BusSafe: Bus reported late');
-    expect(email.text).toContain('Open BusSafe to view the update');
+    expect(email.subject).toBe('SafeBus: Bus reported late');
+    expect(email.text).toContain('Open SafeBus to view the update');
     expect(email.text).not.toContain('PrivateStudentName');
     expect(email.html).not.toContain('PrivateStudentName');
   });
@@ -41,7 +41,7 @@ describe('guardian notification email template', () => {
       eventCreatedAt: '2026-09-29T14:00:00.000Z',
       tenantTimezone: 'America/Edmonton',
     });
-    expect(email.subject).toMatch(/^BusSafe:/);
+    expect(email.subject).toMatch(/^SafeBus:/);
     expect(`${email.text} ${email.html}`).not.toContain('DoNotRender');
   });
 
@@ -112,7 +112,7 @@ describe('guardian notification email template', () => {
     expect(combined).not.toContain('Marie');
     expect(combined).not.toMatch(/\d+\.\d{4,}/); // no coordinates
     // Must not expose route/stop/bus-number/driver identifiers.
-    // Note: "BusSafe" is the brand name and is intentionally present.
+    // Note: "SafeBus" is the brand name and is intentionally present.
     expect(combined).not.toContain('Route');
     expect(combined).not.toContain('Stop');
     expect(combined).not.toMatch(/Bus\s+\d/);
@@ -186,8 +186,8 @@ describe('driver assignment email privacy', () => {
   ]) {
     it(`builds generic ${label.toLowerCase()} copy`, () => {
       const email = buildGuardianEventEmail({ notificationType });
-      expect(email.subject).toBe(`BusSafe: ${label}`);
-      expect(email.text).toContain('Open BusSafe to view the update.');
+      expect(email.subject).toBe(`SafeBus: ${label}`);
+      expect(email.text).toContain('Open SafeBus to view the update.');
       expect(email.text).not.toMatch(/\b(bus|route|stop|schedule|student)\b/i);
     });
   }

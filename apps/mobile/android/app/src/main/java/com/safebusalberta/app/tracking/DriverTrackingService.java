@@ -253,7 +253,7 @@ public final class DriverTrackingService extends Service implements LocationList
             );
             if (UploadHttpPolicy.retryable(refresh.statusCode)) return LocationUploadPump.Result.retry(refresh.retryAfterMs);
             if (refresh.statusCode < 200 || refresh.statusCode >= 300) {
-                return haltUploadsIfCurrent(config, "Authentication expired — reopen BusSafe");
+                return haltUploadsIfCurrent(config, "Authentication expired — reopen SafeBus");
             }
             JSONObject body = new JSONObject(refresh.body);
             // Preserve a concurrent pause/end and do not overwrite a replacement trip's configuration.
@@ -404,7 +404,7 @@ public final class DriverTrackingService extends Service implements LocationList
         NotificationChannel channel = new NotificationChannel(
             CHANNEL_ID, "Active bus tracking", NotificationManager.IMPORTANCE_LOW
         );
-        channel.setDescription("Persistent indicator shown only while BusSafe is collecting or recovering trip locations.");
+        channel.setDescription("Persistent indicator shown only while SafeBus is collecting or recovering trip locations.");
         channel.setShowBadge(false);
         manager.createNotificationChannel(channel);
     }
@@ -416,7 +416,7 @@ public final class DriverTrackingService extends Service implements LocationList
         );
         return new NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_safebus)
-            .setContentTitle("BusSafe trip tracking")
+            .setContentTitle("SafeBus trip tracking")
             .setContentText(content)
             .setContentIntent(pending)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)

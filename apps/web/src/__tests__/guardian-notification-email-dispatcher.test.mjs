@@ -15,7 +15,7 @@ function setEnv(extra = {}) {
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key';
   process.env.SAFEBUS_EMAIL_PROVIDER_API_KEY = 'provider-key';
   process.env.SAFEBUS_EMAIL_FROM = 'noreply@example.test';
-  process.env.SAFEBUS_EMAIL_FROM_NAME = 'BusSafe QA';
+  process.env.SAFEBUS_EMAIL_FROM_NAME = 'SafeBus QA';
   process.env.SAFEBUS_NOTIFICATION_DISPATCHER_SECRET = 'dispatcher-secret';
   delete process.env.SAFEBUS_DEV_EMAIL_RECIPIENT_OVERRIDE;
   delete process.env.CONTEXT;
@@ -210,7 +210,7 @@ describe('runDispatcher integration', () => {
     const sendEmail = vi.fn().mockResolvedValue({ providerMessageId: 'generic-message' });
     const result = await runDispatcher(makeEvent('dispatcher-secret'), sendEmail);
     expect(JSON.parse(result.body)).toMatchObject({ claimed: 1, delivered: 1 });
-    expect(sendEmail.mock.calls[0][0].subject).toBe('BusSafe: Bus service update');
+    expect(sendEmail.mock.calls[0][0].subject).toBe('SafeBus: Bus service update');
     expect(sendEmail.mock.calls[0][0].text).not.toMatch(/student name|Avery|Sam/i);
   });
 
@@ -581,7 +581,7 @@ describe('runDispatcher integration', () => {
     expect(sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: 'assigned-driver@example.test',
-        subject: 'BusSafe: Assignment changed',
+        subject: 'SafeBus: Assignment changed',
         idempotency: 'notification-email-outbox:driver-row-1',
       }),
     );

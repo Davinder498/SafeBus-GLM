@@ -1,4 +1,4 @@
-# SafeBus Alberta — Phase 3: Alberta Privacy and Legal Readiness
+# SafeBus — Phase 3: Alberta Privacy and Legal Readiness
 
 **Status:** Prepared for accountable privacy review; final evidence/approval pending
 **Owner:** Business owner / Privacy Lead; specialist assistance when needed

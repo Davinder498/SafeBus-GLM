@@ -36,9 +36,9 @@ export function buildGuardianEventEmail({
   tenantTimezone,
 }) {
   const genericCopy = {
-    driver_assignment_created: ['Assignment created', 'A BusSafe assignment was created for you.'],
-    driver_assignment_changed: ['Assignment changed', 'A BusSafe assignment was changed for you.'],
-    driver_assignment_ended: ['Assignment ended', 'A BusSafe assignment was ended for you.'],
+    driver_assignment_created: ['Assignment created', 'A SafeBus assignment was created for you.'],
+    driver_assignment_changed: ['Assignment changed', 'A SafeBus assignment was changed for you.'],
+    driver_assignment_ended: ['Assignment ended', 'A SafeBus assignment was ended for you.'],
     trip_started: ['Trip started', 'A scheduled bus trip has started.'],
     trip_completed: ['Trip completed', 'A scheduled bus trip has been completed.'],
     trip_cancelled: ['Trip cancelled', 'A scheduled bus trip has been cancelled.'],
@@ -56,28 +56,28 @@ export function buildGuardianEventEmail({
       'A linked bus service assignment has changed.',
     ],
     guardian_access_changed: [
-      'BusSafe access changed',
+      'SafeBus access changed',
       'Access to linked transportation information has changed.',
     ],
   }[notificationType];
   if (genericCopy) {
     const [subjectLabel, summary] = genericCopy;
-    const subject = `BusSafe: ${subjectLabel}`;
+    const subject = `SafeBus: ${subjectLabel}`;
     const isDriverAssignment = notificationType.startsWith('driver_assignment_');
     const instruction = isDriverAssignment
-      ? 'Open BusSafe to view the update.'
-      : 'Open BusSafe to view the update. This email intentionally excludes student details.';
+      ? 'Open SafeBus to view the update.'
+      : 'Open SafeBus to view the update. This email intentionally excludes student details.';
     const text = [
       summary,
       '',
       instruction,
       '',
-      'BusSafe Alberta',
+      'SafeBus',
     ].join('\n');
     return {
       subject,
       text,
-      html: `<p>${escapeHtml(summary)}</p><p>${escapeHtml(instruction)}</p><p>BusSafe Alberta</p>`,
+      html: `<p>${escapeHtml(summary)}</p><p>${escapeHtml(instruction)}</p><p>SafeBus</p>`,
       action: 'update',
       verb: 'updated',
     };
@@ -116,18 +116,18 @@ export function buildGuardianEventEmail({
     .trim()
     .split(/\s+/)[0];
   const safeFirstName = firstToken || 'your student';
-  const subject = `BusSafe ${action} event recorded`;
+  const subject = `SafeBus ${action} event recorded`;
   const text = [
     `A ${action} event was recorded for ${safeFirstName} at ${when} (${zoneLabel}).`,
     '',
     'This message reflects an event recorded by the transportation system. It is not live child tracking and does not independently verify safety or custody.',
     '',
-    'BusSafe Alberta',
+    'SafeBus',
   ].join('\n');
   return {
     subject,
     text,
-    html: `<p>A ${action} event was recorded for ${escapeHtml(safeFirstName)} at ${escapeHtml(when)} (${escapeHtml(zoneLabel)}).</p><p>This message reflects an event recorded by the transportation system. It is not live child tracking and does not independently verify safety or custody.</p><p>BusSafe Alberta</p>`,
+    html: `<p>A ${action} event was recorded for ${escapeHtml(safeFirstName)} at ${escapeHtml(when)} (${escapeHtml(zoneLabel)}).</p><p>This message reflects an event recorded by the transportation system. It is not live child tracking and does not independently verify safety or custody.</p><p>SafeBus</p>`,
     action,
     verb,
   };
@@ -196,7 +196,7 @@ function requireConfig() {
     service,
     apiKey,
     from,
-    fromName: process.env.SAFEBUS_EMAIL_FROM_NAME || 'BusSafe Alberta',
+    fromName: process.env.SAFEBUS_EMAIL_FROM_NAME || 'SafeBus',
     dispatcherSecret,
     devOverride: process.env.SAFEBUS_DEV_EMAIL_RECIPIENT_OVERRIDE || '',
   };

@@ -1,5 +1,5 @@
 /**
- * SafeBus Alberta — Status language.
+ * SafeBus — Status language.
  *
  * SINGLE SOURCE OF TRUTH for all status strings across web, mobile, and backend.
  * The UI Plan requires consistent wording — never use raw enum values in the UI.

@@ -116,7 +116,7 @@ describe('surface role access', () => {
 
     expect(auth.signOut).toHaveBeenCalledOnce();
     expect(container.textContent).toContain(
-      'Driver and parent accounts use the BusSafe mobile app',
+      'Driver and parent accounts use the SafeBus mobile app',
     );
   });
 
@@ -133,7 +133,7 @@ describe('surface role access', () => {
     await submit(container);
 
     expect(auth.signOut).toHaveBeenCalledOnce();
-    expect(container.textContent).toContain('Administrator accounts use the BusSafe website');
+    expect(container.textContent).toContain('Administrator accounts use the SafeBus website');
   });
 
   it('ends an existing administrator session on the mobile web-only fallback', async () => {
@@ -164,7 +164,7 @@ describe('surface role access', () => {
     );
 
     expect(auth.signOut).toHaveBeenCalledOnce();
-    expect(container.textContent).toContain('Use the correct BusSafe app');
+    expect(container.textContent).toContain('Use the correct SafeBus app');
   });
 
   it('activates a driver invitation on web, signs out, and directs them to mobile', async () => {
@@ -183,7 +183,7 @@ describe('surface role access', () => {
     await submit(container);
 
     expect(auth.signOut).toHaveBeenCalledOnce();
-    expect(container.textContent).toContain('Your account is ready. Open the BusSafe mobile app');
+    expect(container.textContent).toContain('Your account is ready. Open the SafeBus mobile app');
   });
 
   it('updates a driver password on web, signs out, and directs them to mobile', async () => {
@@ -202,7 +202,7 @@ describe('surface role access', () => {
 
     expect(auth.signOut).toHaveBeenCalledOnce();
     expect(container.textContent).toContain(
-      'Your password is updated. Open the BusSafe mobile app',
+      'Your password is updated. Open the SafeBus mobile app',
     );
   });
 });

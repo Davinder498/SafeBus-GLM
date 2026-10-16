@@ -1,15 +1,18 @@
-# BusSafe Alberta
+# SafeBus
 
 > Real-time school bus visibility for Alberta schools and parents.
 
-BusSafe is a school transportation operations platform focused on driver trip workflow, live bus visibility, admin monitoring, guardian-scoped route visibility, and privacy-first student access control.
+SafeBus is a school transportation operations platform focused on driver trip workflow, live bus visibility, admin monitoring, guardian-scoped route visibility, and privacy-first student access control.
 
-**This is not a Student Information System.** BusSafe works alongside existing systems such as PowerSchool and SchoolEngage.
+Operated by **Sachman Gold Inc., doing business as SafeBus**. Use **SafeBus** as
+the sole public product name; see the [naming decision](docs/product-naming.md).
+
+**This is not a Student Information System.** SafeBus works alongside existing systems such as PowerSchool and SchoolEngage.
 
 ## Province
 
-Initially for **Alberta, Canada** only. The privacy-law framework is being
-finalized by Alberta privacy counsel in **Phase 3** against:
+Initially for **Alberta, Canada** only. The **Phase 3** privacy-law assessment
+and its open evidence requirements cover:
 
 - **POPA** — Protection of Privacy Act principles
 - **ATIA** — Access to Information Act principles
@@ -17,14 +20,15 @@ finalized by Alberta privacy counsel in **Phase 3** against:
 - **Education Act** — student record confidentiality
 
 > **Note:** Earlier versions of this README referenced _FOIP_. That reference
-> was obsolete for BusSafe's legal-role analysis and is corrected in Phase 3
+> was obsolete for SafeBus's legal-role analysis and is corrected in Phase 3
 > (see `docs/governance/risk-register.md` R-006 and
-> `docs/governance/phase-3/legal-role-analysis.md`). Final statutory mapping
-> is confirmed by counsel, not engineering.
+> `docs/governance/phase-3/legal-role-analysis.md`). DL-023 requires sourced
+> applicable-law and compliance evidence; counsel appointment is optional unless
+> a specific applicable requirement or customer agreement requires it.
 
 The intended hosted region is Canada (`ca-central-1`). Production processing,
-backup location, and subprocessor terms remain blocked on the Phase 3 vendor
-verification and counsel gates; this repository does not claim those reviews
+backup location, and subprocessor terms remain subject to Phase 3 vendor and
+processing-location verification; this repository does not claim those reviews
 are complete.
 
 ## Monorepo Structure

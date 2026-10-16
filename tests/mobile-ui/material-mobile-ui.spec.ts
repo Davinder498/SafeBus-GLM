@@ -832,7 +832,7 @@ test('driver support page shows one resolved support contact', async ({ page }) 
     'href',
     'mailto:transport@example.test',
   );
-  await expect(page.getByText('BusSafe platform support')).toHaveCount(0);
+  await expect(page.getByText('SafeBus platform support')).toHaveCount(0);
   await expect(page.getByTestId('support-contact-card')).toHaveCSS(
     'background-color',
     'rgb(255, 255, 255)',

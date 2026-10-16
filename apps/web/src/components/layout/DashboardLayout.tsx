@@ -370,11 +370,11 @@ export function DashboardLayout({
           <Link
             to="/"
             className="flex min-w-0 items-center gap-2.5"
-            aria-label="BusSafe Alberta home"
+            aria-label="SafeBus home"
           >
             <BrandMark />
             <span className="sb-brand-copy hidden flex-col leading-tight sm:flex">
-              <span className="text-sm font-bold text-slate-900">BusSafe Alberta</span>
+              <span className="text-sm font-bold text-slate-900">SafeBus</span>
               <span className="text-xs text-slate-600">{portalTitles[portal]} portal</span>
             </span>
           </Link>
@@ -487,7 +487,7 @@ export function DashboardLayout({
             <aside className="absolute left-0 top-0 h-full w-72 max-w-[85vw] overflow-y-auto bg-[var(--color-surface)] p-4 shadow-popover animate-slide-in-right">
               <div className="mb-4 flex items-center justify-between">
                 <span className="flex items-center gap-2 text-sm font-bold text-slate-900">
-                  <Bus className="h-4 w-4 text-navy-600" /> BusSafe Alberta
+                  <Bus className="h-4 w-4 text-navy-600" /> SafeBus
                 </span>
                 <button
                   type="button"
@@ -513,7 +513,7 @@ export function DashboardLayout({
               : undefined
           }
         >
-          <div className="animate-fade-in-up">{children}</div>
+          <div>{children}</div>
         </main>
       </div>
 

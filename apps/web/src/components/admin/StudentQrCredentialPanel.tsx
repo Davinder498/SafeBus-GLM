@@ -174,7 +174,7 @@ export function StudentQrCredentialPanel({ studentId, studentName, disabled = fa
             className="student-qr-print-sheet rounded-xl border bg-white p-4 text-center"
             data-testid="admin-qr-generation-result"
           >
-            <p className="text-sm font-semibold text-gray-500">BusSafe Alberta</p>
+            <p className="text-sm font-semibold text-gray-500">SafeBus</p>
             <h3 className="text-xl font-bold text-navy-900">{badgeName}</h3>
             <img
               alt="Student QR pass"
@@ -189,7 +189,7 @@ export function StudentQrCredentialPanel({ studentId, studentName, disabled = fa
               <a
                 className="inline-flex min-h-11 items-center rounded-lg border px-3 text-sm font-semibold"
                 href={qrDataUrl}
-                download="BusSafe-student-pass.png"
+                download="SafeBus-student-pass.png"
               >
                 Download PNG
               </a>

@@ -1,5 +1,5 @@
 /**
- * SafeBus Alberta — User roles.
+ * SafeBus — User roles.
  *
  * Role hierarchy (high → low privilege within a tenant):
  *   platform_super_admin > tenant_admin > school_admin / transportation_admin > driver / guardian

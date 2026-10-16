@@ -42,7 +42,7 @@ test.describe('Point 10 authenticated CR1 journeys', () => {
       else await installSupabaseMock(page);
       await page.goto('/admin');
       await expect(
-        page.getByRole('heading', { name: 'Use the correct BusSafe app', level: 1 }),
+        page.getByRole('heading', { name: 'Use the correct SafeBus app', level: 1 }),
       ).toBeVisible();
       await expect(page.getByTestId('transportation-summary')).toHaveCount(0);
       await expect

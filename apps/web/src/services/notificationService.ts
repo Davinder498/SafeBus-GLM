@@ -72,14 +72,27 @@ interface NotificationRow {
   destination_path: string;
 }
 
+// Translate only known platform copy from the frozen historical migrations.
+// Customer-authored text and stored records retain their original contents.
+const legacyNotificationCopy: Record<string, string> = {
+  'BusSafe update': 'SafeBus update',
+  'A BusSafe update was recorded': 'A SafeBus update was recorded',
+  'A BusSafe update is available.': 'A SafeBus update is available.',
+  'Open BusSafe to view this update.': 'Open SafeBus to view this update.',
+};
+
 function mapNotification(row: NotificationRow): UserNotification {
   return {
     id: row.id,
     eventType: row.event_type,
     category: row.category,
     severity: row.severity,
-    title: row.title,
-    body: row.body,
+    title: Object.hasOwn(legacyNotificationCopy, row.title)
+      ? legacyNotificationCopy[row.title]
+      : row.title,
+    body: Object.hasOwn(legacyNotificationCopy, row.body)
+      ? legacyNotificationCopy[row.body]
+      : row.body,
     occurredAt: row.occurred_at,
     createdAt: row.created_at,
     readAt: row.read_at,

@@ -96,16 +96,16 @@ export async function verifyAndroidPublicationFiles(root = process.cwd()) {
     'Capacitor SystemBars CSS inset handling is required.',
   );
   invariant(
-    /appName: 'BusSafe Alberta'/.test(capacitorConfig),
-    'Capacitor appName must use BusSafe Alberta.',
+    /appName: 'SafeBus'/.test(capacitorConfig),
+    'Capacitor appName must use SafeBus.',
   );
   invariant(
-    /<string name="app_name">BusSafe Alberta<\/string>/.test(androidStrings),
-    'Android app_name must use BusSafe Alberta.',
+    /<string name="app_name">SafeBus<\/string>/.test(androidStrings),
+    'Android app_name must use SafeBus.',
   );
   invariant(
-    /<title>BusSafe Alberta<\/title>/.test(mobileIndex),
-    'The mobile title must use BusSafe Alberta.',
+    /<title>SafeBus<\/title>/.test(mobileIndex),
+    'The mobile title must use SafeBus.',
   );
 
   const envNames = [...envExample.matchAll(/^\s*(VITE_[A-Z0-9_]+)\s*=/gm)].map((match) => match[1]);
@@ -152,7 +152,7 @@ export async function verifyAndroidPublicationFiles(root = process.cwd()) {
 
   return {
     applicationId: 'com.safebusalberta.app',
-    brandName: 'BusSafe Alberta',
+    brandName: 'SafeBus',
     targetSdk: 36,
     images,
   };
@@ -170,7 +170,7 @@ export async function verifyAndroidPublicationOnline({ fetchImpl = fetch } = {})
     invariant(response.ok, `${origin}${pathname} is not publicly available.`);
     invariant(
       (await response.text()).includes('id="root"'),
-      `${origin}${pathname} did not return the BusSafe web application.`,
+      `${origin}${pathname} did not return the SafeBus web application.`,
     );
   }
 

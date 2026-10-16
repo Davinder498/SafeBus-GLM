@@ -118,6 +118,6 @@ test.describe('Simplified tenant admin workflow', () => {
   test('guardian cannot access task-oriented admin pages', async ({ page }) => {
     await mockAdmin(page, 'guardian');
     await page.goto('/admin/setup');
-    await expect(page.getByRole('heading', { name: 'Use the correct BusSafe app' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Use the correct SafeBus app' })).toBeVisible();
   });
 });

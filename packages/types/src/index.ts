@@ -1,5 +1,5 @@
 /**
- * SafeBus Alberta — Shared types entry point.
+ * SafeBus — Shared types entry point.
  *
  * Single source of truth for domain types, roles, status language,
  * and API contracts across web, mobile, and backend.

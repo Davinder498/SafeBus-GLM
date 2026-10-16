@@ -191,7 +191,7 @@ async function sendInitialTenantAdminInvitation(ctx, email, fullName, redirectTo
         return {
           error: json(400, {
             error:
-              'The email belongs to an unfinished account, but BusSafe could not prepare it for another invitation.',
+              'The email belongs to an unfinished account, but SafeBus could not prepare it for another invitation.',
           }),
         };
       }
@@ -213,7 +213,7 @@ async function sendInitialTenantAdminInvitation(ctx, email, fullName, redirectTo
       };
     }
 
-    // An unconfirmed orphan has no BusSafe profile or accepted identity. Remove
+    // An unconfirmed orphan has no SafeBus profile or accepted identity. Remove
     // the stale provider row so Supabase can issue a fresh invite token and use
     // the normal Invite User email template.
     const removed = await ctx.admin.auth.admin.deleteUser(orphanAuthUser.id);
@@ -250,7 +250,7 @@ async function sendInitialTenantAdminInvitation(ctx, email, fullName, redirectTo
     return {
       error: json(409, {
         error:
-          'The invitation email was not sent and no tenant was created. This email may already belong to another BusSafe account.',
+          'The invitation email was not sent and no tenant was created. This email may already belong to another SafeBus account.',
       }),
     };
   }
@@ -312,7 +312,7 @@ async function sendTenantMemberInvitation(ctx, { email, fullName, redirectTo, ro
     if (accountState.profileTenantId !== tenantId || accountState.profileRole !== role) {
       return {
         error: json(409, {
-          error: 'That email is already linked to a different BusSafe tenant or role.',
+          error: 'That email is already linked to a different SafeBus tenant or role.',
         }),
       };
     }
@@ -375,7 +375,7 @@ async function sendTenantMemberInvitation(ctx, { email, fullName, redirectTo, ro
       return {
         error: json(400, {
           error:
-            'BusSafe found an unfinished member account that could not be safely replaced. No invitation was sent.',
+            'SafeBus found an unfinished member account that could not be safely replaced. No invitation was sent.',
         }),
       };
     }
@@ -388,7 +388,7 @@ async function sendTenantMemberInvitation(ctx, { email, fullName, redirectTo, ro
     return {
       error: json(409, {
         error:
-          'The member invitation email was not sent and no member was added. This email may already belong to another BusSafe account.',
+          'The member invitation email was not sent and no member was added. This email may already belong to another SafeBus account.',
       }),
     };
   }
@@ -601,7 +601,7 @@ async function inviteMember(event, body) {
               'That email is already linked to another SafeBus profile.',
               'A driver with this email address already exists. Use a different email address or select the existing driver.',
             )
-        : 'The email provider accepted the invitation, but BusSafe could not create the member record. No member was added; retry the invitation.';
+        : 'The email provider accepted the invitation, but SafeBus could not create the member record. No member was added; retry the invitation.';
     return json(400, { error: safeFinalizeMessage });
   }
 
@@ -1089,7 +1089,7 @@ export async function handler(event) {
     if (errorName === 'TimeoutError' || errorName === 'AbortError') {
       return json(504, {
         error:
-          'The invitation service timed out before BusSafe could confirm completion. No new member was confirmed; retry once.',
+          'The invitation service timed out before SafeBus could confirm completion. No new member was confirmed; retry once.',
       });
     }
     if (errorName === 'OnboardingConfigurationError') {

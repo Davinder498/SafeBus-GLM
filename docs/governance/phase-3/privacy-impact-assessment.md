@@ -1,15 +1,16 @@
 ﻿# SafeBus Privacy Impact Assessment — Business and CR1 Draft
 
 **Status:** Draft prepared before customer onboarding; not approved or submitted
-**Operator:** `[PROVIDER_LEGAL_NAME]`, Alberta-registered Canadian business
+**Operator:** Sachman Gold Inc., doing business as SafeBus; owner-confirmed Alberta business
 **Responsible business contact:** Business owner, selected Privacy Lead 2026-10-15 / `[PRIVACY_EMAIL]`
 **Prepared:** 2026-10-13 (America/Edmonton)
 **Scope reference:** CR1 product boundary and source based on merged PR 263
 
 **2026-10-15 implementation addendum:** Role-specific notices are now prepared at
 `/privacy#tenant-administrators`, `/privacy#guardians` and `/privacy#drivers`, with
-account-menu and signed-out access. The owner remains Privacy Lead; identity and
-direct contact are unresolved. The [current legal/privacy record](legal-privacy-completion-2026-10-15.md)
+account-menu and signed-out access. The owner remains Privacy Lead. The owner has
+identified Sachman Gold Inc., doing business as SafeBus; direct contact and
+registration evidence remain unresolved. The [current legal/privacy record](legal-privacy-completion-2026-10-15.md)
 adds primary supplier/legal sources and bounded hosted evidence: retention is
 disabled and eight dry-run branches fail with SQLSTATE 42702. No disposal,
 supplier, customer PIA or final privacy approval is inferred from notice access.
@@ -22,8 +23,9 @@ appointing counsel or obtaining a customer. It supports business privacy review
 and a later school-authority assessment; it is not the customer's signed PIA,
 a completed OIPC template, a submitted assessment or launch authorization.
 
-The owner confirmed Alberta registration and requested business/contact
-placeholders. No customer has been identified in this draft. Customer name,
+The owner confirmed Alberta registration and identified Sachman Gold Inc., doing
+business as SafeBus. Contact details remain placeholders. No customer has been
+identified in this draft. Customer name,
 public-body/delegation evidence, operational scope, purposes/authority and any
 required public-body sign-off/submission are added during onboarding. This does
 not transfer ownership of the app/business to the customer.

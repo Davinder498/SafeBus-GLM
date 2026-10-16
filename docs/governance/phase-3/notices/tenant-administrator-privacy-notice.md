@@ -4,7 +4,7 @@
 retention evidence remain pending. Customer collection notices remain specific
 to each activation. This template is not an executed agreement or launch approval.
 
-**Operator:** `[PROVIDER_LEGAL_NAME]`, trading as SafeBus / BusSafe Alberta
+**Operator:** Sachman Gold Inc., doing business as SafeBus
 
 **Business Privacy Lead:** Business owner (selected 2026-10-15)
 

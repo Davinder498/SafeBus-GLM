@@ -219,7 +219,7 @@ export function AdminSchoolsPage() {
                   {editingSchool ? 'Edit school details' : 'Add school'}
                 </h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  Only the name is required. SafeBus Alberta records the province as Alberta.
+                  Only the name is required. SafeBus records the province as Alberta.
                 </p>
               </div>
               <div className="mt-5 grid gap-4 md:grid-cols-2">

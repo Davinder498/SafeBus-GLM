@@ -1,7 +1,7 @@
 # SafeBus Supplier Disclosure — Draft
 
 **Status:** Inventory for review; vendor contracts, countries and notices pending
-**Operator:** `[PROVIDER_LEGAL_NAME]`
+**Operator:** Sachman Gold Inc.
 **Privacy contact:** `[PRIVACY_EMAIL]`
 
 This disclosure covers both transport-service suppliers and suppliers for

@@ -157,7 +157,7 @@ test.describe('Commercial mobile journeys and degraded behavior', () => {
     const fixture = await installGuardianVisibilityMock(page, { role: 'tenant_admin' });
     await page.goto('/parent');
     await expect(
-      page.getByRole('heading', { name: 'Use the correct BusSafe app', level: 1 }),
+      page.getByRole('heading', { name: 'Use the correct SafeBus app', level: 1 }),
     ).toBeVisible();
     await expect
       .poll(() => page.evaluate(() => localStorage.getItem('sb-placeholder-auth-token')))
@@ -200,7 +200,7 @@ test.describe('Commercial mobile journeys and degraded behavior', () => {
       page.getByRole('heading', { name: 'Profile setup needed', level: 1 }),
     ).toBeVisible();
     await expect(
-      page.getByText('We could not verify this BusSafe session. Sign in again or retry shortly.', {
+      page.getByText('We could not verify this SafeBus session. Sign in again or retry shortly.', {
         exact: true,
       }),
     ).toBeVisible();

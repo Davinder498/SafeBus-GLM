@@ -35,7 +35,7 @@ export function PublicOnlyRoute({ children }: PublicOnlyRouteProps) {
       <PublicLayout>
         <main className="mx-auto flex min-h-[calc(100vh-150px)] max-w-lg items-center px-4 py-12 sm:px-6">
           <Card className="w-full p-8 text-center">
-            <h1 className="text-3xl font-bold text-navy-900">Use the correct BusSafe app</h1>
+            <h1 className="text-3xl font-bold text-navy-900">Use the correct SafeBus app</h1>
             <p className="mt-3 text-gray-600">{getSurfaceAccessMessage(appSurface)}</p>
             <Button className="mt-6" type="button" onClick={() => setSurfaceMismatch(false)}>
               Sign in with another account
@@ -65,7 +65,7 @@ export function PublicOnlyRoute({ children }: PublicOnlyRouteProps) {
           <Card className="w-full p-8 text-center">
             <h1 className="text-3xl font-bold text-navy-900">Account unavailable</h1>
             <p className="mt-3 text-gray-600">
-              This BusSafe account is {profile.status}. Ask your administrator to reactivate it.
+              This SafeBus account is {profile.status}. Ask your administrator to reactivate it.
             </p>
             <Button
               type="button"
@@ -89,7 +89,7 @@ export function PublicOnlyRoute({ children }: PublicOnlyRouteProps) {
             <h1 className="text-3xl font-bold text-navy-900">Profile setup needed</h1>
             <p className="mt-3 text-gray-600">
               {authError ??
-                'Your account is signed in, but no BusSafe profile was found. Ask an administrator to finish your profile setup.'}
+                'Your account is signed in, but no SafeBus profile was found. Ask an administrator to finish your profile setup.'}
             </p>
             <Button
               type="button"

@@ -48,7 +48,7 @@ const sections: FeatureSection[] = [
   {
     id: 'privacy',
     title: 'Privacy-first by design',
-    body: 'BusSafe Alberta tracks the bus, not the child. It works alongside existing systems and does not replace PowerSchool.',
+    body: 'SafeBus tracks the bus, not the child. It works alongside existing systems and does not replace PowerSchool.',
     icon: <ShieldCheck className="h-6 w-6" />,
   },
 ];
@@ -75,7 +75,7 @@ export function LandingPage() {
                 <Bus className="h-3.5 w-3.5" /> School transportation visibility
               </span>
               <h1 className="mt-5 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-                BusSafe <span className="text-yellow-400">Alberta</span>
+                <span className="text-yellow-400">SafeBus</span>
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-8 text-navy-100">
                 A transportation operations platform that helps Alberta schools reduce parent
@@ -142,9 +142,9 @@ export function LandingPage() {
               Transportation teams need a calmer source of truth
             </h2>
             <p className="mt-4 text-base leading-7 text-slate-500">
-              BusSafe Alberta focuses on bus operations, parent confidence, and confirmation events.
-              It is not a full school management system and does not replace existing student
-              information workflows.
+              SafeBus focuses on bus operations, parent confidence, and confirmation events. It is
+              not a full school management system and does not replace existing student information
+              workflows.
             </p>
           </div>
         </section>

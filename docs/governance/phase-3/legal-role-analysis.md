@@ -1,4 +1,4 @@
-﻿# SafeBus Alberta — Legal Roles and Alberta Statutory Mapping
+﻿# SafeBus — Legal Roles and Alberta Statutory Mapping
 
 **Status:** Sourced assessment for accountable business/customer review; not approved
 **Owner:** Business owner / Privacy Lead; specialist advice when needed
@@ -14,8 +14,9 @@ the proposed obligations.
 
 The owner confirmed on 2026-10-13 that the contracting business is registered
 in Alberta, Canada, and privacy counsel has not yet been appointed. Its exact
-legal identity, business form, signing authority and registration evidence are
-not established by that confirmation. Record those details in the restricted
+legal identity and business form were subsequently clarified by the owner on
+2026-10-15 as Sachman Gold Inc., doing business as SafeBus. Registration documents
+and signing authority remain unverified. Record that evidence in the restricted
 contract file, with only a non-secret evidence reference in Git.
 
 The approved first customer type is an Alberta public school authority. CR1

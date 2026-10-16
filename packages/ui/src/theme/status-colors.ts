@@ -1,5 +1,5 @@
 /**
- * SafeBus Alberta — Status color mapping.
+ * SafeBus — Status color mapping.
  *
  * Maps status enums (from @safebus/types) to color tokens for consistent
  * visual representation across all apps.

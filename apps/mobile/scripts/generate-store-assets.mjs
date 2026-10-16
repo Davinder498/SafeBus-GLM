@@ -60,8 +60,7 @@ const featureBackground = Buffer.from(`
       <circle cx="28" cy="371" r="10"/>
       <circle cx="1000" cy="307" r="10"/>
     </g>
-    <text x="408" y="193" fill="${brand.navy}" font-family="Arial, Helvetica, sans-serif" font-size="82" font-weight="800" letter-spacing="-3">BusSafe</text>
-    <text x="408" y="285" fill="${brand.navy}" font-family="Arial, Helvetica, sans-serif" font-size="82" font-weight="800" letter-spacing="-3">Alberta</text>
+    <text x="408" y="245" fill="${brand.navy}" font-family="Arial, Helvetica, sans-serif" font-size="82" font-weight="800" letter-spacing="-3">SafeBus</text>
     <text x="412" y="344" fill="url(#accent)" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700">Track the bus. Stay informed.</text>
   </svg>
 `);

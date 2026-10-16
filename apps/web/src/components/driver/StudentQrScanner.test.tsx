@@ -187,7 +187,7 @@ describe('explicit student QR events', () => {
     await click('Open QR scanner');
     await tick();
     expect(mocks.record).not.toHaveBeenCalled();
-    expect(document.body.textContent).toContain('not a BusSafe student QR');
+    expect(document.body.textContent).toContain('not a SafeBus student QR');
   });
 
   it('handles camera permission denial', async () => {

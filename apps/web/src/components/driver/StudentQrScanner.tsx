@@ -423,7 +423,7 @@ export function StudentQrScanner({ tripId, onRecorded }: Props) {
                 )}
                 {state === 'paused' && <p>Camera paused. Start camera when ready to continue.</p>}
                 {state === 'invalid' && (
-                  <p>This is not a BusSafe student QR pass. Nothing was recorded.</p>
+                  <p>This is not a SafeBus student QR pass. Nothing was recorded.</p>
                 )}
                 {state === 'record-failed' && (
                   <p>
