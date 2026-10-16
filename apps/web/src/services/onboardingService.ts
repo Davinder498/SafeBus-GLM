@@ -139,7 +139,7 @@ export async function inviteTenantMember(input: InviteTenantMemberInput) {
 }
 export async function updateInvitation(
   invitationId: string,
-  action: 'resend' | 'cancel' | 'revoke',
+  action: 'resend' | 'cancel' | 'revoke' | 'reissue',
 ) {
   return callOnboarding<{ status: string }>({ kind: 'invitationAction', invitationId, action });
 }

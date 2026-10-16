@@ -230,6 +230,14 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
 
       // POST (insert a route, bus, or driver_trip)
       if (method === 'POST') {
+        if (path.endsWith('/rpc/get_bus_subscription_access')) {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ eligible: true, limit: 10, active: 1 }),
+          });
+          return;
+        }
         if (path.includes('/route_service_days')) {
           await route.fulfill({ status: 201, contentType: 'application/json', body: '[]' });
           return;

@@ -16,6 +16,10 @@ import {
   type BusServiceOption,
 } from '@/services/studentBusAssignmentService';
 import type { AdminBus } from '@/types/transportation';
+import {
+  BusSubscriptionGate,
+  useBusSubscriptionAccess,
+} from '@/components/subscription/BusSubscriptionGate';
 
 function statusLabel(status: AdminBus['status']) {
   return status.charAt(0).toUpperCase() + status.slice(1);
@@ -28,6 +32,7 @@ function statusTone(status: AdminBus['status']): 'success' | 'warning' | 'neutra
 }
 
 export function AdminBusesPage() {
+  const capacity = useBusSubscriptionAccess();
   const { profile } = useAuth();
   const navigate = useNavigate();
   const list = usePaginatedAdminList<AdminBus>('buses');
@@ -72,6 +77,7 @@ export function AdminBusesPage() {
       navGroups={adminNavGroups}
     >
       <div className="space-y-6">
+        <BusSubscriptionGate {...capacity} />
         <PageHeader
           eyebrow="Buses"
           title="Visible buses"

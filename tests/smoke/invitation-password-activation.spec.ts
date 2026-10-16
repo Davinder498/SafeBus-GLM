@@ -23,7 +23,11 @@ async function installInvitedUserMock(page: Page) {
   await page.addInitScript(
     ({ user }) => {
       const session = {
-        access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
+        access_token: [
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+          'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ',
+          'smoke-test-signature',
+        ].join('.'),
         refresh_token: 'invite-refresh-token',
         token_type: 'bearer',
         expires_in: 3600,
@@ -132,11 +136,11 @@ test.describe('invited account password setup', () => {
     await page.goto('/accept-invitation');
 
     await expect(page.getByRole('heading', { name: 'Create your password' })).toBeVisible();
-    await page.getByLabel('New password').fill('SafeBus!2026');
-    await page.getByLabel('Confirm password').fill('SafeBus!2026');
+    await page.getByLabel('New password').fill('SafeBus!2026Trial');
+    await page.getByLabel('Confirm password').fill('SafeBus!2026Trial');
     await page.getByRole('button', { name: 'Create password and activate account' }).click();
 
-    await expect(page).toHaveURL('/admin');
+    await expect(page).toHaveURL('/admin/settings/billing');
     expect(state.passwordWasUpdated()).toBe(true);
     expect(state.activationWasCalled()).toBe(true);
   });

@@ -2,10 +2,11 @@ import { supabase, supabaseConfigError } from '@/lib/supabase';
 import type {
   PlatformBillingSummary,
   PlatformSubscriptionAction,
-  SubscriptionContractInput,
   SubscriptionPrice,
   SubscriptionStatus,
   TenantSubscription,
+  BusSubscriptionAccess,
+  BillingPreview,
 } from '@/types/subscription';
 
 function client() {
@@ -43,6 +44,13 @@ function normalizeSubscription(value: unknown): TenantSubscription {
     currency: text(data.currency),
     unitAmount: number(data.unit_amount),
     annualTotal: number(data.annual_total),
+    billingInterval: data.billing_interval === 'month' ? 'month' : 'year',
+    periodTotal: number(data.period_total),
+    collectionMethod: text(data.collection_method),
+    trialEligible: data.trial_eligible === true,
+    pendingPayment: data.pending_payment === true,
+    pendingChange: (data.pending_change as TenantSubscription['pendingChange']) ?? null,
+    busAccess: normalizeBusAccess(data.bus_access),
     currentPeriodStart: text(data.current_period_start),
     currentPeriodEnd: text(data.current_period_end),
     trialEnd: text(data.trial_end),
@@ -76,15 +84,16 @@ export async function fetchPlatformTenantBillingDetail(
 }
 
 export async function fetchPlatformBillingSummaries(): Promise<PlatformBillingSummary[]> {
-  const { data, error } = await client().rpc('get_platform_tenant_billing_summaries');
+  const { data, error } = await client().rpc('get_platform_subscription_summaries');
   if (error) throw new Error('Unable to load subscription summaries.');
   return ((data ?? []) as Array<Record<string, unknown>>).map((row) => ({
     tenantId: text(row.tenant_id) ?? '',
-    configured: row.subscription_configured === true,
+    configured: row.configured === true,
     status: text(row.subscription_status) as SubscriptionStatus | null,
     licensedBusCount: number(row.licensed_bus_count),
     activeBusCount: number(row.active_bus_count) ?? 0,
     currentPeriodEnd: text(row.current_period_end),
+    trialEnd: text(row.trial_end),
     warning: row.billing_warning === true,
   }));
 }
@@ -100,32 +109,149 @@ async function callBillingFunction<T>(path: string, body: Record<string, unknown
     body: JSON.stringify(body),
   });
   const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
-  if (!response.ok) {
-    throw new Error(
-      typeof payload.error === 'string' ? payload.error : 'The billing request was not confirmed.',
+  if (!response.ok || typeof payload.error === 'string') {
+    throw Object.assign(
+      new Error(
+        typeof payload.error === 'string'
+          ? payload.error
+          : 'The billing request was not confirmed.',
+      ),
+      { retryable: payload.retryable },
     );
   }
   return payload as T;
 }
 
-export async function fetchApprovedSubscriptionPrices(): Promise<SubscriptionPrice[]> {
-  const result = await callBillingFunction<{ prices: SubscriptionPrice[] }>(
-    'platform-subscriptions',
-    { action: 'list_prices' },
+function normalizeBusAccess(value: unknown): BusSubscriptionAccess {
+  const data = record(value);
+  return {
+    eligible: data.eligible === true,
+    limit: number(data.limit),
+    active: number(data.active) ?? 0,
+  };
+}
+
+export async function fetchBusSubscriptionAccess(): Promise<BusSubscriptionAccess> {
+  const { data, error } = await client().rpc('get_bus_subscription_access');
+  if (error) throw new Error('Unable to verify bus capacity. Refresh and try again.');
+  return normalizeBusAccess(data);
+}
+
+export async function fetchTenantPrices(): Promise<SubscriptionPrice[]> {
+  return (
+    await callBillingFunction<{ prices: SubscriptionPrice[] }>('tenant-subscriptions', {
+      action: 'list_prices',
+    })
+  ).prices;
+}
+
+export async function refreshTenantBilling(): Promise<void> {
+  await callBillingFunction('tenant-subscriptions', { action: 'refresh' });
+}
+
+export async function previewTenantChange(
+  priceId: string,
+  quantity: number,
+): Promise<BillingPreview> {
+  return callBillingFunction('tenant-subscriptions', {
+    action: 'preview',
+    requestId: crypto.randomUUID(),
+    priceId,
+    quantity,
+  });
+}
+
+type BillingMutation = {
+  action: 'checkout' | 'change' | 'cancel' | 'keep' | 'unschedule';
+  priceId?: string;
+  quantity?: number;
+};
+type PendingBillingRequest = { requestId: string; body: BillingMutation };
+// Financial request payloads remain in memory or in the authenticated server ledger.
+// Browser storage contains only a locally generated, opaque retry identifier.
+const pendingBillingRequests = new Map<string, PendingBillingRequest>();
+
+export function hasPendingTenantBilling(tenantId: string): boolean {
+  return (
+    pendingBillingRequests.has(tenantId) ||
+    sessionStorage.getItem(`safebus-billing-request:${tenantId}`) !== null
   );
-  return result.prices;
+}
+
+export async function changeTenantBilling(
+  tenantId: string,
+  action: BillingMutation['action'],
+  priceId?: string,
+  quantity?: number,
+): Promise<{ url?: string; pendingPayment?: boolean; paymentUrl?: string }> {
+  const key = `safebus-billing-request:${tenantId}`;
+  const body = { action, ...(priceId ? { priceId, quantity } : {}) };
+  if (!pendingBillingRequests.has(tenantId) && sessionStorage.getItem(key))
+    await recoverPendingTenantBilling(tenantId);
+  const request = pendingBillingRequests.get(tenantId);
+  if (
+    request &&
+    (request.body.action !== action ||
+      request.body.priceId !== body.priceId ||
+      request.body.quantity !== body.quantity)
+  )
+    throw new Error('Retry your previous billing request before making another change.');
+  let localRequestId = sessionStorage.getItem(key);
+  if (!request && !localRequestId) {
+    localRequestId = crypto.randomUUID();
+    sessionStorage.setItem(key, localRequestId);
+  }
+  pendingBillingRequests.set(tenantId, {
+    requestId: request?.requestId ?? localRequestId!,
+    body,
+  });
+  return retryTenantBilling(tenantId);
+}
+
+export async function retryTenantBilling(
+  tenantId: string,
+): Promise<{ url?: string; pendingPayment?: boolean; paymentUrl?: string }> {
+  const key = `safebus-billing-request:${tenantId}`;
+  if (!pendingBillingRequests.has(tenantId)) await recoverPendingTenantBilling(tenantId);
+  const saved = pendingBillingRequests.get(tenantId);
+  if (!saved)
+    throw new Error('The request did not reach billing. Submit your saved selection to retry.');
+  let result;
+  try {
+    result = await callBillingFunction<{
+      url?: string;
+      pendingPayment?: boolean;
+      paymentUrl?: string;
+    }>('tenant-subscriptions', { ...saved.body, requestId: saved.requestId });
+  } catch (error) {
+    if ((error as { retryable?: boolean }).retryable === false) {
+      pendingBillingRequests.delete(tenantId);
+      sessionStorage.removeItem(key);
+    }
+    throw error;
+  }
+  sessionStorage.removeItem(key);
+  pendingBillingRequests.delete(tenantId);
+  return result;
+}
+
+export async function recoverPendingTenantBilling(tenantId: string): Promise<boolean> {
+  const { pending } = await callBillingFunction<{
+    pending: { requestId: string; body: BillingMutation } | null;
+  }>('tenant-subscriptions', { action: 'pending_request' });
+  if (!pending?.body) return false;
+  pendingBillingRequests.set(tenantId, pending);
+  return true;
 }
 
 export async function mutatePlatformSubscription(
   action: PlatformSubscriptionAction,
   tenantId: string,
-  contract?: Omit<SubscriptionContractInput, 'tenantId'>,
 ): Promise<{ ok: boolean; status?: string; replayed?: boolean }> {
   return callBillingFunction('platform-subscriptions', {
     action,
     requestId: crypto.randomUUID(),
     tenantId,
-    ...(contract ?? {}),
   });
 }
 

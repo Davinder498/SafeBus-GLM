@@ -23,6 +23,15 @@
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"]
     },
+    "@safebus/web#test": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/supabase/migrations/**/*.sql",
+        "$TURBO_ROOT$/config/pending/tenant-subscription-authorization.json"
+      ],
+      "outputs": ["coverage/**"]
+    },
     "clean": {
       "cache": false
     }

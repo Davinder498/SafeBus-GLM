@@ -26,10 +26,12 @@ test('server billing boundaries verify signatures, idempotency, and approved pri
   const webhook = read('apps/web/netlify/functions/stripe-webhook.mjs');
   assert.match(webhook, /constructEvent/);
   assert.match(webhook, /billing_begin_webhook_event/);
-  assert.match(platform, /billing_begin_mutation/);
-  assert.match(platform, /billing_upsert_customer_mapping/);
-  assert.match(platform, /idempotencyKey/);
-  assert.match(shared, /price\.recurring\?\.interval !== 'year'/);
+  const tenant = read('apps/web/netlify/functions/tenant-subscriptions.mjs');
+  assert.match(tenant, /billing_claim_operation/);
+  assert.match(tenant, /billing_upsert_customer_mapping/);
+  assert.match(tenant, /idempotencyKey/);
+  assert.doesNotMatch(platform, /subscriptions\.(create|update|cancel)\(/);
+  assert.match(shared, /\['month', 'year'\]\.includes\(price\.recurring\?\.interval\)/);
   assert.match(shared, /price\.currency !== 'cad'/);
   assert.match(shared, /usage_type !== 'licensed'/);
   assert.doesNotMatch(shared + platform + webhook, /VITE_STRIPE/);

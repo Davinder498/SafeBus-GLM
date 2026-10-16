@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Link, Navigate } from 'react-router';
+import { Link, Navigate, useLocation } from 'react-router';
 import { Card } from '@/components/ui/Card';
 import { AppLoadingScreen } from '@/components/ui/AppLoadingScreen';
 import { PublicLayout } from '@/components/layout/PublicLayout';
@@ -39,6 +39,7 @@ function AuthMessage({ title, message }: { title: string; message: string }) {
 }
 
 export function ProtectedRoute({ allowedRoles, children, requireMfa = true }: ProtectedRouteProps) {
+  const location = useLocation();
   const appSurface = useAppSurface();
   const { session, profile, loading, authError, mfaStatus, mfaLoading, signOut } = useAuth();
   const [surfaceMismatch, setSurfaceMismatch] = useState(false);
@@ -142,7 +143,7 @@ export function ProtectedRoute({ allowedRoles, children, requireMfa = true }: Pr
     adminRoles.includes(profile.role as (typeof adminRoles)[number]) &&
     mfaStatus.currentLevel !== 'aal2'
   ) {
-    return <Navigate to="/mfa" replace />;
+    return <Navigate to="/mfa" state={{ returnTo: location.pathname }} replace />;
   }
 
   return children;

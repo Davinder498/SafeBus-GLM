@@ -12,7 +12,7 @@
     "./roles": "./src/roles.ts",
     "./status": "./src/status.ts",
     "./api-contracts": "./src/api-contracts.ts",
-    "./database": "./src/database.generated.ts"
+    "./database": "./src/database.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

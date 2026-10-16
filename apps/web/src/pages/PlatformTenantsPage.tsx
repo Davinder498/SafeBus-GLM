@@ -1,235 +1,292 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
+import { Building2, ChevronRight, Search } from 'lucide-react';
 import { DashboardLayout, platformNavItems } from '@/components/layout/DashboardLayout';
-import { Button } from '@/components/ui/Button';
+import { TenantInvitationWizard } from '@/components/subscription/TenantInvitationWizard';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
+import { Field } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import {
-  createTenantWithAdmin,
   fetchPlatformTenantSummaries,
   type PlatformTenantSummary,
 } from '@/services/onboardingService';
-import { fetchPlatformBillingSummaries } from '@/services/subscriptionService';
+import { fetchPlatformBillingSummaries, formatBillingDate } from '@/services/subscriptionService';
 import type { PlatformBillingSummary } from '@/types/subscription';
 
+const inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm';
 export function PlatformTenantsPage() {
   const [tenants, setTenants] = useState<PlatformTenantSummary[]>([]);
-  const [billingSummaries, setBillingSummaries] = useState<PlatformBillingSummary[]>([]);
+  const [billing, setBilling] = useState<PlatformBillingSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    tenantName: '',
-    tenantType: 'school',
-    adminName: '',
-    adminEmail: '',
-  });
+  const [search, setSearch] = useState('');
+  const [invitation, setInvitation] = useState('all');
+  const [subscription, setSubscription] = useState('all');
+  const [setup, setSetup] = useState('all');
   async function load() {
     setLoading(true);
+    setError(null);
     try {
-      const [summary, billing] = await Promise.all([
+      const results = await Promise.allSettled([
         fetchPlatformTenantSummaries(),
         fetchPlatformBillingSummaries(),
       ]);
-      setTenants(summary);
-      setBillingSummaries(billing);
+      if (results[0].status === 'rejected') throw results[0].reason;
+      setTenants(results[0].value);
+      if (results[1].status === 'fulfilled') setBilling(results[1].value);
+      else {
+        setBilling([]);
+        setError('Tenant list loaded. Subscription summaries are temporarily unavailable.');
+      }
     } finally {
       setLoading(false);
     }
   }
   useEffect(() => {
-    void load().catch((e) => {
-      setError(e instanceof Error ? e.message : 'Unable to load onboarding.');
-    });
+    void load().catch(() => setError('Unable to load tenant onboarding. Refresh to try again.'));
   }, []);
-  const billingByTenant = useMemo(
-    () => new Map(billingSummaries.map((item) => [item.tenantId, item])),
-    [billingSummaries],
-  );
-  async function submit() {
-    setError(null);
-    setMessage(null);
-    setCreating(true);
-    try {
-      const result = await createTenantWithAdmin(form);
-      setForm({
-        tenantName: '',
-        tenantType: 'school',
-        adminName: '',
-        adminEmail: '',
-      });
-      setMessage(
-        `Invitation email sent to ${result.recipientEmail}. ${result.tenant.name} is now ready for administrator acceptance.`,
-      );
-      try {
-        await load();
-      } catch {
-        setError(
-          'The invitation was sent, but the tenant list could not refresh. Reload the page.',
-        );
-      }
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : 'The invitation was not sent and no tenant was created.',
-      );
-    } finally {
-      setCreating(false);
-    }
-  }
+  const byTenant = useMemo(() => new Map(billing.map((b) => [b.tenantId, b])), [billing]);
+  const visible = tenants.filter((t) => {
+    const b = byTenant.get(t.tenant_id);
+    return (
+      [t.tenant_name, t.first_tenant_admin_name, t.first_tenant_admin_email]
+        .join(' ')
+        .toLowerCase()
+        .includes(search.toLowerCase().trim()) &&
+      (invitation === 'all' || t.latest_invitation_status === invitation) &&
+      (subscription === 'all' || (b ? (b.status ?? 'none') : 'unknown') === subscription) &&
+      (setup === 'all' || t.setup_readiness === setup)
+    );
+  });
   return (
     <DashboardLayout title="Platform Admin" portal="admin" navItems={platformNavItems}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Platform onboarding"
           title="Tenant onboarding"
-          description="Create a tenant, invite the first tenant admin, and track setup readiness without exposing student or guardian details."
+          description="Welcome new organizations and follow their progress from invitation to an operational fleet."
+          icon={<Building2 className="h-6 w-6" />}
         />
-        {message && (
-          <Card className="border-success-200 bg-success-50 p-4">
-            <p className="text-sm font-semibold text-success-700" role="status">
-              {message}
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            ['Organizations', tenants.length],
+            [
+              'Awaiting activation',
+              tenants.filter((t) => t.tenant_admin_status === 'invited').length,
+            ],
+            ['Trial subscriptions', billing.filter((b) => b.status === 'trialing').length],
+          ].map(([label, value]) => (
+            <Card key={label} className="p-5">
+              <p className="text-sm font-medium text-slate-500">{label}</p>
+              <p className="mt-2 text-3xl font-bold text-navy-900">{loading ? '—' : value}</p>
+            </Card>
+          ))}
+        </div>
+        <TenantInvitationWizard onCreated={load} />
+        <section aria-labelledby="tenant-directory-heading" className="space-y-4">
+          <div>
+            <h2 id="tenant-directory-heading" className="text-xl font-bold text-navy-900">
+              Your organizations
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Invitations, subscription health, and fleet capacity in one place.
             </p>
+          </div>
+          <Card className="p-4">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <Field label="Search tenants" htmlFor="tenant-search">
+                <div className="relative">
+                  <Search aria-hidden className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <input
+                    id="tenant-search"
+                    className={`${inputClass} pl-9`}
+                    placeholder="Organization or administrator"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+              </Field>
+              <Field label="Invitation" htmlFor="invitation-filter">
+                <select
+                  id="invitation-filter"
+                  className={inputClass}
+                  value={invitation}
+                  onChange={(e) => setInvitation(e.target.value)}
+                >
+                  {['all', 'pending', 'resent', 'activated', 'expired', 'cancelled', 'failed'].map(
+                    (s) => (
+                      <option key={s} value={s}>
+                        {s === 'all' ? 'All invitations' : s}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </Field>
+              <Field label="Subscription" htmlFor="subscription-filter">
+                <select
+                  id="subscription-filter"
+                  className={inputClass}
+                  value={subscription}
+                  onChange={(e) => setSubscription(e.target.value)}
+                >
+                  {[
+                    'all',
+                    'none',
+                    'trialing',
+                    'active',
+                    'past_due',
+                    'canceled',
+                    'unpaid',
+                    'paused',
+                    'incomplete',
+                    'incomplete_expired',
+                  ].map((s) => (
+                    <option key={s} value={s}>
+                      {s === 'all'
+                        ? 'All subscriptions'
+                        : s === 'none'
+                          ? 'Not subscribed'
+                          : s.replaceAll('_', ' ')}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Setup progress" htmlFor="setup-filter">
+                <select
+                  id="setup-filter"
+                  className={inputClass}
+                  value={setup}
+                  onChange={(e) => setSetup(e.target.value)}
+                >
+                  {['all', 'not_started', 'in_progress', 'ready'].map((s) => (
+                    <option key={s} value={s}>
+                      {s === 'all' ? 'All setup stages' : s.replaceAll('_', ' ')}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
           </Card>
-        )}
-        {error && (
-          <Card className="border-danger-200 bg-danger-50 p-4">
-            <p className="text-sm font-semibold text-danger-700" role="alert">
+          {error && (
+            <p role="alert" className="rounded-lg bg-warning-50 p-4 text-sm text-warning-800">
               {error}
             </p>
-          </Card>
-        )}
-        <Card className="p-4 sm:p-5">
-          <h2 className="text-lg font-bold text-navy-900">Create tenant and first admin</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            The tenant appears below only after the invitation provider accepts the email.
-          </p>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <input
-              className="rounded-lg border px-4 py-3"
-              placeholder="Tenant name"
-              value={form.tenantName}
-              onChange={(e) => setForm({ ...form, tenantName: e.target.value })}
+          )}
+          {loading ? (
+            <DataState
+              title="Loading tenants"
+              message="Checking onboarding and subscription status."
             />
-            <select
-              className="rounded-lg border px-4 py-3"
-              value={form.tenantType}
-              onChange={(e) => setForm({ ...form, tenantType: e.target.value })}
-            >
-              <option value="school">School</option>
-              <option value="school_group">School group</option>
-              <option value="bus_contractor">Bus contractor</option>
-              <option value="demo">Demo</option>
-            </select>
-            <input
-              className="rounded-lg border px-4 py-3"
-              placeholder="Tenant admin full name"
-              value={form.adminName}
-              onChange={(e) => setForm({ ...form, adminName: e.target.value })}
+          ) : visible.length === 0 ? (
+            <DataState
+              title={tenants.length ? 'No matching organizations' : 'No tenants yet'}
+              message={
+                tenants.length
+                  ? 'Try another search or filter.'
+                  : 'Invite your first organization above.'
+              }
             />
-            <input
-              className="rounded-lg border px-4 py-3"
-              placeholder="Tenant admin email"
-              value={form.adminEmail}
-              onChange={(e) => setForm({ ...form, adminEmail: e.target.value })}
-            />
-          </div>
-          <Button
-            type="button"
-            className="mt-4 w-full sm:w-auto"
-            loading={creating}
-            disabled={creating}
-            onClick={() => void submit()}
-          >
-            Create tenant and send invitation
-          </Button>
-        </Card>
-        {loading && (
-          <DataState title="Loading tenants" message="Checking tenant onboarding state." />
-        )}
-        {!loading && tenants.length === 0 && (
-          <DataState title="No tenants yet" message="Create the first tenant above." />
-        )}
-        {tenants.map((t) => {
-          const billing = billingByTenant.get(t.tenant_id);
-          const tone =
-            t.tenant_status === 'active' && t.setup_readiness === 'ready'
-              ? 'success'
-              : t.tenant_status === 'suspended'
-                ? 'warning'
-                : 'neutral';
-          return (
-            <Card key={t.tenant_id} className="p-4 sm:p-5">
-              <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-                <div className="min-w-0">
-                  <h2 className="break-words text-xl font-bold text-navy-900">{t.tenant_name}</h2>
-                  <p className="text-sm text-gray-600">
-                    {t.tenant_type} · admin {t.tenant_admin_status} · invitation{' '}
-                    {t.latest_invitation_status}
-                  </p>
-                </div>
-                <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                  <StatusPill
-                    tone={billing?.warning ? 'warning' : billing?.configured ? 'info' : 'neutral'}
-                  >
-                    {billing?.configured
-                      ? `Billing ${billing.status?.replaceAll('_', ' ') ?? 'configured'}`
-                      : 'Subscription not configured'}
-                  </StatusPill>
-                  <StatusPill tone={tone}>
-                    {t.tenant_status === 'active'
-                      ? t.setup_readiness === 'ready'
-                        ? 'Operationally ready'
-                        : t.setup_readiness.replace('_', ' ')
-                      : t.tenant_status}
-                  </StatusPill>
-                  <Link
-                    to={`/admin/tenants/${t.tenant_id}`}
-                    className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-navy-700 px-3 text-sm font-semibold text-white shadow-sm hover:bg-navy-800 sm:w-auto"
-                  >
-                    View tenant
-                  </Link>
-                </div>
+          ) : (
+            <Card className="relative overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[760px] text-left text-sm">
+                  <caption className="sr-only">
+                    Tenant onboarding and subscription directory
+                  </caption>
+                  <thead className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                    <tr>
+                      {[
+                        'Organization',
+                        'First administrator',
+                        'Subscription',
+                        'Active buses',
+                        'Next date',
+                        '',
+                      ].map((h, i) => (
+                        <th key={i} scope="col" className="px-5 py-4">
+                          {h || <span className="sr-only">Actions</span>}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {visible.map((t) => {
+                      const b = byTenant.get(t.tenant_id);
+                      return (
+                        <tr key={t.tenant_id} className="hover:bg-slate-50/70">
+                          <td className="px-5 py-5">
+                            <Link
+                              className="font-bold text-navy-800 hover:underline"
+                              to={`/admin/tenants/${t.tenant_id}`}
+                            >
+                              {t.tenant_name}
+                            </Link>
+                            <p className="mt-1 text-xs text-slate-500">
+                              {t.tenant_type.replaceAll('_', ' ')} · {t.tenant_status}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-600">
+                              {t.setup_readiness.replaceAll('_', ' ')}
+                            </p>
+                          </td>
+                          <td className="px-5 py-5">
+                            <p className="font-medium">
+                              {t.first_tenant_admin_name ?? 'Not assigned'}
+                            </p>
+                            <p className="mt-1 break-all text-xs text-slate-500">
+                              {t.first_tenant_admin_email}
+                            </p>
+                            <p className="mt-2 text-xs text-slate-600">
+                              {t.tenant_admin_status === 'invited'
+                                ? 'Password setup pending'
+                                : t.tenant_admin_status}{' '}
+                              · invitation {t.latest_invitation_status}
+                            </p>
+                          </td>
+                          <td className="px-5 py-5">
+                            <StatusPill
+                              tone={b?.warning ? 'warning' : b?.configured ? 'info' : 'neutral'}
+                            >
+                              {b
+                                ? (b.status?.replaceAll('_', ' ') ?? 'Not subscribed')
+                                : 'Unavailable'}
+                            </StatusPill>
+                          </td>
+                          <td className="px-5 py-5 font-semibold">
+                            {b ? `${b.activeBusCount} / ${b.licensedBusCount ?? '—'}` : '—'}
+                          </td>
+                          <td className="px-5 py-5">
+                            <p className="text-xs text-slate-500">
+                              {b?.status === 'trialing' ? 'Trial ends' : 'Term ends'}
+                            </p>
+                            <p className="mt-1">
+                              {formatBillingDate(
+                                b?.status === 'trialing'
+                                  ? (b.trialEnd ?? null)
+                                  : (b?.currentPeriodEnd ?? null),
+                              )}
+                            </p>
+                          </td>
+                          <td className="px-5 py-5">
+                            <Link
+                              className="inline-flex items-center gap-1 font-semibold text-navy-700"
+                              aria-label={`View tenant ${t.tenant_name}`}
+                              to={`/admin/tenants/${t.tenant_id}`}
+                            >
+                              View tenant
+                              <ChevronRight className="h-4 w-4" aria-hidden />
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-              <div className="mt-4 grid gap-3 text-sm sm:grid-cols-5">
-                <p>
-                  Tenant admins <b>{t.active_tenant_admin_count}</b>
-                </p>
-                <p>
-                  Buses <b>{t.has_buses ? 'yes' : 'no'}</b>
-                </p>
-                <p>
-                  Drivers <b>{t.has_drivers ? 'yes' : 'no'}</b>
-                </p>
-                <p>
-                  Routes <b>{t.has_routes ? 'yes' : 'no'}</b>
-                </p>
-                <p>
-                  Students <b>{t.has_students ? 'yes' : 'no'}</b>
-                </p>
-              </div>
-              {t.first_tenant_admin_email && (
-                <div className="mt-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-4">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-navy-900">
-                      {t.first_tenant_admin_name ?? 'Pending admin'}
-                    </p>
-                    <p className="break-all text-slate-600">
-                      {t.first_tenant_admin_email} · {t.tenant_admin_status}
-                    </p>
-                  </div>
-                  {t.tenant_admin_status === 'invited' && (
-                    <span className="text-xs font-semibold text-warning-700">
-                      Password setup pending
-                    </span>
-                  )}
-                </div>
-              )}
             </Card>
-          );
-        })}
+          )}
+        </section>
       </div>
     </DashboardLayout>
   );

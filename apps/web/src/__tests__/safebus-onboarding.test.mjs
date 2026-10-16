@@ -172,14 +172,19 @@ describe('SafeBus member onboarding', () => {
   it.each([
     [{ data: false, error: null }, 401],
     [{ data: null, error: { message: 'database unavailable' } }, 503],
-  ])('denies inactive or unverifiable sessions before service-role work', async (sessionResult, status) => {
-    const { adminClient } = setupClients({ sessionResult });
-    const response = await handler(event({ email: 'guardian@example.test', firstName: 'Test', lastName: 'Parent' }));
-    expect(response.statusCode).toBe(status);
-    expect(adminClient.from).not.toHaveBeenCalled();
-    expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
-    expect(adminClient.rpc).not.toHaveBeenCalled();
-  });
+  ])(
+    'denies inactive or unverifiable sessions before service-role work',
+    async (sessionResult, status) => {
+      const { adminClient } = setupClients({ sessionResult });
+      const response = await handler(
+        event({ email: 'guardian@example.test', firstName: 'Test', lastName: 'Parent' }),
+      );
+      expect(response.statusCode).toBe(status);
+      expect(adminClient.from).not.toHaveBeenCalled();
+      expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
+      expect(adminClient.rpc).not.toHaveBeenCalled();
+    },
+  );
 
   it('returns a clear server configuration error when the secret key is missing', async () => {
     const legacyService = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -1000,4 +1005,62 @@ describe('SafeBus member onboarding', () => {
       p_admin_email: 'first.admin@example.test',
     });
   });
+});
+
+describe('expired first administrator reissue', () => {
+  beforeEach(() => vi.clearAllMocks());
+  it.each([false, true])(
+    'finalizes only after provider acceptance (failure: %s)',
+    async (failure) => {
+      const profile = { id: 'expired-admin', email: 'first@example.test', status: 'disabled' };
+      const invitation = {
+        id: 'expired-invite',
+        tenant_id: 'tenant-1',
+        email: profile.email,
+        role: 'tenant_admin',
+        status: 'expired',
+        invited_profile_id: profile.id,
+      };
+      const { userClient, adminClient } = setupClients({
+        callerProfile: { ...caller, tenant_id: null, role: 'platform_super_admin' },
+        profile,
+        invitation,
+        rpcResults: [
+          { data: true, error: null },
+          { data: null, error: null },
+        ],
+        authUser: {
+          id: profile.id,
+          email: profile.email,
+          email_confirmed_at: '2026-10-01T00:00:00Z',
+        },
+        resetPasswordError: failure ? { message: 'Provider unavailable', status: 503 } : null,
+      });
+      const response = await handler({
+        httpMethod: 'POST',
+        headers: { authorization: 'Bearer test-token' },
+        body: JSON.stringify({
+          kind: 'invitationAction',
+          invitationId: invitation.id,
+          action: 'reissue',
+        }),
+      });
+      expect(response.statusCode).toBe(failure ? 400 : 200);
+      expect(userClient.rpc).toHaveBeenCalledWith('platform_prepare_first_admin_reissue', {
+        p_invitation_id: invitation.id,
+      });
+      expect(userClient.rpc.mock.invocationCallOrder.at(-1)).toBeLessThan(
+        adminClient.auth.resetPasswordForEmail.mock.invocationCallOrder[0],
+      );
+      if (failure)
+        expect(adminClient.rpc).not.toHaveBeenCalledWith(
+          'platform_finalize_first_admin_reissue',
+          expect.anything(),
+        );
+      else
+        expect(adminClient.rpc).toHaveBeenCalledWith('platform_finalize_first_admin_reissue', {
+          p_invitation_id: invitation.id,
+        });
+    },
+  );
 });

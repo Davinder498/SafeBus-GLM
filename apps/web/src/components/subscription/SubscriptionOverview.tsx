@@ -33,8 +33,7 @@ export function SubscriptionOverview({ subscription }: { subscription: TenantSub
           <div>
             <h2 className="text-lg font-bold text-slate-900">Subscription not configured</h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              No annual SafeBus contract has been connected to this tenant. Operational access is
-              not affected.
+              Choose a subscription to configure buses. Existing transportation operations continue.
             </p>
           </div>
         </div>
@@ -63,9 +62,13 @@ export function SubscriptionOverview({ subscription }: { subscription: TenantSub
       <Card className="p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-sm font-semibold text-navy-600">Annual subscription</p>
+            <p className="text-sm font-semibold text-navy-600">
+              {subscription.billingInterval === 'month'
+                ? 'Monthly subscription'
+                : 'Annual subscription'}
+            </p>
             <h2 className="mt-1 text-xl font-bold text-slate-900">
-              {subscription.priceNickname ?? subscription.productName ?? 'SafeBus annual plan'}
+              {subscription.priceNickname ?? subscription.productName ?? 'SafeBus subscription'}
             </h2>
           </div>
           <StatusPill tone={statusTone(subscription.subscriptionStatus)} dot>
@@ -75,8 +78,11 @@ export function SubscriptionOverview({ subscription }: { subscription: TenantSub
 
         <dl className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <Detail
-            label="Annual total"
-            value={formatMoney(subscription.annualTotal, subscription.currency)}
+            label="Recurring total"
+            value={formatMoney(
+              subscription.periodTotal ?? subscription.annualTotal,
+              subscription.currency,
+            )}
           />
           <Detail
             label="Per bus / year"
@@ -85,9 +91,11 @@ export function SubscriptionOverview({ subscription }: { subscription: TenantSub
           <Detail
             label="Payment terms"
             value={
-              subscription.daysUntilDue
-                ? `Invoice due in ${subscription.daysUntilDue} days`
-                : 'Not available'
+              subscription.collectionMethod === 'charge_automatically'
+                ? 'Automatic payment'
+                : subscription.daysUntilDue
+                  ? `Invoice due in ${subscription.daysUntilDue} days`
+                  : 'Not available'
             }
           />
           <Detail

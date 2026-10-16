@@ -51,7 +51,12 @@ export function AcceptInvitationPage() {
         );
         return;
       }
-      navigate(getDashboardPath(nextProfile.role), { replace: true });
+      navigate(
+        nextProfile.role === 'tenant_admin'
+          ? '/admin/settings/billing'
+          : getDashboardPath(nextProfile.role),
+        { replace: true },
+      );
     } catch (setupError) {
       setError(
         setupError instanceof Error ? setupError.message : 'Unable to activate your account.',

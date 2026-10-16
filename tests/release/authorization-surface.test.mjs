@@ -106,10 +106,16 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
 
 test('production application RPC references are all reviewed', async () => {
   const surface = await readJson('config/authorization-surface.json');
+  // Prepared source can reference an explicitly reviewed forward surface. This
+  // does not add it to the active installation/audit manifest or authorize DDL.
+  const pending = await readJson('config/pending/tenant-subscription-authorization.json');
   const approved = new Set(
-    [...surface.authenticated, ...surface.serviceRole].map((entry) =>
-      entry.slice(0, entry.indexOf('(')),
-    ),
+    [
+      ...surface.authenticated,
+      ...surface.serviceRole,
+      ...pending.authenticated,
+      ...pending.serviceRole,
+    ].map((entry) => entry.slice(0, entry.indexOf('('))),
   );
   const referenced = new Set();
   const sourceRoots = [
@@ -126,6 +132,8 @@ test('production application RPC references are all reviewed', async () => {
       referenced.add(match[1]);
     }
     for (const match of source.matchAll(/\/rpc\/([a-zA-Z0-9_]+)/g)) referenced.add(match[1]);
+    for (const match of source.matchAll(/\brpc\(\s*(?:ctx\.)?admin,\s*['"]([a-zA-Z0-9_]+)['"]/g))
+      referenced.add(match[1]);
   }
   for (const dynamicName of [
     'cancel_guardian_notification_email',
@@ -146,6 +154,19 @@ test('production application RPC references are all reviewed', async () => {
     [...referenced].filter((name) => !approved.has(name)),
     [],
   );
+});
+
+test('the prepared subscription authorization surface cannot change active installation scope', async () => {
+  const pending = await readJson('config/pending/tenant-subscription-authorization.json');
+  const active = await readJson('config/authorization-surface.json');
+  assert.equal(pending.status, 'prepared-unapplied');
+  assert.ok(pending.migration.startsWith('supabase/migrations/pending/'));
+  await fs.access(pending.migration);
+  for (const audience of ['authenticated', 'serviceRole']) {
+    assert.deepEqual(pending[audience], [...new Set(pending[audience])].sort());
+    for (const signature of pending[audience])
+      assert.ok(![...active.authenticated, ...active.serviceRole].includes(signature));
+  }
 });
 
 test('hardening migration removes spare keys and hides internal routines', async () => {
