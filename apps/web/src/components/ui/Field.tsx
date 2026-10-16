@@ -17,9 +17,13 @@ export function Label({ children, hint, required = false, className, ...props }:
     >
       <span>
         {children}
-        {required && <span className="ml-0.5 text-danger-500" aria-hidden>*</span>}
+        {required && (
+          <span className="ml-0.5 text-danger-500" aria-hidden>
+            *
+          </span>
+        )}
       </span>
-      {hint && <span className="text-xs font-normal text-slate-400">{hint}</span>}
+      {hint && <span className="text-xs font-normal text-slate-500">{hint}</span>}
     </label>
   );
 }

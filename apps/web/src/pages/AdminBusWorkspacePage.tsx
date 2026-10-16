@@ -70,6 +70,10 @@ import type {
 } from '@/types/transportation';
 import { cn } from '@/utils/cn';
 import {
+  BusSubscriptionGate,
+  useBusSubscriptionAccess,
+} from '@/components/subscription/BusSubscriptionGate';
+import {
   busAssignmentEffectiveStatus,
   busWorkspaceLifecycle,
   type BusAssignmentEffectiveStatus,
@@ -127,6 +131,7 @@ export function AdminBusWorkspacePage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const isNew = !busId;
+  const capacity = useBusSubscriptionAccess(isNew);
   const requestedTab = searchParams.get('tab') as WorkspaceTab | null;
   const activeTab =
     !isNew && requestedTab && validTabs.has(requestedTab) ? requestedTab : 'details';
@@ -523,14 +528,17 @@ export function AdminBusWorkspacePage() {
                   {bus ? 'Bus details' : 'Create bus'}
                 </h2>
                 <div className="mt-5">
-                  <BusForm
-                    key={bus?.updated_at ?? 'new-bus'}
-                    bus={bus}
-                    schools={schools}
-                    onSubmit={saveBus}
-                    onCancel={backToBuses}
-                    onDirtyChange={setDetailsDirty}
-                  />
+                  {isNew && <BusSubscriptionGate {...capacity} />}
+                  {(!isNew || capacity.access?.eligible) && (
+                    <BusForm
+                      key={bus?.updated_at ?? 'new-bus'}
+                      bus={bus}
+                      schools={schools}
+                      onSubmit={saveBus}
+                      onCancel={backToBuses}
+                      onDirtyChange={setDetailsDirty}
+                    />
+                  )}
                   {bus && <BusQrCredentialPanel busId={bus.id} busNumber={bus.bus_number} />}
                   {bus && canDeleteBus && (
                     <div className="mt-6 border-t border-danger-100 pt-5">

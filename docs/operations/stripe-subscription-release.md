@@ -1,7 +1,8 @@
-# Stripe subscription release runbook
+# Tenant subscriptions: protected release runbook
 
-SafeBus uses Stripe Billing for platform-managed annual, per-bus contracts. Stripe is the financial
-source of truth. SafeBus stores only a display projection and never stores card or bank details.
+SafeBus offers tenant-managed CAD monthly or annual per-active-bus subscriptions through Stripe
+Checkout. New tenants receive one 14-day trial with a payment method collected. Existing invoice
+contracts remain unchanged. Stripe owns financial state; SafeBus stores a private access projection.
 
 Official origin: `https://safebus.kids`. Seller: **Sachman Gold Inc., an Alberta
 corporation doing business as SafeBus** (owner confirmed 2026-10-16). The connected
@@ -9,45 +10,64 @@ Stripe account is a sandbox; its product URL, portal return URL and privacy link
 use this domain. No price is approved and this is not live-payment activation.
 See [account setup evidence](official-domain-setup.md).
 
-## Before production
+## Before commercial activation
 
-1. Obtain finance and legal approval for the CAD annual price, GST/tax behavior, exemption handling,
-   invoice branding, payment terms, cancellation wording, and privacy notice.
-2. In Stripe live mode, create one SafeBus product and one or more active recurring prices with:
-   - currency `CAD`;
-   - interval `year`;
-   - usage type `licensed`;
-   - per-bus unit amount approved by finance.
-3. Configure a customer portal that permits billing-information, payment-method, and invoice access,
-   but disables subscription changes and cancellation.
-4. Register `https://safebus.kids/.netlify/functions/stripe-webhook` for only:
-   - `customer.subscription.created`, `updated`, and `deleted`;
+1. Obtain finance/customer approval for monthly and annual prices, GST/tax behavior, exemptions,
+   renewal/trial disclosures, cancellation wording, and privacy notice. This milestone does not
+   enable automatic tax, create live prices, purchase a subscription, or approve launch.
+2. Configure one approved SafeBus product with active `CAD`, `licensed`, fixed unit prices using
+   `month` or `year`, each with an interval count of one. Configure Stripe's trial disclosures and
+   reminder emails under the approved customer communication policy.
+3. Keep the hosted portal limited to invoices, billing contact, and payment details. Disable its
+   subscription update and cancellation capabilities: SafeBus handles these with capacity checks,
+   reviewed previews, and renewal scheduling. Do not enable adjustable checkout quantities.
+4. Keep server configuration in the existing server-only environment variables documented in
+   `apps/web/.env.example`. Frontend configuration still uses only the Supabase URL and anon key.
+5. Register the signed webhook for:
+   - `checkout.session.completed`, `async_payment_succeeded`, `async_payment_failed`, `expired`;
+   - `customer.subscription.created`, `updated`, `deleted`, `pending_update_applied`, `pending_update_expired`;
    - `customer.updated`;
-   - `invoice.finalized`, `paid`, `payment_failed`, and `voided`.
-5. Add the server-only Netlify variables listed in `apps/web/.env.example`. Confirm none are prefixed
-   with `VITE_` and rotate the webhook signing secret after any suspected disclosure.
-6. Review and approve the forward-only subscription migration through the protected production
-   adoption/release workflow. Do not run it through local reset, Docker, or fixture tooling.
+   - `invoice.finalized`, `paid`, `payment_failed`, `voided`;
+   - `subscription_schedule.updated`, `completed`, `released`, `canceled`.
+6. Review the reconciliation evidence in `docs/qa/tenant-subscription-reconciliation-2026-10-16.md`.
+   Review the pending subscription migration, its checksum, and current recovery evidence through the protected workflow.
+   Rehearse approved schema changes inside one bounded rollback-only transaction before any
+   persistent release. Do not replay all migrations, reset databases, or run hosted fixture writers.
 
-## Release and smoke verification
+## Acceptance before release
 
-1. Apply the approved migration, deploy the web/function release, and confirm the webhook endpoint
-   is healthy before creating a subscription.
-2. As a platform super administrator with MFA and a recent sign-in, open a real tenant detail page,
-   confirm the approved price list, and create a subscription only after contract approval.
-3. Confirm Stripe created one customer and one subscription, then confirm SafeBus shows the same
-   status, quantity, dates, amount, invoice terms, and billing contact.
-4. As that tenant's `tenant_admin`, confirm `/admin/settings/billing` is read-only and the hosted portal
-   exposes invoices/payment details without plan-change or cancellation controls.
-5. Verify school, transportation, driver, and guardian roles cannot access billing routes or data.
-6. Trigger a signed Stripe test event that has no SafeBus tenant mapping and confirm it is safely
-   ignored without logging submitted billing values.
+- Run the four repository checks and the onboarding/billing browser tests with mocked external
+  services. SQL tests use an embedded PostgreSQL process with synthetic records and no network.
+- Use an explicitly authorized Stripe non-live environment for real-provider acceptance before
+  activation: trial start/end, card authentication, failed upgrades, payment recovery, cancellation,
+  renewed schedules, and webhook retry/order behavior. Keep its data out of the production database.
+- Confirm one tenant cannot read another tenant's subscription or alter its checkout ownership.
+- Confirm platform admins can reconcile, but cannot purchase or change a tenant's subscription.
+- Confirm the allowance applies to all bus creation/activation paths, not only visible controls.
+- New insertions (even inactive buses) require a current eligible subscription. Only active buses
+  consume capacity. A scheduled reduction reserves its lower allowance until removed or effective.
+- Paid upgrades use pending updates and unlock capacity after payment. Trial quantity increases
+  preserve the original end date. Reductions and billing-cycle changes apply at renewal.
+- Existing transport operations and bus maintenance continue when billing is delinquent. Tenant
+  suspension remains independent. No bus is automatically deactivated and no record is deleted.
 
-## Incidents and reconciliation
+## Recovery and support
 
-- Billing delinquency never changes `tenants.status`. Tenant suspension is a separate reviewed action.
-- Use **Sync from Stripe** on the tenant detail page after a webhook outage or projection mismatch.
-- Stripe webhook event IDs are deduplicated and failed events return a retryable response.
-- Do not edit private projection tables. Correct Stripe first, then reconcile.
-- Logs may include event names and safe error codes only. Do not log emails, invoices, provider
-  payloads, payment details, secrets, or customer/subscription identifiers.
+- Browser redirect success alone never unlocks capacity. The return page waits for provider
+  reconciliation and offers **Refresh billing** if confirmation is delayed.
+- A financial request retains its idempotency key across retries and reloads. An uncertain outcome
+  fences further financial changes for that tenant; the original administrator uses **Retry previous
+  billing request**. The pending request can be recovered from the server after browser storage loss.
+- The lease lasts two minutes to cover bounded provider calls. Do not substitute a new request ID
+  for an uncertain operation. If the original administrator is unavailable, escalate for reviewed
+  provider reconciliation; do not clear the fence or create a replacement subscription blindly.
+- **Remove scheduled change** releases the schedule without canceling current service. Canceling
+  renewal removes a future plan change and ends renewal at the current trial/paid period end.
+- Failed or stale-processing webhook receipts are retryable; signed events use the stored customer
+  mapping, not user-supplied metadata, to determine tenant ownership.
+- **Sync from Stripe** remains available to platform administrators. Never manually edit private
+  subscription projections or put provider payloads, invoice links, emails, secrets, or payment
+  details into logs or review evidence.
+
+Production migration application, deployment, and final merge require the existing protected
+release workflow and human approval. This PR performs none of those actions.

@@ -253,6 +253,13 @@ async function mockBusWorkspace(
     if (!url.hostname.endsWith('.supabase.co')) return route.fallback();
     const path = url.pathname;
     const method = route.request().method();
+    if (path.endsWith('/get_bus_subscription_access')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ eligible: true, limit: 10, active: 1 }),
+      });
+    }
     if (path.startsWith('/auth/v1/')) {
       return route.fulfill({
         status: 200,

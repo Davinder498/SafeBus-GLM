@@ -4,6 +4,14 @@ SQL here is reviewed source for a future protected release. It is deliberately
 outside the active top-level migration manifest and deployment traversal. Never
 apply these files directly or replay the migration chain against BusSafe.
 
+`20261016173613_tenant_self_service_subscriptions.sql` adds the tenant onboarding
+and subscription milestone. It uses a timestamp filename to avoid taking the
+reserved C1 version below. The existing security-install tip and top-level
+checksum manifest remain unchanged. Before release, resolve canonical ordering
+with other prepared work, reconcile the hosted catalog, review recovery evidence,
+and rehearse the approved migration in one bounded rollback-only transaction.
+See [subscription reconciliation](../../../docs/qa/tenant-subscription-reconciliation-2026-10-16.md).
+
 `0125_async_tracking_invalidations.sql` implements the first server-scaling
 milestone (C1). Recovery is deferred at the customer's request on 2026-10-14.
 The current security installation remains limited to reviewed 0123 → 0122 → 0124.

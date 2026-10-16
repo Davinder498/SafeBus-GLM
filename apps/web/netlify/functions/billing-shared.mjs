@@ -193,7 +193,8 @@ export async function validateApprovedPrice(stripe, priceId, productId) {
     !price.active ||
     priceProductId !== productId ||
     price.type !== 'recurring' ||
-    price.recurring?.interval !== 'year' ||
+    !['month', 'year'].includes(price.recurring?.interval) ||
+    (price.recurring?.interval_count ?? 1) !== 1 ||
     price.recurring?.usage_type !== 'licensed' ||
     price.currency !== 'cad' ||
     !Number.isSafeInteger(price.unit_amount) ||
@@ -215,6 +216,7 @@ export async function syncSubscriptionProjection(
   stripe,
   subscription,
   eventCreatedAt = new Date().toISOString(),
+  operationId = null,
 ) {
   const item = subscriptionItem(subscription);
   const price = item.price;
@@ -228,47 +230,79 @@ export async function syncSubscriptionProjection(
       : subscription.customer;
   if (!customer || customer.deleted) throw new Error('billing_customer_unavailable');
 
-  const tenantId = clean(
-    subscription.metadata?.safebus_tenant_id || customer.metadata?.safebus_tenant_id,
-  );
-  if (!UUID_PATTERN.test(tenantId)) throw new Error('billing_tenant_mapping_missing');
-
+  const { data: mapping, error: mappingError } = await admin.rpc('billing_find_customer', {
+    p_customer_id: customer.id,
+  });
+  if (mappingError) throw new Error('billing_state_unavailable');
+  const tenantId = mapping?.tenant_id;
+  if (!UUID_PATTERN.test(tenantId ?? '')) throw new Error('billing_tenant_mapping_missing');
   const configuredProduct = serverConfig().stripeProductId;
-  if (!configuredProduct || product.id !== configuredProduct) {
+  if (!configuredProduct || product.id !== configuredProduct)
     throw new Error('billing_product_not_approved');
+  if (
+    !['month', 'year'].includes(price.recurring?.interval) ||
+    (price.recurring?.interval_count ?? 1) !== 1 ||
+    price.recurring?.usage_type !== 'licensed' ||
+    price.currency !== 'cad'
+  )
+    throw new Error('billing_product_not_approved');
+  let pendingChange = null;
+  if (subscription.schedule) {
+    const schedule =
+      typeof subscription.schedule === 'string'
+        ? await stripe.subscriptionSchedules.retrieve(subscription.schedule)
+        : subscription.schedule;
+    const next = schedule.phases?.find((phase) => phase.start_date > Math.floor(Date.now() / 1000));
+    if (next)
+      pendingChange = {
+        quantity: next.items[0]?.quantity,
+        priceId:
+          typeof next.items[0]?.price === 'string' ? next.items[0].price : next.items[0]?.price?.id,
+        effectiveAt: asIsoTimestamp(next.start_date),
+      };
   }
-
   const invoice =
     typeof subscription.latest_invoice === 'string'
       ? await stripe.invoices.retrieve(subscription.latest_invoice)
       : subscription.latest_invoice;
-  const periodStart = subscription.current_period_start ?? item.current_period_start;
-  const periodEnd = subscription.current_period_end ?? item.current_period_end;
-  const purchaseOrder = clean(customer.metadata?.safebus_purchase_order_reference) || null;
-
-  const { data, error } = await admin.rpc('billing_upsert_projection', {
-    p_tenant_id: tenantId,
-    p_customer_id: customer.id,
-    p_subscription_id: subscription.id,
-    p_price_id: price.id,
-    p_product_name: clean(product.name) || 'SafeBus annual subscription',
-    p_price_nickname: clean(price.nickname) || null,
-    p_status: subscription.status,
-    p_licensed_bus_count: item.quantity ?? 0,
-    p_currency: price.currency,
-    p_unit_amount: price.unit_amount ?? 0,
-    p_period_start: asIsoTimestamp(periodStart),
-    p_period_end: asIsoTimestamp(periodEnd),
-    p_trial_end: asIsoTimestamp(subscription.trial_end),
-    p_cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
-    p_cancel_at: asIsoTimestamp(subscription.cancel_at),
-    p_canceled_at: asIsoTimestamp(subscription.canceled_at),
-    p_billing_email: clean(customer.email).toLowerCase(),
-    p_purchase_order_reference: purchaseOrder,
-    p_days_until_due: subscription.days_until_due ?? 30,
-    p_latest_invoice_status: invoice?.status ?? null,
-    p_latest_invoice_due_at: asIsoTimestamp(invoice?.due_date),
-    p_event_created_at: eventCreatedAt,
+  const paidPeriodEnd =
+    invoice?.status === 'paid'
+      ? Math.max(0, ...(invoice.lines?.data ?? []).map((line) => line.period?.end ?? 0))
+      : 0;
+  const { data, error } = await admin.rpc('billing_sync_subscription', {
+    p_operation_id: operationId,
+    p_state: {
+      tenant_id: tenantId,
+      customer_id: customer.id,
+      subscription_id: subscription.id,
+      price_id: price.id,
+      product_name: clean(product.name) || 'SafeBus subscription',
+      price_nickname: clean(price.nickname) || null,
+      status: subscription.status,
+      quantity: item.quantity ?? 0,
+      currency: price.currency,
+      unit_amount: price.unit_amount ?? 0,
+      interval: price.recurring.interval,
+      collection_method: subscription.collection_method ?? 'send_invoice',
+      period_start: asIsoTimestamp(subscription.current_period_start ?? item.current_period_start),
+      period_end: asIsoTimestamp(subscription.current_period_end ?? item.current_period_end),
+      trial_end: asIsoTimestamp(subscription.trial_end),
+      cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
+      cancel_at: asIsoTimestamp(subscription.cancel_at),
+      canceled_at: asIsoTimestamp(subscription.canceled_at),
+      billing_email: clean(customer.email).toLowerCase(),
+      purchase_order: clean(customer.metadata?.safebus_purchase_order_reference) || null,
+      days_until_due: subscription.days_until_due ?? 30,
+      invoice_status: invoice?.status ?? null,
+      invoice_due_at: asIsoTimestamp(invoice?.due_date),
+      has_payment_method: Boolean(
+        subscription.default_payment_method || customer.invoice_settings?.default_payment_method,
+      ),
+      pending_change: pendingChange,
+      pending_payment: Boolean(subscription.pending_update),
+      observed_at: eventCreatedAt,
+      paid_period_end: paidPeriodEnd ? asIsoTimestamp(paidPeriodEnd) : null,
+    },
   });
   if (error) throw new Error('billing_projection_sync_failed');
   return { tenantId, applied: Boolean(data), status: subscription.status };

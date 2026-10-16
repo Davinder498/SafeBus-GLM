@@ -926,7 +926,7 @@ async function action(event, body) {
   if (ctx.error) return ctx.error;
   const id = clean(body.invitationId);
   const next = clean(body.action);
-  if (!id || !['resend', 'cancel', 'revoke'].includes(next)) {
+  if (!id || !['resend', 'cancel', 'revoke', 'reissue'].includes(next)) {
     return json(400, { error: 'Invitation and supported action are required.' });
   }
 
@@ -955,6 +955,35 @@ async function action(event, body) {
   if (!inv) return json(404, { error: 'Invitation not found.' });
   if (ctx.caller.role !== 'platform_super_admin' && inv.tenant_id !== ctx.caller.tenant_id) {
     return json(403, { error: 'Invitation is outside your tenant.' });
+  }
+  if (next === 'reissue') {
+    if (ctx.caller.role !== 'platform_super_admin' || inv.status !== 'expired')
+      return json(403, {
+        error: 'Only an expired first-administrator invitation can be reissued.',
+      });
+    if (!(await requireInvitationRateLimit(ctx)))
+      return json(429, { error: 'Too many invitation requests.' });
+    const prepared = await ctx.user.rpc('platform_prepare_first_admin_reissue', {
+      p_invitation_id: id,
+    });
+    if (prepared.error)
+      return json(409, { error: 'This invitation cannot be reissued. Reload onboarding.' });
+    const sent = await sendInvitedPasswordSetup(ctx, {
+      userId: inv.invited_profile_id,
+      email: inv.email,
+      redirectTo: await invitationRedirectUrl(ctx),
+    });
+    if (sent.error) return json(400, { error: sent.error });
+    const finalized = await ctx.admin.rpc('platform_finalize_first_admin_reissue', {
+      p_invitation_id: id,
+    });
+    if (finalized.error)
+      return json(409, {
+        error:
+          'The provider accepted the email, but account activation could not be prepared. Reload and retry reissue.',
+      });
+    await auditServerAction(ctx, 'invitation.resent', 'invitation', id);
+    return json(200, { status: 'pending' });
   }
   if (!['pending', 'resent', 'failed'].includes(inv.status)) {
     return json(409, { error: 'Only a pending invitation can be changed.' });

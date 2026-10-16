@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type Route } from '@playwright/test';
 
 const platformUser = {
@@ -43,10 +44,10 @@ const pendingInvitation = {
 
 async function installPlatformMock(
   page: Page,
-  outcome: 'success' | 'failure' | 'resend' | 'recovery',
+  outcome: 'success' | 'failure' | 'resend' | 'recovery' | 'expired',
 ) {
-  let tenantCreated = outcome === 'resend' || outcome === 'recovery';
-  let invitationStatus = pendingInvitation.status;
+  let tenantCreated = ['resend', 'recovery', 'expired'].includes(outcome);
+  let invitationStatus = outcome === 'expired' ? 'expired' : pendingInvitation.status;
   let resendRequests = 0;
   let recoveryRequests = 0;
   let administratorRecovered = false;
@@ -91,6 +92,15 @@ async function installPlatformMock(
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({ status: 'resent' }),
+      });
+      return;
+    }
+    if (body.kind === 'invitationAction' && body.action === 'reissue') {
+      invitationStatus = 'pending';
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ status: 'pending' }),
       });
       return;
     }
@@ -198,7 +208,12 @@ async function installPlatformMock(
               tenant_admin_status: administratorRecovered ? 'active' : 'disabled',
               active_tenant_admin_count: administratorRecovered ? 1 : 0,
             }
-          : createdTenant;
+          : outcome === 'expired'
+            ? {
+                ...createdTenant,
+                tenant_admin_status: invitationStatus === 'expired' ? 'disabled' : 'invited',
+              }
+            : createdTenant;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -218,7 +233,7 @@ async function installPlatformMock(
       return;
     }
 
-    if (path.includes('/rest/v1/rpc/get_platform_tenant_billing_summaries')) {
+    if (path.includes('/rest/v1/rpc/get_platform_subscription_summaries')) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -227,7 +242,7 @@ async function installPlatformMock(
             ? [
                 {
                   tenant_id: createdTenant.tenant_id,
-                  subscription_configured: false,
+                  configured: false,
                   subscription_status: null,
                   licensed_bus_count: null,
                   active_bus_count: 0,
@@ -273,8 +288,10 @@ async function installPlatformMock(
 
 async function fillTenantForm(page: Page) {
   await page.getByPlaceholder('Tenant name').fill('Successful Transit');
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await page.getByPlaceholder('Tenant admin full name').fill('Successful Admin');
   await page.getByPlaceholder('Tenant admin email').fill('successful.admin@example.test');
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
 }
 
 test.describe('platform tenant invitation atomicity', () => {
@@ -289,7 +306,9 @@ test.describe('platform tenant invitation atomicity', () => {
     await expect(page.getByRole('alert')).toContainText(
       'invitation email was not sent and no tenant was created',
     );
-    await expect(page.getByRole('heading', { name: 'Successful Transit' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Successful Transit', exact: true })).toHaveCount(
+      0,
+    );
   });
 
   test('successful invitation displays confirmation and then adds the tenant card', async ({
@@ -301,10 +320,10 @@ test.describe('platform tenant invitation atomicity', () => {
     await page.getByRole('button', { name: 'Create tenant and send invitation' }).click();
 
     await expect(page.getByRole('status')).toContainText(
-      'Invitation email sent to successful.admin@example.test',
+      'Invitation accepted by the email provider for successful.admin@example.test',
     );
-    await expect(page.getByRole('heading', { name: 'Successful Transit' })).toBeVisible();
-    await expect(page.getByText('Password setup pending')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Successful Transit', exact: true })).toBeVisible();
+    await expect(page.getByText(/Password setup pending/)).toBeVisible();
   });
 
   test('platform super admin can resend a pending tenant-admin invitation', async ({ page }) => {
@@ -336,4 +355,33 @@ test.describe('platform tenant invitation atomicity', () => {
     expect(state.recoveryRequestCount()).toBe(1);
     await expect(page.getByRole('button', { name: 'Emergency recovery' })).toHaveCount(0);
   });
+});
+
+test('expired first administrator invitation can be reissued', async ({ page }) => {
+  await installPlatformMock(page, 'expired');
+  await page.goto('/admin/tenants/' + createdTenant.tenant_id);
+  await page.getByRole('button', { name: 'Reissue expired invitation' }).click();
+  await expect(page.getByRole('status')).toContainText('Account activation is pending');
+  await expect(page.getByRole('button', { name: 'Resend invitation' })).toBeVisible();
+});
+
+test('tenant directory filters, keyboard labels, and responsive layout are accessible', async ({
+  page,
+}, testInfo) => {
+  await installPlatformMock(page, 'resend');
+  await page.goto('/admin/tenants');
+  await expect(page.getByRole('link', { name: 'Successful Transit', exact: true })).toBeVisible();
+  await page.getByLabel('Search tenants').fill('no matching organization');
+  await expect(page.getByText('No matching organizations')).toBeVisible();
+  await page.getByLabel('Search tenants').clear();
+  await page.getByLabel('Invitation', { exact: true }).selectOption('activated');
+  await expect(page.getByText('No matching organizations')).toBeVisible();
+  await page.getByLabel('Invitation', { exact: true }).selectOption('all');
+  expect(
+    (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()).violations,
+  ).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath('onboarding.png'), fullPage: true });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
 });

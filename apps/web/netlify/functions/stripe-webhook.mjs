@@ -14,6 +14,16 @@ const SUPPORTED_EVENTS = new Set([
   'customer.subscription.updated',
   'customer.subscription.deleted',
   'customer.updated',
+  'checkout.session.completed',
+  'checkout.session.async_payment_succeeded',
+  'checkout.session.async_payment_failed',
+  'checkout.session.expired',
+  'customer.subscription.pending_update_applied',
+  'customer.subscription.pending_update_expired',
+  'subscription_schedule.updated',
+  'subscription_schedule.completed',
+  'subscription_schedule.released',
+  'subscription_schedule.canceled',
   'invoice.finalized',
   'invoice.paid',
   'invoice.payment_failed',
@@ -33,6 +43,13 @@ async function subscriptionForEvent(stripe, stripeEvent) {
   const object = stripeEvent.data.object;
   if (stripeEvent.type.startsWith('customer.subscription.')) {
     return retrieveCanonicalSubscription(stripe, object.id);
+  }
+  if (
+    stripeEvent.type.startsWith('checkout.session.') ||
+    stripeEvent.type.startsWith('subscription_schedule.')
+  ) {
+    const id = object.subscription ?? object.released_subscription;
+    return id ? retrieveCanonicalSubscription(stripe, typeof id === 'string' ? id : id.id) : null;
   }
   if (stripeEvent.type.startsWith('invoice.')) {
     const subscriptionId = invoiceSubscriptionId(object);

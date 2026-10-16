@@ -82,23 +82,13 @@ function canonicalSubscription() {
 }
 
 describe('subscription mutation validation', () => {
-  it('normalizes an approved annual-contract request', () => {
-    expect(validateMutationInput(validMutation)).toMatchObject({
-      billingEmail: 'billing@example.ca',
-      licensedBusCount: 10,
-      daysUntilDue: 30,
-      autoRenew: true,
-    });
-  });
-
-  it('rejects invalid identifiers, quantities, terms, and control characters', () => {
-    expect(validateMutationInput({ ...validMutation, requestId: 'not-a-uuid' })).toBeNull();
-    expect(validateMutationInput({ ...validMutation, licensedBusCount: -1 })).toBeNull();
-    expect(validateMutationInput({ ...validMutation, daysUntilDue: 91 })).toBeNull();
+  it('allows platform reconciliation and rejects platform financial changes', () => {
     expect(
-      validateMutationInput({ ...validMutation, purchaseOrderReference: 'PO\nBcc: attacker' }),
-    ).toBeNull();
-    expect(validateMutationInput({ ...validMutation, autoRenew: 'yes' })).toBeNull();
+      validateMutationInput({ action: 'reconcile', tenantId: validMutation.tenantId }),
+    ).toEqual({ action: 'reconcile', tenantId: validMutation.tenantId });
+    for (const action of ['create', 'update', 'schedule_cancel', 'resume'])
+      expect(validateMutationInput({ ...validMutation, action })).toBeNull();
+    expect(validateMutationInput({ action: 'reconcile', tenantId: 'invalid' })).toBeNull();
   });
 
   it('uses stable request fingerprints and safe portal origins', () => {
@@ -167,11 +157,10 @@ describe('Stripe webhook boundary', () => {
   });
 
   it('reconciles a signed supported event without logging provider values', async () => {
-    const rpc = vi
-      .fn()
-      .mockResolvedValueOnce({ data: true, error: null })
-      .mockResolvedValueOnce({ data: true, error: null })
-      .mockResolvedValueOnce({ data: null, error: null });
+    const rpc = vi.fn(async (name) => ({
+      data: name === 'billing_find_customer' ? { tenant_id: validMutation.tenantId } : true,
+      error: null,
+    }));
     createClient.mockReturnValue({ rpc });
     const subscription = canonicalSubscription();
     Stripe.mockImplementation(() => ({
@@ -189,8 +178,10 @@ describe('Stripe webhook boundary', () => {
     });
     expect(response.statusCode).toBe(200);
     expect(rpc).toHaveBeenCalledWith(
-      'billing_upsert_projection',
-      expect.objectContaining({ p_tenant_id: validMutation.tenantId, p_licensed_bus_count: 10 }),
+      'billing_sync_subscription',
+      expect.objectContaining({
+        p_state: expect.objectContaining({ tenant_id: validMutation.tenantId, quantity: 10 }),
+      }),
     );
     expect(JSON.stringify(log.mock.calls)).not.toContain('billing@example.ca');
     expect(JSON.stringify(log.mock.calls)).not.toContain('cus_123');

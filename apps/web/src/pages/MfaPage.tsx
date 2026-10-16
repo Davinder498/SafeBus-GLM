@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Navigate, useNavigate } from 'react-router';
+import { Navigate, useLocation, useNavigate } from 'react-router';
 import { KeyRound, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -22,15 +22,14 @@ function qrSource(value: string) {
 
 export function MfaPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { profile, mfaStatus, mfaLoading, refreshMfa, signOut } = useAuth();
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const verifiedFactor = mfaStatus.verifiedFactors.find(
-    (factor) => factor.factorType === 'totp',
-  );
+  const verifiedFactor = mfaStatus.verifiedFactors.find((factor) => factor.factorType === 'totp');
   const factorId = enrollment?.factorId ?? verifiedFactor?.id ?? null;
   const isVerifiedSession = mfaStatus.currentLevel === 'aal2';
   const isAdmin = profile
@@ -50,7 +49,10 @@ export function MfaPage() {
   }, [isVerifiedSession, mfaLoading, profile]);
 
   if (!profile || !isAdmin) return <Navigate to="/login" replace />;
-  const adminProfile = profile;
+  const destination =
+    location.state?.returnTo === '/admin/settings/billing' && profile.role === 'tenant_admin'
+      ? '/admin/settings/billing'
+      : getDashboardPath(profile.role);
 
   async function beginEnrollment() {
     if (!supabase) {
@@ -112,7 +114,7 @@ export function MfaPage() {
         p_outcome: 'success',
         p_detail: { mfa: true },
       });
-      navigate(getDashboardPath(adminProfile.role), { replace: true });
+      navigate(destination, { replace: true });
     } catch (verifyError) {
       setError(
         verifyError instanceof Error ? verifyError.message : 'Unable to verify the MFA code.',
@@ -157,7 +159,10 @@ export function MfaPage() {
           </p>
 
           {error && (
-            <div className="mt-5 rounded-lg border border-danger-200 bg-danger-50 p-4 text-sm font-medium text-danger-700" role="alert">
+            <div
+              className="mt-5 rounded-lg border border-danger-200 bg-danger-50 p-4 text-sm font-medium text-danger-700"
+              role="alert"
+            >
               {error}
             </div>
           )}
@@ -168,11 +173,16 @@ export function MfaPage() {
                 This session has completed MFA. You can continue to SafeBus administration.
               </div>
               <div className="flex flex-wrap gap-3">
-                <Button type="button" onClick={() => navigate(getDashboardPath(adminProfile.role))}>
+                <Button type="button" onClick={() => navigate(destination)}>
                   Continue to dashboard
                 </Button>
                 {verifiedFactor && (
-                  <Button type="button" variant="danger" loading={busy} onClick={() => void removeFactor()}>
+                  <Button
+                    type="button"
+                    variant="danger"
+                    loading={busy}
+                    onClick={() => void removeFactor()}
+                  >
                     Remove authenticator
                   </Button>
                 )}
@@ -217,7 +227,9 @@ export function MfaPage() {
                       pattern="[0-9]{6}"
                       maxLength={6}
                       value={code}
-                      onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                      onChange={(event) =>
+                        setCode(event.target.value.replace(/\D/g, '').slice(0, 6))
+                      }
                       required
                     />
                   </Field>

@@ -6,7 +6,6 @@ import { SubscriptionOverview } from '@/components/subscription/SubscriptionOver
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
-import { Field } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import {
@@ -19,18 +18,10 @@ import {
   type PlatformTenantSummary,
 } from '@/services/onboardingService';
 import {
-  fetchApprovedSubscriptionPrices,
   fetchPlatformTenantBillingDetail,
   mutatePlatformSubscription,
 } from '@/services/subscriptionService';
-import type {
-  SubscriptionContractInput,
-  SubscriptionPrice,
-  TenantSubscription,
-} from '@/types/subscription';
-
-const inputClass =
-  'w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-navy-500';
+import type { TenantSubscription } from '@/types/subscription';
 
 function readiness(summary: PlatformTenantSummary) {
   return [
@@ -45,21 +36,11 @@ export function PlatformTenantDetailPage() {
   const { tenantId = '' } = useParams();
   const [summary, setSummary] = useState<PlatformTenantSummary | null>(null);
   const [subscription, setSubscription] = useState<TenantSubscription | null>(null);
-  const [prices, setPrices] = useState<SubscriptionPrice[]>([]);
   const [invitations, setInvitations] = useState<PlatformFirstAdminInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [form, setForm] = useState<Omit<SubscriptionContractInput, 'tenantId'>>({
-    priceId: '',
-    billingEmail: '',
-    licensedBusCount: 0,
-    purchaseOrderReference: '',
-    daysUntilDue: 30,
-    trialEnd: '',
-    autoRenew: true,
-  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,26 +51,10 @@ export function PlatformTenantDetailPage() {
         fetchPlatformTenantBillingDetail(tenantId),
         fetchPlatformFirstAdminInvitations(),
       ]);
-      let approvedPrices: SubscriptionPrice[] = [];
-      try {
-        approvedPrices = await fetchApprovedSubscriptionPrices();
-      } catch {
-        setError('Tenant details loaded, but approved Stripe prices are currently unavailable.');
-      }
       const tenantSummary = summaries.find((item) => item.tenant_id === tenantId) ?? null;
       setSummary(tenantSummary);
       setSubscription(billing);
-      setPrices(approvedPrices);
       setInvitations(invitationRows.filter((item) => item.tenant_id === tenantId));
-      setForm({
-        priceId: billing.priceId ?? approvedPrices[0]?.id ?? '',
-        billingEmail: billing.billingEmail ?? tenantSummary?.first_tenant_admin_email ?? '',
-        licensedBusCount: billing.licensedBusCount ?? billing.activeBusCount,
-        purchaseOrderReference: billing.purchaseOrderReference ?? '',
-        daysUntilDue: billing.daysUntilDue ?? 30,
-        trialEnd: billing.trialEnd?.slice(0, 10) ?? '',
-        autoRenew: !billing.cancelAtPeriodEnd,
-      });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to load tenant details.');
     } finally {
@@ -122,15 +87,6 @@ export function PlatformTenantDetailPage() {
     }
   }
 
-  async function saveContract() {
-    const action = subscription?.configured ? 'update' : 'create';
-    await run(
-      action,
-      () => mutatePlatformSubscription(action, tenantId, form),
-      subscription?.configured ? 'Subscription updated.' : 'Subscription created.',
-    );
-  }
-
   if (loading && !summary) {
     return (
       <DashboardLayout title="Platform Admin" portal="admin" navItems={platformNavItems}>
@@ -159,7 +115,7 @@ export function PlatformTenantDetailPage() {
         <PageHeader
           eyebrow="Tenant detail"
           title={summary.tenant_name}
-          description="Manage tenant onboarding, lifecycle, and the annual per-bus contract without accessing student, guardian, driver, route, or location records."
+          description="Manage tenant onboarding, lifecycle, and subscription oversight without accessing student, guardian, driver, route, or location records."
           icon={<Building2 className="h-6 w-6" />}
           action={<StatusPill>{summary.tenant_status}</StatusPill>}
         />
@@ -267,6 +223,45 @@ export function PlatformTenantDetailPage() {
               Invitation {invitations[0].status} · delivery {invitations[0].delivery_status}
             </p>
           )}
+          {invitations[0]?.status === 'expired' && (
+            <Button
+              type="button"
+              className="mt-4"
+              variant="secondary"
+              disabled={saving !== null}
+              loading={saving === 'reissue'}
+              onClick={() =>
+                void run(
+                  'reissue',
+                  () => updateInvitation(invitations[0].invitation_id, 'reissue'),
+                  'A new invitation was accepted by the email provider. Account activation is pending.',
+                )
+              }
+            >
+              Reissue expired invitation
+            </Button>
+          )}
+          <p className="mt-3 text-sm text-slate-500">
+            Email-provider acceptance does not confirm delivery or account activation.
+          </p>
+          {invitations.length > 0 && (
+            <details className="mt-4 rounded-lg border border-slate-200 p-3">
+              <summary className="cursor-pointer text-sm font-semibold text-navy-800">
+                Invitation history
+              </summary>
+              <ul className="mt-3 space-y-3">
+                {invitations.map((i) => (
+                  <li key={i.invitation_id} className="text-sm text-slate-600">
+                    {i.status} · provider {i.delivery_status} · last sent{' '}
+                    {i.last_sent_at
+                      ? new Date(i.last_sent_at).toLocaleDateString('en-CA')
+                      : 'not sent'}{' '}
+                    · expires {new Date(i.expires_at).toLocaleDateString('en-CA')}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
           {pendingInvitation && (
             <div className="mt-4 flex flex-wrap gap-2">
               <Button
@@ -333,164 +328,30 @@ export function PlatformTenantDetailPage() {
         </div>
 
         <Card className="p-5">
-          <h2 className="text-lg font-bold text-slate-900">
-            {subscription.configured ? 'Update annual contract' : 'Create annual contract'}
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Changes use approved CAD annual prices. Quantity changes do not create mid-term
-            prorations.
+          <h2 className="text-lg font-bold text-slate-900">Tenant-managed billing</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            The tenant administrator selects their billing cycle and bus allowance, manages
+            payments, and controls renewal.
           </p>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <Field label="Annual per-bus price" htmlFor="subscription-price" required>
-              <select
-                id="subscription-price"
-                className={inputClass}
-                value={form.priceId}
-                onChange={(event) => setForm({ ...form, priceId: event.target.value })}
-                required
-              >
-                <option value="">Select an approved price</option>
-                {prices.map((price) => (
-                  <option key={price.id} value={price.id}>
-                    {price.name} ·{' '}
-                    {(price.unitAmount / 100).toLocaleString('en-CA', {
-                      style: 'currency',
-                      currency: 'CAD',
-                    })}{' '}
-                    / bus / year
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Billing email" htmlFor="billing-email" required>
-              <input
-                id="billing-email"
-                type="email"
-                className={inputClass}
-                value={form.billingEmail}
-                onChange={(event) => setForm({ ...form, billingEmail: event.target.value })}
-                maxLength={320}
-                required
-              />
-            </Field>
-            <Field label="Contracted active-bus allowance" htmlFor="licensed-buses" required>
-              <input
-                id="licensed-buses"
-                type="number"
-                className={inputClass}
-                min={subscription.activeBusCount}
-                max={10000}
-                value={form.licensedBusCount}
-                onChange={(event) =>
-                  setForm({ ...form, licensedBusCount: Number(event.target.value) })
-                }
-                required
-              />
-            </Field>
-            <Field label="Invoice due days" htmlFor="invoice-due-days" required>
-              <input
-                id="invoice-due-days"
-                type="number"
-                className={inputClass}
-                min={1}
-                max={90}
-                value={form.daysUntilDue}
-                onChange={(event) => setForm({ ...form, daysUntilDue: Number(event.target.value) })}
-                required
-              />
-            </Field>
-            <Field label="Purchase order / reference" htmlFor="purchase-order" hint="Optional">
-              <input
-                id="purchase-order"
-                className={inputClass}
-                value={form.purchaseOrderReference}
-                onChange={(event) =>
-                  setForm({ ...form, purchaseOrderReference: event.target.value })
-                }
-                maxLength={100}
-              />
-            </Field>
-            <Field label="Trial end" htmlFor="trial-end" hint="Optional, future date">
-              <input
-                id="trial-end"
-                type="date"
-                className={inputClass}
-                value={form.trialEnd}
-                onChange={(event) => setForm({ ...form, trialEnd: event.target.value })}
-              />
-            </Field>
-          </div>
-          <label className="mt-4 flex items-center gap-3 text-sm font-semibold text-slate-800">
-            <input
-              type="checkbox"
-              checked={form.autoRenew}
-              onChange={(event) => setForm({ ...form, autoRenew: event.target.checked })}
-            />
-            Renew automatically at the end of the annual term
-          </label>
-          <div className="mt-5 flex flex-wrap gap-2">
+          {subscription.configured && (
             <Button
+              className="mt-4"
               type="button"
-              loading={saving === 'create' || saving === 'update'}
-              disabled={saving !== null || prices.length === 0}
-              onClick={() => void saveContract()}
+              variant="secondary"
+              loading={saving === 'reconcile'}
+              disabled={saving !== null}
+              leftIcon={<RefreshCw className="h-4 w-4" />}
+              onClick={() =>
+                void run(
+                  'reconcile',
+                  () => mutatePlatformSubscription('reconcile', tenantId),
+                  'Subscription reconciled with Stripe.',
+                )
+              }
             >
-              {subscription.configured ? 'Save contract' : 'Create subscription'}
+              Sync from Stripe
             </Button>
-            {subscription.configured && (
-              <>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  loading={saving === 'reconcile'}
-                  disabled={saving !== null}
-                  leftIcon={<RefreshCw className="h-4 w-4" />}
-                  onClick={() =>
-                    void run(
-                      'reconcile',
-                      () => mutatePlatformSubscription('reconcile', tenantId),
-                      'Subscription reconciled with Stripe.',
-                    )
-                  }
-                >
-                  Sync from Stripe
-                </Button>
-                {subscription.cancelAtPeriodEnd ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    loading={saving === 'resume'}
-                    disabled={saving !== null}
-                    onClick={() =>
-                      void run(
-                        'resume',
-                        () => mutatePlatformSubscription('resume', tenantId),
-                        'Annual renewal resumed.',
-                      )
-                    }
-                  >
-                    Resume renewal
-                  </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    loading={saving === 'schedule_cancel'}
-                    disabled={saving !== null}
-                    onClick={() =>
-                      void run(
-                        'schedule_cancel',
-                        () => mutatePlatformSubscription('schedule_cancel', tenantId),
-                        'Cancellation scheduled for the end of the term.',
-                      )
-                    }
-                  >
-                    End after current term
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
+          )}
         </Card>
       </div>
     </DashboardLayout>

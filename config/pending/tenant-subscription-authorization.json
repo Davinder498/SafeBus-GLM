@@ -1,0 +1,18 @@
+{
+  "migration": "supabase/migrations/pending/20261016173613_tenant_self_service_subscriptions.sql",
+  "status": "prepared-unapplied",
+  "authenticated": [
+    "get_bus_subscription_access()",
+    "get_platform_subscription_summaries()",
+    "platform_prepare_first_admin_reissue(uuid)"
+  ],
+  "serviceRole": [
+    "billing_claim_operation(uuid,uuid,uuid,text,text,jsonb)",
+    "billing_find_customer(text)",
+    "billing_finish_operation(uuid,uuid,jsonb)",
+    "billing_get_pending_request(uuid,uuid)",
+    "billing_reserve_capacity(uuid,uuid,integer)",
+    "billing_sync_subscription(jsonb,uuid)",
+    "platform_finalize_first_admin_reissue(uuid)"
+  ]
+}

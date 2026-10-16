@@ -24,6 +24,13 @@ export interface TenantSubscription {
   currency: string | null;
   unitAmount: number | null;
   annualTotal: number | null;
+  billingInterval: 'month' | 'year';
+  periodTotal: number | null;
+  collectionMethod: string | null;
+  trialEligible: boolean;
+  pendingPayment: boolean;
+  pendingChange: { quantity: number; priceId: string; effectiveAt: string } | null;
+  busAccess: BusSubscriptionAccess;
   currentPeriodStart: string | null;
   currentPeriodEnd: string | null;
   trialEnd: string | null;
@@ -46,6 +53,7 @@ export interface PlatformBillingSummary {
   licensedBusCount: number | null;
   activeBusCount: number;
   currentPeriodEnd: string | null;
+  trialEnd?: string | null;
   warning: boolean;
 }
 
@@ -54,19 +62,20 @@ export interface SubscriptionPrice {
   name: string;
   currency: string;
   unitAmount: number;
-  interval: 'year';
+  interval: 'month' | 'year';
 }
 
-export interface SubscriptionContractInput {
-  tenantId: string;
-  priceId: string;
-  billingEmail: string;
-  licensedBusCount: number;
-  purchaseOrderReference: string;
-  daysUntilDue: number;
-  trialEnd: string;
-  autoRenew: boolean;
+export interface BusSubscriptionAccess {
+  eligible: boolean;
+  limit: number | null;
+  active: number;
 }
 
-export type PlatformSubscriptionAction =
-  'create' | 'update' | 'schedule_cancel' | 'resume' | 'reconcile';
+export interface BillingPreview {
+  timing: 'immediate' | 'renewal' | 'unchanged';
+  dueNow: number;
+  currency?: string;
+  effectiveAt: number | null;
+}
+
+export type PlatformSubscriptionAction = 'reconcile';

@@ -115,6 +115,12 @@ Migration `0121_admin_trip_search.sql` is prepared and unapplied: a read-only,
 RLS-preserving recorded-trip search for Tenant Overview. See
 [acceptance and adoption checks](qa/tenant-overview-search-acceptance.md).
 
+Migration `pending/20261016173613_tenant_self_service_subscriptions.sql` is prepared and unapplied.
+It adds tenant-managed monthly/annual checkout, one-time trial tracking, billing
+request coordination, and database bus-capacity enforcement. Existing provider
+contracts and operational records are preserved. See the
+[catalog reconciliation and release boundary](qa/tenant-subscription-reconciliation-2026-10-16.md).
+
 ## 4. Fresh-rebuild proof
 
 A fresh database must be built from `0001` through
