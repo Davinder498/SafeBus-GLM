@@ -513,7 +513,7 @@ export function DashboardLayout({
               : undefined
           }
         >
-          <div className="animate-fade-in-up">{children}</div>
+          <div>{children}</div>
         </main>
       </div>
 

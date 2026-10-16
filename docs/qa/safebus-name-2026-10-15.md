@@ -3,6 +3,7 @@
 **Decision:** Owner selected SafeBus as the sole public product name.
 **Operator:** Sachman Gold Inc., doing business as SafeBus, as stated by the owner.
 **Base:** merged main `94d8fc6` (PR #278).
+**Initial implementation:** `9fd7c64`; the validation table below records that candidate.
 
 The implementation updates web/mobile labels, Android display strings, email
 templates/default sender names, public privacy/operator text, current commercial
@@ -45,3 +46,27 @@ External sender-name overrides, Supabase Auth templates and any deployed/store
 content require the normal release checks described in the
 [naming decision](../product-naming.md). The connected Stripe sandbox already
 uses SafeBus; no Stripe change was needed for this naming milestone.
+
+## PR #279 browser correction
+
+The [first CI run](https://github.com/Davinder498/SafeBus-GLM/actions/runs/38836945215)
+failed the phone-sized signed-in privacy accessibility scan. The dashboard main
+content used a 300 ms animation starting at opacity zero. Axe sampled the notice
+during that animation and reported insufficient contrast, including 3.86:1 for
+text requiring 4.5:1. The failed check reproduced on its CI retries; the initial
+local checks above had missed it.
+
+Removed the main-content opacity animation. The existing page wrapper and layout
+remain, and text renders at full opacity during navigation. No contrast rule,
+assertion, retry setting or test timing was relaxed. All 10 local privacy-access
+and commercial accessibility browser checks pass across desktop and phone-sized
+Chromium for this correction.
+
+Updated local candidate digests after the correction:
+
+- Privacy: `2e00209590818f6afb1081e1b7c0d4b1d88dbdc74256aa38020a848eec872494`
+- Android: `e4c928aed5ccc39e10084414a50da3b4d7d02c4047fe0ecbf95096485410c4a4`
+
+These supersede the local candidate digests above without granting readiness
+approval. CI checks are bound to the updated PR head; no production changes are
+part of this correction.
