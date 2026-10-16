@@ -29,8 +29,8 @@ Do not describe the product as student tracking, a school-management system, or 
 - App access: provide separate synthetic guardian and driver accounts in the restricted Play reviewer instructions. Store credentials only in Play Console, never in Git, screenshots, logs, or the AAB.
 - Account provisioning: public registration is unavailable. Explain that participating school authorities invite adults and that reviewers use the supplied accounts.
 - Content rating and audience: adults 18+, no student users, no ads, no purchases.
-- Privacy policy: `https://bussafe.netlify.app/privacy`.
-- Account deletion: `https://bussafe.netlify.app/account-deletion`.
+- Privacy policy: `https://safebus.kids/privacy`.
+- Account deletion: `https://safebus.kids/account-deletion`.
 - Data safety: use the reviewed inventory in [google-play-data-safety-notifications.md](google-play-data-safety-notifications.md). Privacy and security owners must reconcile it with the final binary and vendor agreements before submission.
 
 Reviewer instructions must cover both roles without exposing real students, drivers, routes, stops, locations, customer names, or device identifiers. The reviewer accounts must be scoped to a synthetic tenant and reset or revoked after review.

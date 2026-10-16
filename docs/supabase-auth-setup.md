@@ -23,10 +23,17 @@ The existing hosted Supabase project is production. Never apply migrations from 
 
 Before Android publication, an authorized Supabase administrator must set and verify:
 
-- Site URL: `https://bussafe.netlify.app`;
-- Redirect URL: `https://bussafe.netlify.app/update-password`;
+- Site URL: `https://safebus.kids`;
+- Redirect URL: `https://safebus.kids/accept-invitation`;
+- Redirect URL: `https://safebus.kids/update-password`;
 - Redirect URL: `com.safebusalberta.app://auth/update-password`; and
 - public user signup disabled.
+
+Use exact callback URLs, not a production wildcard. Existing Netlify-host and
+native callbacks may remain during transition so issued links continue working.
+Custom SMTP is separate from Netlify's inquiry/event-email API credential; see
+[official-domain setup](operations/official-domain-setup.md) for its pending
+account-specific verification. Do not send test invitations to production users.
 
 After the change, run `pnpm android:publication:verify:online` with the protected production URL and anon key. This performs read-only checks and does not reveal the key. Then execute invitation creation, invitation activation, login, and password-recovery acceptance tests with approved synthetic accounts.
 

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router';
 import { LegalPageLayout } from '@/components/layout/LegalPageLayout';
 import { RolePrivacyNotices } from '@/components/privacy/RolePrivacyNotices';
 
-const updatedDate = 'October 15, 2026';
+const updatedDate = 'October 16, 2026';
 
 export function PrivacyPolicyPage() {
   const { hash } = useLocation();
@@ -27,7 +27,8 @@ export function PrivacyPolicyPage() {
           </h1>
           <p className="mt-3 text-sm text-slate-500">Last updated {updatedDate}</p>
           <p className="mt-3 text-sm text-slate-700">
-            SafeBus is operated by Sachman Gold Inc., doing business as SafeBus.
+            SafeBus is operated by Sachman Gold Inc., an Alberta corporation doing business as
+            SafeBus. Our official website is safebus.kids.
           </p>
 
           <div className="mt-8 space-y-8 text-base leading-7 text-slate-700">
@@ -93,14 +94,14 @@ export function PrivacyPolicyPage() {
               <p className="mt-2">
                 The issuing school authority and its authorized transportation staff use SafeBus.
                 Service providers support hosting and authentication (Supabase), application
-                delivery (Netlify), map tiles (Geoapify), transactional email, and opt-in Android
-                push delivery (Google Firebase Cloud Messaging). Stripe processes subscription
-                invoices, billing details, and payment methods. SafeBus stores only a limited
-                subscription summary and does not store card or bank details. Prospective-tenant
-                inquiries are delivered to SafeBus through the transactional email provider and are
-                not stored in the application database. Access is limited to what is needed to
-                provide each service. Push previews exclude names, routes, stops, coordinates,
-                driver identity, tenant identifiers, and internal identifiers.
+                delivery (Netlify), map tiles (Geoapify), transactional email (Resend), and opt-in
+                Android push delivery (Google Firebase Cloud Messaging). Stripe processes
+                subscription invoices, billing details, and payment methods. SafeBus stores only a
+                limited subscription summary and does not store card or bank details.
+                Prospective-tenant inquiries are delivered to SafeBus through the transactional
+                email provider and are not stored in the application database. Access is limited to
+                what is needed to provide each service. Push previews exclude names, routes, stops,
+                coordinates, driver identity, tenant identifiers, and internal identifiers.
               </p>
             </section>
 
@@ -108,13 +109,17 @@ export function PrivacyPolicyPage() {
               <h2 className="text-xl font-bold text-slate-950">Location and retention</h2>
               <p className="mt-2">
                 Core application records are intended to be stored in Canada. Some supporting
-                providers may process limited request or delivery metadata outside Canada. Raw bus
-                location, notifications and operational records are retained for their authorized
-                purposes under the applicable business or issuing organization&apos;s retention
-                schedule. Retention depends on the record and its purpose, including applicable
-                legal requirements and scoped legal holds. Contact the responsible privacy office
-                for the periods that apply to your records. Closing an account does not necessarily
-                erase transportation, financial or security records that must still be retained.
+                providers may process information outside Canada. Resend is configured to send email
+                from North Virginia, United States. When email delivery is enabled, it processes the
+                recipient address, message content and delivery metadata there, including account
+                invitation or password-recovery links, business inquiries, and any enabled event
+                notices. Raw bus location, notifications and operational records are retained for
+                their authorized purposes under the applicable business or issuing
+                organization&apos;s retention schedule. Retention depends on the record and its
+                purpose, including applicable legal requirements and scoped legal holds. Contact the
+                responsible privacy office for the periods that apply to your records. Closing an
+                account does not necessarily erase transportation, financial or security records
+                that must still be retained.
               </p>
             </section>
 

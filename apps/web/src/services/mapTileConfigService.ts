@@ -1,15 +1,11 @@
-import {
-  unavailableMapTileConfig,
-  type MapTileConfig,
-} from '@/config/mapTiles';
+import { unavailableMapTileConfig, type MapTileConfig } from '@/config/mapTiles';
 
 interface MapTileConfigResponse {
   tileUrl?: unknown;
   attribution?: unknown;
 }
 
-const NATIVE_MAP_CONFIG_ENDPOINT =
-  'https://bussafe.netlify.app/.netlify/functions/map-tile-config';
+const NATIVE_MAP_CONFIG_ENDPOINT = 'https://safebus.kids/.netlify/functions/map-tile-config';
 const WEB_MAP_CONFIG_ENDPOINT = '/.netlify/functions/map-tile-config';
 const GEOAPIFY_TILE_ORIGIN = 'https://maps.geoapify.com';
 
@@ -22,9 +18,7 @@ function isNativeCapacitorOrigin(location: Pick<Location, 'hostname' | 'protocol
 export function getMapTileConfigEndpoint(
   location: Pick<Location, 'hostname' | 'protocol'> = window.location,
 ): string {
-  return isNativeCapacitorOrigin(location)
-    ? NATIVE_MAP_CONFIG_ENDPOINT
-    : WEB_MAP_CONFIG_ENDPOINT;
+  return isNativeCapacitorOrigin(location) ? NATIVE_MAP_CONFIG_ENDPOINT : WEB_MAP_CONFIG_ENDPOINT;
 }
 
 export function parseMapTileConfig(payload: MapTileConfigResponse): MapTileConfig {

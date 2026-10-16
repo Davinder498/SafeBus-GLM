@@ -3,6 +3,12 @@
 SafeBus uses Stripe Billing for platform-managed annual, per-bus contracts. Stripe is the financial
 source of truth. SafeBus stores only a display projection and never stores card or bank details.
 
+Official origin: `https://safebus.kids`. Seller: **Sachman Gold Inc., an Alberta
+corporation doing business as SafeBus** (owner confirmed 2026-10-16). The connected
+Stripe account is a sandbox; its product URL, portal return URL and privacy link
+use this domain. No price is approved and this is not live-payment activation.
+See [account setup evidence](official-domain-setup.md).
+
 ## Before production
 
 1. Obtain finance and legal approval for the CAD annual price, GST/tax behavior, exemption handling,
@@ -14,7 +20,7 @@ source of truth. SafeBus stores only a display projection and never stores card 
    - per-bus unit amount approved by finance.
 3. Configure a customer portal that permits billing-information, payment-method, and invoice access,
    but disables subscription changes and cancellation.
-4. Register `/.netlify/functions/stripe-webhook` for only:
+4. Register `https://safebus.kids/.netlify/functions/stripe-webhook` for only:
    - `customer.subscription.created`, `updated`, and `deleted`;
    - `customer.updated`;
    - `invoice.finalized`, `paid`, `payment_failed`, and `voided`.

@@ -11,7 +11,7 @@ test('production health monitoring is scheduled, least-privileged, and productio
   assert.match(workflow, /cron: '\*\/15 \* \* \* \*'/);
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /permissions:\s+contents: read/);
-  assert.match(workflow, /SAFEBUS_MONITOR_ORIGIN: https:\/\/bussafe\.netlify\.app/);
+  assert.match(workflow, /SAFEBUS_MONITOR_ORIGIN: https:\/\/safebus\.kids/);
   assert.match(workflow, /node scripts\/check-production-health\.mjs/);
   assert.match(workflow, /timeout-minutes: 5/);
   assert.doesNotMatch(workflow, /issues: write|pull-requests: write|id-token: write/);

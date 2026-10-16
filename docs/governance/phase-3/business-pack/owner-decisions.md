@@ -1,7 +1,7 @@
 # Owner Decisions Before Signing or Publication
 
 **Status:** Decision worksheet; only expressly recorded owner choices are resolved
-**Prepared:** 2026-10-13; owner inputs updated 2026-10-15
+**Prepared:** 2026-10-13; owner inputs updated 2026-10-16
 
 The owner initially requested placeholders for business identity and contact
 details. On 2026-10-15 the owner identified Sachman Gold Inc., doing business as
@@ -9,8 +9,10 @@ SafeBus, as the operator and seller, and selected SafeBus as the sole public nam
 Keep customer-specific values and signed copies outside Git.
 
 The owner is the Privacy Lead. Contact details remain unresolved. The owner
-reports that the website is unpublished, GST/HST registration is not held, and
-pricing is undecided. No email, address, registration-document verification,
+confirmed on 2026-10-16 that the official domain is safebus.kids and Sachman Gold
+Inc. is an Alberta corporation doing business as SafeBus. The website and public
+privacy/deletion routes are available over HTTPS. GST/HST registration is not held,
+and pricing is undecided. No monitored email, address, registration-document verification,
 signing authority, liability amount or publication approval is inferred.
 
 | Input                                                            | Draft treatment                                                                     | Required decision/evidence                                                                                                                |
