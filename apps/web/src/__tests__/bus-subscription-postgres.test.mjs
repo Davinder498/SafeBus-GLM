@@ -378,4 +378,36 @@ describe('bus subscription enforcement in PostgreSQL', () => {
         ).toBe(false);
     }
   });
+  it('retries crashed webhook receipts without acknowledging an unfinished duplicate', async () => {
+    expect(
+      (
+        await sql(
+          `select public.billing_begin_webhook_event('evt_fresh','invoice.paid','in_synthetic',now()) as claimed`,
+        )
+      ).rows[0].claimed,
+    ).toBe(true);
+    await expect(
+      sql(
+        `select public.billing_begin_webhook_event('evt_fresh','invoice.paid','in_synthetic',now())`,
+      ),
+    ).rejects.toThrow('billing_webhook_busy');
+    await sql(`select public.billing_complete_webhook_event('evt_fresh','completed')`);
+    expect(
+      (
+        await sql(
+          `select public.billing_begin_webhook_event('evt_fresh','invoice.paid','in_synthetic',now()) as claimed`,
+        )
+      ).rows[0].claimed,
+    ).toBe(false);
+    await sql(
+      `insert into safebus_private.stripe_webhook_receipts(event_id,event_type,event_created_at,updated_at) values('evt_crashed','invoice.paid',now(),now()-interval '3 minutes')`,
+    );
+    expect(
+      (
+        await sql(
+          `select public.billing_begin_webhook_event('evt_crashed','invoice.paid','in_synthetic',now()) as claimed`,
+        )
+      ).rows[0].claimed,
+    ).toBe(true);
+  });
 });

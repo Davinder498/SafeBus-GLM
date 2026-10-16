@@ -253,7 +253,11 @@ begin
   if found then return true; end if;
   update safebus_private.stripe_webhook_receipts set attempts=attempts+1,status='processing'
     where event_id=p_event_id and (status='failed' or (status='processing' and updated_at < now()-interval '2 minutes'));
-  return found;
+  if found then return true; end if;
+  if exists(select 1 from safebus_private.stripe_webhook_receipts where event_id=p_event_id and status='processing') then
+    raise exception 'billing_webhook_busy';
+  end if;
+  return false;
 end;
 $$;
 
