@@ -17,12 +17,19 @@ test.describe('Simplified tenant admin workflow', () => {
       'Buses',
       'Routes',
       'Live Operations',
-      'Settings',
+      'Schools',
     ]) {
       await expect(page.getByRole('link', { name: label, exact: true })).toBeVisible();
     }
     await expect(page.getByRole('link', { name: 'Support', exact: true })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Stops', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Settings', exact: true })).toHaveCount(0);
+    if ((page.viewportSize()?.width ?? 1280) < 1024) {
+      await page.getByRole('button', { name: 'Close navigation' }).click();
+    }
+    await page.locator('header button[aria-haspopup="menu"]').click();
+    await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
+    await expect(page).toHaveURL('/admin/settings');
   });
   test('opens tenant support from settings', async ({ page }) => {
     await mockAdmin(page);

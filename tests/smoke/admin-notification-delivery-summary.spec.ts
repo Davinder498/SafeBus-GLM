@@ -88,7 +88,8 @@ test.describe('tenant admin notification delivery summary', () => {
       await page.goto('/admin/settings/notifications');
       const nav = page.getByRole('navigation', { name: 'Settings sections' });
       const links = nav.getByRole('link');
-      await expect(links).toHaveCount(5);
+      await expect(links).toHaveCount(4);
+      await expect(nav.getByRole('link', { name: 'Schools', exact: true })).toHaveCount(0);
       await expect(nav.getByRole('link', { name: 'Notifications' })).toHaveAttribute('aria-current', 'page');
       const measurements = await nav.evaluate((element) => {
         const linkBounds = Array.from(element.querySelectorAll('a'), (link) => link.getBoundingClientRect());
