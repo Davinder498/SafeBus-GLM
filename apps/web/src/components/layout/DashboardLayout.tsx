@@ -22,8 +22,11 @@ import {
   FileUp,
   ShieldCheck,
   CircleHelp,
+  CreditCard,
+  School,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { safeBusDisplayText } from '@/utils/brand';
 import { useAppSurface, type AppSurface } from '@/contexts/AppSurfaceContext';
 import { useAuth } from '@/contexts/useAuth';
 import { NotificationContext } from '@/contexts/NotificationContext';
@@ -64,6 +67,7 @@ interface DashboardLayoutProps {
 
 export const platformNavItems: DashboardNavItem[] = [
   { label: 'Tenants', to: '/admin/tenants', icon: <Building2 className="h-4 w-4" /> },
+  { label: 'Pricing & discounts', to: '/admin/pricing', icon: <CreditCard className="h-4 w-4" /> },
   { label: 'Support', to: '/admin/platform-support', icon: <CircleHelp className="h-4 w-4" /> },
 ];
 
@@ -149,11 +153,11 @@ export const adminNavItems: DashboardNavItem[] = [
     icon: <ClipboardList className="h-4 w-4" />,
   },
   {
-    label: 'Settings',
-    to: '/admin/settings',
+    label: 'Schools',
+    to: '/admin/schools',
     group: 'management',
-    description: 'Tenant configuration',
-    icon: <Settings className="h-4 w-4" />,
+    description: 'School directory',
+    icon: <School className="h-4 w-4" />,
   },
 ];
 
@@ -313,6 +317,7 @@ export function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
   const { signOut, profile } = useAuth();
+  const displayName = safeBusDisplayText(profile?.full_name ?? 'Account');
   const unreadCount = useContext(NotificationContext)?.unreadCount ?? 0;
   const appSurface = useAppSurface();
   const navigate = useNavigate();
@@ -367,11 +372,7 @@ export function DashboardLayout({
           )}
 
           {/* Brand */}
-          <Link
-            to="/"
-            className="flex min-w-0 items-center gap-2.5"
-            aria-label="SafeBus home"
-          >
+          <Link to="/" className="flex min-w-0 items-center gap-2.5" aria-label="SafeBus home">
             <BrandMark />
             <span className="sb-brand-copy hidden flex-col leading-tight sm:flex">
               <span className="text-sm font-bold text-slate-900">SafeBus</span>
@@ -401,13 +402,13 @@ export function DashboardLayout({
               trigger={
                 <span className="flex items-center gap-2.5 rounded-lg py-1.5 pl-1.5 pr-2 transition-colors hover:bg-slate-100">
                   <Avatar
-                    name={profile?.full_name ?? undefined}
+                    name={displayName}
                     size="sm"
                     tone={usesBottomTabs ? 'native-nav' : 'default'}
                   />
                   <span className="hidden text-left leading-tight sm:block">
                     <span className="block text-sm font-semibold text-slate-900">
-                      {profile?.full_name ?? 'Account'}
+                      {displayName}
                     </span>
                     <span className="block text-xs capitalize text-slate-600">
                       {profile ? getRoleLabel(profile.role) : ''}
@@ -417,9 +418,7 @@ export function DashboardLayout({
               }
             >
               <div className="px-3 py-2">
-                <p className="text-sm font-semibold text-slate-900">
-                  {profile?.full_name ?? 'Account'}
-                </p>
+                <p className="text-sm font-semibold text-slate-900">{displayName}</p>
                 <p className="truncate text-xs text-slate-500">{profile?.email}</p>
               </div>
               <DropdownSeparator />
@@ -456,6 +455,20 @@ export function DashboardLayout({
               >
                 Privacy notice
               </DropdownItem>
+              {portal === 'admin' && profile && (
+                <DropdownItem
+                  icon={<Settings className="h-4 w-4" />}
+                  onClick={() =>
+                    navigate(
+                      profile.role === 'platform_super_admin'
+                        ? '/admin/pricing'
+                        : '/admin/settings',
+                    )
+                  }
+                >
+                  Settings
+                </DropdownItem>
+              )}
               <DropdownItem
                 destructive
                 icon={<LogOut className="h-4 w-4" />}
@@ -472,7 +485,7 @@ export function DashboardLayout({
       <div className="mx-auto flex max-w-[1400px] gap-0 px-0 lg:px-6">
         {/* Desktop sidebar */}
         {!usesBottomTabs && (
-          <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto border-r border-[var(--color-border)] bg-[var(--color-surface)] py-6 lg:block">
+          <aside className="sb-sidebar sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto bg-[var(--color-surface)] py-6 lg:block">
             <SidebarNav groups={groups} portal={portal} />
           </aside>
         )}
@@ -484,7 +497,7 @@ export function DashboardLayout({
               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
               onClick={() => setMobileOpen(false)}
             />
-            <aside className="absolute left-0 top-0 h-full w-72 max-w-[85vw] overflow-y-auto bg-[var(--color-surface)] p-4 shadow-popover animate-slide-in-right">
+            <aside className="sb-sidebar absolute left-0 top-0 h-full w-72 max-w-[85vw] overflow-y-auto bg-[var(--color-surface)] p-4 shadow-popover animate-slide-in-right">
               <div className="mb-4 flex items-center justify-between">
                 <span className="flex items-center gap-2 text-sm font-bold text-slate-900">
                   <Bus className="h-4 w-4 text-navy-600" /> SafeBus
@@ -610,7 +623,7 @@ function SidebarNav({
           ))}
         </div>
       ))}
-      <div className="border-t border-slate-200 pt-4">
+      <div className="pt-4">
         <NavListItem
           item={{
             label: 'Privacy notice',

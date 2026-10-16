@@ -1,4 +1,5 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
+import { safeBusDisplayText } from '@/utils/brand';
 import { DuplicateIdentifierError } from '@/services/transportationStructureService';
 
 function client() {
@@ -91,7 +92,13 @@ export interface PlatformFirstAdminInvitation {
 export async function fetchPlatformTenantSummaries(): Promise<PlatformTenantSummary[]> {
   const { data, error } = await client().rpc('get_platform_tenant_onboarding_summary_secure');
   if (error) throw new Error('Unable to load tenant onboarding summary.');
-  return (data ?? []) as PlatformTenantSummary[];
+  return ((data ?? []) as PlatformTenantSummary[]).map((row) => ({
+    ...row,
+    tenant_name: safeBusDisplayText(row.tenant_name),
+    first_tenant_admin_name: row.first_tenant_admin_name
+      ? safeBusDisplayText(row.first_tenant_admin_name)
+      : null,
+  }));
 }
 export async function fetchPlatformFirstAdminInvitations(): Promise<
   PlatformFirstAdminInvitation[]

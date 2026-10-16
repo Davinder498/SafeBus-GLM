@@ -48,13 +48,13 @@ test('platform onboarding no longer accepts or creates a school', () => {
   assert.doesNotMatch(platformOnboarding, /insert into public\.schools/i);
 });
 
-test('schools live under role-aware settings instead of global navigation', () => {
+test('schools have a sidebar destination and the old settings route remains compatible', () => {
   const layout = read('apps/web/src/components/layout/DashboardLayout.tsx');
   const settingsNav = read('apps/web/src/components/settings/AdminSettingsNav.tsx');
   const router = read('apps/web/src/routes/router.tsx');
 
-  assert.doesNotMatch(layout, /label: 'Schools'/);
-  assert.match(settingsNav, /to: '\/admin\/settings\/schools'/);
+  assert.match(layout, /label: 'Schools'/);
+  assert.doesNotMatch(settingsNav, /label: 'Schools'/);
   assert.match(router, /path: '\/admin\/settings\/schools'/);
-  assert.match(router, /path: '\/admin\/schools'[\s\S]*Navigate to="\/admin\/settings\/schools"/);
+  assert.match(router, /path: '\/admin\/settings\/schools'[\s\S]*Navigate to="\/admin\/schools"/);
 });

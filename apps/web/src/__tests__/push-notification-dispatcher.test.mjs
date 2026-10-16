@@ -42,8 +42,8 @@ describe('Supabase Android push dispatcher', () => {
       event_type: 'trip_missing',
       category: 'operations',
       severity: 'urgent',
-      title: 'BusSafe update',
-      body: 'Open BusSafe to view this update.',
+      title: 'Bussafe update',
+      body: 'Open BUSSAFE to view this update.',
       android_channel: 'urgent_operations',
       collapse_key: 'notification-notification-id',
     });

@@ -25,6 +25,18 @@ function statusTone(status: TenantSubscription['subscriptionStatus']) {
 }
 
 export function SubscriptionOverview({ subscription }: { subscription: TenantSubscription }) {
+  if (subscription.subscriptionExempt)
+    return (
+      <Card className="border-success-200 bg-success-50 p-5" data-testid="subscription-exempt">
+        <h2 className="text-lg font-bold text-success-900">
+          Test tenant · no subscription required
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-success-900">
+          This organization has approved testing access. You can configure and activate buses
+          without checkout, a payment method, or a trial.
+        </p>
+      </Card>
+    );
   if (!subscription.configured) {
     return (
       <Card className="p-5" data-testid="subscription-not-configured">
@@ -78,14 +90,14 @@ export function SubscriptionOverview({ subscription }: { subscription: TenantSub
 
         <dl className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <Detail
-            label="Recurring total"
+            label="Plan subtotal before discounts and tax"
             value={formatMoney(
               subscription.periodTotal ?? subscription.annualTotal,
               subscription.currency,
             )}
           />
           <Detail
-            label="Per bus / year"
+            label={subscription.billingInterval === 'month' ? 'Per bus / month' : 'Per bus / year'}
             value={formatMoney(subscription.unitAmount, subscription.currency)}
           />
           <Detail

@@ -28,7 +28,8 @@
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/supabase/migrations/**/*.sql",
-        "$TURBO_ROOT$/config/pending/tenant-subscription-authorization.json"
+        "$TURBO_ROOT$/config/pending/*.json",
+        "$TURBO_ROOT$/supabase/functions/_shared/**/*.mjs"
       ],
       "outputs": ["coverage/**"]
     },

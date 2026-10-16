@@ -9,6 +9,7 @@ export type SubscriptionStatus =
   | 'paused';
 
 export interface TenantSubscription {
+  subscriptionExempt?: boolean;
   configured: boolean;
   tenantId: string;
   tenantName: string;
@@ -47,6 +48,7 @@ export interface TenantSubscription {
 }
 
 export interface PlatformBillingSummary {
+  subscriptionExempt?: boolean;
   tenantId: string;
   configured: boolean;
   status: SubscriptionStatus | null;
@@ -66,6 +68,7 @@ export interface SubscriptionPrice {
 }
 
 export interface BusSubscriptionAccess {
+  exempt?: boolean;
   eligible: boolean;
   limit: number | null;
   active: number;
@@ -79,3 +82,40 @@ export interface BillingPreview {
 }
 
 export type PlatformSubscriptionAction = 'reconcile';
+
+export type CatalogMutation =
+  | { action: 'create_price'; name: string; unitAmount: number; interval: 'month' | 'year' }
+  | { action: 'set_price_active' | 'set_discount_active'; id: string; active: boolean }
+  | {
+      action: 'create_discount';
+      name: string;
+      code: string;
+      kind: 'percent' | 'amount';
+      value: number;
+      duration: 'once' | 'forever';
+      maxRedemptions: number | null;
+      expiresAt: number | null;
+    };
+
+export interface PricingCatalog {
+  prices: Array<SubscriptionPrice & { active: boolean }>;
+  discounts: Array<{
+    id: string;
+    name: string;
+    code: string;
+    active: boolean;
+    percentOff: number | null;
+    amountOff: number | null;
+    currency: string | null;
+    duration: string;
+    timesRedeemed: number;
+    maxRedemptions: number | null;
+    expiresAt: number | null;
+  }>;
+  priceCursor: string | null;
+  discountCursor: string | null;
+}
+export interface PendingCatalogRequest {
+  requestId: string;
+  body: CatalogMutation;
+}

@@ -99,6 +99,16 @@ beforeEach(() => {
   });
 });
 describe('tenant subscription input and ownership', () => {
+  it('does not start checkout or paid capacity changes for an approved test tenant', async () => {
+    state.bus_access = { eligible: true, exempt: true, limit: null };
+    for (const action of ['checkout', 'preview', 'change'])
+      expect(
+        (await handler(event(action, { priceId: 'price_month', quantity: 5 }))).statusCode,
+      ).toBe(409);
+    expect(stripe.checkout.sessions.create).not.toHaveBeenCalled();
+    expect(stripe.subscriptions.update).not.toHaveBeenCalled();
+    expect(shared.createStripeClient).not.toHaveBeenCalled();
+  });
   it('rejects fractional, zero, excessive and malformed selections', () => {
     for (const quantity of [0, -1, 1.5, 10001, '2', NaN])
       expect(
@@ -249,6 +259,7 @@ describe('subscription changes', () => {
     expect(update).not.toHaveProperty('trial_end');
   });
   it('reserves reductions and schedules cycle changes at renewal', async () => {
+    sub.discounts = ['di_existing'];
     expect(classifyChange(sub, 'price_year', 4)).toBe('renewal');
     await handler(event('change', { priceId: 'price_year', quantity: 1 }));
     expect(ctx.admin.rpc).toHaveBeenCalledWith(
@@ -262,6 +273,7 @@ describe('subscription changes', () => {
           expect.objectContaining({
             start_date: 2000000000,
             items: [{ price: 'price_year', quantity: 1 }],
+            discounts: [{ discount: 'di_existing' }],
           }),
         ]),
       }),

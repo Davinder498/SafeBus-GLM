@@ -1,0 +1,10 @@
+{
+  "migration": "supabase/migrations/pending/20261016223500_pricing_catalog_and_test_tenants.sql",
+  "status": "prepared-unapplied",
+  "authenticated": [],
+  "serviceRole": [
+    "billing_claim_catalog_operation(uuid,uuid,text,text,jsonb)",
+    "billing_finish_catalog_operation(uuid,uuid,jsonb)",
+    "billing_get_pending_catalog_operation(uuid)"
+  ]
+}

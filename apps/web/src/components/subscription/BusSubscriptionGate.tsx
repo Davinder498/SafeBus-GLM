@@ -38,16 +38,20 @@ export function BusSubscriptionGate({
         {error ??
           (!access
             ? 'Checking your bus allowance…'
-            : access.eligible
-              ? `${access.active} of ${access.limit} active-bus licences in use`
-              : 'A subscription is required to configure new buses')}
+            : access.exempt && access.eligible
+              ? 'Test tenant · no subscription required'
+              : access.eligible
+                ? `${access.active} of ${access.limit} active-bus licences in use`
+                : 'A subscription is required to configure new buses')}
       </p>
       <p className="mt-1 leading-6">
-        {access?.eligible
-          ? 'Inactive buses do not consume capacity. Activation must fit your subscribed allowance.'
-          : 'Existing transportation operations continue. Start or resolve your subscription to create or activate buses.'}
+        {access?.exempt && access.eligible
+          ? `${access.active} active buses. Testing access has no subscription bus limit.`
+          : access?.eligible
+            ? 'Inactive buses do not consume capacity. Activation must fit your subscribed allowance.'
+            : 'Existing transportation operations continue. Start or resolve your subscription to create or activate buses.'}
       </p>
-      {profile?.role === 'tenant_admin' ? (
+      {access?.exempt ? null : profile?.role === 'tenant_admin' ? (
         <Link
           className="mt-2 inline-block font-semibold text-navy-700 underline"
           to="/admin/settings/billing"

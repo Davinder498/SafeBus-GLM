@@ -108,13 +108,15 @@ test('production application RPC references are all reviewed', async () => {
   const surface = await readJson('config/authorization-surface.json');
   // Prepared source can reference an explicitly reviewed forward surface. This
   // does not add it to the active installation/audit manifest or authorize DDL.
-  const pending = await readJson('config/pending/tenant-subscription-authorization.json');
+  const pending = await Promise.all([
+    readJson('config/pending/tenant-subscription-authorization.json'),
+    readJson('config/pending/pricing-catalog-authorization.json'),
+  ]);
   const approved = new Set(
     [
       ...surface.authenticated,
       ...surface.serviceRole,
-      ...pending.authenticated,
-      ...pending.serviceRole,
+      ...pending.flatMap((surface) => [...surface.authenticated, ...surface.serviceRole]),
     ].map((entry) => entry.slice(0, entry.indexOf('('))),
   );
   const referenced = new Set();
@@ -156,16 +158,21 @@ test('production application RPC references are all reviewed', async () => {
   );
 });
 
-test('the prepared subscription authorization surface cannot change active installation scope', async () => {
-  const pending = await readJson('config/pending/tenant-subscription-authorization.json');
+test('the prepared billing authorization surfaces cannot change active installation scope', async () => {
   const active = await readJson('config/authorization-surface.json');
-  assert.equal(pending.status, 'prepared-unapplied');
-  assert.ok(pending.migration.startsWith('supabase/migrations/pending/'));
-  await fs.access(pending.migration);
-  for (const audience of ['authenticated', 'serviceRole']) {
-    assert.deepEqual(pending[audience], [...new Set(pending[audience])].sort());
-    for (const signature of pending[audience])
-      assert.ok(![...active.authenticated, ...active.serviceRole].includes(signature));
+  for (const file of [
+    'config/pending/tenant-subscription-authorization.json',
+    'config/pending/pricing-catalog-authorization.json',
+  ]) {
+    const pending = await readJson(file);
+    assert.equal(pending.status, 'prepared-unapplied');
+    assert.ok(pending.migration.startsWith('supabase/migrations/pending/'));
+    await fs.access(pending.migration);
+    for (const audience of ['authenticated', 'serviceRole']) {
+      assert.deepEqual(pending[audience], [...new Set(pending[audience])].sort());
+      for (const signature of pending[audience])
+        assert.ok(![...active.authenticated, ...active.serviceRole].includes(signature));
+    }
   }
 });
 

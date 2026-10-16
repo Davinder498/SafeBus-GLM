@@ -65,6 +65,9 @@ const AdminRouteManagePage = lazy(() =>
 const AdminSchoolsPage = lazy(() =>
   import('@/pages/AdminSchoolsPage').then((page) => ({ default: page.AdminSchoolsPage })),
 );
+const PlatformPricingPage = lazy(() =>
+  import('@/pages/PlatformPricingPage').then((page) => ({ default: page.PlatformPricingPage })),
+);
 const AdminSettingsPage = lazy(() =>
   import('@/pages/AdminSettingsPage').then((page) => ({ default: page.AdminSettingsPage })),
 );
@@ -215,6 +218,14 @@ export const appRoutes: RouteObject[] = [
     ),
   },
   {
+    path: '/admin/pricing',
+    element: (
+      <ProtectedRoute allowedRoles={['platform_super_admin']}>
+        <PlatformPricingPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/admin/settings/support',
     element: (
       <ProtectedRoute allowedRoles={['tenant_admin']}>
@@ -274,7 +285,7 @@ export const appRoutes: RouteObject[] = [
     path: '/admin/settings/schools',
     element: (
       <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
-        <AdminSchoolsPage />
+        <Navigate to="/admin/schools" replace />
       </ProtectedRoute>
     ),
   },
@@ -290,7 +301,7 @@ export const appRoutes: RouteObject[] = [
     path: '/admin/schools',
     element: (
       <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
-        <Navigate to="/admin/settings/schools" replace />
+        <AdminSchoolsPage />
       </ProtectedRoute>
     ),
   },

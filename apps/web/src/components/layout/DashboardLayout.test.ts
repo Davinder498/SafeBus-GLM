@@ -31,7 +31,7 @@ const tenantAdminRoutes = [
   '/admin/administrators',
   '/admin/bulk-import',
   '/admin/audit-search',
-  '/admin/settings',
+  '/admin/schools',
 ];
 
 describe('tenant admin shell navigation model', () => {
@@ -70,7 +70,7 @@ describe('tenant admin shell navigation model', () => {
   it('keeps subscription and billing inside settings instead of duplicating sidebar navigation', () => {
     const managementItems = adminNavItems.filter((item) => item.group === 'management');
     expect(managementItems.map((item) => item.label)).not.toContain('Subscription & billing');
-    expect(managementItems.filter((item) => item.to === '/admin/settings')).toHaveLength(1);
+    expect(managementItems.filter((item) => item.to === '/admin/settings')).toHaveLength(0);
   });
 
   it('keeps tenant support inside settings instead of duplicating sidebar navigation', () => {
@@ -79,8 +79,8 @@ describe('tenant admin shell navigation model', () => {
     expect(managementItems.map((item) => item.to)).not.toContain('/support');
   });
 
-  it('keeps nominal school administration inside settings', () => {
-    expect(adminNavItems.map((item) => item.to)).not.toContain('/admin/schools');
+  it('keeps school administration directly in the sidebar', () => {
+    expect(adminNavItems.map((item) => item.to)).toContain('/admin/schools');
   });
 });
 

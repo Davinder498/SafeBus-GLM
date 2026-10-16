@@ -71,7 +71,7 @@ export function AdminSubscriptionPage() {
         setQuantity(saved.quantity ?? Math.max(1, s.licensedBusCount ?? s.activeBusCount));
       } else setError('Unable to load subscription details. Refresh and try again.');
       if (results[1].status === 'fulfilled') setPrices(results[1].value);
-      else
+      else if (results[0].status !== 'fulfilled' || !results[0].value.subscriptionExempt)
         setError(
           'Subscription selection is temporarily unavailable. Existing operations can continue.',
         );
@@ -224,7 +224,7 @@ export function AdminSubscriptionPage() {
           description="Choose the right bus allowance for your organization. Manage your plan, renewal, invoices, and payment details here."
           icon={<CreditCard className="h-6 w-6" />}
           action={
-            subscription?.configured ? (
+            subscription?.configured && !subscription.subscriptionExempt ? (
               <Button
                 type="button"
                 variant="secondary"
@@ -290,7 +290,7 @@ export function AdminSubscriptionPage() {
         )}
         {!loading && subscription && (
           <>
-            {subscription.busAccess.eligible && (
+            {subscription.busAccess.eligible && !subscription.subscriptionExempt && (
               <Card className="flex flex-col justify-between gap-4 border-success-200 bg-success-50 p-5 sm:flex-row sm:items-center">
                 <div>
                   <p className="font-bold text-success-800">Your fleet is ready to grow</p>
@@ -304,7 +304,7 @@ export function AdminSubscriptionPage() {
                 </Link>
               </Card>
             )}
-            {!legacy && (
+            {!legacy && !subscription.subscriptionExempt && (
               <Card className="overflow-hidden">
                 <div className="border-b bg-slate-50 p-5 sm:p-6">
                   <h2 className="text-xl font-bold text-navy-900">
@@ -395,7 +395,9 @@ export function AdminSubscriptionPage() {
                     </Field>
                   </div>
                   <div className="flex flex-col rounded-xl border border-slate-200 bg-slate-50 p-5">
-                    <p className="text-sm font-medium text-slate-500">Recurring subscription</p>
+                    <p className="text-sm font-medium text-slate-500">
+                      Recurring price before discounts and tax
+                    </p>
                     <p className="mt-2 text-3xl font-bold tracking-tight text-navy-900">
                       {selected
                         ? formatMoney(selected.unitAmount * quantity, selected.currency)
@@ -418,6 +420,10 @@ export function AdminSubscriptionPage() {
                     <p className="mb-5 text-sm font-semibold text-slate-700">
                       Renews automatically until canceled. Cancel before your next billing date to
                       avoid renewal.
+                    </p>
+                    <p className="mb-5 text-sm text-slate-600">
+                      Have a promotion code? Enter it at secure checkout to see your discount and
+                      final total.
                     </p>
                     <Button
                       className="mt-auto w-full"

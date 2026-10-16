@@ -52,6 +52,7 @@ describe('platform privacy boundary routing', () => {
     expect(routeAllowsPlatform('/admin/tenants')).toBe(true);
     expect(routeAllowsPlatform('/admin/tenants/:tenantId')).toBe(true);
     expect(routeAllowsPlatform('/admin/platform-support')).toBe(true);
+    expect(routeAllowsPlatform('/admin/pricing')).toBe(true);
 
     for (const path of [
       '/admin',

@@ -118,11 +118,8 @@ export function buildFcmMessage(row) {
     message: {
       token: row.fcm_token,
       notification: {
-        title: row.title === 'BusSafe update' ? 'SafeBus update' : row.title,
-        body:
-          row.body === 'Open BusSafe to view this update.'
-            ? 'Open SafeBus to view this update.'
-            : row.body,
+        title: row.title.replace(/\bbussafe\b/gi, 'SafeBus'),
+        body: row.body.replace(/\bbussafe\b/gi, 'SafeBus'),
       },
       data: {
         notificationId: row.notification_id,
