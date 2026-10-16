@@ -1,6 +1,7 @@
 # SafeBus official domain and provider setup
 
-Observed 2026-10-16. Configuration evidence only; email acceptance, live billing,
+Observed 2026-10-16. Configuration and one owner-authorized Supabase SMTP recovery
+email are verified. Invitation activation, Netlify inquiry delivery, live billing,
 privacy approval and commercial launch approval are not established by this record.
 
 ## Owner-confirmed identity
@@ -29,15 +30,16 @@ privacy approval and commercial launch approval are not established by this reco
 | Netlify non-secret configuration | Production-only SAFEBUS_APP_ORIGIN=https://safebus.kids; SAFEBUS_EMAIL_FROM=no-reply@safebus.kids; SAFEBUS_EMAIL_FROM_NAME=SafeBus                                                                                     |
 | Application email credential     | Owner saved the Resend key; Netlify API/CLI confirms SAFEBUS_EMAIL_PROVIDER_API_KEY is_secret=true, available to production Functions, with a nonempty production value and empty dev/preview/branch/dev-server values |
 | Inquiry recipient                | Owner selected the existing monitored inbox for consultation inquiries and authorized one setup test message; SAFEBUS_INQUIRY_TO saved as a protected production-only setting; address kept outside Git                |
-| Auth email / callbacks           | Supabase dashboard sign-in required; custom SMTP and exact safebus.kids invitation/recovery callbacks remain unverified                                                                                                |
+| Auth email / callbacks           | Owner saved custom SMTP; enabled Resend host/465, SafeBus sender and exact official callbacks verified; one recovery email Delivered and owner confirmed receipt plus SafeBus password-page landing                    |
 | Stripe mode                      | Connected account acct_1UQz3oJPPdFvVToQ is SafeBus sandbox, livemode=false; live account not exposed through connector                                                                                                 |
 | Stripe product                   | safebus_annual_bus_license: active, bus unit, product URL https://safebus.kids; legal_seller / trade_name / official_domain metadata updated; default_price remains null                                               |
 | Stripe portal                    | bpc_1UQzLTJPPdFvVToQGf4veWvy: return URL https://safebus.kids/admin/settings/billing; privacy https://safebus.kids/privacy; headline SafeBus billing — Sachman Gold Inc.                                               |
 | Stripe restrictions              | Billing details, invoices and payment methods enabled; subscription changes, cancellation and portal login page disabled; no unpublished terms URL added                                                               |
 | Stripe application wiring        | No Stripe credentials, webhook or live-payment readiness established; sandbox objects must not be linked to real production tenant billing records                                                                     |
 
-The Resend account login address is not treated as a business/privacy contact or
-an authorized test recipient. The `no-reply` sender is not a monitored mailbox.
+An account login address does not automatically become a business/privacy contact
+or test recipient. The owner explicitly selected the private inquiry/test inbox.
+The `no-reply` sender is not a monitored mailbox.
 Netlify plan controls currently prevent selecting Functions-only scope for a new
 secret; the prepared form marks it secret and leaves every non-production value
 empty. Never expose it through a VITE_ variable or a screenshot.
@@ -63,22 +65,30 @@ invented. Domain verification does not prove inbox delivery or acceptable volume
 1. Owner completed the prepared sending-key creation and Netlify production-secret
    entry for SAFEBUS_EMAIL_PROVIDER_API_KEY. Independent API/CLI checks confirmed
    the key name, secret flag, Functions scope and production-only nonempty value.
-   No credential value was printed or committed. No delivery is yet verified.
-2. Owner signs into the existing BusSafe Supabase dashboard. Configure a separate
-   domain-restricted Resend SMTP credential in the protected Auth settings, using
-   the provider's current SMTP parameters. Credential entry stays with the owner.
-3. Save Site URL https://safebus.kids and exact callbacks
+   No credential value was printed or committed. This key's Netlify inquiry path
+   still awaits runtime activation and its own acceptance test.
+2. Owner saved the Supabase SMTP credential. Readback confirms custom SMTP
+   enabled, sender no-reply@safebus.kids, display name SafeBus, smtp.resend.com,
+   port 465, username resend, stored password hidden and Save changes disabled.
+   One normal app recovery request reached the existing owner-authorized inbox;
+   Resend reported Delivered and the owner confirmed the SafeBus password page
+   opened. No password was changed and no synthetic identity was created.
+3. Readback confirms Site URL https://safebus.kids and exact callbacks
    https://safebus.kids/accept-invitation and
-   https://safebus.kids/update-password. Preserve required native callbacks and
-   existing issued-link compatibility. Keep public signup disabled; no wildcard
-   or session-security relaxation is needed.
+   https://safebus.kids/update-password. Existing native, Netlify and local
+   callbacks were retained. The recovery template retains ConfirmationURL.
+   SAFEBUS_INVITE_REDIRECT_URL now has a production override pointing to the
+   official accept-invitation URL; deployed Netlify functions require a reviewed
+   redeploy to adopt that setting. Public signup/security controls were not changed.
 4. The owner expressly selected a monitored inquiry/test inbox, and the inquiry
    recipient is saved as a production secret. Netlify confirms environment changes
    require a redeploy before running functions use them. After a human-reviewed
-   release applies the settings, verify the one authorized owned-inbox message and
-   invitation/recovery link handling; record acceptance without tokens or recipient
-   details in public evidence. Do not create production QA identities or dispatch
-   transport notifications as a delivery test.
+   release applies the settings, verify inquiry delivery and invitation activation
+   through their respective acceptance procedures. The single authorized setup
+   message has already been used for the verified Auth recovery flow; do not send
+   another test message without an applicable owner instruction. Record acceptance
+   without tokens or recipient details in public evidence. Do not create production
+   QA identities or dispatch transport notifications as a delivery test.
 5. Keep guardian event delivery behind the existing privacy and user opt-in gates.
    Review US message content, provider retention/terms, notices and customer
    instructions before activation. This milestone sends no QA notifications.
@@ -109,7 +119,7 @@ Provider references checked 2026-10-16:
 Local checks on 2026-10-16 passed: `pnpm typecheck`, `pnpm lint`, `pnpm build`
 (web and mobile), `pnpm test` (383 web, 2 mobile and 348 release/local-PostgreSQL
 tests; 733 total), changed-file Prettier check and `git diff --check`.
-No hosted fixtures, SQL mutations or real notifications were used.
+These code checks used no hosted fixtures, SQL mutations or real notifications.
 
 `pnpm operations:health` with SAFEBUS_MONITOR_ORIGIN=https://safebus.kids returned
 healthy at 2026-10-16T15:46:25.400Z: landing, login SPA route and map configuration
@@ -119,8 +129,13 @@ the homepage and role-specific privacy notice; HTTP 200 for a SPA shell does not
 prove authenticated billing or an end-to-end email flow. Browser control then
 disconnected. The existing authenticated Netlify CLI subsequently confirmed the
 email/origin settings and credential metadata without exposing values, and saved
-the authorized inquiry recipient. Supabase Auth sign-in, SMTP configuration,
-runtime activation and inbox acceptance remain unresolved.
+the authorized inquiry recipient. Following browser reconnection, Supabase SMTP,
+the official Auth callbacks and one recovery email were verified. The owner's
+receipt/link confirmation completes that bounded SMTP acceptance. The provider
+delivery evidence is resend:01a1457d-fbda-7b36-9fe5-6ef2cca9b1ab (Delivered).
+The secret-free delivery screenshot stays in the owner's local evidence folder;
+email body, recovery link/token and private inbox address are not committed.
+Netlify runtime activation/inquiry delivery and invitation activation remain open.
 
 Current local working-tree SHA-256 evidence digests, recalculated after these
 source changes (raw local file bytes; recalculate on the reviewed release host):
