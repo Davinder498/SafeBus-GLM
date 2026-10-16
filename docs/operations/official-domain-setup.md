@@ -16,24 +16,25 @@ privacy approval and commercial launch approval are not established by this reco
 
 ## Hosted observations
 
-| Item                             | Evidence / result                                                                                                                                                                                     |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Website                          | Existing Netlify project `bussafe`, connected to SafeBus-GLM, serves https://safebus.kids over HTTPS                                                                                                  |
-| Canonical host                   | safebus.kids is Primary domain; www.safebus.kids redirects to primary; existing Netlify hostname retained                                                                                             |
-| TLS                              | Netlify reports HTTPS enabled, Let's Encrypt certificate for safebus.kids and *.safebus.kids, issued 2026-10-16                                                                                       |
-| DNS                              | Netlify nameservers dns1–dns4.p05.nsone.net; public 1.1.1.1 resolves the delegation and sending CNAME; authoritative DNS resolves DMARC                                                               |
-| Public privacy                   | https://safebus.kids/privacy loads the tenant, guardian and driver notices without authentication; operator already identifies Sachman Gold Inc.                                                      |
-| Resend                           | Existing owner-selected account; verified domain `754adf1d-1eb0-4e6a-b777-30f030af064a`; North Virginia / us-east-1 / United States                                                                   |
-| Resend transport                 | Enforced TLS saved and confirmed; non-TLS recipient servers fail delivery rather than receiving cleartext                                                                                             |
-| Resend tracking / inbound        | No tracking subdomain configured; UI offers Enable tracking metrics. Receiving disabled. No inbox service is established                                                                              |
-| Netlify non-secret configuration | Production-only SAFEBUS_APP_ORIGIN=https://safebus.kids; SAFEBUS_EMAIL_FROM=no-reply@safebus.kids; SAFEBUS_EMAIL_FROM_NAME=SafeBus                                                                    |
-| Application email credential     | Owner confirms the Resend key was saved in Netlify on 2026-10-16; sending-only/domain-limited and production-secret forms were prepared; independent presence/scope check awaits browser reconnection |
-| Auth email / callbacks           | Supabase dashboard sign-in required; custom SMTP and exact safebus.kids invitation/recovery callbacks remain unverified                                                                               |
-| Stripe mode                      | Connected account acct_1UQz3oJPPdFvVToQ is SafeBus sandbox, livemode=false; live account not exposed through connector                                                                                |
-| Stripe product                   | safebus_annual_bus_license: active, bus unit, product URL https://safebus.kids; legal_seller / trade_name / official_domain metadata updated; default_price remains null                              |
-| Stripe portal                    | bpc_1UQzLTJPPdFvVToQGf4veWvy: return URL https://safebus.kids/admin/settings/billing; privacy https://safebus.kids/privacy; headline SafeBus billing — Sachman Gold Inc.                              |
-| Stripe restrictions              | Billing details, invoices and payment methods enabled; subscription changes, cancellation and portal login page disabled; no unpublished terms URL added                                              |
-| Stripe application wiring        | No Stripe credentials, webhook or live-payment readiness established; sandbox objects must not be linked to real production tenant billing records                                                    |
+| Item                             | Evidence / result                                                                                                                                                                                                      |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Website                          | Existing Netlify project `bussafe`, connected to SafeBus-GLM, serves https://safebus.kids over HTTPS                                                                                                                   |
+| Canonical host                   | safebus.kids is Primary domain; www.safebus.kids redirects to primary; existing Netlify hostname retained                                                                                                              |
+| TLS                              | Netlify reports HTTPS enabled, Let's Encrypt certificate for safebus.kids and *.safebus.kids, issued 2026-10-16                                                                                                        |
+| DNS                              | Netlify nameservers dns1–dns4.p05.nsone.net; public 1.1.1.1 resolves the delegation and sending CNAME; authoritative DNS resolves DMARC                                                                                |
+| Public privacy                   | https://safebus.kids/privacy loads the tenant, guardian and driver notices without authentication; operator already identifies Sachman Gold Inc.                                                                       |
+| Resend                           | Existing owner-selected account; verified domain `754adf1d-1eb0-4e6a-b777-30f030af064a`; North Virginia / us-east-1 / United States                                                                                    |
+| Resend transport                 | Enforced TLS saved and confirmed; non-TLS recipient servers fail delivery rather than receiving cleartext                                                                                                              |
+| Resend tracking / inbound        | No tracking subdomain configured; UI offers Enable tracking metrics. Receiving disabled. No inbox service is established                                                                                               |
+| Netlify non-secret configuration | Production-only SAFEBUS_APP_ORIGIN=https://safebus.kids; SAFEBUS_EMAIL_FROM=no-reply@safebus.kids; SAFEBUS_EMAIL_FROM_NAME=SafeBus                                                                                     |
+| Application email credential     | Owner saved the Resend key; Netlify API/CLI confirms SAFEBUS_EMAIL_PROVIDER_API_KEY is_secret=true, available to production Functions, with a nonempty production value and empty dev/preview/branch/dev-server values |
+| Inquiry recipient                | Owner selected the existing monitored inbox for consultation inquiries and authorized one setup test message; SAFEBUS_INQUIRY_TO saved as a protected production-only setting; address kept outside Git                |
+| Auth email / callbacks           | Supabase dashboard sign-in required; custom SMTP and exact safebus.kids invitation/recovery callbacks remain unverified                                                                                                |
+| Stripe mode                      | Connected account acct_1UQz3oJPPdFvVToQ is SafeBus sandbox, livemode=false; live account not exposed through connector                                                                                                 |
+| Stripe product                   | safebus_annual_bus_license: active, bus unit, product URL https://safebus.kids; legal_seller / trade_name / official_domain metadata updated; default_price remains null                                               |
+| Stripe portal                    | bpc_1UQzLTJPPdFvVToQGf4veWvy: return URL https://safebus.kids/admin/settings/billing; privacy https://safebus.kids/privacy; headline SafeBus billing — Sachman Gold Inc.                                               |
+| Stripe restrictions              | Billing details, invoices and payment methods enabled; subscription changes, cancellation and portal login page disabled; no unpublished terms URL added                                                               |
+| Stripe application wiring        | No Stripe credentials, webhook or live-payment readiness established; sandbox objects must not be linked to real production tenant billing records                                                                     |
 
 The Resend account login address is not treated as a business/privacy contact or
 an authorized test recipient. The `no-reply` sender is not a monitored mailbox.
@@ -59,10 +60,10 @@ invented. Domain verification does not prove inbox delivery or acceptable volume
 
 ## Completion sequence
 
-1. Owner reports completing the prepared domain-restricted sending-key creation
-   and Netlify production-secret entry for SAFEBUS_EMAIL_PROVIDER_API_KEY.
-   Independently verify only name/presence/scope after browser reconnection; never
-   copy the value into chat, Git or logs. No delivery has yet been verified.
+1. Owner completed the prepared sending-key creation and Netlify production-secret
+   entry for SAFEBUS_EMAIL_PROVIDER_API_KEY. Independent API/CLI checks confirmed
+   the key name, secret flag, Functions scope and production-only nonempty value.
+   No credential value was printed or committed. No delivery is yet verified.
 2. Owner signs into the existing BusSafe Supabase dashboard. Configure a separate
    domain-restricted Resend SMTP credential in the protected Auth settings, using
    the provider's current SMTP parameters. Credential entry stays with the owner.
@@ -71,10 +72,13 @@ invented. Domain verification does not prove inbox delivery or acceptable volume
    https://safebus.kids/update-password. Preserve required native callbacks and
    existing issued-link compatibility. Keep public signup disabled; no wildcard
    or session-security relaxation is needed.
-4. Obtain a monitored inquiry recipient and owner-authorized test inbox. Do not
-   infer these from a login account. With reviewed deployment/configuration,
-   verify one bounded owned-inbox delivery plus invitation/recovery link handling;
-   record acceptance without tokens or recipient details in public evidence.
+4. The owner expressly selected a monitored inquiry/test inbox, and the inquiry
+   recipient is saved as a production secret. Netlify confirms environment changes
+   require a redeploy before running functions use them. After a human-reviewed
+   release applies the settings, verify the one authorized owned-inbox message and
+   invitation/recovery link handling; record acceptance without tokens or recipient
+   details in public evidence. Do not create production QA identities or dispatch
+   transport notifications as a delivery test.
 5. Keep guardian event delivery behind the existing privacy and user opt-in gates.
    Review US message content, provider retention/terms, notices and customer
    instructions before activation. This milestone sends no QA notifications.
@@ -113,7 +117,10 @@ all passed on the first attempt. Bounded HTTPS requests returned 200 for the
 privacy, account-deletion and billing SPA routes too. Browser inspection confirmed
 the homepage and role-specific privacy notice; HTTP 200 for a SPA shell does not
 prove authenticated billing or an end-to-end email flow. Browser control then
-disconnected, leaving credential-presence checks and Auth sign-in unresolved.
+disconnected. The existing authenticated Netlify CLI subsequently confirmed the
+email/origin settings and credential metadata without exposing values, and saved
+the authorized inquiry recipient. Supabase Auth sign-in, SMTP configuration,
+runtime activation and inbox acceptance remain unresolved.
 
 Current local working-tree SHA-256 evidence digests, recalculated after these
 source changes (raw local file bytes; recalculate on the reviewed release host):

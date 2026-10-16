@@ -52,3 +52,6 @@ supabase/.temp
 # copied web assets, local SDK paths, and signing material.
 apps/mobile/ios/
 apps/mobile/.sourcemaps/
+
+# Local Netlify folder
+.netlify
