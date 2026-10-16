@@ -34,7 +34,7 @@ returns jsonb language sql volatile security definer
 set search_path = pg_catalog, public, safebus_private, pg_temp as $$
   select jsonb_build_object(
     'eligible', coalesce(t.status = 'active' and s.status in ('active','trialing')
-      and case when s.status = 'trialing' then s.trial_end > now() and s.has_payment_method
+      and case when s.status = 'trialing' then s.trial_end > now() and (s.collection_method = 'send_invoice' or s.has_payment_method)
         else s.current_period_end > now() and (s.collection_method = 'send_invoice' or s.paid_through > now()) end, false),
     'limit', least(s.licensed_bus_count, coalesce(c.reserved_bus_count,
       (s.pending_change->>'quantity')::integer, s.licensed_bus_count)),

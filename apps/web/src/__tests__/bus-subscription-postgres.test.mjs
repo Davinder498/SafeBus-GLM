@@ -65,7 +65,7 @@ async function projection(status = 'active', quantity = 2) {
   await sql(
     `insert into safebus_private.tenant_subscription_projections(tenant_id,external_subscription_id,external_price_id,product_name,status,licensed_bus_count,currency,unit_amount,current_period_end,provider_event_created_at,collection_method,has_payment_method,latest_invoice_status,paid_through)
     values($1,'sub_synthetic','price_synthetic','SafeBus',$2,$3,'cad',1000,now()+interval '1 month',now(),'charge_automatically',true,'paid',now()+interval '1 month')
-    on conflict(tenant_id) do update set status=$2,licensed_bus_count=$3,pending_change=null,trial_end=now()+interval '14 days',current_period_end=now()+interval '1 month',latest_invoice_status='paid',has_payment_method=true,paid_through=now()+interval '1 month'`,
+    on conflict(tenant_id) do update set status=$2,licensed_bus_count=$3,pending_change=null,trial_end=now()+interval '14 days',current_period_end=now()+interval '1 month',latest_invoice_status='paid',has_payment_method=true,collection_method='charge_automatically',paid_through=now()+interval '1 month'`,
     [tenant, status, quantity],
   );
 }
@@ -141,6 +141,23 @@ describe('bus subscription enforcement in PostgreSQL', () => {
     ).rejects.toThrow('allowance is full');
     await expect(sql(`update public.buses set tenant_id=gen_random_uuid()`)).rejects.toThrow(
       'cannot be transferred',
+    );
+  });
+  it('preserves existing invoice trials without granting payment-free self-service trials', async () => {
+    await projection('trialing');
+    await sql(
+      `update safebus_private.tenant_subscription_projections set has_payment_method=false`,
+    );
+    await expect(
+      sql(`insert into public.buses(tenant_id,status) values($1,'inactive')`, [tenant]),
+    ).rejects.toThrow('Start a subscription');
+    await sql(
+      `update safebus_private.tenant_subscription_projections set collection_method='send_invoice'`,
+    );
+    await sql(`insert into public.buses(tenant_id,status) values($1,'inactive')`, [tenant]);
+    await projection();
+    await sql(
+      `update safebus_private.tenant_subscription_projections set pending_change='{"quantity":1}'`,
     );
   });
   it('denies anonymous and unrelated role access and private server RPCs', async () => {
