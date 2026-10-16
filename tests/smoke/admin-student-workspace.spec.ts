@@ -412,7 +412,7 @@ test.describe('Admin student workspace', () => {
       });
     });
     await page.goto(`/admin/students/${IDS.student}`);
-    await expect(page.getByText('We could not verify this BusSafe session. Sign in again or retry shortly.')).toBeVisible();
+    await expect(page.getByText('We could not verify this SafeBus session. Sign in again or retry shortly.')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Avery Johnson', level: 1 })).toHaveCount(0);
   });
 
@@ -512,7 +512,7 @@ test.describe('Admin student workspace', () => {
       page.waitForEvent('download'),
       qr.getByRole('link', { name: 'Download PNG' }).click(),
     ]);
-    expect(download.suggestedFilename()).toBe('BusSafe-student-pass.png');
+    expect(download.suggestedFilename()).toBe('SafeBus-student-pass.png');
     await page.evaluate(() => {
       window.print = () => window.dispatchEvent(new Event('afterprint'));
     });

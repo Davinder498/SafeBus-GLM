@@ -10,9 +10,10 @@ Complete the statutory mapping and SafeBus/customer role determination for the
 approved Alberta public-school-authority customer model. Keep the larger Point 6
 gate open until its other items and approvals are complete.
 
-The owner confirmed an Alberta-registered Canadian business and no appointed
-privacy counsel. No legal business name, business form, first customer,
-representative's delegated authority or executed agreement has been verified.
+The owner confirmed an Alberta business and no appointed privacy counsel, and
+identified the operator/seller as Sachman Gold Inc., doing business as SafeBus,
+on 2026-10-15. Registration evidence, signing authority, first customer,
+representative's delegated authority and executed agreements remain unverified.
 The next steps below request evidence, not customer or student data in Git.
 They are review/closure steps rather than prerequisites to writing the business
 documents. The owner requested the [draft pack](business-pack/README.md) and
@@ -45,15 +46,15 @@ Seek counsel where a specific issue or customer requirement warrants it.
 
 ## Decisions required from accountable reviewers and the customer
 
-| ID    | Question to resolve                                                                                       | Evidence needed to close it                                                                                  |
-| ----- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| LR-01 | Which legal business is supplying the service, and who may sign?                                          | Reviewed identity, registration and signing-authority record                                                 |
-| LR-02 | Which statutes and regulatory provisions apply to the customer-directed transport activities?             | Dated sourced statutory map identifying relevant provisions, qualifications and customer model               |
-| LR-03 | Is the proposed public-body/service-provider role correct, including POPA's statutory employee treatment? | Sourced role determination and customer confirmation of the processing instructions and allocation           |
-| LR-04 | How are SafeBus's own account, billing, support and employment-related activities treated?                | Separate PIPA/PIPEDA applicability decision per activity, with purpose and necessary data classes            |
-| LR-05 | Who determines lawful collection/use/disclosure, notice and guardian authority?                           | Customer-approved responsibility allocation and a list of field-authority questions for the PIA item         |
+| ID    | Question to resolve                                                                                       | Evidence needed to close it                                                                                         |
+| ----- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| LR-01 | Which legal business is supplying the service, and who may sign?                                          | Reviewed identity, registration and signing-authority record                                                        |
+| LR-02 | Which statutes and regulatory provisions apply to the customer-directed transport activities?             | Dated sourced statutory map identifying relevant provisions, qualifications and customer model                      |
+| LR-03 | Is the proposed public-body/service-provider role correct, including POPA's statutory employee treatment? | Sourced role determination and customer confirmation of the processing instructions and allocation                  |
+| LR-04 | How are SafeBus's own account, billing, support and employment-related activities treated?                | Separate PIPA/PIPEDA applicability decision per activity, with purpose and necessary data classes                   |
+| LR-05 | Who determines lawful collection/use/disclosure, notice and guardian authority?                           | Customer-approved responsibility allocation and a list of field-authority questions for the PIA item                |
 | LR-06 | Who decides access, correction and complaint requests, and what must SafeBus provide?                     | Customer/privacy-review allocation addressing ATIA access and POPA correction, authority and required cooperation   |
-| LR-07 | Which actual cross-border activities or support arrangements affect the statutory map?                    | Applicability decision identifying known flows and evidence still needed in the vendor/residency item        |
+| LR-07 | Which actual cross-border activities or support arrangements affect the statutory map?                    | Applicability decision identifying known flows and evidence still needed in the vendor/residency item               |
 | LR-08 | Who owns and signs the customer PIA, and is submission to OIPC required?                                  | Customer/privacy-review assessment and, where applicable, head/delegate authority; full PIA work follows separately |
 
 For LR-02 through LR-08, use the linked official sources in the analysis as research
@@ -103,16 +104,16 @@ invent reviewer signatures or compute an activation digest as approval.
 
 ## Review record
 
-| Outcome                             | Status  | Non-secret evidence reference |
-| ----------------------------------- | ------- | ----------------------------- |
-| Contracting identity                | Pending | Not recorded                  |
-| Counsel appointment                 | Optional; not a blanket gate | Not recorded |
-| Statutory mapping decision          | Pending | Not recorded                  |
-| Customer-directed role decision     | Pending | Not recorded                  |
-| Own-business role decision          | Pending | Not recorded                  |
-| Customer authority and confirmation | Deferred to onboarding | Not recorded |
-| Required corrections accepted       | Pending | Not recorded                  |
-| Item 1 completion review            | Pending | Not recorded                  |
+| Outcome                             | Status                       | Non-secret evidence reference |
+| ----------------------------------- | ---------------------------- | ----------------------------- |
+| Contracting identity                | Pending                      | Not recorded                  |
+| Counsel appointment                 | Optional; not a blanket gate | Not recorded                  |
+| Statutory mapping decision          | Pending                      | Not recorded                  |
+| Customer-directed role decision     | Pending                      | Not recorded                  |
+| Own-business role decision          | Pending                      | Not recorded                  |
+| Customer authority and confirmation | Deferred to onboarding       | Not recorded                  |
+| Required corrections accepted       | Pending                      | Not recorded                  |
+| Item 1 completion review            | Pending                      | Not recorded                  |
 
 Prepared documents are review inputs. Item 1 is not complete until the checklist
 has actual supporting evidence; Point 6 and launch approval remain separate.

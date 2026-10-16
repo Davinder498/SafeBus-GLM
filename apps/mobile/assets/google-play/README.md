@@ -1,6 +1,6 @@
 # Google Play artwork
 
-All screenshots in this directory are generated from the real BusSafe mobile UI with local request interception and synthetic records. They contain no production credentials, student records, customer identifiers, or real location data.
+All screenshots in this directory are generated from the real SafeBus mobile UI with local request interception and synthetic records. They contain no production credentials, student records, customer identifiers, or real location data.
 
 | Asset                                      | Dimensions | Source                             |
 | ------------------------------------------ | ---------: | ---------------------------------- |

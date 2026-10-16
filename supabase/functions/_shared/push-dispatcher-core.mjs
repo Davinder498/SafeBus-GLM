@@ -117,7 +117,13 @@ export function buildFcmMessage(row) {
   return {
     message: {
       token: row.fcm_token,
-      notification: { title: row.title, body: row.body },
+      notification: {
+        title: row.title === 'BusSafe update' ? 'SafeBus update' : row.title,
+        body:
+          row.body === 'Open BusSafe to view this update.'
+            ? 'Open SafeBus to view this update.'
+            : row.body,
+      },
       data: {
         notificationId: row.notification_id,
         eventType: row.event_type,

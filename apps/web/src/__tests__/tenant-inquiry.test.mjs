@@ -39,7 +39,7 @@ function event(body = validInquiry, overrides = {}) {
 beforeEach(() => {
   process.env.SAFEBUS_EMAIL_PROVIDER_API_KEY = 'provider-key';
   process.env.SAFEBUS_EMAIL_FROM = 'noreply@example.ca';
-  process.env.SAFEBUS_EMAIL_FROM_NAME = 'BusSafe QA';
+  process.env.SAFEBUS_EMAIL_FROM_NAME = 'SafeBus QA';
   process.env.SAFEBUS_INQUIRY_TO = 'sales@example.ca';
 });
 

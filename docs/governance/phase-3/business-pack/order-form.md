@@ -4,7 +4,7 @@
 
 | Item                                                              | Agreed value to insert outside the public repository                                                   |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Provider legal name, business form, address and authorized signer | `[PROVIDER_LEGAL_NAME]`; `[PROVIDER_BUSINESS_ADDRESS]`; `[PROVIDER_SIGNATORY]`                         |
+| Provider legal name, business form, address and authorized signer | Sachman Gold Inc.; `[PROVIDER_BUSINESS_ADDRESS]`; `[PROVIDER_SIGNATORY]`                         |
 | Customer legal name, public-body status, address and signer       | `[CUSTOMER_LEGAL_NAME]`; `[CUSTOMER_AUTHORITY_EVIDENCE]`; `[CUSTOMER_SIGNATORY]`                       |
 | Order/version and executed schedules                              | `[ORDER_ID]`; exact MSA/DPA/Security/SLA/AUP/Return versions                                           |
 | Contract and service-start dates                                  | `[EFFECTIVE_DATE]`; `[SERVICE_START_DATE]` after acceptance                                            |

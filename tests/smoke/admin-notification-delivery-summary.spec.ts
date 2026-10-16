@@ -132,13 +132,13 @@ test.describe('tenant admin notification delivery summary', () => {
   test('guardian cannot access tenant notification settings', async ({ page }) => {
     await mockRole(page, 'guardian');
     await page.goto('/admin/settings/notifications');
-    await expect(page.getByRole('heading', { name: 'Use the correct BusSafe app' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Use the correct SafeBus app' })).toBeVisible();
   });
 
   test('driver cannot access tenant notification settings', async ({ page }) => {
     await mockRole(page, 'driver');
     await page.goto('/admin/settings/notifications');
-    await expect(page.getByRole('heading', { name: 'Use the correct BusSafe app' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Use the correct SafeBus app' })).toBeVisible();
   });
 
   test('Platform Super Admin cannot access tenant notification settings', async ({ page }) => {

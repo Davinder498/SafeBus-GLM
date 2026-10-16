@@ -195,7 +195,7 @@ export function NotificationSettingsPage() {
       <div className="mx-auto max-w-2xl" data-ui="notification-settings-page">
         <PageHeader
           title="Notification settings"
-          description="Choose how BusSafe should reach you."
+          description="Choose how SafeBus should reach you."
         />
         {isAdmin ? (
           <DataState

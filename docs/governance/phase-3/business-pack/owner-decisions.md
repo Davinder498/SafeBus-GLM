@@ -3,24 +3,27 @@
 **Status:** Decision worksheet; only expressly recorded owner choices are resolved
 **Prepared:** 2026-10-13; owner inputs updated 2026-10-15
 
-The owner requested placeholders for public business identity and contact
-details. Use the same resolved values throughout the final pack; keep
-customer-specific values and signed copies outside Git.
+The owner initially requested placeholders for business identity and contact
+details. On 2026-10-15 the owner identified Sachman Gold Inc., doing business as
+SafeBus, as the operator and seller, and selected SafeBus as the sole public name.
+Keep customer-specific values and signed copies outside Git.
 
-On 2026-10-15 the owner reconfirmed that legal identity/contact details remain
-unresolved and selected themselves as Privacy Lead. No email, address, backup,
-price, liability amount or effective-publication approval is inferred.
+The owner is the Privacy Lead. Contact details remain unresolved. The owner
+reports that the website is unpublished, GST/HST registration is not held, and
+pricing is undecided. No email, address, registration-document verification,
+signing authority, liability amount or publication approval is inferred.
 
 | Input                                                            | Draft treatment                                                                     | Required decision/evidence                                                                                                                |
 | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `[PROVIDER_LEGAL_NAME]`, `[PROVIDER_BUSINESS_ADDRESS]`           | Unfilled                                                                            | Exact contracting entity or proprietor/trade-name formulation, registration and signing authority                                         |
+| Provider legal name / public name                                | Sachman Gold Inc., doing business as SafeBus; owner-confirmed 2026-10-15            | Registration documents and signing authority still require verification before execution                                                  |
+| `[PROVIDER_BUSINESS_ADDRESS]`                                    | Unfilled                                                                            | Business mailing address                                                                                                                  |
 | `[PRIVACY_EMAIL]`, `[SUPPORT_EMAIL]`, `[NOTICE_EMAIL]`           | Unfilled                                                                            | Working, monitored business channels and backup routing                                                                                   |
 | `[PRIVACY_LEAD]`                                                 | Business owner; expressly selected on 2026-10-15                                    | Appointment decision recorded; training, resourcing and working contact still required                                                    |
 | `[PRIVACY_BACKUP]`                                               | Unresolved                                                                          | Capable backup and routing evidence; personal details outside Git                                                                         |
 | `[EFFECTIVE_DATE]`, `[PUBLIC_POLICY_URL]`, `[DELETION_URL]`      | No effective or publication date                                                    | Approved wording, working public HTTPS pages and contact paths                                                                            |
 | `[CUSTOMER_LEGAL_NAME]`, customer privacy contacts and signatory | Unfilled                                                                            | Customer onboarding inputs; not needed to write the business drafts                                                                       |
 | `[ANNUAL_PER_BUS_CAD]`, `[CONTRACTED_BUS_COUNT]`                 | Annual per-bus CAD model from the Stripe runbook                                    | Price, definition of billable bus and allowance; avoid confusing registered users with licensed buses                                     |
-| Tax registration, `[APPLICABLE_TAXES]`, exemptions               | No assumed tax rate or exemption                                                    | Finance/tax review, invoice configuration and applicable customer documentation                                                           |
+| Tax registration, `[APPLICABLE_TAXES]`, exemptions               | Owner reports not GST/HST registered; no assumed rate or exemption                  | Finance/tax review, invoice configuration and applicable customer documentation                                                           |
 | Invoice/payment period                                           | Proposed 30 calendar days                                                           | Owner approval and customer acceptance; align with Stripe collection terms                                                                |
 | Initial term and renewal                                         | Proposed 12 months; renewal election in order form                                  | Auto-renewal choice, notice period, price-change notice and Stripe configuration                                                          |
 | Bus-count changes/proration                                      | Written change order before billing change                                          | Define effective date, approved credit/debit method and evidence of customer authorization                                                |

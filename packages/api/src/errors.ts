@@ -1,5 +1,5 @@
 /**
- * SafeBus Alberta — Typed error classes.
+ * SafeBus — Typed error classes.
  *
  * All API helpers throw these instead of generic Error, so the UI can
  * show appropriate messages (see UI Plan §9 — empty/error states).

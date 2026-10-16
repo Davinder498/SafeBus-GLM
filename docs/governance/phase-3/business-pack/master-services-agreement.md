@@ -1,7 +1,7 @@
 # SafeBus Master Services Agreement — Draft
 
 **Status:** Proposed business terms for owner/customer review; not executed
-**Provider:** `[PROVIDER_LEGAL_NAME]` of `[PROVIDER_BUSINESS_ADDRESS]` (SafeBus)
+**Provider:** Sachman Gold Inc. of `[PROVIDER_BUSINESS_ADDRESS]` (SafeBus)
 **Customer:** `[CUSTOMER_LEGAL_NAME]` identified in the signed Order Form
 **Effective date:** `[EFFECTIVE_DATE]`
 

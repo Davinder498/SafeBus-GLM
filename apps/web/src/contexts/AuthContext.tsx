@@ -80,16 +80,16 @@ export function isRoleAllowedOnSurface(role: ProfileRole, surface: AppSurface): 
 
 export function getSurfaceAccessMessage(surface: AppSurface): string {
   return surface === 'web'
-    ? 'Driver and parent accounts use the BusSafe mobile app. Administrator accounts can sign in on this website.'
-    : 'Administrator accounts use the BusSafe website. Driver and parent accounts can sign in in the mobile app.';
+    ? 'Driver and parent accounts use the SafeBus mobile app. Administrator accounts can sign in on this website.'
+    : 'Administrator accounts use the SafeBus website. Driver and parent accounts can sign in in the mobile app.';
 }
 
 function getProfileErrorMessage() {
-  return 'Your account is signed in, but no BusSafe profile was found. Ask an administrator to finish your profile setup.';
+  return 'Your account is signed in, but no SafeBus profile was found. Ask an administrator to finish your profile setup.';
 }
 
 function getSessionErrorMessage() {
-  return 'BusSafe could not verify your session right now. Please try signing in again.';
+  return 'SafeBus could not verify your session right now. Please try signing in again.';
 }
 
 interface AuthProviderProps {
@@ -144,10 +144,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const registerSession = useCallback(async () => {
     if (!supabase) return;
     const { error } = await supabase.rpc('register_current_user_session', {
-      p_device_label: 'BusSafe web',
+      p_device_label: 'SafeBus web',
       p_user_agent: typeof navigator === 'undefined' ? null : navigator.userAgent,
     });
-    if (error) throw new Error('We could not verify this BusSafe session. Sign in again or retry shortly.');
+    if (error) throw new Error('We could not verify this SafeBus session. Sign in again or retry shortly.');
   }, []);
 
   const loadProfile = useCallback(async (userId: string): Promise<Profile> => {
@@ -167,7 +167,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     if (!isProfileRole(data.role)) {
       throw new Error(
-        'Your BusSafe profile has an unsupported role. Ask an administrator to review your account.',
+        'Your SafeBus profile has an unsupported role. Ask an administrator to review your account.',
       );
     }
 
@@ -297,7 +297,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSession(null);
       setProfile(null);
       setMfaStatus({ currentLevel: null, nextLevel: null, verifiedFactors: [] });
-      setAuthError('This BusSafe session was revoked by an administrator. Sign in again.');
+      setAuthError('This SafeBus session was revoked by an administrator. Sign in again.');
     }
 
     void verifyCurrentSession();
@@ -425,7 +425,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { error: activationError } = await supabase.rpc('complete_invited_account');
       if (activationError) {
         throw new Error(
-          'Your password was saved, but BusSafe could not finish activating the account. Retry this page or ask your administrator for help.',
+          'Your password was saved, but SafeBus could not finish activating the account. Retry this page or ask your administrator for help.',
         );
       }
 

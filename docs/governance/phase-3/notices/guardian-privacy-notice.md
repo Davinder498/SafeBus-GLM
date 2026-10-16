@@ -1,7 +1,7 @@
 ﻿# SafeBus Guardian Privacy Notice — Draft
 
 **Status:** Participant notice draft; customer adaptation and publication pending
-**Operator:** `[PROVIDER_LEGAL_NAME]` / SafeBus Alberta (BusSafe)
+**Operator:** Sachman Gold Inc., doing business as SafeBus
 **Authority/contact:** `[CUSTOMER_LEGAL_NAME]` / `[CUSTOMER_PRIVACY_CONTACT]`
 **SafeBus privacy contact:** `[PRIVACY_EMAIL]`
 

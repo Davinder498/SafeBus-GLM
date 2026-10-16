@@ -1,5 +1,5 @@
 /**
- * SafeBus Alberta — Spacing, radius, shadows, breakpoints.
+ * SafeBus — Spacing, radius, shadows, breakpoints.
  *
  * Per UI Plan §3.4: 4/8/12/16/24/32px scale. Touch targets ≥ 44×44px.
  */

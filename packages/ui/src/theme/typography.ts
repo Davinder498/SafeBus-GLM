@@ -1,5 +1,5 @@
 /**
- * SafeBus Alberta — Typography tokens.
+ * SafeBus — Typography tokens.
  *
  * Per UI Plan §3.3: Inter font, system UI fallback. Readable on phones.
  */

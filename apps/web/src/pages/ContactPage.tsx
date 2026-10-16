@@ -93,7 +93,7 @@ export function ContactPage() {
         <section className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:px-8 lg:py-20">
           <div className="self-start lg:sticky lg:top-24">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-navy-600">
-              Contact BusSafe Alberta
+              Contact SafeBus
             </p>
             <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl">
               Let&apos;s talk school transportation
@@ -125,7 +125,7 @@ export function ContactPage() {
                 <CheckCircle2 className="mx-auto h-12 w-12 text-success-600" aria-hidden />
                 <h2 className="mt-5 text-2xl font-bold text-slate-950">Inquiry sent</h2>
                 <p className="mx-auto mt-3 max-w-md text-slate-600">
-                  Thank you. The BusSafe Alberta team will review your message and follow up using
+                  Thank you. The SafeBus team will review your message and follow up using
                   the work email you provided.
                 </p>
                 <Button
@@ -266,7 +266,7 @@ export function ContactPage() {
                       sensitive personal information.
                     </p>
                     <p className="mt-3 text-xs leading-5 text-slate-500">
-                      By submitting this form, you agree that BusSafe Alberta may use these business
+                      By submitting this form, you agree that SafeBus may use these business
                       contact details to respond to your inquiry. See our{' '}
                       <a
                         className="font-semibold text-navy-700 underline underline-offset-2"

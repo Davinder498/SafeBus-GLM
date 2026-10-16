@@ -1,5 +1,5 @@
 /**
- * SafeBus Alberta — Shared UI component library entry point.
+ * SafeBus — Shared UI component library entry point.
  *
  * Per UI Plan §10: 19 core components. This package exports all of them.
  * Components are added incrementally as needed by the build phases.

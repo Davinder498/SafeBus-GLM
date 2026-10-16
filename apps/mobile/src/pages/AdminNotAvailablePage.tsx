@@ -28,7 +28,7 @@ export function AdminNotAvailablePage() {
         <div className="mb-6 flex items-center justify-center gap-3">
           <BrandMark className="h-12 w-12 rounded-xl" iconClassName="h-6 w-6" />
           <span className="text-left leading-tight">
-            <span className="block font-bold text-navy-900">BusSafe Alberta</span>
+            <span className="block font-bold text-navy-900">SafeBus</span>
             <span className="block text-xs text-slate-500">Mobile app</span>
           </span>
         </div>
@@ -37,8 +37,8 @@ export function AdminNotAvailablePage() {
         </div>
         <h1 className="text-xl font-bold text-slate-900">Admin access on web only</h1>
         <p className="mt-2 text-sm text-slate-600">
-          The BusSafe mobile app is built for drivers and guardians. Admin features — fleet
-          management, routes, people, and settings — are available on the BusSafe web app from a
+          The SafeBus mobile app is built for drivers and guardians. Admin features — fleet
+          management, routes, people, and settings — are available on the SafeBus web app from a
           computer or tablet browser.
         </p>
         <Link

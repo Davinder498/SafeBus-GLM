@@ -42,7 +42,7 @@ export function AdminSupportPage() {
         <PageHeader
           eyebrow="Settings"
           title="Support"
-          description="Contact the BusSafe platform administrator and manage the contact details shown to your drivers and guardians."
+          description="Contact the SafeBus platform administrator and manage the contact details shown to your drivers and guardians."
         />
         <AdminSettingsNav role="tenant_admin" />
         {message && (

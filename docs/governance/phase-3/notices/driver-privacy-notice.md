@@ -1,7 +1,7 @@
 ﻿# SafeBus Driver and Personal-Android Privacy Notice — Draft
 
 **Status:** Participant/BYOD notice draft; customer adaptation, device evidence and publication pending
-**Operator:** `[PROVIDER_LEGAL_NAME]` / SafeBus Alberta (BusSafe)
+**Operator:** Sachman Gold Inc., doing business as SafeBus
 **Customer/employer privacy contact:** `[CUSTOMER_PRIVACY_CONTACT]`
 **SafeBus privacy contact:** `[PRIVACY_EMAIL]`
 

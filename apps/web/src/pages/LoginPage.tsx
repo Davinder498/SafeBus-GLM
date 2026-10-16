@@ -36,7 +36,7 @@ export function LoginPage() {
       if (profile.status !== 'active') {
         await signOut();
         throw new Error(
-          `This BusSafe account is ${profile.status}. Ask your administrator to reactivate it.`,
+          `This SafeBus account is ${profile.status}. Ask your administrator to reactivate it.`,
         );
       }
       if (!isRoleAllowedOnSurface(profile.role, appSurface)) {
@@ -66,7 +66,7 @@ export function LoginPage() {
         <div className="relative p-10">
           <Link to="/" className="flex items-center gap-2.5 text-white">
             <BrandMark className="h-9 w-9" />
-            <span className="text-lg font-bold tracking-tight">BusSafe Alberta</span>
+            <span className="text-lg font-bold tracking-tight">SafeBus</span>
           </Link>
         </div>
         <div className="relative px-10 pb-10">
@@ -93,7 +93,7 @@ export function LoginPage() {
           {/* Mobile brand */}
           <Link to="/" className="mb-8 flex items-center gap-2.5 lg:hidden">
             <BrandMark className="h-12 w-12 rounded-xl" iconClassName="h-6 w-6" />
-            <span className="text-lg font-bold tracking-tight text-slate-900">BusSafe Alberta</span>
+            <span className="text-lg font-bold tracking-tight text-slate-900">SafeBus</span>
           </Link>
 
           <p className="text-xs font-semibold uppercase tracking-[0.1em] text-navy-600">

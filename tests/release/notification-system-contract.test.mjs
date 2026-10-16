@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { buildFcmMessage } from '../../supabase/functions/_shared/push-dispatcher-core.mjs';
 
 const migrationPath = new URL(
   '../../supabase/migrations/0092_end_to_end_notification_system.sql',
@@ -192,14 +193,21 @@ test('one-minute scheduler is fail-closed and reads credentials only from Vault'
   assert.doesNotMatch(schedulerMigration, /BEGIN PRIVATE KEY|service_role|eyJ[A-Za-z0-9_-]+/);
 });
 
-test('FCM payload and diagnostics remain privacy safe and use the current brand', () => {
+test('historical push SQL remains immutable and diagnostics remain privacy safe', () => {
   assert.match(rebrandMigration, /'Open BusSafe to view this update\.'/);
   assert.match(rebrandMigration, /'BusSafe update'/);
   assert.doesNotMatch(rebrandMigration, /Open SafeBus|SafeBus update/);
   assert.match(rebrandMigration, /auth\.role\(\) <>? ?'service_role'/i);
   assert.match(rebrandMigration, /for update of o skip locked/i);
   assert.match(rebrandMigration, /access_expires_at/i);
-  assert.match(dispatcherCore, /notification: \{ title: row\.title, body: row\.body \}/);
+  const push = buildFcmMessage({
+    title: 'BusSafe update',
+    body: 'Open BusSafe to view this update.',
+  });
+  assert.deepEqual(push.message.notification, {
+    title: 'SafeBus update',
+    body: 'Open SafeBus to view this update.',
+  });
   assert.match(dispatcherCore, /visibility: 'PRIVATE'/);
   assert.doesNotMatch(dispatcherCore, /studentName|routeName|stopName|latitude|longitude/);
   assert.doesNotMatch(dispatcherCore, /console\.(?:log|error)[\s\S]*outbox_id/);
@@ -267,10 +275,22 @@ test('tenant notification controls are tenant-derived, role-bound and fail close
     tenantControlMigration,
     /set notifications_enabled = p_enabled[\s\S]*set push_notifications_enabled = p_enabled/i,
   );
-  assert.match(tenantControlMigration, /add column push_delivery_preference_enabled boolean not null default false/i);
-  assert.match(tenantControlMigration, /set push_delivery_preference_enabled = push_notifications_enabled/i);
-  assert.match(tenantControlMigration, /when p_enabled then v_policy\.push_delivery_preference_enabled[\s\S]*else false/i);
-  assert.match(tenantControlMigration, /set push_notifications_enabled = p_enabled,[\s\S]*push_delivery_preference_enabled = p_enabled/i);
+  assert.match(
+    tenantControlMigration,
+    /add column push_delivery_preference_enabled boolean not null default false/i,
+  );
+  assert.match(
+    tenantControlMigration,
+    /set push_delivery_preference_enabled = push_notifications_enabled/i,
+  );
+  assert.match(
+    tenantControlMigration,
+    /when p_enabled then v_policy\.push_delivery_preference_enabled[\s\S]*else false/i,
+  );
+  assert.match(
+    tenantControlMigration,
+    /set push_notifications_enabled = p_enabled,[\s\S]*push_delivery_preference_enabled = p_enabled/i,
+  );
   assert.doesNotMatch(
     tenantControlMigration,
     /set\s+(?:privacy_review_status|privacy_approved_at|privacy_approved_by|tenant_daily_limit|tenant_per_minute_limit|push_tenant_daily_limit|push_tenant_per_minute_limit)\s*=/i,
@@ -321,8 +341,14 @@ test('tenant notification control center owns policy and health presentation', (
     notificationSettingsPage,
     /profile\?\.role === 'tenant_admin'[\s\S]*to="\/admin\/settings\/notifications"/,
   );
-  assert.match(adminSettingsNav, /to: '\/admin\/settings\/notifications'[\s\S]*allowedRoles: \['tenant_admin'\]/);
-  assert.match(notificationsPage, /const settingsPath = isDriver[\s\S]*'\/driver\/settings'[\s\S]*profile\?\.role === 'guardian'[\s\S]*'\/notifications\/settings'[\s\S]*: null;/);
+  assert.match(
+    adminSettingsNav,
+    /to: '\/admin\/settings\/notifications'[\s\S]*allowedRoles: \['tenant_admin'\]/,
+  );
+  assert.match(
+    notificationsPage,
+    /const settingsPath = isDriver[\s\S]*'\/driver\/settings'[\s\S]*profile\?\.role === 'guardian'[\s\S]*'\/notifications\/settings'[\s\S]*: null;/,
+  );
   assert.doesNotMatch(notificationsPage, /'\/admin\/settings\/notifications'/);
   assert.match(notificationsPage, /settingsPath \? \([\s\S]*<Link to=\{settingsPath\}>/);
   assert.doesNotMatch(adminTripsPage, /NotificationDeliverySummaryCard/);

@@ -13,10 +13,10 @@ export function AccountDeletionPage() {
             Account and data request
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
-            Request BusSafe account deletion
+            Request SafeBus account deletion
           </h1>
           <p className="mt-4 leading-7 text-slate-700">
-            BusSafe accounts are created by invitation from a participating school authority. You
+            SafeBus accounts are created by invitation from a participating school authority. You
             can request deletion even if you no longer have the app or cannot sign in.
           </p>
 
@@ -24,8 +24,8 @@ export function AccountDeletionPage() {
             <li className="rounded-xl border border-slate-200 p-5">
               <p className="font-bold text-slate-950">1. Contact the issuing school authority</p>
               <p className="mt-2 leading-7 text-slate-700">
-                Contact its privacy office, transportation office, or BusSafe administrator. State
-                that you want the BusSafe account associated with your email address deleted. Do not
+                Contact its privacy office, transportation office, or SafeBus administrator. State
+                that you want the SafeBus account associated with your email address deleted. Do not
                 include student health, home-address, custody, or other unnecessary sensitive
                 information.
               </p>
@@ -34,7 +34,7 @@ export function AccountDeletionPage() {
               <p className="font-bold text-slate-950">2. Complete identity verification</p>
               <p className="mt-2 leading-7 text-slate-700">
                 The authority must verify that the request comes from the account holder or another
-                authorized person before instructing BusSafe to act.
+                authorized person before instructing SafeBus to act.
               </p>
             </li>
             <li className="rounded-xl border border-slate-200 p-5">
@@ -51,7 +51,7 @@ export function AccountDeletionPage() {
 
           <div className="mt-8 rounded-xl bg-amber-50 p-5 text-sm leading-6 text-amber-950">
             If you cannot identify or reach the issuing authority, use the verified developer
-            contact on the BusSafe Alberta Google Play listing. Include only your account email and
+            contact on the SafeBus Google Play listing. Include only your account email and
             school authority name so the request can be routed safely.
           </div>
 
@@ -66,7 +66,7 @@ export function AccountDeletionPage() {
             to="/privacy"
             className="mt-8 inline-flex font-semibold text-navy-700 underline underline-offset-4"
           >
-            Read the BusSafe Alberta privacy policy
+            Read the SafeBus privacy policy
           </Link>
         </div>
       </div>

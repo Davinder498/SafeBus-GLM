@@ -71,7 +71,7 @@ export function MfaPage() {
 
       const result = await client.auth.mfa.enroll({
         factorType: 'totp',
-        friendlyName: 'BusSafe authenticator',
+        friendlyName: 'SafeBus authenticator',
       });
       if (result.error) throw new Error(result.error.message);
       setEnrollment({
@@ -152,7 +152,7 @@ export function MfaPage() {
           </span>
           <h1 className="mt-5 text-3xl font-bold tracking-tight text-navy-900">{heading}</h1>
           <p className="mt-3 text-gray-600">
-            BusSafe administrator accounts require a verified authenticator-app code before the
+            SafeBus administrator accounts require a verified authenticator-app code before the
             admin portal or sensitive actions are available.
           </p>
 
@@ -165,7 +165,7 @@ export function MfaPage() {
           {isVerifiedSession ? (
             <div className="mt-6 space-y-4">
               <div className="rounded-lg border border-success-200 bg-success-50 p-4 text-sm text-success-800">
-                This session has completed MFA. You can continue to BusSafe administration.
+                This session has completed MFA. You can continue to SafeBus administration.
               </div>
               <div className="flex flex-wrap gap-3">
                 <Button type="button" onClick={() => navigate(getDashboardPath(adminProfile.role))}>

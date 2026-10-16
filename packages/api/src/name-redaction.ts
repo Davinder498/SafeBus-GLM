@@ -1,5 +1,5 @@
 /**
- * SafeBus Alberta — Name redaction.
+ * SafeBus — Name redaction.
  *
  * Provides a single minimized display-name rule for views that should avoid
  * showing full student names.

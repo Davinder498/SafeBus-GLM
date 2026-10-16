@@ -125,7 +125,7 @@ export async function installAdminWorkflowMock(
         contentType: 'application/json',
         body: JSON.stringify({
           platform: {
-            displayName: 'BusSafe platform administration',
+            displayName: 'SafeBus platform administration',
             email: 'platform@example.test',
             phone: '403-555-0100',
             websiteUrl: 'https://example.test/platform-support',

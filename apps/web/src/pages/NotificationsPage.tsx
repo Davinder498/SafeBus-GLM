@@ -280,7 +280,7 @@ export function NotificationsPage() {
         ) : (
           <PageHeader
             title="Notifications"
-            description="Your authoritative BusSafe inbox. In-app updates remain available regardless of push settings."
+            description="Your authoritative SafeBus inbox. In-app updates remain available regardless of push settings."
             action={
               settingsPath ? (
                 <Link to={settingsPath}>

@@ -57,7 +57,7 @@ export function ProtectedRoute({ allowedRoles, children, requireMfa = true }: Pr
       <PublicLayout>
         <main className="mx-auto flex min-h-[calc(100vh-150px)] max-w-lg items-center px-4 py-12 sm:px-6">
           <Card className="w-full p-8 text-center">
-            <h1 className="text-3xl font-bold text-navy-900">Use the correct BusSafe app</h1>
+            <h1 className="text-3xl font-bold text-navy-900">Use the correct SafeBus app</h1>
             <p className="mt-3 text-gray-600">{getSurfaceAccessMessage(appSurface)}</p>
             <Link
               to="/login"
@@ -81,7 +81,7 @@ export function ProtectedRoute({ allowedRoles, children, requireMfa = true }: Pr
     return (
       <AuthMessage
         title="Sign in required"
-        message="Use your BusSafe account to access this dashboard."
+        message="Use your SafeBus account to access this dashboard."
       />
     );
   }
@@ -90,7 +90,7 @@ export function ProtectedRoute({ allowedRoles, children, requireMfa = true }: Pr
     return (
       <AuthMessage
         title="Profile setup needed"
-        message={authError ?? 'Your BusSafe profile could not be loaded.'}
+        message={authError ?? 'Your SafeBus profile could not be loaded.'}
       />
     );
   }
@@ -103,7 +103,7 @@ export function ProtectedRoute({ allowedRoles, children, requireMfa = true }: Pr
     return (
       <AuthMessage
         title="Account unavailable"
-        message={`This BusSafe account is ${profile.status}. Ask your administrator to reactivate it.`}
+        message={`This SafeBus account is ${profile.status}. Ask your administrator to reactivate it.`}
       />
     );
   }

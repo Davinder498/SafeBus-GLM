@@ -17,7 +17,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
           <Link to="/" className="flex min-w-0 items-center gap-2.5">
             <BrandMark />
             <span className="hidden text-base font-bold tracking-tight text-slate-900 min-[390px]:inline">
-              BusSafe Alberta
+              SafeBus
             </span>
           </Link>
           <div className="flex shrink-0 items-center gap-2 sm:gap-4">
@@ -42,7 +42,8 @@ export function PublicLayout({ children }: PublicLayoutProps) {
         data-ui="public-footer"
       >
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 text-sm text-slate-500 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
-          <p>BusSafe Alberta. Track the bus, not the child.</p>
+          <p>SafeBus. Track the bus, not the child.</p>
+          <p className="mt-1 text-xs">Operated by Sachman Gold Inc.</p>
           <div className="flex flex-wrap gap-x-5 gap-y-2">
             <Link className="font-medium text-slate-700 hover:text-slate-950" to="/contact">
               Contact

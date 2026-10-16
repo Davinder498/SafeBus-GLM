@@ -2,7 +2,7 @@
 
 **Status:** Owner review draft; not effective, executed or approved for publication
 **Prepared:** 2026-10-13 (America/Edmonton)
-**Business context:** Alberta-registered Canadian business; exact legal identity and contacts remain placeholders at the owner's request
+**Business context:** Sachman Gold Inc., doing business as SafeBus; owner-confirmed Alberta business. Contact/address, registration evidence and signing authority remain pending
 
 ## How to use this pack
 

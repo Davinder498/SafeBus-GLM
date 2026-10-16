@@ -1,7 +1,7 @@
 # SafeBus Data Processing Agreement — Draft
 
 **Status:** Proposed schedule to the MSA; not executed
-**Parties:** `[PROVIDER_LEGAL_NAME]` (SafeBus) and `[CUSTOMER_LEGAL_NAME]` (Customer)
+**Parties:** Sachman Gold Inc. (SafeBus) and `[CUSTOMER_LEGAL_NAME]` (Customer)
 
 ## 1. Roles and instructions
 

@@ -1,5 +1,5 @@
 /**
- * SafeBus Alberta — API request/response contracts.
+ * SafeBus — API request/response contracts.
  *
  * Shared request and response contracts for approved SafeBus operations.
  */

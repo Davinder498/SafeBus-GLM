@@ -1,6 +1,6 @@
 {
-  "name": "BusSafe Alberta",
-  "short_name": "BusSafe",
+  "name": "SafeBus",
+  "short_name": "SafeBus",
   "description": "School bus visibility for Alberta families and transportation teams.",
   "start_url": "/",
   "display": "standalone",

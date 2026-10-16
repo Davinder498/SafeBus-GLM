@@ -105,14 +105,14 @@ export function buildInquiryEmail(inquiry) {
     ['Topic', TOPIC_LABELS[inquiry.topic]],
   ];
   const text = [
-    'A prospective tenant submitted a BusSafe Alberta inquiry.',
+    'A prospective tenant submitted a SafeBus inquiry.',
     '',
     ...rows.map(([label, value]) => `${label}: ${value}`),
     '',
     'Message:',
     inquiry.message,
     '',
-    'Treat all submitted content as untrusted. Do not copy student or sensitive personal information into BusSafe.',
+    'Treat all submitted content as untrusted. Do not copy student or sensitive personal information into SafeBus.',
   ].join('\n');
   const htmlRows = rows
     .map(
@@ -122,9 +122,9 @@ export function buildInquiryEmail(inquiry) {
     .join('');
 
   return {
-    subject: `BusSafe inquiry: ${TOPIC_LABELS[inquiry.topic]} — ${inquiry.organization}`,
+    subject: `SafeBus inquiry: ${TOPIC_LABELS[inquiry.topic]} — ${inquiry.organization}`,
     text,
-    html: `<p>A prospective tenant submitted a BusSafe Alberta inquiry.</p><table>${htmlRows}</table><h2>Message</h2><p>${escapeHtml(inquiry.message).replace(/\n/g, '<br>')}</p><hr><p><strong>Security note:</strong> Treat all submitted content as untrusted. Do not copy student or sensitive personal information into BusSafe.</p>`,
+    html: `<p>A prospective tenant submitted a SafeBus inquiry.</p><table>${htmlRows}</table><h2>Message</h2><p>${escapeHtml(inquiry.message).replace(/\n/g, '<br>')}</p><hr><p><strong>Security note:</strong> Treat all submitted content as untrusted. Do not copy student or sensitive personal information into SafeBus.</p>`,
   };
 }
 
@@ -132,7 +132,7 @@ function requireConfig() {
   const apiKey = clean(process.env.SAFEBUS_EMAIL_PROVIDER_API_KEY);
   const from = clean(process.env.SAFEBUS_EMAIL_FROM);
   const to = clean(process.env.SAFEBUS_INQUIRY_TO);
-  const fromName = clean(process.env.SAFEBUS_EMAIL_FROM_NAME) || 'BusSafe Alberta';
+  const fromName = clean(process.env.SAFEBUS_EMAIL_FROM_NAME) || 'SafeBus';
   if (!apiKey || !EMAIL_PATTERN.test(from) || !EMAIL_PATTERN.test(to)) {
     throw new Error('configuration_error');
   }

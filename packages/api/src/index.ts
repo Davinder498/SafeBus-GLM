@@ -1,5 +1,5 @@
 /**
- * SafeBus Alberta — Shared API helpers entry point.
+ * SafeBus — Shared API helpers entry point.
  */
 
 export * from './supabase-client.ts';

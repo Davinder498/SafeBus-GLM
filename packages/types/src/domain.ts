@@ -1,5 +1,5 @@
 /**
- * SafeBus Alberta — Domain types.
+ * SafeBus — Domain types.
  *
  * These mirror the database schema (see supabase/migrations/).
  * All entities are tenant-scoped unless noted otherwise.

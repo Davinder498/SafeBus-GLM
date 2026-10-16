@@ -654,7 +654,7 @@ test.describe('Phase 6 — role portal boundaries', () => {
       await page.goto('/admin/driver-assignments');
 
       const expectedHeading =
-        role === 'platform_super_admin' ? 'Wrong portal' : 'Use the correct BusSafe app';
+        role === 'platform_super_admin' ? 'Wrong portal' : 'Use the correct SafeBus app';
       await expect(page.getByRole('heading', { name: expectedHeading, level: 1 })).toBeVisible();
       await expect(page.getByRole('heading', { name: 'Drivers', level: 1 })).toHaveCount(0);
     });

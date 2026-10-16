@@ -1,4 +1,4 @@
-// BusSafe Alberta - Phase 3 scheduled retention runner.
+// SafeBus - Phase 3 scheduled retention runner.
 //
 // The schedule is registered in netlify.toml. Netlify scheduled functions are
 // not addressable by a public production URL. Execution defaults to dry-run;
