@@ -37,7 +37,7 @@ export function usePaginatedAdminList<T>(entity: AdminListEntity) {
   useEffect(() => { void reload(); return () => { sequence.current += 1; }; }, [reload]);
 
   return {
-    ...result, page, pageSize, searchInput, status, schoolId, loading, error, reload,
+    ...result, page, pageSize, searchInput, search, status, schoolId, loading, error, reload,
     setSearchInput,
     setPage,
     setPageSize: (value: AdminPageSize) => { setPage(1); setPageSizeState(value); },

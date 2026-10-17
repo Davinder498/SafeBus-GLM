@@ -1,4 +1,4 @@
-import { act } from 'react';
+import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { StudentQrCredentialPanel } from './StudentQrCredentialPanel';
@@ -16,11 +16,13 @@ const token = `sbus_qr_v1_${'B'.repeat(43)}`;
 async function render(disabled = false, studentId = 'student-1') {
   await act(async () =>
     root.render(
-      <StudentQrCredentialPanel
-        studentId={studentId}
-        studentName="Avery Johnson"
-        disabled={disabled}
-      />,
+      <StrictMode>
+        <StudentQrCredentialPanel
+          studentId={studentId}
+          studentName="Avery Johnson"
+          disabled={disabled}
+        />
+      </StrictMode>,
     ),
   );
 }

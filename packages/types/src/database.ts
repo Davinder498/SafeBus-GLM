@@ -42,6 +42,19 @@ export type Database = Omit<HostedDatabase, 'public'> & {
       student_bus_assignments: SeatedAssignments;
     };
     Functions: HostedDatabase['public']['Functions'] & {
+      admin_get_printable_qr: {
+        Args: {
+          p_kind: string;
+          p_entity_id: string;
+          p_issue_missing?: boolean;
+          p_original_token?: string | null;
+        };
+        Returns: Array<{
+          credential_id: string | null;
+          raw_token: string | null;
+          print_status: string;
+        }>;
+      };
       admin_set_student_bus_service_with_seat: {
         Args: HostedFunctions['admin_set_student_bus_service']['Args'] & {
           p_seat_number: number | null;

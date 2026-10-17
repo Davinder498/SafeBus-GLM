@@ -4,6 +4,7 @@ import { QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { QrReprintControl } from '@/components/admin/QrReprintControl';
 import {
   fetchStudentQrCredentialStatus,
   manageStudentQrCredential,
@@ -75,7 +76,7 @@ export function StudentQrCredentialPanel({ studentId, studentName, disabled = fa
       setMessage(
         action === 'revoke'
           ? 'Student QR revoked.'
-          : 'Student QR created. Print or download now; it cannot be retrieved later.',
+          : 'Student QR created. You can print or download the same pass again later.',
       );
     } catch {
       if (request === requestRef.current) {
@@ -111,7 +112,7 @@ export function StudentQrCredentialPanel({ studentId, studentName, disabled = fa
           <h2 className="text-lg font-bold text-navy-900">Student QR pass</h2>
         </div>
         <p className="text-sm text-slate-600">
-          Print or download the pass when it is issued. Replacing a pass invalidates the old QR
+          Print or download the same pass whenever needed. Replacing a pass invalidates the old QR
           immediately.
         </p>
         {disabled && (
@@ -169,6 +170,14 @@ export function StudentQrCredentialPanel({ studentId, studentName, disabled = fa
             Revoke
           </Button>
         </div>
+        {hasActive && (
+          <QrReprintControl
+            kind="student"
+            entityId={studentId}
+            disabled={disabled || busy}
+            onImage={setQrDataUrl}
+          />
+        )}
         {qrDataUrl && (
           <div
             className="student-qr-print-sheet rounded-xl border bg-white p-4 text-center"

@@ -1,3 +1,4 @@
+import { AdminDataDownloads } from '@/components/admin/AdminDataDownloads';
 import { useEffect, useMemo, useState } from 'react';
 import { BusFront, ChevronRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
@@ -82,6 +83,12 @@ export function AdminBusesPage() {
           eyebrow="Buses"
           title="Visible buses"
           description="Select a bus to manage its details, QR, route trips, planned drivers, and student roster."
+        />
+
+        <AdminDataDownloads
+          entity="buses"
+          query={{ search: list.search, status: list.status, schoolId: list.schoolId }}
+          disabled={list.loading || !!list.error || list.searchInput !== list.search}
         />
 
         {canWrite && (

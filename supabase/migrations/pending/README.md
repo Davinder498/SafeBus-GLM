@@ -4,6 +4,14 @@ SQL here is reviewed source for a future protected release. It is deliberately
 outside the active top-level migration manifest and deployment traversal. Never
 apply these files directly or replay the migration chain against BusSafe.
 
+`20261017161907_stable_qr_reprints.sql` adds encrypted private copies for authorized
+reprinting of the same active student and bus QR codes. Existing hash-only codes
+stay valid and can be recovered from a matching original image; downloads never
+rotate them. The original issuer signatures remain compatible. Release only
+after Vault privilege/key checks, hosted reconciliation, recovery evidence,
+rollback rehearsal and protected approval. See
+[data downloads and stable QR reprints](../../../docs/qa/data-downloads-and-qr-reprints.md).
+
 `20261017154816_optional_student_seat_assignment.sql` adds optional integer seats
 to student bus-service assignments, conflict/capacity enforcement, seat-aware
 administrative writes and role-scoped read projections. It remains unapplied and

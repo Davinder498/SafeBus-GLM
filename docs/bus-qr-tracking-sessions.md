@@ -1,5 +1,10 @@
 # Bus QR tracking sessions
 
+The prepared [stable reprint milestone](qa/data-downloads-and-qr-reprints.md)
+adds authorized printing and downloading of the same active QR. Its encrypted
+copies and legacy-image recovery supersede the issuance-only limitation below
+after protected release.
+
 This milestone replaces the driver route-assignment chooser with a bus-first start flow.
 
 ## Operational flow

@@ -298,6 +298,47 @@
 
 /* Print only the generated bus QR card when its Print QR action is used. */
 @media print {
+  @page qr-batch {
+    size: A4;
+    margin: 10mm;
+  }
+  body.printing-qr-batch > :not(.qr-batch-print-root) {
+    display: none !important;
+  }
+  body.printing-qr-batch .qr-batch-print-root {
+    display: block !important;
+  }
+  .qr-batch-print-page {
+    page: qr-batch;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    gap: 3mm;
+    height: 270mm;
+    break-after: page;
+    color: #172b3a;
+    font-size: 9pt;
+  }
+  .qr-batch-print-page:last-child {
+    break-after: auto;
+  }
+  .qr-batch-print-page article {
+    border: 1px solid #ccc;
+    padding: 2mm;
+    text-align: center;
+    break-inside: avoid;
+    overflow-wrap: anywhere;
+  }
+  .qr-batch-print-page h2 {
+    font-size: 12pt;
+    font-weight: bold;
+  }
+  .qr-batch-print-page img {
+    width: 42mm;
+    height: 42mm;
+    margin: 1mm auto;
+    object-fit: contain;
+  }
   @page {
     margin: 12mm;
   }
@@ -364,4 +405,8 @@ select[size='1']:not([multiple]) {
     appearance: auto;
     background-image: none;
   }
+}
+
+.qr-batch-print-root {
+  display: none;
 }

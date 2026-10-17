@@ -1,3 +1,4 @@
+import { AdminDataDownloads } from '@/components/admin/AdminDataDownloads';
 import { useEffect, useState } from 'react';
 import { UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router';
@@ -135,6 +136,12 @@ export function AdminStudentsPage() {
           eyebrow="Students"
           title="Students"
           description="Manage student records for your transportation account. Add, edit, and deactivate students."
+        />
+
+        <AdminDataDownloads
+          entity="students"
+          query={{ search: list.search, status: list.status, schoolId: list.schoolId }}
+          disabled={list.loading || !!list.error || list.searchInput !== list.search}
         />
 
         {canWrite && !showCreateForm && !showCsvImport && (

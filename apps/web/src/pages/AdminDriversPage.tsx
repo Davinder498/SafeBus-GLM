@@ -1,3 +1,4 @@
+import { AdminDataDownloads } from '@/components/admin/AdminDataDownloads';
 import { useState, type FormEvent } from 'react';
 import { AlertTriangle, CheckCircle2, Eye, Mail, Phone, UserRound } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router';
@@ -140,6 +141,12 @@ export function AdminDriversPage() {
               </Button>
             ) : undefined
           }
+        />
+
+        <AdminDataDownloads
+          entity="drivers"
+          query={{ search: list.search, status: list.status, schoolId: list.schoolId }}
+          disabled={list.loading || !!list.error || list.searchInput !== list.search}
         />
 
         {showInviteForm && (
