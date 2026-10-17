@@ -2,6 +2,12 @@
 
 Status: implemented for PR review; migration application, SQL execution, real-device acceptance, and deployment remain pending.
 
+The prepared [stable reprint milestone](qa/data-downloads-and-qr-reprints.md)
+adds encrypted reprints of the same active QR. After its protected release, saved
+copies can be downloaded again; legacy hash-only codes can be recovered from a
+matching original image. The issuance-only behavior below describes the earlier
+milestone.
+
 The customer authorized this named milestone and selected admin-only passes and an explicit Pickup/Drop-off mode with automatic recording. It promotes the earlier D1 experiment into development scope. The CR1 release approval and production gates are unchanged.
 
 ## Use

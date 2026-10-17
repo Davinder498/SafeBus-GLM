@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
 
 const IDS = {
@@ -112,6 +113,7 @@ async function installWorkspaceMock(
   let qrActive = false;
   let seatNumber: number | null = null;
   let qrGeneration = 0;
+  let qrReprintSaved = false;
 
   const service = {
     id: IDS.service,
@@ -339,10 +341,24 @@ async function installWorkspaceMock(
       ]);
       return;
     }
+    if (method === 'POST' && path.includes('/rpc/admin_get_printable_qr')) {
+      const body = requestRoute.request().postDataJSON() as { p_original_token?: string };
+      const token = `sbus_qr_v1_${'A'.repeat(43)}${qrGeneration}`;
+      if (body.p_original_token === token) qrReprintSaved = true;
+      await fulfillRows([
+        {
+          credential_id: '66666666-6666-6666-6666-666666666666',
+          raw_token: qrReprintSaved ? token : null,
+          print_status: qrReprintSaved ? 'ready' : 'needs_original',
+        },
+      ]);
+      return;
+    }
     if (method === 'POST' && path.includes('/rpc/manage_student_qr_credential')) {
       const action = (requestRoute.request().postDataJSON() as { p_action: string }).p_action;
       qrActive = action !== 'revoke';
       if (qrActive) qrGeneration += 1;
+      qrReprintSaved = false;
       await fulfillRows([
         {
           student_id: IDS.student,
@@ -603,4 +619,36 @@ test('optional student seats can be added, edited, cleared and reloaded', async 
       seat ? `Seat ${seat}` : 'Not assigned',
     );
   }
+});
+
+test('recovers an original QR PNG and reprints the same credential without replacement', async ({
+  page,
+}) => {
+  await installWorkspaceMock(page);
+  const actions: string[] = [];
+  page.on('request', (request) => {
+    if (request.url().includes('/rpc/manage_student_qr_credential'))
+      actions.push(request.postDataJSON().p_action);
+  });
+  await page.goto(`/admin/students/${IDS.student}`);
+  const panel = page.getByTestId('admin-student-qr-panel');
+  await panel.getByRole('button', { name: 'Generate', exact: true }).click();
+  const image = panel.getByAltText('Student QR pass');
+  await expect(image).toBeVisible();
+  const original = await image.getAttribute('src');
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    panel.getByRole('link', { name: 'Download PNG' }).click(),
+  ]);
+  const png = await readFile((await download.path())!);
+  await panel.getByRole('button', { name: 'Done', exact: true }).click();
+  await panel.getByRole('button', { name: 'View / download existing QR' }).click();
+  await panel
+    .getByLabel('Original QR image')
+    .setInputFiles({ name: 'original.png', mimeType: 'image/png', buffer: png });
+  await expect(image).toHaveAttribute('src', original!);
+  await page.reload();
+  await panel.getByRole('button', { name: 'View / download existing QR' }).click();
+  await expect(image).toHaveAttribute('src', original!);
+  expect(actions).toEqual(['generate']);
 });

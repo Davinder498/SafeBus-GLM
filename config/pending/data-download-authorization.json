@@ -1,0 +1,4 @@
+{
+  "authenticated": ["admin_get_printable_qr(text,uuid,boolean,text)"],
+  "serviceRole": []
+}

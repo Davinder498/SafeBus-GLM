@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { QrReprintControl } from '@/components/admin/QrReprintControl';
 import {
   fetchBusQrCredentialStatus,
   manageBusQrCredential,
@@ -14,43 +16,71 @@ export function BusQrCredentialPanel({ busId, busNumber }: { busId: string; busN
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  const load = useCallback(async () => {
-    const status = await fetchBusQrCredentialStatus(busId);
-    setHasActive(!!status?.hasActiveCredential);
-  }, [busId]);
+  const [confirmation, setConfirmation] = useState<'rotate' | 'revoke' | null>(null);
+  const sequence = useRef(0);
+  const busyRef = useRef(false);
 
   useEffect(() => {
-    void load().catch(() => setError('Unable to load the bus QR status.'));
-  }, [load]);
+    const request = ++sequence.current;
+    setHasActive(null);
+    setQrDataUrl(null);
+    setError(null);
+    setMessage(null);
+    setConfirmation(null);
+    setBusy(false);
+    busyRef.current = false;
+    void fetchBusQrCredentialStatus(busId)
+      .then((status) => {
+        if (request === sequence.current) setHasActive(!!status?.hasActiveCredential);
+      })
+      .catch(() => {
+        if (request === sequence.current) setError('Unable to load the bus QR status.');
+      });
+    return () => {
+      sequence.current = request + 1;
+      document.body.classList.remove('printing-bus-qr');
+    };
+  }, [busId]);
 
   async function act(action: BusQrCredentialAction) {
+    if (busyRef.current || hasActive === null) return;
+    busyRef.current = true;
+    const request = sequence.current;
     setBusy(true);
     setError(null);
     setMessage(null);
+    setQrDataUrl(null);
     try {
       const result = await manageBusQrCredential(busId, action);
+      if (request !== sequence.current) return;
+      setHasActive(result.status === 'active');
       if (result.rawToken) {
-        setQrDataUrl(
-          await QRCode.toDataURL(result.rawToken, {
-            width: 640,
-            margin: 3,
-            errorCorrectionLevel: 'M',
-          }),
-        );
+        const image = await QRCode.toDataURL(result.rawToken, {
+          width: 640,
+          margin: 3,
+          errorCorrectionLevel: 'M',
+        });
+        if (request !== sequence.current) return;
+        setQrDataUrl(image);
       } else {
         setQrDataUrl(null);
       }
       setMessage(
         action === 'revoke'
           ? 'Bus QR revoked.'
-          : 'Bus QR created. Print it now; the raw credential cannot be retrieved later.',
+          : 'Bus QR created. You can print or download the same code again later.',
       );
-      await load();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to manage the bus QR.');
+    } catch {
+      if (request === sequence.current) {
+        setHasActive(null);
+        setError('Unable to manage this bus QR. Reload to check its status before trying again.');
+      }
     } finally {
-      setBusy(false);
+      if (request === sequence.current) {
+        setBusy(false);
+        busyRef.current = false;
+        setConfirmation(null);
+      }
     }
   }
 
@@ -84,7 +114,7 @@ export function BusQrCredentialPanel({ busId, busNumber }: { busId: string; busN
           <Button
             type="button"
             size="sm"
-            disabled={busy || hasActive === true}
+            disabled={busy || hasActive !== false}
             onClick={() => void act('generate')}
           >
             Generate QR
@@ -94,7 +124,7 @@ export function BusQrCredentialPanel({ busId, busNumber }: { busId: string; busN
             size="sm"
             variant="secondary"
             disabled={busy || !hasActive}
-            onClick={() => void act('rotate')}
+            onClick={() => setConfirmation('rotate')}
           >
             Replace QR
           </Button>
@@ -103,11 +133,14 @@ export function BusQrCredentialPanel({ busId, busNumber }: { busId: string; busN
             size="sm"
             variant="danger"
             disabled={busy || !hasActive}
-            onClick={() => void act('revoke')}
+            onClick={() => setConfirmation('revoke')}
           >
             Revoke QR
           </Button>
         </div>
+        {hasActive && (
+          <QrReprintControl kind="bus" entityId={busId} disabled={busy} onImage={setQrDataUrl} />
+        )}
         {qrDataUrl && (
           <div
             className="bus-qr-print-sheet rounded-xl border border-gray-200 bg-white p-4 text-center print:border-0"
@@ -121,12 +154,36 @@ export function BusQrCredentialPanel({ busId, busNumber }: { busId: string; busN
               className="mx-auto my-4 h-64 w-64"
             />
             <p className="text-sm text-gray-700">Driver: open SafeBus and choose Scan to start.</p>
-            <Button type="button" size="sm" className="mt-3 print:hidden" onClick={printQr}>
-              Print QR
-            </Button>
+            <div className="mt-3 flex flex-wrap justify-center gap-2 print:hidden">
+              <Button type="button" size="sm" onClick={printQr}>
+                Print QR
+              </Button>
+              <a
+                className="inline-flex min-h-11 items-center rounded-lg border px-3 text-sm font-semibold"
+                href={qrDataUrl}
+                download="SafeBus-bus-QR.png"
+              >
+                Download PNG
+              </a>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setQrDataUrl(null)}>
+                Done
+              </Button>
+            </div>
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={confirmation !== null}
+        title={confirmation === 'rotate' ? 'Replace bus QR?' : 'Revoke bus QR?'}
+        description="The current printed QR will stop working immediately. To print another copy of the same QR, use View / download existing QR."
+        confirmLabel={confirmation === 'rotate' ? 'Replace code' : 'Revoke code'}
+        destructive
+        busy={busy}
+        onCancel={() => setConfirmation(null)}
+        onConfirm={() => {
+          if (confirmation) void act(confirmation);
+        }}
+      />
     </Card>
   );
 }

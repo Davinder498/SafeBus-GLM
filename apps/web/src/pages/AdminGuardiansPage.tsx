@@ -1,3 +1,4 @@
+import { AdminDataDownloads } from '@/components/admin/AdminDataDownloads';
 import { useState, type FormEvent } from 'react';
 import { CheckCircle2, CircleDashed, Eye, Mail, Phone, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router';
@@ -85,6 +86,8 @@ export function AdminGuardiansPage() {
             ) : undefined
           }
         />
+
+        <AdminDataDownloads entity="guardians" query={{ search: list.search, status: list.status, schoolId: list.schoolId }} disabled={list.loading || !!list.error || list.searchInput !== list.search} />
 
         {showInviteForm && (
           <Card className="p-5">
