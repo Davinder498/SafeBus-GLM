@@ -79,8 +79,10 @@ The student and bus directories expose **Prepare QR sheets** for tenant admins.
 The confirmation explains that missing codes will be issued and existing codes
 reused. A batch covers all filtered records, up to 200, and processes sequentially
 to bound issuance work. Inactive students and retired buses are skipped. Legacy
-codes needing originals are identified with links to their records; ready codes
-can be printed, and the skipped count is explicit. A cancelled/failed batch
+codes needing originals are identified with links to their records. Printing is
+blocked until every eligible record in the batch has a printable QR, so buses
+are not silently omitted from a partial sheet. Each record gets its own card,
+including codes reused from an earlier preparation; the skipped count is explicit. A cancelled/failed batch
 retains any already-issued codes securely so retrying reuses them.
 
 Preview images remain in memory until dismissed, navigation or context change.

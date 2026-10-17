@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router';
 import QRCode from 'qrcode';
@@ -21,10 +21,14 @@ export function BulkQrSheets({
   kind,
   query,
   disabled,
+  leadingActions,
+  trailingActions,
 }: {
   kind: 'student' | 'bus';
   query: Omit<AdminListQuery, 'page' | 'pageSize'>;
   disabled?: boolean;
+  leadingActions?: ReactNode;
+  trailingActions?: ReactNode;
 }) {
   const { user, profile } = useAuth();
   const [confirm, setConfirm] = useState(false);
@@ -130,6 +134,7 @@ export function BulkQrSheets({
     }
   }
   function print() {
+    if (originals.length > 0 || passes.length === 0) return;
     document.body.classList.add('printing-qr-batch');
     window.addEventListener(
       'afterprint',
@@ -141,7 +146,8 @@ export function BulkQrSheets({
   if (profile?.role !== 'tenant_admin' || profile.status !== 'active') return null;
   return (
     <div className="space-y-3" data-testid="bulk-qr-sheets">
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        {leadingActions}
         <Button
           type="button"
           variant="outline"
@@ -151,6 +157,7 @@ export function BulkQrSheets({
         >
           Prepare QR sheets
         </Button>
+        {trailingActions}
         {busy && (
           <Button
             type="button"
@@ -169,7 +176,7 @@ export function BulkQrSheets({
         )}
         {passes.length > 0 && (
           <>
-            <Button type="button" onClick={print}>
+            <Button type="button" onClick={print} disabled={originals.length > 0}>
               Print QR sheets
             </Button>
             <Button
@@ -199,8 +206,9 @@ export function BulkQrSheets({
       {originals.length > 0 && (
         <div className="rounded-lg bg-slate-50 p-3 text-sm">
           <p>
-            These existing codes stay valid. Open the record and save an original QR image to enable
-            reprinting, then prepare this batch again.
+            Printing is unavailable until every eligible {kind === 'bus' ? 'bus' : 'student'} in
+            this batch has a printable QR. These existing codes stay valid. Open each record below
+            and save an original QR image, then prepare this batch again to include them all.
           </p>
           <ul className="mt-2 flex flex-wrap gap-3">
             {originals.map((row) => (

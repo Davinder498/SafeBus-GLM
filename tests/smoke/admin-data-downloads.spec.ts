@@ -144,20 +144,65 @@ test('bulk student sheets reuse the same QR codes and print twelve passes per pa
   expect(Array.from(fixture.qrTokens.values())).toEqual(tokens);
 });
 
-test('bulk bus sheets use the same issued bus QR codes', async ({ page }) => {
-  const fixture = await install(page, 'buses', 2);
+test('bulk bus sheets include every bus across pages and reuse every issued QR', async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  const fixture = await install(page, 'buses', 101);
   await page.goto('/admin/buses');
   await page.getByRole('button', { name: 'Prepare QR sheets' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Prepare sheets' }).click();
-  await expect(page.getByText('2 QR codes ready.', { exact: false })).toBeVisible();
-  await expect(page.getByRole('img', { name: 'QR for Bus B0' })).toBeVisible();
+  await expect(page.getByText('101 QR codes ready.', { exact: false })).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.getByRole('img', { name: 'QR for Bus B0', exact: true })).toBeAttached();
+  await expect(page.getByRole('img', { name: 'QR for Bus B100', exact: true })).toBeAttached();
+  await expect(page.locator('.qr-batch-print-page')).toHaveCount(9);
+  expect(await page.locator('.qr-batch-print-root article h2').allTextContents()).toEqual(
+    Array.from({ length: 101 }, (_, index) => `Bus B${index}`),
+  );
+  expect(fixture.calls.some((call) => call.page === 2 && call.pageSize === 100)).toBe(true);
   expect(
     Array.from(fixture.qrTokens.values()).every((token) => token.startsWith('sbus_bus_v1_')),
   ).toBe(true);
   const issued = Array.from(fixture.qrTokens.values());
+  expect(issued).toHaveLength(101);
   await page.getByRole('button', { name: 'Dismiss QR sheets' }).click();
   await page.getByRole('button', { name: 'Prepare QR sheets' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Prepare sheets' }).click();
-  await expect(page.getByText('2 QR codes ready.', { exact: false })).toBeVisible();
+  await expect(page.getByText('101 QR codes ready.', { exact: false })).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.locator('.qr-batch-print-root article')).toHaveCount(101);
   expect(Array.from(fixture.qrTokens.values())).toEqual(issued);
+});
+
+test('bus actions share the desktop row and fit on phones with simplified branding', async ({
+  page,
+}, testInfo) => {
+  await install(page, 'buses', 2);
+  await page.goto('/admin/buses');
+  const download = page.getByRole('button', { name: 'Download CSV', exact: true });
+  const prepare = page.getByRole('button', { name: 'Prepare QR sheets', exact: true });
+  const add = page.getByRole('button', { name: 'Add bus', exact: true });
+  await expect(download).toBeEnabled();
+  await expect(prepare).toBeVisible();
+  await expect(add).toBeVisible();
+  if (testInfo.project.name === 'desktop-chromium') {
+    const boxes = await Promise.all([
+      download.boundingBox(),
+      prepare.boundingBox(),
+      add.boundingBox(),
+    ]);
+    expect(boxes.every((box) => box && Math.abs(box.y - boxes[0]!.y) < 2)).toBe(true);
+    await expect(page.locator('header').getByText('Test Admin', { exact: true })).toBeVisible();
+    await expect(page.locator('header').getByText('SafeBus', { exact: true })).toBeVisible();
+  }
+  await expect(page.locator('header').getByText('Admin portal', { exact: true })).toHaveCount(0);
+  await expect(page.locator('header').getByText('Tenant admin', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'SafeBus home' }).locator('svg, img')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  await page.screenshot({ path: `.codex-artifacts/bus-toolbar-${testInfo.project.name}.png` });
 });

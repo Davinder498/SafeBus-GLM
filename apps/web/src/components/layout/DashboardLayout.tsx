@@ -376,7 +376,9 @@ export function DashboardLayout({
             <BrandMark />
             <span className="sb-brand-copy hidden flex-col leading-tight sm:flex">
               <span className="text-sm font-bold text-slate-900">SafeBus</span>
-              <span className="text-xs text-slate-600">{portalTitles[portal]} portal</span>
+              {portal !== 'admin' && (
+                <span className="text-xs text-slate-600">{portalTitles[portal]} portal</span>
+              )}
             </span>
           </Link>
 
@@ -410,9 +412,11 @@ export function DashboardLayout({
                     <span className="block text-sm font-semibold text-slate-900">
                       {displayName}
                     </span>
-                    <span className="block text-xs capitalize text-slate-600">
-                      {profile ? getRoleLabel(profile.role) : ''}
-                    </span>
+                    {profile && profile.role !== 'tenant_admin' && (
+                      <span className="block text-xs capitalize text-slate-600">
+                        {getRoleLabel(profile.role)}
+                      </span>
+                    )}
                   </span>
                 </span>
               }
