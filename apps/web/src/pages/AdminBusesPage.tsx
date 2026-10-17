@@ -89,15 +89,14 @@ export function AdminBusesPage() {
           entity="buses"
           query={{ search: list.search, status: list.status, schoolId: list.schoolId }}
           disabled={list.loading || !!list.error || list.searchInput !== list.search}
+          actions={
+            canWrite && (
+              <Button type="button" onClick={() => navigate('/admin/buses/new')}>
+                Add bus
+              </Button>
+            )
+          }
         />
-
-        {canWrite && (
-          <div className="flex">
-            <Button type="button" onClick={() => navigate('/admin/buses/new')}>
-              Add bus
-            </Button>
-          </div>
-        )}
 
         <div>
           <label className="block text-sm font-semibold text-gray-700" htmlFor="bus-search">

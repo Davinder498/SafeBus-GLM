@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router';
 import { LegalPageLayout } from '@/components/layout/LegalPageLayout';
 import { RolePrivacyNotices } from '@/components/privacy/RolePrivacyNotices';
 
-const updatedDate = 'October 16, 2026';
+const updatedDate = 'October 17, 2026';
 
 export function PrivacyPolicyPage() {
   const { hash } = useLocation();
@@ -27,8 +27,8 @@ export function PrivacyPolicyPage() {
           </h1>
           <p className="mt-3 text-sm text-slate-500">Last updated {updatedDate}</p>
           <p className="mt-3 text-sm text-slate-700">
-            SafeBus is operated by Sachman Gold Inc., an Alberta corporation doing business as
-            SafeBus. Our official website is safebus.kids.
+            SafeBus is owned and operated by Sachman Gold Inc. Sachman Gold Inc. is an Alberta
+            corporation. Our official website is safebus.kids.
           </p>
 
           <div className="mt-8 space-y-8 text-base leading-7 text-slate-700">

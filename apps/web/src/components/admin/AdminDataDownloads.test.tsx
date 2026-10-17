@@ -143,3 +143,43 @@ it('lists legacy originals without replacing or printing a different code', asyn
   expect(mocks.image).not.toHaveBeenCalled();
   expect(document.querySelector('.qr-batch-print-root')).toBeNull();
 });
+it('blocks incomplete bus sheets until every existing code can be reprinted', async () => {
+  mocks.collect.mockResolvedValue([
+    { id: 'bus-a', bus_number: '1', status: 'active' },
+    { id: 'bus-b', bus_number: '2', status: 'active' },
+  ]);
+  mocks.qr.mockResolvedValueOnce({ status: 'ready', token: 'original-a' });
+  mocks.qr.mockResolvedValueOnce({ status: 'needs_original', token: null });
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <AdminDataDownloads entity="buses" query={{}} />
+      </MemoryRouter>,
+    ),
+  );
+  await click('Prepare QR sheets');
+  await click('Prepare sheets');
+  const printButton = [...container.querySelectorAll('button')].find(
+    (button) => button.textContent === 'Print QR sheets',
+  );
+  expect(printButton?.disabled).toBe(true);
+  expect(container.textContent).toContain('Printing is unavailable until every eligible bus');
+  expect(container.querySelector('a')?.getAttribute('href')).toBe('/admin/buses/bus-b');
+
+  mocks.qr.mockResolvedValueOnce({ status: 'ready', token: 'original-a' });
+  mocks.qr.mockResolvedValueOnce({ status: 'ready', token: 'original-b' });
+  await click('Prepare QR sheets');
+  await click('Prepare sheets');
+  expect(container.textContent).toContain('2 QR codes ready');
+  expect(
+    [...container.querySelectorAll('button')].find(
+      (button) => button.textContent === 'Print QR sheets',
+    )?.disabled,
+  ).toBe(false);
+  expect(document.querySelectorAll('.qr-batch-print-root article')).toHaveLength(2);
+  expect(mocks.image.mock.calls.map(([token]) => token)).toEqual([
+    'original-a',
+    'original-a',
+    'original-b',
+  ]);
+});
