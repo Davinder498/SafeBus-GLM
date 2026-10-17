@@ -1,5 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { StudentSearchPicker } from '@/components/admin/StudentSearchPicker';
+import { SeatNumberField } from '@/components/admin/SeatNumberField';
+import { parseSeatNumber } from '@/utils/studentSeat';
 import { Button } from '@/components/ui/Button';
 import type {
   BusServiceOption,
@@ -60,6 +62,11 @@ export function DirectionalStudentBusAssignmentForm({
   );
 
   const [studentId, setStudentId] = useState(assignments[0]?.student_id ?? fixedStudentId ?? '');
+  const differentSeats = new Set(assignments.map((a) => a.seat_number ?? null)).size > 1;
+  const [seatNumber, setSeatNumber] = useState(
+    differentSeats ? '' : String(assignments[0]?.seat_number ?? ''),
+  );
+  const [seatResolved, setSeatResolved] = useState(!differentSeats);
   const [serviceSelection, setServiceSelection] = useState(initialServiceSelection);
   const [directionScope, setDirectionScope] = useState<DirectionScope>(() =>
     initialServices.length > 0
@@ -143,6 +150,8 @@ export function DirectionalStudentBusAssignmentForm({
 
     setSaving(true);
     try {
+      if (!seatResolved) throw new Error('Choose a seat number or explicitly clear both seats.');
+      const seat = parseSeatNumber(seatNumber, routeServices[0]?.bus_capacity);
       const reverseStops = resolveReverseStops({
         customizeReturn,
         forwardPickupStopId,
@@ -151,6 +160,7 @@ export function DirectionalStudentBusAssignmentForm({
         reverseDropoffStopId,
       });
       await onSubmit({
+        seatNumber: seat,
         studentId,
         busId,
         routeId,
@@ -246,6 +256,16 @@ export function DirectionalStudentBusAssignmentForm({
           </select>
         </label>
       </div>
+
+      <SeatNumberField
+        value={seatNumber}
+        capacity={routeServices[0]?.bus_capacity}
+        mixed={!seatResolved}
+        onChange={(value) => {
+          setSeatNumber(value);
+          setSeatResolved(true);
+        }}
+      />
 
       {(directionScope === 'both' || directionScope === 'forward') && (
         <fieldset className="grid gap-4 rounded-xl border border-slate-200 p-4 sm:grid-cols-2">

@@ -46,6 +46,11 @@ function requireSupabase() {
 
 export function describeBusError(error: { message?: string; code?: string }): Error {
   const message = error?.message ?? '';
+  if (message.includes('Bus capacity cannot be lower than a currently or future reserved seat')) {
+    return new Error(
+      'Reassign or clear seats above the new capacity before reducing bus capacity.',
+    );
+  }
   if (message.includes('bus_admin_details_tenant_fleet_number_unique')) {
     return new DuplicateIdentifierError(
       'fleetNumber',

@@ -588,7 +588,7 @@ async function mockBusWorkspace(
       }
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
     }
-    if (path.endsWith('/rpc/admin_set_student_bus_service')) {
+    if (path.endsWith('/rpc/admin_set_student_bus_service_with_seat')) {
       const body = route.request().postDataJSON() as {
         p_student_id?: string;
         p_effective_to?: string | null;
@@ -1100,6 +1100,7 @@ test.describe('unified bus workspace', () => {
     await expect(studentRoster.getByRole('columnheader')).toHaveText([
       'Student',
       'Route service',
+      'Seat',
       'Pickup',
       'Drop-off',
       'Service dates',

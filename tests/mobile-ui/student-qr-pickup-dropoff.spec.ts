@@ -21,7 +21,7 @@ async function install(
   const studentStatuses = new Map<string, string>();
   const calls: Record<string, string>[] = [];
   let didRecord = false;
-  await page.route('**/rest/v1/rpc/get_driver_active_trip_student_manifest', async (route) => {
+  await page.route('**/rest/v1/rpc/get_driver_active_trip_student_manifest_v2', async (route) => {
     if (options.refreshFailure && didRecord)
       return route.fulfill({ status: 503, body: '{"message":"refresh failure"}' });
     await route.fulfill({
@@ -32,6 +32,7 @@ async function install(
               active_trip_id: MOCK.tripId,
               student_id: 'aaaaaaaa-0000-0000-0000-000000000001',
               student_display_name: 'Avery Johnson',
+              seat_number: 12,
               route_name: 'North Ridge',
               trip_name: 'Outbound',
               bus_number: '12',
@@ -153,6 +154,7 @@ test('boarding line scans successive students automatically and retains the sele
 }) => {
   const calls = await install(page);
   await page.goto('/driver/manifest');
+  await expect(page.getByTestId('driver-manifest-student-card')).toContainText('Seat 12');
   await page.getByRole('button', { name: 'Open QR scanner' }).click();
   await expect(page.getByTestId('driver-qr-recorded-message')).toHaveText('Pickup recorded.');
   await expect(page.getByRole('radio', { name: 'Pickup', exact: true })).toBeChecked();

@@ -1,3 +1,4 @@
+import { seatLabel } from '@/utils/studentSeat';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
@@ -498,6 +499,10 @@ export function AdminStudentDetailPage() {
                                       ? `Bus ${assignment.bus.bus_number}`
                                       : 'Not assigned'
                                   }
+                                />
+                                <DetailItem
+                                  label="Seat"
+                                  value={seatLabel(assignment?.seat_number)}
                                 />
                                 <DetailItem
                                   label="Pickup stop"

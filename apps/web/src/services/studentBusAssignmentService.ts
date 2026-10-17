@@ -8,8 +8,10 @@ import type {
   UpdateStudentBusAssignmentInput,
 } from '@/types/transportation';
 import { busAssignmentEffectiveStatus } from '@/utils/busWorkspace';
+import { studentSeatError } from '@/utils/studentSeat';
 
 export interface BusServiceOption extends BusRouteAssignment {
+  bus_capacity?: number | null;
   bus_number: string;
   route_name: string;
   route_code: string;
@@ -27,6 +29,7 @@ export interface SetBusRouteServiceInput {
 }
 
 export interface SetStudentBusServiceInput {
+  seatNumber: number | null;
   studentId: string;
   busId: string;
   routeId: string;
@@ -46,9 +49,9 @@ function client() {
 }
 
 export async function fetchAdminBusServices(): Promise<BusServiceOption[]> {
-  const { data, error } = await client().rpc('get_admin_bus_services');
+  const { data, error } = await client().rpc('get_admin_bus_services_with_capacity');
   if (error) throw new Error('Unable to load bus services.');
-  return (data ?? []) as BusServiceOption[];
+  return (data ?? []) as unknown as BusServiceOption[];
 }
 
 export async function setBusRouteService(
@@ -77,7 +80,8 @@ export async function setBusRouteService(
 export async function setStudentBusService(
   input: SetStudentBusServiceInput,
 ): Promise<StudentBusAssignment[]> {
-  const { data, error } = await client().rpc('admin_set_student_bus_service', {
+  const { data, error } = await client().rpc('admin_set_student_bus_service_with_seat', {
+    p_seat_number: input.seatNumber,
     p_student_id: input.studentId,
     p_bus_id: input.busId,
     p_route_id: input.routeId,
@@ -91,6 +95,8 @@ export async function setStudentBusService(
     p_existing_assignment_ids: input.existingAssignmentIds ?? [],
   });
   if (error) {
+    const seatError = studentSeatError(error);
+    if (seatError) throw seatError;
     if (error.code === '23P01' || error.code === '23505') {
       throw new Error('The student already has service for one of those directions and dates.');
     }
@@ -124,7 +130,11 @@ export async function setStudentBusServiceStatus(
     p_status: status,
     p_end_service: endService,
   });
-  if (error) throw new Error(error.message || 'Unable to update this student bus service.');
+  if (error)
+    throw (
+      studentSeatError(error) ??
+      new Error(error.message || 'Unable to update this student bus service.')
+    );
   return (data ?? []) as StudentBusAssignment[];
 }
 
@@ -228,7 +238,10 @@ export async function createStudentBusAssignment(
     .select('*')
     .single();
   if (error)
-    throw new Error('Unable to assign this student to the bus service. Check the selected stops.');
+    throw (
+      studentSeatError(error) ??
+      new Error('Unable to assign this student to the bus service. Check the selected stops.')
+    );
   return data as StudentBusAssignment;
 }
 
@@ -242,6 +255,7 @@ export async function updateStudentBusAssignment(
     .eq('id', id)
     .select('*')
     .single();
-  if (error) throw new Error('Unable to update this student bus assignment.');
+  if (error)
+    throw studentSeatError(error) ?? new Error('Unable to update this student bus assignment.');
   return data as StudentBusAssignment;
 }

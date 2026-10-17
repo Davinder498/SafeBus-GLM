@@ -10,6 +10,37 @@ test.beforeEach(async ({ page }) => {
   await installLocalOnlyBoundary(page);
 });
 
+test('guardian sees the linked student seat per direction on mobile', async ({ page }) => {
+  const row = guardianVisibilityRow();
+  await installGuardianVisibilityMock(page, {
+    rows: [row],
+    studentStops: [
+      {
+        student_id: row.student_id,
+        bus_number: '42',
+        trip_name: 'Outbound',
+        direction: 'forward',
+        pickup_stop_name: 'Elm',
+        dropoff_stop_name: 'School',
+        seat_number: 12,
+      },
+      {
+        student_id: row.student_id,
+        bus_number: '42',
+        trip_name: 'Return',
+        direction: 'reverse',
+        pickup_stop_name: 'School',
+        dropoff_stop_name: 'Elm',
+        seat_number: null,
+      },
+    ],
+  });
+  await page.goto('/parent');
+  const card = page.getByTestId('guardian-home-student-card');
+  await expect(card).toContainText('Seat 12');
+  await expect(card).toContainText('Not assigned');
+});
+
 test('guardian navigation opens assigned buses in the mobile app', async ({ page }) => {
   await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
   await page.goto('/parent');

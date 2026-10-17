@@ -1,0 +1,9 @@
+{
+  "authenticated": [
+    "admin_set_student_bus_service_with_seat(uuid,uuid,uuid,integer,text,uuid,uuid,uuid,uuid,date,date,uuid[])",
+    "get_admin_bus_services_with_capacity()",
+    "get_driver_active_trip_student_manifest_v2()",
+    "get_guardian_student_stops_v2()"
+  ],
+  "serviceRole": []
+}

@@ -301,7 +301,7 @@ export async function installAdminWorkflowMock(
       route_service_days: [],
     };
     const table = path.split('/').pop() ?? '';
-    if (table === 'get_admin_bus_services') {
+    if (table === 'get_admin_bus_services_with_capacity') {
       await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
       return;
     }

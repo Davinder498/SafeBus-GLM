@@ -1,3 +1,4 @@
+import { seatLabel } from '@/utils/studentSeat';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LogOut, UserCheck } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
@@ -254,6 +255,10 @@ export function DriverManifestPage() {
                           {student.studentDisplayName}
                         </h3>
                         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                          <div>
+                            <dt className="font-semibold text-gray-500">Seat</dt>
+                            <dd className="mt-1 text-gray-800">{seatLabel(student.seatNumber)}</dd>
+                          </div>
                           <div>
                             <dt className="font-semibold text-gray-500">Pickup stop</dt>
                             <dd className="mt-1 text-gray-800">

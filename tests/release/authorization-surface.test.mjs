@@ -111,6 +111,7 @@ test('production application RPC references are all reviewed', async () => {
   const pending = await Promise.all([
     readJson('config/pending/tenant-subscription-authorization.json'),
     readJson('config/pending/pricing-catalog-authorization.json'),
+    readJson('config/pending/student-seat-authorization.json'),
   ]);
   const approved = new Set(
     [

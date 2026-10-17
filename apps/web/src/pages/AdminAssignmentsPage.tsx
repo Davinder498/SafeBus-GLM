@@ -1,3 +1,4 @@
+import { seatLabel } from '@/utils/studentSeat';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AdminPagination } from '@/components/admin/AdminPagination';
 import {
@@ -230,6 +231,7 @@ export function AdminAssignmentsPage() {
                   </div>
                 </div>
                 <div className="mt-5 grid gap-3 text-sm md:grid-cols-2">
+                  <p>Seat: <span className="font-semibold">{seatLabel(assignment.seat_number)}</span></p>
                   <p className="text-gray-600">
                     Pickup stop:{' '}
                     <span className="font-semibold text-navy-900">

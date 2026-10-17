@@ -4,6 +4,14 @@ SQL here is reviewed source for a future protected release. It is deliberately
 outside the active top-level migration manifest and deployment traversal. Never
 apply these files directly or replay the migration chain against BusSafe.
 
+`20261017154816_optional_student_seat_assignment.sql` adds optional integer seats
+to student bus-service assignments, conflict/capacity enforcement, seat-aware
+administrative writes and role-scoped read projections. It remains unapplied and
+does not change the active migration manifest or security-install tip. Release
+the migration before deploying its clients, after hosted-schema reconciliation,
+verified recovery evidence, bounded rollback rehearsal and protected approval.
+See [seat implementation and verification](../../../docs/qa/optional-student-seats.md).
+
 `20261016173613_tenant_self_service_subscriptions.sql` adds the tenant onboarding
 and subscription milestone. It uses a timestamp filename to avoid taking the
 reserved C1 version below. The existing security-install tip and top-level
