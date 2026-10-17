@@ -1,3 +1,4 @@
+import { seatLabel } from '@/utils/studentSeat';
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -414,7 +415,7 @@ export function RouteSetupPanel({
                       {services.find((s) => s.id === a.bus_route_assignment_id)?.trip_name} ·{' '}
                       {a.pickup_stop_name ?? 'Pickup not selected'} →{' '}
                       {a.dropoff_stop_name ?? 'Drop-off not selected'} · {a.effective_from} –{' '}
-                      {a.effective_to ?? 'No end date'}
+                      {a.effective_to ?? 'No end date'} · {seatLabel(a.seat_number)}
                     </p>
                   ))}
                   <DropdownMenu

@@ -1,5 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { StudentSearchPicker } from '@/components/admin/StudentSearchPicker';
+import { SeatNumberField } from '@/components/admin/SeatNumberField';
+import { parseSeatNumber } from '@/utils/studentSeat';
 import { Button } from '@/components/ui/Button';
 import type { BusServiceOption } from '@/services/studentBusAssignmentService';
 import type {
@@ -35,6 +37,7 @@ export function StudentBusAssignmentForm({
 }) {
   const [studentId, setStudentId] = useState(assignment?.student_id ?? fixedStudentId ?? '');
   const [serviceId, setServiceId] = useState(assignment?.bus_route_assignment_id ?? '');
+  const [seatNumber, setSeatNumber] = useState(String(assignment?.seat_number ?? ''));
   const [pickupStopId, setPickupStopId] = useState(assignment?.pickup_stop_id ?? '');
   const [dropoffStopId, setDropoffStopId] = useState(assignment?.dropoff_stop_id ?? '');
   const [effectiveFrom, setEffectiveFrom] = useState(
@@ -94,7 +97,11 @@ export function StudentBusAssignmentForm({
     };
     setSaving(true);
     try {
-      await onSubmit(assignment ? values : { tenant_id: defaultTenantId, ...values });
+      const seatedValues = {
+        ...values,
+        seat_number: parseSeatNumber(seatNumber, service.bus_capacity),
+      };
+      await onSubmit(assignment ? seatedValues : { tenant_id: defaultTenantId, ...seatedValues });
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -145,6 +152,11 @@ export function StudentBusAssignmentForm({
           ))}
         </select>
       </label>
+      <SeatNumberField
+        value={seatNumber}
+        onChange={setSeatNumber}
+        capacity={service?.bus_capacity}
+      />
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm font-semibold text-gray-700">
           Pickup stop

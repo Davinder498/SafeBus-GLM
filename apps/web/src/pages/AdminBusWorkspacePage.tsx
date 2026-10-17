@@ -1,3 +1,4 @@
+import { seatLabel } from '@/utils/studentSeat';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ArrowLeft, BusFront, Route as RouteIcon, UserRound, UsersRound } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
@@ -1143,6 +1144,7 @@ function StudentsPanel({
               <tr>
                 <TableColumn>Student</TableColumn>
                 <TableColumn>Route service</TableColumn>
+                <TableColumn>Seat</TableColumn>
                 <TableColumn>Pickup</TableColumn>
                 <TableColumn>Drop-off</TableColumn>
                 <TableColumn>Service dates</TableColumn>
@@ -1180,6 +1182,18 @@ function StudentsPanel({
                       <span className="mt-1 block text-xs text-slate-500">
                         {directionScopeLabel(group.directionScope)}
                       </span>
+                    </TableCell>
+                    <TableCell className="min-w-36">
+                      {group.forward && (
+                        <span className="block">
+                          Outbound: {seatLabel(group.forward.seat_number)}
+                        </span>
+                      )}
+                      {group.reverse && (
+                        <span className="block">
+                          Return: {seatLabel(group.reverse.seat_number)}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="min-w-36">
                       {group.forward && (

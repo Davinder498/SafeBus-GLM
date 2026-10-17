@@ -142,7 +142,7 @@ export async function fetchAdminStudentDetail(studentId: string): Promise<AdminS
     client
       .from('student_bus_assignments')
       .select(
-        'id, tenant_id, student_id, bus_route_assignment_id, pickup_stop_id, dropoff_stop_id, effective_from, effective_to, status, created_at, updated_at',
+        'id, tenant_id, student_id, seat_number, bus_route_assignment_id, pickup_stop_id, dropoff_stop_id, effective_from, effective_to, status, created_at, updated_at',
       )
       .eq('student_id', student.id)
       .eq('status', 'active')

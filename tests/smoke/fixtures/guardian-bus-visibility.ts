@@ -58,6 +58,7 @@ export type GuardianBusServiceLineRow = {
 };
 
 export type GuardianStudentStopRow = {
+  seat_number?: number | null;
   student_id: string;
   bus_number: string;
   trip_name: string;

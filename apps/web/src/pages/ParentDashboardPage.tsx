@@ -1,3 +1,4 @@
+import { seatLabel } from '@/utils/studentSeat';
 import { useEffect, useState } from 'react';
 import { BusFront, MapPin, Users } from 'lucide-react';
 import { Link } from 'react-router';
@@ -38,12 +39,7 @@ export function ParentDashboardPage() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([
-      fetchGuardianBusVisibility(),
-      appSurface === 'native-mobile'
-        ? fetchGuardianStudentStops().catch(() => null)
-        : Promise.resolve(null),
-    ])
+    Promise.all([fetchGuardianBusVisibility(), fetchGuardianStudentStops().catch(() => null)])
       .then(([buses, stops]) => {
         if (active) setState({ kind: 'ready', buses, stops });
       })
@@ -209,6 +205,7 @@ export function ParentDashboardPage() {
                             className="rounded-xl bg-slate-50 p-3 text-sm"
                           >
                             <p className="font-bold text-navy-900">{assignment.tripName}</p>
+                            <p className="mt-1 text-gray-600">{seatLabel(assignment.seatNumber)}</p>
                             <p className="mt-1 text-gray-600">
                               Pickup: {assignment.pickupStopName ?? 'Not assigned'}
                             </p>
@@ -250,6 +247,23 @@ export function ParentDashboardPage() {
                 <StatusPill tone={bus.hasActiveTrip ? 'success' : 'neutral'}>
                   {bus.hasActiveTrip ? 'School run active' : 'Not active right now'}
                 </StatusPill>
+              </div>
+              <div className="mt-4 text-sm text-gray-700">
+                {state.stops === null ? (
+                  <p>Seat information is unavailable right now.</p>
+                ) : (
+                  state.stops
+                    .filter(
+                      (assignment) =>
+                        assignment.studentId === bus.studentId &&
+                        assignment.busNumber === bus.busNumber,
+                    )
+                    .map((assignment, index) => (
+                      <p key={index}>
+                        {assignment.tripName}: {seatLabel(assignment.seatNumber)}
+                      </p>
+                    ))
+                )}
               </div>
               <div className="mt-5 flex flex-wrap gap-3 border-t border-gray-200 pt-5">
                 <Link

@@ -272,6 +272,7 @@ export interface StudentBusAssignment {
   id: string;
   tenant_id: string;
   student_id: string;
+  seat_number: number | null;
   bus_route_assignment_id: string;
   route_trip_pattern_id: string;
   pickup_stop_id: string | null;
@@ -362,8 +363,8 @@ export type UpdateBusRouteAssignmentInput = Partial<
 >;
 export type CreateStudentBusAssignmentInput = Omit<
   StudentBusAssignment,
-  'id' | 'created_at' | 'updated_at'
->;
+  'id' | 'created_at' | 'updated_at' | 'seat_number'
+> & { seat_number?: number | null };
 export type UpdateStudentBusAssignmentInput = Partial<
   Omit<CreateStudentBusAssignmentInput, 'tenant_id'>
 >;

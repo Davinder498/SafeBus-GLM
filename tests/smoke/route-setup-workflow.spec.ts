@@ -114,7 +114,7 @@ async function fixture(
           return reply(assignments[0]);
         }
         return reply(assignments);
-      case 'get_admin_bus_services':
+      case 'get_admin_bus_services_with_capacity':
         if (options.rejectServices) return reply({ message: 'Service read denied' }, 403);
         return reply(services);
       case 'get_admin_route_shape_versions':
@@ -189,7 +189,7 @@ async function fixture(
           args.p_assignment_ids.includes(s.id) ? { ...s, status: args.p_status } : s,
         );
         return reply(students);
-      case 'admin_set_student_bus_service':
+      case 'admin_set_student_bus_service_with_seat':
         writes.push({ name, args });
         students = services.map((s) => ({
           id: `student-${s.id}`,
@@ -284,7 +284,9 @@ test('sets up route details, bus, driver and student stops without leaving the r
     id: ADMIN_IDS.route,
     routeName: 'North School',
   });
-  expect(writes.find((w) => w.name === 'admin_set_student_bus_service')?.args).toMatchObject({
+  expect(
+    writes.find((w) => w.name === 'admin_set_student_bus_service_with_seat')?.args,
+  ).toMatchObject({
     p_route_id: ADMIN_IDS.route,
     p_bus_id: ADMIN_IDS.bus,
     p_forward_pickup_stop_id: 'stop-a',
@@ -296,7 +298,7 @@ test('sets up route details, bus, driver and student stops without leaving the r
   await section.getByLabel('Effective to (optional)').fill('2027-06-30');
   await section.getByRole('button', { name: 'Update assignment' }).click();
   expect(
-    writes.filter((w) => w.name === 'admin_set_student_bus_service').at(-1)?.args
+    writes.filter((w) => w.name === 'admin_set_student_bus_service_with_seat').at(-1)?.args
       .p_existing_assignment_ids,
   ).toEqual(['student-service-forward', 'student-service-reverse']);
   await page.locator('#route-service').screenshot({ path: info.outputPath('route-service.png') });

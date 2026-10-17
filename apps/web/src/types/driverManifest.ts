@@ -1,4 +1,5 @@
 export interface DriverManifestRow {
+  seatNumber: number | null;
   /** Internal active trip id. Used only as a React key fallback; never visibly rendered. */
   activeTripId: string;
   /** Internal student id. Used only as a React key; never visibly rendered. */

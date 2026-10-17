@@ -110,6 +110,7 @@ async function installWorkspaceMock(
   let deleted = options.missing ?? false;
   let assignmentActive = options.withAssignment ?? true;
   let qrActive = false;
+  let seatNumber: number | null = null;
   let qrGeneration = 0;
 
   const service = {
@@ -135,6 +136,7 @@ async function installWorkspaceMock(
     id: IDS.assignment,
     tenant_id: IDS.tenant,
     student_id: IDS.student,
+    seat_number: seatNumber,
     bus_route_assignment_id: IDS.service,
     route_trip_pattern_id: IDS.forwardPattern,
     pickup_stop_id: IDS.pickup,
@@ -292,6 +294,7 @@ async function installWorkspaceMock(
         {
           ...service,
           bus_number: bus.bus_number,
+          bus_capacity: bus.capacity,
           route_name: routeRecord.route_name,
           route_code: routeRecord.route_code,
           trip_name: 'Morning run',
@@ -300,6 +303,7 @@ async function installWorkspaceMock(
         {
           ...returnService,
           bus_number: bus.bus_number,
+          bus_capacity: bus.capacity,
           route_name: routeRecord.route_name,
           route_code: routeRecord.route_code,
           trip_name: 'Return run',
@@ -314,6 +318,8 @@ async function installWorkspaceMock(
       return;
     }
     if (method === 'POST' && path.includes('/rpc/admin_set_student_bus_service')) {
+      seatNumber = (requestRoute.request().postDataJSON() as { p_seat_number: number | null })
+        .p_seat_number;
       assignmentActive = true;
       await fulfillRows([assignment(), returnAssignment()]);
       return;
@@ -412,7 +418,9 @@ test.describe('Admin student workspace', () => {
       });
     });
     await page.goto(`/admin/students/${IDS.student}`);
-    await expect(page.getByText('We could not verify this SafeBus session. Sign in again or retry shortly.')).toBeVisible();
+    await expect(
+      page.getByText('We could not verify this SafeBus session. Sign in again or retry shortly.'),
+    ).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Avery Johnson', level: 1 })).toHaveCount(0);
   });
 
@@ -576,4 +584,23 @@ test.describe('Admin student workspace', () => {
     }));
     expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
   });
+});
+
+test('optional student seats can be added, edited, cleared and reloaded', async ({ page }) => {
+  await installWorkspaceMock(page);
+  await page.goto(`/admin/students/${IDS.student}`);
+  const transportation = page.getByTestId('student-transportation-section');
+  for (const seat of ['12', '15', '']) {
+    await transportation.getByRole('button', { name: /Edit transportation for NL-1/ }).click();
+    await transportation.getByLabel('Seat number (optional)').fill(seat);
+    await transportation.getByRole('button', { name: 'Update assignment', exact: true }).click();
+    await expect(transportation.getByLabel('Seat number (optional)')).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByTestId('student-transportation-forward')).toContainText(
+      seat ? `Seat ${seat}` : 'Not assigned',
+    );
+    await expect(page.getByTestId('student-transportation-reverse')).toContainText(
+      seat ? `Seat ${seat}` : 'Not assigned',
+    );
+  }
 });

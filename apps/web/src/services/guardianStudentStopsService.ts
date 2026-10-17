@@ -1,6 +1,7 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 
 export interface GuardianStudentStopAssignment {
+  seatNumber: number | null;
   studentId: string;
   busNumber: string;
   tripName: string;
@@ -10,6 +11,7 @@ export interface GuardianStudentStopAssignment {
 }
 
 interface GuardianStudentStopRow {
+  seat_number: number | null;
   student_id: string;
   bus_number: string;
   trip_name: string;
@@ -20,9 +22,10 @@ interface GuardianStudentStopRow {
 
 export async function fetchGuardianStudentStops(): Promise<GuardianStudentStopAssignment[]> {
   if (!supabase) throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
-  const { data, error } = await supabase.rpc('get_guardian_student_stops');
+  const { data, error } = await supabase.rpc('get_guardian_student_stops_v2');
   if (error) throw new Error('We could not load your stop information.');
   return ((data ?? []) as GuardianStudentStopRow[]).map((row) => ({
+    seatNumber: row.seat_number ?? null,
     studentId: row.student_id,
     busNumber: row.bus_number,
     tripName: row.trip_name,

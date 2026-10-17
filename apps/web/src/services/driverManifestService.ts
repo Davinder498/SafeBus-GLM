@@ -9,6 +9,7 @@ function requireSupabase() {
 }
 
 interface DriverManifestRpcRow {
+  seat_number: number | null;
   active_trip_id: string;
   student_id: string | null;
   student_display_name: string | null;
@@ -27,6 +28,7 @@ interface DriverManifestRpcRow {
 
 function mapRow(row: DriverManifestRpcRow): DriverManifestRow {
   return {
+    seatNumber: row.seat_number ?? null,
     activeTripId: row.active_trip_id,
     studentId: row.student_id,
     studentDisplayName: row.student_display_name,
@@ -51,7 +53,7 @@ function mapRow(row: DriverManifestRpcRow): DriverManifestRow {
 export async function fetchDriverActiveTripStudentManifest(): Promise<DriverManifestRow[]> {
   const client = requireSupabase();
 
-  const { data, error } = await client.rpc('get_driver_active_trip_student_manifest');
+  const { data, error } = await client.rpc('get_driver_active_trip_student_manifest_v2');
 
   if (error) {
     if (import.meta.env.DEV) {
