@@ -49,10 +49,13 @@ async function expectMaterialBrand(page: import('@playwright/test').Page) {
 
 async function installNotificationInboxMock(
   page: import('@playwright/test').Page,
-  options: { driver?: boolean } = {},
+  options: { driver?: boolean; body?: string } = {},
 ) {
   let readAt: string | null = null;
   let markAllReadCalls = 0;
+  let readCalls = 0;
+  let archiveCalls = 0;
+  let archived = false;
   const notification = options.driver
     ? {
         id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
@@ -81,6 +84,7 @@ async function installNotificationInboxMock(
         destination_path: '/notifications?notification=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       };
 
+  if (options.body) notification.body = options.body;
   await page.route('**/rest/v1/rpc/get_user_notification_unread_count', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: readAt ? '0' : '1' }),
   );
@@ -88,9 +92,19 @@ async function installNotificationInboxMock(
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify([{ ...notification, read_at: readAt }]),
+      body: JSON.stringify(archived ? [] : [{ ...notification, read_at: readAt }]),
     }),
   );
+  await page.route('**/rest/v1/rpc/mark_user_notifications_read', (route) => {
+    readCalls++;
+    readAt = '2026-10-18T03:30:00Z';
+    return route.fulfill({ json: 1 });
+  });
+  await page.route('**/rest/v1/rpc/archive_user_notifications', (route) => {
+    archiveCalls++;
+    archived = true;
+    return route.fulfill({ json: 1 });
+  });
   await page.route('**/rest/v1/rpc/mark_all_user_notifications_read', (route) => {
     markAllReadCalls += 1;
     readAt = '2026-09-28T22:00:00Z';
@@ -99,6 +113,8 @@ async function installNotificationInboxMock(
 
   return {
     getMarkAllReadCallCount: () => markAllReadCalls,
+    getReadCallCount: () => readCalls,
+    getArchiveCallCount: () => archiveCalls,
   };
 }
 
@@ -202,6 +218,33 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await page.screenshot({ path: testInfo.outputPath('guardian-live-map.png') });
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Back to home' })).toBeVisible();
+});
+
+test('update cards expand inline only for longer messages and keep archive separate', async ({
+  page,
+}) => {
+  await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
+  const message = 'A reported road closure is delaying the school bus. '.repeat(12);
+  const fixture = await installNotificationInboxMock(page, { body: message });
+  await page.goto('/notifications');
+  const card = page.locator('[data-ui="notification-card"]');
+  const update = card.getByRole('button', { name: `Update: ${message}` });
+  await expect(update).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByText('View update', { exact: true })).toHaveCount(0);
+  const collapsed = (await card.boundingBox())!.height;
+  await update.focus();
+  await page.keyboard.press('Enter');
+  await expect(update).toHaveAttribute('aria-expanded', 'true');
+  expect((await card.boundingBox())!.height).toBeGreaterThan(collapsed);
+  await expect(card.getByText('Read', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL('/notifications');
+  await expect(page.locator('[data-ui="notification-detail-card"]')).toHaveCount(0);
+  await update.click();
+  await expect(update).toHaveAttribute('aria-expanded', 'false');
+  expect(fixture.getReadCallCount()).toBe(1);
+  await card.getByRole('button', { name: 'Archive Trip cancelled', exact: true }).click();
+  await expect(card).toHaveCount(0);
+  expect(fixture.getArchiveCallCount()).toBe(1);
 });
 
 test('guardian live map requires a bus choice and merges shared pickup and drop-off stops', async ({
@@ -722,9 +765,9 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
   await expect(page.locator('[data-ui="avatar"]')).toHaveAttribute('data-tone', 'native-nav');
   await expect(
     notification.getByRole('button', {
-      name: 'Open notification: Trip “Afternoon” for Bus 01 on Route 01 was cancelled by Alex Singh at 6:00 AM on Sep 1, 2026.',
+      name: 'Update: Trip “Afternoon” for Bus 01 on Route 01 was cancelled by Alex Singh at 6:00 AM on Sep 1, 2026.',
     }),
-  ).toHaveText('View update');
+  ).toBeVisible();
   await expect(
     notification.getByText(
       'Trip “Afternoon” for Bus 01 on Route 01 was cancelled by Alex Singh at 6:00 AM on Sep 1, 2026.',
@@ -774,9 +817,18 @@ test('driver updates reuse the compact inbox with assignment-only alerts', async
   await expect(notification.getByText('Your planned work assignment has changed.')).toHaveCount(1);
   await expect(
     notification.getByRole('button', {
-      name: 'Open notification: Your planned work assignment has changed.',
+      name: 'Update: Your planned work assignment has changed.',
     }),
-  ).toHaveText('View update');
+  ).toBeVisible();
+  const shortUpdate = notification.getByRole('button', {
+    name: 'Update: Your planned work assignment has changed.',
+  });
+  await expect(shortUpdate).not.toHaveAttribute('aria-expanded');
+  await shortUpdate.click();
+  await expect(notification.getByText('Read', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL('/notifications');
+  await expect(page.locator('[data-ui="notification-detail-card"]')).toHaveCount(0);
+  await expect(page.getByText('View update', { exact: true })).toHaveCount(0);
   await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
@@ -873,7 +925,8 @@ test('driver account menu exposes existing secondary destinations', async ({ pag
   await expect(page.getByRole('menuitem', { name: 'Driver settings' })).toHaveCount(0);
   await expect(page.getByRole('menuitem', { name: 'Profile' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Support' })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: 'Privacy & account' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Privacy & account' })).toHaveCount(0);
+  await expect(page.getByRole('menuitem', { name: 'Privacy Notice', exact: true })).toHaveCount(1);
   await expect(page.getByRole('menuitem', { name: 'Sign out' })).toBeVisible();
 });
 
