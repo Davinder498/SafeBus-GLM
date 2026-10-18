@@ -8,6 +8,7 @@ import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { GuardianIconTile } from '@/components/ui/GuardianIconTile';
+import { guardianServicePosition, guardianServiceStops } from '@/utils/guardianServiceLine';
 import {
   fetchGuardianBusServiceLines,
   fetchGuardianBusVisibility,
@@ -277,11 +278,13 @@ export function interpolateServiceLinePosition(
 function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
   const status = serviceLineStatus(line);
   const progress = line.progressPercent;
-  const progressPosition =
+  const routePosition =
     line.progressPosition ??
     (progress !== null && line.stops.length > 1
       ? (progress / 100) * (line.stops.length - 1)
       : null);
+  const stops = guardianServiceStops(line.stops);
+  const progressPosition = guardianServicePosition(stops, routePosition);
   const hasLivePosition =
     line.tripStatus === 'active' && line.locationState === 'fresh' && progressPosition !== null;
   const serviceLineRef = useRef<HTMLDivElement>(null);
@@ -330,11 +333,15 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
     const observer = new ResizeObserver(measure);
     observer.observe(container);
     return () => observer.disconnect();
-  }, [hasLivePosition, progressPosition, line.stops.length]);
-  const nextStop = line.stops.find((stop) => stop.serviceState === 'next');
-  const atStop = line.stops.find((stop) => stop.serviceState === 'at_stop');
+  }, [hasLivePosition, progressPosition, stops.length]);
+  const nextStop = stops.find(({ stop, routeIndex }) =>
+    routePosition !== null
+      ? routeIndex > routePosition
+      : stop.serviceState === 'next' || stop.serviceState === 'upcoming',
+  )?.stop;
+  const atStop = stops.find(({ stop }) => stop.serviceState === 'at_stop')?.stop;
   const announcement = nextStop
-    ? `Next stop ${nextStop.name}.${
+    ? `Next on your service line: ${nextStop.name}.${
         nextStop.etaStatus === 'unavailable' ? '' : ` ${nextStop.etaLabel}.`
       }`
     : atStop
@@ -359,11 +366,11 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
         </StatusPill>
       </div>
 
-      {line.stops.length > 0 ? (
+      {stops.length > 0 ? (
         <div
           className="mt-6"
           data-ui="guardian-service-line"
-          aria-label={`${line.routeName} scheduled stops`}
+          aria-label={`${line.routeName} stops for your students`}
           ref={serviceLineRef}
         >
           <span
@@ -400,12 +407,12 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
             </span>
           )}
 
-          {line.stops.map((stop, index) => (
+          {stops.map(({ stop }, index) => (
             <ServiceStopPoint
               key={`${stop.order}:${stop.name}`}
               stop={stop}
               index={index}
-              total={line.stops.length}
+              total={stops.length}
             />
           ))}
         </div>
@@ -424,9 +431,11 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
           data-ui="guardian-service-line-note"
         >
           <p className="font-semibold">
-            {line.nextStopName
-              ? `Next stop: ${line.nextStopName}`
-              : 'Bus is at the end of this run.'}
+            {atStop
+              ? `Bus is at ${atStop.name}.`
+              : nextStop
+                ? `Next on your service line: ${nextStop.name}`
+                : 'Bus has reached the end of your service line.'}
           </p>
           {line.progressSource === 'stop_sequence' && (
             <p className="mt-1 text-xs text-navy-700">Position estimated from the ordered stops.</p>
@@ -478,7 +487,14 @@ function ServiceStopPoint({
   const isStart = index === 0;
   const isEnd = index === total - 1;
   const plannedTime = formatPlannedTime(stop.plannedArrivalTime);
-  const positionLabel = isStart ? 'Start' : isEnd ? 'End' : `Stop ${index + 1}`;
+  const positionLabel = [
+    isStart ? 'Start' : null,
+    stop.pickupStudentNames.length > 0 ? 'Pick up' : null,
+    stop.dropoffStudentNames.length > 0 ? 'Drop off' : null,
+    isEnd && stop.dropoffStudentNames.length === 0 && !isStart ? 'End' : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <div
@@ -490,9 +506,19 @@ function ServiceStopPoint({
       <div className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-gray-500">
-            {stop.serviceState === 'next' ? 'Next stop' : positionLabel}
+            {positionLabel}
           </p>
           <p className="mt-0.5 font-bold text-navy-900">{stop.name}</p>
+          {stop.pickupStudentNames.length > 0 && (
+            <p className="mt-1 text-sm text-navy-700">
+              Pick up: {stop.pickupStudentNames.join(', ')}
+            </p>
+          )}
+          {stop.dropoffStudentNames.length > 0 && (
+            <p className="mt-1 text-sm text-navy-700">
+              Drop off: {stop.dropoffStudentNames.join(', ')}
+            </p>
+          )}
           <p className="mt-1 text-xs text-gray-500">Planned {plannedTime ?? 'time unavailable'}</p>
         </div>
         {stop.etaStatus !== 'unavailable' && (

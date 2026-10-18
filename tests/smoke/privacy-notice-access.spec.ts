@@ -16,7 +16,7 @@ test('privacy notice is reachable before sign-in and explains all three roles', 
       operationalRequests.push(request.url());
   });
   await page.goto('/login');
-  await page.getByRole('link', { name: 'Privacy notice', exact: true }).click();
+  await page.getByRole('link', { name: 'Privacy Notice', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'SafeBus privacy policy' })).toBeVisible();
   const sections = page.getByRole('navigation', { name: 'Privacy notice sections' });
   for (const [name, heading, fragment] of [
@@ -43,7 +43,7 @@ test('tenant admin can use the account menu and navigation without losing its po
   await page.goto('/admin');
   await expect(page.getByRole('heading', { name: 'Transportation overview' })).toBeVisible();
   await page.locator('header button[aria-haspopup="menu"]').click();
-  await page.getByRole('menuitem', { name: 'Privacy notice', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Privacy Notice', exact: true }).click();
   await expect(page).toHaveURL('/privacy');
   await expect(page.locator('[data-ui="dashboard-shell"]')).toHaveAttribute('data-portal', 'admin');
   await expect(
@@ -56,7 +56,7 @@ test('tenant admin can use the account menu and navigation without losing its po
   const drawerButton = page.getByRole('button', { name: 'Open navigation' });
   if (await drawerButton.isVisible()) await drawerButton.click();
   await page
-    .getByRole('link', { name: 'Privacy notice', exact: true })
+    .getByRole('link', { name: 'Privacy Notice', exact: true })
     .filter({ visible: true })
     .click();
   await expect(page).toHaveURL('/privacy');
