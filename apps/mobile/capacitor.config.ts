@@ -27,6 +27,11 @@ const config: CapacitorConfig = {
     webContentsDebuggingEnabled: false,
   },
   plugins: {
+    PushNotifications: {
+      // Also present incoming pushes while SafeBus is open. The receive listener
+      // still refreshes the inbox; Android channels control sound and visibility.
+      presentationOptions: ['alert', 'sound'],
+    },
     SystemBars: {
       insetsHandling: 'css',
       style: 'LIGHT',
