@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import {
+  guardianBusServiceLine,
   guardianVisibilityRow,
   installGuardianVisibilityMock,
 } from '../smoke/fixtures/guardian-bus-visibility';
@@ -9,6 +10,113 @@ import { installSupabaseMock } from '../smoke/fixtures/supabase-mock';
 test.beforeEach(async ({ page }) => {
   await installLocalOnlyBoundary(page);
 });
+
+for (const direction of ['forward', 'reverse'] as const) {
+  test(`guardian service line shows only family stops in ${direction} travel order`, async ({
+    page,
+  }) => {
+    const base = guardianBusServiceLine();
+    const stop = (name: string, order: number, pickup: string[] = [], dropoff: string[] = []) => ({
+      ...base.stops[1],
+      name,
+      order,
+      pickupStudentNames: pickup,
+      dropoffStudentNames: dropoff,
+      serviceState: 'upcoming' as const,
+    });
+    const stops =
+      direction === 'forward'
+        ? [
+            stop('Start depot', 1),
+            stop('Other family pickup', 2),
+            stop('Shared pickup', 3, ['Avery', 'Morgan']),
+            stop('Unrelated school', 4),
+            stop('Avery school', 5, [], ['Avery']),
+            stop('Morgan school', 6, [], ['Morgan']),
+            stop('Final depot', 7),
+          ]
+        : [
+            stop('Start depot', 7),
+            stop('Morgan school', 6, ['Morgan']),
+            stop('Avery school', 5, ['Avery']),
+            stop('Unrelated school', 4),
+            stop('Shared drop-off', 3, [], ['Avery', 'Morgan']),
+            stop('Other family pickup', 2),
+            stop('Final depot', 1),
+          ];
+    await installGuardianVisibilityMock(page, {
+      rows: [
+        guardianVisibilityRow(),
+        guardianVisibilityRow({
+          student_id: '44444444-4444-4444-4444-444444444444',
+          student_name: 'Morgan Johnson',
+        }),
+      ],
+      serviceLines: [
+        guardianBusServiceLine({
+          direction,
+          stops,
+          progressPosition: 3,
+          nextStopName: 'Unrelated school',
+        }),
+      ],
+    });
+    await page.goto('/guardian/buses/42');
+    const line = page.locator('[data-ui="guardian-service-line"]');
+    await expect(line.locator('.guardian-service-line__point')).toHaveCount(4, { timeout: 20_000 });
+    expect(
+      await line
+        .locator('.guardian-service-line__point .font-bold.text-navy-900')
+        .allTextContents(),
+    ).toEqual(
+      direction === 'forward'
+        ? ['Start depot', 'Shared pickup', 'Avery school', 'Morgan school']
+        : ['Start depot', 'Morgan school', 'Avery school', 'Shared drop-off'],
+    );
+    for (const name of ['Other family pickup', 'Unrelated school', 'Final depot']) {
+      await expect(page.getByText(name, { exact: false })).toHaveCount(0);
+    }
+    await expect(
+      line.getByText(
+        direction === 'forward' ? 'Pick up: Avery, Morgan' : 'Drop off: Avery, Morgan',
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await expect(page.getByTestId('guardian-service-line-bus')).toBeVisible();
+    await expect
+      .poll(async () => {
+        const centers = await line.locator('[data-service-stop-anchor]').evaluateAll((anchors) =>
+          anchors.map((anchor) => {
+            const rect = anchor.getBoundingClientRect();
+            return rect.top + rect.height / 2;
+          }),
+        );
+        const marker = await page.getByTestId('guardian-service-line-bus').boundingBox();
+        const lower = direction === 'forward' ? 1 : 2;
+        return marker
+          ? Math.abs(marker.y + marker.height / 2 - (centers[lower] + centers[lower + 1]) / 2)
+          : Infinity;
+      })
+      .toBeLessThan(1.5);
+    const anchors = await line.locator('[data-service-stop-anchor]').evaluateAll((elements) =>
+      elements.map((element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.top + rect.height / 2;
+      }),
+    );
+    const track = await line.locator('.guardian-service-line__track').boundingBox();
+    expect(track).not.toBeNull();
+    expect(Math.abs(track!.y - anchors[0])).toBeLessThan(1.5);
+    expect(Math.abs(track!.y + track!.height - anchors.at(-1)!)).toBeLessThan(1.5);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+    await page.screenshot({
+      path: `.codex-artifacts/guardian-family-service-${direction}.png`,
+      fullPage: true,
+    });
+  });
+}
 
 test('guardian sees the linked student seat per direction on mobile', async ({ page }) => {
   const row = guardianVisibilityRow();

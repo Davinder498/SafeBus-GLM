@@ -393,23 +393,22 @@ test('guardian buses group students and open a clean bus detail view', async ({
     'background-color',
     'rgb(255, 255, 255)',
   );
-  await expect(serviceLine.locator('.guardian-service-line__point')).toHaveCount(3);
+  await expect(serviceLine.locator('.guardian-service-line__point')).toHaveCount(2);
   await expect(serviceLine.getByText('North Terminal')).toBeVisible();
-  await expect(serviceLine.getByText('Cedar Avenue')).toBeVisible();
+  await expect(page.getByText('Cedar Avenue')).toHaveCount(0);
   await expect(serviceLine.getByText('Riverside School')).toBeVisible();
   await expect(serviceLine.getByText(/Start/)).toBeVisible();
-  await expect(serviceLine.getByText(/End/)).toBeVisible();
+  await expect(serviceLine.getByText('Drop off: Avery', { exact: true })).toBeVisible();
   await expect(page.getByTestId('guardian-service-line-bus')).toBeVisible();
-  await expect(page.getByText('Next stop: Cedar Avenue')).toBeVisible();
-  await expect(serviceLine.getByText('Passed')).toBeVisible();
-  await expect(serviceLine.getByText('6–9 min')).toBeVisible();
-  await expect(serviceLine.getByText('19–26 min')).toBeVisible();
-  await expect(serviceLine.getByText('Planned 8:12 AM')).toBeVisible();
   await expect(
-    serviceLine.locator('.guardian-service-line__point[data-state="next"]'),
-  ).toContainText('Cedar Avenue');
+    page.getByText('Next on your service line: Riverside School', { exact: true }),
+  ).toBeVisible();
+  await expect(serviceLine.getByText('Passed')).toBeVisible();
+  await expect(serviceLine.getByText('6–9 min')).toHaveCount(0);
+  await expect(serviceLine.getByText('19–26 min')).toBeVisible();
+  await expect(serviceLine.getByText('Planned 8:12 AM')).toHaveCount(0);
   const busMarker = page.getByTestId('guardian-service-line-bus');
-  const distanceFromSegmentMidpoint = async (lowerIndex: number, upperIndex: number) => {
+  const distanceFromSegmentPosition = async (fraction: number) => {
     const stopCenters = await serviceLine
       .locator('[data-service-stop-anchor]')
       .evaluateAll((anchors) =>
@@ -421,12 +420,12 @@ test('guardian buses group students and open a clean bus detail view', async ({
     const busBox = await busMarker.boundingBox();
     if (!busBox) return Number.POSITIVE_INFINITY;
     const busCenter = busBox.y + busBox.height / 2;
-    const expected = (stopCenters[lowerIndex] + stopCenters[upperIndex]) / 2;
+    const expected = stopCenters[0] + (stopCenters[1] - stopCenters[0]) * fraction;
     return Math.abs(busCenter - expected);
   };
-  await expect.poll(() => distanceFromSegmentMidpoint(0, 1)).toBeLessThan(1.5);
+  await expect.poll(() => distanceFromSegmentPosition(0.25)).toBeLessThan(1.5);
   await page.setViewportSize({ width: 360, height: 740 });
-  await expect.poll(() => distanceFromSegmentMidpoint(0, 1)).toBeLessThan(1.5);
+  await expect.poll(() => distanceFromSegmentPosition(0.25)).toBeLessThan(1.5);
   guardianMock.setServiceLines([
     guardianBusServiceLine({
       progressPosition: 1.5,
@@ -436,7 +435,7 @@ test('guardian buses group students and open a clean bus detail view', async ({
     }),
   ]);
   await page.reload();
-  await expect.poll(() => distanceFromSegmentMidpoint(1, 2)).toBeLessThan(1.5);
+  await expect.poll(() => distanceFromSegmentPosition(0.75)).toBeLessThan(1.5);
   await expect(page.getByText('Position estimated from the ordered stops.')).toBeVisible();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect
@@ -601,13 +600,12 @@ test('mobile notification settings autosave independent channel sections with sw
   const profileMenu = page.locator('[data-ui="dropdown-panel"]');
   await expect(profileMenu).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await page.screenshot({ path: testInfo.outputPath('guardian-profile-menu.png') });
-  await page.getByRole('menuitem', { name: 'Privacy & account' }).click();
-  await expect(page.getByRole('heading', { name: 'Privacy and account', level: 1 })).toBeVisible();
-  await expect(page.locator('[data-ui="guardian-account-card"]').first()).toHaveCSS(
-    'background-color',
-    'rgb(255, 255, 255)',
-  );
-  await page.screenshot({ path: testInfo.outputPath('guardian-account.png'), fullPage: true });
+  await expect(page.getByRole('menuitem', { name: 'Privacy & account' })).toHaveCount(0);
+  await page.getByRole('menuitem', { name: 'Privacy Notice', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Guardian privacy notice', exact: true }),
+  ).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('guardian-privacy.png'), fullPage: true });
 });
 
 test('Android push permission denial rolls back and offers system settings recovery', async ({

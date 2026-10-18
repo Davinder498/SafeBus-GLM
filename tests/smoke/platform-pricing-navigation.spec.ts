@@ -171,7 +171,7 @@ test('profile uses SafeBus branding and settings follows privacy; schools are in
   await account.click();
   await expect(page.getByRole('menu')).toContainText('Administrator SafeBus');
   const items = await page.getByRole('menuitem').allTextContents();
-  expect(items.indexOf('Settings')).toBe(items.indexOf('Privacy notice') + 1);
+  expect(items.indexOf('Settings')).toBe(items.indexOf('Privacy Notice') + 1);
   await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/settings$/);
   if ((page.viewportSize()?.width ?? 0) < 1024)

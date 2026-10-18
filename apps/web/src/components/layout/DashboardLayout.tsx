@@ -445,19 +445,21 @@ export function DashboardLayout({
                   >
                     Support
                   </DropdownItem>
-                  <DropdownItem
-                    icon={<ShieldCheck className="h-4 w-4" />}
-                    onClick={() => navigate('/account')}
-                  >
-                    Privacy &amp; account
-                  </DropdownItem>
+                  {portal === 'driver' && (
+                    <DropdownItem
+                      icon={<ShieldCheck className="h-4 w-4" />}
+                      onClick={() => navigate('/account')}
+                    >
+                      Privacy &amp; account
+                    </DropdownItem>
+                  )}
                 </>
               )}
               <DropdownItem
                 icon={<ShieldCheck className="h-4 w-4" />}
                 onClick={() => navigate('/privacy')}
               >
-                Privacy notice
+                Privacy Notice
               </DropdownItem>
               {portal === 'admin' && profile && (
                 <DropdownItem
@@ -630,7 +632,7 @@ function SidebarNav({
       <div className="pt-4">
         <NavListItem
           item={{
-            label: 'Privacy notice',
+            label: 'Privacy Notice',
             to: '/privacy',
             icon: <ShieldCheck className="h-4 w-4" />,
           }}

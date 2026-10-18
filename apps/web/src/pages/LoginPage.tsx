@@ -169,7 +169,7 @@ export function LoginPage() {
             to="/privacy"
             className="mt-6 inline-flex text-sm font-semibold text-navy-700 underline underline-offset-4"
           >
-            Privacy notice
+            Privacy Notice
           </Link>
         </div>
       </div>
