@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NotificationCategory, UserNotification } from '@safebus/types';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { Archive, ArrowRight, CheckCheck, Settings, X } from 'lucide-react';
+import { Archive, CheckCheck, Settings, X } from 'lucide-react';
 import {
   DashboardLayout,
   adminNavGroups,
@@ -9,6 +9,7 @@ import {
   guardianNavGroups,
   platformNavGroups,
 } from '@/components/layout/DashboardLayout';
+import { NotificationUpdateCard } from '@/components/notifications/NotificationUpdateCard';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
@@ -521,42 +522,11 @@ export function NotificationsPage() {
                 data-severity={item.severity}
               >
                 {isRecipientMobile ? (
-                  <article>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-start gap-2">
-                        {!item.readAt ? (
-                          <span
-                            className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
-                            data-ui="notification-unread-dot"
-                            aria-label="Unread"
-                          />
-                        ) : null}
-                        <h2 className="text-sm font-bold leading-5 text-navy-900">{item.body}</h2>
-                      </div>
-                      <button
-                        type="button"
-                        className="-mr-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
-                        onClick={() => void archive(item)}
-                        aria-label={`Archive ${item.title}`}
-                      >
-                        <X className="h-4 w-4" aria-hidden />
-                      </button>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between gap-3 border-t border-slate-100 pt-1">
-                      <span className="text-[0.6875rem] font-medium text-slate-500">
-                        {item.readAt ? 'Read' : 'New update'}
-                      </span>
-                      <button
-                        type="button"
-                        className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-[#e7f8fb] px-3 text-xs font-semibold text-navy-700 transition-colors hover:bg-[#d8f2f6]"
-                        onClick={() => openNotification(item)}
-                        aria-label={`Open notification: ${item.body}`}
-                      >
-                        View update
-                        <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-                      </button>
-                    </div>
-                  </article>
+                  <NotificationUpdateCard
+                    item={item}
+                    onRead={() => void setReadState(item, true)}
+                    onArchive={() => void archive(item)}
+                  />
                 ) : (
                   <div className="flex items-start justify-between gap-4">
                     <button

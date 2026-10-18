@@ -29,6 +29,7 @@ describe('scheduled notification dispatcher', () => {
   });
 
   it("runs the dispatcher with Netlify's documented next_run schedule payload", async () => {
+    delete process.env.SAFEBUS_NOTIFICATION_DISPATCHER_SECRET;
     const client = { rpc: vi.fn(() => Promise.resolve({ data: [], error: null })) };
     createClient.mockReturnValue(client);
 
@@ -50,8 +51,32 @@ describe('scheduled notification dispatcher', () => {
       cancelled: 0,
       error: 0,
     });
-    // The scheduled handler should inject the secret internally so the claim RPC runs.
+    // Platform-scheduled execution does not need the manual HTTP endpoint's secret.
     expect(client.rpc).toHaveBeenCalled();
+  });
+
+  it('keeps the manual HTTP endpoint closed when its secret is absent', async () => {
+    delete process.env.SAFEBUS_NOTIFICATION_DISPATCHER_SECRET;
+    const { handler } = await import('../../netlify/functions/guardian-notification-email.mjs');
+    const response = await handler({ httpMethod: 'POST', headers: {}, body: '{"scheduled":true}' });
+    expect(response.statusCode).toBe(500);
+    expect(createClient).not.toHaveBeenCalled();
+  });
+
+  it('does not drain the queue before the versioned schema endpoint is available', async () => {
+    delete process.env.SAFEBUS_NOTIFICATION_DISPATCHER_SECRET;
+    const client = {
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { message: 'Function not found' } }),
+    };
+    createClient.mockReturnValue(client);
+    const { handler } =
+      await import('../../netlify/functions/guardian-notification-email-scheduled.mjs');
+    expect((await handler()).statusCode).toBe(500);
+    expect(client.rpc).toHaveBeenCalledTimes(1);
+    expect(client.rpc).toHaveBeenCalledWith(
+      'claim_guardian_notification_email_batch_v2',
+      expect.any(Object),
+    );
   });
 
   it('keeps bodyless local and legacy schedule invocations working', async () => {
@@ -64,7 +89,7 @@ describe('scheduled notification dispatcher', () => {
 
     expect(result.statusCode).toBe(200);
     expect(client.rpc).toHaveBeenCalledWith(
-      'claim_guardian_notification_email_batch',
+      'claim_guardian_notification_email_batch_v2',
       expect.objectContaining({ p_batch_size: 50 }),
     );
   });
@@ -72,7 +97,7 @@ describe('scheduled notification dispatcher', () => {
   it('processes a claimed row through the scheduled path', async () => {
     const client = {
       rpc: vi.fn((name) => {
-        if (name === 'claim_guardian_notification_email_batch') {
+        if (name === 'claim_guardian_notification_email_batch_v2') {
           return Promise.resolve({
             data: [
               {

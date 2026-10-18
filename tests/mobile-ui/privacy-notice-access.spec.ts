@@ -20,10 +20,9 @@ for (const role of ['driver', 'guardian'] as const) {
     await expect(page.getByRole('menuitem', { name: 'Privacy Notice', exact: true })).toHaveCount(
       1,
     );
-    if (role === 'guardian')
-      await expect(
-        page.getByRole('menuitem', { name: 'Privacy & account', exact: true }),
-      ).toHaveCount(0);
+    await expect(
+      page.getByRole('menuitem', { name: 'Privacy & account', exact: true }),
+    ).toHaveCount(0);
     await page.getByRole('menuitem', { name: 'Privacy Notice', exact: true }).click();
     await expect(page).toHaveURL('/privacy');
     await expect(page.getByTestId('native-bottom-navigation')).toBeVisible();
@@ -34,18 +33,6 @@ for (const role of ['driver', 'guardian'] as const) {
     ).toBeVisible();
     await expectNoWcagAaViolations(page);
 
-    if (role === 'driver') {
-      await page.locator('header button[aria-haspopup="menu"]').click();
-      await page.getByRole('menuitem', { name: 'Privacy & account', exact: true }).click();
-      await expect(page).toHaveURL('/account');
-      await expect(
-        page.getByRole('heading', { name: 'Privacy and account', exact: true }),
-      ).toBeVisible();
-      const pagesBefore = page.context().pages().length;
-      await page.getByRole('link', { name: 'Open privacy policy', exact: true }).click();
-      await expect(page).toHaveURL('/privacy');
-      expect(page.context().pages()).toHaveLength(pagesBefore);
-    }
     await page.getByRole('link', { name: 'Account deletion instructions', exact: true }).click();
     await expect(page).toHaveURL('/account-deletion');
     await expect(page.getByTestId('native-bottom-navigation')).toBeVisible();

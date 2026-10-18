@@ -67,13 +67,7 @@ export function buildGuardianEventEmail({
     const instruction = isDriverAssignment
       ? 'Open SafeBus to view the update.'
       : 'Open SafeBus to view the update. This email intentionally excludes student details.';
-    const text = [
-      summary,
-      '',
-      instruction,
-      '',
-      'SafeBus',
-    ].join('\n');
+    const text = [summary, '', instruction, '', 'SafeBus'].join('\n');
     return {
       subject,
       text,
@@ -189,8 +183,7 @@ function requireConfig() {
   const apiKey = process.env.SAFEBUS_EMAIL_PROVIDER_API_KEY;
   const from = process.env.SAFEBUS_EMAIL_FROM;
   const dispatcherSecret = process.env.SAFEBUS_NOTIFICATION_DISPATCHER_SECRET;
-  if (!url || !service || !apiKey || !from || !dispatcherSecret)
-    throw new Error('configuration_error');
+  if (!url || !service || !apiKey || !from) throw new Error('configuration_error');
   return {
     url,
     service,
@@ -391,7 +384,18 @@ async function dispatchOne(supabase, cfg, row, sendEmail = sendResendEmail) {
 
 export async function runDispatcher(event, sendEmail) {
   const cfg = requireConfig();
+  if (!cfg.dispatcherSecret) throw new Error('configuration_error');
   if (!authorized(event, cfg.dispatcherSecret)) return json(401, { error: 'Unauthorized.' });
+  return dispatchBatch(cfg, sendEmail);
+}
+
+// Called only by the Netlify scheduled-function entry point, which has no public URL.
+// HTTP requests always use runDispatcher and cannot select this execution path.
+export async function runScheduledDispatcher(sendEmail) {
+  return dispatchBatch(requireConfig(), sendEmail);
+}
+
+async function dispatchBatch(cfg, sendEmail) {
   /** @type {import('@supabase/supabase-js').SupabaseClient<import('@safebus/types/database').Database>} */
   const supabase = createClient(cfg.url, cfg.service, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -410,7 +414,7 @@ export async function runDispatcher(event, sendEmail) {
       1000,
     ),
   );
-  const { data: rows, error } = await supabase.rpc('claim_guardian_notification_email_batch', {
+  const { data: rows, error } = await supabase.rpc('claim_guardian_notification_email_batch_v2', {
     p_batch_size: batchSize,
     p_lease_seconds: 120,
     p_max_attempts: MAX_ATTEMPTS,

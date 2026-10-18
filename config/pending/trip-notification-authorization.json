@@ -1,0 +1,4 @@
+{
+  "authenticated": [],
+  "serviceRole": ["claim_guardian_notification_email_batch_v2(integer,integer,integer,integer)"]
+}

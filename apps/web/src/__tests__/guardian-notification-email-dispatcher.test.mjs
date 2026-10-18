@@ -92,7 +92,7 @@ describe('runDispatcher integration', () => {
     };
     const claimedRows = [row];
     const client = mockSupabase((name) => {
-      if (name === 'claim_guardian_notification_email_batch')
+      if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: claimedRows, error: null });
       if (name === 'resolve_guardian_notification_email_payload') {
         return Promise.resolve({
@@ -145,7 +145,7 @@ describe('runDispatcher integration', () => {
       attempt_count: 1,
     };
     mockSupabase((name) => {
-      if (name === 'claim_guardian_notification_email_batch')
+      if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
       if (name === 'resolve_guardian_notification_email_payload') {
         return Promise.resolve({
@@ -186,7 +186,7 @@ describe('runDispatcher integration', () => {
       attempt_count: 1,
     };
     mockSupabase((name) => {
-      if (name === 'claim_guardian_notification_email_batch')
+      if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
       if (name === 'resolve_guardian_notification_email_payload') {
         return Promise.resolve({
@@ -225,7 +225,7 @@ describe('runDispatcher integration', () => {
       attempt_count: 1,
     };
     mockSupabase((name) => {
-      if (name === 'claim_guardian_notification_email_batch')
+      if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
       if (name === 'resolve_guardian_notification_email_payload')
         return Promise.resolve({ data: [], error: null });
@@ -251,7 +251,7 @@ describe('runDispatcher integration', () => {
       attempt_count: 1,
     };
     mockSupabase((name) => {
-      if (name === 'claim_guardian_notification_email_batch')
+      if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
       if (name === 'resolve_guardian_notification_email_payload') {
         return Promise.resolve({
@@ -291,7 +291,7 @@ describe('runDispatcher integration', () => {
       attempt_count: 1,
     };
     mockSupabase((name) => {
-      if (name === 'claim_guardian_notification_email_batch')
+      if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
       if (name === 'resolve_guardian_notification_email_payload') {
         return Promise.resolve({
@@ -329,7 +329,7 @@ describe('runDispatcher integration', () => {
       attempt_count: 1,
     };
     mockSupabase((name) => {
-      if (name === 'claim_guardian_notification_email_batch')
+      if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
       if (name === 'resolve_guardian_notification_email_payload') {
         return Promise.resolve({
@@ -375,7 +375,7 @@ describe('runDispatcher integration', () => {
       attempt_count: 1,
     };
     mockSupabase((name) => {
-      if (name === 'claim_guardian_notification_email_batch')
+      if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
       if (name === 'resolve_guardian_notification_email_payload') {
         return Promise.resolve({
@@ -416,7 +416,7 @@ describe('runDispatcher integration', () => {
       attempt_count: 1,
     };
     mockSupabase((name) => {
-      if (name === 'claim_guardian_notification_email_batch')
+      if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
       if (name === 'resolve_guardian_notification_email_payload') {
         return Promise.resolve({
@@ -463,7 +463,7 @@ describe('runDispatcher integration', () => {
       attempt_count: 1,
     };
     mockSupabase((name) => {
-      if (name === 'claim_guardian_notification_email_batch')
+      if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
       if (name === 'resolve_guardian_notification_email_payload') {
         return Promise.resolve({
@@ -503,7 +503,7 @@ describe('runDispatcher integration', () => {
       attempt_count: 1,
     };
     mockSupabase((name) => {
-      if (name === 'claim_guardian_notification_email_batch')
+      if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
       if (name === 'resolve_guardian_notification_email_payload') {
         return Promise.resolve({
@@ -533,7 +533,7 @@ describe('runDispatcher integration', () => {
 
   it('returns 500 when claim RPC errors', async () => {
     mockSupabase((name) => {
-      if (name === 'claim_guardian_notification_email_batch')
+      if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: null, error: { message: 'boom' } });
       return Promise.resolve({ data: null, error: null });
     });
@@ -551,7 +551,7 @@ describe('runDispatcher integration', () => {
       attempt_count: 1,
     };
     mockSupabase((name) => {
-      if (name === 'claim_guardian_notification_email_batch') {
+      if (name === 'claim_guardian_notification_email_batch_v2') {
         return Promise.resolve({ data: [row], error: null });
       }
       if (name === 'resolve_guardian_notification_email_payload') {

@@ -42,6 +42,7 @@ export type Database = Omit<HostedDatabase, 'public'> & {
       student_bus_assignments: SeatedAssignments;
     };
     Functions: HostedDatabase['public']['Functions'] & {
+      claim_guardian_notification_email_batch_v2: HostedFunctions['claim_guardian_notification_email_batch'];
       admin_get_printable_qr: {
         Args: {
           p_kind: string;

@@ -445,14 +445,6 @@ export function DashboardLayout({
                   >
                     Support
                   </DropdownItem>
-                  {portal === 'driver' && (
-                    <DropdownItem
-                      icon={<ShieldCheck className="h-4 w-4" />}
-                      onClick={() => navigate('/account')}
-                    >
-                      Privacy &amp; account
-                    </DropdownItem>
-                  )}
                 </>
               )}
               <DropdownItem
