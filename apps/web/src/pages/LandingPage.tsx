@@ -1,55 +1,57 @@
 import { Link } from 'react-router';
-import {
-  Bus,
-  Eye,
-  Navigation,
-  ShieldCheck,
-  ClipboardCheck,
-  UserCircle,
-  ArrowRight,
-  CheckCircle2,
-} from 'lucide-react';
-import type { ReactNode } from 'react';
+import { Bus, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { PublicLayout } from '@/components/layout/PublicLayout';
-import { Card } from '@/components/ui/Card';
+import winterMorningHero from '@/assets/hero-winter-morning.webp';
+import notificationsPhoto from '@/assets/feature-notifications.webp';
+import etaPhoto from '@/assets/feature-eta.webp';
+import trackingPhoto from '@/assets/feature-tracking.webp';
+import privacyPhoto from '@/assets/feature-privacy.webp';
+import managementPhoto from '@/assets/feature-management.webp';
 
 interface FeatureSection {
   id: string;
   title: string;
   body: string;
-  icon: ReactNode;
+  image: string;
+  imageAlt: string;
 }
 
 const sections: FeatureSection[] = [
   {
-    id: 'parents',
-    title: 'Parent visibility without exposing the full route',
-    body: 'Parents see only their assigned bus during active trips, with simple pickup, delay, and drop-off status.',
-    icon: <UserCircle className="h-6 w-6" />,
+    id: 'notifications',
+    title: 'Pickup and drop-off notifications',
+    body: 'Receive notifications when pickup and drop-off events are confirmed, helping your family stay informed throughout the school journey.',
+    image: notificationsPhoto,
+    imageAlt: 'A parent checking a phone beside a parked yellow school bus.',
   },
   {
-    id: 'drivers',
-    title: 'A parked-bus friendly driver app',
-    body: 'Drivers get a focused trip screen with large actions, assigned stops, bus-location sharing status, and delay reporting.',
-    icon: <Navigation className="h-6 w-6" />,
+    id: 'eta',
+    title: 'Estimated arrival times',
+    body: 'See an estimated arrival time for your assigned bus, helping you plan for pickup with less uncertainty.',
+    image: etaPhoto,
+    imageAlt: 'A parent checking a phone at a bus stop on a spring morning.',
   },
   {
-    id: 'admins',
-    title: 'Operational control for transportation teams',
-    body: 'Admins can monitor active trips, delayed buses, stale GPS status, confirmations, alerts, and route operations from one dashboard.',
-    icon: <Eye className="h-6 w-6" />,
-  },
-  {
-    id: 'confirmations',
-    title: 'Pickup and drop-off confirmation',
-    body: 'The MVP is designed around confirming transportation events while keeping student data limited and purposeful.',
-    icon: <ClipboardCheck className="h-6 w-6" />,
+    id: 'tracking',
+    title: 'Live bus tracking',
+    body: 'View your assigned bus\u2019s location during active trips and follow its progress toward your stop.',
+    image: trackingPhoto,
+    imageAlt: 'An elevated view of a yellow school bus on an Alberta prairie road in autumn.',
   },
   {
     id: 'privacy',
-    title: 'Privacy-first by design',
-    body: 'SafeBus tracks the bus, not the child. It works alongside existing systems and does not replace PowerSchool.',
-    icon: <ShieldCheck className="h-6 w-6" />,
+    title: 'Access limited to your assigned bus',
+    body: 'Parents can only view their assigned bus and linked transportation information, keeping other families\u2019 details private.',
+    image: privacyPhoto,
+    imageAlt: 'A parent using a phone privately at a kitchen table in natural daylight.',
+  },
+  {
+    id: 'management',
+    title: 'Easier transportation management',
+    body: 'Manage buses, routes, driver assignments, and daily transportation activity from one place.',
+    image: managementPhoto,
+    imageAlt:
+      'Transportation coordinators working together in a dispatch office overlooking parked buses.',
   },
 ];
 
@@ -61,15 +63,18 @@ export function LandingPage() {
       <main>
         {/* Hero */}
         <section className="relative overflow-hidden bg-navy-900 text-white">
-          <div className="absolute inset-0 bg-gradient-to-br from-navy-900 via-navy-800 to-navy-950" />
-          <div
-            className="absolute inset-0 opacity-30"
-            style={{
-              backgroundImage:
-                'radial-gradient(at 20% 20%, rgb(37 99 235 / 0.4) 0px, transparent 50%), radial-gradient(at 80% 10%, rgb(250 204 21 / 0.25) 0px, transparent 50%)',
-            }}
+          <img
+            src={winterMorningHero}
+            alt=""
+            aria-hidden="true"
+            fetchPriority="high"
+            className="absolute inset-0 h-full w-full object-cover object-[65%_center] lg:object-center"
           />
-          <div className="relative mx-auto grid max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-28">
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-navy-950/70 lg:bg-gradient-to-r lg:from-navy-950/95 lg:via-navy-950/65 lg:to-navy-950/10 lg:bg-transparent"
+          />
+          <div className="relative mx-auto grid max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:min-h-[42rem] lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-12">
             <div className="flex flex-col justify-center">
               <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-yellow-300 backdrop-blur">
                 <Bus className="h-3.5 w-3.5" /> School transportation visibility
@@ -99,10 +104,10 @@ export function LandingPage() {
             </div>
 
             {/* Floating mock card */}
-            <div className="relative flex items-center justify-center">
-              <div className="w-full max-w-sm rounded-2xl border border-white/15 bg-white/10 p-4 shadow-2xl backdrop-blur-md">
-                <div className="rounded-xl bg-white p-5 text-slate-900 shadow-xl">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div className="relative flex items-center justify-center lg:items-end lg:justify-end">
+              <div className="w-full max-w-sm rounded-2xl border border-white/15 bg-white/10 p-4 shadow-2xl backdrop-blur-md lg:p-3">
+                <div className="rounded-xl bg-white p-5 text-slate-900 shadow-xl lg:p-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-4 lg:pb-3">
                     <div>
                       <p className="text-xs font-medium uppercase tracking-wide text-slate-600">
                         Live trip
@@ -113,15 +118,18 @@ export function LandingPage() {
                       <span className="h-1.5 w-1.5 rounded-full bg-success-500" /> On route
                     </span>
                   </div>
-                  <div className="mt-5 space-y-4">
+                  <div className="mt-5 space-y-4 lg:mt-3 lg:grid lg:grid-cols-3 lg:gap-3 lg:space-y-0">
                     {heroSteps.map((item, index) => (
-                      <div key={item} className="flex items-center gap-3">
+                      <div
+                        key={item}
+                        className="relative flex items-center gap-3 lg:flex-col lg:items-start lg:gap-2"
+                      >
                         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-navy-50 text-sm font-bold text-navy-700 ring-1 ring-inset ring-navy-100">
                           {index + 1}
                         </span>
                         <p className="text-sm font-semibold text-slate-700">{item}</p>
                         {index === heroSteps.length - 1 && (
-                          <CheckCircle2 className="ml-auto h-4 w-4 text-success-500" />
+                          <CheckCircle2 className="ml-auto h-4 w-4 text-success-500 lg:absolute lg:right-0 lg:top-2" />
                         )}
                       </div>
                     ))}
@@ -149,22 +157,48 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Feature grid */}
-        <section id="capabilities" className="scroll-mt-24 bg-slate-50">
-          <div className="mx-auto grid max-w-7xl gap-5 px-4 py-16 sm:px-6 md:grid-cols-2 lg:px-8">
-            {sections.map((section) => (
-              <Card key={section.id} id={section.id} interactive className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-navy-50 text-navy-600 ring-1 ring-inset ring-navy-100">
-                    {section.icon}
+        {/* Features */}
+        <section
+          id="capabilities"
+          aria-labelledby="features-heading"
+          className="scroll-mt-24 bg-slate-50"
+        >
+          <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+            <h2
+              id="features-heading"
+              className="mx-auto mb-12 max-w-3xl text-center text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:mb-16"
+            >
+              Features built for school transportation
+            </h2>
+            <div className="space-y-16 lg:space-y-24">
+              {sections.map((section, index) => (
+                <article
+                  key={section.id}
+                  id={section.id}
+                  aria-labelledby={`${section.id}-heading`}
+                  className="grid scroll-mt-24 items-center gap-8 lg:grid-cols-2 lg:gap-16"
+                >
+                  <img
+                    src={section.image}
+                    alt={section.imageAlt}
+                    width={1200}
+                    height={900}
+                    loading="lazy"
+                    decoding="async"
+                    className={`aspect-[4/3] w-full rounded-2xl bg-navy-50 object-cover ${index % 2 === 1 ? 'lg:order-2' : ''}`}
+                  />
+                  <div className={`min-w-0 ${index % 2 === 1 ? 'lg:order-1' : ''}`}>
+                    <h3
+                      id={`${section.id}-heading`}
+                      className="max-w-xl text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
+                    >
+                      {section.title}
+                    </h3>
+                    <p className="mt-4 max-w-xl text-lg leading-8 text-slate-600">{section.body}</p>
                   </div>
-                  <div className="min-w-0">
-                    <h3 className="text-lg font-bold text-slate-900">{section.title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-500">{section.body}</p>
-                  </div>
-                </div>
-              </Card>
-            ))}
+                </article>
+              ))}
+            </div>
           </div>
         </section>
 
