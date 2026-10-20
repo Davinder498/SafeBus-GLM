@@ -20,20 +20,12 @@ export function PublicLayout({ children }: PublicLayoutProps) {
               SafeBus
             </span>
           </Link>
-          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
-            <NavLink
-              to="/login"
-              className="px-2 py-2 text-sm font-semibold text-slate-600 transition-colors hover:text-slate-950"
-            >
-              Sign in
-            </NavLink>
-            <NavLink
-              to="/contact"
-              className="rounded-lg bg-navy-700 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-navy-800 sm:px-4"
-            >
-              Contact
-            </NavLink>
-          </div>
+          <NavLink
+            to="/login"
+            className="shrink-0 px-2 py-2 text-sm font-semibold text-slate-600 transition-colors hover:text-slate-950"
+          >
+            Sign in
+          </NavLink>
         </div>
       </header>
       {children}

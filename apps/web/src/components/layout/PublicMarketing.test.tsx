@@ -29,13 +29,14 @@ async function render(node: ReactNode) {
 }
 
 describe('public marketing navigation', () => {
-  it('offers contact and administrator sign-in without role or demo links', async () => {
+  it('keeps contact in the footer and administrator sign-in in the header', async () => {
     const container = await render(<PublicLayout>Content</PublicLayout>);
     const header = container.querySelector('header');
     const headerText = header?.textContent ?? '';
 
-    expect(headerText).toContain('Contact');
+    expect(headerText).not.toContain('Contact');
     expect(headerText).toContain('Sign in');
+    expect(container.querySelector('footer a[href="/contact"]')?.textContent).toBe('Contact');
     expect(headerText).not.toContain('Parents');
     expect(headerText).not.toContain('Drivers');
     expect(headerText).not.toContain('Admins');
