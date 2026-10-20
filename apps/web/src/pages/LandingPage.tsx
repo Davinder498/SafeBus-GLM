@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { Bus, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Bus, ArrowRight } from 'lucide-react';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import winterMorningHero from '@/assets/hero-winter-morning.webp';
 import notificationsPhoto from '@/assets/feature-notifications.webp';
@@ -55,8 +55,6 @@ const sections: FeatureSection[] = [
   },
 ];
 
-const heroSteps = ['Trip started', 'Pickup confirmed', 'Approaching school'];
-
 export function LandingPage() {
   return (
     <PublicLayout>
@@ -74,8 +72,8 @@ export function LandingPage() {
             aria-hidden="true"
             className="absolute inset-0 bg-navy-950/70 lg:bg-gradient-to-r lg:from-navy-950/95 lg:via-navy-950/65 lg:to-navy-950/10 lg:bg-transparent"
           />
-          <div className="relative mx-auto grid max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:min-h-[42rem] lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-12">
-            <div className="flex flex-col justify-center">
+          <div className="relative mx-auto flex max-w-7xl px-4 py-20 sm:px-6 lg:min-h-[42rem] lg:px-8 lg:py-12">
+            <div className="flex max-w-xl flex-col justify-center">
               <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-yellow-300 backdrop-blur">
                 <Bus className="h-3.5 w-3.5" /> School transportation visibility
               </span>
@@ -100,41 +98,6 @@ export function LandingPage() {
                 >
                   Explore capabilities
                 </a>
-              </div>
-            </div>
-
-            {/* Floating mock card */}
-            <div className="relative flex items-center justify-center lg:items-end lg:justify-end">
-              <div className="w-full max-w-sm rounded-2xl border border-white/15 bg-white/10 p-4 shadow-2xl backdrop-blur-md lg:p-3">
-                <div className="rounded-xl bg-white p-5 text-slate-900 shadow-xl lg:p-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-4 lg:pb-3">
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-slate-600">
-                        Live trip
-                      </p>
-                      <p className="text-2xl font-bold text-slate-900">Bus 12</p>
-                    </div>
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-success-50 px-3 py-1 text-xs font-semibold text-success-700 ring-1 ring-inset ring-success-200">
-                      <span className="h-1.5 w-1.5 rounded-full bg-success-500" /> On route
-                    </span>
-                  </div>
-                  <div className="mt-5 space-y-4 lg:mt-3 lg:grid lg:grid-cols-3 lg:gap-3 lg:space-y-0">
-                    {heroSteps.map((item, index) => (
-                      <div
-                        key={item}
-                        className="relative flex items-center gap-3 lg:flex-col lg:items-start lg:gap-2"
-                      >
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-navy-50 text-sm font-bold text-navy-700 ring-1 ring-inset ring-navy-100">
-                          {index + 1}
-                        </span>
-                        <p className="text-sm font-semibold text-slate-700">{item}</p>
-                        {index === heroSteps.length - 1 && (
-                          <CheckCircle2 className="ml-auto h-4 w-4 text-success-500 lg:absolute lg:right-0 lg:top-2" />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -170,24 +133,30 @@ export function LandingPage() {
             >
               Features built for school transportation
             </h2>
-            <div className="space-y-16 lg:space-y-24">
+            <div className="space-y-8 lg:space-y-10">
               {sections.map((section, index) => (
                 <article
                   key={section.id}
                   id={section.id}
                   aria-labelledby={`${section.id}-heading`}
-                  className="grid scroll-mt-24 items-center gap-8 lg:grid-cols-2 lg:gap-16"
+                  className="grid scroll-mt-24 overflow-hidden bg-white lg:grid-cols-2"
                 >
-                  <img
-                    src={section.image}
-                    alt={section.imageAlt}
-                    width={1200}
-                    height={900}
-                    loading="lazy"
-                    decoding="async"
-                    className={`aspect-[4/3] w-full rounded-2xl bg-navy-50 object-cover ${index % 2 === 1 ? 'lg:order-2' : ''}`}
-                  />
-                  <div className={`min-w-0 ${index % 2 === 1 ? 'lg:order-1' : ''}`}>
+                  <div
+                    className={`relative aspect-[16/10] bg-navy-50 lg:aspect-auto ${index % 2 === 1 ? 'lg:order-2' : ''}`}
+                  >
+                    <img
+                      src={section.image}
+                      alt={section.imageAlt}
+                      width={1200}
+                      height={900}
+                      loading="lazy"
+                      decoding="async"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  </div>
+                  <div
+                    className={`flex min-w-0 flex-col justify-center px-6 py-8 sm:p-10 lg:p-12 ${index % 2 === 1 ? 'lg:order-1' : ''}`}
+                  >
                     <h3
                       id={`${section.id}-heading`}
                       className="max-w-xl text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
