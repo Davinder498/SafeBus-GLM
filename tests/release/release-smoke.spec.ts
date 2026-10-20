@@ -13,11 +13,12 @@ test('landing page loads without third-party font requests', async ({ page }) =>
   await expect(page.getByRole('heading', { name: 'SafeBus', level: 1 })).toBeVisible();
   const mark = page.getByRole('banner').getByTestId('safebus-brand-mark');
   await expect(mark.locator('img')).toBeVisible();
-  await expect(mark.locator('img')).toHaveCSS('width', '30px');
-  await expect(mark.locator('img')).toHaveCSS('height', '30px');
+  const logoSize = page.viewportSize()!.width < 640 ? '44px' : '48px';
+  await expect(mark.locator('img')).toHaveCSS('width', logoSize);
+  await expect(mark.locator('img')).toHaveCSS('height', logoSize);
   await expect(mark).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(mark).toHaveCSS('box-shadow', 'none');
-  await expect(page.getByRole('banner').getByRole('link', { name: 'Contact' })).toBeVisible();
+  await expect(page.getByRole('banner').getByRole('link', { name: 'Contact' })).toHaveCount(0);
   await expect(page.getByRole('banner').getByRole('link', { name: 'Sign in' })).toBeVisible();
   await expect(page.getByRole('link', { name: /demo login/i })).toHaveCount(0);
   expect(externalFontRequests).toEqual([]);
