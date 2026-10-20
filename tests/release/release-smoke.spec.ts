@@ -18,7 +18,7 @@ test('landing page loads without third-party font requests', async ({ page }) =>
   await expect(mark.locator('img')).toHaveCSS('height', logoSize);
   await expect(mark).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(mark).toHaveCSS('box-shadow', 'none');
-  await expect(page.getByRole('banner').getByRole('link', { name: 'Contact' })).toBeVisible();
+  await expect(page.getByRole('banner').getByRole('link', { name: 'Contact' })).toHaveCount(0);
   await expect(page.getByRole('banner').getByRole('link', { name: 'Sign in' })).toBeVisible();
   await expect(page.getByRole('link', { name: /demo login/i })).toHaveCount(0);
   expect(externalFontRequests).toEqual([]);
