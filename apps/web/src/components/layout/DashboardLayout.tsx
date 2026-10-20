@@ -372,14 +372,16 @@ export function DashboardLayout({
           )}
 
           {/* Brand */}
-          <Link to="/" className="flex min-w-0 items-center gap-2.5" aria-label="SafeBus home">
+          <Link to="/" className="flex min-w-0 items-center gap-2.5">
             <BrandMark />
+            {!usesBottomTabs && <span className="sr-only sm:hidden">SafeBus</span>}
             <span className="sb-brand-copy hidden flex-col leading-tight sm:flex">
               <span className="text-sm font-bold text-slate-900">SafeBus</span>
               {portal !== 'admin' && (
                 <span className="text-xs text-slate-600">{portalTitles[portal]} portal</span>
               )}
             </span>
+            <span className="sr-only"> home</span>
           </Link>
 
           <div className="flex-1" />

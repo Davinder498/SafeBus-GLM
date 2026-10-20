@@ -229,6 +229,7 @@ test.describe('route corridor and named trips', () => {
     await page.getByLabel('Status').first().selectOption('active');
     await page.getByRole('button', { name: 'Save route definition' }).click();
 
+    await expect(page).toHaveURL('/admin/routes/33333333-3333-3333-3333-333333333333#setup');
     const payload = mock.savedPayload() as {
       p_route: { routeKind: string };
       p_stops: Array<{ stopName: string; stopOrder: number }>;
