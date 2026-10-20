@@ -151,9 +151,9 @@ export function GuardianRoutesPage() {
                   key={group.key}
                   to={guardianBusDetailsPath(group.busNumber)}
                   className="block rounded-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-navy-900/20"
-                  aria-label={`View details for Bus ${group.busNumber}`}
                   data-testid="guardian-bus-details-link"
                 >
+                  <span className="sr-only">View details for Bus {group.busNumber}</span>
                   {content}
                 </Link>
               ) : (

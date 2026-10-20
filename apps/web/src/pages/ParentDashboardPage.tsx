@@ -141,9 +141,9 @@ export function ParentDashboardPage() {
                 key={group.key}
                 to={guardianBusDetailsPath(group.busNumber)}
                 className="block rounded-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-300"
-                aria-label={`View details for Bus ${group.busNumber}`}
                 data-testid="guardian-home-bus-link"
               >
+                <span className="sr-only">View details for Bus {group.busNumber}</span>
                 {content}
               </Link>
             ) : (
