@@ -1016,8 +1016,10 @@ for (const path of ['/privacy', '/account-deletion']) {
     for (const scrollY of [500, 100, 0]) {
       await page.evaluate((y) => window.scrollTo(0, y), scrollY);
       expect((await header.boundingBox())?.y).toBe(0);
-      const logo = await header.getByTestId('safebus-brand-mark').boundingBox();
-      expect(logo?.y).toBeGreaterThanOrEqual(32);
+      const wordmark = await header
+        .getByRole('img', { name: 'SafeBus', exact: true })
+        .boundingBox();
+      expect(wordmark?.y).toBeGreaterThanOrEqual(32);
     }
     await expectNoHorizontalOverflow(page);
   });
