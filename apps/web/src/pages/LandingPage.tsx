@@ -91,7 +91,7 @@ const featureGroups = [
 
 export function LandingPage() {
   return (
-    <PublicLayout>
+    <PublicLayout overlayHeader>
       <main>
         {/* Hero */}
         <section className="relative overflow-hidden bg-navy-900 text-white">
@@ -106,7 +106,7 @@ export function LandingPage() {
             aria-hidden="true"
             className="absolute inset-0 bg-navy-950/70 lg:bg-gradient-to-r lg:from-navy-950/95 lg:via-navy-950/65 lg:to-navy-950/10 lg:bg-transparent"
           />
-          <div className="relative mx-auto flex max-w-7xl px-4 py-20 sm:px-6 lg:min-h-[42rem] lg:px-8 lg:py-12">
+          <div className="relative mx-auto flex max-w-7xl px-4 pb-20 pt-32 sm:px-6 lg:min-h-[42rem] lg:px-8 lg:pb-20 lg:pt-32">
             <div className="flex max-w-xl flex-col justify-center">
               <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-yellow-300 backdrop-blur">
                 <Bus className="h-3.5 w-3.5" /> School transportation visibility
