@@ -11,13 +11,24 @@ test('landing page loads without third-party font requests', async ({ page }) =>
 
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'SafeBus', level: 1 })).toBeVisible();
-  const mark = page.getByRole('banner').getByTestId('safebus-brand-mark');
-  await expect(mark.locator('img')).toBeVisible();
-  const logoSize = page.viewportSize()!.width < 640 ? '36px' : '40px';
-  await expect(mark.locator('img')).toHaveCSS('width', logoSize);
-  await expect(mark.locator('img')).toHaveCSS('height', logoSize);
-  await expect(mark).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-  await expect(mark).toHaveCSS('box-shadow', 'none');
+  const header = page.getByRole('banner');
+  const wordmark = header.getByRole('link', { name: 'SafeBus home' });
+  await expect(wordmark).toHaveText('SafeBus');
+  await expect(wordmark.locator('img')).toHaveCount(0);
+  await expect(wordmark.getByRole('img', { name: 'SafeBus' })).toBeVisible();
+  await expect(wordmark.getByText('Safe', { exact: true })).toHaveCSS('fill', 'rgb(23, 43, 58)');
+  await expect(wordmark.getByText('Bus', { exact: true })).toHaveCSS('fill', 'rgb(252, 214, 107)');
+  await expect(header.getByRole('link', { name: 'Sign in' })).toHaveCSS(
+    'background-color',
+    'rgb(23, 43, 58)',
+  );
+  await expect(header).toHaveCSS('position', 'fixed');
+  await expect(header).toHaveCSS('border-radius', '20px');
+  const heroImage = page.locator('main > section').first().locator('img');
+  const heroBounds = await heroImage.boundingBox();
+  expect(heroBounds?.x).toBe(0);
+  expect(heroBounds?.y).toBe(0);
+  expect(heroBounds?.width).toBe(page.viewportSize()!.width);
   await expect(page.getByRole('banner').getByRole('link', { name: 'Contact' })).toHaveCount(0);
   await expect(page.getByRole('banner').getByRole('link', { name: 'Sign in' })).toBeVisible();
   await expect(page.getByRole('link', { name: /demo login/i })).toHaveCount(0);

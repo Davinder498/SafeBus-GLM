@@ -1,28 +1,37 @@
 import type { ReactNode } from 'react';
 import { Link, NavLink } from 'react-router';
-import { BrandMark } from '@/components/ui/BrandMark';
 
 interface PublicLayoutProps {
   children: ReactNode;
+  overlayHeader?: boolean;
 }
 
-export function PublicLayout({ children }: PublicLayoutProps) {
+export function PublicLayout({ children, overlayHeader = false }: PublicLayoutProps) {
   return (
-    <div className="min-h-screen bg-[var(--color-canvas)]" data-ui="public-shell">
+    <div
+      className={`min-h-screen bg-[var(--color-canvas)]${overlayHeader ? '' : ' pt-24'}`}
+      data-ui="public-shell"
+    >
       <header
-        className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-white/95 shadow-[0_1px_0_rgb(23_43_58_/_0.06)] backdrop-blur-md"
+        className="fixed inset-x-3 top-3 z-30 mx-auto max-w-7xl rounded-2xl border border-white/70 bg-white/95 shadow-[0_8px_32px_rgb(7_19_28_/_0.15)] backdrop-blur-md sm:inset-x-6 sm:top-5"
         data-ui="public-app-bar"
       >
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link to="/" className="flex min-w-0 items-center gap-2.5" aria-label="SafeBus home">
-            <BrandMark className="!h-9 !w-9 sm:!h-10 sm:!w-10" iconClassName="!h-full !w-full" />
-            <span className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
-              SafeBus
-            </span>
+        <div className="flex h-14 items-center justify-between px-4 sm:px-5">
+          <Link
+            to="/"
+            className="inline-flex min-h-11 items-center rounded-md text-2xl font-extrabold tracking-tight"
+            aria-label="SafeBus home"
+          >
+            <svg width="100" height="32" viewBox="0 0 100 32" role="img" aria-label="SafeBus">
+              <text y="24" fontSize="24" fontWeight="800" letterSpacing="-0.6">
+                <tspan fill="var(--color-brand)">Safe</tspan>
+                <tspan fill="var(--color-accent)">Bus</tspan>
+              </text>
+            </svg>
           </Link>
           <NavLink
             to="/login"
-            className="shrink-0 px-2 py-2 text-sm font-semibold text-slate-600 transition-colors hover:text-slate-950"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand)] px-5 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-brand-hover)]"
           >
             Sign in
           </NavLink>
