@@ -234,6 +234,9 @@ test.describe('Commercial mobile WCAG 2.2 AA gate', () => {
     await page.goto('/parent');
     await expect(page.getByTestId('guardian-home-student-card')).toBeVisible();
     await expectNoWcagAaViolations(page, 'Mobile guardian home');
+    await page.goto('/guardian/routes');
+    await expect(page.getByTestId('guardian-student-bus-card')).toBeVisible();
+    await expectNoWcagAaViolations(page, 'Mobile guardian assigned buses');
     await page.getByRole('link', { name: 'View details for Bus 42' }).click();
     await expect(page.locator('[data-ui="guardian-service-line"]')).toBeVisible();
     await expectNoWcagAaViolations(page, 'Mobile guardian bus detail');
