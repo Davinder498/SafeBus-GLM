@@ -15,7 +15,7 @@ const webPublicDirectory = path.join(workspaceDirectory, 'apps', 'web', 'public'
 const androidResDirectory = path.join(mobileDirectory, 'android', 'app', 'src', 'main', 'res');
 
 const brand = {
-  navy: '#172B3A',
+  navy: '#0F2A44',
   yellow: '#FCD66B',
   canvas: '#F4E1A1',
 };

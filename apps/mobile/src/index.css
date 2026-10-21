@@ -251,8 +251,8 @@
 
   html[data-app-surface='native-mobile'] [data-ui='public-app-bar'] .safebus-brand-mark,
   html[data-app-surface='native-mobile'] [data-ui='app-bar'] .safebus-brand-mark {
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2.25rem;
+    height: 2.25rem;
     border-radius: 0.875rem;
   }
 
