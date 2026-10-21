@@ -54,7 +54,11 @@ test('a slow page download shows a loading status and then opens', async ({ page
   });
   await page.goto('/login', { waitUntil: 'domcontentloaded' });
   try {
-    await expect(page.getByRole('status')).toHaveText('Loading page...');
+    const status = page.getByRole('status');
+    await expect(status.getByText('Loading page...', { exact: true })).toBeVisible();
+    await expect(status.getByTestId('safebus-wordmark')).toHaveText('SafeBus');
+    await expect(status.getByTestId('safebus-wordmark')).toHaveCSS('color', 'rgb(23, 43, 58)');
+    await expect(status.locator('img, svg')).toHaveCount(0);
   } finally {
     release();
   }

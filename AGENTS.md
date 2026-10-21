@@ -78,6 +78,12 @@ Frontend may only use:
 
 Never expose service role or secret keys in frontend code, `.env`, docs, logs, or screenshots.
 
+## Branding
+
+- Use the text-only `SafeBus` wordmark on every web and mobile screen, including sign-in, loading, errors, and splash screens.
+- Use the existing brand blue on light surfaces and white on dark surfaces. Do not use yellow lettering in the wordmark.
+- Reserve the bus artwork for the Android launcher and store app icon. Do not reintroduce it into screen branding, splash artwork, web icons, or marketing screenshots.
+
 ## Privacy Rules
 
 - Do not add Alberta Student Number.

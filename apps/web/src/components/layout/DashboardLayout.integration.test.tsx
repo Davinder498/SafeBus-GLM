@@ -3,19 +3,12 @@ import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter, useLocation } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppSurfaceProvider, type AppSurface } from '@/contexts/AppSurfaceContext';
-import {
-  AuthContext,
-  type AuthContextValue,
-  type Profile,
-} from '@/contexts/AuthContext';
-import {
-  NotificationContext,
-  type NotificationContextValue,
-} from '@/contexts/NotificationContext';
+import { AuthContext, type AuthContextValue, type Profile } from '@/contexts/AuthContext';
+import { NotificationContext, type NotificationContextValue } from '@/contexts/NotificationContext';
 import { DashboardLayout, driverNavGroups } from './DashboardLayout';
 
-(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean })
-  .IS_REACT_ACT_ENVIRONMENT = true;
+(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT =
+  true;
 
 const driverProfile: Profile = {
   id: 'driver-profile-id',
@@ -123,13 +116,15 @@ describe('DashboardLayout navigation presentation', () => {
     );
     expect(container.querySelector('button[aria-label="Open navigation"]')).toBeNull();
     expect(container.querySelector('aside')).toBeNull();
-    expect(container.querySelector('[data-testid="safebus-brand-mark"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="safebus-wordmark"]')?.textContent).toBe(
+      'SafeBus',
+    );
   });
 
   it('does not put notification badges on the driver Settings destination', async () => {
     const container = await renderDriverLayout('native-mobile', 7);
-    const settingsTab = Array.from(container.querySelectorAll('a')).find(
-      (tab) => tab.textContent?.includes('Settings'),
+    const settingsTab = Array.from(container.querySelectorAll('a')).find((tab) =>
+      tab.textContent?.includes('Settings'),
     );
 
     expect(settingsTab?.textContent).not.toContain('7');
@@ -138,12 +133,15 @@ describe('DashboardLayout navigation presentation', () => {
 
   it('opens the secondary driver Profile route from the account menu', async () => {
     const container = await renderDriverLayout('native-mobile');
-    const accountButton = container.querySelector<HTMLButtonElement>('button[aria-haspopup="menu"]');
+    const accountButton = container.querySelector<HTMLButtonElement>(
+      'button[aria-haspopup="menu"]',
+    );
 
     await act(async () => accountButton?.click());
 
-    const profileButton = Array.from(container.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'))
-      .find((item) => item.textContent?.trim() === 'Profile');
+    const profileButton = Array.from(
+      container.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'),
+    ).find((item) => item.textContent?.trim() === 'Profile');
     await act(async () => profileButton?.click());
 
     expect(container.querySelector('[data-testid="location-probe"]')?.textContent).toBe(
@@ -153,7 +151,9 @@ describe('DashboardLayout navigation presentation', () => {
 
   it('does not duplicate Driver settings in the native account menu', async () => {
     const container = await renderDriverLayout('native-mobile');
-    const accountButton = container.querySelector<HTMLButtonElement>('button[aria-haspopup="menu"]');
+    const accountButton = container.querySelector<HTMLButtonElement>(
+      'button[aria-haspopup="menu"]',
+    );
 
     await act(async () => accountButton?.click());
 

@@ -8,6 +8,7 @@ const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const mobileDirectory = path.resolve(scriptDirectory, '..');
 const workspaceDirectory = path.resolve(mobileDirectory, '..', '..');
 const masterSourcePath = path.join(mobileDirectory, 'assets', 'brand', 'safebus-official-mark.svg');
+const wordmarkSourcePath = path.join(mobileDirectory, 'assets', 'brand', 'safebus-wordmark.svg');
 const masterPath = path.join(mobileDirectory, 'assets', 'brand', 'safebus-master-mark.png');
 const playDirectory = path.join(mobileDirectory, 'assets', 'google-play');
 const mobilePublicDirectory = path.join(mobileDirectory, 'public');
@@ -60,15 +61,10 @@ const featureBackground = Buffer.from(`
       <circle cx="28" cy="371" r="10"/>
       <circle cx="1000" cy="307" r="10"/>
     </g>
-    <text x="408" y="245" fill="${brand.navy}" font-family="Arial, Helvetica, sans-serif" font-size="82" font-weight="800" letter-spacing="-3">SafeBus</text>
-    <text x="412" y="344" fill="url(#accent)" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700">Track the bus. Stay informed.</text>
+    <text x="512" y="245" text-anchor="middle" fill="#172B3A" font-family="Arial, Helvetica, sans-serif" font-size="100" font-weight="800" letter-spacing="-3">SafeBus</text>
+    <text x="512" y="330" text-anchor="middle" fill="url(#accent)" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700">Track the bus. Stay informed.</text>
   </svg>
 `);
-
-const featureMark = await sharp(masterPath)
-  .resize(320, 320, { fit: 'contain' })
-  .png({ compressionLevel: 9 })
-  .toBuffer();
 
 const densitySizes = {
   ldpi: 36,
@@ -87,35 +83,55 @@ const writeCanvasIcon = async (size, outputPath, inset = 0.04) => {
   const mark = await renderMark(markSize);
   return sharp({
     create: { width: size, height: size, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
-  }).composite([{
-    input: mark,
-    left: Math.round((size - markSize) / 2),
-    top: Math.round((size - markSize) / 2),
-  }]).png({ compressionLevel: 9 }).toFile(outputPath);
+  })
+    .composite([
+      {
+        input: mark,
+        left: Math.round((size - markSize) / 2),
+        top: Math.round((size - markSize) / 2),
+      },
+    ])
+    .png({ compressionLevel: 9 })
+    .toFile(outputPath);
 };
 
 const writeAdaptiveForeground = async (size, outputPath) => {
   const markSize = Math.round(size * 0.62);
-  const mark = await sharp(busOnlySource).resize(markSize, markSize, { fit: 'contain' }).png().toBuffer();
+  const mark = await sharp(busOnlySource)
+    .resize(markSize, markSize, { fit: 'contain' })
+    .png()
+    .toBuffer();
   return sharp({
     create: { width: size, height: size, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
-  }).composite([{
-    input: mark,
-    left: Math.round((size - markSize) / 2),
-    top: Math.round((size - markSize) / 2),
-  }]).png({ compressionLevel: 9 }).toFile(outputPath);
+  })
+    .composite([
+      {
+        input: mark,
+        left: Math.round((size - markSize) / 2),
+        top: Math.round((size - markSize) / 2),
+      },
+    ])
+    .png({ compressionLevel: 9 })
+    .toFile(outputPath);
 };
 
-const writeSplashIcon = async (size, outputPath) => {
-  const markSize = Math.round(size * 0.62);
-  const mark = await renderMark(markSize);
+// A generous transparent canvas keeps the wordmark within Android's splash mask.
+const writeWordmark = async (size, outputPath) => {
+  const width = Math.round(size * 0.62);
+  const mark = await sharp(wordmarkSourcePath).resize({ width }).png().toBuffer();
+  const { height } = await sharp(mark).metadata();
   return sharp({
     create: { width: size, height: size, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
-  }).composite([{
-    input: mark,
-    left: Math.round((size - markSize) / 2),
-    top: Math.round((size - markSize) / 2),
-  }]).png({ compressionLevel: 9 }).toFile(outputPath);
+  })
+    .composite([
+      {
+        input: mark,
+        left: Math.round((size - width) / 2),
+        top: Math.round((size - height) / 2),
+      },
+    ])
+    .png({ compressionLevel: 9 })
+    .toFile(outputPath);
 };
 
 const androidIconTasks = Object.entries(densitySizes).flatMap(([density, size]) => {
@@ -132,39 +148,21 @@ const androidIconTasks = Object.entries(densitySizes).flatMap(([density, size]) 
 });
 
 await Promise.all([
-  sharp(masterPath)
+  sharp(wordmarkSourcePath)
+    .resize(1024, 1024, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .png({ compressionLevel: 9 })
     .toFile(path.join(mobileDirectory, 'assets', 'logo.png')),
   sharp(masterPath)
     .resize(512, 512, { fit: 'contain' })
     .png({ compressionLevel: 9 })
     .toFile(path.join(playDirectory, 'app-icon-512.png')),
-  sharp(masterSourcePath)
-    .resize(180, 180)
-    .png({ compressionLevel: 9 })
-    .toFile(path.join(webPublicDirectory, 'apple-touch-icon.png')),
-  sharp(masterSourcePath)
-    .resize(64, 64)
-    .png({ compressionLevel: 9 })
-    .toFile(path.join(webPublicDirectory, 'favicon.png')),
-  sharp(masterSourcePath)
-    .resize(64, 64)
-    .png({ compressionLevel: 9 })
-    .toFile(path.join(mobilePublicDirectory, 'favicon.png')),
-  sharp(masterSourcePath)
-    .resize(192, 192)
-    .png({ compressionLevel: 9 })
-    .toFile(path.join(webPublicDirectory, 'icon-192.png')),
-  sharp(masterSourcePath)
-    .resize(512, 512)
-    .png({ compressionLevel: 9 })
-    .toFile(path.join(webPublicDirectory, 'icon-512.png')),
-  writeSplashIcon(
-    432,
-    path.join(androidResDirectory, 'drawable-nodpi', 'safebus_splash_icon.png'),
-  ),
+  writeWordmark(180, path.join(webPublicDirectory, 'apple-touch-icon.png')),
+  writeWordmark(64, path.join(webPublicDirectory, 'favicon.png')),
+  writeWordmark(64, path.join(mobilePublicDirectory, 'favicon.png')),
+  writeWordmark(192, path.join(webPublicDirectory, 'icon-192.png')),
+  writeWordmark(512, path.join(webPublicDirectory, 'icon-512.png')),
+  writeWordmark(432, path.join(androidResDirectory, 'drawable-nodpi', 'safebus_splash_icon.png')),
   sharp(featureBackground)
-    .composite([{ input: featureMark, left: 48, top: 82 }])
     .png({ compressionLevel: 9 })
     .toFile(path.join(playDirectory, 'feature-graphic-1024x500.png')),
   ...androidIconTasks,

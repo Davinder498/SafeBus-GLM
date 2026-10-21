@@ -36,15 +36,13 @@ async function expectNoHorizontalOverflow(page: import('@playwright/test').Page)
 }
 
 async function expectMaterialBrand(page: import('@playwright/test').Page) {
-  const mark = page.getByTestId('safebus-brand-mark').last();
+  const mark = page.getByTestId('safebus-wordmark').last();
   await expect(mark).toBeVisible();
-  const logo = mark.locator('img');
-  await expect(logo).toBeVisible();
-  await expect(logo).toHaveAttribute('src', /safebus-official-mark.*\.svg/);
-  await expect(logo).toHaveAttribute('alt', '');
+  await expect(mark).toHaveText('SafeBus');
+  await expect(mark).toHaveCSS('color', 'rgb(23, 43, 58)');
+  await expect(mark.locator('img')).toHaveCount(0);
   await expect(mark.locator('svg')).toHaveCount(0);
   await expect(mark).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-  await expect(logo).toHaveCSS('border-radius', '18%');
 }
 
 async function installNotificationInboxMock(
@@ -1016,9 +1014,7 @@ for (const path of ['/privacy', '/account-deletion']) {
     for (const scrollY of [500, 100, 0]) {
       await page.evaluate((y) => window.scrollTo(0, y), scrollY);
       expect((await header.boundingBox())?.y).toBe(0);
-      const wordmark = await header
-        .getByRole('img', { name: 'SafeBus', exact: true })
-        .boundingBox();
+      const wordmark = await header.getByTestId('safebus-wordmark').boundingBox();
       expect(wordmark?.y).toBeGreaterThanOrEqual(32);
     }
     await expectNoHorizontalOverflow(page);

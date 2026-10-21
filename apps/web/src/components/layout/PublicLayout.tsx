@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, NavLink } from 'react-router';
+import { BrandMark } from '@/components/ui/BrandMark';
 
 interface PublicLayoutProps {
   children: ReactNode;
@@ -13,7 +14,7 @@ export function PublicLayout({ children, overlayHeader = false }: PublicLayoutPr
       data-ui="public-shell"
     >
       <header
-        className="fixed inset-x-3 top-3 z-30 mx-auto max-w-7xl rounded-2xl border border-white/70 bg-white/95 shadow-[0_8px_32px_rgb(7_19_28_/_0.15)] backdrop-blur-md sm:inset-x-6 sm:top-5"
+        className="fixed inset-x-3 top-3 z-30 rounded-2xl border border-white/70 bg-white/95 shadow-[0_8px_32px_rgb(7_19_28_/_0.15)] backdrop-blur-md sm:inset-x-6 sm:top-5"
         data-ui="public-app-bar"
       >
         <div className="flex h-14 items-center justify-between px-4 sm:px-5">
@@ -22,12 +23,7 @@ export function PublicLayout({ children, overlayHeader = false }: PublicLayoutPr
             className="inline-flex min-h-11 items-center rounded-md text-2xl font-extrabold tracking-tight"
             aria-label="SafeBus home"
           >
-            <svg width="100" height="32" viewBox="0 0 100 32" role="img" aria-label="SafeBus">
-              <text y="24" fontSize="24" fontWeight="800" letterSpacing="-0.6">
-                <tspan fill="var(--color-brand)">Safe</tspan>
-                <tspan fill="var(--color-accent)">Bus</tspan>
-              </text>
-            </svg>
+            <BrandMark />
           </Link>
           <NavLink
             to="/login"

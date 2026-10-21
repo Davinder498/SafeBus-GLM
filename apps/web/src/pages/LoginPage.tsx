@@ -65,8 +65,7 @@ export function LoginPage() {
         />
         <div className="relative p-10">
           <Link to="/" className="flex items-center gap-2.5 text-white">
-            <BrandMark className="h-9 w-9" />
-            <span className="text-lg font-bold tracking-tight">SafeBus</span>
+            <BrandMark inverse className="text-2xl" />
           </Link>
         </div>
         <div className="relative px-10 pb-10">
@@ -92,8 +91,7 @@ export function LoginPage() {
         <div className="mx-auto w-full max-w-sm" data-ui="login-card">
           {/* Mobile brand */}
           <Link to="/" className="mb-8 flex items-center gap-2.5 lg:hidden">
-            <BrandMark className="h-12 w-12 rounded-xl" iconClassName="h-6 w-6" />
-            <span className="text-lg font-bold tracking-tight text-slate-900">SafeBus</span>
+            <BrandMark className="text-3xl" />
           </Link>
 
           <p className="text-xs font-semibold uppercase tracking-[0.1em] text-navy-600">

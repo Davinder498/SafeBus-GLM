@@ -1,29 +1,25 @@
 import { cn } from '@/utils/cn';
-import safeBusLogo from '../../../../mobile/assets/brand/safebus-official-mark.svg';
 
 interface BrandMarkProps {
   className?: string;
-  iconClassName?: string;
+  inverse?: boolean;
 }
 
 /**
- * Shared brand tile used by both the web and mobile surfaces.
+ * Text-only wordmark shared by web and mobile screens.
+ * The bus artwork is reserved for the mobile launcher icon.
  */
-export function BrandMark({ className, iconClassName }: BrandMarkProps) {
+export function BrandMark({ className, inverse = false }: BrandMarkProps) {
   return (
     <span
       className={cn(
-        'safebus-brand-mark flex h-8 w-8 shrink-0 items-center justify-center',
+        'inline-block shrink-0 whitespace-nowrap font-extrabold leading-tight tracking-tight',
+        inverse ? 'text-white' : 'text-[var(--color-brand)]',
         className,
       )}
-      data-testid="safebus-brand-mark"
-      aria-hidden
+      data-testid="safebus-wordmark"
     >
-      <img
-        src={safeBusLogo}
-        alt=""
-        className={cn('h-[30px] w-[30px] object-contain', iconClassName)}
-      />
+      SafeBus
     </span>
   );
 }
