@@ -7,7 +7,7 @@ function PageLoadingScreen() {
   return (
     <main className="flex min-h-screen items-center justify-center px-6 text-center">
       <div role="status" aria-live="polite">
-        <BrandMark className="mx-auto h-12 w-12" />
+        <BrandMark className="text-3xl" />
         <p className="mt-4 font-semibold text-navy-900">Loading page...</p>
       </div>
     </main>
@@ -27,7 +27,7 @@ export class PageBoundary extends Component<{ children: ReactNode }, { failed: b
       return (
         <main className="flex min-h-screen items-center justify-center px-6 text-center">
           <div className="max-w-sm">
-            <BrandMark className="mx-auto h-12 w-12" />
+            <BrandMark className="text-3xl" />
             <h1 className="mt-4 text-xl font-bold text-navy-900">Unable to open this page</h1>
             <p className="mt-3 text-gray-600">
               Check your connection and reload the page. If the problem continues, try again later.

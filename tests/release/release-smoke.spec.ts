@@ -15,15 +15,18 @@ test('landing page loads without third-party font requests', async ({ page }) =>
   const wordmark = header.getByRole('link', { name: 'SafeBus home' });
   await expect(wordmark).toHaveText('SafeBus');
   await expect(wordmark.locator('img')).toHaveCount(0);
-  await expect(wordmark.getByRole('img', { name: 'SafeBus' })).toBeVisible();
-  await expect(wordmark.getByText('Safe', { exact: true })).toHaveCSS('fill', 'rgb(23, 43, 58)');
-  await expect(wordmark.getByText('Bus', { exact: true })).toHaveCSS('fill', 'rgb(252, 214, 107)');
+  await expect(wordmark.getByTestId('safebus-wordmark')).toHaveCSS('color', 'rgb(23, 43, 58)');
+  await expect(wordmark.locator('svg')).toHaveCount(0);
   await expect(header.getByRole('link', { name: 'Sign in' })).toHaveCSS(
     'background-color',
     'rgb(23, 43, 58)',
   );
   await expect(header).toHaveCSS('position', 'fixed');
   await expect(header).toHaveCSS('border-radius', '20px');
+  const headerBounds = await header.boundingBox();
+  const gutter = page.viewportSize()!.width < 640 ? 12 : 24;
+  expect(headerBounds?.x).toBe(gutter);
+  expect(headerBounds?.width).toBe(page.viewportSize()!.width - gutter * 2);
   const heroImage = page.locator('main > section').first().locator('img');
   const heroBounds = await heroImage.boundingBox();
   expect(heroBounds?.x).toBe(0);

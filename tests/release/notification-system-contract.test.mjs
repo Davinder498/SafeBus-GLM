@@ -412,15 +412,18 @@ test('guardian delivery preference RPC is fail-closed and synchronizes current a
   assert.doesNotMatch(simplifiedPreferencesMigration, /to anon|grant execute[\s\S]*to public/i);
 });
 
-test('the official scalable mark is the single web brand source', () => {
+test('the bus artwork is reserved for the mobile app icon and screens use the wordmark', () => {
   assert.match(officialMark, /solid navy-blue tile/);
   assert.match(officialMark, /<rect width="1024" height="1024" rx="160" fill="#0F2A44"/);
   assert.doesNotMatch(officialMark, /<pattern id="dots"/);
   assert.doesNotMatch(officialMark, /id="panel"|panel-shadow|fill="url\(#panel\)"/);
   assert.match(officialMark, /fill="url\(#bus\)"/);
   assert.match(officialMark, /fill="#C7463D"/);
-  assert.match(brandMarkComponent, /safebus-official-mark\.svg/);
-  assert.doesNotMatch(brandMarkComponent, /safebus-master-mark\.png/);
+  assert.match(brandMarkComponent, /SafeBus/);
+  assert.doesNotMatch(
+    brandMarkComponent,
+    /<img|<svg|safebus-official-mark\.svg|safebus-master-mark\.png/,
+  );
 });
 
 test('Android registration handles permission, channels, taps, refresh and cleanup', () => {

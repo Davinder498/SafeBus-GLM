@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { Bus, ArrowRight } from 'lucide-react';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { WhyChooseUsCarousel } from '@/components/marketing/WhyChooseUsCarousel';
+import { BrandMark } from '@/components/ui/BrandMark';
 import winterMorningHero from '@/assets/hero-winter-morning.webp';
 import notificationsPhoto from '@/assets/feature-notifications-app.webp';
 import liveMapIllustration from '@/assets/feature-live-map.webp';
@@ -112,7 +113,7 @@ export function LandingPage() {
                 <Bus className="h-3.5 w-3.5" /> School transportation visibility
               </span>
               <h1 className="mt-5 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-                <span className="text-yellow-400">SafeBus</span>
+                <BrandMark inverse />
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-8 text-navy-100">
                 A transportation operations platform that helps Alberta schools reduce parent

@@ -196,13 +196,13 @@ test('bus actions share the desktop row and fit on phones with simplified brandi
     ]);
     expect(boxes.every((box) => box && Math.abs(box.y - boxes[0]!.y) < 2)).toBe(true);
     await expect(page.locator('header').getByText('Test Admin', { exact: true })).toBeVisible();
-    await expect(
-      page.locator('header .sb-brand-copy').getByText('SafeBus', { exact: true }),
-    ).toBeVisible();
+    await expect(page.locator('header').getByTestId('safebus-wordmark')).toBeVisible();
   }
   await expect(page.locator('header').getByText('Admin portal', { exact: true })).toHaveCount(0);
   await expect(page.locator('header').getByText('Tenant admin', { exact: true })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'SafeBus home' }).locator('svg, img')).toBeVisible();
+  const brand = page.getByRole('link', { name: 'SafeBus home' });
+  await expect(brand.getByTestId('safebus-wordmark')).toHaveText('SafeBus');
+  await expect(brand.locator('svg, img')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );

@@ -132,7 +132,9 @@
     color: #173f55;
   }
 
-  html[data-app-surface='native-mobile'] [data-ui='notification-settings-page'] input[role='switch'] {
+  html[data-app-surface='native-mobile']
+    [data-ui='notification-settings-page']
+    input[role='switch'] {
     position: relative;
     width: 2.75rem;
     min-width: 2.75rem;
@@ -185,19 +187,6 @@
 }
 
 @layer components {
-  html[data-app-surface='native-mobile'] .safebus-brand-mark {
-    border: 0;
-    background: transparent !important;
-    box-shadow: none;
-  }
-
-  html[data-app-surface='native-mobile'] .safebus-brand-mark img {
-    width: 100%;
-    height: 100%;
-    border-radius: 18%;
-    box-shadow: 0 4px 14px rgb(23 43 58 / 0.22);
-  }
-
   html[data-app-surface='native-mobile'] [data-ui='login-shell'],
   html[data-app-surface='native-mobile'] [data-ui='public-shell'],
   html[data-app-surface='native-mobile'] [data-ui='mobile-fallback'] {
@@ -247,13 +236,6 @@
     height: 4.25rem;
     padding-right: 1rem;
     padding-left: 1rem;
-  }
-
-  html[data-app-surface='native-mobile'] [data-ui='public-app-bar'] .safebus-brand-mark,
-  html[data-app-surface='native-mobile'] [data-ui='app-bar'] .safebus-brand-mark {
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: 0.875rem;
   }
 
   html[data-app-surface='native-mobile'] [data-ui='public-footer'] {
@@ -332,16 +314,6 @@
     box-shadow: 0 1px 0 rgb(35 92 120 / 0.03);
     transform: translateZ(0);
     backface-visibility: hidden;
-  }
-
-  html[data-app-surface='native-mobile'] .sb-brand-copy {
-    display: flex !important;
-  }
-
-  html[data-app-surface='native-mobile'] .sb-brand-copy > span:first-child {
-    color: var(--mobile-primary);
-    font-size: 0.875rem;
-    letter-spacing: -0.01em;
   }
 
   html[data-app-surface='native-mobile'] [data-ui='top-notifications'] {
@@ -1264,14 +1236,6 @@
     color: var(--guardian-navy);
   }
 
-  html[data-app-surface='native-mobile'] [data-ui='app-loading'] .safebus-brand-mark {
-    width: 5rem;
-    height: 5rem;
-    border: 0;
-    background: transparent !important;
-    box-shadow: none;
-  }
-
   html[data-app-surface='native-mobile'] [data-ui='app-loading-content'] > span:last-child {
     background: rgb(23 43 58 / 0.14);
   }
@@ -1318,13 +1282,6 @@
     > button
     > span:hover {
     background: rgb(90 70 18 / 0.1);
-  }
-
-  html[data-app-surface='native-mobile']
-    [data-portal='parent'][data-ui='dashboard-shell']
-    .sb-brand-copy
-    > span:first-child {
-    color: var(--guardian-navy);
   }
 
   html[data-app-surface='native-mobile']
@@ -1761,10 +1718,6 @@
 }
 
 @media (max-width: 359px) {
-  html[data-app-surface='native-mobile'] .sb-brand-copy > span:last-child {
-    display: none;
-  }
-
   html[data-app-surface='native-mobile'] [data-ui='mobile-main'] {
     padding-right: 0.75rem !important;
     padding-left: 0.75rem !important;
@@ -1978,7 +1931,12 @@
   /* Keep guardian and driver card edges neutral across their native pages. */
   html[data-app-surface='native-mobile']
     :is([data-portal='parent'], [data-portal='driver'])[data-ui='dashboard-shell']
-    :is([data-ui='card'], [data-ui$='-card'], [data-testid$='-card'], [data-ui-state='data-state']) {
+    :is(
+      [data-ui='card'],
+      [data-ui$='-card'],
+      [data-testid$='-card'],
+      [data-ui-state='data-state']
+    ) {
     border-color: var(--mobile-card-outline) !important;
   }
 }

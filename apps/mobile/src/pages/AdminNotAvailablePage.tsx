@@ -25,12 +25,9 @@ export function AdminNotAvailablePage() {
       data-ui="mobile-fallback"
     >
       <Card className="max-w-md p-8 text-center">
-        <div className="mb-6 flex items-center justify-center gap-3">
-          <BrandMark className="h-12 w-12 rounded-xl" iconClassName="h-6 w-6" />
-          <span className="text-left leading-tight">
-            <span className="block font-bold text-navy-900">SafeBus</span>
-            <span className="block text-xs text-slate-500">Mobile app</span>
-          </span>
+        <div className="mb-6 flex flex-col items-center gap-1">
+          <BrandMark className="text-3xl" />
+          <span className="text-xs text-slate-500">Mobile app</span>
         </div>
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-navy-50">
           <Monitor className="h-7 w-7 text-navy-600" />
