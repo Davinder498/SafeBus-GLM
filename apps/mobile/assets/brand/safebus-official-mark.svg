@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title description">
   <title id="title">SafeBus</title>
-  <description id="description">A friendly yellow school bus on a solid navy-blue tile.</description>
+  <description id="description">A compact, square-proportioned yellow school bus on a solid navy-blue tile.</description>
   <defs>
     <linearGradient id="bus" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#F4C23D"/>
@@ -10,28 +10,28 @@
       <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#122536" flood-opacity="0.24"/>
     </filter>
   </defs>
-  <rect width="1024" height="1024" rx="160" fill="#172B3A"/>
-  <g filter="url(#bus-shadow)" transform="translate(512 512) scale(1.16) translate(-512 -512)">
-    <path d="M294 294c0-66 54-120 120-120h196c66 0 120 54 120 120v350c0 58-47 105-105 105H399c-58 0-105-47-105-105V294Z" fill="url(#bus)"/>
-    <path d="M314 291c0-54 44-98 98-98h200c54 0 98 44 98 98v34H314v-34Z" fill="#F1BD36"/>
-    <circle cx="390" cy="222" r="20" fill="#C7463D"/>
-    <circle cx="512" cy="222" r="15" fill="#A27B2F"/>
-    <circle cx="634" cy="222" r="20" fill="#C7463D"/>
-    <rect x="332" y="280" width="160" height="159" rx="24" fill="#102D43"/>
-    <rect x="532" y="280" width="160" height="159" rx="24" fill="#102D43"/>
-    <path d="m467 295-55 128h-53l56-128h52Z" fill="#FFFFFF" opacity="0.22"/>
-    <path d="m667 295-55 128h-53l56-128h52Z" fill="#FFFFFF" opacity="0.22"/>
-    <rect x="326" y="477" width="372" height="24" rx="12" fill="#173247"/>
-    <rect x="382" y="538" width="260" height="18" rx="9" fill="#173247"/>
-    <rect x="414" y="578" width="196" height="18" rx="9" fill="#173247"/>
-    <circle cx="354" cy="650" r="45" fill="#FFFFFF"/>
-    <circle cx="354" cy="650" r="28" fill="#F8C63D"/>
-    <circle cx="670" cy="650" r="45" fill="#FFFFFF"/>
-    <circle cx="670" cy="650" r="28" fill="#F8C63D"/>
-    <rect x="334" y="727" width="358" height="27" rx="13.5" fill="#D8A92F" opacity="0.45"/>
-    <rect x="330" y="761" width="92" height="59" rx="22" fill="#173247"/>
-    <rect x="602" y="761" width="92" height="59" rx="22" fill="#173247"/>
-    <rect x="350" y="776" width="52" height="12" rx="6" fill="#6F8491"/>
-    <rect x="622" y="776" width="52" height="12" rx="6" fill="#6F8491"/>
+  <rect width="1024" height="1024" rx="160" fill="#0F2A44"/>
+  <g filter="url(#bus-shadow)" transform="translate(512 512) scale(1.06) translate(-512 -512)">
+    <rect x="248" y="738" width="112" height="78" rx="22" fill="#07131C"/>
+    <rect x="664" y="738" width="112" height="78" rx="22" fill="#07131C"/>
+    <path d="M208 312c0-57 47-104 104-104h400c57 0 104 47 104 104v360c0 53-43 96-96 96H304c-53 0-96-43-96-96V312Z" fill="url(#bus)"/>
+    <path d="M232 316c0-47 38-86 86-86h388c48 0 86 39 86 86v20H232v-20Z" fill="#F1BD36"/>
+    <circle cx="308" cy="258" r="18" fill="#C7463D"/>
+    <circle cx="512" cy="258" r="13" fill="#A27B2F"/>
+    <circle cx="716" cy="258" r="18" fill="#C7463D"/>
+    <rect x="252" y="302" width="232" height="166" rx="24" fill="#102D43"/>
+    <rect x="540" y="302" width="232" height="166" rx="24" fill="#102D43"/>
+    <path d="m450 318-60 134h-56l60-134h56Z" fill="#FFFFFF" opacity="0.22"/>
+    <path d="m738 318-60 134h-56l60-134h56Z" fill="#FFFFFF" opacity="0.22"/>
+    <rect x="246" y="500" width="532" height="22" rx="11" fill="#173247"/>
+    <rect x="340" y="548" width="344" height="16" rx="8" fill="#173247"/>
+    <rect x="382" y="581" width="260" height="16" rx="8" fill="#173247"/>
+    <circle cx="280" cy="666" r="37" fill="#FFFFFF"/>
+    <circle cx="280" cy="666" r="24" fill="#F8C63D"/>
+    <circle cx="744" cy="666" r="37" fill="#FFFFFF"/>
+    <circle cx="744" cy="666" r="24" fill="#F8C63D"/>
+    <rect x="260" y="730" width="504" height="24" rx="12" fill="#D8A92F" opacity="0.45"/>
+    <rect x="280" y="784" width="48" height="10" rx="5" fill="#6F8491"/>
+    <rect x="696" y="784" width="48" height="10" rx="5" fill="#6F8491"/>
   </g>
 </svg>
