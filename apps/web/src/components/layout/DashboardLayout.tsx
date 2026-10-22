@@ -499,9 +499,7 @@ export function DashboardLayout({
             />
             <aside className="sb-sidebar absolute left-0 top-0 h-full w-72 max-w-[85vw] overflow-y-auto bg-[var(--color-surface)] p-4 shadow-popover animate-slide-in-right">
               <div className="mb-4 flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm font-bold text-slate-900">
-                  <Bus className="h-4 w-4 text-navy-600" /> SafeBus
-                </span>
+                <BrandMark className="text-sm" />
                 <button
                   type="button"
                   onClick={() => setMobileOpen(false)}

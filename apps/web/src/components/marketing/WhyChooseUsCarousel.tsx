@@ -1,13 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import {
-  Ban,
-  Bus,
-  ChevronLeft,
-  ChevronRight,
-  GraduationCap,
-  MapPin,
-  ShieldCheck,
-} from 'lucide-react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { Ban, Bus, GraduationCap, MapPin, ShieldCheck } from 'lucide-react';
 
 const cards = [
   {
@@ -39,179 +31,142 @@ const cards = [
   },
 ];
 
-const keyboardDirections: Record<string, number | 'first' | 'last'> = {
-  ArrowLeft: -1,
-  ArrowRight: 1,
-  Home: 'first',
-  End: 'last',
-};
-
-function getMetrics(viewport: HTMLDivElement) {
-  const first = viewport.children[0] as HTMLElement | undefined;
-  const second = viewport.children[1] as HTMLElement | undefined;
-  if (!first?.offsetWidth || !second || !viewport.clientWidth) return null;
-
-  const step = second.offsetLeft - first.offsetLeft;
-  if (step <= 0) return null;
-
-  const visible = Math.min(
-    cards.length,
-    Math.max(1, Math.round(viewport.clientWidth / first.offsetWidth)),
-  );
-  const maxStart = cards.length - visible;
-  const start = Math.min(maxStart, Math.max(0, Math.round(viewport.scrollLeft / step)));
-  return { step, visible, maxStart, start };
-}
-
 export function WhyChooseUsCarousel() {
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const pendingStartRef = useRef<number | null>(null);
-  const rangeRef = useRef({ start: 0, visible: 1 });
-  const [range, setRange] = useState(rangeRef.current);
+  const regionRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [hasFocus, setHasFocus] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isPageVisible, setIsPageVisible] = useState(!document.hidden);
+  const [reduceMotion, setReduceMotion] = useState(
+    () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
+  );
 
-  const updateRange = useCallback((start: number, visible: number) => {
-    rangeRef.current = { start, visible };
-    setRange((previous) =>
-      previous.start === start && previous.visible === visible ? previous : { start, visible },
-    );
+  useEffect(() => {
+    const preference = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    const updateMotion = () => setReduceMotion(preference?.matches ?? false);
+    const updateVisibility = () => setIsPageVisible(!document.hidden);
+    preference?.addEventListener('change', updateMotion);
+    document.addEventListener('visibilitychange', updateVisibility);
+    return () => {
+      preference?.removeEventListener('change', updateMotion);
+      document.removeEventListener('visibilitychange', updateVisibility);
+    };
   }, []);
 
   useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-
-    const handleResize = () => {
-      const metrics = getMetrics(viewport);
-      if (!metrics) return;
-      pendingStartRef.current = null;
-      const start = Math.min(rangeRef.current.start, metrics.maxStart);
-      const left = start * metrics.step;
-      if (Math.abs(viewport.scrollLeft - left) > 1) {
-        viewport.scrollTo({ left, behavior: 'auto' });
-      }
-      updateRange(start, metrics.visible);
-    };
-
-    handleResize();
-    if (typeof ResizeObserver !== 'undefined') {
-      const observer = new ResizeObserver(handleResize);
-      observer.observe(viewport);
-      return () => observer.disconnect();
+    if (typeof IntersectionObserver === 'undefined') {
+      setIsVisible(true);
+      return;
     }
+    const observer = new IntersectionObserver(([entry]) => setIsVisible(entry.isIntersecting), {
+      threshold: 0.25,
+    });
+    if (regionRef.current) observer.observe(regionRef.current);
+    return () => observer.disconnect();
+  }, []);
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [updateRange]);
+  const isRotating = !isHovered && !hasFocus && !reduceMotion && isVisible && isPageVisible;
 
-  const syncScroll = () => {
-    const viewport = viewportRef.current;
-    const metrics = viewport && getMetrics(viewport);
-    if (metrics && viewport) {
-      if (
-        pendingStartRef.current !== null &&
-        Math.abs(viewport.scrollLeft - pendingStartRef.current * metrics.step) < 2
-      ) {
-        pendingStartRef.current = null;
-      }
-      updateRange(metrics.start, metrics.visible);
-    }
-  };
+  useEffect(() => {
+    if (!isRotating) return;
+    const timer = window.setTimeout(() => {
+      setActiveIndex((index) => (index + 1) % cards.length);
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [activeIndex, isRotating]);
 
-  const navigate = (direction: number | 'first' | 'last') => {
-    const viewport = viewportRef.current;
-    const metrics = viewport && getMetrics(viewport);
-    if (!viewport || !metrics) return;
-    const start = pendingStartRef.current ?? metrics.start;
-    const target =
-      direction === 'first'
-        ? 0
-        : direction === 'last'
-          ? metrics.maxStart
-          : Math.min(metrics.maxStart, Math.max(0, start + direction));
-    pendingStartRef.current = target;
-    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-    viewport.scrollTo({ left: target * metrics.step, behavior: reduceMotion ? 'auto' : 'smooth' });
+  const navigate = (direction: number) => {
+    setActiveIndex((index) => (index + direction + cards.length) % cards.length);
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget || event.altKey || event.ctrlKey || event.metaKey)
       return;
-    const direction = keyboardDirections[event.key];
-    if (direction === undefined) return;
+    switch (event.key) {
+      case 'ArrowLeft':
+        navigate(-1);
+        break;
+      case 'ArrowRight':
+        navigate(1);
+        break;
+      case 'Home':
+        setActiveIndex(0);
+        break;
+      case 'End':
+        setActiveIndex(cards.length - 1);
+        break;
+      default:
+        return;
+    }
     event.preventDefault();
-    navigate(direction);
   };
-
-  const end = Math.min(cards.length, range.start + range.visible);
-  const position = range.visible === 1 ? `${range.start + 1}` : `${range.start + 1}\u2013${end}`;
 
   return (
     <div
+      ref={regionRef}
       role="region"
       aria-roledescription="carousel"
       aria-labelledby="why-choose-us-heading"
-      className="mt-10"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onFocusCapture={() => setHasFocus(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setHasFocus(false);
+      }}
+      className="w-full min-w-0 max-w-md rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-yellow-300"
     >
       <div
-        ref={viewportRef}
         id="why-choose-us-cards"
-        role="group"
-        aria-label="Reasons to choose SafeBus"
-        tabIndex={0}
-        onScroll={syncScroll}
-        onKeyDown={handleKeyDown}
-        onPointerDown={() => {
-          pendingStartRef.current = null;
-        }}
-        onWheel={() => {
-          pendingStartRef.current = null;
-        }}
-        className="relative flex snap-x snap-mandatory gap-6 overflow-x-auto rounded-xl pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        aria-live={isRotating ? 'off' : 'polite'}
+        aria-atomic="true"
+        className="grid"
       >
         {cards.map(({ title, description, icon: Icon }, index) => (
           <article
             key={title}
             role="group"
             aria-roledescription="slide"
-            aria-label={`${index + 1} of ${cards.length}`}
-            className="w-full min-w-0 shrink-0 snap-start rounded-xl border border-yellow-200 bg-white p-6 shadow-sm md:w-[calc((100%_-_1.5rem)/2)] lg:w-[calc((100%_-_3rem)/3)] lg:p-8"
+            aria-label={title}
+            aria-hidden={index !== activeIndex}
+            className={`relative overflow-hidden rounded-2xl border border-white/30 bg-navy-950/45 p-6 shadow-[0_20px_70px_-20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-xl transition-opacity duration-500 [grid-area:1/1] motion-reduce:transition-none sm:p-7 ${index === activeIndex ? 'visible opacity-100' : 'invisible opacity-0'}`}
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-yellow-100 text-navy-800">
-              <Icon className="h-6 w-6" aria-hidden="true" />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent"
+            />
+            <div className="relative">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-yellow-200/30 bg-yellow-400/15 text-yellow-300">
+                <Icon className="h-6 w-6" aria-hidden="true" />
+              </div>
+              <h3 className="mt-5 text-2xl font-bold leading-tight tracking-tight text-yellow-300">
+                {title}
+              </h3>
+              <p className="mt-3 text-base leading-7 text-white">{description}</p>
             </div>
-            <h3 className="mt-5 text-xl font-bold leading-7 tracking-tight text-navy-800">
-              {title}
-            </h3>
-            <p className="mt-3 text-base leading-7 text-slate-600">{description}</p>
           </article>
         ))}
       </div>
-      <div className="mt-6 flex items-center justify-between gap-4">
-        <p role="status" aria-live="polite" aria-atomic="true" className="text-sm text-navy-600">
-          <span className="sr-only">Cards </span>
-          {position} of {cards.length}
-        </p>
-        <div className="flex gap-3">
-          <button
-            type="button"
-            aria-label="Previous cards"
-            aria-controls="why-choose-us-cards"
-            disabled={range.start === 0}
-            onClick={() => navigate(-1)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-navy-200 bg-white text-navy-800 transition-colors hover:bg-yellow-100 disabled:pointer-events-none disabled:opacity-40"
-          >
-            <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            aria-label="Next cards"
-            aria-controls="why-choose-us-cards"
-            disabled={end === cards.length}
-            onClick={() => navigate(1)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-navy-200 bg-white text-navy-800 transition-colors hover:bg-yellow-100 disabled:pointer-events-none disabled:opacity-40"
-          >
-            <ChevronRight className="h-5 w-5" aria-hidden="true" />
-          </button>
+      <div className="mt-3">
+        <div role="group" aria-label="Choose a reason" className="flex items-center gap-1">
+          {cards.map((card, index) => (
+            <button
+              key={card.title}
+              type="button"
+              aria-label={`Show reason ${index + 1}: ${card.title}`}
+              aria-current={index === activeIndex ? 'true' : undefined}
+              aria-controls="why-choose-us-cards"
+              onClick={() => setActiveIndex(index)}
+              className="flex h-11 w-8 items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
+            >
+              <span
+                aria-hidden="true"
+                className={`h-2 rounded-full transition-all motion-reduce:transition-none ${index === activeIndex ? 'w-7 bg-yellow-300' : 'w-2 bg-white/50 hover:bg-white'}`}
+              />
+            </button>
+          ))}
         </div>
       </div>
     </div>
