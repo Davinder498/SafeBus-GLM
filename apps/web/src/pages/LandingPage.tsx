@@ -4,6 +4,7 @@ import { PublicLayout } from '@/components/layout/PublicLayout';
 import { WhyChooseUsCarousel } from '@/components/marketing/WhyChooseUsCarousel';
 import { BrandMark } from '@/components/ui/BrandMark';
 import winterMorningHero from '@/assets/hero-winter-morning.webp';
+import parkedBusesPhoto from '@/assets/why-choose-us-parked-buses.webp';
 import notificationsPhoto from '@/assets/feature-notifications-app.webp';
 import liveMapIllustration from '@/assets/feature-live-map.webp';
 import privacyPhoto from '@/assets/feature-privacy.webp';
@@ -220,18 +221,40 @@ export function LandingPage() {
         <section
           id="why-choose-us"
           aria-labelledby="why-choose-us-heading"
-          className="bg-yellow-50"
+          className="relative isolate overflow-hidden bg-navy-900 text-white"
         >
-          <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-            <div className="mx-auto max-w-3xl text-center">
-              <h2
-                id="why-choose-us-heading"
-                className="text-3xl font-bold tracking-tight text-navy-800 sm:text-4xl"
-              >
-                Why choose us
-              </h2>
+          <img
+            src={parkedBusesPhoto}
+            alt="Yellow school buses parked in an open-air parking area."
+            width={1672}
+            height={940}
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 -z-20 h-full w-full object-cover object-[60%_center]"
+          />
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 -z-10 bg-navy-950/55 lg:bg-gradient-to-r lg:from-navy-950/90 lg:via-navy-950/50 lg:to-navy-950/25 lg:bg-transparent"
+          />
+          <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:min-h-[42rem] lg:px-8 lg:py-12">
+            <div className="flex max-w-lg flex-col gap-8">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-yellow-300">
+                  The SafeBus difference
+                </p>
+                <h2
+                  id="why-choose-us-heading"
+                  className="mt-5 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl"
+                >
+                  Why choose <span className="text-yellow-400">us</span>
+                </h2>
+                <p className="mt-6 max-w-md text-lg leading-8 text-navy-100">
+                  Local roots. A clear purpose. School transportation built around the people who
+                  count on it every day.
+                </p>
+              </div>
+              <WhyChooseUsCarousel />
             </div>
-            <WhyChooseUsCarousel />
           </div>
         </section>
       </main>
