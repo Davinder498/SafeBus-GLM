@@ -13,8 +13,9 @@ export function PublicLayout({ children, overlayHeader = false }: PublicLayoutPr
       className={`min-h-screen bg-[var(--color-canvas)]${overlayHeader ? '' : ' pt-24'}`}
       data-ui="public-shell"
     >
+      {/* Match max-w-7xl body content after its responsive horizontal padding. */}
       <header
-        className="fixed inset-x-3 top-3 z-30 rounded-2xl border border-white/70 bg-white/95 shadow-[0_8px_32px_rgb(7_19_28_/_0.15)] backdrop-blur-md sm:inset-x-6 sm:top-5"
+        className="fixed inset-x-4 top-3 z-30 mx-auto max-w-[76rem] rounded-2xl border border-white/70 bg-white/95 shadow-[0_8px_32px_rgb(7_19_28_/_0.15)] backdrop-blur-md sm:inset-x-6 sm:top-5 lg:inset-x-8"
         data-ui="public-app-bar"
       >
         <div className="flex h-14 items-center justify-between px-4 sm:px-5">
