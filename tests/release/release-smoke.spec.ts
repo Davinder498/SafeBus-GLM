@@ -24,9 +24,14 @@ test('landing page loads without third-party font requests', async ({ page }) =>
   await expect(header).toHaveCSS('position', 'fixed');
   await expect(header).toHaveCSS('border-radius', '20px');
   const headerBounds = await header.boundingBox();
-  const gutter = page.viewportSize()!.width < 640 ? 12 : 24;
-  expect(headerBounds?.x).toBe(gutter);
-  expect(headerBounds?.width).toBe(page.viewportSize()!.width - gutter * 2);
+  const bodyContent = page.locator('section[aria-labelledby="features-heading"] > div');
+  const contentBounds = await bodyContent.boundingBox();
+  const padding = await bodyContent.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { left: parseFloat(style.paddingLeft), right: parseFloat(style.paddingRight) };
+  });
+  expect(headerBounds?.x).toBe(contentBounds!.x + padding.left);
+  expect(headerBounds?.width).toBe(contentBounds!.width - padding.left - padding.right);
   const heroImage = page.locator('main > section').first().locator('img');
   const heroBounds = await heroImage.boundingBox();
   expect(heroBounds?.x).toBe(0);

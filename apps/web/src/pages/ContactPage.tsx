@@ -103,6 +103,15 @@ export function ContactPage() {
               questions, or interest in a pilot. We&apos;ll review your inquiry and follow up using
               your work email.
             </p>
+            <div className="mt-6 rounded-2xl border border-navy-100 bg-white/80 p-5">
+              <p className="text-sm font-semibold text-navy-900">Prefer email?</p>
+              <a
+                href="mailto:info@safebus.kids"
+                className="mt-2 inline-block rounded text-lg font-semibold text-navy-700 underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-600 focus-visible:ring-offset-2"
+              >
+                info@safebus.kids
+              </a>
+            </div>
             <div className="mt-8 space-y-4 text-sm text-slate-600">
               <p className="flex items-start gap-3">
                 <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-navy-600" aria-hidden />
@@ -125,8 +134,8 @@ export function ContactPage() {
                 <CheckCircle2 className="mx-auto h-12 w-12 text-success-600" aria-hidden />
                 <h2 className="mt-5 text-2xl font-bold text-slate-950">Inquiry sent</h2>
                 <p className="mx-auto mt-3 max-w-md text-slate-600">
-                  Thank you. The SafeBus team will review your message and follow up using
-                  the work email you provided.
+                  Thank you. The SafeBus team will review your message and follow up using the work
+                  email you provided.
                 </p>
                 <Button
                   className="mt-6"
@@ -266,8 +275,8 @@ export function ContactPage() {
                       sensitive personal information.
                     </p>
                     <p className="mt-3 text-xs leading-5 text-slate-500">
-                      By submitting this form, you agree that SafeBus may use these business
-                      contact details to respond to your inquiry. See our{' '}
+                      By submitting this form, you agree that SafeBus may use these business contact
+                      details to respond to your inquiry. See our{' '}
                       <a
                         className="font-semibold text-navy-700 underline underline-offset-2"
                         href="/privacy"
