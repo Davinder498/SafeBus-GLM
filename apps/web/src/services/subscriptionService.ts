@@ -10,6 +10,7 @@ import type {
   BillingPreview,
   PricingCatalog,
   PendingCatalogRequest,
+  SubscriptionInvoicePage,
 } from '@/types/subscription';
 
 function client() {
@@ -153,6 +154,22 @@ export async function fetchTenantPrices(): Promise<SubscriptionPrice[]> {
 
 export async function refreshTenantBilling(): Promise<void> {
   await callBillingFunction('tenant-subscriptions', { action: 'refresh' });
+}
+
+export async function fetchTenantInvoices(
+  startingAfter?: string,
+): Promise<SubscriptionInvoicePage> {
+  const page = await callBillingFunction<SubscriptionInvoicePage>(
+    'tenant-invoices',
+    startingAfter ? { startingAfter } : {},
+  );
+  if (
+    !Array.isArray(page.invoices) ||
+    (page.nextCursor !== null && typeof page.nextCursor !== 'string')
+  ) {
+    throw new Error('Invoice history could not be loaded. Try again.');
+  }
+  return page;
 }
 
 export async function fetchPricingCatalog(

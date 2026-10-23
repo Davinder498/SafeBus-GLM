@@ -4,11 +4,16 @@ SafeBus offers tenant-managed CAD monthly or annual per-active-bus subscriptions
 Checkout. New tenants receive one 14-day trial with a payment method collected. Existing invoice
 contracts remain unchanged. Stripe owns financial state; SafeBus stores a private access projection.
 
+Invoice downloads, native Stripe email setup, and payment/email acceptance checks
+are documented in [subscription-invoice-delivery.md](subscription-invoice-delivery.md).
+
 Official origin: `https://safebus.kids`. Seller: **Sachman Gold Inc., an Alberta
 corporation doing business as SafeBus** (owner confirmed 2026-10-16). The connected
-Stripe account is a sandbox; its product URL, portal return URL and privacy link
-use this domain. No price is approved and this is not live-payment activation.
-See [account setup evidence](official-domain-setup.md).
+Stripe account in the earlier setup evidence was a sandbox. On 2026-10-23 the owner
+confirmed a live account and reported Stripe setup complete; live payment and email
+acceptance remain unverified. This feature does not create prices, configure tax,
+or activate payments. See [historical account setup evidence](official-domain-setup.md)
+and the invoice delivery runbook for current acceptance steps.
 
 ## Before commercial activation
 

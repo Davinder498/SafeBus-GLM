@@ -38,6 +38,14 @@ export async function installBilling(
   );
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/tenant-invoices')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ invoices: [], nextCursor: null }),
+      });
+      return;
+    }
     if (url.pathname.endsWith('/tenant-subscriptions')) {
       const body = route.request().postDataJSON();
       requests.push(body);
@@ -110,6 +118,7 @@ export async function installBilling(
         collection_method: 'charge_automatically',
         price_id: subscribed ? 'price_month' : null,
         currency: 'cad',
+        billing_email: 'billing@example.test',
         unit_amount: 2500,
         period_total: 5000,
         trial_end: '2026-11-01T00:00:00Z',

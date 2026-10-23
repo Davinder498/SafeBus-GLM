@@ -67,6 +67,26 @@ export interface SubscriptionPrice {
   interval: 'month' | 'year';
 }
 
+export interface SubscriptionInvoice {
+  id: string;
+  number: string | null;
+  status: 'open' | 'paid' | 'void' | 'uncollectible';
+  currency: string;
+  total: number;
+  amountPaid: number;
+  amountRemaining: number;
+  issuedAt: string | null;
+  paidAt: string | null;
+  dueAt: string | null;
+  pdfUrl: string | null;
+  hostedUrl: string | null;
+}
+
+export interface SubscriptionInvoicePage {
+  invoices: SubscriptionInvoice[];
+  nextCursor: string | null;
+}
+
 export interface BusSubscriptionAccess {
   exempt?: boolean;
   eligible: boolean;

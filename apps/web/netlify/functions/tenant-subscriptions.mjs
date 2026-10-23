@@ -126,6 +126,9 @@ async function startCheckout(ctx, stripe, state, input) {
       integration_identifier: 'safebus_checkout_hqrzftkm',
       line_items: [{ price: input.priceId, quantity: input.quantity }],
       payment_method_collection: 'always',
+      // Stripe keeps business billing details with the invoice, outside SafeBus.
+      billing_address_collection: 'required',
+      customer_update: { name: 'auto', address: 'auto' },
       allow_promotion_codes: true,
       subscription_data: trial
         ? {
