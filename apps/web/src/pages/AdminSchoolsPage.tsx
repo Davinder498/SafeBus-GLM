@@ -170,9 +170,9 @@ export function AdminSchoolsPage() {
     >
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Organization"
+          eyebrow="School authority"
           title="Schools"
-          description="Maintain the nominal school directory for your tenant. Directory changes do not start, stop, or delete transportation operations or tenant access."
+          description="Manage schools within your school authority. Your transportation team manages routes, buses, and assignments across these schools."
           action={
             canManage ? (
               <Button
@@ -265,15 +265,18 @@ export function AdminSchoolsPage() {
         )}
 
         {loading && (
-          <DataState title="Loading schools" message="Fetching your tenant school directory." />
+          <DataState
+            title="Loading schools"
+            message="Fetching your school authority school directory."
+          />
         )}
         {!loading && schools.length === 0 && (
           <DataState
             title="No schools added"
             message={
               canManage
-                ? 'Add the first school when your tenant is ready.'
-                : 'Your tenant administrator has not added a school.'
+                ? 'Add the first school when your school authority is ready.'
+                : 'Your school authority administrator has not added a school.'
             }
           />
         )}

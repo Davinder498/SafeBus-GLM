@@ -18,7 +18,9 @@ describe('bus save error translation', () => {
 
     expect(error).toBeInstanceOf(DuplicateIdentifierError);
     expect((error as DuplicateIdentifierError).field).toBe('fleetNumber');
-    expect(error.message).toBe('A bus with this fleet number already exists in your organization.');
+    expect(error.message).toBe(
+      'A bus with this fleet number already exists in your school authority.',
+    );
   });
 });
 
@@ -30,7 +32,7 @@ describe('route save error translation', () => {
         message: 'duplicate key value violates unique constraint "routes_tenant_route_code_unique"',
       }).message,
     ).toBe(
-      'A route with this code already exists in your organization. Use a different route code.',
+      'A route with this code already exists in your school authority. Use a different route code.',
     );
   });
 

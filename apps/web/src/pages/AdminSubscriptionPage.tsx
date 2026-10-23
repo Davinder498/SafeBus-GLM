@@ -221,7 +221,7 @@ export function AdminSubscriptionPage() {
         <PageHeader
           eyebrow="Settings"
           title="Subscription & billing"
-          description="Choose the right bus allowance for your organization. Manage your plan, renewal, invoices, and payment details here."
+          description="Choose the right bus allowance for your school authority. Manage your plan, renewal, invoices, and payment details here."
           icon={<CreditCard className="h-6 w-6" />}
           action={
             subscription?.configured && !subscription.subscriptionExempt ? (

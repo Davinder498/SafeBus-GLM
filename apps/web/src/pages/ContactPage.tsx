@@ -41,7 +41,7 @@ function validate(values: FormValues): FormErrors {
   if (!values.workEmail.trim() || !/^\S+@\S+\.\S+$/.test(values.workEmail.trim())) {
     errors.workEmail = 'Enter a valid work email.';
   }
-  if (!values.organization.trim()) errors.organization = 'Enter your organization.';
+  if (!values.organization.trim()) errors.organization = 'Enter your school authority.';
   if (!values.role.trim()) errors.role = 'Enter your role or title.';
   if (!values.message.trim()) errors.message = 'Tell us how we can help.';
   return errors;
@@ -190,7 +190,7 @@ export function ContactPage() {
                     />
                   </Field>
                   <Field
-                    label="Organization or school authority"
+                    label="School authority"
                     htmlFor="inquiry-organization"
                     required
                     error={errors.organization}

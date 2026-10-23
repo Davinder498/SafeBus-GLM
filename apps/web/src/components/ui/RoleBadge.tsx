@@ -7,7 +7,7 @@ interface RoleBadgeProps {
 
 const roleLabels: Record<ProfileRole, string> = {
   platform_super_admin: 'Platform super admin',
-  tenant_admin: 'Tenant admin',
+  tenant_admin: 'School authority admin',
   school_admin: 'School admin',
   transportation_admin: 'Transportation admin',
   driver: 'Driver',

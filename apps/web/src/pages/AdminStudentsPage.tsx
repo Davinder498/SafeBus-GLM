@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { AdminPagination } from '@/components/admin/AdminPagination';
-import { StudentCsvImportPanel } from '@/components/admin/StudentCsvImportPanel';
+import { BulkOnboardingPanel } from '@/components/admin/BulkOnboardingPanel';
 import { StudentForm, type StudentFormInput } from '@/components/admin/StudentForm';
 import { StudentOnboardingForm } from '@/components/admin/StudentOnboardingForm';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
@@ -203,7 +203,8 @@ export function AdminStudentsPage() {
           ))}
 
         {profile?.role === 'tenant_admin' && showCsvImport && (
-          <StudentCsvImportPanel
+          <BulkOnboardingPanel
+            recordType="student"
             onImported={handleCsvImported}
             onCancel={() => setShowCsvImport(false)}
           />

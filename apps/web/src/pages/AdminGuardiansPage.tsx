@@ -1,7 +1,8 @@
+import { BulkOnboardingPanel } from '@/components/admin/BulkOnboardingPanel';
 import { AdminDataDownloads } from '@/components/admin/AdminDataDownloads';
 import { useState, type FormEvent } from 'react';
 import { CheckCircle2, CircleDashed, Eye, Mail, Phone, UserRound } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { AdminPagination } from '@/components/admin/AdminPagination';
 import { StudentSearchPicker } from '@/components/admin/StudentSearchPicker';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
@@ -35,8 +36,10 @@ function guardianName(guardian: Guardian) {
 export function AdminGuardiansPage() {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const list = usePaginatedAdminList<GuardianRow>('guardians');
   const [showInviteForm, setShowInviteForm] = useState(false);
+  const [showCsvImport, setShowCsvImport] = useState(searchParams.get('import') === '1');
   const [inviteForm, setInviteForm] = useState(emptyInvite);
   const [inviting, setInviting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -80,14 +83,29 @@ export function AdminGuardiansPage() {
           description="A focused directory of guardian contacts and student links."
           action={
             canInvite ? (
-              <Button type="button" onClick={() => setShowInviteForm((value) => !value)}>
-                Invite guardian
-              </Button>
+              <div className="flex flex-wrap gap-3">
+                <Button type="button" variant="secondary" onClick={() => setShowCsvImport(true)}>
+                  Import CSV
+                </Button>
+                <Button type="button" onClick={() => setShowInviteForm((value) => !value)}>
+                  Invite guardian
+                </Button>
+              </div>
             ) : undefined
           }
         />
 
         <AdminDataDownloads entity="guardians" query={{ search: list.search, status: list.status, schoolId: list.schoolId }} disabled={list.loading || !!list.error || list.searchInput !== list.search} />
+
+        {canInvite && (
+          <div hidden={!showCsvImport}>
+            <BulkOnboardingPanel
+              recordType="guardian"
+              onImported={async () => { await list.reload(); }}
+              onCancel={() => setShowCsvImport(false)}
+            />
+          </div>
+        )}
 
         {showInviteForm && (
           <Card className="p-5">

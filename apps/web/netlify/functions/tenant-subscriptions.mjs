@@ -273,17 +273,17 @@ export async function handler(event) {
       rateLimitMax: 20,
     });
     if (ctx.error) return ctx.error;
-    if (!ctx.caller.tenant_id) return json(403, { error: 'Tenant assignment required.' });
+    if (!ctx.caller.tenant_id) return json(403, { error: 'School authority assignment required.' });
     if (input.action === 'list_prices')
       return json(200, {
         prices: await approvedPrices(createStripeClient(), ctx.config.stripeProductId),
       });
     let state = await getInternalBillingState(ctx.admin, ctx.caller.tenant_id);
     if (state.tenant_status !== 'active')
-      return json(403, { error: 'Tenant access is suspended.' });
+      return json(403, { error: 'School authority access is suspended.' });
     if (state.bus_access?.exempt && ['checkout', 'preview', 'change'].includes(input.action))
       return json(409, {
-        error: 'This test tenant does not require a subscription.',
+        error: 'This test school authority does not require a subscription.',
         retryable: false,
       });
     if (state.bus_access?.exempt && input.action === 'refresh') return json(200, { ok: true });

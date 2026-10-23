@@ -188,12 +188,12 @@ test('test tenant has no checkout requirement and can open bus configuration', a
   await installBilling(page, false, null, { exempt: true });
   await page.goto('/admin/settings/billing');
   await expect(
-    page.getByRole('heading', { name: 'Test tenant · no subscription required' }),
+    page.getByRole('heading', { name: 'Test school authority · no subscription required' }),
   ).toBeVisible();
   await expect(page.getByRole('button', { name: /Continue to .*checkout/ })).toHaveCount(0);
   await page.goto('/admin/buses/new');
   await expect(
-    page.getByText('Test tenant · no subscription required', { exact: true }),
+    page.getByText('Test school authority · no subscription required', { exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole('textbox', { name: 'Bus number (stable service number)' }),

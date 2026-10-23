@@ -9,7 +9,7 @@ export function RolePrivacyNotices() {
         <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-3 font-semibold text-navy-700">
           <li>
             <a className="underline underline-offset-4" href="#tenant-administrators">
-              Tenant administrators
+              School authority administrators
             </a>
           </li>
           <li>
@@ -35,7 +35,7 @@ export function RolePrivacyNotices() {
         aria-labelledby="tenant-privacy-heading"
       >
         <h2 id="tenant-privacy-heading" className="text-xl font-bold text-slate-950">
-          Tenant administrator privacy notice
+          School authority administrator privacy notice
         </h2>
         <p className="mt-2">
           We use your name, email, role, organization, account/session information and necessary
@@ -44,18 +44,18 @@ export function RolePrivacyNotices() {
           are handled by Stripe.
         </p>
         <p className="mt-3">
-          Your organization directs its transportation records and determines the lawful purpose,
-          collection notice, authorized staff and verified guardian relationships. SafeBus provides
-          the software and processes those records on its instructions. Ownership of SafeBus does
-          not transfer ownership of your organization or its records.
+          Your school authority directs its transportation records and determines the lawful
+          purpose, collection notice, authorized staff and verified guardian relationships. SafeBus
+          provides the software and processes those records on its instructions. Ownership of
+          SafeBus does not transfer ownership of your school authority or its records.
         </p>
         <p className="mt-3">
           Use only the minimum information needed, keep assignments and access current, and remove
           access when responsibilities change. Do not place student health, home-address or custody
           information in rosters, notes or support messages. Route transportation record requests to
-          your organization's privacy office; contact SafeBus about its own business records or
-          privacy practices. Reading this notice does not replace your organization's agreement or
-          legal authority to use the service.
+          your school authority's privacy office; contact SafeBus about its own business records or
+          privacy practices. Reading this notice does not replace your school authority's agreement
+          or legal authority to use the service.
         </p>
       </section>
       <section id="guardians" className={sectionClass} aria-labelledby="guardian-privacy-heading">
@@ -65,9 +65,9 @@ export function RolePrivacyNotices() {
         <p className="mt-2">
           Your account name, email, authorized student links, session information and notification
           choices let us show the assigned bus and the minimum linked-student transportation
-          information. Your organization supplies or verifies the student name, school, grade and
-          transport assignment. Guardians do not receive other families' student lists or a driver's
-          complete location history.
+          information. Your school authority supplies or verifies the student name, school, grade
+          and transport assignment. Guardians do not receive other families' student lists or a
+          driver's complete location history.
         </p>
         <p className="mt-3">
           You do not need to share your phone's GPS to see the bus. The map represents the bus, not
@@ -76,10 +76,11 @@ export function RolePrivacyNotices() {
           your student's first name, the recorded event and its time.
         </p>
         <p className="mt-3">
-          Manage optional notifications in settings. Ask the issuing organization's privacy office
-          to correct a student link or transportation record, or to handle an access or deletion
-          request. SafeBus can assist with routing and handles requests about its own business
-          information. You can read this notice and deletion instructions without signing in.
+          Manage optional notifications in settings. Ask the issuing school authority's privacy
+          office to correct a student link or transportation record, or to handle an access or
+          deletion request. SafeBus can assist with routing and handles requests about its own
+          business information. You can read this notice and deletion instructions without signing
+          in.
         </p>
       </section>
       <section id="drivers" className={sectionClass} aria-labelledby="driver-privacy-heading">

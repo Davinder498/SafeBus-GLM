@@ -868,7 +868,7 @@ describe('SafeBus member onboarding', () => {
 
     expect(response.statusCode).toBe(409);
     expect(JSON.parse(response.body).error).toContain(
-      'invitation email was not sent and no tenant was created',
+      'invitation email was not sent and no school authority was created',
     );
     expect(userClient.rpc).toHaveBeenCalledTimes(1);
     expect(userClient.rpc).toHaveBeenCalledWith('platform_find_unprofiled_auth_user', {

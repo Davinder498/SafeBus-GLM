@@ -2,6 +2,16 @@
 
 SafeBus Alberta is a school transportation operations and live bus visibility platform.
 
+SafeBus serves Alberta schools and school authorities only.
+
+Use **School authority** for the customer account and **School authority admin**
+for its primary administrator in user-facing text. Preserve each authority's
+actual name, including Division, District, Board, or Conseil scolaire. One school
+authority can manage multiple schools and shared transportation operations.
+Bus carriers are distinct from the school authority that manages the account.
+Keep existing internal tenant identifiers, API contracts, and authorization roles
+unless a separately scoped migration explicitly changes them.
+
 It is not a PowerSchool replacement.
 It is not a full school management system.
 

@@ -7,8 +7,9 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { RoleBadge } from '@/components/ui/RoleBadge';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { useAuth } from '@/contexts/useAuth';
-import { getOrganizationContext } from '@/services/adminOrganizationService';
-import type { OrganizationContext } from '@/types/organization';
+import { getCurrentTenant } from '@/services/adminOrganizationService';
+import type { Tenant } from '@/types/organization';
+import { schoolAuthorityTypeLabel } from '@/utils/schoolAuthority';
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -21,7 +22,7 @@ function Field({ label, value }: { label: string; value: string }) {
 
 export function AdminSettingsPage() {
   const { profile } = useAuth();
-  const [context, setContext] = useState<OrganizationContext>({ tenant: null, school: null });
+  const [tenant, setTenant] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,14 +39,14 @@ export function AdminSettingsPage() {
       setError(null);
 
       try {
-        const nextContext = await getOrganizationContext(profile.tenant_id, profile.school_id);
-        if (active) setContext(nextContext);
+        const nextTenant = await getCurrentTenant(profile.tenant_id);
+        if (active) setTenant(nextTenant);
       } catch (contextError) {
         if (active) {
           setError(
             contextError instanceof Error
               ? contextError.message
-              : 'Unable to load organization context.',
+              : 'Unable to load school authority context.',
           );
         }
       } finally {
@@ -71,18 +72,18 @@ export function AdminSettingsPage() {
         <PageHeader
           eyebrow="Administration"
           title="Settings"
-          description="Review your account access and the organization context available to you."
+          description="Review your account access and school authority details."
         />
 
         <AdminSettingsNav role={profile?.role} />
 
         {loading && (
           <DataState
-            title="Loading organization"
-            message="Fetching your visible tenant and school details."
+            title="Loading school authority"
+            message="Fetching your school authority details."
           />
         )}
-        {error && <DataState title="Unable to load organization" message={error} />}
+        {error && <DataState title="Unable to load school authority" message={error} />}
 
         {!loading && !error && profile && (
           <>
@@ -102,53 +103,36 @@ export function AdminSettingsPage() {
               </div>
             </Card>
 
-            <section className="grid gap-5 xl:grid-cols-2">
+            <section>
               <Card className="p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h2 className="text-xl font-bold text-navy-900">Tenant</h2>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      School authority
+                    </p>
+                    <h2 className="mt-1 text-xl font-bold text-navy-900">
+                      {tenant?.name ?? 'No school authority assigned'}
+                    </h2>
                     <p className="mt-1 text-sm text-gray-600">
-                      Organization visible to this admin account
+                      Transportation account for your schools
                     </p>
                   </div>
-                  {context.tenant?.status && <StatusPill>{context.tenant.status}</StatusPill>}
+                  {tenant?.status && <StatusPill>{tenant.status}</StatusPill>}
                 </div>
-                <div className="mt-5 grid gap-4">
-                  <Field label="Name" value={context.tenant?.name ?? 'No tenant visible'} />
-                  <Field label="Type" value={context.tenant?.type ?? 'Not available'} />
-                  <Field label="Tenant id" value={profile.tenant_id ?? 'Not assigned'} />
-                </div>
-              </Card>
-
-              <Card className="p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-xl font-bold text-navy-900">School</h2>
-                    <p className="mt-1 text-sm text-gray-600">
-                      Linked school, when assigned to the profile
-                    </p>
-                  </div>
-                  {context.school?.status && <StatusPill>{context.school.status}</StatusPill>}
-                </div>
-                <div className="mt-5 grid gap-4">
-                  <Field label="Name" value={context.school?.name ?? 'No school visible'} />
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
                   <Field
-                    label="City / province"
-                    value={
-                      context.school
-                        ? `${context.school.city ?? 'City not provided'}, ${context.school.province}`
-                        : 'Not available'
-                    }
+                    label="Type"
+                    value={tenant ? schoolAuthorityTypeLabel(tenant.type) : 'Not available'}
                   />
-                  <Field label="School id" value={profile.school_id ?? 'Not assigned'} />
+                  <Field label="Account ID" value={profile.tenant_id ?? 'Not assigned'} />
                 </div>
               </Card>
             </section>
 
             <Card className="border-navy-100 bg-navy-50 p-5">
               <p className="text-sm font-semibold text-navy-900">
-                These details are read-only. Organization changes and access updates are managed by
-                an authorized tenant administrator or the SafeBus platform team.
+                These details are read-only. School authority changes and access updates are managed
+                by an authorized school authority administrator or the SafeBus platform team.
               </p>
             </Card>
           </>

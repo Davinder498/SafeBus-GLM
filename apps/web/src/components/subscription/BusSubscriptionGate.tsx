@@ -39,7 +39,7 @@ export function BusSubscriptionGate({
           (!access
             ? 'Checking your bus allowance…'
             : access.exempt && access.eligible
-              ? 'Test tenant · no subscription required'
+              ? 'Test school authority · no subscription required'
               : access.eligible
                 ? `${access.active} of ${access.limit} active-bus licences in use`
                 : 'A subscription is required to configure new buses')}
@@ -59,7 +59,7 @@ export function BusSubscriptionGate({
           Manage subscription
         </Link>
       ) : (
-        <p className="mt-2">Your tenant administrator manages the subscription.</p>
+        <p className="mt-2">Your school authority administrator manages the subscription.</p>
       )}
     </div>
   );

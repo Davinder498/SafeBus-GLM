@@ -137,7 +137,7 @@ export function RouteSetupPanel({
     (a) => services.find((s) => s.id === a.bus_route_assignment_id)?.direction ?? null,
   );
   async function saveDetails(payload: SaveRouteDefinitionInput) {
-    if (!profile?.tenant_id) throw new Error('An active tenant is required.');
+    if (!profile?.tenant_id) throw new Error('An active school authority is required.');
     const result = await saveRouteDefinition({
       ...payload,
       route: { ...payload.route, id: route.id },

@@ -125,7 +125,7 @@ async function installPlatformMock(
         contentType: 'application/json',
         body: JSON.stringify({
           error:
-            'The invitation email was not sent and no tenant was created. This email may already belong to another SafeBus account.',
+            'The invitation email was not sent and no school authority was created. This email may already belong to another SafeBus account.',
         }),
       });
       return;
@@ -287,10 +287,14 @@ async function installPlatformMock(
 }
 
 async function fillTenantForm(page: Page) {
-  await page.getByPlaceholder('Tenant name').fill('Successful Transit');
+  await expect(page.getByLabel('School authority type')).toHaveValue('school_group');
+  await expect(
+    page.getByLabel('School authority type').locator('option[value="bus_contractor"]'),
+  ).toHaveCount(0);
+  await page.getByPlaceholder('School authority name').fill('Successful Transit');
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
-  await page.getByPlaceholder('Tenant admin full name').fill('Successful Admin');
-  await page.getByPlaceholder('Tenant admin email').fill('successful.admin@example.test');
+  await page.getByPlaceholder('School authority admin full name').fill('Successful Admin');
+  await page.getByPlaceholder('School authority admin email').fill('successful.admin@example.test');
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
 }
 
@@ -301,10 +305,10 @@ test.describe('platform tenant invitation atomicity', () => {
     await installPlatformMock(page, 'failure');
     await page.goto('/admin/tenants');
     await fillTenantForm(page);
-    await page.getByRole('button', { name: 'Create tenant and send invitation' }).click();
+    await page.getByRole('button', { name: 'Create school authority and send invitation' }).click();
 
     await expect(page.getByRole('alert')).toContainText(
-      'invitation email was not sent and no tenant was created',
+      'invitation email was not sent and no school authority was created',
     );
     await expect(page.getByRole('link', { name: 'Successful Transit', exact: true })).toHaveCount(
       0,
@@ -317,7 +321,18 @@ test.describe('platform tenant invitation atomicity', () => {
     await installPlatformMock(page, 'success');
     await page.goto('/admin/tenants');
     await fillTenantForm(page);
-    await page.getByRole('button', { name: 'Create tenant and send invitation' }).click();
+    const createRequest = page.waitForRequest(
+      (request) =>
+        request.url().endsWith('/.netlify/functions/safebus-onboarding') &&
+        request.method() === 'POST' &&
+        request.postDataJSON().kind === 'createTenant',
+    );
+    await page.getByRole('button', { name: 'Create school authority and send invitation' }).click();
+    expect((await createRequest).postDataJSON()).toMatchObject({
+      kind: 'createTenant',
+      tenantType: 'school_group',
+      tenantName: 'Successful Transit',
+    });
 
     await expect(page.getByRole('status')).toContainText(
       'Invitation accepted by the email provider for successful.admin@example.test',
@@ -329,7 +344,7 @@ test.describe('platform tenant invitation atomicity', () => {
   test('platform super admin can resend a pending tenant-admin invitation', async ({ page }) => {
     const state = await installPlatformMock(page, 'resend');
     await page.goto('/admin/tenants');
-    await page.getByRole('link', { name: 'View tenant' }).click();
+    await page.getByRole('link', { name: 'View school authority' }).click();
 
     await page.getByRole('button', { name: 'Resend invitation' }).click();
 
@@ -345,7 +360,7 @@ test.describe('platform tenant invitation atomicity', () => {
   }) => {
     const state = await installPlatformMock(page, 'recovery');
     await page.goto('/admin/tenants');
-    await page.getByRole('link', { name: 'View tenant' }).click();
+    await page.getByRole('link', { name: 'View school authority' }).click();
 
     await page.getByRole('button', { name: 'Emergency recovery' }).click();
 
@@ -371,11 +386,11 @@ test('tenant directory filters, keyboard labels, and responsive layout are acces
   await installPlatformMock(page, 'resend');
   await page.goto('/admin/tenants');
   await expect(page.getByRole('link', { name: 'Successful Transit', exact: true })).toBeVisible();
-  await page.getByLabel('Search tenants').fill('no matching organization');
-  await expect(page.getByText('No matching organizations')).toBeVisible();
-  await page.getByLabel('Search tenants').clear();
+  await page.getByLabel('Search school authorities').fill('no matching organization');
+  await expect(page.getByText('No matching school authorities')).toBeVisible();
+  await page.getByLabel('Search school authorities').clear();
   await page.getByLabel('Invitation', { exact: true }).selectOption('activated');
-  await expect(page.getByText('No matching organizations')).toBeVisible();
+  await expect(page.getByText('No matching school authorities')).toBeVisible();
   await page.getByLabel('Invitation', { exact: true }).selectOption('all');
   expect(
     (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()).violations,

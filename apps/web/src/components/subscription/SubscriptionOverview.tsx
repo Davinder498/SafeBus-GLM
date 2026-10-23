@@ -29,10 +29,10 @@ export function SubscriptionOverview({ subscription }: { subscription: TenantSub
     return (
       <Card className="border-success-200 bg-success-50 p-5" data-testid="subscription-exempt">
         <h2 className="text-lg font-bold text-success-900">
-          Test tenant · no subscription required
+          Test school authority · no subscription required
         </h2>
         <p className="mt-2 text-sm leading-6 text-success-900">
-          This organization has approved testing access. You can configure and activate buses
+          This school authority has approved testing access. You can configure and activate buses
           without checkout, a payment method, or a trial.
         </p>
       </Card>

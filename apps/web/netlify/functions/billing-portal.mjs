@@ -17,7 +17,7 @@ export async function handler(event) {
       rateLimitMax: 10,
     });
     if (ctx.error) return ctx.error;
-    if (!ctx.caller.tenant_id) return json(403, { error: 'Tenant assignment required.' });
+    if (!ctx.caller.tenant_id) return json(403, { error: 'School authority assignment required.' });
 
     const origin = validatePortalOrigin(ctx.config.appOrigin);
     if (!origin || !ctx.config.stripePortalConfigurationId) {
@@ -26,7 +26,7 @@ export async function handler(event) {
 
     const state = await getInternalBillingState(ctx.admin, ctx.caller.tenant_id);
     if (!state.external_customer_id) {
-      return json(409, { error: 'A subscription has not been configured for this tenant.' });
+      return json(409, { error: 'A subscription has not been configured for this school authority.' });
     }
 
     const stripe = createStripeClient();

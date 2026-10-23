@@ -480,7 +480,7 @@ export function StudentOnboardingForm({
     <Card className="p-5">
       <div>
         <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">
-          Tenant admin workflow
+          School authority admin workflow
         </p>
         <h2 className="mt-1 text-xl font-bold text-navy-900">Add student and transportation</h2>
         <p className="mt-1 text-sm text-gray-600">
@@ -655,7 +655,7 @@ export function StudentOnboardingForm({
 
         <Section
           title="3. Bus, route, and stops"
-          description="Transportation is optional. Existing records are searched within your tenant; new records are created together with the student."
+          description="Transportation is optional. Existing records are searched within your school authority; new records are created together with the student."
         >
           <label className="flex items-start gap-3 text-sm font-semibold text-gray-700">
             <input

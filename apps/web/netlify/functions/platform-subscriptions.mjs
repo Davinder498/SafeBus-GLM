@@ -36,15 +36,15 @@ export async function handler(event) {
     });
     if (ctx.error) return ctx.error;
     if (!['list_prices', 'reconcile'].includes(body.action))
-      return json(403, { error: 'Subscription changes are managed by the tenant administrator.' });
+      return json(403, { error: 'Subscription changes are managed by the school authority administrator.' });
     const stripe = createStripeClient();
     if (body.action === 'list_prices')
       return json(200, { prices: await approvedPrices(stripe, ctx.config.stripeProductId) });
     const input = validateMutationInput(body);
-    if (!input) return json(400, { error: 'A valid tenant is required.' });
+    if (!input) return json(400, { error: 'A valid school authority is required.' });
     const state = await getInternalBillingState(ctx.admin, input.tenantId);
     if (!state.external_subscription_id)
-      return json(409, { error: 'This tenant does not have a subscription yet.' });
+      return json(409, { error: 'This school authority does not have a subscription yet.' });
     const subscription = await retrieveCanonicalSubscription(
       stripe,
       state.external_subscription_id,

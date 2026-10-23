@@ -199,7 +199,9 @@ test('bus actions share the desktop row and fit on phones with simplified brandi
     await expect(page.locator('header').getByTestId('safebus-wordmark')).toBeVisible();
   }
   await expect(page.locator('header').getByText('Admin portal', { exact: true })).toHaveCount(0);
-  await expect(page.locator('header').getByText('Tenant admin', { exact: true })).toHaveCount(0);
+  await expect(
+    page.locator('header').getByText('School authority admin', { exact: true }),
+  ).toHaveCount(0);
   const brand = page.getByRole('link', { name: 'SafeBus home' });
   await expect(brand.getByTestId('safebus-wordmark')).toHaveText('SafeBus');
   await expect(brand.locator('svg, img')).toHaveCount(0);

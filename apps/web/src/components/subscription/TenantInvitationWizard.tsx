@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { createTenantWithAdmin } from '@/services/onboardingService';
+import { schoolAuthorityAccountTypes, schoolAuthorityTypeLabel } from '@/utils/schoolAuthority';
 
 const inputClass =
   'w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm focus:ring-2 focus:ring-navy-500';
-const initial = { tenantName: '', tenantType: 'school', adminName: '', adminEmail: '' };
+const initial = { tenantName: '', tenantType: 'school_group', adminName: '', adminEmail: '' };
 export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise<void> }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(initial);
@@ -37,7 +38,9 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
       try {
         await onCreated();
       } catch {
-        setError('Invitation sent. Refresh the tenant list to see the new organization.');
+        setError(
+          'Invitation sent. Refresh the school authority list to see the new school authority.',
+        );
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'The invitation could not be confirmed.');
@@ -53,14 +56,14 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
             <Mail aria-hidden className="h-5 w-5" />
           </span>
           <div>
-            <h2 className="text-lg font-bold text-navy-900">Invite a new organization</h2>
+            <h2 className="text-lg font-bold text-navy-900">Invite a new school authority</h2>
             <p className="mt-1 text-sm text-slate-600">
               Their administrator sets up the account, then chooses a subscription.
             </p>
           </div>
         </div>
         <ol aria-label="Invitation steps" className="mt-6 grid grid-cols-3 gap-2">
-          {['Organization', 'First administrator', 'Review and invite'].map((label, i) => (
+          {['School authority', 'First administrator', 'Review and invite'].map((label, i) => (
             <li
               key={label}
               aria-current={step === i ? 'step' : undefined}
@@ -85,12 +88,12 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
         )}
         {step === 0 && (
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Tenant name" htmlFor="tenant-name" required>
+            <Field label="School authority name" htmlFor="tenant-name" required>
               <input
                 id="tenant-name"
                 autoComplete="organization"
                 className={inputClass}
-                placeholder="Tenant name"
+                placeholder="School authority name"
                 value={form.tenantName}
                 required
                 minLength={2}
@@ -98,28 +101,29 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
                 onChange={(e) => setForm({ ...form, tenantName: e.target.value })}
               />
             </Field>
-            <Field label="Organization type" htmlFor="tenant-type">
+            <Field label="School authority type" htmlFor="tenant-type">
               <select
                 id="tenant-type"
                 className={inputClass}
                 value={form.tenantType}
                 onChange={(e) => setForm({ ...form, tenantType: e.target.value })}
               >
-                <option value="school">School</option>
-                <option value="school_group">School group</option>
-                <option value="bus_contractor">Bus contractor</option>
-                <option value="demo">Demo</option>
+                {schoolAuthorityAccountTypes.map((type) => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
+                ))}
               </select>
             </Field>
           </div>
         )}
         {step === 1 && (
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Tenant admin full name" htmlFor="tenant-admin-name" required>
+            <Field label="School authority admin full name" htmlFor="tenant-admin-name" required>
               <input
                 id="tenant-admin-name"
                 autoComplete="name"
-                placeholder="Tenant admin full name"
+                placeholder="School authority admin full name"
                 className={inputClass}
                 value={form.adminName}
                 required
@@ -129,7 +133,7 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
               />
             </Field>
             <Field
-              label="Tenant admin email"
+              label="School authority admin email"
               htmlFor="tenant-admin-email"
               required
               hint="A secure account setup link will be sent to this address."
@@ -138,7 +142,7 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
                 id="tenant-admin-email"
                 type="email"
                 autoComplete="email"
-                placeholder="Tenant admin email"
+                placeholder="School authority admin email"
                 className={inputClass}
                 value={form.adminEmail}
                 required
@@ -153,9 +157,9 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
             <h3 className="font-bold text-navy-900">Ready to invite</h3>
             <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
               <div>
-                <dt className="text-slate-500">Organization</dt>
+                <dt className="text-slate-500">School authority</dt>
                 <dd className="mt-1 break-words font-semibold">
-                  {form.tenantName} · {form.tenantType.replaceAll('_', ' ')}
+                  {form.tenantName} · {schoolAuthorityTypeLabel(form.tenantType)}
                 </dd>
               </div>
               <div>
@@ -171,7 +175,7 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
               <CheckCircle2 className="mt-1 h-4 w-4 shrink-0" aria-hidden />
               No subscription is purchased by sending this invitation. The administrator chooses a
               bus allowance and billing cycle through secure checkout, with a 14-day trial for new
-              tenants.
+              school authorities.
             </p>
           </div>
         )}
@@ -195,7 +199,7 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
             disabled={busy}
             rightIcon={<ArrowRight className="h-4 w-4" />}
           >
-            {step === 2 ? 'Create tenant and send invitation' : 'Continue'}
+            {step === 2 ? 'Create school authority and send invitation' : 'Continue'}
           </Button>
         </div>
       </form>

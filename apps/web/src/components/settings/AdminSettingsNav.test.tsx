@@ -39,7 +39,7 @@ describe('AdminSettingsNav', () => {
     const container = await renderSettingsNav('/admin/settings', 'school_admin');
 
     expect(Array.from(container.querySelectorAll('a')).map((link) => link.textContent)).toEqual([
-      'Organization',
+      'School authority',
     ]);
   });
 
@@ -50,7 +50,6 @@ describe('AdminSettingsNav', () => {
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
       '/admin/settings/support',
       '/admin/settings',
-      '/admin/settings/notifications',
       '/admin/settings/billing',
     ]);
     expect(
@@ -58,16 +57,16 @@ describe('AdminSettingsNav', () => {
     ).toContain('Subscription & billing');
   });
 
-  it('shows tenant notification controls only to tenant administrators', async () => {
-    const tenant = await renderSettingsNav('/admin/settings/notifications', 'tenant_admin');
-    expect(tenant.textContent).toContain('Notifications');
+  it('keeps notification settings out of the general settings tabs', async () => {
+    const tenant = await renderSettingsNav('/admin/settings', 'tenant_admin');
+    expect(tenant.textContent).not.toContain('Notifications');
     expect(tenant.querySelector('nav')?.className).not.toContain('overflow-x-auto');
     expect(tenant.querySelector('ul')?.className).toContain('flex-wrap');
     expect(
       Array.from(tenant.querySelectorAll('a'))
         .find((link) => link.getAttribute('aria-current') === 'page')
         ?.getAttribute('href'),
-    ).toBe('/admin/settings/notifications');
+    ).toBe('/admin/settings');
 
     await act(async () => root?.unmount());
     root = null;

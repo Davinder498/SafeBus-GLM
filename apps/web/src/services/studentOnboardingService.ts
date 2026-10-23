@@ -114,7 +114,7 @@ async function search<T>(rpcName: SearchRpcName, query: string): Promise<T[]> {
     p_search: normalized,
     p_limit: 20,
   });
-  if (error) throw new Error('Unable to search your organization records.');
+  if (error) throw new Error('Unable to search your school authority records.');
   return (data ?? []) as T[];
 }
 
@@ -198,13 +198,13 @@ function describeOnboardingError(message: string, guardianWasProvisioned: boolea
     );
   }
   if (message.includes('routes_tenant_route_code_unique')) {
-    return new Error(`That route code already exists in your organization.${suffix}`);
+    return new Error(`That route code already exists in your school authority.${suffix}`);
   }
   if (message.includes('buses_tenant_bus_number_unique')) {
-    return new Error(`That bus number already exists in your organization.${suffix}`);
+    return new Error(`That bus number already exists in your school authority.${suffix}`);
   }
   if (message.includes('bus_admin_details_tenant_fleet_number_unique')) {
-    return new Error(`That fleet number already exists in your organization.${suffix}`);
+    return new Error(`That fleet number already exists in your school authority.${suffix}`);
   }
   if (
     message.includes('not found in your tenant') ||
@@ -215,7 +215,9 @@ function describeOnboardingError(message: string, guardianWasProvisioned: boolea
     );
   }
   if (message.includes('Only a tenant administrator')) {
-    return new Error('Only a tenant administrator can complete this onboarding workflow.');
+    return new Error(
+      'Only a school authority administrator can complete this onboarding workflow.',
+    );
   }
   return new Error(
     `We could not complete student onboarding. No partial student or transportation records were saved.${suffix}`,

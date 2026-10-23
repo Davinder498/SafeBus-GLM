@@ -45,7 +45,9 @@ export function AdminAdministratorsPage() {
 
   const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<'tenant_admin' | 'school_admin' | 'transportation_admin'>('school_admin');
+  const [inviteRole, setInviteRole] = useState<
+    'tenant_admin' | 'school_admin' | 'transportation_admin'
+  >('school_admin');
   const [inviteSchoolId, setInviteSchoolId] = useState('');
 
   const isAdmin = profile?.role === 'tenant_admin';
@@ -63,7 +65,8 @@ export function AdminAdministratorsPage() {
       setSchools(schoolList);
       setInvitations(invitationList);
       setActiveAdminCount(
-        adminList.filter((admin) => admin.role === 'tenant_admin' && admin.status === 'active').length,
+        adminList.filter((admin) => admin.role === 'tenant_admin' && admin.status === 'active')
+          .length,
       );
       setSchoolSelections(
         Object.fromEntries(adminList.map((admin) => [admin.id, admin.school_id ?? ''])),
@@ -114,7 +117,11 @@ export function AdminAdministratorsPage() {
       if (newRole === 'school_admin' && !selectedSchoolId) {
         throw new Error('Choose an active school before assigning the school administrator role.');
       }
-      await changeAdminRole(profileId, newRole, newRole === 'school_admin' ? selectedSchoolId : null);
+      await changeAdminRole(
+        profileId,
+        newRole,
+        newRole === 'school_admin' ? selectedSchoolId : null,
+      );
       setSuccess('Administrator role updated.');
       await load();
     } catch (e) {
@@ -129,7 +136,7 @@ export function AdminAdministratorsPage() {
     setError(null);
     try {
       await transferAdministrator(profileId);
-      setSuccess('Administrator transferred to tenant administrator.');
+      setSuccess('Administrator transferred to school authority administrator.');
       setTransferTarget(null);
       await load();
     } catch (e) {
@@ -190,7 +197,9 @@ export function AdminAdministratorsPage() {
     setError(null);
     try {
       await updateInvitation(invitation.id, action);
-      setSuccess(action === 'resend' ? 'Invitation resent with a new expiry.' : 'Invitation revoked.');
+      setSuccess(
+        action === 'resend' ? 'Invitation resent with a new expiry.' : 'Invitation revoked.',
+      );
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to update invitation.');
@@ -200,12 +209,17 @@ export function AdminAdministratorsPage() {
   }
 
   return (
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
+    <DashboardLayout
+      title="Admin Dashboard"
+      portal="admin"
+      navItems={[]}
+      navGroups={adminNavGroups}
+    >
       <div className="space-y-6">
         <PageHeader
           eyebrow="Administration"
           title="Administrators"
-          description="Manage tenant administrators, school administrators, and transportation administrators. Multiple administrators ensure operational independence."
+          description="Manage school authority administrators, school administrators, and transportation administrators. Multiple administrators ensure operational independence."
           action={
             isAdmin ? (
               <Button type="button" onClick={() => setShowInviteForm((v) => !v)}>
@@ -219,13 +233,15 @@ export function AdminAdministratorsPage() {
           <div className="flex items-center gap-4">
             <div>
               <p className="text-2xl font-bold text-navy-900">{activeAdminCount}</p>
-              <p className="text-sm font-semibold text-navy-700">Active tenant administrator(s)</p>
+              <p className="text-sm font-semibold text-navy-700">
+                Active school authority administrator(s)
+              </p>
             </div>
             <div className="flex-1">
               <p className="text-sm text-gray-600">
                 {activeAdminCount <= 1
-                  ? '⚠ Add at least one more administrator to ensure the tenant can operate independently if one is unavailable.'
-                  : '✓ This tenant has multiple active administrators.'}
+                  ? '⚠ Add at least one more administrator to ensure the school authority can operate independently if one is unavailable.'
+                  : '✓ This school authority has multiple active administrators.'}
               </p>
             </div>
           </div>
@@ -277,14 +293,17 @@ export function AdminAdministratorsPage() {
                     onChange={(e) => setInviteRole(e.target.value as typeof inviteRole)}
                     className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm"
                   >
-                    <option value="tenant_admin">Tenant administrator</option>
+                    <option value="tenant_admin">School authority administrator</option>
                     <option value="school_admin">School administrator</option>
                     <option value="transportation_admin">Transportation administrator</option>
                   </select>
                 </div>
                 {inviteRole === 'school_admin' && (
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700" htmlFor="inv-school">
+                    <label
+                      className="block text-sm font-semibold text-gray-700"
+                      htmlFor="inv-school"
+                    >
                       School
                     </label>
                     <select
@@ -296,7 +315,9 @@ export function AdminAdministratorsPage() {
                     >
                       <option value="">Choose a school</option>
                       {schools.map((school) => (
-                        <option key={school.id} value={school.id}>{school.name}</option>
+                        <option key={school.id} value={school.id}>
+                          {school.name}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -306,7 +327,12 @@ export function AdminAdministratorsPage() {
                 <Button type="submit" loading={busy}>
                   Send invitation
                 </Button>
-                <Button type="button" variant="secondary" disabled={busy} onClick={() => setShowInviteForm(false)}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={busy}
+                  onClick={() => setShowInviteForm(false)}
+                >
                   Cancel
                 </Button>
               </div>
@@ -319,19 +345,35 @@ export function AdminAdministratorsPage() {
             <h2 className="text-lg font-bold text-navy-900">Administrator invitations</h2>
             <div className="mt-4 space-y-3">
               {invitations.map((invitation) => (
-                <div key={invitation.id} className="flex flex-col gap-3 rounded-lg border border-slate-200 p-3 md:flex-row md:items-center md:justify-between">
+                <div
+                  key={invitation.id}
+                  className="flex flex-col gap-3 rounded-lg border border-slate-200 p-3 md:flex-row md:items-center md:justify-between"
+                >
                   <div>
                     <p className="font-semibold text-navy-900">{invitation.full_name}</p>
                     <p className="text-sm text-slate-600">
-                      {invitation.email} · {invitation.role} · {invitation.status} · delivery {invitation.delivery_status}
+                      {invitation.email} · {invitation.role} · {invitation.status} · delivery{' '}
+                      {invitation.delivery_status}
                     </p>
                   </div>
                   {['pending', 'resent', 'failed'].includes(invitation.status) && (
                     <div className="flex gap-2">
-                      <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void handleInvitationAction(invitation, 'resend')}>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        disabled={busy}
+                        onClick={() => void handleInvitationAction(invitation, 'resend')}
+                      >
                         Resend
                       </Button>
-                      <Button type="button" size="sm" variant="danger" disabled={busy} onClick={() => void handleInvitationAction(invitation, 'revoke')}>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="danger"
+                        disabled={busy}
+                        onClick={() => void handleInvitationAction(invitation, 'revoke')}
+                      >
                         Revoke
                       </Button>
                     </div>
@@ -353,7 +395,9 @@ export function AdminAdministratorsPage() {
           </Card>
         )}
 
-        {loading && <DataState title="Loading administrators" message="Fetching administrator profiles." />}
+        {loading && (
+          <DataState title="Loading administrators" message="Fetching administrator profiles." />
+        )}
         {!loading && !error && admins.length === 0 && (
           <DataState title="No administrators" message="Invite an administrator to get started." />
         )}
@@ -380,7 +424,7 @@ export function AdminAdministratorsPage() {
                         className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
                         aria-label={`Change role for ${admin.full_name}`}
                       >
-                        <option value="tenant_admin">Tenant admin</option>
+                        <option value="tenant_admin">School authority admin</option>
                         <option value="school_admin">School admin</option>
                         <option value="transportation_admin">Transportation admin</option>
                       </select>
@@ -399,7 +443,9 @@ export function AdminAdministratorsPage() {
                       >
                         <option value="">School scope</option>
                         {schools.map((school) => (
-                          <option key={school.id} value={school.id}>{school.name}</option>
+                          <option key={school.id} value={school.id}>
+                            {school.name}
+                          </option>
                         ))}
                       </select>
                       {admin.role !== 'tenant_admin' && (
@@ -410,7 +456,7 @@ export function AdminAdministratorsPage() {
                           disabled={busy}
                           onClick={() => setTransferTarget(admin)}
                         >
-                          Promote to tenant admin
+                          Promote to school authority admin
                         </Button>
                       )}
                       {(admin.status === 'disabled' || admin.status === 'suspended') && (
@@ -465,8 +511,8 @@ export function AdminAdministratorsPage() {
         <ConfirmDialog
           open={!!transferTarget}
           title={`Promote ${transferTarget?.full_name ?? 'administrator'}?`}
-          description="This transfers the administrator to a full tenant administrator role with full tenant-wide permissions."
-          confirmLabel="Promote to tenant admin"
+          description="This transfers the administrator to a full school authority administrator role with full school authority-wide permissions."
+          confirmLabel="Promote to school authority admin"
           busy={busy}
           onConfirm={() => transferTarget && void handleTransfer(transferTarget.id)}
           onCancel={() => setTransferTarget(null)}

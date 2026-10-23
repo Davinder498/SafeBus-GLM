@@ -132,7 +132,7 @@ export async function setPlannedDriverAssignment(
     throw new Error('Planned assignments are temporarily unavailable. Please contact support.');
   }
   if (error.code === '42501') {
-    throw new Error('Only a tenant administrator can change planned assignments.');
+    throw new Error('Only a school authority administrator can change planned assignments.');
   }
   if (error.code === 'P0002') {
     throw new Error(error.message || 'The selected driver or bus service is no longer available.');
@@ -156,7 +156,7 @@ export async function createDriverAssignment(
   defaultTenantId: string | null,
 ): Promise<DriverRouteAssignment> {
   if (!defaultTenantId) {
-    throw new Error('Use an account with a tenant before saving this assignment.');
+    throw new Error('Use an account with a school authority before saving this assignment.');
   }
 
   const busService = await ensureBusRouteAssignment({

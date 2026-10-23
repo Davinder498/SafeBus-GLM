@@ -102,7 +102,7 @@ it('does not download if the tenant role or session changes during collection', 
       error: null,
     });
   await expect(collectDownloadRecords('students', {}, context, options())).rejects.toThrow(
-    'active tenant administrator',
+    'active school authority administrator',
   );
 });
 it('enriches only the exact student directory assignment with its seat', async () => {

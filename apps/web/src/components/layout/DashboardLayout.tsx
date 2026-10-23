@@ -19,7 +19,6 @@ import {
   MapPinned,
   List,
   History,
-  FileUp,
   ShieldCheck,
   CircleHelp,
   CreditCard,
@@ -66,7 +65,7 @@ interface DashboardLayoutProps {
 /* ----------------------------- nav definitions ---------------------------- */
 
 export const platformNavItems: DashboardNavItem[] = [
-  { label: 'Tenants', to: '/admin/tenants', icon: <Building2 className="h-4 w-4" /> },
+  { label: 'School authorities', to: '/admin/tenants', icon: <Building2 className="h-4 w-4" /> },
   { label: 'Pricing & discounts', to: '/admin/pricing', icon: <CreditCard className="h-4 w-4" /> },
   { label: 'Support', to: '/admin/platform-support', icon: <CircleHelp className="h-4 w-4" /> },
 ];
@@ -137,18 +136,10 @@ export const adminNavItems: DashboardNavItem[] = [
     icon: <ShieldCheck className="h-4 w-4" />,
   },
   {
-    label: 'Bulk onboarding',
-    to: '/admin/bulk-import',
-    group: 'management',
-    description: 'Validate and import tenant rosters',
-    allowedRoles: ['tenant_admin'],
-    icon: <FileUp className="h-4 w-4" />,
-  },
-  {
     label: 'Audit search',
     to: '/admin/audit-search',
     group: 'management',
-    description: 'Search tenant audit events',
+    description: 'Search school authority audit events',
     allowedRoles: ['tenant_admin'],
     icon: <ClipboardList className="h-4 w-4" />,
   },

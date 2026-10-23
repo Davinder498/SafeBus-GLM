@@ -176,5 +176,5 @@ export const TERMS_TYPE_LABELS: Record<TermsType, string> = {
   terms_of_service: 'Terms of Service',
   guardian_consent: 'Guardian Consent Form',
   driver_terms: 'Driver Terms',
-  tenant_agreement: 'Tenant Agreement',
+  tenant_agreement: 'School authority agreement',
 };

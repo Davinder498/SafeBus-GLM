@@ -35,7 +35,7 @@ export function PlatformSupportPage() {
         <PageHeader
           eyebrow="Platform administration"
           title="Support system"
-          description="Manage the platform administrator contact shown to tenant administrators."
+          description="Manage the platform administrator contact shown to school authority administrators."
         />
         {message && (
           <Card className="border-success-200 bg-success-50 p-4">
@@ -58,7 +58,7 @@ export function PlatformSupportPage() {
           />
         ) : (
           <SupportContactForm
-            title="Contact details for tenant administrators"
+            title="Contact details for school authority administrators"
             contact={contact}
             saving={saving}
             onSave={async (input) => {
@@ -67,7 +67,7 @@ export function PlatformSupportPage() {
               setMessage(null);
               try {
                 await updatePlatformSupportContact(input);
-                setMessage('Platform support details updated for tenant administrators.');
+                setMessage('Platform support details updated for school authority administrators.');
                 await load();
               } catch (cause) {
                 setError(

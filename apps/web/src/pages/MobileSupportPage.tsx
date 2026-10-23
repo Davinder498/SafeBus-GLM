@@ -45,12 +45,12 @@ export function MobileSupportPage() {
         <PageHeader
           eyebrow="Help"
           title="Support"
-          description="Contact your tenant administrator for help with your SafeBus account or transportation service."
+          description="Contact your school authority administrator for help with your SafeBus account or transportation service."
         />
         {loading && (
           <DataState
             title="Loading support"
-            message="Checking your organization’s support details."
+            message="Checking your school authority’s support details."
           />
         )}
         {error && (

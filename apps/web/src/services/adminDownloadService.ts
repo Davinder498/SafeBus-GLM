@@ -43,7 +43,7 @@ export async function verifyDownloadContext(
     result.data.role !== 'tenant_admin' ||
     result.data.status !== 'active'
   ) {
-    throw new Error('An active tenant administrator is required to download records.');
+    throw new Error('An active school authority administrator is required to download records.');
   }
 }
 

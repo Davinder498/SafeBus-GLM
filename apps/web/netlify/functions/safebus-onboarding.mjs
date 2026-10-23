@@ -202,7 +202,7 @@ async function sendInitialTenantAdminInvitation(ctx, email, fullName, redirectTo
         return {
           error: json(400, {
             error:
-              'The invitation email was not sent. No tenant was created. Retry later or use another administrator email.',
+              'The invitation email was not sent. No school authority was created. Retry later or use another administrator email.',
           }),
         };
       }
@@ -232,7 +232,7 @@ async function sendInitialTenantAdminInvitation(ctx, email, fullName, redirectTo
       return {
         error: json(400, {
           error:
-            'The invitation email was not sent. No tenant was created. Retry later or use another administrator email.',
+            'The invitation email was not sent. No school authority was created. Retry later or use another administrator email.',
         }),
       };
     }
@@ -250,7 +250,7 @@ async function sendInitialTenantAdminInvitation(ctx, email, fullName, redirectTo
     return {
       error: json(409, {
         error:
-          'The invitation email was not sent and no tenant was created. This email may already belong to another SafeBus account.',
+          'The invitation email was not sent and no school authority was created. This email may already belong to another SafeBus account.',
       }),
     };
   }
@@ -312,7 +312,7 @@ async function sendTenantMemberInvitation(ctx, { email, fullName, redirectTo, ro
     if (accountState.profileTenantId !== tenantId || accountState.profileRole !== role) {
       return {
         error: json(409, {
-          error: 'That email is already linked to a different SafeBus tenant or role.',
+          error: 'That email is already linked to a different SafeBus school authority or role.',
         }),
       };
     }
@@ -408,7 +408,7 @@ async function createTenant(event, body) {
   const email = clean(body.adminEmail).toLowerCase();
   if (!tenantName || !adminName || !email) {
     return json(400, {
-      error: 'Tenant name, admin name, and admin email are required. No invitation was sent.',
+      error: 'School authority name, admin name, and admin email are required. No invitation was sent.',
     });
   }
   if (
@@ -418,7 +418,7 @@ async function createTenant(event, body) {
     !EMAIL_PATTERN.test(email)
   ) {
     return json(400, {
-      error: 'Enter valid tenant and administrator details. No invitation was sent.',
+      error: 'Enter valid school authority and administrator details. No invitation was sent.',
     });
   }
 
@@ -447,7 +447,7 @@ async function createTenant(event, body) {
     }
     return json(500, {
       error:
-        'The invitation could not be completed, so the tenant was not created. Retry the onboarding request.',
+        'The invitation could not be completed, so the school authority was not created. Retry the onboarding request.',
     });
   }
 
@@ -619,13 +619,13 @@ async function tenantLifecycle(event, body) {
   const tenantId = clean(body.tenantId);
   const status = clean(body.status);
   if (!['active', 'suspended', 'disabled'].includes(status))
-    return json(400, { error: 'Unsupported tenant status.' });
-  if (!tenantId) return json(400, { error: 'Tenant is required.' });
+    return json(400, { error: 'Unsupported school authority status.' });
+  if (!tenantId) return json(400, { error: 'School authority is required.' });
   const { data, error } = await ctx.user.rpc('platform_set_tenant_lifecycle', {
     p_tenant_id: tenantId,
     p_status: status,
   });
-  if (error) return json(400, { error: error.message || 'Unable to update tenant status.' });
+  if (error) return json(400, { error: error.message || 'Unable to update school authority status.' });
   return json(200, data);
 }
 
@@ -659,7 +659,7 @@ async function inviteAdministrator(event, body) {
       .eq('status', 'active')
       .maybeSingle();
     if (schoolError || !school) {
-      return json(400, { error: 'Select an active school in your tenant.' });
+      return json(400, { error: 'Select an active school in your school authority.' });
     }
   }
 
@@ -724,7 +724,7 @@ async function emergencyRecoveryAction(event, body) {
   const profileId = clean(body.profileId);
   const tenantId = clean(body.tenantId);
   if (!profileId || !tenantId) {
-    return json(400, { error: 'Profile ID and tenant ID are required.' });
+    return json(400, { error: 'Profile ID and Account ID are required.' });
   }
 
   const { data, error } = await ctx.user.rpc('platform_emergency_admin_recovery', {
@@ -938,7 +938,7 @@ async function action(event, body) {
     if (boundaryError) return json(500, { error: 'Unable to verify the invitation boundary.' });
     if (isFirstAdminInvitation !== true) {
       return json(403, {
-        error: 'Platform personnel can manage only the first tenant administrator invitation.',
+        error: 'Platform personnel can manage only the first school authority administrator invitation.',
       });
     }
   }
@@ -954,7 +954,7 @@ async function action(event, body) {
   }
   if (!inv) return json(404, { error: 'Invitation not found.' });
   if (ctx.caller.role !== 'platform_super_admin' && inv.tenant_id !== ctx.caller.tenant_id) {
-    return json(403, { error: 'Invitation is outside your tenant.' });
+    return json(403, { error: 'Invitation is outside your school authority.' });
   }
   if (next === 'reissue') {
     if (ctx.caller.role !== 'platform_super_admin' || inv.status !== 'expired')
@@ -1009,7 +1009,7 @@ async function action(event, body) {
 
   if (next === 'revoke') {
     if (ctx.caller.role !== 'tenant_admin') {
-      return json(403, { error: 'Only the tenant can revoke this invitation.' });
+      return json(403, { error: 'Only the school authority can revoke this invitation.' });
     }
     const { data, error } = await ctx.user.rpc('revoke_invitation', {
       p_invitation_id: id,
@@ -1031,7 +1031,7 @@ async function action(event, body) {
 
   if (next === 'cancel') {
     if (ctx.caller.role !== 'platform_super_admin') {
-      return json(403, { error: 'Tenant administrators must use the audited revoke workflow.' });
+      return json(403, { error: 'School authority administrators must use the audited revoke workflow.' });
     }
     const { data, error } = await ctx.user.rpc('platform_cancel_first_admin_invitation', {
       p_invitation_id: id,

@@ -77,7 +77,7 @@ export function PlatformPricingPage() {
     try {
       await changePricingCatalog(request);
       setPending(null);
-      setMessage('Catalog updated. Existing tenant contracts are preserved.');
+      setMessage('Catalog updated. Existing school authority contracts are preserved.');
       setCatalog(await fetchPricingCatalog());
     } catch (e) {
       if ((e as { retryable?: boolean }).retryable === false) setPending(null);
@@ -261,8 +261,8 @@ export function PlatformPricingPage() {
                     ))}
                   {catalog && !catalog.prices.some((p) => showArchived || p.active) && (
                     <p className="py-4 text-sm text-slate-600">
-                      No subscription prices to show. Publish a price to make it available to
-                      tenants.
+                      No subscription prices to show. Publish a price to make it available to school
+                      authorities.
                     </p>
                   )}
                   {catalog?.priceCursor && (

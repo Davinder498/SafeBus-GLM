@@ -1,9 +1,6 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 import type { Json } from '@safebus/types/database';
-import type {
-  StudentCsvImportIssue,
-  StudentCsvImportRow,
-} from '@/utils/studentCsv';
+import type { StudentCsvImportIssue, StudentCsvImportRow } from '@/utils/studentCsv';
 
 export interface StudentCsvImportResult {
   rowCount: number;
@@ -40,7 +37,7 @@ async function processStudentCsvImport(
 
   if (error) {
     if ((error.message ?? '').includes('Only a tenant administrator')) {
-      throw new Error('Only a tenant administrator can import student CSV files.');
+      throw new Error('Only a school authority administrator can import student CSV files.');
     }
     throw new Error(
       commit

@@ -99,13 +99,13 @@ export function buildInquiryEmail(inquiry) {
   const rows = [
     ['Name', inquiry.name],
     ['Work email', inquiry.workEmail],
-    ['Organization', inquiry.organization],
+    ['School authority', inquiry.organization],
     ['Role or title', inquiry.role],
     ['Phone', inquiry.phone || 'Not provided'],
     ['Topic', TOPIC_LABELS[inquiry.topic]],
   ];
   const text = [
-    'A prospective tenant submitted a SafeBus inquiry.',
+    'A prospective school authority submitted a SafeBus inquiry.',
     '',
     ...rows.map(([label, value]) => `${label}: ${value}`),
     '',
@@ -124,7 +124,7 @@ export function buildInquiryEmail(inquiry) {
   return {
     subject: `SafeBus inquiry: ${TOPIC_LABELS[inquiry.topic]} — ${inquiry.organization}`,
     text,
-    html: `<p>A prospective tenant submitted a SafeBus inquiry.</p><table>${htmlRows}</table><h2>Message</h2><p>${escapeHtml(inquiry.message).replace(/\n/g, '<br>')}</p><hr><p><strong>Security note:</strong> Treat all submitted content as untrusted. Do not copy student or sensitive personal information into SafeBus.</p>`,
+    html: `<p>A prospective school authority submitted a SafeBus inquiry.</p><table>${htmlRows}</table><h2>Message</h2><p>${escapeHtml(inquiry.message).replace(/\n/g, '<br>')}</p><hr><p><strong>Security note:</strong> Treat all submitted content as untrusted. Do not copy student or sensitive personal information into SafeBus.</p>`,
   };
 }
 

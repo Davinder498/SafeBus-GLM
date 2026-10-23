@@ -22,6 +22,7 @@ import {
   mutatePlatformSubscription,
 } from '@/services/subscriptionService';
 import type { TenantSubscription } from '@/types/subscription';
+import { schoolAuthorityTypeLabel } from '@/utils/schoolAuthority';
 
 function readiness(summary: PlatformTenantSummary) {
   return [
@@ -56,7 +57,7 @@ export function PlatformTenantDetailPage() {
       setSubscription(billing);
       setInvitations(invitationRows.filter((item) => item.tenant_id === tenantId));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to load tenant details.');
+      setError(cause instanceof Error ? cause.message : 'Unable to load school authority details.');
     } finally {
       setLoading(false);
     }
@@ -90,7 +91,10 @@ export function PlatformTenantDetailPage() {
   if (loading && !summary) {
     return (
       <DashboardLayout title="Platform Admin" portal="admin" navItems={platformNavItems}>
-        <DataState title="Loading tenant" message="Checking onboarding and subscription details." />
+        <DataState
+          title="Loading school authority"
+          message="Checking onboarding and subscription details."
+        />
       </DashboardLayout>
     );
   }
@@ -98,7 +102,10 @@ export function PlatformTenantDetailPage() {
   if (!summary || !subscription) {
     return (
       <DashboardLayout title="Platform Admin" portal="admin" navItems={platformNavItems}>
-        <DataState title="Tenant unavailable" message={error ?? 'The tenant could not be found.'} />
+        <DataState
+          title="School authority unavailable"
+          message={error ?? 'The school authority could not be found.'}
+        />
       </DashboardLayout>
     );
   }
@@ -110,12 +117,12 @@ export function PlatformTenantDetailPage() {
           to="/admin/tenants"
           className="inline-flex items-center gap-2 text-sm font-semibold text-navy-700"
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden /> Back to tenants
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Back to school authorities
         </Link>
         <PageHeader
-          eyebrow="Tenant detail"
+          eyebrow="School authority detail"
           title={summary.tenant_name}
-          description="Manage tenant onboarding, lifecycle, and subscription oversight without accessing student, guardian, driver, route, or location records."
+          description="Manage school authority onboarding, lifecycle, and subscription oversight without accessing student, guardian, driver, route, or location records."
           icon={<Building2 className="h-6 w-6" />}
           action={<StatusPill>{summary.tenant_status}</StatusPill>}
         />
@@ -138,9 +145,9 @@ export function PlatformTenantDetailPage() {
         <Card className="p-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Tenant controls</h2>
+              <h2 className="text-lg font-bold text-slate-900">School authority controls</h2>
               <p className="mt-1 text-sm text-slate-600">
-                {summary.tenant_type} · created{' '}
+                {schoolAuthorityTypeLabel(summary.tenant_type)} · created{' '}
                 {new Date(summary.tenant_created_at).toLocaleDateString('en-CA')}
               </p>
             </div>
@@ -156,7 +163,7 @@ export function PlatformTenantDetailPage() {
                     void run(
                       'suspend',
                       () => updateTenantLifecycle(tenantId, 'suspended'),
-                      'Tenant suspended.',
+                      'School authority suspended.',
                     )
                   }
                 >
@@ -173,7 +180,7 @@ export function PlatformTenantDetailPage() {
                     void run(
                       'reactivate',
                       () => updateTenantLifecycle(tenantId, 'active'),
-                      'Tenant reactivated.',
+                      'School authority reactivated.',
                     )
                   }
                 >
@@ -190,7 +197,7 @@ export function PlatformTenantDetailPage() {
                   void run(
                     'disable',
                     () => updateTenantLifecycle(tenantId, 'disabled'),
-                    'Tenant disabled.',
+                    'School authority disabled.',
                   )
                 }
               >
@@ -213,7 +220,7 @@ export function PlatformTenantDetailPage() {
         </Card>
 
         <Card className="p-5">
-          <h2 className="text-lg font-bold text-slate-900">First tenant administrator</h2>
+          <h2 className="text-lg font-bold text-slate-900">First school authority administrator</h2>
           <p className="mt-2 text-sm text-slate-600">
             {summary.first_tenant_admin_name ?? 'Not assigned'} ·{' '}
             {summary.first_tenant_admin_email ?? 'No email'} · {summary.tenant_admin_status}
@@ -328,10 +335,12 @@ export function PlatformTenantDetailPage() {
         </div>
 
         <Card className="p-5">
-          <h2 className="text-lg font-bold text-slate-900">Tenant-managed billing</h2>
+          <h2 className="text-lg font-bold text-slate-900">
+            Billing managed by the school authority
+          </h2>
           <p className="mt-2 text-sm text-slate-600">
-            The tenant administrator selects their billing cycle and bus allowance, manages
-            payments, and controls renewal.
+            The school authority administrator selects their billing cycle and bus allowance,
+            manages payments, and controls renewal.
           </p>
           {subscription.configured && (
             <Button
