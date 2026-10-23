@@ -187,6 +187,8 @@ describe('checkout and trial lifecycle', () => {
     expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
       expect.objectContaining({
         payment_method_collection: 'always',
+        billing_address_collection: 'required',
+        customer_update: { name: 'auto', address: 'auto' },
         subscription_data: {
           trial_period_days: 14,
           trial_settings: { end_behavior: { missing_payment_method: 'cancel' } },

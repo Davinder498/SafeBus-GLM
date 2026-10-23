@@ -4,6 +4,7 @@ import { CreditCard, ExternalLink, ShieldCheck } from 'lucide-react';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { AdminSettingsNav } from '@/components/settings/AdminSettingsNav';
 import { SubscriptionOverview } from '@/components/subscription/SubscriptionOverview';
+import { InvoiceHistory } from '@/components/subscription/InvoiceHistory';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -496,6 +497,13 @@ export function AdminSubscriptionPage() {
               </p>
             )}
             <SubscriptionOverview subscription={subscription} />
+            {subscription.configured && !subscription.subscriptionExempt && (
+              <InvoiceHistory
+                key={subscription.tenantId}
+                billingEmail={subscription.billingEmail}
+                refreshToken={subscription.lastSyncedAt}
+              />
+            )}
             <div className="flex flex-wrap gap-3">
               <Button
                 type="button"
