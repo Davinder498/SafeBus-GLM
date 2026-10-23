@@ -85,8 +85,8 @@ function PlannedAssignmentsCard({ assignments }: { assignments: PlannedDriverAss
       </p>
       {assignments.length === 0 ? (
         <p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
-          No current or upcoming assignments are planned. You can still scan any eligible tenant bus
-          when directed by operations.
+          No current or upcoming assignments are planned. You can still scan any eligible school
+          authority bus when directed by operations.
         </p>
       ) : (
         <div className="mt-4 space-y-3">

@@ -1,6 +1,7 @@
 import { act } from 'react';
 import type { ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TenantNotificationSettings } from '@safebus/types';
 import { AdminNotificationSettingsPage } from './AdminNotificationSettingsPage';
@@ -17,9 +18,6 @@ vi.mock('@/contexts/useAuth', () => ({
 vi.mock('@/components/layout/DashboardLayout', () => ({
   DashboardLayout: ({ children }: { children: ReactNode }) => <>{children}</>,
   adminNavGroups: [],
-}));
-vi.mock('@/components/settings/AdminSettingsNav', () => ({
-  AdminSettingsNav: () => <nav>Tenant settings</nav>,
 }));
 vi.mock('@/components/admin/NotificationDeliverySummaryCard', () => ({
   NotificationDeliverySummaryCard: () => <section>Delivery health summary</section>,
@@ -50,7 +48,13 @@ async function renderPage(settings: TenantNotificationSettings = active) {
   const container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
-  await act(async () => root?.render(<AdminNotificationSettingsPage />));
+  await act(async () =>
+    root?.render(
+      <MemoryRouter>
+        <AdminNotificationSettingsPage />
+      </MemoryRouter>,
+    ),
+  );
   return container;
 }
 
@@ -93,6 +97,9 @@ describe('tenant notification settings', () => {
     expect(container.textContent).toContain('Email');
     expect(container.textContent).toContain('Android push');
     expect(container.textContent).toContain('Delivery health summary');
+    expect(container.querySelector('h1')?.textContent).toBe('Notification settings');
+    expect(container.querySelector('a')?.getAttribute('href')).toBe('/notifications');
+    expect(container.querySelector('nav[aria-label="Settings sections"]')).toBeNull();
     expect(button(container, 'Pause delivery').disabled).toBe(false);
     expect(button(container, 'Disable push').disabled).toBe(false);
   });

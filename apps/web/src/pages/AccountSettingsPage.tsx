@@ -36,8 +36,8 @@ export function AccountSettingsPage() {
             <div className="min-w-0">
               <h2 className="font-bold text-slate-950">Support</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Contact the transportation organization that issued your account using its verified
-                support details.
+                Contact the school authority that issued your account using its verified support
+                details.
               </p>
               <a
                 className="mt-3 inline-flex items-center gap-1.5 font-semibold text-navy-700 underline underline-offset-4"
@@ -46,7 +46,8 @@ export function AccountSettingsPage() {
                 Open support <ExternalLink className="h-4 w-4" aria-hidden />
               </a>
               <p className="mt-3 text-xs text-slate-500">
-                If your organization has not published a contact, use the developer contact in the{' '}
+                If your school authority has not published a contact, use the developer contact in
+                the{' '}
                 <a className="font-semibold underline underline-offset-2" href="/privacy#contact">
                   privacy policy
                 </a>

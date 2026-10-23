@@ -54,7 +54,7 @@ export function describeBusError(error: { message?: string; code?: string }): Er
   if (message.includes('bus_admin_details_tenant_fleet_number_unique')) {
     return new DuplicateIdentifierError(
       'fleetNumber',
-      'A bus with this fleet number already exists in your organization.',
+      'A bus with this fleet number already exists in your school authority.',
     );
   }
   if (
@@ -261,7 +261,7 @@ export function describeRouteError(error: { message?: string; code?: string }): 
     normalizedMessage.includes('route with this code already exists');
   if (isDuplicateRouteCode) {
     return new Error(
-      'A route with this code already exists in your organization. Use a different route code.',
+      'A route with this code already exists in your school authority. Use a different route code.',
     );
   }
   return new Error(message || 'Unable to save route.');
@@ -451,7 +451,7 @@ export async function createStudentRouteAssignment(
   if (error) {
     if (import.meta.env.DEV) console.error('Failed to create student route assignment', error);
     throw new Error(
-      'We could not save this assignment. Confirm the student, route, and stops are active and belong to your organization.',
+      'We could not save this assignment. Confirm the student, route, and stops are active and belong to your school authority.',
     );
   }
   return data as StudentRouteAssignment;
@@ -474,7 +474,7 @@ export async function updateStudentRouteAssignment(
   if (error) {
     if (import.meta.env.DEV) console.error('Failed to update student route assignment', error);
     throw new Error(
-      'We could not update this assignment. Confirm the student, route, and stops are active and belong to your organization.',
+      'We could not update this assignment. Confirm the student, route, and stops are active and belong to your school authority.',
     );
   }
   return data as StudentRouteAssignment;

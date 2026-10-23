@@ -91,7 +91,7 @@ export interface PlatformFirstAdminInvitation {
 
 export async function fetchPlatformTenantSummaries(): Promise<PlatformTenantSummary[]> {
   const { data, error } = await client().rpc('get_platform_tenant_onboarding_summary_secure');
-  if (error) throw new Error('Unable to load tenant onboarding summary.');
+  if (error) throw new Error('Unable to load school authority onboarding summary.');
   return ((data ?? []) as PlatformTenantSummary[]).map((row) => ({
     ...row,
     tenant_name: safeBusDisplayText(row.tenant_name),

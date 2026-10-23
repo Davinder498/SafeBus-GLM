@@ -84,7 +84,12 @@ export function AdminUsersPage() {
   }, [profiles, query]);
 
   return (
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
+    <DashboardLayout
+      title="Admin Dashboard"
+      portal="admin"
+      navItems={[]}
+      navGroups={adminNavGroups}
+    >
       <div className="space-y-6">
         <PageHeader
           eyebrow="Users"
@@ -146,7 +151,7 @@ export function AdminUsersPage() {
                 </div>
                 <div className="mt-5 grid gap-3 text-sm md:grid-cols-2">
                   <p className="text-gray-600">
-                    Tenant:{' '}
+                    School authority:{' '}
                     <span className="font-semibold text-navy-900">
                       {profile.tenant_id
                         ? (tenantNames.get(profile.tenant_id) ?? profile.tenant_id)

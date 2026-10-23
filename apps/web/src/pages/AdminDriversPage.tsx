@@ -1,3 +1,4 @@
+import { BulkOnboardingPanel } from '@/components/admin/BulkOnboardingPanel';
 import { AdminDataDownloads } from '@/components/admin/AdminDataDownloads';
 import { useState, type FormEvent } from 'react';
 import { AlertTriangle, CheckCircle2, Eye, Mail, Phone, UserRound } from 'lucide-react';
@@ -75,6 +76,7 @@ export function AdminDriversPage() {
   const [searchParams] = useSearchParams();
   const list = usePaginatedAdminList<DriverRow>('drivers');
   const [showInviteForm, setShowInviteForm] = useState(searchParams.get('invite') === '1');
+  const [showCsvImport, setShowCsvImport] = useState(searchParams.get('import') === '1');
   const [inviteForm, setInviteForm] = useState(emptyInvite);
   const [inviting, setInviting] = useState(false);
   const [writeError, setWriteError] = useState<string | null>(null);
@@ -136,9 +138,14 @@ export function AdminDriversPage() {
           description="A focused driver directory with licence readiness at a glance."
           action={
             canInvite ? (
-              <Button type="button" onClick={() => setShowInviteForm((value) => !value)}>
-                Invite driver
-              </Button>
+              <div className="flex flex-wrap gap-3">
+                <Button type="button" variant="secondary" onClick={() => setShowCsvImport(true)}>
+                  Import CSV
+                </Button>
+                <Button type="button" onClick={() => setShowInviteForm((value) => !value)}>
+                  Invite driver
+                </Button>
+              </div>
             ) : undefined
           }
         />
@@ -149,6 +156,18 @@ export function AdminDriversPage() {
           disabled={list.loading || !!list.error || list.searchInput !== list.search}
         />
 
+        {canInvite && (
+          <div hidden={!showCsvImport}>
+            <BulkOnboardingPanel
+              recordType="driver"
+              onImported={async () => {
+                await list.reload();
+              }}
+              onCancel={() => setShowCsvImport(false)}
+            />
+          </div>
+        )}
+
         {showInviteForm && (
           <Card className="p-5">
             <div>
@@ -157,8 +176,8 @@ export function AdminDriversPage() {
               </p>
               <h2 className="mt-1 text-lg font-bold text-navy-900">Add driver</h2>
               <p className="mt-1 text-sm text-slate-600">
-                The email becomes the login. Licence and address details stay tenant-scoped behind
-                RLS.
+                The email becomes the login. Licence and address details are restricted to
+                authorized staff in your school authority.
               </p>
             </div>
             <form className="mt-5 space-y-5" onSubmit={(event) => void inviteDriver(event)}>

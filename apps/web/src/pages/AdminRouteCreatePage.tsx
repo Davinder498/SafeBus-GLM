@@ -36,7 +36,7 @@ export function AdminRouteCreatePage() {
   }, [revision]);
 
   async function save(payload: SaveRouteDefinitionInput) {
-    if (!profile?.tenant_id) throw new Error('An active tenant is required.');
+    if (!profile?.tenant_id) throw new Error('An active school authority is required.');
     const saveId = pendingCreatedRouteId.current;
     const input = saveId ? { ...payload, route: { ...payload.route, id: saveId } } : payload;
     const result = await saveRouteDefinition(input);
@@ -74,7 +74,10 @@ export function AdminRouteCreatePage() {
           description="Start with route details and stops. Save to continue with the road path, bus, driver and students on this route."
         />
         {profile?.role !== 'tenant_admin' ? (
-          <DataState title="View only" message="Only tenant administrators can create routes." />
+          <DataState
+            title="View only"
+            message="Only school authority administrators can create routes."
+          />
         ) : (
           <>
             <AdminWriteError message={error} />

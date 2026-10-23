@@ -355,7 +355,7 @@ export function DriverForm({
     }
 
     if (!tenantId) {
-      setFormError('The selected driver profile must belong to a tenant.');
+      setFormError('The selected driver profile must belong to a school authority.');
       return;
     }
 
@@ -477,7 +477,7 @@ export function RouteForm({
       route?.tenant_id ?? getSchoolTenantId(schools, schoolId || null) ?? defaultTenantId;
 
     if (!tenantId) {
-      setFormError('Use an account with a tenant before saving this route.');
+      setFormError('Use an account with a school authority before saving this route.');
       return;
     }
 
@@ -1043,7 +1043,7 @@ export function DriverAssignmentForm({
     setFormError(null);
 
     if (!defaultTenantId) {
-      setFormError('Use an account with a tenant before saving this planned assignment.');
+      setFormError('Use an account with a school authority before saving this planned assignment.');
       return;
     }
     const selectedPattern = tripPatterns.find((pattern) => pattern.id === tripPatternId);

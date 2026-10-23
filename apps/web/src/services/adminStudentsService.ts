@@ -321,7 +321,7 @@ export async function createStudent(
   const client = requireSupabase();
 
   if (!defaultTenantId) {
-    throw new Error('Use an account with a tenant before saving this student.');
+    throw new Error('Use an account with a school authority before saving this student.');
   }
 
   if (!input.firstName.trim() || !input.lastName.trim()) {

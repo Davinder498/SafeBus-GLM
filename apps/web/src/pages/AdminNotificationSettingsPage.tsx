@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { TenantNotificationSettings } from '@safebus/types';
-import { Bell, Inbox, Mail, Power, ShieldCheck, Smartphone } from 'lucide-react';
+import { Link } from 'react-router';
+import { ArrowLeft, Bell, Inbox, Mail, Power, ShieldCheck, Smartphone } from 'lucide-react';
 import { NotificationDeliverySummaryCard } from '@/components/admin/NotificationDeliverySummaryCard';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
-import { AdminSettingsNav } from '@/components/settings/AdminSettingsNav';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonClass } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { useAuth } from '@/contexts/useAuth';
 import {
   fetchTenantNotificationSettings,
   setTenantNotificationDeliveryEnabled,
@@ -56,7 +55,7 @@ function policyPresentation(settings: TenantNotificationSettings): PolicyPresent
       tone: 'neutral',
       title: 'External delivery is paused',
       message:
-        'Email and Android push are paused for this tenant. Existing individual preferences are preserved.',
+        'Email and Android push are paused for this school authority. Existing individual preferences are preserved.',
     };
   }
   return {
@@ -64,7 +63,7 @@ function policyPresentation(settings: TenantNotificationSettings): PolicyPresent
     tone: 'success',
     title: 'External delivery is active',
     message:
-      'Approved email delivery is active. Android push follows the tenant channel state and each person’s preferences.',
+      'Approved email delivery is active. Android push follows the school authority channel state and each person’s preferences.',
   };
 }
 
@@ -124,7 +123,6 @@ function ChannelCard({
 }
 
 export function AdminNotificationSettingsPage() {
-  const { profile } = useAuth();
   const [settings, setSettings] = useState<TenantNotificationSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -139,7 +137,9 @@ export function AdminNotificationSettingsPage() {
       setSettings(await fetchTenantNotificationSettings());
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : 'Unable to load tenant notification settings.',
+        cause instanceof Error
+          ? cause.message
+          : 'Unable to load school authority notification settings.',
       );
     } finally {
       setLoading(false);
@@ -191,10 +191,10 @@ export function AdminNotificationSettingsPage() {
     ? pendingChange.kind === 'delivery'
       ? pendingChange.enabled
         ? 'Email and any enabled Android push delivery will resume for people who have chosen those notifications.'
-        : 'New email and Android push deliveries will stop for this tenant. The in-app inbox and individual preferences will remain available.'
+        : 'New email and Android push deliveries will stop for this school authority. The in-app inbox and individual preferences will remain available.'
       : pendingChange.enabled
         ? 'Android push will become available to people who have enabled it in their personal settings.'
-        : 'Android push will stop for this tenant. Email and the in-app inbox will continue according to their current settings.'
+        : 'Android push will stop for this school authority. Email and the in-app inbox will continue according to their current settings.'
     : '';
 
   return (
@@ -206,13 +206,17 @@ export function AdminNotificationSettingsPage() {
     >
       <div className="space-y-6" data-ui="tenant-notification-settings-page">
         <PageHeader
-          eyebrow="Settings"
-          title="Notifications"
-          description="Control tenant-wide email and Android push delivery and monitor delivery health. Individual preferences remain with each guardian and driver."
+          eyebrow="Notifications"
+          title="Notification settings"
+          description="Control school authority-wide email and Android push delivery and monitor delivery health. Individual preferences remain with each guardian and driver."
           icon={<Bell className="h-6 w-6" aria-hidden />}
+          action={
+            <Link to="/notifications" className={buttonClass({ variant: 'ghost', size: 'sm' })}>
+              <ArrowLeft className="h-4 w-4" aria-hidden />
+              Back to notifications
+            </Link>
+          }
         />
-
-        <AdminSettingsNav role={profile?.role} />
 
         {error ? (
           <Card className="border-danger-200 bg-danger-50 p-4" role="alert">
@@ -240,7 +244,7 @@ export function AdminNotificationSettingsPage() {
         {loading ? (
           <DataState
             title="Loading notification controls"
-            message="Checking tenant delivery and privacy status."
+            message="Checking school authority delivery and privacy status."
           />
         ) : settings && presentation ? (
           <>
@@ -297,8 +301,8 @@ export function AdminNotificationSettingsPage() {
                   Delivery channels
                 </h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  Tenant controls set availability. Each person still chooses their own optional
-                  alerts.
+                  School authority controls set availability. Each person still chooses their own
+                  optional alerts.
                 </p>
               </div>
               <div className="grid gap-4 lg:grid-cols-3">

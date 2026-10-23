@@ -38,14 +38,18 @@ export function PlatformTenantsPage() {
       if (results[1].status === 'fulfilled') setBilling(results[1].value);
       else {
         setBilling([]);
-        setError('Tenant list loaded. Subscription summaries are temporarily unavailable.');
+        setError(
+          'School authority list loaded. Subscription summaries are temporarily unavailable.',
+        );
       }
     } finally {
       setLoading(false);
     }
   }
   useEffect(() => {
-    void load().catch(() => setError('Unable to load tenant onboarding. Refresh to try again.'));
+    void load().catch(() =>
+      setError('Unable to load school authority onboarding. Refresh to try again.'),
+    );
   }, []);
   const byTenant = useMemo(() => new Map(billing.map((b) => [b.tenantId, b])), [billing]);
   const visible = tenants.filter((t) => {
@@ -67,13 +71,13 @@ export function PlatformTenantsPage() {
       <div className="space-y-6">
         <PageHeader
           eyebrow="Platform onboarding"
-          title="Tenant onboarding"
-          description="Welcome new organizations and follow their progress from invitation to an operational fleet."
+          title="School authority onboarding"
+          description="Welcome new school authorities and follow their progress from invitation to an operational fleet."
           icon={<Building2 className="h-6 w-6" />}
         />
         <div className="grid gap-4 sm:grid-cols-3">
           {[
-            ['Organizations', tenants.length],
+            ['School authorities', tenants.length],
             [
               'Awaiting activation',
               tenants.filter((t) => t.tenant_admin_status === 'invited').length,
@@ -90,7 +94,7 @@ export function PlatformTenantsPage() {
         <section aria-labelledby="tenant-directory-heading" className="space-y-4">
           <div>
             <h2 id="tenant-directory-heading" className="text-xl font-bold text-navy-900">
-              Your organizations
+              Your school authorities
             </h2>
             <p className="mt-1 text-sm text-slate-600">
               Invitations, subscription health, and fleet capacity in one place.
@@ -98,13 +102,13 @@ export function PlatformTenantsPage() {
           </div>
           <Card className="p-4">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <Field label="Search tenants" htmlFor="tenant-search">
+              <Field label="Search school authorities" htmlFor="tenant-search">
                 <div className="relative">
                   <Search aria-hidden className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                   <input
                     id="tenant-search"
                     className={`${inputClass} pl-9`}
-                    placeholder="Organization or administrator"
+                    placeholder="School authority or administrator"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
@@ -179,16 +183,18 @@ export function PlatformTenantsPage() {
           )}
           {loading ? (
             <DataState
-              title="Loading tenants"
+              title="Loading school authorities"
               message="Checking onboarding and subscription status."
             />
           ) : visible.length === 0 ? (
             <DataState
-              title={tenants.length ? 'No matching organizations' : 'No tenants yet'}
+              title={
+                tenants.length ? 'No matching school authorities' : 'No school authorities yet'
+              }
               message={
                 tenants.length
                   ? 'Try another search or filter.'
-                  : 'Invite your first organization above.'
+                  : 'Invite your first school authority above.'
               }
             />
           ) : (
@@ -196,12 +202,12 @@ export function PlatformTenantsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[760px] text-left text-sm">
                   <caption className="sr-only">
-                    Tenant onboarding and subscription directory
+                    School authority onboarding and subscription directory
                   </caption>
                   <thead className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                     <tr>
                       {[
-                        'Organization',
+                        'School authority',
                         'First administrator',
                         'Subscription',
                         'Active buses',
@@ -278,10 +284,10 @@ export function PlatformTenantsPage() {
                           <td className="px-5 py-5">
                             <Link
                               className="inline-flex items-center gap-1 font-semibold text-navy-700"
-                              aria-label={`View tenant ${t.tenant_name}`}
+                              aria-label={`View school authority ${t.tenant_name}`}
                               to={`/admin/tenants/${t.tenant_id}`}
                             >
-                              View tenant
+                              View school authority
                               <ChevronRight className="h-4 w-4" aria-hidden />
                             </Link>
                           </td>

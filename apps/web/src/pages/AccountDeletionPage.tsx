@@ -51,14 +51,14 @@ export function AccountDeletionPage() {
 
           <div className="mt-8 rounded-xl bg-amber-50 p-5 text-sm leading-6 text-amber-950">
             If you cannot identify or reach the issuing authority, use the verified developer
-            contact on the SafeBus Google Play listing. Include only your account email and
-            school authority name so the request can be routed safely.
+            contact on the SafeBus Google Play listing. Include only your account email and school
+            authority name so the request can be routed safely.
           </div>
 
           <p className="mt-5 leading-7 text-slate-700">
             For SafeBus&apos;s own business, billing or correspondence records, contact SafeBus
             directly using the privacy contact described in the privacy notice. You can also raise a
-            privacy concern without an active account. The issuing organization handles its
+            privacy concern without an active account. The issuing school authority handles its
             transportation records; SafeBus assists with routing and authorized action.
           </p>
 

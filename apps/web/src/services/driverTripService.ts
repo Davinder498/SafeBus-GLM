@@ -133,7 +133,7 @@ export async function cancelDriverTrip(
       throw new Error('This trip is no longer active or paused.');
     }
     if (message.includes('not found') || message.includes('can cancel')) {
-      throw new Error('Could not cancel the trip. It may belong to another tenant.');
+      throw new Error('Could not cancel the trip. It may belong to another school authority.');
     }
     throw new Error(message);
   }

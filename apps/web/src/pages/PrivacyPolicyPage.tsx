@@ -67,8 +67,8 @@ export function PrivacyPolicyPage() {
                   model, permission state, and Firebase Cloud Messaging token.
                 </li>
                 <li>
-                  Tenant subscription details such as the billing contact, purchase-order reference,
-                  contracted bus allowance, plan, renewal dates, and invoice status.
+                  School authority subscription details such as the billing contact, purchase-order
+                  reference, contracted bus allowance, plan, renewal dates, and invoice status.
                 </li>
               </ul>
               <p className="mt-3">
@@ -97,11 +97,12 @@ export function PrivacyPolicyPage() {
                 delivery (Netlify), map tiles (Geoapify), transactional email (Resend), and opt-in
                 Android push delivery (Google Firebase Cloud Messaging). Stripe processes
                 subscription invoices, billing details, and payment methods. SafeBus stores only a
-                limited subscription summary and does not store card or bank details.
-                Prospective-tenant inquiries are delivered to SafeBus through the transactional
+                limited subscription summary and does not store card or bank details. Inquiries from
+                prospective school authorities are delivered to SafeBus through the transactional
                 email provider and are not stored in the application database. Access is limited to
                 what is needed to provide each service. Push previews exclude names, routes, stops,
-                coordinates, driver identity, tenant identifiers, and internal identifiers.
+                coordinates, driver identity, school authority identifiers, and internal
+                identifiers.
               </p>
             </section>
 
@@ -145,10 +146,10 @@ export function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-bold text-slate-950">Security and changes</h2>
               <p className="mt-2">
-                SafeBus uses encryption in transit, role-based access, tenant isolation, restricted
-                administrative access, and audit records. We will update this notice when material
-                practices change and will communicate significant changes through the issuing school
-                authority or the app.
+                SafeBus uses encryption in transit, role-based access, school authority isolation,
+                restricted administrative access, and audit records. We will update this notice when
+                material practices change and will communicate significant changes through the
+                issuing school authority or the app.
               </p>
             </section>
 

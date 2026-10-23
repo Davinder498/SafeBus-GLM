@@ -40,10 +40,7 @@ function args(input: SupportContactInput) {
   };
 }
 
-function supportWriteError(
-  error: { code?: string; message?: string },
-  fallback: string,
-): Error {
+function supportWriteError(error: { code?: string; message?: string }, fallback: string): Error {
   if (error.code === '55006' && /recent authentication/i.test(error.message ?? '')) {
     return new Error(
       'For your security, sign out and sign back in, then save again within 15 minutes.',
@@ -65,5 +62,5 @@ export async function updatePlatformSupportContact(input: SupportContactInput): 
 
 export async function updateTenantSupportContact(input: SupportContactInput): Promise<void> {
   const { error } = await client().rpc('update_tenant_support_contact', args(input));
-  if (error) throw supportWriteError(error, 'Tenant support details were not saved.');
+  if (error) throw supportWriteError(error, 'School authority support details were not saved.');
 }

@@ -1,4 +1,4 @@
-import { Bell, Building2, CircleHelp, CreditCard } from 'lucide-react';
+import { Building2, CircleHelp, CreditCard } from 'lucide-react';
 import { NavLink, type NavLinkRenderProps } from 'react-router';
 import type { ProfileRole } from '@/contexts/AuthContext';
 import { cn } from '@/utils/cn';
@@ -16,18 +16,11 @@ const settingsItems = [
     allowedRoles: ['tenant_admin'],
   },
   {
-    label: 'Organization',
+    label: 'School authority',
     to: '/admin/settings',
     end: true,
     icon: Building2,
     allowedRoles: ['tenant_admin', 'school_admin', 'transportation_admin'],
-  },
-  {
-    label: 'Notifications',
-    to: '/admin/settings/notifications',
-    end: false,
-    icon: Bell,
-    allowedRoles: ['tenant_admin'],
   },
   {
     label: 'Subscription & billing',

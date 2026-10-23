@@ -15,7 +15,13 @@ export interface AdminProfile {
   school_id: string | null;
   full_name: string;
   email: string;
-  role: 'platform_super_admin' | 'tenant_admin' | 'school_admin' | 'transportation_admin' | 'driver' | 'guardian';
+  role:
+    | 'platform_super_admin'
+    | 'tenant_admin'
+    | 'school_admin'
+    | 'transportation_admin'
+    | 'driver'
+    | 'guardian';
   status: 'invited' | 'active' | 'suspended' | 'disabled';
   created_at: string;
   updated_at: string;
@@ -130,7 +136,11 @@ export async function fetchTenantAdminInvitations(): Promise<TenantAdminInvitati
   return (data ?? []) as TenantAdminInvitation[];
 }
 
-export async function changeAdminRole(profileId: string, newRole: string, schoolId?: string | null) {
+export async function changeAdminRole(
+  profileId: string,
+  newRole: string,
+  schoolId?: string | null,
+) {
   const { data, error } = await client().rpc('tenant_change_admin_role', {
     p_profile_id: profileId,
     p_new_role: newRole,
@@ -222,12 +232,12 @@ export async function getBulkImportErrors(batchId: string): Promise<BulkImportEr
   return (data ?? []) as BulkImportErrorRow[];
 }
 
-export async function fetchBulkImportBatches(): Promise<BulkImportBatch[]> {
-  const { data, error } = await client()
-    .from('bulk_import_batches')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(50);
+export async function fetchBulkImportBatches(
+  recordType?: BulkImportBatch['record_type'],
+): Promise<BulkImportBatch[]> {
+  let query = client().from('bulk_import_batches').select('*');
+  if (recordType) query = query.eq('record_type', recordType);
+  const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
   if (error) throw new Error('Unable to load import history.');
   return (data ?? []) as BulkImportBatch[];
 }

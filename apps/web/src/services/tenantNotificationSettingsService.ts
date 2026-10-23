@@ -50,7 +50,7 @@ function normalizeSettings(value: unknown): TenantNotificationSettings {
 
 export async function fetchTenantNotificationSettings(): Promise<TenantNotificationSettings> {
   const { data, error } = await client().rpc('get_tenant_notification_settings');
-  if (error) throw new Error('Unable to load tenant notification settings.');
+  if (error) throw new Error('Unable to load school authority notification settings.');
   return normalizeSettings(data);
 }
 

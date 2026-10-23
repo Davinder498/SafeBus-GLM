@@ -27,7 +27,9 @@ export async function getVisibleGuardians(): Promise<Guardian[]> {
   const client = requireSupabase();
   const { data, error } = await client
     .from('guardians')
-    .select('id, tenant_id, profile_id, first_name, last_name, full_name, email, phone, status, created_at, updated_at')
+    .select(
+      'id, tenant_id, profile_id, first_name, last_name, full_name, email, phone, status, created_at, updated_at',
+    )
     .eq('status', 'active')
     .order('last_name', { ascending: true })
     .order('first_name', { ascending: true });
@@ -85,7 +87,7 @@ export async function createStudentGuardianLink(input: {
   // the authenticated user. We keep the parameter for API compatibility but
   // only use it for a client-side guard.
   if (!input.defaultTenantId) {
-    throw new Error('Use an account with a tenant before saving this link.');
+    throw new Error('Use an account with a school authority before saving this link.');
   }
 
   const { data, error } = await client.rpc('admin_link_student_guardian', {
@@ -99,7 +101,8 @@ export async function createStudentGuardianLink(input: {
     if (import.meta.env.DEV) {
       console.error('Failed to link student guardian', error);
     }
-    const message = error.message ?? 'We could not save the student guardian link. Please try again.';
+    const message =
+      error.message ?? 'We could not save the student guardian link. Please try again.';
     // Pass through the RPC's friendly error messages.
     if (message.includes('already linked')) {
       throw new Error('This student is already linked to this guardian.');
@@ -167,9 +170,11 @@ export async function setStudentGuardianLinkStatus(input: {
   });
   if (error) {
     if (import.meta.env.DEV) console.error('Failed to update guardian link status', error);
-    throw new Error(error.message.includes('must be active')
-      ? 'Activate the guardian account before activating this connection.'
-      : 'We could not update this guardian connection.');
+    throw new Error(
+      error.message.includes('must be active')
+        ? 'Activate the guardian account before activating this connection.'
+        : 'We could not update this guardian connection.',
+    );
   }
   return data as StudentGuardian;
 }

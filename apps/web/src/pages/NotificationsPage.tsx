@@ -10,7 +10,7 @@ import {
   platformNavGroups,
 } from '@/components/layout/DashboardLayout';
 import { NotificationUpdateCard } from '@/components/notifications/NotificationUpdateCard';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonClass } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -115,7 +115,9 @@ export function NotificationsPage() {
     ? '/driver/settings'
     : profile?.role === 'guardian'
       ? '/notifications/settings'
-      : null;
+      : profile?.role === 'tenant_admin'
+        ? '/admin/settings/notifications'
+        : null;
 
   const selectedItem = requestedId && detail?.id === requestedId ? detail : null;
 
@@ -284,11 +286,13 @@ export function NotificationsPage() {
             description="Your authoritative SafeBus inbox. In-app updates remain available regardless of push settings."
             action={
               settingsPath ? (
-                <Link to={settingsPath}>
-                  <Button variant="secondary">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </Button>
+                <Link
+                  to={settingsPath}
+                  aria-label="Notification settings"
+                  className={cn(buttonClass({ variant: 'ghost', size: 'sm' }), 'min-h-11')}
+                >
+                  <Settings className="h-4 w-4" aria-hidden />
+                  Settings
                 </Link>
               ) : undefined
             }

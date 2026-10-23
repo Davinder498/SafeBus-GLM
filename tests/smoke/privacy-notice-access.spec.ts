@@ -20,7 +20,11 @@ test('privacy notice is reachable before sign-in and explains all three roles', 
   await expect(page.getByRole('heading', { name: 'SafeBus privacy policy' })).toBeVisible();
   const sections = page.getByRole('navigation', { name: 'Privacy notice sections' });
   for (const [name, heading, fragment] of [
-    ['Tenant administrators', 'Tenant administrator privacy notice', 'tenant-administrators'],
+    [
+      'School authority administrators',
+      'School authority administrator privacy notice',
+      'tenant-administrators',
+    ],
     ['Guardians', 'Guardian privacy notice', 'guardians'],
     ['Drivers', 'Driver privacy notice', 'drivers'],
   ]) {
@@ -47,7 +51,7 @@ test('tenant admin can use the account menu and navigation without losing its po
   await expect(page).toHaveURL('/privacy');
   await expect(page.locator('[data-ui="dashboard-shell"]')).toHaveAttribute('data-portal', 'admin');
   await expect(
-    page.getByRole('heading', { name: 'Tenant administrator privacy notice' }),
+    page.getByRole('heading', { name: 'School authority administrator privacy notice' }),
   ).toBeVisible();
   await expectNoWcagAaViolations(page);
 

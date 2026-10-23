@@ -82,6 +82,24 @@ async function render(path = '/notifications?notification=event-1') {
   );
 }
 describe('notification detail links', () => {
+  it.each([
+    ['tenant_admin', '/admin/settings/notifications'],
+    ['guardian', '/notifications/settings'],
+    ['driver', '/driver/settings'],
+    ['school_admin', null],
+    ['transportation_admin', null],
+    ['platform_super_admin', null],
+  ])('shows the permitted settings destination for %s', async (role, destination) => {
+    mocks.role = role!;
+    await render('/notifications');
+    const link = container.querySelector('a[aria-label="Notification settings"]');
+    if (destination) {
+      expect(link?.getAttribute('href')).toBe(destination);
+      expect(link?.querySelector('button')).toBeNull();
+    } else {
+      expect(link).toBeNull();
+    }
+  });
   it('opens authorized details absent from the current inbox and marks only that event read', async () => {
     await render();
     expect(container.textContent).toContain(row.body);

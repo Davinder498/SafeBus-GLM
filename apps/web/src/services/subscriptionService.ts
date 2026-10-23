@@ -35,7 +35,7 @@ function normalizeSubscription(value: unknown): TenantSubscription {
     configured: data.configured === true,
     subscriptionExempt: data.subscription_exempt === true,
     tenantId: text(data.tenant_id) ?? '',
-    tenantName: safeBusDisplayText(text(data.tenant_name) ?? 'Tenant'),
+    tenantName: safeBusDisplayText(text(data.tenant_name) ?? 'School authority'),
     tenantType: text(data.tenant_type) ?? 'school',
     tenantStatus: text(data.tenant_status) ?? 'active',
     productName: data.product_name ? safeBusDisplayText(String(data.product_name)) : null,
@@ -83,7 +83,7 @@ export async function fetchPlatformTenantBillingDetail(
   const { data, error } = await client().rpc('get_platform_tenant_billing_detail', {
     p_tenant_id: tenantId,
   });
-  if (error) throw new Error('Unable to load tenant billing details.');
+  if (error) throw new Error('Unable to load school authority billing details.');
   return normalizeSubscription(data);
 }
 

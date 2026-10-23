@@ -341,16 +341,14 @@ test('tenant notification control center owns policy and health presentation', (
     notificationSettingsPage,
     /profile\?\.role === 'tenant_admin'[\s\S]*to="\/admin\/settings\/notifications"/,
   );
-  assert.match(
-    adminSettingsNav,
-    /to: '\/admin\/settings\/notifications'[\s\S]*allowedRoles: \['tenant_admin'\]/,
-  );
+  assert.doesNotMatch(adminSettingsNav, /\/admin\/settings\/notifications/);
   assert.match(
     notificationsPage,
-    /const settingsPath = isDriver[\s\S]*'\/driver\/settings'[\s\S]*profile\?\.role === 'guardian'[\s\S]*'\/notifications\/settings'[\s\S]*: null;/,
+    /const settingsPath = isDriver[\s\S]*'\/driver\/settings'[\s\S]*profile\?\.role === 'guardian'[\s\S]*'\/notifications\/settings'[\s\S]*profile\?\.role === 'tenant_admin'[\s\S]*'\/admin\/settings\/notifications'[\s\S]*: null;/,
   );
-  assert.doesNotMatch(notificationsPage, /'\/admin\/settings\/notifications'/);
-  assert.match(notificationsPage, /settingsPath \? \([\s\S]*<Link to=\{settingsPath\}>/);
+  assert.match(notificationsPage, /settingsPath \? \([\s\S]*<Link\s+to=\{settingsPath\}/);
+  assert.match(tenantNotificationPage, /to="\/notifications"/);
+  assert.doesNotMatch(tenantNotificationPage, /AdminSettingsNav/);
   assert.doesNotMatch(adminTripsPage, /NotificationDeliverySummaryCard/);
 });
 

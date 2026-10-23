@@ -433,7 +433,7 @@ export function AdminLiveTripsPage() {
             {trips.length === 0 ? (
               <DataState
                 title="No active trips right now."
-                message="Active driver trips in your organization will appear here."
+                message="Active driver trips in your school authority will appear here."
               />
             ) : (
               <Card className="overflow-hidden" data-testid="admin-live-trips-list">

@@ -26,7 +26,7 @@ export const USER_ROLES: readonly UserRole[] = [
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   platform_super_admin: 'Platform Super Admin',
-  tenant_admin: 'Tenant Admin',
+  tenant_admin: 'School authority admin',
   school_admin: 'School Admin',
   transportation_admin: 'Transportation Admin',
   driver: 'Driver',

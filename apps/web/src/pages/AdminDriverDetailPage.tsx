@@ -776,7 +776,7 @@ export function AdminDriverDetailPage() {
               </p>
               <p className="mt-3 flex items-center gap-2 text-xs text-slate-500">
                 <Mail className="h-4 w-4" aria-hidden />
-                Visible only to authorized staff under tenant-scoped RLS.
+                Visible only to authorized staff in your school authority.
               </p>
               <p className="mt-2 flex items-center gap-2 text-xs text-slate-500">
                 <Phone className="h-4 w-4" aria-hidden />

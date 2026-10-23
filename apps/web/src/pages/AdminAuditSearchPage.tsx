@@ -4,6 +4,8 @@ import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { getRoleLabel } from '@/components/ui/RoleBadge';
+import type { ProfileRole } from '@/contexts/AuthContext';
 import { searchAuditEvents } from '@/services/tenantAdminService';
 import type { AuditEvent } from '@/services/tenantAdminService';
 
@@ -20,8 +22,8 @@ const ACTION_OPTIONS = [
   { value: 'school.updated', label: 'School updated' },
   { value: 'school.archived', label: 'School deleted' },
   { value: 'school.restored', label: 'School restored' },
-  { value: 'tenant.suspended', label: 'Tenant suspended' },
-  { value: 'tenant.reactivated', label: 'Tenant reactivated' },
+  { value: 'tenant.suspended', label: 'School authority suspended' },
+  { value: 'tenant.reactivated', label: 'School authority reactivated' },
   { value: 'invitation.created', label: 'Invitation created' },
   { value: 'invitation.revoked', label: 'Invitation revoked' },
   { value: 'auth.login', label: 'Login' },
@@ -55,7 +57,9 @@ export function AdminAuditSearchPage() {
     try {
       const events = await searchAuditEvents({
         action: action || null,
-        targetType: targetType || null,
+        targetType: /^school authorit(?:y|ies)$/i.test(targetType.trim())
+          ? 'tenant'
+          : targetType.trim() || null,
         fromDate: fromDate ? new Date(fromDate).toISOString() : null,
         toDate: toDate ? new Date(toDate + 'T23:59:59').toISOString() : null,
         limit: 100,
@@ -69,7 +73,12 @@ export function AdminAuditSearchPage() {
   }, [action, targetType, fromDate, toDate]);
 
   return (
-    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
+    <DashboardLayout
+      title="Admin Dashboard"
+      portal="admin"
+      navItems={[]}
+      navGroups={adminNavGroups}
+    >
       <div className="space-y-6">
         <PageHeader
           eyebrow="Audit"
@@ -103,7 +112,7 @@ export function AdminAuditSearchPage() {
               <input
                 id="audit-target"
                 type="text"
-                placeholder="e.g. profile, tenant, invitation"
+                placeholder="e.g. profile, school authority, invitation"
                 value={targetType}
                 onChange={(e) => setTargetType(e.target.value)}
                 className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm"
@@ -174,19 +183,30 @@ export function AdminAuditSearchPage() {
                       <td className="whitespace-nowrap px-4 py-3 text-slate-700">
                         {formatDateTime(event.created_at)}
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-navy-900">{event.action}</td>
+                      <td className="px-4 py-3 text-sm text-navy-900">
+                        {ACTION_OPTIONS.find((option) => option.value === event.action)?.label ??
+                          event.action}
+                      </td>
                       <td className="px-4 py-3 text-slate-700">
                         {event.actor_email ?? '—'}
                         {event.actor_role ? (
-                          <span className="ml-2 text-xs text-slate-400">{event.actor_role}</span>
+                          <span className="ml-2 text-xs text-slate-400">
+                            {getRoleLabel(event.actor_role as ProfileRole) ?? event.actor_role}
+                          </span>
                         ) : null}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
                         {event.target_type ? (
                           <>
-                            <span className="font-mono text-xs">{event.target_type}</span>
+                            <span className="text-xs">
+                              {event.target_type === 'tenant'
+                                ? 'School authority'
+                                : event.target_type}
+                            </span>
                             {event.target_label ? (
-                              <span className="ml-2 text-xs text-slate-500">{event.target_label}</span>
+                              <span className="ml-2 text-xs text-slate-500">
+                                {event.target_label}
+                              </span>
                             ) : null}
                           </>
                         ) : (
@@ -198,7 +218,9 @@ export function AdminAuditSearchPage() {
                           className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                             event.outcome === 'success'
                               ? 'bg-success-50 text-success-700'
-                              : event.outcome === 'failure' || event.outcome === 'denied' || event.outcome === 'error'
+                              : event.outcome === 'failure' ||
+                                  event.outcome === 'denied' ||
+                                  event.outcome === 'error'
                                 ? 'bg-danger-50 text-danger-700'
                                 : 'bg-slate-100 text-slate-600'
                           }`}

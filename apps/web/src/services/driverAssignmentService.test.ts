@@ -63,7 +63,7 @@ describe('planned driver assignment saves', () => {
   it('does not retry or bypass a tenant authorization denial', async () => {
     rpc.mockResolvedValue({ data: null, error: { code: '42501' } });
     await expect(setPlannedDriverAssignment(input)).rejects.toThrow(
-      'Only a tenant administrator can change planned assignments.',
+      'Only a school authority administrator can change planned assignments.',
     );
     expect(rpc).toHaveBeenCalledTimes(1);
   });
