@@ -147,12 +147,14 @@ export function MfaPage() {
 
   return (
     <PublicLayout>
-      <main className="mx-auto flex min-h-[calc(100vh-150px)] max-w-xl items-center px-4 py-12 sm:px-6">
-        <Card className="w-full p-6 sm:p-8">
+      <main className="mx-auto flex min-h-[calc(100svh-184px)] w-full max-w-xl items-start px-4 py-6 sm:items-center sm:px-6 sm:py-12">
+        <Card className="w-full break-words p-5 sm:p-8">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-navy-50 text-navy-700">
             <ShieldCheck className="h-5 w-5" aria-hidden />
           </span>
-          <h1 className="mt-5 text-3xl font-bold tracking-tight text-navy-900">{heading}</h1>
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-navy-900 sm:text-3xl">
+            {heading}
+          </h1>
           <p className="mt-3 text-gray-600">
             SafeBus administrator accounts require a verified authenticator-app code before the
             admin portal or sensitive actions are available.
@@ -204,7 +206,7 @@ export function MfaPage() {
                   <img
                     src={qrSource(enrollment.qrCode)}
                     alt="Authenticator enrollment QR code"
-                    className="mx-auto h-52 w-52 rounded-lg bg-white p-2"
+                    className="mx-auto aspect-square h-auto w-52 max-w-full rounded-lg bg-white p-2"
                   />
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -244,7 +246,7 @@ export function MfaPage() {
 
           <button
             type="button"
-            className="mt-6 text-sm font-semibold text-slate-600 hover:text-slate-900"
+            className="mt-6 inline-flex min-h-11 items-center text-sm font-semibold text-slate-600 hover:text-slate-900"
             onClick={() => void signOut()}
           >
             Sign out

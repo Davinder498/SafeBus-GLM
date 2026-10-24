@@ -1,6 +1,94 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { installBilling, tenantId } from './fixtures/billing';
+import { installLocalOnlyBoundary } from './fixtures/local-only';
+import { expectUsableMobileLayout } from './fixtures/responsive';
+
+test('new-account price failure offers a real retry instead of an empty selector', async ({
+  page,
+}, testInfo) => {
+  if (testInfo.project.name === 'mobile-chromium')
+    await page.setViewportSize({ width: 320, height: 568 });
+  await installLocalOnlyBoundary(page);
+  const requests = await installBilling(page);
+  let attempts = 0;
+  let catalogReady = false;
+  await page.route('**/.netlify/functions/tenant-subscriptions', async (route) => {
+    if (route.request().postDataJSON().action !== 'list_prices') return route.fallback();
+    attempts++;
+    if (catalogReady) return route.fallback();
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 'billing_catalog_not_configured',
+        error: 'Subscription options are not configured correctly. Contact SafeBus support.',
+        retryable: false,
+      }),
+    });
+  });
+  await page.goto('/admin/settings/billing');
+  await expect(page.getByRole('alert')).toContainText(
+    'Subscription options are not configured correctly',
+  );
+  await expect(page.getByLabel('Subscription price', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Contact SafeBus support' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Continue to trial checkout' })).toHaveCount(0);
+  await expectUsableMobileLayout(page);
+  await page.screenshot({
+    path: testInfo.outputPath('subscription-unavailable.png'),
+    fullPage: true,
+  });
+  const initialAttempts = attempts;
+  catalogReady = true;
+  await page.getByRole('button', { name: 'Retry subscription options' }).click();
+  await expect(page.getByLabel('Subscription price', { exact: true })).toHaveValue('price_month');
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  expect(attempts).toBeGreaterThan(initialAttempts);
+  expect(requests.some((r) => r.action === 'checkout')).toBe(false);
+  // Capture the fixed header at the top of the full-page review artifact.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({
+    path: testInfo.outputPath('subscription-recovered.png'),
+    fullPage: true,
+  });
+  await expectUsableMobileLayout(page);
+  if (testInfo.project.name === 'mobile-chromium') {
+    await page.getByRole('button', { name: 'Open navigation' }).click();
+    await expect(page.getByRole('button', { name: 'Close navigation' })).toBeVisible();
+    await expectUsableMobileLayout(page);
+    await page.getByRole('button', { name: 'Close navigation' }).click();
+  }
+});
+
+test('new account starts on the available cycle when only annual prices exist', async ({
+  page,
+}) => {
+  await installLocalOnlyBoundary(page);
+  await installBilling(page);
+  await page.route('**/.netlify/functions/tenant-subscriptions', async (route) => {
+    if (route.request().postDataJSON().action !== 'list_prices') return route.fallback();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        prices: [
+          {
+            id: 'price_year',
+            name: 'SafeBus',
+            unitAmount: 25000,
+            currency: 'cad',
+            interval: 'year',
+          },
+        ],
+      }),
+    });
+  });
+  await page.goto('/admin/settings/billing');
+  await expect(page.getByLabel('Annual', { exact: true })).toBeChecked();
+  await expect(page.getByLabel('Monthly', { exact: true })).toBeDisabled();
+  await expect(page.getByLabel('Subscription price', { exact: true })).toHaveValue('price_year');
+});
 
 test('new tenant selects quantity and cycle, retains checkout selection and request identity', async ({
   page,

@@ -354,7 +354,7 @@ export function DashboardLayout({
           {!usesBottomTabs && (
             <button
               type="button"
-              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 lg:hidden"
               aria-label="Open navigation"
               onClick={() => setMobileOpen(true)}
             >
@@ -382,7 +382,7 @@ export function DashboardLayout({
             <Link
               to="/notifications"
               data-ui="top-notifications"
-              className="relative hidden rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 min-[360px]:block"
+              className="relative hidden h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 min-[360px]:inline-flex"
               aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : 'Notifications'}
             >
               <Bell className="h-5 w-5" />
@@ -494,7 +494,7 @@ export function DashboardLayout({
                 <button
                   type="button"
                   onClick={() => setMobileOpen(false)}
-                  className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
                   aria-label="Close navigation"
                 >
                   <X className="h-5 w-5" />

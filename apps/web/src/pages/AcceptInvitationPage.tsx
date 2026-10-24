@@ -69,7 +69,7 @@ export function AcceptInvitationPage() {
   if (loading) {
     return (
       <PublicLayout>
-        <main className="mx-auto flex min-h-[calc(100vh-150px)] max-w-lg items-center px-4 py-12 sm:px-6">
+        <main className="mx-auto flex min-h-[calc(100svh-184px)] w-full max-w-lg items-start px-4 py-6 sm:items-center sm:px-6 sm:py-12">
           <Card className="w-full p-8 text-center">
             <p className="text-lg font-bold text-navy-900">Checking your invitation</p>
             <p className="mt-2 text-gray-600">
@@ -86,18 +86,15 @@ export function AcceptInvitationPage() {
 
   return (
     <PublicLayout>
-      <main className="mx-auto flex min-h-[calc(100vh-150px)] max-w-lg items-center px-4 py-12 sm:px-6">
-        <Card className="w-full p-6 sm:p-8">
+      <main className="mx-auto flex min-h-[calc(100svh-184px)] w-full max-w-lg items-start px-4 py-6 sm:items-center sm:px-6 sm:py-12">
+        <Card className="w-full break-words p-5 sm:p-8">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-navy-50 text-navy-700">
             <KeyRound className="h-5 w-5" aria-hidden />
           </span>
-          <h1 className="mt-5 text-3xl font-bold tracking-tight text-navy-900">
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-navy-900 sm:text-3xl">
             Create your password
           </h1>
-          <p className="mt-3 text-gray-600">
-            Finish accepting your SafeBus invitation. After your password is saved, you will be
-            taken to the dashboard for your assigned role.
-          </p>
+          <p className="mt-3 text-gray-600">Set a password to activate your SafeBus account.</p>
 
           {(configError || error) && (
             <div
@@ -217,8 +214,9 @@ export function AcceptInvitationPage() {
                 size="lg"
                 loading={submitting}
                 disabled={Boolean(configError)}
+                aria-label="Create password and activate account"
               >
-                Create password and activate account
+                Create password
               </Button>
             </form>
           )}

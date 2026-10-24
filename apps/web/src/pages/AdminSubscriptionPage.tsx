@@ -27,12 +27,15 @@ import {
 import type { BillingPreview, SubscriptionPrice, TenantSubscription } from '@/types/subscription';
 import { useAuth } from '@/contexts/useAuth';
 
-const inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm';
+const inputClass =
+  'min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-3 text-base sm:text-sm';
 export function AdminSubscriptionPage() {
   const { profile } = useAuth();
   const [params] = useSearchParams();
   const [subscription, setSubscription] = useState<TenantSubscription | null>(null);
   const [prices, setPrices] = useState<SubscriptionPrice[]>([]);
+  const [priceError, setPriceError] = useState<string | null>(null);
+  const [pricesLoading, setPricesLoading] = useState(false);
   const [interval, setInterval] = useState<'month' | 'year'>('month');
   const [priceId, setPriceId] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -67,14 +70,22 @@ export function AdminSubscriptionPage() {
         } catch {
           /* Ignore malformed saved selection. */
         }
-        setInterval(saved.interval ?? (s.configured ? s.billingInterval : 'month'));
+        const preferred = saved.interval ?? (s.configured ? s.billingInterval : 'month');
+        const available = results[1].status === 'fulfilled' ? results[1].value : [];
+        setInterval(
+          available.length && !available.some((p) => p.interval === preferred)
+            ? available[0].interval
+            : preferred,
+        );
         setPriceId(saved.priceId ?? s.priceId ?? '');
         setQuantity(saved.quantity ?? Math.max(1, s.licensedBusCount ?? s.activeBusCount));
       } else setError('Unable to load subscription details. Refresh and try again.');
       if (results[1].status === 'fulfilled') setPrices(results[1].value);
-      else if (results[0].status !== 'fulfilled' || !results[0].value.subscriptionExempt)
-        setError(
-          'Subscription selection is temporarily unavailable. Existing operations can continue.',
+      else
+        setPriceError(
+          results[1].reason instanceof Error
+            ? results[1].reason.message
+            : 'Subscription options could not be loaded. Try again shortly.',
         );
       setLoading(false);
       if (results[0].status === 'fulfilled')
@@ -132,6 +143,26 @@ export function AdminSubscriptionPage() {
     subscription?.configured &&
     !['canceled', 'incomplete_expired'].includes(subscription.subscriptionStatus ?? '');
   const legacy = liveContract && subscription?.collectionMethod === 'send_invoice';
+  async function reloadPrices() {
+    setPricesLoading(true);
+    try {
+      const next = await fetchTenantPrices();
+      setPrices(next);
+      setPriceError(null);
+      if (next.length && !next.some((p) => p.interval === interval)) {
+        setInterval(next[0].interval);
+        setPriceId('');
+      }
+    } catch (e) {
+      setPriceError(
+        e instanceof Error
+          ? e.message
+          : 'Subscription options could not be loaded. Try again shortly.',
+      );
+    } finally {
+      setPricesLoading(false);
+    }
+  }
   function saveSelection(choice: {
     priceId?: string;
     quantity?: number;
@@ -319,137 +350,176 @@ export function AdminSubscriptionPage() {
                     One licence for every active bus. Inactive buses do not use your allowance.
                   </p>
                 </div>
-                <form
-                  className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[1fr_1fr]"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void start();
-                  }}
-                >
-                  <div className="space-y-5">
-                    <fieldset>
-                      <legend className="mb-3 text-sm font-semibold text-slate-800">
-                        Billing cycle
-                      </legend>
-                      <div className="grid grid-cols-2 gap-3">
-                        {(['month', 'year'] as const).map((cycle) => (
-                          <label
-                            key={cycle}
-                            className={`cursor-pointer rounded-xl border p-4 text-sm font-semibold ${interval === cycle ? 'border-navy-600 bg-navy-50 text-navy-900 ring-1 ring-navy-600' : 'border-slate-200'}`}
-                          >
-                            <input
-                              type="radio"
-                              name="billing-cycle"
-                              className="mr-2"
-                              checked={interval === cycle}
-                              onChange={() => {
-                                setInterval(cycle);
-                                setPriceId('');
-                                saveSelection({ interval: cycle, priceId: '' });
-                              }}
-                            />
-                            {cycle === 'month' ? 'Monthly' : 'Annual'}
-                          </label>
-                        ))}
-                      </div>
-                    </fieldset>
-                    <Field label="Subscription price" htmlFor="tenant-price">
-                      <select
-                        id="tenant-price"
-                        className={inputClass}
-                        value={selected?.id ?? ''}
-                        onChange={(e) => {
-                          setPriceId(e.target.value);
-                          saveSelection({ priceId: e.target.value });
-                        }}
-                        required
+                {priceError || prices.length === 0 ? (
+                  <div className="space-y-4 p-5 sm:p-6">
+                    <div
+                      role={priceError ? 'alert' : 'status'}
+                      className="space-y-2 text-sm leading-6 text-slate-600"
+                    >
+                      <p className="font-semibold text-navy-900">
+                        {priceError
+                          ? 'Subscription options are unavailable'
+                          : 'Subscription prices are not published yet'}
+                      </p>
+                      <p>
+                        {priceError ??
+                          'Contact SafeBus support to finish setting up subscription pricing.'}
+                      </p>
+                      <p>You can retry loading these options without changing your subscription.</p>
+                    </div>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        loading={pricesLoading}
+                        onClick={() => void reloadPrices()}
                       >
-                        {options.length === 0 && (
-                          <option value="">No prices available for this cycle</option>
-                        )}
-                        {options.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name} · {formatMoney(p.unitAmount, p.currency)} / bus / {p.interval}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field
-                      label="Active-bus allowance"
-                      htmlFor="tenant-bus-quantity"
-                      hint={`At least ${Math.max(1, subscription.activeBusCount)}; up to 10,000.`}
-                    >
-                      <input
-                        id="tenant-bus-quantity"
-                        type="number"
-                        className={inputClass}
-                        min={Math.max(1, subscription.activeBusCount)}
-                        max={10000}
-                        step={1}
-                        value={quantity}
-                        required
-                        onChange={(e) => {
-                          setQuantity(Number(e.target.value));
-                          saveSelection({ quantity: Number(e.target.value) });
-                        }}
-                      />
-                    </Field>
+                        Retry subscription options
+                      </Button>
+                      <Link
+                        to="/admin/settings/support"
+                        className="inline-flex min-h-11 items-center font-semibold text-navy-700 underline"
+                      >
+                        Contact SafeBus support
+                      </Link>
+                    </div>
                   </div>
-                  <div className="flex flex-col rounded-xl border border-slate-200 bg-slate-50 p-5">
-                    <p className="text-sm font-medium text-slate-500">
-                      Recurring price before discounts and tax
-                    </p>
-                    <p className="mt-2 text-3xl font-bold tracking-tight text-navy-900">
-                      {selected
-                        ? formatMoney(selected.unitAmount * quantity, selected.currency)
-                        : 'Unavailable'}
-                      <span className="ml-1 text-sm font-medium text-slate-500">
-                        / {interval === 'month' ? 'month' : 'year'}
-                      </span>
-                    </p>
-                    <p className="mt-2 text-sm text-slate-600">
-                      {quantity} active {quantity === 1 ? 'bus' : 'buses'} · CAD · applicable taxes
-                      shown at checkout
-                    </p>
-                    <p className="my-5 text-sm leading-6 text-slate-600">
-                      {!liveContract && subscription.trialEligible
-                        ? 'No charge today. Your 14-day trial begins when checkout is complete. A payment method is required. Your first payment is due when the trial ends; the exact date is shown at checkout.'
-                        : liveContract
-                          ? 'Paid increases take effect after prorated payment. Reductions and billing-cycle changes take effect at renewal. Trial changes keep the original trial end date.'
-                          : 'Your subscription begins after payment is confirmed. A new trial is not included.'}
-                    </p>
-                    <p className="mb-5 text-sm font-semibold text-slate-700">
-                      Renews automatically until canceled. Cancel before your next billing date to
-                      avoid renewal.
-                    </p>
-                    <p className="mb-5 text-sm text-slate-600">
-                      Have a promotion code? Enter it at secure checkout to see your discount and
-                      final total.
-                    </p>
-                    <Button
-                      className="mt-auto w-full"
-                      type="submit"
-                      loading={busy}
-                      disabled={
-                        busy ||
-                        processing ||
-                        !selected ||
-                        Boolean(subscription.pendingChange) ||
-                        subscription.pendingPayment
-                      }
-                    >
-                      {liveContract
-                        ? 'Review change'
-                        : subscription.trialEligible
-                          ? 'Continue to trial checkout'
-                          : 'Continue to secure checkout'}
-                    </Button>
-                    <p className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-500">
-                      <ShieldCheck className="h-4 w-4" aria-hidden />
-                      Secure checkout powered by Stripe
-                    </p>
-                  </div>
-                </form>
+                ) : (
+                  <form
+                    aria-label="Subscription selection"
+                    className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[1fr_1fr]"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void start();
+                    }}
+                  >
+                    <div className="min-w-0 space-y-5">
+                      <fieldset className="min-w-0">
+                        <legend className="mb-3 text-sm font-semibold text-slate-800">
+                          Billing cycle
+                        </legend>
+                        <div className="grid grid-cols-2 gap-3">
+                          {(['month', 'year'] as const).map((cycle) => (
+                            <label
+                              key={cycle}
+                              className={`flex min-h-12 items-center gap-2 rounded-xl border p-3 text-sm font-semibold sm:p-4 ${!prices.some((p) => p.interval === cycle) ? 'cursor-not-allowed text-slate-400' : 'cursor-pointer'} ${interval === cycle ? 'border-navy-600 bg-navy-50 text-navy-900 ring-1 ring-navy-600' : 'border-slate-200'}`}
+                            >
+                              <input
+                                type="radio"
+                                name="billing-cycle"
+                                className="shrink-0"
+                                disabled={!prices.some((p) => p.interval === cycle)}
+                                checked={interval === cycle}
+                                onChange={() => {
+                                  setInterval(cycle);
+                                  setPriceId('');
+                                  saveSelection({ interval: cycle, priceId: '' });
+                                }}
+                              />
+                              {cycle === 'month' ? 'Monthly' : 'Annual'}
+                            </label>
+                          ))}
+                        </div>
+                      </fieldset>
+                      <Field label="Subscription price" htmlFor="tenant-price">
+                        <select
+                          id="tenant-price"
+                          className={inputClass}
+                          value={selected?.id ?? ''}
+                          onChange={(e) => {
+                            setPriceId(e.target.value);
+                            saveSelection({ priceId: e.target.value });
+                          }}
+                          required
+                        >
+                          {options.length === 0 && (
+                            <option value="">No prices available for this cycle</option>
+                          )}
+                          {options.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name} · {formatMoney(p.unitAmount, p.currency)} / bus /{' '}
+                              {p.interval}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Active-bus allowance" htmlFor="tenant-bus-quantity">
+                        <input
+                          id="tenant-bus-quantity"
+                          type="number"
+                          className={inputClass}
+                          min={Math.max(1, subscription.activeBusCount)}
+                          max={10000}
+                          step={1}
+                          value={quantity}
+                          required
+                          aria-describedby="tenant-bus-quantity-hint"
+                          onChange={(e) => {
+                            setQuantity(Number(e.target.value));
+                            saveSelection({ quantity: Number(e.target.value) });
+                          }}
+                        />
+                        <p id="tenant-bus-quantity-hint" className="text-xs text-slate-500">
+                          At least {Math.max(1, subscription.activeBusCount)}; up to 10,000.
+                        </p>
+                      </Field>
+                    </div>
+                    <div className="flex min-w-0 flex-col rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+                      <p className="text-sm font-medium text-slate-500">
+                        Recurring price before discounts and tax
+                      </p>
+                      <p className="mt-2 text-3xl font-bold tracking-tight text-navy-900">
+                        {selected
+                          ? formatMoney(selected.unitAmount * quantity, selected.currency)
+                          : 'Unavailable'}
+                        <span className="ml-1 text-sm font-medium text-slate-500">
+                          / {interval === 'month' ? 'month' : 'year'}
+                        </span>
+                      </p>
+                      <p className="mt-2 text-sm text-slate-600">
+                        {quantity} active {quantity === 1 ? 'bus' : 'buses'} · CAD · applicable
+                        taxes shown at checkout
+                      </p>
+                      <p className="my-5 text-sm leading-6 text-slate-600">
+                        {!liveContract && subscription.trialEligible
+                          ? 'No charge today. Your 14-day trial begins when checkout is complete. A payment method is required. Your first payment is due when the trial ends; the exact date is shown at checkout.'
+                          : liveContract
+                            ? 'Paid increases take effect after prorated payment. Reductions and billing-cycle changes take effect at renewal. Trial changes keep the original trial end date.'
+                            : 'Your subscription begins after payment is confirmed. A new trial is not included.'}
+                      </p>
+                      <p className="mb-5 text-sm font-semibold text-slate-700">
+                        Renews automatically until canceled. Cancel before your next billing date to
+                        avoid renewal.
+                      </p>
+                      <p className="mb-5 text-sm text-slate-600">
+                        Have a promotion code? Enter it at secure checkout to see your discount and
+                        final total.
+                      </p>
+                      <Button
+                        className="mt-auto w-full"
+                        type="submit"
+                        loading={busy}
+                        disabled={
+                          busy ||
+                          processing ||
+                          !selected ||
+                          Boolean(subscription.pendingChange) ||
+                          subscription.pendingPayment
+                        }
+                      >
+                        {liveContract
+                          ? 'Review change'
+                          : subscription.trialEligible
+                            ? 'Continue to trial checkout'
+                            : 'Continue to secure checkout'}
+                      </Button>
+                      <p className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-500">
+                        <ShieldCheck className="h-4 w-4" aria-hidden />
+                        Secure checkout powered by Stripe
+                      </p>
+                    </div>
+                  </form>
+                )}
               </Card>
             )}
             {legacy && (
@@ -513,7 +583,10 @@ export function AdminSubscriptionPage() {
                   setBusy(true);
                   setError(null);
                   void refreshTenantBilling()
-                    .then(load)
+                    .then(async () => {
+                      await load();
+                      await reloadPrices();
+                    })
                     .catch((e: unknown) =>
                       setError(e instanceof Error ? e.message : 'Unable to refresh billing.'),
                     )

@@ -67,12 +67,12 @@ export function UpdatePasswordPage() {
 
   return (
     <PublicLayout>
-      <main className="mx-auto flex min-h-[calc(100vh-150px)] max-w-lg items-center px-4 py-12 sm:px-6">
-        <Card className="w-full p-6 sm:p-8">
+      <main className="mx-auto flex min-h-[calc(100svh-184px)] w-full max-w-lg items-start px-4 py-6 sm:items-center sm:px-6 sm:py-12">
+        <Card className="w-full break-words p-5 sm:p-8">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-navy-50 text-navy-700">
             <KeyRound className="h-5 w-5" aria-hidden />
           </span>
-          <h1 className="mt-5 text-3xl font-bold tracking-tight text-navy-900">
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-navy-900 sm:text-3xl">
             Choose a new password
           </h1>
           <p className="mt-3 text-gray-600">

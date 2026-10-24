@@ -114,7 +114,7 @@ async function callBillingFunction<T>(path: string, body: Record<string, unknown
     headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
     body: JSON.stringify(body),
   });
-  const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+  const payload = record(await response.json().catch(() => ({})));
   if (!response.ok || typeof payload.error === 'string') {
     throw Object.assign(
       new Error(
@@ -145,11 +145,26 @@ export async function fetchBusSubscriptionAccess(): Promise<BusSubscriptionAcces
 }
 
 export async function fetchTenantPrices(): Promise<SubscriptionPrice[]> {
-  return (
+  const prices = (
     await callBillingFunction<{ prices: SubscriptionPrice[] }>('tenant-subscriptions', {
       action: 'list_prices',
     })
   ).prices;
+  if (
+    !Array.isArray(prices) ||
+    prices.some(
+      (p) =>
+        !p ||
+        typeof p.id !== 'string' ||
+        typeof p.name !== 'string' ||
+        p.currency !== 'cad' ||
+        !Number.isSafeInteger(p.unitAmount) ||
+        p.unitAmount < 0 ||
+        !['month', 'year'].includes(p.interval),
+    )
+  )
+    throw new Error('Subscription options could not be loaded. Try again shortly.');
+  return prices;
 }
 
 export async function refreshTenantBilling(): Promise<void> {

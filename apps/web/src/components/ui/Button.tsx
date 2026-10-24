@@ -4,12 +4,11 @@ import { Loader2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-colors transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+  'inline-flex min-w-0 items-center justify-center gap-2 break-words rounded-lg text-center font-semibold transition-colors transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>svg]:shrink-0',
   {
     variants: {
       variant: {
-        primary:
-          'bg-navy-700 text-white shadow-sm hover:bg-navy-800 focus-visible:ring-navy-500',
+        primary: 'bg-navy-700 text-white shadow-sm hover:bg-navy-800 focus-visible:ring-navy-500',
         secondary:
           'bg-navy-50 text-navy-700 hover:bg-navy-100 focus-visible:ring-navy-500 border border-navy-100',
         danger:
@@ -22,9 +21,9 @@ const buttonVariants = cva(
           'border border-[var(--color-border)] bg-[var(--color-surface)] text-slate-700 shadow-xs hover:bg-[var(--color-surface-subtle)] hover:text-slate-900 focus-visible:ring-navy-500',
       },
       size: {
-        sm: 'h-9 px-3 text-sm',
-        md: 'h-11 px-4 text-sm',
-        lg: 'h-12 px-6 text-base',
+        sm: 'min-h-9 px-3 py-2 text-sm',
+        md: 'min-h-11 px-4 py-2.5 text-sm',
+        lg: 'min-h-12 px-6 py-3 text-base',
         icon: 'h-10 w-10 p-0',
       },
     },
@@ -73,11 +72,7 @@ export function Button({
       disabled={disabled || loading}
       {...props}
     >
-      {loading ? (
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-      ) : (
-        leftIcon
-      )}
+      {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : leftIcon}
       {children}
       {!loading && rightIcon}
     </button>
