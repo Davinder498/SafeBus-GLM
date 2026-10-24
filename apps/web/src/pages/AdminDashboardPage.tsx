@@ -70,9 +70,7 @@ export function AdminDashboardPage() {
           <h2 id="transportation-summary-heading" className="text-xl font-bold text-navy-900">
             Transportation summary
           </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Active records and links in your transportation network.
-          </p>
+
           <div className="mt-4" aria-live="polite" aria-busy={summary.kind === 'loading'}>
             {summary.kind === 'loading' && (
               <DataState

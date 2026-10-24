@@ -186,9 +186,6 @@ export function GuardianRoutesPage() {
                         Bus number
                       </p>
                       <p className="mt-1 text-2xl font-bold text-navy-900">{bus.busNumber}</p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        This service number stays the same.
-                      </p>
                     </div>
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -196,9 +193,6 @@ export function GuardianRoutesPage() {
                       </p>
                       <p className="mt-1 text-lg font-semibold text-navy-900">
                         {bus.licensePlate ?? 'Not available'}
-                      </p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        This may change when the physical vehicle changes.
                       </p>
                     </div>
                   </div>

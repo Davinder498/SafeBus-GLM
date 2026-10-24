@@ -223,10 +223,7 @@ export function PlatformPricingPage() {
                 <h2 id="subscription-prices-heading" className="text-xl font-bold text-navy-900">
                   Subscription prices
                 </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Publish a new price when your rates change. Archive older prices to stop new
-                  selections.
-                </p>
+
                 <div className="mt-5 space-y-3">
                   {catalog?.prices
                     .filter((p) => showArchived || p.active)
@@ -335,10 +332,7 @@ export function PlatformPricingPage() {
                 >
                   <Tag className="h-5 w-5" aria-hidden /> Discounts & promotion codes
                 </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Customers enter a promotion code at checkout. Archiving a code stops new
-                  redemptions and preserves discounts already applied.
-                </p>
+
                 <div className="mt-5 space-y-3">
                   {catalog?.discounts
                     .filter((p) => showArchived || p.active)

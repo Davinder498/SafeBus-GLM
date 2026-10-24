@@ -91,7 +91,6 @@ export function AdminSettingsPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="text-xl font-bold text-navy-900">Current user</h2>
-                  <p className="mt-1 text-sm text-gray-600">Signed-in SafeBus profile</p>
                 </div>
                 <RoleBadge role={profile.role} />
               </div>
@@ -113,9 +112,6 @@ export function AdminSettingsPage() {
                     <h2 className="mt-1 text-xl font-bold text-navy-900">
                       {tenant?.name ?? 'No school authority assigned'}
                     </h2>
-                    <p className="mt-1 text-sm text-gray-600">
-                      Transportation account for your schools
-                    </p>
                   </div>
                   {tenant?.status && <StatusPill>{tenant.status}</StatusPill>}
                 </div>

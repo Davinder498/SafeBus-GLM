@@ -17,13 +17,7 @@ const statusLabels = {
   uncollectible: 'Uncollectible',
 } as const;
 
-export function InvoiceHistory({
-  billingEmail,
-  refreshToken,
-}: {
-  billingEmail: string | null;
-  refreshToken: string | null;
-}) {
+export function InvoiceHistory({ refreshToken }: { refreshToken: string | null }) {
   const [invoices, setInvoices] = useState<SubscriptionInvoice[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,10 +61,6 @@ export function InvoiceHistory({
             <FileText className="h-5 w-5 text-navy-600" aria-hidden />
             Invoice history
           </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            View your subscription invoices and download PDFs for your records. Invoices include the
-            final discounts and applicable taxes.
-          </p>
         </div>
         <Button
           type="button"
@@ -82,11 +72,6 @@ export function InvoiceHistory({
           Refresh invoices
         </Button>
       </div>
-      <p className="mt-4 break-words rounded-lg bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-        Billing email:{' '}
-        <span className="font-semibold text-slate-900">{billingEmail ?? 'Not set'}</span>. Use
-        Manage payment details to update the billing contact or manage payment methods.
-      </p>
       {error && (
         <p role="alert" className="mt-4 rounded-lg bg-danger-50 p-4 text-sm text-danger-700">
           {error} Use Refresh invoices to try again. Previously loaded invoices remain available.
@@ -98,10 +83,7 @@ export function InvoiceHistory({
         </p>
       )}
       {!loading && !error && invoices.length === 0 && (
-        <p className="mt-5 text-sm leading-6 text-slate-600">
-          No finalized subscription invoices yet. Your first invoice will appear here when Stripe
-          finalizes it. Starting a free trial does not mean a payment has been made.
-        </p>
+        <p className="mt-5 text-sm leading-6 text-slate-600">No invoices yet.</p>
       )}
       {invoices.length > 0 && (
         <ul className="mt-5 divide-y divide-slate-200" aria-label="Subscription invoices">
@@ -189,10 +171,6 @@ export function InvoiceHistory({
           Load older invoices
         </Button>
       )}
-      <p className="mt-5 text-xs leading-5 text-slate-500">
-        Invoice links open securely in Stripe. If a link expires, refresh invoices or use Manage
-        payment details below.
-      </p>
     </Card>
   );
 }

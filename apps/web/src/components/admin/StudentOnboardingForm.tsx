@@ -34,13 +34,13 @@ function Section({
   children,
 }: {
   title: string;
-  description: string;
+  description?: string;
   children: ReactNode;
 }) {
   return (
     <fieldset className="rounded-xl border border-gray-200 p-4">
       <legend className="px-2 text-base font-bold text-navy-900">{title}</legend>
-      <p className="mb-4 text-sm text-gray-600">{description}</p>
+      {description && <p className="mb-4 text-sm text-gray-600">{description}</p>}
       {children}
     </fieldset>
   );
@@ -483,10 +483,6 @@ export function StudentOnboardingForm({
           School authority admin workflow
         </p>
         <h2 className="mt-1 text-xl font-bold text-navy-900">Add student and transportation</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Create the student, link or invite a guardian, and configure their bus service in one
-          secure workflow.
-        </p>
       </div>
 
       <form className="mt-5 grid gap-5" onSubmit={handleSubmit}>
@@ -555,10 +551,7 @@ export function StudentOnboardingForm({
           </div>
         </Section>
 
-        <Section
-          title="2. Guardian"
-          description="Select an existing guardian or send a one-time account invitation. Guardians only see students explicitly linked to them."
-        >
+        <Section title="2. Guardian">
           <div className="grid gap-4 md:grid-cols-2">
             <ModeSelect
               label="Guardian option"
@@ -653,10 +646,7 @@ export function StudentOnboardingForm({
           )}
         </Section>
 
-        <Section
-          title="3. Bus, route, and stops"
-          description="Transportation is optional. Existing records are searched within your school authority; new records are created together with the student."
-        >
+        <Section title="3. Bus, route, and stops">
           <label className="flex items-start gap-3 text-sm font-semibold text-gray-700">
             <input
               className="mt-1 h-4 w-4"

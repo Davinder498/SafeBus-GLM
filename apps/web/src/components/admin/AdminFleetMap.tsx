@@ -185,7 +185,7 @@ export function AdminFleetMap({ trips, overlays = [], tileConfig, formatters, on
       <Card className="overflow-hidden" data-testid="admin-live-fleet-map">
         <div className="border-b border-gray-100 p-5">
           <h2 className="text-lg font-bold text-navy-900">Live fleet map</h2>
-          <p className="mt-1 text-sm text-gray-600">Colored numbered dots show the active route stops without implying a road path. Live bus markers show valid current coordinates and remain above the stop markers.</p>
+
           <RouteOverlayLegend overlays={overlays} />
           {locations.length === 0 && <p className="mt-3 text-sm font-semibold text-gray-700" data-testid="admin-live-fleet-map-empty">No active buses with valid coordinates.</p>}
         </div>

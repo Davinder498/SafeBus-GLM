@@ -193,7 +193,7 @@ function BusDetails({
       {serviceLines === null && (
         <DataState
           title="Route line is not available"
-          message="The bus and live map remain available. Route stops will appear after the guardian route contract is approved and released."
+          message="Route stops are temporarily unavailable."
           icon={<Navigation className="h-6 w-6" aria-hidden />}
         />
       )}
@@ -438,7 +438,7 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
                 : 'Bus has reached the end of your service line.'}
           </p>
           {line.progressSource === 'stop_sequence' && (
-            <p className="mt-1 text-xs text-navy-700">Position estimated from the ordered stops.</p>
+            <p className="mt-1 text-xs text-navy-700">Estimated position</p>
           )}
         </div>
       ) : (
@@ -452,14 +452,11 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
               ? 'GPS is live, but route position and stop ETAs are unavailable. See the live map for the bus location.'
               : line.locationState === 'invalid'
                 ? 'The latest location cannot be used for this service line. Check the live map for bus location availability.'
-                : 'Live position appears when the school run is active and a fresh GPS update is available.'}
+                : line.tripStatus === 'active'
+                  ? 'Waiting for a current location.'
+                  : 'Service inactive.'}
         </p>
       )}
-
-      <p className="mt-4 text-xs leading-5 text-gray-500">
-        The marker moves only when a verified location update is received. It is never projected
-        ahead of the last update.
-      </p>
 
       <p className="sr-only" aria-live="polite" aria-atomic="true">
         {announcement}

@@ -107,13 +107,11 @@ export function AdminTripSearchSection() {
       data-testid="admin-trip-search"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+        <div className="flex items-center gap-3">
           <h2 id="trip-search-heading" className="text-xl font-bold text-navy-900">
             Trips
           </h2>
-          <p className="mt-1 text-sm text-gray-600">
-            Review recorded trips by date and status. Times shown in Alberta time.
-          </p>
+          <span className="text-xs font-medium text-slate-500">Alberta time</span>
         </div>
         <Button
           type="button"

@@ -114,7 +114,6 @@ export function DriverSettingsPage() {
         {
           key: 'assignment-alerts',
           label: 'Assignment alerts',
-          description: 'When one of your assignments is created, changed, or ended',
           icon: <ClipboardList className="h-5 w-5" aria-hidden />,
           pushChecked: preferences.assignmentAlerts.push,
           emailChecked: preferences.assignmentAlerts.email,
@@ -133,7 +132,12 @@ export function DriverSettingsPage() {
     : [];
 
   return (
-    <DashboardLayout title="Driver settings" portal="driver" navItems={[]} navGroups={driverNavGroups}>
+    <DashboardLayout
+      title="Driver settings"
+      portal="driver"
+      navItems={[]}
+      navGroups={driverNavGroups}
+    >
       <div className="mx-auto max-w-3xl space-y-5" data-ui="driver-settings-page">
         <PageHeader
           eyebrow="Settings"
@@ -146,9 +150,6 @@ export function DriverSettingsPage() {
             <h2 id="driver-notification-settings" className="text-lg font-bold text-navy-900">
               Notification settings
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
-              SafeBus only sends you alerts about assignments connected to your driver account.
-            </p>
           </div>
           {error ? (
             <div className="space-y-3">

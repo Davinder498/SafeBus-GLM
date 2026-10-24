@@ -231,10 +231,7 @@ export function AdminRoutesMap({ routes, tileConfig }: AdminRoutesMapProps) {
       <Card className="overflow-hidden" data-testid="admin-routes-map">
         <div className="border-b border-gray-100 p-5">
           <h2 className="text-lg font-bold text-navy-900">Routes map</h2>
-          <p className="mt-1 text-sm text-gray-600">
-            Numbered route stops plotted at their saved latitude and longitude. Each route uses a
-            distinct color; the map does not imply a road path between stops.
-          </p>
+
           {locations.length === 0 && (
             <p
               className="mt-3 text-sm font-semibold text-gray-700"

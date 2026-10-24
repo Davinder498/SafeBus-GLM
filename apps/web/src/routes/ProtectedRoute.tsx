@@ -130,20 +130,24 @@ export function ProtectedRoute({ allowedRoles, children, requireMfa = true }: Pr
     );
   }
 
-  if (
-    requireMfa &&
-    adminRoles.includes(profile.role as (typeof adminRoles)[number]) &&
-    (mfaLoading || mfaStatus.currentLevel === null)
-  ) {
+  if (requireMfa && (mfaLoading || mfaStatus.currentLevel === null)) {
     return <AppLoadingScreen />;
   }
 
   if (
     requireMfa &&
-    adminRoles.includes(profile.role as (typeof adminRoles)[number]) &&
+    (adminRoles.includes(profile.role as (typeof adminRoles)[number]) ||
+      mfaStatus.nextLevel === 'aal2' ||
+      mfaStatus.verifiedFactors.length > 0) &&
     mfaStatus.currentLevel !== 'aal2'
   ) {
-    return <Navigate to="/mfa" state={{ returnTo: location.pathname }} replace />;
+    return (
+      <Navigate
+        to="/mfa"
+        state={{ returnTo: `${location.pathname}${location.search}${location.hash}` }}
+        replace
+      />
+    );
   }
 
   return children;

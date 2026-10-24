@@ -163,10 +163,7 @@ export function AdminGuardianDetailPage() {
     setWriteError(null);
     setMessage(null);
     try {
-      await setGuardianAccessExpiry(
-        linkId,
-        value ? new Date(value).toISOString() : null,
-      );
+      await setGuardianAccessExpiry(linkId, value ? new Date(value).toISOString() : null);
       setExpiryLinkId(null);
       setExpiryValue('');
       setMessage(value ? 'Guardian access expiry updated.' : 'Guardian access expiry removed.');
@@ -248,7 +245,6 @@ export function AdminGuardianDetailPage() {
                   </span>
                   <div>
                     <h2 className="font-bold text-navy-900">Guardian contact</h2>
-                    <p className="text-sm text-slate-600">Used for their SafeBus account.</p>
                   </div>
                 </div>
                 <dl className="mt-5 grid gap-5 sm:grid-cols-2">
@@ -263,10 +259,7 @@ export function AdminGuardianDetailPage() {
                   <ShieldCheck className="h-5 w-5 text-success-600" aria-hidden />
                   <h2 className="font-bold text-navy-900">Account access</h2>
                 </div>
-                <p className="mt-3 text-sm text-slate-600">
-                  This describes login readiness, not whether the guardian is active in a school
-                  program.
-                </p>
+
                 <div className="mt-4">
                   <StatusPill
                     tone={
@@ -304,9 +297,6 @@ export function AdminGuardianDetailPage() {
                     <UsersRound className="h-5 w-5" aria-hidden />
                     Linked students
                   </h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Only explicitly linked students are visible to this guardian.
-                  </p>
                 </div>
               </div>
               {canWrite && (
@@ -431,10 +421,13 @@ export function AdminGuardianDetailPage() {
                           className="mt-2 block min-h-11 w-full max-w-sm rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-500"
                         />
                         <p className="mt-2 text-xs text-slate-500">
-                          Access stops automatically at this time. Leave blank to remove an existing expiry.
+                          Access stops automatically at this time. Leave blank to remove an existing
+                          expiry.
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
-                          <Button type="submit" size="sm" loading={busy}>Save expiry</Button>
+                          <Button type="submit" size="sm" loading={busy}>
+                            Save expiry
+                          </Button>
                           {link.access_expires_at && (
                             <Button
                               type="button"

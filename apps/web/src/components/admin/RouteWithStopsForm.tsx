@@ -306,9 +306,7 @@ export function RouteWithStopsForm({
 
       <section className="rounded-lg border border-gray-200 bg-white p-5">
         <h3 className="text-base font-bold text-navy-900">Route corridor</h3>
-        <p className="mt-1 text-sm text-gray-600">
-          The stop sequence defines one physical corridor from its first stop to its last.
-        </p>
+
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label className={labelClassName}>
             Route name
@@ -390,9 +388,7 @@ export function RouteWithStopsForm({
 
       <section className="rounded-lg border border-gray-200 bg-white p-5">
         <h3 className="text-base font-bold text-navy-900">Service days</h3>
-        <p className="mt-1 text-sm text-gray-600">
-          Select the regular days this route is scheduled to operate.
-        </p>
+
         <div className="mt-4 flex flex-wrap gap-3">
           {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(
             (label, dayOfWeek) => (
@@ -422,9 +418,6 @@ export function RouteWithStopsForm({
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className="text-base font-bold text-navy-900">Directional trips</h3>
-            <p className="mt-1 text-sm text-gray-600">
-              Names are editable; direction remains tied to the corridor.
-            </p>
           </div>
         </div>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -463,9 +456,6 @@ export function RouteWithStopsForm({
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className="text-base font-bold text-navy-900">Stops ({stops.length})</h3>
-            <p className="mt-1 text-sm text-gray-600">
-              The first and last active stops are always the route terminals.
-            </p>
           </div>
           <Button
             type="button"

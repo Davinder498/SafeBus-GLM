@@ -8,7 +8,6 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 
 export interface NotificationAlertChoice {
   key?: string;
-  description: string;
   emailChecked: boolean;
   icon: ReactNode;
   label: string;
@@ -39,7 +38,6 @@ type Channel = 'in-app' | 'email' | 'push';
 function ChannelSection({
   channel,
   label,
-  description,
   icon,
   enabled,
   onChange,
@@ -47,7 +45,6 @@ function ChannelSection({
 }: {
   channel: Channel;
   label: string;
-  description: string;
   icon: ReactNode;
   enabled: boolean;
   onChange: (checked: boolean) => void;
@@ -63,7 +60,6 @@ function ChannelSection({
           <GuardianIconTile>{icon}</GuardianIconTile>
           <div className="min-w-0 flex-1">
             <h2 className="font-bold text-navy-900">{label}</h2>
-            <p className="mt-1 text-sm leading-5 text-slate-600">{description}</p>
           </div>
           <ToggleSwitch label={label} checked={enabled} onChange={onChange} />
         </div>
@@ -92,7 +88,6 @@ function ChannelSection({
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-navy-900">{alert.label}</p>
-                  <p className="mt-0.5 text-xs leading-4 text-slate-600">{alert.description}</p>
                 </div>
                 <ToggleSwitch
                   label={`${alert.label} ${channel}`}
@@ -130,7 +125,6 @@ export function NotificationDeliverySettings({
           <ChannelSection
             channel="in-app"
             label="In-app notifications"
-            description="Choose future inbox updates. Existing notifications remain available."
             icon={<Bell className="h-5 w-5" aria-hidden />}
             enabled={inAppEnabled}
             onChange={onInAppEnabledChange}
@@ -140,7 +134,6 @@ export function NotificationDeliverySettings({
         <ChannelSection
           channel="email"
           label="Email notifications"
-          description="Updates sent to your account email. Your event choices are saved when email is off."
           icon={<Mail className="h-5 w-5" aria-hidden />}
           enabled={emailEnabled}
           onChange={onEmailEnabledChange}
@@ -149,7 +142,6 @@ export function NotificationDeliverySettings({
         <ChannelSection
           channel="push"
           label="Push notifications"
-          description="Phone alerts on your Android devices, independent of your inbox and email choices."
           icon={<Smartphone className="h-5 w-5" aria-hidden />}
           enabled={pushEnabled}
           onChange={onPushEnabledChange}

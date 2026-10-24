@@ -295,9 +295,7 @@ export function GuardianLiveBusMap({
         {!fullScreen && (
           <div className="border-b border-gray-100 p-5">
             <h2 className="text-lg font-bold text-navy-900">Live bus map</h2>
-            <p className="mt-1 text-sm text-gray-600">
-              The selected bus and its assigned pickup and drop-off locations are shown.
-            </p>
+
             {markerEntries.length === 0 && (
               <p
                 className="mt-3 text-sm font-semibold text-gray-700"

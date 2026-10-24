@@ -702,9 +702,6 @@ function RoutesPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-navy-900">Route services</h2>
-          <p className="mt-1 text-sm text-gray-600">
-            Assign both directions together, or use one direction when buses differ.
-          </p>
         </div>
         {canManage && !form && (
           <Button type="button" onClick={onAdd}>
@@ -900,10 +897,6 @@ function DriversPanel({
     <div className="space-y-5">
       <div>
         <h2 className="text-xl font-bold text-navy-900">Planned drivers</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Plan a driver for each route direction. The plan informs the driver; scanning this bus QR
-          confirms the trip actually operated.
-        </p>
       </div>
 
       {form && (
@@ -1108,9 +1101,6 @@ function StudentsPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-navy-900">Student roster</h2>
-          <p className="mt-1 text-sm text-gray-600">
-            Assign students, update their bus service, or remove them from this bus.
-          </p>
         </div>
         {!form && services.length > 0 && (
           <Button type="button" onClick={onAdd}>

@@ -21,7 +21,6 @@ export function AdminTripsOverview({
   showAllLink = true,
   showLiveLink = true,
   title = 'Trips',
-  description = 'Dated operational runs. Routes and their outbound and return patterns remain reusable definitions.',
   initialFilter = 'all',
 }: {
   trips: AdminTripOverviewItem[];
@@ -29,7 +28,6 @@ export function AdminTripsOverview({
   showAllLink?: boolean;
   showLiveLink?: boolean;
   title?: string;
-  description?: string;
   initialFilter?: AdminTripFilter;
 }) {
   const [filter, setFilter] = useState<AdminTripFilter>(initialFilter);
@@ -53,7 +51,6 @@ export function AdminTripsOverview({
           <h2 id="trip-overview-heading" className="text-xl font-bold text-navy-900">
             {title}
           </h2>
-          <p className="mt-1 text-sm text-gray-600">{description}</p>
         </div>
         <div className="flex gap-2">
           {showLiveLink && (

@@ -1,9 +1,3 @@
--- Owner-approved standard notification availability, 2026-10-24.
--- A newly provisioned school authority must not need a separate platform
--- privacy approval. Personal choices, device permission, authorization,
--- quotas, quiet hours and deliberate existing pauses remain enforced.
--- Forward change only; do not replay historical migrations.
-
 alter table public.guardian_notification_delivery_policies
   alter column privacy_review_status set default 'approved',
   alter column privacy_approved_at set default now(),
@@ -11,17 +5,9 @@ alter table public.guardian_notification_delivery_policies
   alter column push_notifications_enabled set default true,
   alter column push_delivery_preference_enabled set default true;
 
--- The existing tenant INSERT trigger creates this policy in the same
--- transaction using these defaults. No new browser grant, policy, RPC or
--- authenticated-actor impersonation is needed. privacy_approved_by remains
--- NULL for the standard platform policy rather than inventing a personal
--- approval by the new administrator.
 comment on table public.guardian_notification_delivery_policies is
   'School authority notification availability under the owner-approved standard policy. New accounts are provisioned ready; personal consent, device permission, tenant scope, quiet hours and quotas still govern delivery.';
 
--- Repair only the owner-identified new account that was left at the old
--- pending defaults. Do not reactivate previously approved/paused or rejected
--- policies, reset limits, change recipient choices, or enable other accounts.
 update public.guardian_notification_delivery_policies as policy
 set privacy_review_status = 'approved',
     privacy_approved_at = now(),

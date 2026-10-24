@@ -88,9 +88,7 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
           <h2 id="invite-authority-heading" className="mt-3 text-lg font-bold text-navy-900">
             Invite a school authority
           </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Start with the school authority and its first school authority admin.
-          </p>
+
           <ol aria-label="Invitation steps" className="mt-6 flex gap-3 lg:flex-col lg:gap-5">
             {steps.map((label, i) => (
               <li
@@ -108,10 +106,6 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
               </li>
             ))}
           </ol>
-          <p className="mt-8 hidden text-xs leading-5 text-slate-500 lg:block">
-            The admin receives a secure setup link, activates their account, then chooses a
-            subscription.
-          </p>
         </div>
         <form
           aria-label="Invite a school authority"

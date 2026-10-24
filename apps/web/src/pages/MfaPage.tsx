@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { KeyRound, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { PublicLayout } from '@/components/layout/PublicLayout';
+import { AppLoadingScreen } from '@/components/ui/AppLoadingScreen';
+import { BrandMark } from '@/components/ui/BrandMark';
+import { useAppSurface } from '@/contexts/AppSurfaceContext';
 import { adminRoles, getDashboardPath } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 import { supabase, supabaseConfigError } from '@/lib/supabase';
@@ -17,7 +20,22 @@ interface Enrollment {
 }
 
 function qrSource(value: string) {
-  return value.startsWith('data:') ? value : `data:image/svg+xml;utf-8,${value}`;
+  return value.startsWith('data:')
+    ? value
+    : `data:image/svg+xml;utf-8,${encodeURIComponent(value)}`;
+}
+
+function MfaLayout({ children }: { children: ReactNode }) {
+  const surface = useAppSurface();
+  if (surface === 'web') return <PublicLayout>{children}</PublicLayout>;
+  return (
+    <div className="min-h-screen bg-[var(--color-canvas)]">
+      <header className="border-b border-slate-200 bg-white px-5 py-4">
+        <BrandMark className="text-2xl" />
+      </header>
+      {children}
+    </div>
+  );
 }
 
 export function MfaPage() {
@@ -28,6 +46,7 @@ export function MfaPage() {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [removing, setRemoving] = useState(false);
 
   const verifiedFactor = mfaStatus.verifiedFactors.find((factor) => factor.factorType === 'totp');
   const factorId = enrollment?.factorId ?? verifiedFactor?.id ?? null;
@@ -35,12 +54,14 @@ export function MfaPage() {
   const isAdmin = profile
     ? adminRoles.includes(profile.role as (typeof adminRoles)[number])
     : false;
+  const managing = location.pathname === '/account/security';
 
   const heading = useMemo(() => {
-    if (isVerifiedSession) return 'Multi-factor authentication is active';
+    if (removing) return 'Verify to remove authenticator';
+    if (isVerifiedSession && verifiedFactor) return 'Multi-factor authentication is active';
     if (verifiedFactor) return 'Enter your authenticator code';
-    return 'Protect this administrator account';
-  }, [isVerifiedSession, verifiedFactor]);
+    return isAdmin ? 'Protect this administrator account' : 'Set up multi-factor authentication';
+  }, [isAdmin, isVerifiedSession, removing, verifiedFactor]);
 
   useEffect(() => {
     if (!mfaLoading && profile && isVerifiedSession) {
@@ -48,10 +69,17 @@ export function MfaPage() {
     }
   }, [isVerifiedSession, mfaLoading, profile]);
 
-  if (!profile || !isAdmin) return <Navigate to="/login" replace />;
-  const destination =
-    location.state?.returnTo === '/admin/settings/billing' && profile.role === 'tenant_admin'
-      ? '/admin/settings/billing'
+  if (!profile) return <Navigate to="/login" replace />;
+  if (mfaLoading) return <AppLoadingScreen />;
+  const returnTo: unknown = location.state?.returnTo;
+  const destination = managing
+    ? '/account'
+    : typeof returnTo === 'string' &&
+        returnTo.startsWith('/') &&
+        !returnTo.startsWith('//') &&
+        !returnTo.includes('\\') &&
+        !returnTo.startsWith('/mfa')
+      ? returnTo
       : getDashboardPath(profile.role);
 
   async function beginEnrollment() {
@@ -65,11 +93,13 @@ export function MfaPage() {
     try {
       const listed = await client.auth.mfa.listFactors();
       if (listed.error) throw new Error(listed.error.message);
-      await Promise.all(
+      const cleanup = await Promise.all(
         listed.data.all
           .filter((factor) => factor.factor_type === 'totp' && factor.status !== 'verified')
           .map((factor) => client.auth.mfa.unenroll({ factorId: factor.id })),
       );
+      const cleanupError = cleanup.find((result) => result.error)?.error;
+      if (cleanupError) throw new Error(cleanupError.message);
 
       const result = await client.auth.mfa.enroll({
         factorType: 'totp',
@@ -108,6 +138,23 @@ export function MfaPage() {
         });
         throw new Error(result.error.message);
       }
+      if (removing) {
+        // Always prove possession with a fresh code, even in an AAL2 session.
+        const removed = await supabase.auth.mfa.unenroll({ factorId });
+        if (removed.error) throw new Error(removed.error.message);
+        const refreshed = await supabase.auth.refreshSession();
+        if (refreshed.error) throw new Error(refreshed.error.message);
+        await refreshMfa();
+        void supabase.rpc('record_own_auth_event', {
+          p_action: 'auth.mfa_removed',
+          p_outcome: 'success',
+          p_detail: {},
+        });
+        setRemoving(false);
+        setCode('');
+        if (!isAdmin) navigate('/account', { replace: true });
+        return;
+      }
       await refreshMfa();
       void supabase.rpc('record_own_auth_event', {
         p_action: enrollment ? 'auth.mfa_enrolled' : 'auth.login',
@@ -124,29 +171,15 @@ export function MfaPage() {
     }
   }
 
-  async function removeFactor() {
-    if (!supabase || !verifiedFactor || !isVerifiedSession) return;
-    setBusy(true);
+  function requestRemoval() {
+    if (!verifiedFactor || !isVerifiedSession) return;
     setError(null);
-    try {
-      const result = await supabase.auth.mfa.unenroll({ factorId: verifiedFactor.id });
-      if (result.error) throw new Error(result.error.message);
-      await supabase.auth.refreshSession();
-      await refreshMfa();
-      void supabase.rpc('record_own_auth_event', {
-        p_action: 'auth.mfa_removed',
-        p_outcome: 'success',
-        p_detail: {},
-      });
-    } catch (removeError) {
-      setError(removeError instanceof Error ? removeError.message : 'Unable to remove MFA.');
-    } finally {
-      setBusy(false);
-    }
+    setCode('');
+    setRemoving(true);
   }
 
   return (
-    <PublicLayout>
+    <MfaLayout>
       <main className="mx-auto flex min-h-[calc(100svh-184px)] w-full max-w-xl items-start px-4 py-6 sm:items-center sm:px-6 sm:py-12">
         <Card className="w-full break-words p-5 sm:p-8">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-navy-50 text-navy-700">
@@ -155,10 +188,9 @@ export function MfaPage() {
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-navy-900 sm:text-3xl">
             {heading}
           </h1>
-          <p className="mt-3 text-gray-600">
-            SafeBus administrator accounts require a verified authenticator-app code before the
-            admin portal or sensitive actions are available.
-          </p>
+          {isAdmin && !removing && (
+            <p className="mt-3 text-gray-600">MFA is required for administrator accounts.</p>
+          )}
 
           {error && (
             <div
@@ -169,22 +201,14 @@ export function MfaPage() {
             </div>
           )}
 
-          {isVerifiedSession ? (
+          {isVerifiedSession && verifiedFactor && !removing ? (
             <div className="mt-6 space-y-4">
-              <div className="rounded-lg border border-success-200 bg-success-50 p-4 text-sm text-success-800">
-                This session has completed MFA. You can continue to SafeBus administration.
-              </div>
               <div className="flex flex-wrap gap-3">
                 <Button type="button" onClick={() => navigate(destination)}>
-                  Continue to dashboard
+                  {managing ? 'Back to account' : 'Continue'}
                 </Button>
                 {verifiedFactor && (
-                  <Button
-                    type="button"
-                    variant="danger"
-                    loading={busy}
-                    onClick={() => void removeFactor()}
-                  >
+                  <Button type="button" variant="danger" loading={busy} onClick={requestRemoval}>
                     Remove authenticator
                   </Button>
                 )}
@@ -237,12 +261,47 @@ export function MfaPage() {
                   </Field>
                   <Button type="submit" fullWidth loading={busy}>
                     <KeyRound className="h-4 w-4" aria-hidden />
-                    Verify and continue
+                    {removing
+                      ? 'Verify and remove authenticator'
+                      : enrollment
+                        ? 'Enable MFA'
+                        : 'Verify and continue'}
                   </Button>
                 </form>
               )}
             </div>
           )}
+
+          {!isAdmin && managing && !verifiedFactor && (
+            <Link
+              to="/account"
+              className="mt-5 inline-flex min-h-11 items-center font-semibold text-navy-700"
+            >
+              Back to account
+            </Link>
+          )}
+          {removing && (
+            <Button
+              type="button"
+              variant="secondary"
+              className="mt-4"
+              disabled={busy}
+              onClick={() => {
+                setRemoving(false);
+                setCode('');
+                setError(null);
+              }}
+            >
+              Cancel
+            </Button>
+          )}
+
+          <Link
+            to="/privacy#contact"
+            className="mt-5 block py-2 text-sm font-semibold text-navy-700 underline"
+          >
+            Need help accessing your account?
+          </Link>
 
           <button
             type="button"
@@ -253,6 +312,6 @@ export function MfaPage() {
           </button>
         </Card>
       </main>
-    </PublicLayout>
+    </MfaLayout>
   );
 }

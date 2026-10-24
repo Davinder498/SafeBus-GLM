@@ -165,10 +165,7 @@ export function RouteSetupPanel({
     <div id="setup" data-testid="route-setup" className="space-y-6 scroll-mt-24">
       <Card className="p-5">
         <h2 className="text-xl font-bold text-navy-900">Route setup</h2>
-        <p className="mt-2 text-sm text-gray-600">
-          Work through each section here. Route details and road paths are reusable; service dates
-          belong to the bus and driver plans. Each section saves separately.
-        </p>
+
         <nav
           aria-label="Route setup sections"
           onClick={(event) => {
@@ -191,10 +188,6 @@ export function RouteSetupPanel({
         )}
       </Card>
       <RouteSetupSection id="route-details" title="1. Route details and stops">
-        <p className="my-3 text-sm text-gray-600">
-          Set the name, directions, stop order, regular operating days and planned stop times. No
-          start or end date is attached to the route.
-        </p>
         {setupError && <p role="alert">{setupError}</p>}
         {editing && setup && !setupError ? (
           <RouteWithStopsForm
@@ -221,10 +214,6 @@ export function RouteSetupPanel({
         onPublishedStateChange={setPathPublished}
       />
       <RouteSetupSection id="route-service" title="3. Bus, driver and schedule">
-        <p className="text-sm text-gray-600">
-          Choose a bus for the route directions, then assign its driver here. Set service dates when
-          needed; leave the end date blank for ongoing service.
-        </p>
         {!eligible && (
           <p className="text-sm text-warning-700">
             Save complete stops and activate the route in Route details before assigning a bus.
@@ -312,10 +301,7 @@ export function RouteSetupPanel({
         </section>
         <section aria-label="Schedule" className="space-y-3 rounded-xl border border-navy-200 p-4">
           <h3 className="font-bold text-navy-900">Schedule</h3>
-          <p className="text-sm text-gray-600">
-            Edit regular operating days and stop times in step 1. Edit bus service dates in Bus
-            above, and driver coverage dates in Driver.
-          </p>
+
           <Button
             variant="secondary"
             disabled={!setup || !!setupError}
