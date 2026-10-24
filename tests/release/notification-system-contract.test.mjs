@@ -332,10 +332,14 @@ test('tenant notification control center owns policy and health presentation', (
     router,
     /path: '\/admin\/settings\/notifications'[\s\S]*allowedRoles=\{\['tenant_admin'\]\}/i,
   );
-  assert.match(tenantNotificationPage, /Awaiting privacy approval/);
-  assert.match(tenantNotificationPage, /Privacy approval rejected/);
-  assert.match(tenantNotificationPage, /External delivery is paused/);
-  assert.match(tenantNotificationPage, /External delivery is active/);
+  assert.match(tenantNotificationPage, /Email and phone alerts/);
+  assert.match(tenantNotificationPage, /privacyReviewStatus === 'approved'/);
+  assert.match(tenantNotificationPage, /Boolean\(settings.privacyApprovedAt\)/);
+  assert.match(tenantNotificationPage, /disabled=\{!approved \|\| saving\}/);
+  assert.doesNotMatch(
+    tenantNotificationPage,
+    /Delivery channels|ChannelCard|External delivery is locked|Privacy approval:/,
+  );
   assert.match(tenantNotificationPage, /NotificationDeliverySummaryCard/);
   assert.match(
     notificationSettingsPage,
