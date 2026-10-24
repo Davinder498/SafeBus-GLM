@@ -566,13 +566,6 @@ export function AdminSubscriptionPage() {
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                   <div>
                     <h2 className="text-lg font-semibold text-slate-900">Payment details</h2>
- codex/launch-settings-cleanup
-
-                    <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
-                      Update your payment method, billing contact, or billing address securely in
-                      Stripe.
-                    </p>
- main
                   </div>
                   <Button
                     type="button"

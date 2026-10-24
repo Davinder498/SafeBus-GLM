@@ -162,7 +162,6 @@ export function AdminNotificationSettingsPage() {
                 >
                   <div className="min-w-0">
                     <h3 className="text-sm font-semibold text-slate-900">Email and phone alerts</h3>
-codex/launch-settings-cleanup
 
                     <p className="mt-1 text-xs text-slate-500">
                       {!approved ? 'Not available yet' : settings.emailEffective ? 'On' : 'Paused'}
@@ -193,44 +192,6 @@ codex/launch-settings-cleanup
                     </p>
                   </div>
                   <ToggleSwitch
-
-                    <p className="mt-1 max-w-xl text-sm leading-6 text-slate-600">
-                      Allow email and enabled Android alerts for guardians and drivers who choose
-                      them.
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {!approved ? 'Not available yet' : settings.emailEffective ? 'On' : 'Paused'}
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    label="Email and phone alerts"
-                    checked={settings.emailEffective}
-                    disabled={!approved || saving}
-                    onChange={(enabled) => setPendingChange({ kind: 'delivery', enabled })}
-                  />
-                </div>
-                <div
-                  className="flex items-center justify-between gap-4 py-4"
-                  data-ui="notification-setting-row"
-                >
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-semibold text-slate-900">Android push</h3>
-                    <p className="mt-1 max-w-xl text-sm leading-6 text-slate-600">
-                      Allow phone alerts on Android devices. Each person manages their device
-                      permission.
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {!approved
-                        ? 'Not available yet'
-                        : !settings.notificationsEnabled
-                          ? 'Paused with email and phone alerts; your choice is saved'
-                          : settings.pushEffective
-                            ? 'On'
-                            : 'Off'}
-                    </p>
-                  </div>
-                  <ToggleSwitch
- main
                     label="Android push"
                     checked={settings.pushNotificationsEnabled}
                     disabled={!approved || !settings.notificationsEnabled || saving}
@@ -238,9 +199,6 @@ codex/launch-settings-cleanup
                   />
                 </div>
               </div>
-              <p className="border-t border-slate-200 py-4 text-xs leading-5 text-slate-500">
-                The in-app inbox remains available when email and phone alerts are off.
-              </p>
             </section>
           </Card>
         ) : null}
