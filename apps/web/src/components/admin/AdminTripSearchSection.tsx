@@ -107,10 +107,11 @@ export function AdminTripSearchSection() {
       data-testid="admin-trip-search"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+        <div className="flex items-center gap-3">
           <h2 id="trip-search-heading" className="text-xl font-bold text-navy-900">
             Trips
           </h2>
+          <span className="text-xs font-medium text-slate-500">Alberta time</span>
         </div>
         <Button
           type="button"
@@ -125,7 +126,7 @@ export function AdminTripSearchSection() {
 
       <form className="mt-4" onSubmit={applyDates} noValidate>
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-          <Field label="Dates (Alberta time)" htmlFor="trip-date-mode">
+          <Field label="Dates" htmlFor="trip-date-mode">
             <Select
               id="trip-date-mode"
               value={selection.mode}
