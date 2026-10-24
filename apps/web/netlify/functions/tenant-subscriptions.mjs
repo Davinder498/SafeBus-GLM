@@ -37,6 +37,7 @@ export function validateTenantBillingInput(body) {
 
 export async function approvedPrices(stripe, productId) {
   if (!productId) throw new Error('billing_not_configured');
+  if (/^(acct|price|bpc)_/.test(productId)) throw new Error('billing_product_id_invalid');
   const prices = await stripe.prices.list({
     product: productId,
     active: true,
@@ -290,7 +291,6 @@ export async function handler(event) {
         retryable: false,
       });
     if (state.bus_access?.exempt && input.action === 'refresh') return json(200, { ok: true });
-    const stripe = createStripeClient();
     if (input.action === 'pending_request')
       return json(200, {
         pending: await rpc(ctx.admin, 'billing_get_pending_request', {
@@ -298,6 +298,7 @@ export async function handler(event) {
           p_actor_id: ctx.caller.id,
         }),
       });
+    const stripe = createStripeClient();
     if (input.action === 'refresh') {
       if (state.external_subscription_id)
         await syncSubscriptionProjection(
@@ -402,6 +403,29 @@ export async function handler(event) {
     return json(200, result);
   } catch (error) {
     const code = safeProviderErrorCode(error);
+    if (input?.action === 'list_prices') {
+      const configurationFailure = [
+        'resource_missing',
+        'api_key_expired',
+        'stripeauthenticationerror',
+        'stripepermissionerror',
+        'billing_stripe_not_configured',
+        'billing_not_configured',
+        'billing_product_id_invalid',
+      ].includes(code);
+      console.error(
+        JSON.stringify({ event: 'tenant_billing_failed', action: input.action, errorCode: code }),
+      );
+      return json(503, {
+        code: configurationFailure
+          ? 'billing_catalog_not_configured'
+          : 'billing_catalog_unavailable',
+        error: configurationFailure
+          ? 'Subscription options are not configured correctly. Contact SafeBus support.'
+          : 'Subscription options could not be loaded. Try again shortly.',
+        retryable: !configurationFailure,
+      });
+    }
     const messages = {
       billing_quantity_below_usage: 'Deactivate buses before choosing a smaller allowance.',
       billing_legacy_contract:
@@ -435,7 +459,9 @@ export async function handler(event) {
         p_response: { error: messages[code], retryable: false },
       }).catch(() => undefined);
     }
-    console.error(JSON.stringify({ event: 'tenant_billing_failed', errorCode: code }));
+    console.error(
+      JSON.stringify({ event: 'tenant_billing_failed', action: input?.action, errorCode: code }),
+    );
     return json(messages[code] ? 409 : 502, {
       error:
         messages[code] ??

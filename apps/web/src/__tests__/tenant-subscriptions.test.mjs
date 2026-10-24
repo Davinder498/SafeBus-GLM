@@ -99,6 +99,66 @@ beforeEach(() => {
   });
 });
 describe('tenant subscription input and ownership', () => {
+  it('rejects the deployed account-ID-as-product configuration before contacting Stripe', async () => {
+    ctx.config.stripeProductId = 'acct_example';
+    stripe.prices = { list: vi.fn() };
+    const response = await handler(event('list_prices'));
+    expect(response.statusCode).toBe(503);
+    expect(JSON.parse(response.body)).toMatchObject({
+      code: 'billing_catalog_not_configured',
+      retryable: false,
+    });
+    expect(stripe.prices.list).not.toHaveBeenCalled();
+    expect(stripe.checkout.sessions.create).not.toHaveBeenCalled();
+  });
+  it('does not require Stripe to recover a pending request from the server ledger', async () => {
+    const response = await handler(event('pending_request'));
+    expect(response.statusCode).toBe(200);
+    expect(shared.createStripeClient).not.toHaveBeenCalled();
+    expect(ctx.admin.rpc).toHaveBeenCalledWith(
+      'billing_get_pending_request',
+      expect.objectContaining({ p_actor_id: 'actor', p_tenant_id: tenant }),
+    );
+  });
+  it.each([
+    'resource_missing',
+    'billing_stripe_not_configured',
+    'stripeauthenticationerror',
+    'stripepermissionerror',
+  ])('reports catalog configuration failures before checkout: %s', async (code) => {
+    stripe.prices = {
+      list: vi.fn(async () => {
+        throw new Error(code);
+      }),
+    };
+    if (code === 'billing_stripe_not_configured')
+      shared.createStripeClient.mockImplementationOnce(() => {
+        throw new Error(code);
+      });
+    const response = await handler(event('list_prices'));
+    expect(response.statusCode).toBe(503);
+    expect(JSON.parse(response.body)).toMatchObject({
+      code: 'billing_catalog_not_configured',
+      retryable: false,
+    });
+    expect(stripe.checkout.sessions.create).not.toHaveBeenCalled();
+    expect(ctx.admin.rpc).not.toHaveBeenCalled();
+  });
+  it('offers a read retry instead of financial reconciliation for a transient catalog failure', async () => {
+    stripe.prices = {
+      list: vi.fn(async () => {
+        throw new Error('provider_unavailable');
+      }),
+    };
+    const response = await handler(event('list_prices'));
+    expect(response.statusCode).toBe(503);
+    expect(JSON.parse(response.body)).toMatchObject({
+      code: 'billing_catalog_unavailable',
+      retryable: true,
+    });
+    expect(response.body).not.toContain('same request');
+    expect(stripe.checkout.sessions.create).not.toHaveBeenCalled();
+  });
   it('does not start checkout or paid capacity changes for an approved test tenant', async () => {
     state.bus_access = { eligible: true, exempt: true, limit: null };
     for (const action of ['checkout', 'preview', 'change'])

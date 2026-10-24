@@ -20,7 +20,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       type={type}
       data-ui="input"
       className={cn(
-        'block w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-slate-900 shadow-xs',
+        'block min-h-11 w-full min-w-0 rounded-lg border bg-white px-3 py-2.5 text-base text-slate-900 shadow-xs sm:text-sm',
         'placeholder:text-slate-400',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0',
         'disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500',
