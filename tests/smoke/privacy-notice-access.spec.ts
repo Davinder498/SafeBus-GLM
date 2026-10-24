@@ -40,12 +40,17 @@ test('privacy notice is reachable before sign-in and explains all three roles', 
   ).toBeVisible();
 });
 
-test('tenant admin can use the account menu and navigation without losing its portal', async ({
+test('tenant admin uses the account menu for privacy without a duplicate sidebar link', async ({
   page,
-}) => {
+}, testInfo) => {
   await installAdminWorkflowMock(page);
   await page.goto('/admin');
   await expect(page.getByRole('heading', { name: 'Transportation overview' })).toBeVisible();
+  await expect(
+    page
+      .getByRole('navigation', { name: 'Primary', exact: true })
+      .getByRole('link', { name: 'Privacy Notice', exact: true }),
+  ).toHaveCount(0);
   await page.locator('header button[aria-haspopup="menu"]').click();
   await page.getByRole('menuitem', { name: 'Privacy Notice', exact: true }).click();
   await expect(page).toHaveURL('/privacy');
@@ -59,10 +64,20 @@ test('tenant admin can use the account menu and navigation without losing its po
   await expect(page.getByRole('heading', { name: 'Transportation overview' })).toBeVisible();
   const drawerButton = page.getByRole('button', { name: 'Open navigation' });
   if (await drawerButton.isVisible()) await drawerButton.click();
-  await page
-    .getByRole('link', { name: 'Privacy Notice', exact: true })
-    .filter({ visible: true })
-    .click();
+  await expect(
+    page
+      .getByRole('navigation', { name: 'Primary', exact: true })
+      .getByRole('link', { name: 'Privacy Notice', exact: true }),
+  ).toHaveCount(0);
+  await page.screenshot({
+    path: testInfo.outputPath('sidebar-without-privacy.png'),
+    fullPage: true,
+    animations: 'disabled',
+  });
+  if (await page.getByRole('button', { name: 'Close navigation' }).isVisible())
+    await page.getByRole('button', { name: 'Close navigation' }).click();
+  await page.locator('header button[aria-haspopup="menu"]').click();
+  await page.getByRole('menuitem', { name: 'Privacy Notice', exact: true }).click();
   await expect(page).toHaveURL('/privacy');
   await expect(page.getByRole('button', { name: 'Close navigation' })).toHaveCount(0);
 });
