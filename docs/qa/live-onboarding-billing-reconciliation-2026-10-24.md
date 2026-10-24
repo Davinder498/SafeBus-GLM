@@ -66,7 +66,7 @@ displays 14 days free, CA$0.00 due today, then CA$1.99 per month starting
 session; no second checkout request was created. The owner must enter payment
 details and perform the final live trial/subscription confirmation.
 
-## Live acceptance to complete after correction
+## Live acceptance checklist
 
 1. Reopen billing as the existing school authority admin, complete MFA and any
    required recent sign-in, and verify both live CAD price choices load.
@@ -82,10 +82,41 @@ details and perform the final live trial/subscription confirmation.
    it does not establish a successful paid invoice. Record any separately
    authorized charge and paid-invoice verification independently.
 
+## Live trial completion verified
+
+The owner completed the final live Checkout step and reported the CA$0.00
+invoice. Bounded read-only verification confirms:
+
+- The school authority remains active and its subscription is `trialing`.
+- One bus licence is provisioned at CAD 199 cents per month, with automatic
+  renewal enabled. Trial/current-period end is 2026-11-07T03:02:35Z. The browser
+  displays November 6 in its local timezone; UTC is November 7.
+- `customer.subscription.created` and `checkout.session.completed` receipts
+  both completed on their first processing attempt at 2026-10-24T03:02:39Z,
+  with no error code. The deployed handler verifies Stripe's signature before
+  creating a receipt, so these are verified webhook-processing records.
+- SafeBus displays "Your fleet is ready to grow", 0 of 1 active-bus licences
+  in use, and the `trialing` subscription. No bus fixture was created.
+- The authenticated invoice list shows the first invoice as Paid, total CA$0.00.
+  This is the trial's zero-dollar invoice; it proves no nonzero payment capture.
+
+Onboarding activation, fresh sign-in/MFA, live price selection, Checkout,
+verified webhook processing, subscription projection, allowance unlock and
+invoice display have now been verified for the owner-created school authority.
+The first nonzero recurring invoice/charge has not been tested. No trial was
+shortened and no additional charge or subscription change was initiated.
+
 This record does not authorize new QA accounts, emails, migrations, commercial
 launch, payment, merge or deployment.
 
 ## Local validation and coverage
+
+GitHub CI passed for application/test commit `b3a0af4`: 337 website smoke/WCAG
+checks passed (seven intentional skips), all 63 native mobile browser tests
+passed, and all ten production page-loading/failure-recovery checks passed.
+Typecheck/lint/build, unit tests, Android build/lint, migration verification,
+dependency audit, secret scanning, CodeQL and Netlify preview checks also passed.
+The final live-completion evidence update changes this document only.
 
 - `pnpm typecheck`, `pnpm lint`, `pnpm build` and `pnpm test` passed. The final
   test run includes 566 web tests, two mobile unit tests and 364 release checks.
@@ -109,9 +140,7 @@ launch, payment, merge or deployment.
   incorrectly supplied an already-MFA-verified session; it now starts at AAL1.
   Screenshots are retained in local/CI Playwright artifacts for visual review.
 
-Local browser fixtures are synthetic and network-bounded. They do not prove
-Stripe live checkout, a paid invoice or signed webhook delivery. The Chrome
-connection disconnected during navigation to the successfully created Checkout
-session; recovered inspection verified the terms above. Final live acceptance
-must resume from that session and be recorded separately; do not start an
-unrelated second checkout as a workaround.
+Local browser fixtures are synthetic and network-bounded. Live completion is
+supported by the separate production evidence above, rather than inferred from
+those fixtures or a success redirect. A nonzero renewal/payment remains a
+separate, unverified acceptance step.
