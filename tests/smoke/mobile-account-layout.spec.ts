@@ -43,6 +43,7 @@ for (const viewport of [
     await expect(page.getByRole('img', { name: 'Authenticator enrollment QR code' })).toBeVisible();
     await expect(page.getByLabel('Six-digit authenticator code')).toBeVisible();
     await expectUsableMobileLayout(page);
+    await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({ path: testInfo.outputPath('authenticator-setup.png'), fullPage: true });
     await page.goto('/update-password');
     await expect(page.getByRole('heading', { name: 'Choose a new password' })).toBeVisible();

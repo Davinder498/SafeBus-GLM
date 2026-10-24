@@ -46,6 +46,8 @@ test('new-account price failure offers a real retry instead of an empty selector
   await expect(page.getByRole('alert')).toHaveCount(0);
   expect(attempts).toBeGreaterThan(initialAttempts);
   expect(requests.some((r) => r.action === 'checkout')).toBe(false);
+  // Capture the fixed header at the top of the full-page review artifact.
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({
     path: testInfo.outputPath('subscription-recovered.png'),
     fullPage: true,

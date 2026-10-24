@@ -60,6 +60,12 @@ secure Stripe Checkout link and no error code. No subscription projection exists
 yet. This verifies checkout-session creation; it does not establish Checkout
 completion, card acceptance, a subscription, a charge or webhook acceptance.
 
+Recovered browser inspection of that same Checkout session confirms Stripe
+displays 14 days free, CA$0.00 due today, then CA$1.99 per month starting
+6 November 2026, renewing until canceled. A fresh review tab reused the existing
+session; no second checkout request was created. The owner must enter payment
+details and perform the final live trial/subscription confirmation.
+
 ## Live acceptance to complete after correction
 
 1. Reopen billing as the existing school authority admin, complete MFA and any
@@ -105,6 +111,7 @@ launch, payment, merge or deployment.
 
 Local browser fixtures are synthetic and network-bounded. They do not prove
 Stripe live checkout, a paid invoice or signed webhook delivery. The Chrome
-connection disconnected again during navigation to the successfully created
-Checkout session. Final live acceptance must resume from that session and be
-recorded separately; do not start an unrelated second checkout as a workaround.
+connection disconnected during navigation to the successfully created Checkout
+session; recovered inspection verified the terms above. Final live acceptance
+must resume from that session and be recorded separately; do not start an
+unrelated second checkout as a workaround.
