@@ -60,7 +60,7 @@ export function InvoiceHistory({
   }, [load, refreshToken]);
 
   return (
-    <Card className="p-5 sm:p-6">
+    <Card className="p-5 shadow-none sm:p-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
           <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
@@ -85,7 +85,7 @@ export function InvoiceHistory({
       <p className="mt-4 break-words rounded-lg bg-slate-50 p-4 text-sm leading-6 text-slate-600">
         Billing email:{' '}
         <span className="font-semibold text-slate-900">{billingEmail ?? 'Not set'}</span>. Use
-        Invoices &amp; payment details to update the billing contact or manage payment methods.
+        Manage payment details to update the billing contact or manage payment methods.
       </p>
       {error && (
         <p role="alert" className="mt-4 rounded-lg bg-danger-50 p-4 text-sm text-danger-700">
@@ -190,8 +190,8 @@ export function InvoiceHistory({
         </Button>
       )}
       <p className="mt-5 text-xs leading-5 text-slate-500">
-        Invoice links open securely in Stripe. If a link expires, refresh invoices or open Invoices
-        &amp; payment details above.
+        Invoice links open securely in Stripe. If a link expires, refresh invoices or use Manage
+        payment details below.
       </p>
     </Card>
   );

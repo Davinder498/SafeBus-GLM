@@ -1,4 +1,5 @@
-import { AlertTriangle, Bus, CalendarDays, CreditCard } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { AlertTriangle, CreditCard } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { formatBillingDate, formatMoney } from '@/services/subscriptionService';
@@ -6,9 +7,11 @@ import type { TenantSubscription } from '@/types/subscription';
 
 function Detail({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-      <dt className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{label}</dt>
-      <dd className="mt-2 break-words text-sm font-semibold text-slate-900">{value}</dd>
+    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-baseline gap-4 py-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-8">
+      <dt className="text-sm leading-6 text-slate-600">{label}</dt>
+      <dd className="min-w-0 break-words text-right text-sm font-medium leading-6 text-slate-900">
+        {value}
+      </dd>
     </div>
   );
 }
@@ -24,7 +27,13 @@ function statusTone(status: TenantSubscription['subscriptionStatus']) {
   return 'neutral' as const;
 }
 
-export function SubscriptionOverview({ subscription }: { subscription: TenantSubscription }) {
+export function SubscriptionOverview({
+  subscription,
+  action,
+}: {
+  subscription: TenantSubscription;
+  action?: ReactNode;
+}) {
   if (subscription.subscriptionExempt)
     return (
       <Card className="border-success-200 bg-success-50 p-5" data-testid="subscription-exempt">
@@ -71,24 +80,26 @@ export function SubscriptionOverview({ subscription }: { subscription: TenantSub
         </Card>
       )}
 
-      <Card className="p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-navy-600">
-              {subscription.billingInterval === 'month'
-                ? 'Monthly subscription'
-                : 'Annual subscription'}
-            </p>
-            <h2 className="mt-1 text-xl font-bold text-slate-900">
-              {subscription.priceNickname ?? subscription.productName ?? 'SafeBus subscription'}
-            </h2>
+      <Card className="p-5 shadow-none sm:p-6" data-testid="subscription-summary">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold text-slate-900">Subscription</h2>
+          <div className="flex flex-wrap items-center gap-3">
+            <StatusPill tone={statusTone(subscription.subscriptionStatus)} dot>
+              {status.replaceAll('_', ' ')}
+            </StatusPill>
+            {action}
           </div>
-          <StatusPill tone={statusTone(subscription.subscriptionStatus)} dot>
-            {status.replaceAll('_', ' ')}
-          </StatusPill>
         </div>
 
-        <dl className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <dl className="mt-4 divide-y divide-slate-200">
+          <Detail
+            label="Plan"
+            value={subscription.priceNickname ?? subscription.productName ?? 'SafeBus subscription'}
+          />
+          <Detail
+            label="Billing cycle"
+            value={subscription.billingInterval === 'month' ? 'Monthly' : 'Annual'}
+          />
           <Detail
             label="Plan subtotal before discounts and tax"
             value={formatMoney(
@@ -128,40 +139,18 @@ export function SubscriptionOverview({ subscription }: { subscription: TenantSub
             label="Latest invoice"
             value={subscription.latestInvoiceStatus?.replaceAll('_', ' ') ?? 'Not available'}
           />
+          <Detail label="Contracted buses" value={String(subscription.licensedBusCount ?? 0)} />
+          <Detail label="Active buses" value={String(subscription.activeBusCount)} />
         </dl>
+        {subscription.usageExceedsAllowance && (
+          <p className="mt-3 text-sm font-semibold text-warning-700">
+            Active usage exceeds the contracted allowance. No automatic charge was made.
+          </p>
+        )}
+        <p className="mt-3 text-xs leading-5 text-slate-500">
+          Last updated: {formatBillingDate(subscription.lastSyncedAt)}
+        </p>
       </Card>
-
-      <section className="grid gap-5 lg:grid-cols-2">
-        <Card className="p-5">
-          <div className="flex items-center gap-3">
-            <Bus className="h-5 w-5 text-navy-600" aria-hidden />
-            <h2 className="text-lg font-bold text-slate-900">Fleet allowance</h2>
-          </div>
-          <dl className="mt-4 grid grid-cols-2 gap-4">
-            <Detail label="Contracted buses" value={String(subscription.licensedBusCount ?? 0)} />
-            <Detail label="Active buses" value={String(subscription.activeBusCount)} />
-          </dl>
-          {subscription.usageExceedsAllowance && (
-            <p className="mt-3 text-sm font-semibold text-warning-700">
-              Active usage exceeds the contracted allowance. No automatic charge was made.
-            </p>
-          )}
-        </Card>
-
-        <Card className="p-5">
-          <div className="flex items-center gap-3">
-            <CalendarDays className="h-5 w-5 text-navy-600" aria-hidden />
-            <h2 className="text-lg font-bold text-slate-900">Synchronization</h2>
-          </div>
-          <p className="mt-4 text-sm leading-6 text-slate-600">
-            Stripe is the billing source of truth. SafeBus stores only this display summary and no
-            card or bank details.
-          </p>
-          <p className="mt-3 text-sm font-semibold text-slate-900">
-            Last updated: {formatBillingDate(subscription.lastSyncedAt)}
-          </p>
-        </Card>
-      </section>
     </div>
   );
 }
