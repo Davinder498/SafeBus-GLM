@@ -127,7 +127,7 @@ test('empty invoice history does not imply a paid trial or an email delivery', a
   await installBilling(page, true);
   await page.goto('/admin/settings/billing');
   await expect(
-    page.getByText('No finalized subscription invoices yet.', { exact: false }),
+    page.getByText('No invoices yet.', { exact: true }),
   ).toBeVisible();
   await expect(page.getByRole('link', { name: 'Download PDF', exact: false })).toHaveCount(0);
   await expect(page.getByText('Email delivered', { exact: true })).toHaveCount(0);

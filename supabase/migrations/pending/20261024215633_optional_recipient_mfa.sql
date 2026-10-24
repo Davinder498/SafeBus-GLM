@@ -1,6 +1,3 @@
--- MFA remains mandatory for administrators under the existing guards.
--- Guardians/drivers opt in by verifying an Auth factor. Once enrolled, their
--- operational data requires AAL2 on the server as well as in the route guard.
 create function safebus_private.has_completed_optional_mfa()
 returns boolean language sql stable security definer
 set search_path = pg_catalog, public, auth, pg_temp
@@ -17,9 +14,6 @@ $$;
 revoke all on function safebus_private.has_completed_optional_mfa() from public, anon;
 grant execute on function safebus_private.has_completed_optional_mfa() to authenticated, service_role;
 
--- Preserve every existing tenant/ownership/session policy. Restrictive policies
--- can only narrow their grants. Own-profile SELECT is needed to bootstrap the
--- challenge screen; the API hook below rejects all profile writes before MFA.
 do $$
 declare v_table record;
 begin
@@ -40,9 +34,6 @@ begin
 end;
 $$;
 
--- SECURITY DEFINER RPCs bypass RLS, so enforce the same rule at PostgREST.
--- The three bootstrap RPCs only operate on the caller's session/auth audit.
--- Auth's challenge/enrollment APIs are separate and remain reachable.
 create or replace function safebus_private.enforce_active_api_session()
 returns void language plpgsql security invoker
 set search_path = pg_catalog, public, auth, pg_temp

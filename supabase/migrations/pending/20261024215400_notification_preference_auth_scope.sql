@@ -1,6 +1,3 @@
--- A guardian changing their own alert choices is not granting student access.
--- Keep the original recent-auth gate for link creation, deletion, identity,
--- scope, expiry, status and every other access-bearing field.
 create or replace function safebus_private.enforce_sensitive_admin_mutation()
 returns trigger
 language plpgsql security definer
@@ -14,8 +11,6 @@ begin
     return coalesce(new, old);
   end if;
 
-  -- Preserve the hosted first-account activation exception. Invited users
-  -- must be able to finish their own onboarding before administrator MFA setup.
   if tg_table_name = 'profiles' and tg_op = 'UPDATE' then
     if new.id = auth.uid() and old.status = 'invited' and new.status = 'active'
        and new.role is not distinct from old.role then
@@ -51,6 +46,5 @@ begin
   return coalesce(new, old);
 end;
 $$;
--- Existing triggers and audit capture remain attached. No new RPC or grants.
 revoke all on function safebus_private.enforce_sensitive_admin_mutation()
   from public, anon, authenticated;

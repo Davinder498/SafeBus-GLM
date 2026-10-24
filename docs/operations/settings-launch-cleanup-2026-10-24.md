@@ -30,6 +30,26 @@ when a school authority is provisioned under the owner's approved platform polic
 
 ## Database release
 
+### SQL editor copy correction
+
+The reported SQL editor errors (`42601` at `Owner`, `Guardians`, and `A`)
+occurred because the executed text started with explanatory prose without its
+SQL comment markers. Read-only hosted verification confirmed none of the three
+changes had been applied: defaults were still pending/off, the notification
+exception was absent, and there were no optional-MFA helper or policies.
+
+The three pending files now start directly with executable SQL and contain no
+standalone explanatory line comments. Their executable statements are unchanged.
+Use each complete raw `.sql` file, in the order below; do not copy rendered prose
+or an excerpt. The explanatory context remains in this document and the PR.
+
+The exact corrected files were also executed together against BusSafe in a
+5-second statement / 1-second lock bounded transaction and rolled back. All
+three changes succeeded inside that rehearsal, including the 67 MFA policies.
+A separate read-only check confirmed the original defaults and guards were
+restored and no optional-MFA helper or policies remained. This was verification,
+not a persistent deployment.
+
 Forward files remain in `supabase/migrations/pending` for the protected release
 workflow. Do not replay historical migrations or deploy only a cosmetic browser
 fix for the preference error.
