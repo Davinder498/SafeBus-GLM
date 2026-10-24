@@ -53,6 +53,13 @@ Test School District and its first school authority admin are active. No billing
 customer or subscription mapping existed at the checkpoint. Those observations
 verify onboarding activation, not checkout, card acceptance or webhook delivery.
 
+After the owner completed fresh sign-in/MFA, the normal one-bus monthly checkout
+request succeeded at 2026-10-24T02:55:57.824814Z. A bounded read-only transaction
+confirmed a billing customer mapping and one completed checkout request with a
+secure Stripe Checkout link and no error code. No subscription projection exists
+yet. This verifies checkout-session creation; it does not establish Checkout
+completion, card acceptance, a subscription, a charge or webhook acceptance.
+
 ## Live acceptance to complete after correction
 
 1. Reopen billing as the existing school authority admin, complete MFA and any
@@ -98,5 +105,6 @@ launch, payment, merge or deployment.
 
 Local browser fixtures are synthetic and network-bounded. They do not prove
 Stripe live checkout, a paid invoice or signed webhook delivery. The Chrome
-connection disconnected during the owner's fresh sign-in; final live acceptance
-must resume from the owner's signed-in session and be recorded separately.
+connection disconnected again during navigation to the successfully created
+Checkout session. Final live acceptance must resume from that session and be
+recorded separately; do not start an unrelated second checkout as a workaround.
