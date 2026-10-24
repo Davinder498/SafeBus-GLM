@@ -612,17 +612,6 @@ function SidebarNav({
           ))}
         </div>
       ))}
-      <div className="pt-4">
-        <NavListItem
-          item={{
-            label: 'Privacy Notice',
-            to: '/privacy',
-            icon: <ShieldCheck className="h-4 w-4" />,
-          }}
-          portal={portal}
-          onNavigate={onNavigate}
-        />
-      </div>
     </nav>
   );
 }
