@@ -41,6 +41,7 @@ export function AdminSubscriptionPage() {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [editingPlan, setEditingPlan] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(
     params.get('checkout') === 'canceled'
@@ -224,6 +225,7 @@ export function AdminSubscriptionPage() {
               : 'Subscription change confirmed.',
       );
       setConfirm(null);
+      setEditingPlan(false);
       await load();
       sessionStorage.removeItem(selectionKey);
     } catch (e) {
@@ -255,19 +257,6 @@ export function AdminSubscriptionPage() {
           title="Subscription & billing"
           description="Choose the right bus allowance for your school authority. Manage your plan, renewal, invoices, and payment details here."
           icon={<CreditCard className="h-6 w-6" />}
-          action={
-            subscription?.configured && !subscription.subscriptionExempt ? (
-              <Button
-                type="button"
-                variant="secondary"
-                loading={busy}
-                onClick={() => void openPortal()}
-                rightIcon={<ExternalLink className="h-4 w-4" />}
-              >
-                Invoices & payment details
-              </Button>
-            ) : undefined
-          }
         />
         <AdminSettingsNav role={profile?.role} />
         {error && (
@@ -322,22 +311,25 @@ export function AdminSubscriptionPage() {
         )}
         {!loading && subscription && (
           <>
-            {subscription.busAccess.eligible && !subscription.subscriptionExempt && (
-              <Card className="flex flex-col justify-between gap-4 border-success-200 bg-success-50 p-5 sm:flex-row sm:items-center">
-                <div>
-                  <p className="font-bold text-success-800">Your fleet is ready to grow</p>
-                  <p className="mt-1 text-sm text-success-800">
-                    {subscription.busAccess.active} of {subscription.busAccess.limit} active-bus
-                    licences in use.
-                  </p>
-                </div>
-                <Link className="font-semibold text-success-800 underline" to="/admin/buses">
-                  Configure buses
-                </Link>
-              </Card>
-            )}
-            {!legacy && !subscription.subscriptionExempt && (
-              <Card className="overflow-hidden">
+            <SubscriptionOverview
+              subscription={subscription}
+              action={
+                liveContract && !legacy && !subscription.subscriptionExempt ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={busy}
+                    aria-expanded={editingPlan}
+                    aria-controls={editingPlan ? 'subscription-plan-editor' : undefined}
+                    onClick={() => setEditingPlan(!editingPlan)}
+                  >
+                    {editingPlan ? 'Close plan editor' : 'Change plan'}
+                  </Button>
+                ) : undefined
+              }
+            />
+            {!legacy && !subscription.subscriptionExempt && (!liveContract || editingPlan) && (
+              <Card className="overflow-hidden shadow-none" id="subscription-plan-editor">
                 <div className="border-b bg-slate-50 p-5 sm:p-6">
                   <h2 className="text-xl font-bold text-navy-900">
                     {liveContract
@@ -563,16 +555,65 @@ export function AdminSubscriptionPage() {
                     Complete payment
                   </a>
                 )}{' '}
-                You can also open invoices and payment details above.
+                You can also open your invoice from Invoice history below.
               </p>
             )}
-            <SubscriptionOverview subscription={subscription} />
             {subscription.configured && !subscription.subscriptionExempt && (
               <InvoiceHistory
                 key={subscription.tenantId}
                 billingEmail={subscription.billingEmail}
                 refreshToken={subscription.lastSyncedAt}
               />
+            )}
+            {subscription.configured && !subscription.subscriptionExempt && (
+              <Card className="p-5 shadow-none sm:p-6">
+                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                  <div>
+                    <h2 className="text-lg font-semibold text-slate-900">Payment details</h2>
+                    <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+                      Update your payment method, billing contact, or billing address securely in
+                      Stripe.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    loading={busy}
+                    className="shrink-0"
+                    onClick={() => void openPortal()}
+                    rightIcon={<ExternalLink className="h-4 w-4" aria-hidden />}
+                  >
+                    Manage payment details
+                  </Button>
+                </div>
+              </Card>
+            )}
+            {liveContract && !legacy && !subscription.subscriptionExempt && (
+              <Card className="p-5 shadow-none sm:p-6" data-testid="subscription-cancellation">
+                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                  <div>
+                    <h2 className="text-lg font-semibold text-slate-900">
+                      {subscription.cancelAtPeriodEnd
+                        ? 'Plan cancellation scheduled'
+                        : 'Cancel plan'}
+                    </h2>
+                    <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+                      {subscription.cancelAtPeriodEnd
+                        ? `Your plan will not renew. Your current trial or paid term continues through ${formatBillingDate(subscription.currentPeriodEnd)}.`
+                        : 'If you cancel, your current trial or paid term continues until its end date. Existing transportation operations continue afterward.'}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant={subscription.cancelAtPeriodEnd ? 'outline' : 'danger'}
+                    className="shrink-0"
+                    disabled={busy}
+                    onClick={() => setConfirm(subscription.cancelAtPeriodEnd ? 'keep' : 'cancel')}
+                  >
+                    {subscription.cancelAtPeriodEnd ? 'Resume renewal' : 'Cancel plan'}
+                  </Button>
+                </div>
+              </Card>
             )}
             <div className="flex flex-wrap gap-3">
               <Button
@@ -595,16 +636,6 @@ export function AdminSubscriptionPage() {
               >
                 Refresh billing
               </Button>
-              {liveContract && !legacy && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  disabled={busy}
-                  onClick={() => setConfirm(subscription.cancelAtPeriodEnd ? 'keep' : 'cancel')}
-                >
-                  {subscription.cancelAtPeriodEnd ? 'Resume renewal' : 'Cancel renewal'}
-                </Button>
-              )}
             </div>
           </>
         )}
