@@ -86,6 +86,7 @@ const AccountDeletionPage = lazy(() =>
 const AccountSettingsPage = lazy(() =>
   import('@/pages/AccountSettingsPage').then((page) => ({ default: page.AccountSettingsPage })),
 );
+const MfaPage = lazy(() => import('@/pages/MfaPage').then((page) => ({ default: page.MfaPage })));
 const MobileSupportPage = lazy(() =>
   import('@/pages/MobileSupportPage').then((page) => ({ default: page.MobileSupportPage })),
 );
@@ -110,6 +111,22 @@ export const appRoutes: RouteObject[] = [
   { path: '/update-password', element: <UpdatePasswordPage /> },
   { path: '/privacy', element: <PrivacyPolicyPage /> },
   { path: '/account-deletion', element: <AccountDeletionPage /> },
+  {
+    path: '/mfa',
+    element: (
+      <ProtectedRoute allowedRoles={['driver', 'guardian']} requireMfa={false}>
+        <MfaPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/account/security',
+    element: (
+      <ProtectedRoute allowedRoles={['driver', 'guardian']}>
+        <MfaPage />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: '/support',
     element: (

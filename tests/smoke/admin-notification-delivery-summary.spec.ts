@@ -313,7 +313,7 @@ test.describe('tenant admin notification delivery summary', () => {
       .textContent();
     expect(cardText).not.toContain('@');
     expect(cardText).not.toContain('guardian@example');
-    expect(cardText).toContain('no recipient');
+    expect(cardText).not.toContain('recipient, message, token or provider identifiers');
   });
 
   test('guardian cannot access tenant notification settings', async ({ page }) => {

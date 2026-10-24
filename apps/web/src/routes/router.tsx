@@ -174,7 +174,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/mfa',
     element: (
-      <ProtectedRoute allowedRoles={[...adminRoles]} requireMfa={false}>
+      <ProtectedRoute allowedRoles={[...adminRoles, 'driver', 'guardian']} requireMfa={false}>
         <MfaPage />
       </ProtectedRoute>
     ),

@@ -149,7 +149,6 @@ export function NotificationSettingsPage() {
         {
           key: 'pickup-dropoff',
           label: 'Pickup & drop-off',
-          description: 'Recorded boarding and drop-off events',
           icon: <BusFront className="h-5 w-5" aria-hidden />,
           pushChecked: preferences.pickupDropoff.push,
           inAppChecked: preferences.pickupDropoff.inApp,
@@ -161,7 +160,6 @@ export function NotificationSettingsPage() {
         {
           key: 'trip-updates',
           label: 'Trip updates',
-          description: 'Trip starts, completions and cancellations',
           icon: <Route className="h-5 w-5" aria-hidden />,
           pushChecked: preferences.tripUpdates.push,
           inAppChecked: preferences.tripUpdates.inApp,
@@ -173,7 +171,6 @@ export function NotificationSettingsPage() {
         {
           key: 'operational-alerts',
           label: 'Operational alerts',
-          description: 'Delays, disruptions and service changes',
           icon: <TriangleAlert className="h-5 w-5" aria-hidden />,
           pushChecked: preferences.operationalAlerts.push,
           inAppChecked: preferences.operationalAlerts.inApp,

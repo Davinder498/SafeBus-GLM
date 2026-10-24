@@ -338,10 +338,7 @@ export function PlatformTenantDetailPage() {
           <h2 className="text-lg font-bold text-slate-900">
             Billing managed by the school authority
           </h2>
-          <p className="mt-2 text-sm text-slate-600">
-            The school authority administrator selects their billing cycle and bus allowance,
-            manages payments, and controls renewal.
-          </p>
+
           {subscription.configured && (
             <Button
               className="mt-4"

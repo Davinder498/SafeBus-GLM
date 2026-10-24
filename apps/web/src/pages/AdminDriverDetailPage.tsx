@@ -529,7 +529,6 @@ export function AdminDriverDetailPage() {
                   </span>
                   <div>
                     <h2 className="font-bold text-navy-900">Account and contact</h2>
-                    <p className="text-sm text-slate-600">Login and operational contact details.</p>
                   </div>
                 </div>
                 <dl className="mt-5 grid gap-5 sm:grid-cols-2">
@@ -602,10 +601,6 @@ export function AdminDriverDetailPage() {
                   <BusFront className="mt-0.5 h-5 w-5 shrink-0 text-navy-700" aria-hidden />
                   <div>
                     <h2 className="font-bold text-navy-900">Planned bus assignments</h2>
-                    <p className="mt-1 text-sm text-slate-600">
-                      Administrative guidance for the driver. Scanning the bus QR confirms the bus
-                      and route actually operated.
-                    </p>
                   </div>
                 </div>
                 {canWrite && detail.driver.status === 'active' && (

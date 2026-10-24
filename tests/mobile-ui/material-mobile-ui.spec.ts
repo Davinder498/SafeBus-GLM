@@ -477,7 +477,7 @@ test('guardian buses group students and open a clean bus detail view', async ({
   ]);
   await page.reload();
   await expect.poll(() => distanceFromSegmentPosition(0.75)).toBeLessThan(1.5);
-  await expect(page.getByText('Position estimated from the ordered stops.')).toBeVisible();
+  await expect(page.getByText('Estimated position', { exact: true })).toBeVisible();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect
     .poll(() =>

@@ -341,9 +341,7 @@ function BusChooser({
     >
       <div className={compact ? 'mx-auto max-w-md' : ''}>
         <h2 className="text-lg font-bold text-navy-900">Choose a bus</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Select a bus to see its live location and assigned pickup and drop-off stops.
-        </p>
+
         <div className="mt-4 grid gap-3">
           {assignedGroups.map((group) => (
             <Link

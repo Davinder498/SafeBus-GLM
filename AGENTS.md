@@ -123,6 +123,21 @@ This supersedes the isolated-target requirement for this security milestone.
 - This approval is not commercial launch approval or authorization to merge a new
   pull request without review.
 
+## Account preferences and interface copy
+
+- Ordinary guardian and driver notification choices must save with an active,
+  valid session, without a recent-sign-in prompt. Preserve ownership, tenant,
+  account-status, device-permission, and enabled-channel checks.
+- Changes to guardian/student access, account security, roles, and credentials
+  retain their appropriate verification requirements.
+- Guardians and drivers can opt into MFA in account settings. Once enrolled,
+  verify MFA at sign-in and enforce it server-side. Require a fresh authenticator
+  code before removing an enrolled authenticator. Administrator MFA stays required.
+- Prefer headings, labels, values, and controls in cards. Do not add repetitive
+  card subtitles, per-option descriptions, implementation explanations, or generic
+  instructional cards. Keep essential task instructions, errors, live statuses,
+  permissions/disclosures, and destructive or billing-action consequences.
+
 ## Frontend Environment
 
 Frontend may only use:

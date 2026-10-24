@@ -338,9 +338,6 @@ export function AdminSubscriptionPage() {
                         ? 'Start your 14-day trial'
                         : 'Choose your subscription'}
                   </h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    One licence for every active bus. Inactive buses do not use your allowance.
-                  </p>
                 </div>
                 {priceError || prices.length === 0 ? (
                   <div className="space-y-4 p-5 sm:p-6">
@@ -561,7 +558,6 @@ export function AdminSubscriptionPage() {
             {subscription.configured && !subscription.subscriptionExempt && (
               <InvoiceHistory
                 key={subscription.tenantId}
-                billingEmail={subscription.billingEmail}
                 refreshToken={subscription.lastSyncedAt}
               />
             )}
@@ -570,10 +566,6 @@ export function AdminSubscriptionPage() {
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                   <div>
                     <h2 className="text-lg font-semibold text-slate-900">Payment details</h2>
-                    <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
-                      Update your payment method, billing contact, or billing address securely in
-                      Stripe.
-                    </p>
                   </div>
                   <Button
                     type="button"

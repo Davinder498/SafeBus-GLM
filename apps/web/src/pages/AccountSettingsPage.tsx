@@ -11,22 +11,34 @@ import { GuardianIconTile } from '@/components/ui/GuardianIconTile';
 import { useAuth } from '@/contexts/useAuth';
 
 export function AccountSettingsPage() {
-  const { profile } = useAuth();
+  const { profile, mfaStatus } = useAuth();
   const isDriver = profile?.role === 'driver';
+  const mfaEnabled = mfaStatus.verifiedFactors.length > 0;
 
   return (
     <DashboardLayout
-      title="Privacy and account"
+      title="Account settings"
       portal={isDriver ? 'driver' : 'parent'}
       navItems={[]}
       navGroups={isDriver ? driverNavGroups : guardianNavGroups}
     >
       <div className="mx-auto max-w-3xl space-y-5" data-ui="guardian-account-page">
-        <PageHeader
-          eyebrow="Account"
-          title="Privacy and account"
-          description="Review SafeBus privacy information and find the account-deletion process."
-        />
+        <PageHeader eyebrow="Account" title="Account settings" />
+
+        <Card className="p-5" data-ui="account-security-card">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="font-bold text-slate-950">Multi-factor authentication</h2>
+              <p className="mt-1 text-sm text-slate-600">{mfaEnabled ? 'On' : 'Off'}</p>
+            </div>
+            <Link
+              to="/account/security"
+              className="inline-flex min-h-11 items-center rounded-lg border border-slate-200 px-4 text-sm font-semibold text-navy-700 hover:bg-slate-50"
+            >
+              {mfaEnabled ? 'Manage MFA' : 'Enable MFA'}
+            </Link>
+          </div>
+        </Card>
 
         <Card className="p-5" data-ui="guardian-account-card">
           <div className="flex items-start gap-3" data-ui="guardian-card-row">
@@ -35,10 +47,7 @@ export function AccountSettingsPage() {
             </GuardianIconTile>
             <div className="min-w-0">
               <h2 className="font-bold text-slate-950">Support</h2>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
-                Contact the school authority that issued your account using its verified support
-                details.
-              </p>
+
               <a
                 className="mt-3 inline-flex items-center gap-1.5 font-semibold text-navy-700 underline underline-offset-4"
                 href="/support"
@@ -64,10 +73,7 @@ export function AccountSettingsPage() {
             </GuardianIconTile>
             <div className="min-w-0">
               <h2 className="font-bold text-slate-950">Privacy policy</h2>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
-                Learn what SafeBus handles, how bus location is limited to active trips, and how to
-                exercise privacy choices.
-              </p>
+
               <Link
                 className="mt-3 inline-flex items-center gap-1.5 font-semibold text-navy-700 underline underline-offset-4"
                 to="/privacy"

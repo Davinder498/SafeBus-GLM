@@ -98,9 +98,6 @@ export function PlatformTenantsPage() {
             <h2 id="tenant-directory-heading" className="text-xl font-bold text-navy-900">
               Your school authorities
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Invitations, subscription health, and fleet capacity in one place.
-            </p>
           </div>
           <Card className="p-4">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

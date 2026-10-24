@@ -550,7 +550,6 @@ export function AdminLiveTripsPage() {
               showLiveLink={false}
               initialFilter="non-active"
               title="Recent trip history"
-              description="Review dated trip runs without leaving live operations. Use All trips for the complete history view."
             />
           )}
         </section>

@@ -284,20 +284,6 @@ export function ParentDashboardPage() {
               </div>
             </Card>
           ))}
-
-        {appSurface === 'web' && (
-          <Card className="p-5">
-            <h2 className="text-lg font-bold text-navy-900">Bus number and license plate</h2>
-            <p className="mt-2 text-sm leading-6 text-gray-600">
-              The bus number is the student's stable service number. The license plate identifies
-              the physical vehicle and can change when transportation assigns another vehicle to
-              that service.
-            </p>
-            <Link to="/guardian/routes" className={`${actionLinkClass} mt-4`}>
-              View all assigned buses
-            </Link>
-          </Card>
-        )}
       </div>
     </DashboardLayout>
   );

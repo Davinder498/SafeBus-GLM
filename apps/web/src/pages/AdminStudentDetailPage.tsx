@@ -373,10 +373,7 @@ export function AdminStudentDetailPage() {
                 <UsersRound className="h-5 w-5 text-navy-700" aria-hidden />
                 <h2 className="text-lg font-bold text-navy-900">Guardians</h2>
               </div>
-              <p className="mt-1 text-sm text-slate-600">
-                Connect guardians, send invitations, and manage each relationship without leaving
-                this student.
-              </p>
+
               {canWrite && (
                 <StudentGuardianManager
                   detail={detail}
@@ -444,9 +441,6 @@ export function AdminStudentDetailPage() {
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <h3 className="font-bold text-navy-900">{routeLabel}</h3>
-                            <p className="mt-1 text-sm text-slate-600">
-                              Outbound and return are shown separately below.
-                            </p>
                           </div>
                           {canWrite && rosterActive && (
                             <div className="flex flex-wrap gap-2">

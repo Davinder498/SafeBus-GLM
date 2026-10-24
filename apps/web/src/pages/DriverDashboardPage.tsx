@@ -79,10 +79,7 @@ function PlannedAssignmentsCard({ assignments }: { assignments: PlannedDriverAss
         </div>
         <StatusPill tone="info">Planned</StatusPill>
       </div>
-      <p className="mt-3 text-sm leading-6 text-slate-600">
-        These assignments help you prepare. Scan the bus QR to confirm the bus and route direction
-        you are actually operating.
-      </p>
+
       {assignments.length === 0 ? (
         <p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
           No current or upcoming assignments are planned. You can still scan any eligible school
