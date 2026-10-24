@@ -142,15 +142,111 @@ test('recovers the original server request without persisting financial response
 test('trial tenant previews a change and sees current capacity without platform controls', async ({
   page,
 }) => {
+  await installLocalOnlyBoundary(page);
   const requests = await installBilling(page, true);
   await page.goto('/admin/settings/billing');
-  await expect(page.getByText('Your fleet is ready to grow')).toBeVisible();
+  await expect(page.getByText('Your fleet is ready to grow')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Configure buses' })).toHaveCount(0);
+  const summary = page.getByTestId('subscription-summary');
+  await expect(summary.getByText('Contracted buses', { exact: true })).toBeVisible();
+  await expect(summary.getByText('2', { exact: true })).toBeVisible();
+  await expect(page.getByRole('form', { name: 'Subscription selection' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Change plan', exact: true }).click();
   await page.getByLabel('Active-bus allowance', { exact: false }).fill('4');
   await page.getByRole('button', { name: 'Review change' }).click();
   await expect(page.getByRole('dialog')).toContainText('Estimated due now: $12.50');
   await page.getByRole('button', { name: 'Confirm', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Subscription change confirmed');
   expect(requests.filter((r) => r.action === 'change')).toHaveLength(1);
+  await expect(page.getByRole('form', { name: 'Subscription selection' })).toHaveCount(0);
+});
+
+test('subscription cancellation stays in SafeBus and requires confirmation', async ({ page }) => {
+  await installLocalOnlyBoundary(page);
+  const requests = await installBilling(page, true);
+  let cancelAtPeriodEnd = false;
+  await page.route('**/rest/v1/rpc/get_tenant_subscription', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        configured: true,
+        tenant_id: tenantId,
+        subscription_status: 'trialing',
+        billing_interval: 'month',
+        collection_method: 'charge_automatically',
+        current_period_end: '2026-11-01T00:00:00Z',
+        cancel_at_period_end: cancelAtPeriodEnd,
+      }),
+    });
+  });
+  await page.route('**/.netlify/functions/tenant-subscriptions', async (route) => {
+    const action = route.request().postDataJSON().action;
+    if (action === 'cancel') cancelAtPeriodEnd = true;
+    if (action === 'keep') cancelAtPeriodEnd = false;
+    await route.fallback();
+  });
+  await page.goto('/admin/settings/billing');
+  const card = page.getByTestId('subscription-cancellation');
+  await card.getByRole('button', { name: 'Cancel plan', exact: true }).click();
+  await expect(page.getByRole('dialog')).toContainText('Existing operations continue afterward');
+  expect(requests.some((r) => r.action === 'cancel')).toBe(false);
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel renewal' }).click();
+  await expect(card.getByRole('heading')).toHaveText('Plan cancellation scheduled');
+  await expect(page.getByTestId('subscription-summary').getByText('Access through')).toBeVisible();
+  expect(requests.filter((r) => r.action === 'cancel')).toHaveLength(1);
+  await card.getByRole('button', { name: 'Resume renewal' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Confirm', exact: true }).click();
+  await expect(card.getByRole('heading')).toHaveText('Cancel plan');
+  expect(requests.filter((r) => r.action === 'keep')).toHaveLength(1);
+  await expect(page).toHaveURL(/\/admin\/settings\/billing$/);
+});
+
+test('payment details opens the authenticated Stripe portal only on request', async ({ page }) => {
+  await installLocalOnlyBoundary(page);
+  await installBilling(page, true);
+  let portalRequests = 0;
+  await page.route('**/.netlify/functions/billing-portal', async (route) => {
+    portalRequests++;
+    expect(route.request().method()).toBe('POST');
+    expect(route.request().headers().authorization).toMatch(/^Bearer /);
+    expect(route.request().postDataJSON()).toEqual({});
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ url: 'https://billing.stripe.com/p/session/synthetic' }),
+    });
+  });
+  await page.route('https://billing.stripe.com/p/session/synthetic', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<h1>Synthetic billing portal</h1>' }),
+  );
+  await page.goto('/admin/settings/billing');
+  await expect(page.getByRole('heading', { name: 'Payment details', exact: true })).toBeVisible();
+  expect(portalRequests).toBe(0);
+  await page.getByRole('button', { name: 'Manage payment details', exact: true }).click();
+  await expect(page).toHaveURL('https://billing.stripe.com/p/session/synthetic');
+  expect(portalRequests).toBe(1);
+});
+
+test('subscribed billing uses one details card and stays accessible on desktop and phone', async ({
+  page,
+}, testInfo) => {
+  await installLocalOnlyBoundary(page);
+  await installBilling(page, true);
+  if (testInfo.project.name === 'mobile-chromium')
+    await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto('/admin/settings/billing');
+  await expect(page.getByTestId('subscription-summary')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Invoice history' })).toBeVisible();
+  await expectUsableMobileLayout(page);
+  const report = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+  expect(report.violations).toEqual([]);
+  const summary = page.getByTestId('subscription-summary');
+  const label = await summary.locator('dt').first().boundingBox();
+  const value = await summary.locator('dd').first().boundingBox();
+  expect(label).not.toBeNull();
+  expect(value).not.toBeNull();
+  expect(value!.x).toBeGreaterThan(label!.x + label!.width);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: testInfo.outputPath('subscribed-billing.png'), fullPage: true });
 });
 
 test('unsubscribed tenant cannot open the new bus form', async ({ page }) => {
