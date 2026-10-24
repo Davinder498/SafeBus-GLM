@@ -67,6 +67,12 @@ function button(container: HTMLElement, label: string, last = false): HTMLButton
   return match;
 }
 
+function toggle(container: HTMLElement, label: string): HTMLButtonElement {
+  const match = container.querySelector(`[role="switch"][aria-label="${label}"]`);
+  if (!(match instanceof HTMLButtonElement)) throw new Error(`Missing switch: ${label}`);
+  return match;
+}
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   let reject!: (error: Error) => void;
@@ -90,38 +96,44 @@ afterEach(async () => {
 });
 
 describe('tenant notification settings', () => {
-  it('shows the approved active policy and effective channels', async () => {
+  it('shows compact notification controls without policy or channel cards', async () => {
     const container = await renderPage();
-    expect(container.textContent).toContain('External delivery is active');
-    expect(container.textContent).toContain('In-app inbox');
-    expect(container.textContent).toContain('Email');
+    expect(container.textContent).toContain('The in-app inbox remains available');
+    expect(container.textContent).toContain('Email and phone alerts');
     expect(container.textContent).toContain('Android push');
     expect(container.textContent).toContain('Delivery health summary');
     expect(container.querySelector('h1')?.textContent).toBe('Notification settings');
     expect(container.querySelector('a')?.getAttribute('href')).toBe('/notifications');
     expect(container.querySelector('nav[aria-label="Settings sections"]')).toBeNull();
-    expect(button(container, 'Pause delivery').disabled).toBe(false);
-    expect(button(container, 'Disable push').disabled).toBe(false);
+    expect(toggle(container, 'Email and phone alerts').getAttribute('aria-checked')).toBe('true');
+    expect(toggle(container, 'Email and phone alerts').disabled).toBe(false);
+    expect(toggle(container, 'Android push').disabled).toBe(false);
+    expect(container.textContent).not.toMatch(
+      /privacy approval|Delivery channels|External delivery/i,
+    );
+    expect(container.querySelector('[data-card-type]')).toBeNull();
   });
 
-  it.each([
-    ['pending', 'Awaiting privacy approval', 'External delivery is locked'],
-    ['rejected', 'Privacy approval rejected', 'External delivery is unavailable'],
-  ] as const)('locks external controls when privacy review is %s', async (status, label, title) => {
-    const container = await renderPage({
-      ...active,
-      notificationsEnabled: false,
-      pushNotificationsEnabled: false,
-      emailEffective: false,
-      pushEffective: false,
-      privacyReviewStatus: status,
-      privacyApprovedAt: null,
-    });
-    expect(container.textContent).toContain(label);
-    expect(container.textContent).toContain(title);
-    expect(container.textContent).not.toContain('Resume delivery');
-    expect(button(container, 'Enable push').disabled).toBe(true);
-  });
+  it.each(['pending', 'rejected', 'approved'] as const)(
+    'keeps unconfigured controls disabled when status is %s without an approval timestamp',
+    async (status) => {
+      const container = await renderPage({
+        ...active,
+        notificationsEnabled: false,
+        pushNotificationsEnabled: false,
+        emailEffective: false,
+        pushEffective: false,
+        privacyReviewStatus: status,
+        privacyApprovedAt: null,
+      });
+      expect(container.textContent).toContain('Email and phone alerts are not available');
+      expect(container.textContent).not.toMatch(/privacy approval|External delivery/i);
+      expect(toggle(container, 'Email and phone alerts').disabled).toBe(true);
+      expect(toggle(container, 'Android push').disabled).toBe(true);
+      expect(mocks.setDelivery).not.toHaveBeenCalled();
+      expect(mocks.setPush).not.toHaveBeenCalled();
+    },
+  );
 
   it('confirms a tenant-wide pause and keeps the updated state', async () => {
     const paused = {
@@ -133,14 +145,15 @@ describe('tenant notification settings', () => {
     mocks.setDelivery.mockResolvedValue(paused);
     const container = await renderPage();
 
-    await act(async () => button(container, 'Pause delivery', true).click());
+    await act(async () => toggle(container, 'Email and phone alerts').click());
     expect(container.textContent).toContain('New email and Android push deliveries will stop');
-    await act(async () => button(container, 'Pause delivery', true).click());
+    expect(mocks.setDelivery).not.toHaveBeenCalled();
+    await act(async () => button(container, 'Pause alerts').click());
 
     expect(mocks.setDelivery).toHaveBeenCalledWith(false);
-    expect(container.textContent).toContain('External delivery paused.');
-    expect(container.textContent).toContain('External delivery is paused');
-    expect(button(container, 'Resume delivery').disabled).toBe(false);
+    expect(container.textContent).toContain('Email and phone alerts paused.');
+    expect(toggle(container, 'Email and phone alerts').getAttribute('aria-checked')).toBe('false');
+    expect(toggle(container, 'Email and phone alerts').disabled).toBe(false);
   });
 
   it('confirms Android push changes independently', async () => {
@@ -152,12 +165,13 @@ describe('tenant notification settings', () => {
     mocks.setPush.mockResolvedValue(pushDisabled);
     const container = await renderPage();
 
-    await act(async () => button(container, 'Disable push', true).click());
+    await act(async () => toggle(container, 'Android push').click());
     await act(async () => button(container, 'Disable push', true).click());
 
     expect(mocks.setPush).toHaveBeenCalledWith(false);
     expect(container.textContent).toContain('Android push disabled.');
-    expect(button(container, 'Enable push').disabled).toBe(false);
+    expect(toggle(container, 'Android push').getAttribute('aria-checked')).toBe('false');
+    expect(toggle(container, 'Android push').disabled).toBe(false);
   });
 
   it('resumes a paused tenant and restores the saved push choice', async () => {
@@ -170,15 +184,18 @@ describe('tenant notification settings', () => {
     mocks.setDelivery.mockResolvedValue(active);
     const container = await renderPage(paused);
 
-    expect(container.textContent).toContain('External delivery is paused');
-    expect(button(container, 'Disable push').disabled).toBe(true);
-    await act(async () => button(container, 'Resume delivery').click());
-    await act(async () => button(container, 'Resume delivery', true).click());
+    expect(container.textContent).toContain(
+      'Paused with email and phone alerts; your choice is saved',
+    );
+    expect(toggle(container, 'Android push').getAttribute('aria-checked')).toBe('true');
+    expect(toggle(container, 'Android push').disabled).toBe(true);
+    await act(async () => toggle(container, 'Email and phone alerts').click());
+    await act(async () => button(container, 'Resume alerts').click());
 
     expect(mocks.setDelivery).toHaveBeenCalledWith(true);
-    expect(container.textContent).toContain('External delivery resumed.');
-    expect(container.textContent).toContain('External delivery is active');
-    expect(button(container, 'Disable push').disabled).toBe(false);
+    expect(container.textContent).toContain('Email and phone alerts resumed.');
+    expect(toggle(container, 'Email and phone alerts').getAttribute('aria-checked')).toBe('true');
+    expect(toggle(container, 'Android push').disabled).toBe(false);
   });
 
   it('keeps confirmation busy until the save completes and reports failures', async () => {
@@ -186,8 +203,8 @@ describe('tenant notification settings', () => {
     mocks.setDelivery.mockReturnValue(save.promise);
     const container = await renderPage();
 
-    await act(async () => button(container, 'Pause delivery').click());
-    await act(async () => button(container, 'Pause delivery', true).click());
+    await act(async () => toggle(container, 'Email and phone alerts').click());
+    await act(async () => button(container, 'Pause alerts').click());
     expect(container.querySelector('[role="dialog"]')).not.toBeNull();
     expect(button(container, 'Working…').disabled).toBe(true);
 
@@ -196,7 +213,7 @@ describe('tenant notification settings', () => {
     expect(container.querySelector('[role="alert"]')?.textContent).toContain(
       'Delivery update failed.',
     );
-    expect(container.textContent).toContain('External delivery is active');
+    expect(toggle(container, 'Email and phone alerts').getAttribute('aria-checked')).toBe('true');
   });
 
   it('offers retry after a settings load failure', async () => {
@@ -207,6 +224,6 @@ describe('tenant notification settings', () => {
     );
     mocks.fetchSettings.mockResolvedValue(active);
     await act(async () => button(container, 'Try again').click());
-    expect(container.textContent).toContain('External delivery is active');
+    expect(toggle(container, 'Email and phone alerts').getAttribute('aria-checked')).toBe('true');
   });
 });
