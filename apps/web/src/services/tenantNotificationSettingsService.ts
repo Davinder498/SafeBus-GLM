@@ -63,8 +63,8 @@ export async function setTenantNotificationDeliveryEnabled(
   if (error) {
     throw new Error(
       enabled
-        ? 'External delivery could not be enabled. Confirm that privacy review is approved.'
-        : 'External delivery could not be paused.',
+        ? 'Email and phone alerts could not be enabled. Contact SafeBus support if notification setup is incomplete.'
+        : 'Email and phone alerts could not be paused.',
     );
   }
   return normalizeSettings(data);

@@ -4,6 +4,16 @@ SQL here is reviewed source for a future protected release. It is deliberately
 outside the active top-level migration manifest and deployment traversal. Never
 apply these files directly or replay the migration chain against BusSafe.
 
+`20261024203929_launch_ready_notification_defaults.sql` implements the owner's
+standard launch behavior for new school authorities. The existing tenant trigger
+provisions notification availability automatically, without a manual approval
+for each new account. It also repairs only the identified Test School District
+policy while it still matches the old pending defaults. Existing pauses,
+rejections, recipient choices and limits are preserved. Embedded PostgreSQL
+tests and a bounded rollback-only rehearsal against the reconciled hosted schema
+passed. This is prepared source, not a persistent installation. See
+[the owner direction and verification](../../../docs/operations/notification-privacy-approval-2026-10-24.md).
+
 `20261024014838_official_invitation_origin.sql` adds only the owner-approved
 `https://safebus.kids` origin to the invitation allowlist, preserving all existing
 entries. This corrects the official-domain configuration mismatch observed on

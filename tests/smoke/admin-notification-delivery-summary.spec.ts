@@ -1,5 +1,8 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
+import { installLocalOnlyBoundary } from './fixtures/local-only';
+import { expectUsableMobileLayout } from './fixtures/responsive';
 
 const ids = {
   profile: '11111111-1111-1111-1111-111111111111',
@@ -25,8 +28,21 @@ async function mockRole(
   page: Page,
   role: 'tenant_admin' | 'guardian' | 'driver' | 'platform_super_admin' = 'tenant_admin',
   summaryBody?: unknown,
+  settingsOverrides: Record<string, unknown> = {},
 ) {
+  await installLocalOnlyBoundary(page);
   const currentProfile = profile(role);
+  const settings = {
+    notifications_enabled: true,
+    push_notifications_enabled: true,
+    email_effective: true,
+    push_effective: true,
+    privacy_review_status: 'approved',
+    privacy_approved_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+    ...settingsOverrides,
+  };
+  const mutations: Array<{ path: string; body: Record<string, unknown> }> = [];
   await page.addInitScript(
     ({ userProfile }) => {
       const session = {
@@ -102,16 +118,26 @@ async function mockRole(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          notifications_enabled: true,
-          push_notifications_enabled: true,
-          email_effective: true,
-          push_effective: true,
-          privacy_review_status: 'approved',
-          privacy_approved_at: '2026-01-01T00:00:00Z',
-          updated_at: '2026-01-01T00:00:00Z',
-        }),
+        body: JSON.stringify(settings),
       });
+    if (
+      path.includes('/rpc/set_tenant_notification_delivery_enabled') ||
+      path.includes('/rpc/set_tenant_push_notifications_enabled')
+    ) {
+      const body = route.request().postDataJSON();
+      mutations.push({ path, body });
+      if (path.includes('set_tenant_notification_delivery_enabled')) {
+        settings.notifications_enabled = body.p_enabled;
+        settings.email_effective = body.p_enabled;
+      } else settings.push_notifications_enabled = body.p_enabled;
+      settings.push_effective =
+        settings.notifications_enabled && settings.push_notifications_enabled;
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(settings),
+      });
+    }
     if (path.includes('/rpc/get_notification_delivery_health_v2')) {
       if (summaryBody === undefined)
         return route.fulfill({
@@ -159,6 +185,12 @@ async function mockRole(
       });
     return blockUnexpectedSupabaseRestAccess(route, method, path);
   });
+  return mutations;
+}
+
+async function openDeliveryActivity(page: Page) {
+  await page.goto('/admin/settings/notifications');
+  await page.getByText('Delivery activity', { exact: true }).click();
 }
 
 test.describe('tenant admin notification delivery summary', () => {
@@ -253,7 +285,7 @@ test.describe('tenant admin notification delivery summary', () => {
 
   test('tenant admin sees safe operational counts and failure categories', async ({ page }) => {
     await mockRole(page, 'tenant_admin');
-    await page.goto('/admin/settings/notifications');
+    await openDeliveryActivity(page);
     await expect(
       page.getByRole('heading', { name: 'Notification delivery', level: 2 }),
     ).toBeVisible();
@@ -271,7 +303,7 @@ test.describe('tenant admin notification delivery summary', () => {
     page,
   }) => {
     await mockRole(page, 'tenant_admin');
-    await page.goto('/admin/settings/notifications');
+    await openDeliveryActivity(page);
     // The summary card must never show emails or names
     await expect(page.getByRole('heading', { name: 'Notification delivery' })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Android push' })).toBeVisible();
@@ -306,7 +338,7 @@ test.describe('tenant admin notification delivery summary', () => {
   test('summary card renders without crashing on mobile viewport', async ({ page }) => {
     await mockRole(page, 'tenant_admin');
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('/admin/settings/notifications');
+    await openDeliveryActivity(page);
     await expect(
       page.getByRole('heading', { name: 'Notification delivery', level: 2 }),
     ).toBeVisible();
@@ -328,13 +360,95 @@ test.describe('tenant admin notification delivery summary', () => {
         recentFailureCategories: [],
       },
     });
-    await page.goto('/admin/settings/notifications');
+    await openDeliveryActivity(page);
     await expect(page.getByText('No recent push failures.')).toBeVisible();
   });
 
   test('fails closed when the delivery-health response is malformed', async ({ page }) => {
     await mockRole(page, 'tenant_admin', []);
-    await page.goto('/admin/settings/notifications');
+    await openDeliveryActivity(page);
     await expect(page.getByText('Summary unavailable')).toBeVisible();
+  });
+
+  test('compact settings are accessible and confirm school authority changes', async ({
+    page,
+  }, testInfo) => {
+    const mutations = await mockRole(page);
+    if (testInfo.project.name === 'mobile-chromium')
+      await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto('/admin/settings/notifications');
+    const alerts = page.getByRole('switch', { name: 'Email and phone alerts', exact: true });
+    const push = page.getByRole('switch', { name: 'Android push', exact: true });
+    await expect(alerts).toBeChecked();
+    await expect(push).toBeChecked();
+    await expect(page.getByRole('heading', { name: 'Delivery channels' })).toHaveCount(0);
+    await expect(page.getByText(/privacy approval|External delivery is locked/i)).toHaveCount(0);
+    await expect(
+      page.getByRole('heading', { name: 'Notification delivery', exact: true }),
+    ).not.toBeVisible();
+    await expectUsableMobileLayout(page);
+    const report = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+    expect(report.violations).toEqual([]);
+    await page.screenshot({
+      path: testInfo.outputPath('notification-settings.png'),
+      fullPage: true,
+    });
+    await alerts.click();
+    await expect(page.getByRole('dialog')).toContainText(
+      'individual preferences will remain available',
+    );
+    expect(mutations).toHaveLength(0);
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Pause alerts', exact: true })
+      .click();
+    await expect(alerts).not.toBeChecked();
+    await expect(push).toBeChecked();
+    await expect(push).toBeDisabled();
+    await alerts.click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Resume alerts', exact: true })
+      .click();
+    await expect(push).toBeEnabled();
+    await push.click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Disable push', exact: true })
+      .click();
+    await expect(push).not.toBeChecked();
+    expect(mutations.map((request) => request.body)).toEqual([
+      { p_enabled: false },
+      { p_enabled: true },
+      { p_enabled: false },
+    ]);
+  });
+
+  test('unconfigured notification setup is explained without an internal approval banner', async ({
+    page,
+  }, testInfo) => {
+    const mutations = await mockRole(page, 'tenant_admin', undefined, {
+      privacy_review_status: 'pending',
+      privacy_approved_at: null,
+      notifications_enabled: false,
+      push_notifications_enabled: false,
+      email_effective: false,
+      push_effective: false,
+    });
+    if (testInfo.project.name === 'mobile-chromium')
+      await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto('/admin/settings/notifications');
+    await expect(page.getByRole('status')).toContainText('to finish notification setup');
+    await expect(page.getByRole('link', { name: 'Contact SafeBus support' })).toHaveAttribute(
+      'href',
+      '/admin/settings/support',
+    );
+    await expect(
+      page.getByRole('switch', { name: 'Email and phone alerts', exact: true }),
+    ).toBeDisabled();
+    await expect(page.getByRole('switch', { name: 'Android push', exact: true })).toBeDisabled();
+    await expectUsableMobileLayout(page);
+    expect(mutations).toHaveLength(0);
+    await page.screenshot({ path: testInfo.outputPath('notification-setup.png'), fullPage: true });
   });
 });
