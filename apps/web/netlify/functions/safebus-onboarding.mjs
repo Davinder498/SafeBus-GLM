@@ -16,9 +16,13 @@ const GUARDIAN_RELATIONSHIPS = new Set(['mother', 'father', 'guardian', 'caregiv
 const SUPABASE_REQUEST_TIMEOUT_MS = 12_000;
 
 class OnboardingConfigurationError extends Error {
-  constructor() {
-    super('Server onboarding is not configured.');
+  constructor(
+    code = 'onboarding_not_configured',
+    message = 'The invitation service is not configured. Contact the platform administrator. No invitation was sent.',
+  ) {
+    super(message);
     this.name = 'OnboardingConfigurationError';
+    this.code = code;
   }
 }
 
@@ -40,21 +44,41 @@ async function invitationRedirectUrl(ctx) {
   const configured = clean(process.env.SAFEBUS_INVITE_REDIRECT_URL);
   if (!configured) return null;
 
+  let redirect;
   try {
-    const redirect = new URL(configured);
-    const { data: allowed, error } = await ctx.user.rpc('is_allowed_redirect_origin', {
-      p_origin: redirect.origin.toLowerCase(),
-    });
-    if (error || !allowed) {
-      throw new Error('Server invitation redirect is not in the approved origin allowlist.');
+    redirect = new URL(configured);
+    if (
+      !['http:', 'https:'].includes(redirect.protocol) ||
+      redirect.username ||
+      redirect.password
+    ) {
+      throw new Error('Unsupported invitation URL.');
     }
-    redirect.pathname = '/accept-invitation';
-    redirect.search = '';
-    redirect.hash = '';
-    return redirect.toString();
   } catch {
-    throw new Error('Server invitation redirect is not a valid absolute URL.');
+    throw new OnboardingConfigurationError(
+      'invitation_redirect_invalid',
+      'Invitations are unavailable because the account setup address is invalid. Contact the platform administrator. No invitation was sent.',
+    );
   }
+  const { data: allowed, error } = await ctx.user.rpc('is_allowed_redirect_origin', {
+    p_origin: redirect.origin.toLowerCase(),
+  });
+  if (error) {
+    throw new OnboardingConfigurationError(
+      'invitation_redirect_check_failed',
+      'The invitation service could not verify the account setup address. Contact the platform administrator. No invitation was sent.',
+    );
+  }
+  if (allowed !== true) {
+    throw new OnboardingConfigurationError(
+      'invitation_redirect_not_allowed',
+      'Invitations are unavailable because the account setup address has not been approved. Contact the platform administrator to approve the SafeBus website address. No invitation was sent.',
+    );
+  }
+  redirect.pathname = '/accept-invitation';
+  redirect.search = '';
+  redirect.hash = '';
+  return redirect.toString();
 }
 
 async function fetchWithTimeout(input, init = {}) {
@@ -408,7 +432,8 @@ async function createTenant(event, body) {
   const email = clean(body.adminEmail).toLowerCase();
   if (!tenantName || !adminName || !email) {
     return json(400, {
-      error: 'School authority name, admin name, and admin email are required. No invitation was sent.',
+      error:
+        'School authority name, admin name, and admin email are required. No invitation was sent.',
     });
   }
   if (
@@ -625,7 +650,8 @@ async function tenantLifecycle(event, body) {
     p_tenant_id: tenantId,
     p_status: status,
   });
-  if (error) return json(400, { error: error.message || 'Unable to update school authority status.' });
+  if (error)
+    return json(400, { error: error.message || 'Unable to update school authority status.' });
   return json(200, data);
 }
 
@@ -938,7 +964,8 @@ async function action(event, body) {
     if (boundaryError) return json(500, { error: 'Unable to verify the invitation boundary.' });
     if (isFirstAdminInvitation !== true) {
       return json(403, {
-        error: 'Platform personnel can manage only the first school authority administrator invitation.',
+        error:
+          'Platform personnel can manage only the first school authority administrator invitation.',
       });
     }
   }
@@ -1031,7 +1058,9 @@ async function action(event, body) {
 
   if (next === 'cancel') {
     if (ctx.caller.role !== 'platform_super_admin') {
-      return json(403, { error: 'School authority administrators must use the audited revoke workflow.' });
+      return json(403, {
+        error: 'School authority administrators must use the audited revoke workflow.',
+      });
     }
     const { data, error } = await ctx.user.rpc('platform_cancel_first_admin_invitation', {
       p_invitation_id: id,
@@ -1113,6 +1142,7 @@ export async function handler(event) {
         event: 'safebus_onboarding_failed',
         kind: requestKind,
         errorName,
+        ...(error instanceof OnboardingConfigurationError ? { code: error.code } : {}),
       }),
     );
     if (errorName === 'TimeoutError' || errorName === 'AbortError') {
@@ -1123,8 +1153,8 @@ export async function handler(event) {
     }
     if (errorName === 'OnboardingConfigurationError') {
       return json(503, {
-        error:
-          'Server onboarding is not configured. Add SUPABASE_SECRET_KEY to apps/web/.env and restart the local dev server.',
+        error: error.message,
+        code: error.code,
       });
     }
     return json(500, {

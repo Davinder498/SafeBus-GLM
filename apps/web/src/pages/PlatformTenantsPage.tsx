@@ -75,7 +75,7 @@ export function PlatformTenantsPage() {
           description="Welcome new school authorities and follow their progress from invitation to an operational fleet."
           icon={<Building2 className="h-6 w-6" />}
         />
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
           {[
             ['School authorities', tenants.length],
             [
@@ -84,9 +84,11 @@ export function PlatformTenantsPage() {
             ],
             ['Trial subscriptions', billing.filter((b) => b.status === 'trialing').length],
           ].map(([label, value]) => (
-            <Card key={label} className="p-5">
-              <p className="text-sm font-medium text-slate-500">{label}</p>
-              <p className="mt-2 text-3xl font-bold text-navy-900">{loading ? '—' : value}</p>
+            <Card key={label} className="p-3 sm:p-5">
+              <p className="text-xs font-medium text-slate-500 sm:text-sm">{label}</p>
+              <p className="mt-2 text-2xl font-bold text-navy-900 sm:text-3xl">
+                {loading ? '—' : value}
+              </p>
             </Card>
           ))}
         </div>

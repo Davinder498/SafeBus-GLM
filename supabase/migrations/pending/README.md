@@ -4,6 +4,12 @@ SQL here is reviewed source for a future protected release. It is deliberately
 outside the active top-level migration manifest and deployment traversal. Never
 apply these files directly or replay the migration chain against BusSafe.
 
+`20261024014838_official_invitation_origin.sql` adds only the owner-approved
+`https://safebus.kids` origin to the invitation allowlist, preserving all existing
+entries. This corrects the official-domain configuration mismatch observed on
+2026-10-24. It remains unapplied. See the
+[onboarding review and release checks](../../../docs/qa/school-authority-onboarding-review-2026-10-24.md).
+
 `20261017161907_stable_qr_reprints.sql` adds encrypted private copies for authorized
 reprinting of the same active student and bus QR codes. Existing hash-only codes
 stay valid and can be recovered from a matching original image; downloads never
