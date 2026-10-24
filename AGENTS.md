@@ -19,6 +19,48 @@ Core product principle:
 
 > Track the bus, not the child.
 
+## Required launch behavior — owner direction, 2026-10-24
+
+SafeBus must work as a real, usable service for every newly onboarded school
+authority and school authority admin. Do not deliver accounts with shipped
+features silently disabled by development defaults, undocumented switches, or
+repeated manual approvals. Fix the provisioning defaults and verify the resulting
+behavior; changing a label or recording an approval in a document is not a fix.
+
+- Normal invitation acceptance, authentication/MFA, subscription or trial terms,
+  bus allowance, role permissions, and school authority data boundaries remain.
+  “Full app” means all shipped features permitted by those normal rules; it does
+  not mean bypassing billing, authentication, RLS, or another person's consent.
+- The owner has approved the standard notification privacy setup. New school
+  authorities must receive notification availability automatically. Do not
+  require a separate owner/platform privacy approval for each new account.
+- School authority notification availability is separate from each guardian's
+  and driver's choices and Android permission. Preserve personal opt-outs, quiet
+  hours, authorization checks, rate limits, and intentional school authority
+  pauses. Do not auto-subscribe people or send test notifications to real users.
+- Repair existing accounts left incomplete by the old provisioning defaults with
+  a bounded, reviewed change. Preserve deliberate pauses and rejected policies;
+  do not blanket-enable every existing school authority.
+- Verify the complete new-account journey and the actual provider configuration
+  required by shipped features. A missing email, push, billing, or map service
+  configuration is a platform issue to resolve, not a permanent customer-facing
+  “awaiting approval” state. Report any concrete remaining dependency plainly.
+- An instruction edit, local fixture test, or open pull request alone does not
+  prove that the live app works. Distinguish implemented, tested, and live-verified
+  behavior, and never claim launch completion while required work is pending.
+
+This direction supersedes older requirements for per-school-authority manual
+notification privacy approval, including historical milestone documents. It
+authorizes implementing the onboarding/default fixes and bounded verification
+against the existing BusSafe database. The existing BusSafe project is the
+approved target for these launch-default fixes; a separate DEV/staging database
+is not a prerequisite. Reconcile the hosted schema, rehearse a bounded change
+with rollback, and retain recovery evidence before its reviewed rollout.
+It does not authorize inventing completed
+legal/vendor evidence, merging without human review, destructive testing, or
+bypassing the protected software release workflow. Do not ask the owner to
+repeat the standard notification privacy approval already given.
+
 ## Workflow
 
 - Work one milestone at a time.
@@ -39,7 +81,9 @@ Core product principle:
 - Do not run `supabase start`.
 - Do not run `supabase db reset`.
 - Keep SQL migrations in `supabase/migrations`.
-- Do not apply pending migrations until an isolated test database or branch is explicitly approved.
+- Pending changes require an approved target and reviewed rollout. The
+  owner-authorized launch-default fixes above may use the existing BusSafe
+  project; do not require a second database for that work.
 - Do not run RLS tests or QA seed/fixture writers against production.
 - Modify production only through the protected, approved adoption/release workflow.
 
@@ -122,11 +166,15 @@ Never expose service role or secret keys in frontend code, `.env`, docs, logs, o
 
 ## Current Active Migrations
 
-- `0001_auth_profile_foundation.sql`
-- `0002_foundation_read_grants.sql`
-- `0003_students_guardians_foundation.sql`
-- `0004_transportation_structure_foundation.sql`
-- `0005_transportation_admin_write_foundation.sql`
+Use `supabase/migration-checksums.json` for the current tracked migration chain;
+the original five foundation migrations are not the full current schema.
+The hosted project also has reviewed reconciliation records. Inspect the actual
+hosted schema and release evidence before preparing a forward change. Never
+replay the migration chain to make the hosted project match the repository.
+
+Changes in `supabase/migrations/pending` are prepared changes, not proof of
+deployment. Keep new forward changes there until their promotion/release is
+reviewed through the existing workflow.
 
 Legacy archived migration:
 

@@ -4,8 +4,11 @@ The SafeBus owner explicitly approved notification privacy in this session:
 
 > i approve privacy.
 
-This records the owner's approval for the school-authority notification setup
-being discussed. It does not grant consent on behalf of guardians or drivers.
+The owner subsequently clarified that every new school authority admin must
+receive a working app, with no manual privacy activation for each account.
+`AGENTS.md` now records that launch requirement. This is approval of the standard
+platform notification setup; it does not grant consent on behalf of guardians
+or drivers.
 
 ## Verified current state
 
@@ -29,24 +32,51 @@ statement and 1-second lock timeouts, and final `ROLLBACK`. No notification
 settings, recipients, preferences, queues, or identities were changed. The only
 non-internal update trigger on the policy table sets `updated_at`.
 
-## Protected recording step
+## Automatic provisioning fix
 
-The reviewable production change is to record this approval on **only this
-policy**: set `privacy_review_status` to `approved`, record the actual approval
-timestamp, and bind `privacy_approved_by` to an authenticated, verified approving
-profile. Preserve all delivery switches, limits, individual choices, other school
-authorities, and existing queue records. Approval alone must not send alerts.
+The prepared forward change is
+`supabase/migrations/pending/20261024203929_launch_ready_notification_defaults.sql`.
+It changes the policy defaults used by the existing school authority creation
+trigger: notification availability is enabled and the standard policy is already
+approved. A new school authority no longer needs a separate platform action.
+No approving person is invented: `privacy_approved_by` remains null for the
+standard automatically provisioned policy, and the timestamp records provision.
 
-After recording approval, verify the school authority's settings RPC reports
-approval and that email and push remain off. The school authority admin can then
-choose to resume alerts through the existing authenticated, audited controls.
-Do not simulate an authenticated actor or bypass the protected workflow.
+The migration also repairs **only Test School District**, and only if its policy
+still matches the old pending, never-approved, disabled state. It preserves its
+limits, other school authorities' settings, deliberate pauses and rejected
+policies. It does not rewrite personal choices, quiet hours, Android permissions,
+identities, queues or previous notifications. Delivery still requires each
+recipient's eligibility and choices.
 
-**Live approval recording remains pending.** `AGENTS.md` requires:
-“Modify production only through the protected, approved adoption/release
-workflow.” This UI pull request does not execute that production operation or
-merge itself. The scoped notification approval is recorded here; no additional
-owner privacy confirmation is being requested.
+Embedded PostgreSQL checks execute the actual policy table, reconciled creation
+trigger and notification-control RPCs with the forward change. They verify new
+account readiness, scoped repair, preservation of limits and other accounts,
+personal opt-outs, pause/resume and replay, role boundaries, and rollback of an
+incomplete school authority creation. They do not use the hosted database.
+
+The exact forward SQL was also rehearsed against the reconciled hosted schema
+in one transaction with 5-second statement and 1-second lock timeouts and final
+`ROLLBACK`. Inside that transaction, the five defaults changed as intended and
+Test School District became ready; an assertion verified that all other school
+authority policy rows stayed identical. A separate read-only transaction then
+confirmed that the old defaults and target state were restored. No fixtures,
+identities, email sends, push sends or persistent schema/data changes resulted.
+
+Runtime checks also confirmed that the public site, sign-in shell, security
+headers and map configuration pass the existing health checker. The production
+function environment contains the email-provider, sender, Supabase and Stripe
+configuration keys used by their shipped handlers. The optional manual email
+dispatcher secret is absent; the scheduled dispatcher does not require it and
+is configured to run every five minutes. The push Edge Function is active and
+its minute-by-minute database schedule is active. Credential presence and these
+read-only checks do not establish a completed real-device push delivery or a
+new nonzero payment; do not represent them as full launch certification.
+
+**Rollout is not yet complete.** The change is prepared for review, not applied
+to the hosted project. After the reviewed rollout, verify a real new-account
+journey and delivery configuration before reporting live completion. No further
+per-account owner privacy approval is needed.
 
 The separate commercial privacy-readiness evidence file is unchanged because
 this request addresses notification setup, not completion of its legal,
