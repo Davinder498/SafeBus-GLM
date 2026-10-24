@@ -72,6 +72,14 @@ export function InvoiceHistory({ refreshToken }: { refreshToken: string | null }
           Refresh invoices
         </Button>
       </div>
+ codex/launch-settings-cleanup
+
+      <p className="mt-4 break-words rounded-lg bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+        Billing email:{' '}
+        <span className="font-semibold text-slate-900">{billingEmail ?? 'Not set'}</span>. Use
+        Manage payment details to update the billing contact or manage payment methods.
+      </p>
+ main
       {error && (
         <p role="alert" className="mt-4 rounded-lg bg-danger-50 p-4 text-sm text-danger-700">
           {error} Use Refresh invoices to try again. Previously loaded invoices remain available.
@@ -171,6 +179,13 @@ export function InvoiceHistory({ refreshToken }: { refreshToken: string | null }
           Load older invoices
         </Button>
       )}
+ codex/launch-settings-cleanup
+
+      <p className="mt-5 text-xs leading-5 text-slate-500">
+        Invoice links open securely in Stripe. If a link expires, refresh invoices or use Manage
+        payment details below.
+      </p>
+ main
     </Card>
   );
 }

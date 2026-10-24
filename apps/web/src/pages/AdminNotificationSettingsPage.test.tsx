@@ -98,7 +98,12 @@ afterEach(async () => {
 describe('tenant notification settings', () => {
   it('shows compact notification controls without policy or channel cards', async () => {
     const container = await renderPage();
+ codex/launch-settings-cleanup
     expect(container.textContent).not.toContain('The in-app inbox remains available');
+
+    expect(container.textContent).toContain('The in-app inbox remains available');
+    
+    main
     expect(container.textContent).toContain('Email and phone alerts');
     expect(container.textContent).toContain('Android push');
     expect(container.textContent).toContain('Delivery health summary');
