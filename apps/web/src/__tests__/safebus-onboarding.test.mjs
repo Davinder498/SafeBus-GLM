@@ -59,6 +59,7 @@ function setupClients({
   deleteUserError = null,
   resetPasswordError = null,
   sessionResult = { data: true, error: null },
+  redirectResult = { data: true, error: null },
   authUser = {
     id: 'guardian-auth-1',
     email: 'guardian@example.test',
@@ -126,7 +127,7 @@ function setupClients({
     rpc: async (name, args) => {
       if (name === 'is_current_user_session_active') return sessionResult;
       if (name === 'check_rate_limit') return { data: true, error: null };
-      if (name === 'is_allowed_redirect_origin') return { data: true, error: null };
+      if (name === 'is_allowed_redirect_origin') return redirectResult;
       return userClient.rpc(name, args);
     },
   };
@@ -196,7 +197,10 @@ describe('SafeBus member onboarding', () => {
       const response = await handler(createTenantEvent());
 
       expect(response.statusCode).toBe(503);
-      expect(JSON.parse(response.body).error).toContain('Add SUPABASE_SECRET_KEY to apps/web/.env');
+      expect(JSON.parse(response.body)).toMatchObject({
+        code: 'onboarding_not_configured',
+        error: expect.stringContaining('No invitation was sent'),
+      });
       expect(createClient).not.toHaveBeenCalled();
     } finally {
       process.env.SUPABASE_SERVICE_ROLE_KEY = legacyService;
@@ -204,6 +208,50 @@ describe('SafeBus member onboarding', () => {
       else process.env.SUPABASE_SECRET_KEY = currentSecret;
     }
   });
+
+  it.each([
+    [false, null, 'invitation_redirect_not_allowed'],
+    [null, { message: 'private database detail' }, 'invitation_redirect_check_failed'],
+  ])(
+    'rejects an unapproved or unverifiable invitation origin before sending email',
+    async (allowed, error, code) => {
+      const { adminClient, userClient } = setupClients({
+        callerProfile: { ...caller, role: 'platform_super_admin', tenant_id: null },
+        redirectResult: { data: allowed, error },
+      });
+      const response = await handler(createTenantEvent());
+      expect(response.statusCode).toBe(503);
+      expect(JSON.parse(response.body)).toMatchObject({
+        code,
+        error: expect.stringContaining('No invitation was sent'),
+      });
+      expect(response.body).not.toContain('private database detail');
+      expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
+      expect(adminClient.auth.admin.deleteUser).not.toHaveBeenCalled();
+      expect(adminClient.auth.admin.updateUserById).not.toHaveBeenCalled();
+      expect(userClient.rpc).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['invalid-url', 'javascript:alert(1)', 'https://user:password@app.example.test'])(
+    'rejects an invalid configured invitation URL: %s',
+    async (url) => {
+      const previous = process.env.SAFEBUS_INVITE_REDIRECT_URL;
+      process.env.SAFEBUS_INVITE_REDIRECT_URL = url;
+      try {
+        const { adminClient } = setupClients({
+          callerProfile: { ...caller, role: 'platform_super_admin', tenant_id: null },
+        });
+        const response = await handler(createTenantEvent());
+        expect(response.statusCode).toBe(503);
+        expect(JSON.parse(response.body).code).toBe('invitation_redirect_invalid');
+        expect(response.body).not.toContain(url);
+        expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
+      } finally {
+        process.env.SAFEBUS_INVITE_REDIRECT_URL = previous;
+      }
+    },
+  );
 
   it('accepts current Supabase publishable and secret server keys', async () => {
     const legacyAnon = process.env.SUPABASE_ANON_KEY;

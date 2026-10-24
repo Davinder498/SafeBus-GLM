@@ -299,13 +299,77 @@ async function fillTenantForm(page: Page) {
 }
 
 test.describe('platform tenant invitation atomicity', () => {
+  test('review supports editing, accessible hints and a recoverable configuration error', async ({
+    page,
+  }, testInfo) => {
+    // This full journey includes two accessibility scans and three screenshots.
+    test.setTimeout(60_000);
+    await installPlatformMock(page, 'success');
+    let attempts = 0;
+    await page.route('**/.netlify/functions/safebus-onboarding', async (route) => {
+      attempts += 1;
+      if (attempts > 1) return route.fallback();
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'invitation_redirect_not_allowed',
+          error: 'The account setup address has not been approved. No invitation was sent.',
+        }),
+      });
+    });
+    await page.goto('/admin/tenants');
+    await fillTenantForm(page);
+    const wizard = page.getByRole('form', { name: 'Invite a school authority' });
+    await wizard.getByRole('button', { name: 'Edit school authority admin', exact: true }).click();
+    await expect(wizard.getByLabel('School authority admin full name')).toHaveValue(
+      'Successful Admin',
+    );
+    await expect(wizard.getByLabel('School authority admin email')).toHaveAccessibleDescription(
+      'A secure account setup link will be sent to this address.',
+    );
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({ path: testInfo.outputPath('onboarding-admin.png'), fullPage: true });
+    expect(
+      (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()).violations,
+    ).toEqual([]);
+    await wizard.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect(wizard.getByRole('heading', { name: 'Review invitation' })).toBeFocused();
+    await wizard.getByRole('button', { name: 'Edit school authority', exact: true }).click();
+    await expect(wizard.getByLabel('School authority name')).toHaveValue('Successful Transit');
+    await wizard.getByLabel('School authority name').fill('Successful School Division');
+    await wizard.getByRole('button', { name: 'Continue', exact: true }).click();
+    await wizard.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect(wizard).toContainText('Successful School Division');
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({ path: testInfo.outputPath('onboarding-ready.png'), fullPage: true });
+    await wizard.getByRole('button', { name: 'Send invitation', exact: true }).click();
+    await expect(wizard.getByRole('alert')).toContainText('No invitation was sent');
+    expect(attempts).toBe(1);
+    await expect(wizard).toContainText('Successful School Division');
+    await expect(wizard).toContainText('successful.admin@example.test');
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({ path: testInfo.outputPath('onboarding-review.png'), fullPage: true });
+    expect(
+      (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()).violations,
+    ).toEqual([]);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+    await wizard.getByRole('button', { name: 'Send invitation', exact: true }).click();
+    await expect(wizard.getByRole('status')).toContainText(
+      'Invitation accepted by the email provider',
+    );
+    expect(attempts).toBe(2);
+  });
+
   test('failed invitation shows the provider error without adding a tenant card', async ({
     page,
   }) => {
     await installPlatformMock(page, 'failure');
     await page.goto('/admin/tenants');
     await fillTenantForm(page);
-    await page.getByRole('button', { name: 'Create school authority and send invitation' }).click();
+    await page.getByRole('button', { name: 'Send invitation' }).click();
 
     await expect(page.getByRole('alert')).toContainText(
       'invitation email was not sent and no school authority was created',
@@ -327,7 +391,7 @@ test.describe('platform tenant invitation atomicity', () => {
         request.method() === 'POST' &&
         request.postDataJSON().kind === 'createTenant',
     );
-    await page.getByRole('button', { name: 'Create school authority and send invitation' }).click();
+    await page.getByRole('button', { name: 'Send invitation' }).click();
     expect((await createRequest).postDataJSON()).toMatchObject({
       kind: 'createTenant',
       tenantType: 'school_group',
