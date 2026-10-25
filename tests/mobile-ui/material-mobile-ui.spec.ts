@@ -888,13 +888,11 @@ test('driver support page shows one resolved support contact', async ({ page }) 
   await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
 
   await page.goto('/account');
-  const accountCards = page.locator('[data-ui="guardian-account-card"]');
-  await expect(accountCards).toHaveCount(3);
-  await expect(accountCards.first()).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-  await expect(accountCards.first().locator('[data-ui="guardian-icon-tile"]')).toHaveCSS(
-    'background-color',
-    'rgb(221, 242, 244)',
-  );
+  await expect(page).toHaveURL('/driver/settings');
+  const securityCard = page.locator('[data-ui="account-security-card"]');
+  await expect(securityCard).toHaveCount(1);
+  await expect(securityCard).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(securityCard.getByRole('link', { name: 'Enable MFA' })).toBeVisible();
 });
 
 test('driver support page avoids a configuration dead end when no contact is returned', async ({

@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/contexts/useAuth';
+import { MfaSettingsCard } from '@/components/settings/MfaSettingsCard';
 import {
   fetchGuardianDeliveryPreferences,
   saveGuardianDeliveryPreferences,
@@ -187,51 +188,52 @@ export function NotificationSettingsPage() {
 
   return (
     <DashboardLayout
-      title="Notification settings"
+      title="Settings"
       portal={isAdmin ? 'admin' : 'parent'}
       navItems={[]}
       navGroups={nav}
     >
-      <div className="mx-auto max-w-2xl" data-ui="notification-settings-page">
-        <PageHeader
-          title="Notification settings"
-          description="Choose how SafeBus should reach you."
-        />
-        {isAdmin ? (
-          <DataState
-            title="No settings needed"
-            message="Administrative updates remain available in your notification inbox."
-          />
-        ) : error ? (
-          <div className="space-y-4">
-            <DataState title="Settings unavailable" message={error} />
-            <Button type="button" variant="secondary" onClick={() => void load()}>
-              Try again
-            </Button>
-          </div>
-        ) : !preferences ? (
-          <DataState title="Loading settings" message="Checking your notification choices." />
-        ) : (
-          <NotificationDeliverySettings
-            inAppEnabled={preferences.inAppEnabled}
-            onInAppEnabledChange={(checked) =>
-              queueChange((value) => ({ ...value, inAppEnabled: checked }))
-            }
-            pushEnabled={preferences.pushEnabled}
-            emailEnabled={preferences.emailEnabled}
-            alerts={alerts}
-            pendingSaves={pendingSaves}
-            message={message}
-            nativePushAvailable={nativePushAvailable}
-            permissionState={permissionState}
-            onPushEnabledChange={(checked) =>
-              queueChange((value) => ({ ...value, pushEnabled: checked }), checked)
-            }
-            onEmailEnabledChange={(checked) =>
-              queueChange((value) => ({ ...value, emailEnabled: checked }))
-            }
-          />
-        )}
+      <div className="mx-auto max-w-2xl space-y-5" data-ui="notification-settings-page">
+        <PageHeader title="Settings" />
+        <section aria-label="Notification settings">
+          <h2 className="mb-3 text-lg font-bold text-navy-900">Notification settings</h2>
+          {isAdmin ? (
+            <DataState
+              title="No settings needed"
+              message="Administrative updates remain available in your notification inbox."
+            />
+          ) : error ? (
+            <div className="space-y-4">
+              <DataState title="Settings unavailable" message={error} />
+              <Button type="button" variant="secondary" onClick={() => void load()}>
+                Try again
+              </Button>
+            </div>
+          ) : !preferences ? (
+            <DataState title="Loading settings" message="Checking your notification choices." />
+          ) : (
+            <NotificationDeliverySettings
+              inAppEnabled={preferences.inAppEnabled}
+              onInAppEnabledChange={(checked) =>
+                queueChange((value) => ({ ...value, inAppEnabled: checked }))
+              }
+              pushEnabled={preferences.pushEnabled}
+              emailEnabled={preferences.emailEnabled}
+              alerts={alerts}
+              pendingSaves={pendingSaves}
+              message={message}
+              nativePushAvailable={nativePushAvailable}
+              permissionState={permissionState}
+              onPushEnabledChange={(checked) =>
+                queueChange((value) => ({ ...value, pushEnabled: checked }), checked)
+              }
+              onEmailEnabledChange={(checked) =>
+                queueChange((value) => ({ ...value, emailEnabled: checked }))
+              }
+            />
+          )}
+        </section>
+        {isGuardian && <MfaSettingsCard />}
       </div>
     </DashboardLayout>
   );

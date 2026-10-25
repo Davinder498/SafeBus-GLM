@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { MfaSettingsCard } from '@/components/settings/MfaSettingsCard';
 import {
   fetchDriverDeliveryPreferences,
   saveDriverDeliveryPreferences,
@@ -193,6 +194,8 @@ export function DriverSettingsPage() {
             </Button>
           </Link>
         </section>
+
+        <MfaSettingsCard />
 
         <Card className="p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

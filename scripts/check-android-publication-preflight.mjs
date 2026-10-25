@@ -57,7 +57,8 @@ export async function verifyAndroidPublicationFiles(root = process.cwd()) {
     workflow,
     webRoutes,
     mobileRoutes,
-    accountSettings,
+    privacyPolicy,
+    accountMenu,
     androidStrings,
     mobileIndex,
   ] = await Promise.all([
@@ -69,7 +70,8 @@ export async function verifyAndroidPublicationFiles(root = process.cwd()) {
     read('.github/workflows/release-android.yml'),
     read('apps/web/src/routes/router.tsx'),
     read('apps/mobile/src/routes/router.tsx'),
-    read('apps/web/src/pages/AccountSettingsPage.tsx'),
+    read('apps/web/src/pages/PrivacyPolicyPage.tsx'),
+    read('apps/web/src/components/layout/DashboardLayout.tsx'),
     read('apps/mobile/android/app/src/main/res/values/strings.xml'),
     read('apps/mobile/index.html'),
   ]);
@@ -127,12 +129,15 @@ export async function verifyAndroidPublicationFiles(root = process.cwd()) {
     /path: '\/account-deletion'/.test(mobileRoutes),
     'The mobile account-deletion route is missing.',
   );
-  for (const href of ['/privacy', '/privacy#contact', '/account-deletion']) {
-    invariant(
-      accountSettings.includes(`href="${href}"`) || accountSettings.includes(`to="${href}"`),
-      `Account settings is missing ${href}.`,
-    );
-  }
+  invariant(accountMenu.includes("navigate('/privacy')"), 'The account menu must link to privacy.');
+  invariant(
+    privacyPolicy.includes('to="/account-deletion"'),
+    'Privacy must link to account deletion.',
+  );
+  invariant(
+    privacyPolicy.includes('id="contact"'),
+    'The privacy contact section must remain available.',
+  );
 
   const images = {};
   for (const [relativePath, expected] of REQUIRED_IMAGES) {
