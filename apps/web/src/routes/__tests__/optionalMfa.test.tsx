@@ -98,7 +98,8 @@ async function render(path = '/account/security', guard = false) {
               }
             />
             <Route path="/mfa" element={<Destination />} />
-            <Route path="/account" element={<Destination />} />
+            <Route path="/notifications/settings" element={<Destination />} />
+            <Route path="/driver/settings" element={<Destination />} />
           </Routes>
         </MemoryRouter>
       </AppSurfaceProvider>,
@@ -163,7 +164,7 @@ it('lets a guardian enroll and verify an authenticator from account settings', a
   expect(c.querySelector('img')?.src).toContain('%3Csvg%2F%3E');
   await submit(c, '123456');
   expect(mocks.challengeAndVerify).toHaveBeenCalledWith({ factorId: 'new-factor', code: '123456' });
-  expect(c.textContent).toContain('/account:');
+  expect(c.textContent).toContain('/notifications/settings:');
 });
 it('requires a new code to remove MFA even in an already verified session', async () => {
   mocks.auth.mfaStatus = { currentLevel: 'aal2', nextLevel: 'aal2', verifiedFactors: [factor] };
@@ -176,7 +177,7 @@ it('requires a new code to remove MFA even in an already verified session', asyn
   expect(mocks.challengeAndVerify.mock.invocationCallOrder[0]).toBeLessThan(
     mocks.unenroll.mock.invocationCallOrder[0],
   );
-  expect(c.textContent).toContain('/account:');
+  expect(c.textContent).toContain('/notifications/settings:');
 });
 it('keeps the authenticator when fresh verification fails', async () => {
   mocks.auth.mfaStatus = { currentLevel: 'aal2', nextLevel: 'aal2', verifiedFactors: [factor] };
@@ -186,4 +187,12 @@ it('keeps the authenticator when fresh verification fails', async () => {
   await submit(c, '111111');
   expect(mocks.unenroll).not.toHaveBeenCalled();
   expect(c.textContent).toContain('Invalid authenticator code');
+});
+
+it('returns a driver to Driver settings after enrollment', async () => {
+  mocks.auth.profile!.role = 'driver';
+  const c = await render();
+  await click(c, 'Set up authenticator app');
+  await submit(c, '123456');
+  expect(c.textContent).toContain('/driver/settings:');
 });

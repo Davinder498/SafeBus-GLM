@@ -2,10 +2,17 @@ import { act, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GuardianDeliveryPreferences } from '@safebus/types';
+import { MemoryRouter } from 'react-router';
 import { NotificationSettingsPage } from './NotificationSettingsPage';
 
 const mocks = vi.hoisted(() => ({ fetch: vi.fn(), save: vi.fn() }));
-vi.mock('@/contexts/useAuth', () => ({ useAuth: () => ({ profile: { role: 'guardian' } }) }));
+vi.mock('@/contexts/useAuth', () => ({
+  useAuth: () => ({
+    profile: { role: 'guardian' },
+    mfaLoading: false,
+    mfaStatus: { verifiedFactors: [] },
+  }),
+}));
 vi.mock('@/components/layout/DashboardLayout', () => ({
   DashboardLayout: ({ children }: { children: ReactNode }) => <>{children}</>,
   adminNavGroups: [],
@@ -40,7 +47,13 @@ async function click(label: string) {
   await act(async () => control(label).click());
 }
 async function render() {
-  await act(async () => root.render(<NotificationSettingsPage />));
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <NotificationSettingsPage />
+      </MemoryRouter>,
+    ),
+  );
 }
 
 beforeEach(() => {
@@ -103,4 +116,11 @@ describe('guardian channel settings', () => {
     expect(mocks.save.mock.calls[1][0].pickupDropoff.inApp).toBe(true);
     expect(mocks.save.mock.calls[1][0].tripUpdates.email).toBe(true);
   });
+});
+
+it('keeps MFA available when notification settings cannot load', async () => {
+  mocks.fetch.mockRejectedValueOnce(new Error('Notification service unavailable'));
+  await render();
+  expect(container.textContent).toContain('Notification service unavailable');
+  expect(container.querySelector('a[href="/account/security"]')?.textContent).toBe('Enable MFA');
 });

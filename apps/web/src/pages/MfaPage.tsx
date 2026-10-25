@@ -72,8 +72,9 @@ export function MfaPage() {
   if (!profile) return <Navigate to="/login" replace />;
   if (mfaLoading) return <AppLoadingScreen />;
   const returnTo: unknown = location.state?.returnTo;
+  const settingsPath = profile.role === 'driver' ? '/driver/settings' : '/notifications/settings';
   const destination = managing
-    ? '/account'
+    ? settingsPath
     : typeof returnTo === 'string' &&
         returnTo.startsWith('/') &&
         !returnTo.startsWith('//') &&
@@ -152,7 +153,7 @@ export function MfaPage() {
         });
         setRemoving(false);
         setCode('');
-        if (!isAdmin) navigate('/account', { replace: true });
+        if (!isAdmin) navigate(settingsPath, { replace: true });
         return;
       }
       await refreshMfa();
@@ -205,7 +206,7 @@ export function MfaPage() {
             <div className="mt-6 space-y-4">
               <div className="flex flex-wrap gap-3">
                 <Button type="button" onClick={() => navigate(destination)}>
-                  {managing ? 'Back to account' : 'Continue'}
+                  {managing ? 'Back to settings' : 'Continue'}
                 </Button>
                 {verifiedFactor && (
                   <Button type="button" variant="danger" loading={busy} onClick={requestRemoval}>
@@ -274,10 +275,10 @@ export function MfaPage() {
 
           {!isAdmin && managing && !verifiedFactor && (
             <Link
-              to="/account"
+              to={settingsPath}
               className="mt-5 inline-flex min-h-11 items-center font-semibold text-navy-700"
             >
-              Back to account
+              Back to settings
             </Link>
           )}
           {removing && (

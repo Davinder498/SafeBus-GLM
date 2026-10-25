@@ -441,12 +441,6 @@ export function DashboardLayout({
               {usesBottomTabs && portal !== 'admin' && (
                 <>
                   <DropdownItem
-                    icon={<ShieldCheck className="h-4 w-4" />}
-                    onClick={() => navigate('/account')}
-                  >
-                    Account security
-                  </DropdownItem>
-                  <DropdownItem
                     icon={<CircleHelp className="h-4 w-4" />}
                     onClick={() => navigate('/support')}
                   >
