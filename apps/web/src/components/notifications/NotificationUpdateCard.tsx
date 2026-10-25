@@ -36,6 +36,9 @@ export function NotificationUpdateCard({
         aria-label={`Update: ${item.body}`}
         aria-expanded={hasMore ? expanded : undefined}
       >
+        {item.eventType === 'authority_announcement' && (
+          <span className="mb-1 block text-sm font-bold text-navy-900">{item.title}</span>
+        )}
         <span className="flex items-start gap-2">
           {!item.readAt && (
             <span
@@ -46,7 +49,11 @@ export function NotificationUpdateCard({
           )}
           <span
             ref={message}
-            className={cn('text-sm font-bold leading-5 text-navy-900', !expanded && 'line-clamp-3')}
+            className={cn(
+              'whitespace-pre-wrap break-words text-sm leading-5 text-navy-900',
+              item.eventType !== 'authority_announcement' && 'font-bold',
+              !expanded && 'line-clamp-3',
+            )}
           >
             {item.body}
           </span>

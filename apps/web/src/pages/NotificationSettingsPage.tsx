@@ -123,7 +123,10 @@ export function NotificationSettingsPage() {
   if (profile?.role === 'driver') {
     return <Navigate to="/driver/settings" replace />;
   }
-  if (profile?.role === 'tenant_admin') {
+  if (
+    profile?.role &&
+    ['tenant_admin', 'school_admin', 'transportation_admin'].includes(profile.role)
+  ) {
     return <Navigate to="/admin/settings/notifications" replace />;
   }
 

@@ -744,7 +744,7 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
     'rgb(35, 92, 120)',
   );
   await expect(page.getByRole('button', { name: 'Unread 1' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Service alerts' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Operational alerts' })).toBeVisible();
   await expect(filters.getByRole('combobox')).toHaveCount(0);
   await expect(filters.getByRole('checkbox')).toHaveCount(0);
   await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('gap', '8px');
@@ -786,7 +786,7 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
   await page.screenshot({ path: testInfo.outputPath('guardian-updates.png'), fullPage: true });
 });
 
-test('driver updates reuse the compact inbox with assignment-only alerts', async ({
+test('driver updates include assignment, trip, and operational alerts', async ({
   page,
 }, testInfo) => {
   await installSupabaseMock(page);
@@ -805,7 +805,7 @@ test('driver updates reuse the compact inbox with assignment-only alerts', async
   );
   await expect(page.getByRole('button', { name: 'Unread 1' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Assignment alerts' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Service alerts' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Operational alerts' })).toBeVisible();
   await expect(filters).toHaveCSS('margin-bottom', '16px');
   await expect(filters.locator('[data-ui="notification-filter-controls"]')).toHaveCSS('gap', '8px');
   await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('gap', '8px');
@@ -935,10 +935,10 @@ test('driver settings combines assignment delivery and device guidance', async (
   await expect(page.getByRole('heading', { name: 'Driver settings', level: 1 })).toBeVisible();
   await expect(page.getByRole('switch', { name: 'Push notifications' })).toBeVisible();
   await expect(page.getByRole('switch', { name: 'Email notifications' })).toBeVisible();
-  await expect(page.getByText('Assignment alerts', { exact: true })).toHaveCount(2);
+  await expect(page.getByText('Assignment alerts', { exact: true })).toHaveCount(3);
   await expect(page.getByRole('switch', { name: 'Assignment alerts push' })).toBeVisible();
   await expect(page.getByRole('switch', { name: 'Assignment alerts email' })).toBeVisible();
-  await expect(page.getByRole('switch', { name: 'In-app notifications' })).toHaveCount(0);
+  await expect(page.getByRole('switch', { name: 'In-app notifications' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Location access' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Driver safety' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'View notifications' })).toHaveAttribute(

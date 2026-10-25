@@ -327,28 +327,26 @@ test('tenant notification mutations are audited and narrowly granted', () => {
   }
 });
 
-test('tenant notification control center owns policy and health presentation', () => {
+test('administrator preferences control only the personal inbox', () => {
   assert.match(
     router,
-    /path: '\/admin\/settings\/notifications'[\s\S]*allowedRoles=\{\['tenant_admin'\]\}/i,
+    /path: '\/admin\/settings\/notifications'[\s\S]*allowedRoles=\{\['tenant_admin', 'school_admin', 'transportation_admin'\]\}/i,
   );
-  assert.match(tenantNotificationPage, /Email and phone alerts/);
-  assert.match(tenantNotificationPage, /privacyReviewStatus === 'approved'/);
-  assert.match(tenantNotificationPage, /Boolean\(settings.privacyApprovedAt\)/);
-  assert.match(tenantNotificationPage, /disabled=\{!approved \|\| saving\}/);
+  assert.match(tenantNotificationPage, /fetchAdminInboxPreferences/);
+  assert.match(tenantNotificationPage, /saveAdminInboxPreferences/);
+  assert.match(tenantNotificationPage, /In-app notifications/);
   assert.doesNotMatch(
     tenantNotificationPage,
-    /Delivery channels|ChannelCard|External delivery is locked|Privacy approval:/,
+    /tenantNotificationSettingsService|Email and phone alerts|Android push|privacyReviewStatus|NotificationDeliverySummaryCard/,
   );
-  assert.match(tenantNotificationPage, /NotificationDeliverySummaryCard/);
   assert.match(
     notificationSettingsPage,
-    /profile\?\.role === 'tenant_admin'[\s\S]*to="\/admin\/settings\/notifications"/,
+    /\['tenant_admin', 'school_admin', 'transportation_admin'\][\s\S]*to="\/admin\/settings\/notifications"/,
   );
-  assert.doesNotMatch(adminSettingsNav, /\/admin\/settings\/notifications/);
+  assert.match(adminSettingsNav, /\/admin\/settings\/notifications/);
   assert.match(
     notificationsPage,
-    /const settingsPath = isDriver[\s\S]*'\/driver\/settings'[\s\S]*profile\?\.role === 'guardian'[\s\S]*'\/notifications\/settings'[\s\S]*profile\?\.role === 'tenant_admin'[\s\S]*'\/admin\/settings\/notifications'[\s\S]*: null;/,
+    /const settingsPath = isDriver[\s\S]*'\/driver\/settings'[\s\S]*profile\?\.role === 'guardian'[\s\S]*'\/notifications\/settings'[\s\S]*admin[\s\S]*'\/admin\/settings\/notifications'[\s\S]*: null;/,
   );
   assert.match(notificationsPage, /settingsPath \? \([\s\S]*<Link\s+to=\{settingsPath\}/);
   assert.match(tenantNotificationPage, /to="\/notifications"/);

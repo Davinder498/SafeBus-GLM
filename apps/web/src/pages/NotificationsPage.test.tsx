@@ -86,8 +86,8 @@ describe('notification detail links', () => {
     ['tenant_admin', '/admin/settings/notifications'],
     ['guardian', '/notifications/settings'],
     ['driver', '/driver/settings'],
-    ['school_admin', null],
-    ['transportation_admin', null],
+    ['school_admin', '/admin/settings/notifications'],
+    ['transportation_admin', '/admin/settings/notifications'],
     ['platform_super_admin', null],
   ])('shows the permitted settings destination for %s', async (role, destination) => {
     mocks.role = role!;
@@ -125,13 +125,13 @@ describe('notification detail links', () => {
     expect(mocks.archive).toHaveBeenCalledWith(['event-1']);
     expect(container.textContent).not.toContain('Notification details');
   });
-  it('keeps driver queries restricted to assignment notifications', async () => {
+  it('includes all permitted driver categories by default', async () => {
     mocks.role = 'driver';
     await render('/notifications');
     expect(mocks.fetch).toHaveBeenCalledWith({
       limit: 30,
       unreadOnly: false,
-      category: 'assignments',
+      category: null,
     });
     expect(mocks.detail).not.toHaveBeenCalled();
   });

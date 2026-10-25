@@ -25,26 +25,7 @@ import {
   setNotificationsRead,
 } from '@/services/notificationService';
 import { cn } from '@/utils/cn';
-
-const categories: Array<{ value: NotificationCategory; label: string }> = [
-  { value: 'trip_status', label: 'Trips' },
-  { value: 'operations', label: 'Operations' },
-  { value: 'pickup_dropoff', label: 'Pickup & drop-off' },
-  { value: 'service_changes', label: 'Service changes' },
-  { value: 'assignments', label: 'Assignments' },
-  { value: 'delivery_health', label: 'Delivery health' },
-  { value: 'platform', label: 'Platform' },
-];
-
-const guardianMobileCategories: Array<{ value: NotificationCategory; label: string }> = [
-  { value: 'trip_status', label: 'Trips' },
-  { value: 'service_changes', label: 'Service alerts' },
-  { value: 'pickup_dropoff', label: 'Boarding' },
-];
-
-const driverMobileCategories: Array<{ value: NotificationCategory; label: string }> = [
-  { value: 'assignments', label: 'Assignment alerts' },
-];
+import { notificationCategoryChoices } from '@/utils/notificationCategories';
 
 export function NotificationsPage() {
   const [searchParams] = useSearchParams();
@@ -75,7 +56,7 @@ export function NotificationsPage() {
       const rows = await fetchNotifications({
         limit: 30,
         unreadOnly,
-        category: isDriver ? 'assignments' : category || null,
+        category: category || null,
       });
       setItems(rows);
       setHasMore(rows.length === 30);
@@ -86,7 +67,7 @@ export function NotificationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [category, isDriver, unreadOnly]);
+  }, [category, unreadOnly]);
   useEffect(() => {
     void load();
   }, [load]);
@@ -110,12 +91,14 @@ export function NotificationsPage() {
           : guardianNavGroups;
   const isRecipientMobile =
     appSurface === 'native-mobile' && (profile?.role === 'guardian' || isDriver);
-  const recipientMobileCategories = isDriver ? driverMobileCategories : guardianMobileCategories;
+  const categories =
+    notificationCategoryChoices[profile?.role ?? ''] ?? notificationCategoryChoices.admin;
+  const recipientMobileCategories = categories;
   const settingsPath = isDriver
     ? '/driver/settings'
     : profile?.role === 'guardian'
       ? '/notifications/settings'
-      : profile?.role === 'tenant_admin'
+      : admin
         ? '/admin/settings/notifications'
         : null;
 
@@ -209,7 +192,7 @@ export function NotificationsPage() {
         limit: 30,
         cursor: { createdAt: last.createdAt, id: last.id },
         unreadOnly,
-        category: isDriver ? 'assignments' : category || null,
+        category: category || null,
       });
       setItems((current) => [...current, ...rows]);
       setHasMore(rows.length === 30);
@@ -276,14 +259,14 @@ export function NotificationsPage() {
             </div>
             <p className="mt-1 text-xs leading-5 text-slate-600">
               {isDriver
-                ? 'Assignment updates connected to your driver account.'
+                ? 'Assignment, trip, and operational updates.'
                 : 'Real-time trip, arrival, and service updates.'}
             </p>
           </header>
         ) : (
           <PageHeader
             title="Notifications"
-            description="Your authoritative SafeBus inbox. In-app updates remain available regardless of push settings."
+            description="Your SafeBus updates."
             action={
               settingsPath ? (
                 <Link
@@ -292,7 +275,7 @@ export function NotificationsPage() {
                   className={cn(buttonClass({ variant: 'ghost', size: 'sm' }), 'min-h-11')}
                 >
                   <Settings className="h-4 w-4" aria-hidden />
-                  Settings
+                  Preferences
                 </Link>
               ) : undefined
             }
