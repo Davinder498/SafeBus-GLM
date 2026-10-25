@@ -454,12 +454,6 @@ export function DashboardLayout({
                   </DropdownItem>
                 </>
               )}
-              <DropdownItem
-                icon={<ShieldCheck className="h-4 w-4" />}
-                onClick={() => navigate('/privacy')}
-              >
-                Privacy Notice
-              </DropdownItem>
               {portal === 'admin' &&
                 profile &&
                 ['tenant_admin', 'school_admin', 'transportation_admin'].includes(profile.role) && (
@@ -470,6 +464,12 @@ export function DashboardLayout({
                     Notification preferences
                   </DropdownItem>
                 )}
+              <DropdownItem
+                icon={<ShieldCheck className="h-4 w-4" />}
+                onClick={() => navigate('/privacy')}
+              >
+                Privacy Notice
+              </DropdownItem>
               {portal === 'admin' && profile && (
                 <DropdownItem
                   icon={<Settings className="h-4 w-4" />}
