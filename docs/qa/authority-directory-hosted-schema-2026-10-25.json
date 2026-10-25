@@ -1,0 +1,179 @@
+{
+  "columns": [
+    {
+      "type": "boolean",
+      "table": "platform_support_contacts",
+      "column": "id",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "platform_support_contacts",
+      "column": "display_name",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "platform_support_contacts",
+      "column": "email",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "platform_support_contacts",
+      "column": "phone",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "platform_support_contacts",
+      "column": "website_url",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "platform_support_contacts",
+      "column": "support_hours",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "platform_support_contacts",
+      "column": "instructions",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "platform_support_contacts",
+      "column": "updated_by",
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "platform_support_contacts",
+      "column": "updated_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "tenant_support_contacts",
+      "column": "tenant_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "tenant_support_contacts",
+      "column": "display_name",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "tenant_support_contacts",
+      "column": "email",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "tenant_support_contacts",
+      "column": "phone",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "tenant_support_contacts",
+      "column": "website_url",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "tenant_support_contacts",
+      "column": "support_hours",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "tenant_support_contacts",
+      "column": "instructions",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "tenant_support_contacts",
+      "column": "updated_by",
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "tenant_support_contacts",
+      "column": "updated_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "tenants",
+      "column": "id",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "tenants",
+      "column": "name",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "tenants",
+      "column": "type",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "tenants",
+      "column": "status",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "tenants",
+      "column": "created_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "tenants",
+      "column": "updated_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "tenants",
+      "column": "timezone",
+      "nullable": "NO"
+    }
+  ],
+  "project": "BusSafe",
+  "functions": [
+    {
+      "md5": "ca2a49b03cfe2d4b5de2f6d74384f76b",
+      "signature": "get_support_directory()",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_support_directory()\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare\r\n  v_role public.user_role;\r\n  v_tenant_id uuid;\r\n  v_platform jsonb;\r\n  v_tenant jsonb;\r\nbegin\r\n  if (select auth.uid()) is null then\r\n    raise exception 'Support directory requires an active login.' using errcode = '42501';\r\n  end if;\r\n\r\n  v_role := safebus_private.current_user_role();\r\n  v_tenant_id := safebus_private.current_tenant_id();\r\n\r\n  if v_role is null then\r\n    raise exception 'Support directory requires an active profile.' using errcode = '42501';\r\n  end if;\r\n\r\n  if v_role in ('platform_super_admin', 'tenant_admin') then\r\n    select jsonb_build_object(\r\n      'displayName', contact.display_name,\r\n      'email', contact.email,\r\n      'phone', contact.phone,\r\n      'websiteUrl', contact.website_url,\r\n      'supportHours', contact.support_hours,\r\n      'instructions', contact.instructions,\r\n      'updatedAt', contact.updated_at\r\n    )\r\n    into v_platform\r\n    from public.platform_support_contacts contact\r\n    where contact.id = true;\r\n  end if;\r\n\r\n  if v_role in ('tenant_admin', 'driver', 'guardian') and v_tenant_id is not null then\r\n    select jsonb_build_object(\r\n      'displayName', contact.display_name,\r\n      'email', contact.email,\r\n      'phone', contact.phone,\r\n      'websiteUrl', contact.website_url,\r\n      'supportHours', contact.support_hours,\r\n      'instructions', contact.instructions,\r\n      'updatedAt', contact.updated_at\r\n    )\r\n    into v_tenant\r\n    from public.tenant_support_contacts contact\r\n    where contact.tenant_id = v_tenant_id;\r\n  end if;\r\n\r\n  -- Platform contact details are published business support information. Put\r\n  -- the fallback in the tenant slot so recipient apps expose only one contact.\r\n  if v_role in ('driver', 'guardian') and v_tenant is null then\r\n    select jsonb_build_object(\r\n      'displayName', contact.display_name,\r\n      'email', contact.email,\r\n      'phone', contact.phone,\r\n      'websiteUrl', contact.website_url,\r\n      'supportHours', contact.support_hours,\r\n      'instructions', contact.instructions,\r\n      'updatedAt', contact.updated_at\r\n    )\r\n    into v_tenant\r\n    from public.platform_support_contacts contact\r\n    where contact.id = true;\r\n  end if;\r\n\r\n  return jsonb_build_object('platform', v_platform, 'tenant', v_tenant);\r\nend;\r\n$function$\n"
+    },
+    {
+      "md5": "482dab67cadc3c2703b0543bf6aeb1d8",
+      "signature": "platform_finalize_tenant_invitation(uuid,text,text,text,text,text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.platform_finalize_tenant_invitation(p_auth_user_id uuid, p_tenant_name text, p_tenant_type text, p_school_name text, p_city text, p_admin_name text, p_admin_email text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\r\ndeclare\r\n  v_tenant public.tenants%rowtype;\r\n  v_auth_email text;\r\n  v_tenant_name text := btrim(p_tenant_name);\r\n  v_tenant_type text := btrim(p_tenant_type);\r\n  v_admin_name text := btrim(p_admin_name);\r\n  v_admin_email text := lower(btrim(p_admin_email));\r\nbegin\r\n  if not safebus_private.is_platform_super_admin() then\r\n    raise exception 'Only an active platform super administrator can finalize tenant onboarding.'\r\n      using errcode = '42501';\r\n  end if;\r\n  perform safebus_private.enforce_mfa_if_required();\r\n  perform safebus_private.enforce_recent_auth_for_sensitive_action();\r\n\r\n  if p_auth_user_id is null\r\n    or nullif(v_tenant_name, '') is null\r\n    or nullif(v_admin_name, '') is null\r\n    or nullif(v_admin_email, '') is null then\r\n    raise exception 'Tenant and administrator details are required.' using errcode = '22023';\r\n  end if;\r\n\r\n  if v_tenant_type not in ('school', 'school_group', 'bus_contractor', 'demo')\r\n    or length(v_tenant_name) > 200\r\n    or length(v_admin_name) > 200\r\n    or length(v_admin_email) > 320 then\r\n    raise exception 'Tenant or administrator details are invalid.' using errcode = '22023';\r\n  end if;\r\n\r\n  select lower(u.email)\r\n  into v_auth_email\r\n  from auth.users u\r\n  where u.id = p_auth_user_id;\r\n\r\n  if v_auth_email is null or v_auth_email <> v_admin_email then\r\n    raise exception 'The invited Auth account does not match the administrator email.'\r\n      using errcode = '22023';\r\n  end if;\r\n\r\n  if exists (\r\n    select 1\r\n    from public.profiles p\r\n    where p.id = p_auth_user_id or lower(p.email) = v_admin_email\r\n  ) then\r\n    raise exception 'The administrator email is already assigned to a SafeBus profile.'\r\n      using errcode = '23505';\r\n  end if;\r\n\r\n  insert into public.tenants (name, type, status)\r\n  values (v_tenant_name, v_tenant_type, 'active')\r\n  returning * into v_tenant;\r\n\r\n  insert into public.profiles (\r\n    id, tenant_id, school_id, full_name, email, role, status\r\n  ) values (\r\n    p_auth_user_id, v_tenant.id, null, v_admin_name, v_admin_email,\r\n    'tenant_admin', 'invited'\r\n  );\r\n\r\n  insert into public.tenant_onboarding_invitations (\r\n    tenant_id, email, full_name, role, status,\r\n    invited_profile_id, invited_by_profile_id, last_sent_at\r\n  ) values (\r\n    v_tenant.id, v_admin_email, v_admin_name, 'tenant_admin', 'pending',\r\n    p_auth_user_id, auth.uid(), now()\r\n  );\r\n\r\n  return jsonb_build_object(\r\n    'tenant', jsonb_build_object(\r\n      'id', v_tenant.id,\r\n      'name', v_tenant.name,\r\n      'status', v_tenant.status\r\n    )\r\n  );\r\nend;\r\n$function$\n"
+    },
+    {
+      "md5": "3bb15c65069a452836f7f1432be8e4bb",
+      "signature": "update_tenant_support_contact(text,text,text,text,text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.update_tenant_support_contact(p_display_name text, p_email text, p_phone text, p_website_url text, p_support_hours text, p_instructions text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\r\ndeclare v_tenant_id uuid;\r\nbegin\r\n  if auth.uid() is null or safebus_private.current_user_role() is distinct from 'tenant_admin'::public.user_role then\r\n    raise exception 'Only a tenant administrator can update tenant support.' using errcode = '42501';\r\n  end if;\r\n  v_tenant_id := safebus_private.current_tenant_id();\r\n  if v_tenant_id is null then raise exception 'A tenant is required.' using errcode = '42501'; end if;\r\n  perform safebus_private.enforce_mfa_if_required();\r\n  perform safebus_private.enforce_recent_auth_for_sensitive_action();\r\n  if nullif(trim(p_display_name), '') is null or length(trim(p_display_name)) > 120\r\n    or nullif(trim(p_email), '') is null or length(trim(p_email)) > 320\r\n    or trim(p_email) !~ '^[^@ ]+@[^@ ]+\\.[^@ ]+$'\r\n    or length(coalesce(trim(p_phone), '')) > 40\r\n    or length(coalesce(trim(p_support_hours), '')) > 240\r\n    or length(coalesce(trim(p_instructions), '')) > 1000\r\n    or (nullif(trim(p_website_url), '') is not null and (length(trim(p_website_url)) > 500 or trim(p_website_url) !~ '^https://')) then\r\n    raise exception 'Enter valid support contact details.' using errcode = '22023';\r\n  end if;\r\n  insert into public.tenant_support_contacts(tenant_id, display_name, email, phone, website_url, support_hours, instructions, updated_by)\r\n  values (v_tenant_id, trim(p_display_name), lower(trim(p_email)), nullif(trim(p_phone), ''), nullif(trim(p_website_url), ''), nullif(trim(p_support_hours), ''), nullif(trim(p_instructions), ''), auth.uid())\r\n  on conflict (tenant_id) do update set display_name = excluded.display_name, email = excluded.email,\r\n    phone = excluded.phone, website_url = excluded.website_url, support_hours = excluded.support_hours,\r\n    instructions = excluded.instructions, updated_by = auth.uid(), updated_at = now();\r\n  perform safebus_private.phase5_write_audit_event(auth.uid(), 'tenant_support.updated', 'tenant', v_tenant_id, trim(p_display_name), '{}'::jsonb);\r\nend $function$\n"
+    }
+  ],
+  "observedAt": "2026-10-25T15:58:08.765235+00:00",
+  "tenantTriggers": [
+    "CREATE TRIGGER audit_tenant_status_security AFTER UPDATE OF status ON public.tenants FOR EACH ROW WHEN ((new.status IS DISTINCT FROM old.status)) EXECUTE FUNCTION safebus_private.capture_sensitive_admin_audit()",
+    "CREATE TRIGGER enforce_tenant_status_security BEFORE UPDATE OF status ON public.tenants FOR EACH ROW WHEN ((new.status IS DISTINCT FROM old.status)) EXECUTE FUNCTION safebus_private.enforce_sensitive_admin_mutation()",
+    "CREATE TRIGGER set_updated_at_tenants BEFORE UPDATE ON public.tenants FOR EACH ROW EXECUTE FUNCTION safebus_private.set_updated_at()",
+    "CREATE TRIGGER tenants_create_guardian_notification_policy AFTER INSERT ON public.tenants FOR EACH ROW EXECUTE FUNCTION safebus_private.create_default_guardian_notification_policy()"
+  ]
+}

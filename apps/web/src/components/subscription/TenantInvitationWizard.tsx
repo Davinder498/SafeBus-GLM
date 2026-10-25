@@ -3,22 +3,75 @@ import { ArrowLeft, ArrowRight, Building2, Check, Mail, ShieldCheck } from 'luci
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
+import { AuthoritySearch } from './AuthoritySearch';
+import { SupportContactFields } from '@/components/support/SupportContactFields';
+import type { AuthorityReference } from '@/services/authorityDirectoryService';
+import type { SupportContactInput } from '@/services/supportDirectoryService';
 import { createTenantWithAdmin } from '@/services/onboardingService';
 import { schoolAuthorityAccountTypes, schoolAuthorityTypeLabel } from '@/utils/schoolAuthority';
 
 const inputClass =
   'w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy-500';
 const initial = { tenantName: '', tenantType: 'school_group', adminName: '', adminEmail: '' };
-const steps = ['School authority', 'School authority admin', 'Review invitation'];
+const emptySupport: SupportContactInput = {
+  displayName: '',
+  email: '',
+  phone: null,
+  websiteUrl: null,
+  supportHours: null,
+  instructions: null,
+  address: null,
+};
+const steps = [
+  'School authority',
+  'School authority admin',
+  'Support details',
+  'Review invitation',
+];
 const descriptions = [
   'Enter the school authority’s official name and account type.',
   'Choose the person who will set up and manage this school authority’s account.',
+  'Confirm the contact details that drivers and guardians will see.',
   'Check these details before creating the school authority and sending its setup link.',
 ];
 
 export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise<void> }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(initial);
+  const [authority, setAuthority] = useState<AuthorityReference | null>(null);
+  const [support, setSupport] = useState<SupportContactInput>(emptySupport);
+  const [supportConfirmed, setSupportConfirmed] = useState(false);
+
+  function chooseAuthority(value: AuthorityReference | null) {
+    setAuthority(value);
+    setForm({
+      ...initial,
+      tenantName: value?.officialName ?? '',
+      tenantType:
+        value && !['Public', 'Separate', 'Francophone'].includes(value.authorityCategory)
+          ? 'school'
+          : 'school_group',
+    });
+    setSupport(
+      value
+        ? {
+            ...emptySupport,
+            displayName: value.officialName.length <= 120 ? value.officialName : '',
+            email: value.email ?? '',
+            phone: value.phone,
+            websiteUrl: value.websiteUrl?.startsWith('https://') ? value.websiteUrl : null,
+            address:
+              [
+                value.address,
+                [value.city, value.province, value.postalCode].filter(Boolean).join(' '),
+              ]
+                .filter(Boolean)
+                .join('\n') || null,
+          }
+        : emptySupport,
+    );
+    setSupportConfirmed(false);
+  }
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -47,7 +100,11 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
       setError('Enter the school authority admin’s full name with at least two characters.');
       return;
     }
-    if (step < 2) {
+    if (step >= 2 && !supportConfirmed) {
+      setError('Confirm the support details shown to drivers and guardians.');
+      return;
+    }
+    if (step < 3) {
       setStep(step + 1);
       return;
     }
@@ -56,6 +113,10 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
     try {
       const result = await createTenantWithAdmin({
         ...form,
+        onboardingVersion: 2,
+        authorityCode: authority?.authorityCode ?? null,
+        supportContact: support,
+        supportConfirmed,
         tenantName: form.tenantName.trim(),
         adminName: form.adminName.trim(),
         adminEmail: form.adminEmail.trim(),
@@ -65,6 +126,9 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
       );
       setStep(0);
       setForm(initial);
+      setAuthority(null);
+      setSupport(emptySupport);
+      setSupportConfirmed(false);
       try {
         await onCreated();
       } catch {
@@ -116,7 +180,7 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
           <div className="mx-auto max-w-xl space-y-6">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Step {step + 1} of 3
+                Step {step + 1} of 4
               </p>
               <h3
                 ref={heading}
@@ -145,12 +209,14 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
             )}
             {step === 0 && (
               <div className="space-y-5">
+                <AuthoritySearch selected={authority} onSelect={chooseAuthority} />
                 <Field label="School authority name" htmlFor="tenant-name" required>
                   <input
                     id="tenant-name"
                     autoComplete="organization"
                     className={inputClass}
                     placeholder="School authority name"
+                    readOnly={Boolean(authority)}
                     value={form.tenantName}
                     required
                     minLength={2}
@@ -218,6 +284,30 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
             )}
             {step === 2 && (
               <div className="space-y-5">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <SupportContactFields
+                    form={support}
+                    includeAddress
+                    update={(key, value) => {
+                      setSupport((current) => ({ ...current, [key]: value }));
+                      setSupportConfirmed(false);
+                    }}
+                  />
+                </div>
+                <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-4 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-5 w-5 shrink-0"
+                    required
+                    checked={supportConfirmed}
+                    onChange={(event) => setSupportConfirmed(event.target.checked)}
+                  />
+                  I confirm these are the support contact details to show to drivers and guardians.
+                </label>
+              </div>
+            )}
+            {step === 3 && (
+              <div className="space-y-5">
                 <div className="divide-y divide-slate-200 rounded-xl border border-slate-200 px-4 sm:px-5">
                   {[
                     {
@@ -234,6 +324,22 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
                       detail: form.adminEmail.trim(),
                       target: 1,
                     },
+                    {
+                      label: 'Published support contact',
+                      icon: Mail,
+                      name: support.displayName.trim(),
+                      detail: [
+                        support.email.trim(),
+                        support.phone,
+                        support.websiteUrl,
+                        support.address,
+                        support.supportHours,
+                        support.instructions,
+                      ]
+                        .filter(Boolean)
+                        .join('\n'),
+                      target: 2,
+                    },
                   ].map(({ label, icon: Icon, name, detail, target }) => (
                     <div key={label} className="flex items-start gap-3 py-5">
                       <Icon
@@ -244,7 +350,7 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
                         <dt className="text-xs font-medium text-slate-500">{label}</dt>
                         <dd className="mt-1 space-y-1 break-words text-sm">
                           <p className="font-semibold text-navy-900">{name}</p>
-                          <p className="text-slate-600">{detail}</p>
+                          <p className="whitespace-pre-line text-slate-600">{detail}</p>
                         </dd>
                       </dl>
                       <Button
@@ -290,10 +396,10 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
                 loading={busy}
                 disabled={busy}
                 rightIcon={
-                  step === 2 ? <Mail className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />
+                  step === 3 ? <Mail className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />
                 }
               >
-                {step === 2 ? 'Send invitation' : 'Continue'}
+                {step === 3 ? 'Send invitation' : 'Continue'}
               </Button>
             </div>
           </div>

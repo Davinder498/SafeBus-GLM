@@ -170,6 +170,99 @@ describe('SafeBus member onboarding', () => {
     vi.clearAllMocks();
   });
 
+  it('requires explicit support confirmation before sending a directory-flow invitation', async () => {
+    const { adminClient } = setupClients({
+      callerProfile: { ...caller, role: 'platform_super_admin', tenant_id: null },
+    });
+    const response = await handler(
+      createTenantEvent({
+        onboardingVersion: 2,
+        authorityCode: '0009',
+        supportContact: { displayName: 'Office', email: 'office@example.test' },
+      }),
+    );
+    expect(response.statusCode).toBe(400);
+    expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['23505', 409],
+    ['22023', 400],
+    ['42501', 403],
+    ['55006', 403],
+    ['PGRST202', 503],
+  ])('rejects directory preflight %s before contacting email', async (code, status) => {
+    const { adminClient } = setupClients({
+      callerProfile: { ...caller, role: 'platform_super_admin', tenant_id: null },
+      rpcResults: [{ data: null, error: { code, message: 'private failure details' } }],
+    });
+    const response = await handler(
+      createTenantEvent({
+        onboardingVersion: 2,
+        authorityCode: '0009',
+        supportConfirmed: true,
+        supportContact: { displayName: 'Office', email: 'office@example.test' },
+      }),
+    );
+    expect(response.statusCode).toBe(status);
+    expect(response.body).not.toContain('private failure details');
+    expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
+  });
+
+  it('preflights and atomically finalizes the selected authority with a separate support contact', async () => {
+    const support = {
+      displayName: 'Transportation office',
+      email: 'transport@example.test',
+      address: '123 School Road',
+      phone: null,
+      websiteUrl: null,
+      supportHours: null,
+      instructions: null,
+    };
+    const setup = { tenant: { id: 'tenant-new', name: 'Official authority', status: 'active' } };
+    const { adminClient, userClient } = setupClients({
+      callerProfile: { ...caller, role: 'platform_super_admin', tenant_id: null },
+      rpcResults: [
+        { data: true, error: null },
+        { data: null, error: null },
+        { data: setup, error: null },
+      ],
+      authUser: { id: 'new-admin', email: 'first.admin@example.test', last_sign_in_at: null },
+    });
+    const response = await handler(
+      createTenantEvent({
+        onboardingVersion: 2,
+        authorityCode: '0009',
+        supportConfirmed: true,
+        supportContact: support,
+      }),
+    );
+    expect(response.statusCode).toBe(200);
+    expect(userClient.rpc).toHaveBeenNthCalledWith(1, 'platform_check_authority_onboarding', {
+      p_authority_code: '0009',
+      p_support_contact: support,
+      p_support_confirmed: true,
+    });
+    expect(adminClient.auth.admin.inviteUserByEmail).toHaveBeenCalledWith(
+      'first.admin@example.test',
+      expect.anything(),
+    );
+    expect(userClient.rpc).toHaveBeenLastCalledWith(
+      'platform_finalize_tenant_invitation_v2',
+      expect.objectContaining({
+        p_auth_user_id: 'new-admin',
+        p_authority_code: '0009',
+        p_support_contact: support,
+        p_support_confirmed: true,
+        p_admin_email: 'first.admin@example.test',
+      }),
+    );
+    expect(userClient.rpc).not.toHaveBeenCalledWith(
+      'update_tenant_support_contact',
+      expect.anything(),
+    );
+  });
+
   it.each([
     [{ data: false, error: null }, 401],
     [{ data: null, error: { message: 'database unavailable' } }, 503],

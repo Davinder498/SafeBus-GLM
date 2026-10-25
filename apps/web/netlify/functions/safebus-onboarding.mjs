@@ -430,6 +430,36 @@ async function createTenant(event, body) {
   const tenantType = clean(body.tenantType) || 'school';
   const adminName = clean(body.adminName);
   const email = clean(body.adminEmail).toLowerCase();
+  const usesDirectoryFlow = body.onboardingVersion === 2;
+  const hasDirectoryFields = [
+    'onboardingVersion',
+    'authorityCode',
+    'supportContact',
+    'supportConfirmed',
+  ].some((key) => Object.hasOwn(body, key));
+  if (hasDirectoryFields && !usesDirectoryFlow) {
+    return json(400, { error: 'Use the current onboarding form. No invitation was sent.' });
+  }
+  const authorityCode = clean(body.authorityCode) || null;
+  const supportContact = body.supportContact;
+  if (
+    usesDirectoryFlow &&
+    (body.supportConfirmed !== true ||
+      !supportContact ||
+      Array.isArray(supportContact) ||
+      typeof supportContact !== 'object' ||
+      !['displayName', 'email'].every(
+        (key) => typeof supportContact[key] === 'string' && supportContact[key].trim(),
+      ) ||
+      ['phone', 'websiteUrl', 'supportHours', 'instructions', 'address'].some(
+        (key) => supportContact[key] != null && typeof supportContact[key] !== 'string',
+      ) ||
+      (authorityCode !== null && !/^[0-9]{4}$/.test(authorityCode)))
+  ) {
+    return json(400, {
+      error: 'Review and confirm the school authority support details. No invitation was sent.',
+    });
+  }
   if (!tenantName || !adminName || !email) {
     return json(400, {
       error:
@@ -451,20 +481,64 @@ async function createTenant(event, body) {
     return json(429, { error: 'Too many invitation requests. Try again shortly.' });
   }
   const redirectTo = await invitationRedirectUrl(ctx);
+  if (usesDirectoryFlow) {
+    const { data: ready, error: preflightError } = await ctx.user.rpc(
+      'platform_check_authority_onboarding',
+      {
+        p_authority_code: authorityCode,
+        p_support_contact: supportContact,
+        p_support_confirmed: true,
+      },
+    );
+    if (preflightError || ready !== true) {
+      if (['42501', '55006'].includes(preflightError?.code)) {
+        return json(403, {
+          error:
+            'For your security, sign in again and complete administrator MFA before sending this invitation. No invitation was sent.',
+        });
+      }
+      if (preflightError?.code === '23505') {
+        return json(409, {
+          error: 'This school authority already has a SafeBus account. No invitation was sent.',
+        });
+      }
+      if (preflightError?.code === '22023') {
+        return json(400, {
+          error: 'Review the selected authority and support details. No invitation was sent.',
+        });
+      }
+      return json(503, {
+        error: 'School authority onboarding is unavailable. No invitation was sent.',
+      });
+    }
+  }
   const invitation = await sendInitialTenantAdminInvitation(ctx, email, adminName, redirectTo);
   if (invitation.error) return invitation.error;
 
   const { data: setup, error: setupError } = await ctx.user.rpc(
-    'platform_finalize_tenant_invitation',
-    {
-      p_auth_user_id: invitation.userId,
-      p_tenant_name: tenantName,
-      p_tenant_type: tenantType,
-      p_school_name: null,
-      p_city: null,
-      p_admin_name: adminName,
-      p_admin_email: email,
-    },
+    usesDirectoryFlow
+      ? 'platform_finalize_tenant_invitation_v2'
+      : 'platform_finalize_tenant_invitation',
+    usesDirectoryFlow
+      ? {
+          p_auth_user_id: invitation.userId,
+          p_tenant_name: tenantName,
+          p_tenant_type: tenantType,
+          p_admin_name: adminName,
+          p_admin_email: email,
+          p_authority_code: authorityCode,
+          p_support_contact: supportContact,
+          p_support_confirmed: true,
+        }
+      : {
+          p_auth_user_id: invitation.userId,
+          p_tenant_name: tenantName,
+          p_tenant_type: tenantType,
+          p_school_name: null,
+          p_city: null,
+          p_admin_name: adminName,
+          p_admin_email: email,
+        },
   );
   if (setupError || !setup?.tenant?.id) {
     if (invitation.createdAuthUser) {

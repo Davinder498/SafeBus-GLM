@@ -7,6 +7,7 @@ export interface SupportContact {
   websiteUrl: string | null;
   supportHours: string | null;
   instructions: string | null;
+  address?: string | null;
   updatedAt: string;
 }
 
@@ -23,7 +24,7 @@ function client() {
 }
 
 export async function fetchSupportDirectory(): Promise<SupportDirectory> {
-  const { data, error } = await client().rpc('get_support_directory');
+  const { data, error } = await client().rpc('get_support_directory_v2');
   if (error) throw new Error('We could not load support details. Please try again.');
   const value = (data ?? {}) as Partial<SupportDirectory>;
   return { platform: value.platform ?? null, tenant: value.tenant ?? null };
@@ -61,6 +62,12 @@ export async function updatePlatformSupportContact(input: SupportContactInput): 
 }
 
 export async function updateTenantSupportContact(input: SupportContactInput): Promise<void> {
-  const { error } = await client().rpc('update_tenant_support_contact', args(input));
+  const { error } =
+    input.address === undefined
+      ? await client().rpc('update_tenant_support_contact', args(input))
+      : await client().rpc('update_tenant_support_contact_v2', {
+          ...args(input),
+          p_address: input.address?.trim() || null,
+        });
   if (error) throw supportWriteError(error, 'School authority support details were not saved.');
 }

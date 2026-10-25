@@ -864,6 +864,7 @@ test('driver support page shows one resolved support contact', async ({ page }) 
       tenant: {
         displayName: 'Prairie Schools Transportation',
         email: 'transport@example.test',
+        address: '123 School Road\nCalgary AB T1A 1A1',
         phone: '403-555-0123',
         websiteUrl: 'https://example.test/support',
         supportHours: 'Monday–Friday, 8:00 AM–4:30 PM MT',
@@ -876,6 +877,8 @@ test('driver support page shows one resolved support contact', async ({ page }) 
   await expect(page.getByRole('heading', { name: 'Support', level: 1 })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Support contact' })).toBeVisible();
   await expect(page.getByText('Prairie Schools Transportation')).toBeVisible();
+  await expect(page.getByText('School authority address', { exact: true })).toBeVisible();
+  await expect(page.getByText('123 School Road', { exact: false })).toBeVisible();
   await expect(page.getByRole('link', { name: 'transport@example.test' })).toHaveAttribute(
     'href',
     'mailto:transport@example.test',

@@ -29,7 +29,12 @@
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/supabase/migrations/**/*.sql",
         "$TURBO_ROOT$/config/pending/*.json",
-        "$TURBO_ROOT$/supabase/functions/_shared/**/*.mjs"
+        "$TURBO_ROOT$/supabase/functions/_shared/**/*.mjs",
+        "$TURBO_ROOT$/scripts/lib/authority-directory.mjs",
+        "$TURBO_ROOT$/tests/fixtures/authority-directory/**",
+        "$TURBO_ROOT$/docs/qa/authority-directory-hosted-schema-2026-10-25.json",
+        "$TURBO_ROOT$/package.json",
+        "$TURBO_ROOT$/pnpm-lock.yaml"
       ],
       "outputs": ["coverage/**"]
     },

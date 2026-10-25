@@ -42,6 +42,35 @@ export type Database = Omit<HostedDatabase, 'public'> & {
       student_bus_assignments: SeatedAssignments;
     };
     Functions: HostedDatabase['public']['Functions'] & {
+      search_authority_reference_directory: { Args: { p_query: string }; Returns: Json };
+      platform_check_authority_onboarding: {
+        Args: {
+          p_authority_code: string | null;
+          p_support_contact: Json;
+          p_support_confirmed: boolean;
+        };
+        Returns: boolean;
+      };
+      platform_finalize_tenant_invitation_v2: {
+        Args: {
+          p_auth_user_id: string;
+          p_tenant_name: string;
+          p_tenant_type: string;
+          p_admin_name: string;
+          p_admin_email: string;
+          p_authority_code: string | null;
+          p_support_contact: Json;
+          p_support_confirmed: boolean;
+        };
+        Returns: Json;
+      };
+      get_support_directory_v2: { Args: Record<string, never>; Returns: Json };
+      update_tenant_support_contact_v2: {
+        Args: HostedFunctions['update_tenant_support_contact']['Args'] & {
+          p_address: string | null;
+        };
+        Returns: undefined;
+      };
       claim_guardian_notification_email_batch_v2: HostedFunctions['claim_guardian_notification_email_batch'];
       admin_get_printable_qr: {
         Args: {
