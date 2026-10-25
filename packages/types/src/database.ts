@@ -43,6 +43,10 @@ export type Database = Omit<HostedDatabase, 'public'> & {
     };
     Functions: HostedDatabase['public']['Functions'] & {
       search_authority_reference_directory: { Args: { p_query: string }; Returns: Json };
+      search_authority_reference_directory_v2: {
+        Args: { p_query: string; p_offset?: number };
+        Returns: Json;
+      };
       platform_check_authority_onboarding: {
         Args: {
           p_authority_code: string | null;

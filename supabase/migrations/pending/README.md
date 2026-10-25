@@ -4,6 +4,14 @@ SQL here is reviewed source for a future protected release. It is deliberately
 outside the active top-level migration manifest and deployment traversal. Never
 apply these files directly or replay the migration chain against BusSafe.
 
+`20261025185119_authority_directory_search_pages.sql` follows the search-alias
+correction below and adds bounded pages, a total count, and a next offset. The
+client exposes every city match with **Load more**. The old array-returning RPC
+keeps its signature and first-page behavior. Install the reviewed alias correction
+then pagination before the client through the protected workflow. This forward
+change remains unapplied; local rollback and authorization tests are separate
+from hosted recovery and release evidence.
+
 `20261025183313_authority_directory_search_aliases.sql` corrects authority search
 with reviewed common names, token matching, and relevance ordering before the
 20-result limit. It retains source names, account associations, and contacts.

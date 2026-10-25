@@ -7,6 +7,8 @@
   "sourceExtractDate": "2026-10-24",
   "sourceRecordCount": 445,
   "hostedRecordCount": 445,
+  "hostedAvailableOrganizationalCityCounts": { "Calgary": 110, "Edmonton": 77 },
+  "paginationFinding": "The live city search returns only 20 rows without a total or continuation. A new versioned paginated search is prepared locally; no hosted changes were made.",
   "comparedFields": [
     "authority_code",
     "official_name",

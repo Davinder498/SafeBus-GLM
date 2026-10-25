@@ -30,7 +30,7 @@ customer accounts or establish exhaustive coverage of every common name.
 
 Search normalizes punctuation/spacing, matches all query tokens, and orders exact
 code/name/alias and name-prefix matches ahead of city-only matches before applying
-the existing limit. Results and selected records show common names alongside the
+the page limit. Results and selected records show common names alongside the
 unchanged provincial source name. The RPC signature, platform role/session/MFA
 checks, private-table access restrictions, and availability rules remain intact.
 
@@ -45,6 +45,31 @@ replacement, then cover CBE, common names, reordered tokens, punctuation, result
 ordering, withdrawn records, permissions, and preservation through a full refresh.
 The live observation above does not claim that this correction is live. Use the
 existing protected review, recovery, rehearsal and release process before rollout.
+
+## Complete city search results — 2026-10-25
+
+A further production read-only count found 110 available reference records whose
+organizational city is Calgary and 77 whose city is Edmonton. The old search
+returned at most 20 with no total or continuation control, explaining why city
+results appeared to stop around B. These are organizational address cities, not
+a guarantee that an authority serves only that city. Name and alias matches can
+also appear in a city query.
+
+`20261025185119_authority_directory_search_pages.sql` adds the platform-only
+`search_authority_reference_directory_v2(text,integer)` RPC with the same matching,
+ranking, availability, active-session and MFA checks. Each response contains at
+most 20 items, the total number of matches, and a nullable next offset. Ordering
+is deterministic, with authority code as the final tie-breaker. The old RPC keeps
+its array response and delegates to the first page. No existing API signature
+changes. The client shows the count and a **Load more** button, preserves loaded
+results on a retryable later-page error, and discards responses for an old query.
+
+Release this pending migration after the aliases correction and before its client.
+Embedded PostgreSQL verifies every Calgary/Edmonton match across all pages,
+totals, invalid offsets, authorization, legacy compatibility and rollback of
+the new function and replacement wrapper. Browser checks use local mocked
+requests; no invitation or notification is sent. Neither pending correction has
+been applied by this work; the hosted read-only count is separate live evidence.
 
 ## Initial source review
 
@@ -103,6 +128,7 @@ support. Those choices remain explicit.
    This command never connects to a database and has no apply mode. It writes a
    change report, the proposed baseline JSON, and `reviewed-import.sql`. For the
    initial empty directory only, use `--initial` instead of `--baseline`.
+
 4. Review additions, changed codes, missing records, source date, count, and
    omitted invalid fields. A missing record becomes unavailable for new selection;
    it is retained for existing account references. Do not automatically accept

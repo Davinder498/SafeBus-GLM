@@ -46,6 +46,14 @@ async function search(query) {
     ])
   ).rows[0].result;
 }
+async function searchPage(query, offset = 0) {
+  return (
+    await asAuthenticated(
+      'select public.search_authority_reference_directory_v2($1,$2) as result',
+      [query, offset],
+    )
+  ).rows[0].result;
+}
 async function finalize(code = '0009', support = contact, confirmed = true) {
   const id = crypto.randomUUID();
   await db.query('insert into auth.users(id,email) values($1,$2)', [id, `${id}@example.test`]);
@@ -160,6 +168,39 @@ beforeAll(async () => {
     ).rows[0].count,
   ).toBe(0);
   await db.exec(searchCorrection);
+  const pagination = await read(
+    'supabase/migrations/pending/20261025185119_authority_directory_search_pages.sql',
+  );
+  const oldSearch = (
+    await db.query(
+      "select pg_get_functiondef('public.search_authority_reference_directory(text)'::regprocedure) as definition",
+    )
+  ).rows[0].definition;
+  await db.exec('begin');
+  await db.exec(pagination);
+  expect(
+    (
+      await db.query(
+        "select to_regprocedure('public.search_authority_reference_directory_v2(text,integer)')::text as signature",
+      )
+    ).rows[0].signature,
+  ).not.toBeNull();
+  await db.exec('rollback');
+  expect(
+    (
+      await db.query(
+        "select to_regprocedure('public.search_authority_reference_directory_v2(text,integer)')::text as signature",
+      )
+    ).rows[0].signature,
+  ).toBeNull();
+  expect(
+    (
+      await db.query(
+        "select pg_get_functiondef('public.search_authority_reference_directory(text)'::regprocedure) as definition",
+      )
+    ).rows[0].definition,
+  ).toBe(oldSearch);
+  await db.exec(pagination);
   await actor();
 }, 30000);
 afterAll(async () => {
@@ -167,6 +208,52 @@ afterAll(async () => {
 });
 
 describe('authority directory and support in PostgreSQL', () => {
+  it.each(['Calgary', 'Edmonton'])(
+    'makes every %s match reachable without duplicate or missing pages',
+    async (city) => {
+      const expected = (
+        await db.query(
+          "select authority_code from safebus_private.authority_reference_directory where available and position(lower($1) in lower(official_name||' '||coalesce(city,'')||' '||array_to_string(search_aliases,' ')))>0 order by authority_code",
+          [city],
+        )
+      ).rows.map((row) => row.authority_code);
+      expect(expected.length).toBeGreaterThan(20);
+      let offset = 0;
+      const codes = [];
+      do {
+        const page = await searchPage(city, offset);
+        expect(page.total).toBe(expected.length);
+        expect(page.items.length).toBeGreaterThan(0);
+        expect(page.items.length).toBeLessThanOrEqual(20);
+        expect(await searchPage(city, offset)).toEqual(page);
+        codes.push(...page.items.map((row) => row.authorityCode));
+        if (offset === 0) expect(await search(city)).toEqual(page.items);
+        offset = page.nextOffset;
+      } while (offset !== null);
+      expect(codes.sort()).toEqual(expected);
+      expect(new Set(codes).size).toBe(expected.length);
+      expect(await searchPage(city, expected.length)).toEqual({
+        items: [],
+        total: expected.length,
+        nextOffset: null,
+      });
+    },
+  );
+  it('returns accurate totals for exact, empty and withdrawn matches and rejects invalid page requests', async () => {
+    expect(await searchPage('CBE')).toMatchObject({ total: 1, nextOffset: null });
+    expect(await searchPage('%_')).toEqual({ items: [], total: 0, nextOffset: null });
+    expect(await searchPage('q')).toEqual({ items: [], total: 0, nextOffset: null });
+    await expect(searchPage('Calgary', -1)).rejects.toMatchObject({ code: '22023' });
+    await expect(searchPage('Calgary', null)).rejects.toMatchObject({ code: '22023' });
+    await expect(searchPage('Calgary', 10001)).rejects.toMatchObject({ code: '22023' });
+    await expect(searchPage('a'.repeat(101))).rejects.toMatchObject({ code: '22023' });
+    await db.exec('begin');
+    await db.query(
+      "update safebus_private.authority_reference_directory set available=false where authority_code='3030'",
+    );
+    expect(await searchPage('CBE')).toEqual({ items: [], total: 0, nextOffset: null });
+    await db.exec('rollback');
+  });
   it.each([
     'Calgary Board of Education',
     'CBE',
@@ -255,6 +342,7 @@ describe('authority directory and support in PostgreSQL', () => {
     async (id) => {
       await actor(id);
       await expect(search('school')).rejects.toMatchObject({ code: '42501' });
+      await expect(searchPage('school', 20)).rejects.toMatchObject({ code: '42501' });
       await actor();
     },
   );
@@ -266,16 +354,24 @@ describe('authority directory and support in PostgreSQL', () => {
     await expect(
       db.query("select public.search_authority_reference_directory('school')"),
     ).rejects.toMatchObject({ code: '42501' });
+    await expect(
+      db.query("select public.search_authority_reference_directory_v2('school',20)"),
+    ).rejects.toMatchObject({ code: '42501' });
     await db.exec('reset role');
     await db.exec('set role service_role');
     await expect(
       db.query("select public.search_authority_reference_directory('school')"),
     ).rejects.toMatchObject({ code: '42501' });
+    await expect(
+      db.query("select public.search_authority_reference_directory_v2('school',20)"),
+    ).rejects.toMatchObject({ code: '42501' });
     await db.exec('reset role');
     await actor(platform, 'aal1');
     await expect(search('school')).rejects.toMatchObject({ code: '55006' });
+    await expect(searchPage('school', 20)).rejects.toMatchObject({ code: '55006' });
     await actor(platform, 'aal2', 'true', 'false');
     await expect(search('school')).rejects.toMatchObject({ code: '42501' });
+    await expect(searchPage('school', 20)).rejects.toMatchObject({ code: '42501' });
     await db.query("update public.profiles set status='suspended' where id=$1", [platform]);
     await actor();
     await expect(search('school')).rejects.toMatchObject({ code: '42501' });
