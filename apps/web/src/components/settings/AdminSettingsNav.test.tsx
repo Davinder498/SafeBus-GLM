@@ -39,7 +39,6 @@ describe('AdminSettingsNav', () => {
     const container = await renderSettingsNav('/admin/settings', 'school_admin');
 
     expect(Array.from(container.querySelectorAll('a')).map((link) => link.textContent)).toEqual([
-      'Notifications',
       'School authority',
     ]);
   });
@@ -49,7 +48,6 @@ describe('AdminSettingsNav', () => {
     const links = Array.from(container.querySelectorAll('a'));
 
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
-      '/admin/settings/notifications',
       '/admin/settings/support',
       '/admin/settings',
       '/admin/settings/billing',
@@ -59,9 +57,9 @@ describe('AdminSettingsNav', () => {
     ).toContain('Subscription & billing');
   });
 
-  it('makes personal notification preferences accessible to delegated admins', async () => {
+  it('keeps notification preferences out of the general settings tabs', async () => {
     const tenant = await renderSettingsNav('/admin/settings', 'tenant_admin');
-    expect(tenant.textContent).toContain('Notifications');
+    expect(tenant.textContent).not.toContain('Notifications');
     expect(tenant.querySelector('nav')?.className).not.toContain('overflow-x-auto');
     expect(tenant.querySelector('ul')?.className).toContain('flex-wrap');
     expect(
@@ -74,6 +72,6 @@ describe('AdminSettingsNav', () => {
     root = null;
     document.body.innerHTML = '';
     const delegated = await renderSettingsNav('/admin/settings', 'transportation_admin');
-    expect(delegated.textContent).toContain('Notifications');
+    expect(delegated.textContent).not.toContain('Notifications');
   });
 });

@@ -454,16 +454,6 @@ export function DashboardLayout({
                   </DropdownItem>
                 </>
               )}
-              {portal === 'admin' &&
-                profile &&
-                ['tenant_admin', 'school_admin', 'transportation_admin'].includes(profile.role) && (
-                  <DropdownItem
-                    icon={<Bell className="h-4 w-4" />}
-                    onClick={() => navigate('/admin/settings/notifications')}
-                  >
-                    Notification preferences
-                  </DropdownItem>
-                )}
               <DropdownItem
                 icon={<ShieldCheck className="h-4 w-4" />}
                 onClick={() => navigate('/privacy')}
