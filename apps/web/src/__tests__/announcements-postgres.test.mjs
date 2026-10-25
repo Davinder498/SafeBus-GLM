@@ -233,6 +233,35 @@ it('broadcasts only within authorized audiences, preserves opt-outs, and dedupli
     await expect(
       db.query('select public.set_driver_delivery_preferences_v2($1)', [{}]),
     ).rejects.toMatchObject({ code: '22023' });
+    await db.exec(`insert into driver_trips(id,tenant_id,driver_id,route_id)
+      values('${id(200)}','${id(1)}','${id(60)}','${id(90)}'),
+        ('${id(201)}','${id(1)}','${id(61)}','${id(91)}');`);
+    const tripNotice = async (trip) =>
+      (
+        await call(
+          `select safebus_private.enqueue_user_notification(
+      '${id(1)}','${id(40)}','trip_started','trip_status','info','driver_trip',$1::uuid,$1::text,now(),null,$1::uuid,null) as value`,
+          [id(trip)],
+        )
+      ).value;
+    expect(await tripNotice(200)).toEqual(expect.any(String));
+    expect(await tripNotice(201)).toBeNull();
+    await db.exec(
+      definition(
+        await readFile(
+          '../../supabase/migrations/0111_driver_assignment_notifications.sql',
+          'utf8',
+        ),
+        'public.get_driver_delivery_preferences',
+      ),
+    );
+    await db.query('select public.set_driver_delivery_preferences($1)', [
+      { push_enabled: true, email_enabled: true, assignment_alerts: { push: true, email: true } },
+    ]);
+    expect(
+      (await call('select public.get_driver_delivery_preferences_v2() as value')).value
+        .operational_alerts,
+    ).toEqual({ in_app: false, push: false, email: false });
     await db.exec("select set_config('test.mfa','false',false)");
     await expect(
       db.query('select public.get_driver_delivery_preferences_v2()'),

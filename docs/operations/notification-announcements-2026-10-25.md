@@ -102,7 +102,9 @@ run advisors again after the approved release. Supabase guidance:
   categories in the in-app, email, and push cards.
 - Embedded PostgreSQL verifies scope, MFA/session rejection, sibling deduplication,
   recipient opt-outs, generic outbox creation, guardian link and school-driver
-  assignment revocation before delivery, and malformed preference rejection.
+  assignment revocation before delivery, own-trip versus other-driver rejection,
+  preservation of new choices when an older client saves, and malformed
+  preference rejection.
 
 These checks establish implemented and tested behavior, not production release
 or real-provider delivery verification for the new announcement event.
