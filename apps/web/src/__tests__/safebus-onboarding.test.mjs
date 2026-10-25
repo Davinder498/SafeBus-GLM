@@ -188,6 +188,8 @@ describe('SafeBus member onboarding', () => {
   it.each([
     ['23505', 409],
     ['22023', 400],
+    ['42501', 403],
+    ['55006', 403],
     ['PGRST202', 503],
   ])('rejects directory preflight %s before contacting email', async (code, status) => {
     const { adminClient } = setupClients({

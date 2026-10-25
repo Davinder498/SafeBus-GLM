@@ -491,6 +491,12 @@ async function createTenant(event, body) {
       },
     );
     if (preflightError || ready !== true) {
+      if (['42501', '55006'].includes(preflightError?.code)) {
+        return json(403, {
+          error:
+            'For your security, sign in again and complete administrator MFA before sending this invitation. No invitation was sent.',
+        });
+      }
       if (preflightError?.code === '23505') {
         return json(409, {
           error: 'This school authority already has a SafeBus account. No invitation was sent.',
