@@ -343,7 +343,7 @@ test('administrator preferences control only the personal inbox', () => {
     notificationSettingsPage,
     /\['tenant_admin', 'school_admin', 'transportation_admin'\][\s\S]*to="\/admin\/settings\/notifications"/,
   );
-  assert.match(adminSettingsNav, /\/admin\/settings\/notifications/);
+  assert.doesNotMatch(adminSettingsNav, /\/admin\/settings\/notifications/);
   assert.match(
     notificationsPage,
     /const settingsPath = isDriver[\s\S]*'\/driver\/settings'[\s\S]*profile\?\.role === 'guardian'[\s\S]*'\/notifications\/settings'[\s\S]*admin[\s\S]*'\/admin\/settings\/notifications'[\s\S]*: null;/,
