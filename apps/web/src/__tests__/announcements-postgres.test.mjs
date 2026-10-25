@@ -143,6 +143,8 @@ it('broadcasts only within authorized audiences, preserves opt-outs, and dedupli
     await expect(send(100, 'drivers', 2)).rejects.toMatchObject({ code: '22023' });
     await expect(send(101, 'all', 3)).rejects.toMatchObject({ code: '22023' });
     await db.query("select set_config('request.jwt.claim.sub',$1,false)", [id(21)]);
+    await db.exec(`update driver_route_assignments set route_id='${id(90)}',
+      effective_from=(now() at time zone 'America/Edmonton')::date+1 where id='${id(93)}';`);
     expect(await audience('all')).toEqual({ guardians: 1, drivers: 1, total: 2 });
     await send(102, 'all', 2);
     expect((await call('select public.get_authority_announcements() as value')).value).toHaveLength(

@@ -38,6 +38,8 @@ authorities or change notification provisioning defaults from PR #308.
   to active students in their school, and drivers with effective assignments to
   that school's active routes. A guardian with multiple linked students receives
   one announcement, not one copy per student.
+  Driver assignment dates use the Alberta service date, independently of the
+  database server's timezone.
 - Count, send, and history RPCs derive scope from the active server-side profile,
   school, and authority, with an active session and required administrator MFA.
   The client cannot supply a tenant, school, recipient list, or sender identity.

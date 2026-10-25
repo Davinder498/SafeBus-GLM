@@ -68,8 +68,8 @@ returns table(profile_id uuid, role public.user_role) language sql stable securi
           join public.routes r on r.id = a.route_id and r.tenant_id = a.tenant_id and r.status = 'active'
           join public.schools school on school.id = r.school_id and school.tenant_id = r.tenant_id and school.status = 'active'
           where a.driver_id = d.id and a.tenant_id = d.tenant_id and a.status = 'active'
-            and (a.effective_from is null or a.effective_from <= current_date)
-            and (a.effective_to is null or a.effective_to >= current_date)
+            and (a.effective_from is null or a.effective_from <= (now() at time zone 'America/Edmonton')::date)
+            and (a.effective_to is null or a.effective_to >= (now() at time zone 'America/Edmonton')::date)
             and r.school_id = p_school_id
         ))
     ))
