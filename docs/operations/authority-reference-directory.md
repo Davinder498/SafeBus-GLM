@@ -71,6 +71,12 @@ the new function and replacement wrapper. Browser checks use local mocked
 requests; no invitation or notification is sent. Neither pending correction has
 been applied by this work; the hosted read-only count is separate live evidence.
 
+On a constrained local workstation, set `VITEST_MAX_FORKS=1` and
+`VITEST_MIN_FORKS=1` before `pnpm test`. The web test task explicitly passes these
+worker settings through Turbo. Unset CI defaults and all test timeouts are
+unchanged. Run the browser suite separately from the embedded PostgreSQL suite
+to avoid resource contention during database initialization.
+
 ## Initial source review
 
 The [official catalogue](https://open.alberta.ca/opendata/alberta-education-schools-and-authorities)

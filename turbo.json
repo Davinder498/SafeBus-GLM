@@ -25,6 +25,7 @@
     },
     "@safebus/web#test": {
       "dependsOn": ["^build"],
+      "passThroughEnv": ["VITEST_MAX_FORKS", "VITEST_MIN_FORKS"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/supabase/migrations/**/*.sql",
