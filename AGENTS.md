@@ -125,6 +125,20 @@ This supersedes the isolated-target requirement for this security milestone.
 
 ## Account preferences and interface copy
 
+- Use consistent notification labels across inbox filters and preferences:
+  Pickup & drop-off, Trip updates, Assignment alerts, and Operational alerts.
+  Show only categories relevant to the current role. Preserve internal category
+  identifiers; `operations` and `service_changes` share Operational alerts in
+  the interface and must use the same saved preference group.
+- School authority broadcasts belong to Operational alerts. Keep composing and
+  sent history on Announcements, separate from each administrator's personal
+  inbox preferences. Do not present Android push as an administrator device
+  capability or mix recipient delivery policy into personal preferences.
+- Broadcast audience selection, counts, history, and delivery must enforce the
+  sender's school authority and school scope on the server. Preserve recipient
+  opt-outs and device permissions, and deduplicate retried sends. Never send
+  real announcements or external notifications as QA.
+
 - Ordinary guardian and driver notification choices must save with an active,
   valid session, without a recent-sign-in prompt. Preserve ownership, tenant,
   account-status, device-permission, and enabled-channel checks.

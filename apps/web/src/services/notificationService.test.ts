@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   fetchGuardianDeliveryPreferences,
+  fetchDriverDeliveryPreferences,
   fetchNotificationDetail,
   saveGuardianDeliveryPreferences,
+  saveDriverDeliveryPreferences,
 } from './notificationService';
 
 const mocks = vi.hoisted(() => ({ rpc: vi.fn() }));
@@ -16,6 +18,23 @@ const snapshot = {
   operational_alerts: { in_app: true, push: true, email: false },
 };
 beforeEach(() => mocks.rpc.mockReset());
+it('round-trips driver trip and operational preferences independently from assignments', async () => {
+  const driver = {
+    in_app_enabled: false,
+    push_enabled: true,
+    email_enabled: false,
+    assignment_alerts: { in_app: true, push: true, email: false },
+    trip_updates: { in_app: false, push: false, email: true },
+    operational_alerts: { in_app: true, push: false, email: false },
+  };
+  mocks.rpc.mockResolvedValue({ data: driver, error: null });
+  const preferences = await fetchDriverDeliveryPreferences();
+  expect(preferences.operationalAlerts).toEqual({ inApp: true, push: false, email: false });
+  expect(await saveDriverDeliveryPreferences(preferences)).toEqual(preferences);
+  expect(mocks.rpc).toHaveBeenLastCalledWith('set_driver_delivery_preferences_v2', {
+    p_preferences: driver,
+  });
+});
 describe('guardian preference v3 service', () => {
   it('round-trips independent channel selections without changing disabled master selections', async () => {
     mocks.rpc.mockResolvedValue({ data: snapshot, error: null });

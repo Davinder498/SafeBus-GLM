@@ -1,5 +1,6 @@
 import type {
   AndroidPushDevice,
+  AdminInboxPreferences,
   DriverDeliveryPreferences,
   GuardianDeliveryPreferences,
   NotificationCategory,
@@ -211,24 +212,35 @@ export async function saveGuardianDeliveryPreferences(
 }
 
 interface DriverDeliveryPreferencesRow {
+  in_app_enabled: boolean;
   push_enabled: boolean;
   email_enabled: boolean;
-  assignment_alerts: { push: boolean; email: boolean };
+  assignment_alerts: { in_app: boolean; push: boolean; email: boolean };
+  trip_updates: { in_app: boolean; push: boolean; email: boolean };
+  operational_alerts: { in_app: boolean; push: boolean; email: boolean };
 }
 
 function mapDriverDeliveryPreferences(
   value: DriverDeliveryPreferencesRow,
 ): DriverDeliveryPreferences {
+  const channel = (group: DriverDeliveryPreferencesRow['assignment_alerts']) => ({
+    inApp: group.in_app,
+    push: group.push,
+    email: group.email,
+  });
   return {
+    inAppEnabled: value.in_app_enabled,
     pushEnabled: value.push_enabled,
     emailEnabled: value.email_enabled,
-    assignmentAlerts: value.assignment_alerts,
+    assignmentAlerts: channel(value.assignment_alerts),
+    tripUpdates: channel(value.trip_updates),
+    operationalAlerts: channel(value.operational_alerts),
   };
 }
 
 export async function fetchDriverDeliveryPreferences(): Promise<DriverDeliveryPreferences> {
   const value = assertData<DriverDeliveryPreferencesRow>(
-    await clientRpc()('get_driver_delivery_preferences'),
+    await clientRpc()('get_driver_delivery_preferences_v2'),
   );
   return mapDriverDeliveryPreferences(value);
 }
@@ -236,16 +248,36 @@ export async function fetchDriverDeliveryPreferences(): Promise<DriverDeliveryPr
 export async function saveDriverDeliveryPreferences(
   value: DriverDeliveryPreferences,
 ): Promise<DriverDeliveryPreferences> {
+  const channel = (group: DriverDeliveryPreferences['assignmentAlerts']) => ({
+    in_app: group.inApp,
+    push: group.push,
+    email: group.email,
+  });
   const result = assertData<DriverDeliveryPreferencesRow>(
-    await clientRpc()('set_driver_delivery_preferences', {
+    await clientRpc()('set_driver_delivery_preferences_v2', {
       p_preferences: {
+        in_app_enabled: value.inAppEnabled,
         push_enabled: value.pushEnabled,
         email_enabled: value.emailEnabled,
-        assignment_alerts: value.assignmentAlerts,
+        assignment_alerts: channel(value.assignmentAlerts),
+        trip_updates: channel(value.tripUpdates),
+        operational_alerts: channel(value.operationalAlerts),
       },
     }),
   );
   return mapDriverDeliveryPreferences(result);
+}
+
+export async function fetchAdminInboxPreferences(): Promise<AdminInboxPreferences> {
+  return assertData<AdminInboxPreferences>(await clientRpc()('get_admin_inbox_preferences'));
+}
+
+export async function saveAdminInboxPreferences(
+  value: AdminInboxPreferences,
+): Promise<AdminInboxPreferences> {
+  return assertData<AdminInboxPreferences>(
+    await clientRpc()('set_admin_inbox_preferences', { p_preferences: value }),
+  );
 }
 
 interface DeviceRow {

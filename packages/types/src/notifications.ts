@@ -16,7 +16,8 @@ export type NotificationEventType =
   | 'student_service_changed'
   | 'guardian_access_changed'
   | 'delivery_health_incident'
-  | 'provider_configuration_incident';
+  | 'provider_configuration_incident'
+  | 'authority_announcement';
 
 export type NotificationCategory =
   | 'pickup_dropoff'
@@ -84,9 +85,39 @@ export interface GuardianDeliveryChannelPreferences {
 }
 
 export interface DriverDeliveryPreferences {
+  inAppEnabled: boolean;
   pushEnabled: boolean;
   emailEnabled: boolean;
-  assignmentAlerts: GuardianDeliveryChannelPreferences;
+  assignmentAlerts: GuardianInboxChannelPreferences;
+  tripUpdates: GuardianInboxChannelPreferences;
+  operationalAlerts: GuardianInboxChannelPreferences;
+}
+
+export interface AdminInboxPreferences {
+  inAppEnabled: boolean;
+  tripUpdates: boolean;
+  operationalAlerts: boolean;
+  deliveryHealth: boolean;
+}
+
+export type AnnouncementAudience = 'all' | 'guardians' | 'drivers';
+
+export interface AnnouncementRecipientCount {
+  guardians: number;
+  drivers: number;
+  total: number;
+}
+
+export interface AuthorityAnnouncement {
+  id: string;
+  title: string;
+  body: string;
+  audience: AnnouncementAudience;
+  senderName: string;
+  createdAt: string;
+  recipientCount: number;
+  guardianCount: number;
+  driverCount: number;
 }
 
 export interface AndroidPushDevice {

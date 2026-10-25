@@ -12,7 +12,7 @@ export const ADMIN_IDS = {
   trip: '77777777-7777-7777-7777-777777777777',
 } as const;
 
-type AdminWorkflowRole = 'tenant_admin' | 'guardian';
+type AdminWorkflowRole = 'tenant_admin' | 'school_admin' | 'transportation_admin' | 'guardian';
 
 function profile(role: AdminWorkflowRole = 'tenant_admin') {
   return {

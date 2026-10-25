@@ -23,6 +23,7 @@ function expectNativeItem(
 const tenantAdminRoutes = [
   '/admin',
   '/admin/live-trips',
+  '/admin/announcements',
   '/admin/routes',
   '/admin/buses',
   '/admin/drivers',
@@ -49,6 +50,7 @@ describe('tenant admin shell navigation model', () => {
     expect(operationItems.map(({ label, to }) => [label, to])).toEqual([
       ['Overview', '/admin'],
       ['Live Operations', '/admin/live-trips'],
+      ['Announcements', '/admin/announcements'],
     ]);
   });
 

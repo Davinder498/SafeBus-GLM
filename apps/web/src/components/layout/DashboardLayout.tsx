@@ -23,6 +23,7 @@ import {
   CircleHelp,
   CreditCard,
   School,
+  Megaphone,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { safeBusDisplayText } from '@/utils/brand';
@@ -91,6 +92,13 @@ export const adminNavItems: DashboardNavItem[] = [
     group: 'operations',
     description: 'Live fleet and trip history',
     icon: <Radio className="h-4 w-4" />,
+  },
+  {
+    label: 'Announcements',
+    to: '/admin/announcements',
+    group: 'operations',
+    allowedRoles: ['tenant_admin', 'school_admin', 'transportation_admin'],
+    icon: <Megaphone className="h-4 w-4" />,
   },
   {
     label: 'Routes',
@@ -452,6 +460,16 @@ export function DashboardLayout({
               >
                 Privacy Notice
               </DropdownItem>
+              {portal === 'admin' &&
+                profile &&
+                ['tenant_admin', 'school_admin', 'transportation_admin'].includes(profile.role) && (
+                  <DropdownItem
+                    icon={<Bell className="h-4 w-4" />}
+                    onClick={() => navigate('/admin/settings/notifications')}
+                  >
+                    Notification preferences
+                  </DropdownItem>
+                )}
               {portal === 'admin' && profile && (
                 <DropdownItem
                   icon={<Settings className="h-4 w-4" />}

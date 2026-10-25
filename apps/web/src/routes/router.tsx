@@ -71,6 +71,11 @@ const PlatformPricingPage = lazy(() =>
 const AdminSettingsPage = lazy(() =>
   import('@/pages/AdminSettingsPage').then((page) => ({ default: page.AdminSettingsPage })),
 );
+const AdminAnnouncementsPage = lazy(() =>
+  import('@/pages/AdminAnnouncementsPage').then((page) => ({
+    default: page.AdminAnnouncementsPage,
+  })),
+);
 const AdminNotificationSettingsPage = lazy(() =>
   import('@/pages/AdminNotificationSettingsPage').then((page) => ({
     default: page.AdminNotificationSettingsPage,
@@ -266,9 +271,17 @@ export const appRoutes: RouteObject[] = [
     ),
   },
   {
+    path: '/admin/announcements',
+    element: (
+      <ProtectedRoute allowedRoles={['tenant_admin', 'school_admin', 'transportation_admin']}>
+        <AdminAnnouncementsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/admin/settings/notifications',
     element: (
-      <ProtectedRoute allowedRoles={['tenant_admin']}>
+      <ProtectedRoute allowedRoles={['tenant_admin', 'school_admin', 'transportation_admin']}>
         <AdminNotificationSettingsPage />
       </ProtectedRoute>
     ),

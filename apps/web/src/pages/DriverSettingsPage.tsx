@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Bell, ClipboardList } from 'lucide-react';
+import { Bell, ClipboardList, Route, TriangleAlert } from 'lucide-react';
 import { Link } from 'react-router';
 import type { DriverDeliveryPreferences, PushPermissionState } from '@safebus/types';
 import { DashboardLayout, driverNavGroups } from '@/components/layout/DashboardLayout';
@@ -110,25 +110,26 @@ export function DriverSettingsPage() {
   }
 
   const alerts: NotificationAlertChoice[] = preferences
-    ? [
-        {
-          key: 'assignment-alerts',
-          label: 'Assignment alerts',
-          icon: <ClipboardList className="h-5 w-5" aria-hidden />,
-          pushChecked: preferences.assignmentAlerts.push,
-          emailChecked: preferences.assignmentAlerts.email,
-          onPushChange: (checked) =>
-            queueChange((value) => ({
-              ...value,
-              assignmentAlerts: { ...value.assignmentAlerts, push: checked },
-            })),
-          onEmailChange: (checked) =>
-            queueChange((value) => ({
-              ...value,
-              assignmentAlerts: { ...value.assignmentAlerts, email: checked },
-            })),
-        },
-      ]
+    ? (
+        [
+          ['assignmentAlerts', 'Assignment alerts', ClipboardList],
+          ['tripUpdates', 'Trip updates', Route],
+          ['operationalAlerts', 'Operational alerts', TriangleAlert],
+        ] as const
+      ).map(([key, label, Icon]) => ({
+        key,
+        label,
+        icon: <Icon className="h-5 w-5" aria-hidden />,
+        inAppChecked: preferences[key].inApp,
+        pushChecked: preferences[key].push,
+        emailChecked: preferences[key].email,
+        onInAppChange: (checked: boolean) =>
+          queueChange((value) => ({ ...value, [key]: { ...value[key], inApp: checked } })),
+        onPushChange: (checked: boolean) =>
+          queueChange((value) => ({ ...value, [key]: { ...value[key], push: checked } })),
+        onEmailChange: (checked: boolean) =>
+          queueChange((value) => ({ ...value, [key]: { ...value[key], email: checked } })),
+      }))
     : [];
 
   return (
@@ -142,7 +143,7 @@ export function DriverSettingsPage() {
         <PageHeader
           eyebrow="Settings"
           title="Driver settings"
-          description="Manage assignment alerts and how this device shares the active bus location."
+          description="Manage your notifications and location access."
         />
 
         <section aria-labelledby="driver-notification-settings" className="space-y-3">
@@ -162,6 +163,10 @@ export function DriverSettingsPage() {
             <DataState title="Loading settings" message="Checking your notification choices." />
           ) : (
             <NotificationDeliverySettings
+              inAppEnabled={preferences.inAppEnabled}
+              onInAppEnabledChange={(checked) =>
+                queueChange((value) => ({ ...value, inAppEnabled: checked }))
+              }
               pushEnabled={preferences.pushEnabled}
               emailEnabled={preferences.emailEnabled}
               alerts={alerts}

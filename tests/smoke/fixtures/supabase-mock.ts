@@ -274,7 +274,10 @@ export async function installSupabaseMock(
   let driverDeliveryPreferences = {
     push_enabled: false,
     email_enabled: false,
-    assignment_alerts: { push: false, email: false },
+    assignment_alerts: { in_app: true, push: false, email: false },
+    in_app_enabled: true,
+    trip_updates: { in_app: true, push: false, email: false },
+    operational_alerts: { in_app: true, push: false, email: false },
   };
 
   const setActiveTrip = (trip: ReturnType<typeof activeTripRow> | null) => {
@@ -443,7 +446,7 @@ export async function installSupabaseMock(
           });
           return;
         }
-        if (table === 'rpc/get_driver_delivery_preferences') {
+        if (table === 'rpc/get_driver_delivery_preferences_v2') {
           await route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -451,7 +454,7 @@ export async function installSupabaseMock(
           });
           return;
         }
-        if (table === 'rpc/set_driver_delivery_preferences') {
+        if (table === 'rpc/set_driver_delivery_preferences_v2') {
           const requestBody = route.request().postDataJSON() as {
             p_preferences?: typeof driverDeliveryPreferences;
           } | null;

@@ -34,6 +34,7 @@ describe('guardian notification email template', () => {
     'mechanical_disruption',
     'student_service_changed',
     'guardian_access_changed',
+    'authority_announcement',
   ])('uses controlled privacy-safe copy for %s', (notificationType) => {
     const email = buildGuardianEventEmail({
       notificationType,

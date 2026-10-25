@@ -36,6 +36,7 @@ export function buildGuardianEventEmail({
   tenantTimezone,
 }) {
   const genericCopy = {
+    authority_announcement: ['School authority announcement', 'Your school authority has sent an operational alert.'],
     driver_assignment_created: ['Assignment created', 'A SafeBus assignment was created for you.'],
     driver_assignment_changed: ['Assignment changed', 'A SafeBus assignment was changed for you.'],
     driver_assignment_ended: ['Assignment ended', 'A SafeBus assignment was ended for you.'],
@@ -63,7 +64,7 @@ export function buildGuardianEventEmail({
   if (genericCopy) {
     const [subjectLabel, summary] = genericCopy;
     const subject = `SafeBus: ${subjectLabel}`;
-    const isDriverAssignment = notificationType.startsWith('driver_assignment_');
+    const isDriverAssignment = notificationType.startsWith('driver_assignment_') || notificationType === 'authority_announcement';
     const instruction = isDriverAssignment
       ? 'Open SafeBus to view the update.'
       : 'Open SafeBus to view the update. This email intentionally excludes student details.';
