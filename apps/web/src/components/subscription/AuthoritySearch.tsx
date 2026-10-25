@@ -50,6 +50,9 @@ export function AuthoritySearch({
       {selected ? (
         <div className="rounded-lg border border-slate-200 p-4">
           <p className="font-semibold text-navy-900">{selected.officialName}</p>
+          {selected.aliases?.length ? (
+            <p className="text-sm text-slate-700">{selected.aliases.join(' · ')}</p>
+          ) : null}
           <p className="text-sm text-slate-600">
             {selected.authorityCode} · {selected.authorityCategory}
             {selected.city ? ` · ${selected.city}` : ''}
@@ -98,6 +101,9 @@ export function AuthoritySearch({
                     onClick={() => onSelect(row)}
                   >
                     <span className="block font-semibold">{row.officialName}</span>
+                    {row.aliases?.length ? (
+                      <span className="block text-slate-700">{row.aliases.join(' · ')}</span>
+                    ) : null}
                     <span>
                       {row.authorityCode} · {row.authorityCategory}
                       {row.city ? ` · ${row.city}` : ''}

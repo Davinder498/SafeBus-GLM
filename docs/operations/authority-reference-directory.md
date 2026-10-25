@@ -7,6 +7,45 @@ first school authority admin. They review a support contact and address before
 sending the invitation. School authority admins can later edit their published
 support information. Directory refreshes never update accounts or support contacts.
 
+## Common-name search correction — 2026-10-25
+
+A production read-only audit found all 445 source records installed and matching
+a freshly downloaded provincial workbook after the documented website omissions.
+The ordered field fingerprint matches for all 13 imported fields, including the
+source date and availability. Evidence is retained in
+`docs/qa/authority-directory-search-audit-2026-10-25.json`. This establishes import
+consistency, not independent accuracy of every published phone number or email.
+
+The audit also reproduced a search defect: code 3030 exists as **The Calgary
+School Division**, while searches for **Calgary Board of Education** or **CBE**
+have no name match. Alphabetical ordering of all Calgary-city matches also puts
+that authority outside the first 20 results. Code **3030** and **Calgary School
+Division** remain available searches on the observed live version.
+
+The forward correction adds a private `search_aliases` column and six explicitly
+verified aliases for four authorities. Provenance is in
+`config/authority-directory-search-aliases.json`, with each authority's own website
+and review date. These aliases supplement provincial names; they do not rename
+customer accounts or establish exhaustive coverage of every common name.
+
+Search normalizes punctuation/spacing, matches all query tokens, and orders exact
+code/name/alias and name-prefix matches ahead of city-only matches before applying
+the existing limit. Results and selected records show common names alongside the
+unchanged provincial source name. The RPC signature, platform role/session/MFA
+checks, private-table access restrictions, and availability rules remain intact.
+
+Monthly source imports explicitly write only the 13 provincial fields. They
+preserve curated aliases, even if a baseline includes that column. Add or revise
+aliases only through a reviewed forward change backed by an authority's own
+publication; do not invent acronyms or infer them from names.
+
+`20261025183313_authority_directory_search_aliases.sql` remains prepared/unapplied.
+Its embedded PostgreSQL tests rehearse and roll back the new column and search
+replacement, then cover CBE, common names, reordered tokens, punctuation, result
+ordering, withdrawn records, permissions, and preservation through a full refresh.
+The live observation above does not claim that this correction is live. Use the
+existing protected review, recovery, rehearsal and release process before rollout.
+
 ## Initial source review
 
 The [official catalogue](https://open.alberta.ca/opendata/alberta-education-schools-and-authorities)

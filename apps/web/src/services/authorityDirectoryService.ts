@@ -3,6 +3,7 @@ import { supabase, supabaseConfigError } from '@/lib/supabase';
 export interface AuthorityReference {
   authorityCode: string;
   officialName: string;
+  aliases?: string[];
   authorityCategory: string;
   address: string | null;
   city: string | null;

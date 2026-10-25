@@ -1,0 +1,30 @@
+{
+  "verifiedOn": "2026-10-25",
+  "description": "Reviewed search aliases supplement the Alberta source names. They do not rename authorities or change contacts or account associations.",
+  "authorities": [
+    {
+      "authorityCode": "0110",
+      "officialName": "The Edmonton Catholic Separate School Division",
+      "aliases": ["Edmonton Catholic Schools"],
+      "sourceUrl": "https://www.ecsd.net/"
+    },
+    {
+      "authorityCode": "1190",
+      "officialName": "The Rocky View School Division",
+      "aliases": ["Rocky View Schools", "RVS"],
+      "sourceUrl": "https://www.rockyview.ab.ca/"
+    },
+    {
+      "authorityCode": "3020",
+      "officialName": "The Edmonton School Division",
+      "aliases": ["Edmonton Public Schools"],
+      "sourceUrl": "https://www.epsb.ca/"
+    },
+    {
+      "authorityCode": "3030",
+      "officialName": "The Calgary School Division",
+      "aliases": ["Calgary Board of Education", "CBE"],
+      "sourceUrl": "https://www.cbe.ab.ca/about-us"
+    }
+  ]
+}

@@ -4,6 +4,12 @@ SQL here is reviewed source for a future protected release. It is deliberately
 outside the active top-level migration manifest and deployment traversal. Never
 apply these files directly or replay the migration chain against BusSafe.
 
+`20261025183313_authority_directory_search_aliases.sql` corrects authority search
+with reviewed common names, token matching, and relevance ordering before the
+20-result limit. It retains source names, account associations, and contacts.
+The forward correction remains unapplied. See the
+[search audit](../../../docs/qa/authority-directory-search-audit-2026-10-25.json).
+
 `20261025155815_authority_reference_directory.sql` adds platform-only reference
 search, optional authority associations, atomic reviewed onboarding support, and
 address-aware support RPCs. `20261025160733_alberta_authority_reference_import.sql`
@@ -11,7 +17,11 @@ is the reviewed initial 445-record official source snapshot (extract date
 2026-10-24). Install schema before data and both before the new clients through
 the protected promotion/release process. Existing launch-ready notification
 defaults remain a release prerequisite; the new finalizer delegates existing
-provisioning rather than replacing it. Neither file is persistently installed.
+provisioning rather than replacing it. The source files remain here for release
+accounting. A later read-only observation on 2026-10-25 confirmed the directory
+table, search RPC, and matching 445 records are present on BusSafe; this observation
+does not establish how those objects were released. The new search-alias correction
+above remains unapplied.
 See [directory operations and release](../../../docs/operations/authority-reference-directory.md).
 
 `20261024203929_launch_ready_notification_defaults.sql` implements the owner's

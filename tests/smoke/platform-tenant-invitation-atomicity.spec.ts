@@ -309,6 +309,52 @@ async function fillTenantForm(page: Page) {
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
 }
 
+test('common-name search displays CBE alongside its unchanged provincial source name', async ({
+  page,
+}, testInfo) => {
+  await installPlatformMock(page, 'success');
+  await page.route('**/rest/v1/rpc/search_authority_reference_directory', async (route) => {
+    expect(route.request().postDataJSON().p_query).toBe('Calgary Board of Education');
+    await route.fulfill({
+      json: [
+        {
+          authorityCode: '3030',
+          officialName: 'The Calgary School Division',
+          aliases: ['Calgary Board of Education', 'CBE'],
+          authorityCategory: 'Public',
+          address: null,
+          city: 'Calgary',
+          province: 'AB',
+          postalCode: null,
+          email: 'office@example.test',
+          phone: null,
+          websiteUrl: null,
+          sourceExtractDate: '2026-10-24',
+          importedAt: '2026-10-25T00:00:00Z',
+          sourceUrl: 'https://education.alberta.ca/media/1626668/authority.xlsx',
+          alreadyLinked: false,
+        },
+      ],
+    });
+  });
+  await page.goto('/admin/tenants');
+  await page.getByLabel('Search Alberta school authorities').fill('Calgary Board of Education');
+  const result = page
+    .getByRole('list', { name: 'Matching school authorities' })
+    .getByRole('button', { name: /Calgary Board of Education/ });
+  await expect(result).toContainText('The Calgary School Division');
+  await expect(result).toContainText('CBE');
+  await page.screenshot({
+    path: testInfo.outputPath('cbe-common-name-result.png'),
+    fullPage: true,
+  });
+  await result.click();
+  await expect(
+    page.getByRole('textbox', { name: 'School authority name', exact: true }),
+  ).toHaveValue('The Calgary School Division');
+  await expect(page.getByText('Calgary Board of Education · CBE', { exact: true })).toBeVisible();
+});
+
 test('directory selection prefills support while the administrator is chosen explicitly', async ({
   page,
 }, testInfo) => {

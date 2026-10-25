@@ -139,6 +139,27 @@ beforeAll(async () => {
   await db.exec(migration);
   await db.exec(initialImport);
   await db.exec('commit');
+  const searchCorrection = await read(
+    'supabase/migrations/pending/20261025183313_authority_directory_search_aliases.sql',
+  );
+  await db.exec('begin');
+  await db.exec(searchCorrection);
+  expect(
+    (
+      await db.query(
+        "select search_aliases from safebus_private.authority_reference_directory where authority_code='3030'",
+      )
+    ).rows[0].search_aliases,
+  ).toContain('CBE');
+  await db.exec('rollback');
+  expect(
+    (
+      await db.query(
+        "select count(*)::int as count from information_schema.columns where table_schema='safebus_private' and table_name='authority_reference_directory' and column_name='search_aliases'",
+      )
+    ).rows[0].count,
+  ).toBe(0);
+  await db.exec(searchCorrection);
   await actor();
 }, 30000);
 afterAll(async () => {
@@ -146,6 +167,73 @@ afterAll(async () => {
 });
 
 describe('authority directory and support in PostgreSQL', () => {
+  it.each([
+    'Calgary Board of Education',
+    'CBE',
+    '3030',
+    'Calgary School Division',
+    'education calgary board',
+    '  CALGARY board-of EDUCATION  ',
+  ])('finds CBE by %s while retaining its source name', async (query) => {
+    const rows = await search(query);
+    expect(rows[0]).toMatchObject({
+      authorityCode: '3030',
+      officialName: 'The Calgary School Division',
+      aliases: ['Calgary Board of Education', 'CBE'],
+    });
+  });
+  it('ranks authority names ahead of city-only matches before limiting the page', async () => {
+    const rows = await search('Calgary');
+    expect(rows).toHaveLength(20);
+    expect(rows.some((row) => row.authorityCode === '3030')).toBe(true);
+    expect(rows[0].officialName.toLowerCase()).toContain('calgary');
+  });
+  it('resolves every explicitly verified alias to its reviewed authority code', async () => {
+    const verified = JSON.parse(await read('config/authority-directory-search-aliases.json'));
+    for (const authority of verified.authorities) {
+      for (const alias of authority.aliases) {
+        expect((await search(alias))[0]).toMatchObject({
+          authorityCode: authority.authorityCode,
+          officialName: authority.officialName,
+        });
+      }
+    }
+  });
+  it('keeps curated aliases and account/contact data out of provincial refresh writes', async () => {
+    const { records } = (
+      await db.query(
+        "select jsonb_agg(to_jsonb(d)-'imported_at') as records from safebus_private.authority_reference_directory d",
+      )
+    ).rows[0];
+    const state = (
+      await db.query('select source_sha256 from safebus_private.authority_directory_import_state')
+    ).rows[0];
+    for (const row of records) row.search_aliases = [];
+    const sql = authorityImportSql({
+      records,
+      sourceSha256: 'b'.repeat(64),
+      previousSha256: state.source_sha256,
+    });
+    expect(sql).not.toContain('search_aliases');
+    await db.exec('begin');
+    await db.exec(sql);
+    expect(
+      (
+        await db.query(
+          "select search_aliases from safebus_private.authority_reference_directory where authority_code='3030'",
+        )
+      ).rows[0].search_aliases,
+    ).toEqual(['Calgary Board of Education', 'CBE']);
+    await db.exec('rollback');
+  });
+  it('does not expose withdrawn authorities through their common names', async () => {
+    await db.exec('begin');
+    await db.query(
+      "update safebus_private.authority_reference_directory set available=false where authority_code='3030'",
+    );
+    expect(await search('CBE')).toEqual([]);
+    await db.exec('rollback');
+  });
   it('preserves the existing finalizer and keeps reference data separate from accounts', async () => {
     expect(
       (
