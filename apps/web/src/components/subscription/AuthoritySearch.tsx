@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -17,39 +17,79 @@ export function AuthoritySearch({
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<AuthorityReference[]>([]);
   const [status, setStatus] = useState('');
+  const [total, setTotal] = useState<number | null>(null);
+  const [nextOffset, setNextOffset] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const generation = useRef<object>({});
   useEffect(() => {
-    let current = true;
+    const request = {};
+    generation.current = request;
     setResults([]);
     setStatus('');
+    setTotal(null);
+    setNextOffset(null);
+    setLoading(false);
     if (selected || query.trim().length < 2) return;
     setStatus('Searching authorities…');
     const timer = window.setTimeout(() => {
+      setLoading(true);
       void searchAuthorityDirectory(query)
-        .then((rows) => {
-          if (!current) return;
-          setResults(rows);
-          setStatus(rows.length ? '' : 'No matching authorities. Enter the details manually.');
+        .then((page) => {
+          if (request !== generation.current) return;
+          setResults(page.items);
+          setTotal(page.total);
+          setNextOffset(page.nextOffset);
+          setStatus(
+            page.items.length ? '' : 'No matching authorities. Enter the details manually.',
+          );
         })
         .catch((error: unknown) => {
-          if (current)
+          if (request === generation.current)
             setStatus(
               error instanceof Error
                 ? error.message
                 : 'Search is unavailable. Enter the details manually.',
             );
+        })
+        .finally(() => {
+          if (request === generation.current) setLoading(false);
         });
     }, 300);
     return () => {
-      current = false;
+      generation.current = {};
       window.clearTimeout(timer);
     };
   }, [query, selected]);
+
+  async function loadMore() {
+    if (nextOffset === null || loading) return;
+    const request = generation.current;
+    setLoading(true);
+    setStatus('');
+    try {
+      const page = await searchAuthorityDirectory(query, nextOffset);
+      if (request !== generation.current) return;
+      setResults((rows) => [
+        ...new Map([...rows, ...page.items].map((row) => [row.authorityCode, row])).values(),
+      ]);
+      setTotal(page.total);
+      setNextOffset(page.nextOffset);
+    } catch {
+      if (request === generation.current)
+        setStatus('More results could not be loaded. Try Load more again.');
+    } finally {
+      if (request === generation.current) setLoading(false);
+    }
+  }
 
   return (
     <div className="space-y-3">
       {selected ? (
         <div className="rounded-lg border border-slate-200 p-4">
           <p className="font-semibold text-navy-900">{selected.officialName}</p>
+          {selected.aliases?.length ? (
+            <p className="text-sm text-slate-700">{selected.aliases.join(' · ')}</p>
+          ) : null}
           <p className="text-sm text-slate-600">
             {selected.authorityCode} · {selected.authorityCategory}
             {selected.city ? ` · ${selected.city}` : ''}
@@ -76,7 +116,10 @@ export function AuthoritySearch({
               maxLength={100}
               value={query}
               placeholder="Name, authority code, or city"
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                generation.current = {};
+                setQuery(event.target.value);
+              }}
             />
           </Field>
           {status && (
@@ -98,6 +141,9 @@ export function AuthoritySearch({
                     onClick={() => onSelect(row)}
                   >
                     <span className="block font-semibold">{row.officialName}</span>
+                    {row.aliases?.length ? (
+                      <span className="block text-slate-700">{row.aliases.join(' · ')}</span>
+                    ) : null}
                     <span>
                       {row.authorityCode} · {row.authorityCategory}
                       {row.city ? ` · ${row.city}` : ''}
@@ -109,6 +155,21 @@ export function AuthoritySearch({
                 </li>
               ))}
             </ul>
+          )}
+          {total !== null && total > 0 && (
+            <p role="status" className="text-sm text-slate-600">
+              Showing {results.length} of {total} matching school authorities
+            </p>
+          )}
+          {nextOffset !== null && (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={loading}
+              onClick={() => void loadMore()}
+            >
+              {loading ? 'Loading more…' : 'Load more'}
+            </Button>
           )}
         </>
       )}

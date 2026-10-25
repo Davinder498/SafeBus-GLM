@@ -6,6 +6,7 @@
     "platform_check_authority_onboarding(text,jsonb,boolean)",
     "platform_finalize_tenant_invitation_v2(uuid,text,text,text,text,text,jsonb,boolean)",
     "search_authority_reference_directory(text)",
+    "search_authority_reference_directory_v2(text,integer)",
     "update_tenant_support_contact_v2(text,text,text,text,text,text,text)"
   ],
   "serviceRole": []

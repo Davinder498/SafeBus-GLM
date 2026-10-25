@@ -1,0 +1,56 @@
+{
+  "observedOn": "2026-10-25",
+  "mode": "read-only-production-observation",
+  "project": "BusSafe",
+  "sourceUrl": "https://education.alberta.ca/media/1626668/authority.xlsx",
+  "sourceSha256": "7ad60759cc326466260c0072d3613c27fa755ff13ad2edc64d391ffbf11204ee",
+  "sourceExtractDate": "2026-10-24",
+  "sourceRecordCount": 445,
+  "hostedRecordCount": 445,
+  "hostedAvailableOrganizationalCityCounts": { "Calgary": 110, "Edmonton": 77 },
+  "paginationFinding": "The live city search returns only 20 rows without a total or continuation. A new versioned paginated search is prepared locally; no hosted changes were made.",
+  "comparedFields": [
+    "authority_code",
+    "official_name",
+    "authority_category",
+    "address",
+    "city",
+    "province",
+    "postal_code",
+    "email",
+    "phone",
+    "website_url",
+    "source_url",
+    "source_extract_date",
+    "available"
+  ],
+  "sourceFieldFingerprint": "af91664e1f89b3fec4361457d03b5571",
+  "hostedFieldFingerprint": "af91664e1f89b3fec4361457d03b5571",
+  "fingerprintMethod": "MD5 of concatenated per-record MD5 hashes over PostgreSQL-compatible JSON arrays, ordered by authority code. Consistency comparison only; not a security signature.",
+  "documentedSourceOmissions": [
+    {
+      "authorityCode": "0108",
+      "field": "website_url",
+      "issue": "Unusable source value omitted; review against the official source."
+    },
+    {
+      "authorityCode": "9309",
+      "field": "website_url",
+      "issue": "Unusable source value omitted; review against the official source."
+    },
+    {
+      "authorityCode": "9413",
+      "field": "website_url",
+      "issue": "Unusable source value omitted; review against the official source."
+    }
+  ],
+  "cbe": {
+    "authorityCode": "3030",
+    "officialName": "The Calgary School Division",
+    "available": true,
+    "fullCommonNameMatchesBeforeFix": 0,
+    "excludedFromFirst20CalgaryResultsBeforeFix": true
+  },
+  "finding": "All imported organization fields match the freshly retrieved source after documented website omissions. The deployed search lacks common-name aliases and ranks by alphabet before applying a 20-row limit.",
+  "limits": "This does not independently validate every contact or establish exhaustive common-name coverage. The forward search correction is prepared for review; no hosted data or schema was changed."
+}

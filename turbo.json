@@ -25,12 +25,14 @@
     },
     "@safebus/web#test": {
       "dependsOn": ["^build"],
+      "passThroughEnv": ["VITEST_MAX_FORKS", "VITEST_MIN_FORKS"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/supabase/migrations/**/*.sql",
         "$TURBO_ROOT$/config/pending/*.json",
         "$TURBO_ROOT$/supabase/functions/_shared/**/*.mjs",
         "$TURBO_ROOT$/scripts/lib/authority-directory.mjs",
+        "$TURBO_ROOT$/config/authority-directory-search-aliases.json",
         "$TURBO_ROOT$/tests/fixtures/authority-directory/**",
         "$TURBO_ROOT$/docs/qa/authority-directory-hosted-schema-2026-10-25.json",
         "$TURBO_ROOT$/package.json",

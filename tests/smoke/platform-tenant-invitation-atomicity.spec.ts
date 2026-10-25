@@ -309,6 +309,179 @@ async function fillTenantForm(page: Page) {
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
 }
 
+test('common-name search displays CBE alongside its unchanged provincial source name', async ({
+  page,
+}, testInfo) => {
+  await installPlatformMock(page, 'success');
+  await page.route('**/rest/v1/rpc/search_authority_reference_directory_v2', async (route) => {
+    expect(route.request().postDataJSON().p_query).toBe('Calgary Board of Education');
+    await route.fulfill({
+      json: {
+        total: 1,
+        nextOffset: null,
+        items: [
+          {
+            authorityCode: '3030',
+            officialName: 'The Calgary School Division',
+            aliases: ['Calgary Board of Education', 'CBE'],
+            authorityCategory: 'Public',
+            address: null,
+            city: 'Calgary',
+            province: 'AB',
+            postalCode: null,
+            email: 'office@example.test',
+            phone: null,
+            websiteUrl: null,
+            sourceExtractDate: '2026-10-24',
+            importedAt: '2026-10-25T00:00:00Z',
+            sourceUrl: 'https://education.alberta.ca/media/1626668/authority.xlsx',
+            alreadyLinked: false,
+          },
+        ],
+      },
+    });
+  });
+  await page.goto('/admin/tenants');
+  await page.getByLabel('Search Alberta school authorities').fill('Calgary Board of Education');
+  const result = page
+    .getByRole('list', { name: 'Matching school authorities' })
+    .getByRole('button', { name: /Calgary Board of Education/ });
+  await expect(result).toContainText('The Calgary School Division');
+  await expect(result).toContainText('CBE');
+  await page.screenshot({
+    path: testInfo.outputPath('cbe-common-name-result.png'),
+    fullPage: true,
+  });
+  await result.click();
+  await expect(
+    page.getByRole('textbox', { name: 'School authority name', exact: true }),
+  ).toHaveValue('The Calgary School Division');
+  await expect(page.getByText('Calgary Board of Education · CBE', { exact: true })).toBeVisible();
+});
+
+function cityReference(index: number, city = 'Calgary') {
+  return {
+    authorityCode: String(7000 + index),
+    officialName: `${index === 40 ? 'Z' : 'A'} ${city} Authority ${String(index).padStart(2, '0')}`,
+    authorityCategory: 'Private School',
+    city,
+    sourceExtractDate: '2026-10-24',
+    alreadyLinked: false,
+  };
+}
+
+test('city search loads every page, shows totals and preserves results when a later page needs retry', async ({
+  page,
+}, testInfo) => {
+  await installPlatformMock(page, 'success');
+  const records = Array.from({ length: 41 }, (_, index) => cityReference(index));
+  const offsets: number[] = [];
+  let failNext = true;
+  await page.route('**/rest/v1/rpc/search_authority_reference_directory_v2', async (route) => {
+    const { p_query: query, p_offset: offset } = route.request().postDataJSON();
+    expect(query).toBe('Calgary');
+    offsets.push(offset);
+    if (offset === 20 && failNext) {
+      failNext = false;
+      return route.fulfill({ status: 503, json: { message: 'unavailable' } });
+    }
+    return route.fulfill({
+      json: {
+        items: records.slice(offset, offset + 20),
+        total: 41,
+        nextOffset: offset + 20 < 41 ? offset + 20 : null,
+      },
+    });
+  });
+  await page.goto('/admin/tenants');
+  await page.getByLabel('Search Alberta school authorities').fill('Calgary');
+  const list = page.getByRole('list', { name: 'Matching school authorities' });
+  await expect(
+    page.getByText('Showing 20 of 41 matching school authorities', { exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Load more', exact: true }).click();
+  await expect(
+    page.getByText('More results could not be loaded. Try Load more again.', { exact: true }),
+  ).toBeVisible();
+  await expect(list.getByRole('button')).toHaveCount(20);
+  await page.getByRole('button', { name: 'Load more', exact: true }).click();
+  await expect(
+    page.getByText('Showing 40 of 41 matching school authorities', { exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Load more', exact: true }).click();
+  await expect(
+    page.getByText('Showing 41 of 41 matching school authorities', { exact: true }),
+  ).toBeVisible();
+  await expect(list.getByRole('button')).toHaveCount(41);
+  await expect(page.getByRole('button', { name: 'Load more', exact: true })).toHaveCount(0);
+  expect(offsets).toEqual([0, 20, 20, 40]);
+  await list.getByRole('button', { name: /Z Calgary Authority 40/ }).scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: testInfo.outputPath('authority-city-last-page.png'),
+    fullPage: true,
+  });
+  await list.getByRole('button', { name: /Z Calgary Authority 40/ }).click();
+  await expect(
+    page.getByRole('textbox', { name: 'School authority name', exact: true }),
+  ).toHaveValue('Z Calgary Authority 40');
+});
+
+test('changing the city resets pagination and ignores a late page from the previous search', async ({
+  page,
+}) => {
+  await installPlatformMock(page, 'success');
+  let releaseOldPage!: () => void;
+  const oldPage = new Promise<void>((resolve) => {
+    releaseOldPage = resolve;
+  });
+  await page.route('**/rest/v1/rpc/search_authority_reference_directory_v2', async (route) => {
+    const { p_query: query, p_offset: offset } = route.request().postDataJSON();
+    if (query === 'Edmonton') {
+      expect(offset).toBe(0);
+      return route.fulfill({
+        json: { items: [cityReference(1, 'Edmonton')], total: 1, nextOffset: null },
+      });
+    }
+    if (offset === 20) await oldPage;
+    return route.fulfill({
+      json: {
+        items: Array.from({ length: 20 }, (_, index) => cityReference(offset + index)),
+        total: 40,
+        nextOffset: offset === 0 ? 20 : null,
+      },
+    });
+  });
+  await page.goto('/admin/tenants');
+  const input = page.getByLabel('Search Alberta school authorities');
+  await input.fill('Calgary');
+  await expect(
+    page.getByText('Showing 20 of 40 matching school authorities', { exact: true }),
+  ).toBeVisible();
+  const pendingPage = page.waitForRequest(
+    (request) =>
+      request.url().endsWith('/search_authority_reference_directory_v2') &&
+      request.postDataJSON().p_offset === 20,
+  );
+  await page.getByRole('button', { name: 'Load more', exact: true }).click();
+  await pendingPage;
+  await input.fill('Edmonton');
+  await expect(
+    page.getByText('Showing 1 of 1 matching school authorities', { exact: true }),
+  ).toBeVisible();
+  const oldResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/search_authority_reference_directory_v2') &&
+      response.request().postDataJSON().p_offset === 20,
+  );
+  releaseOldPage();
+  await oldResponse;
+  const list = page.getByRole('list', { name: 'Matching school authorities' });
+  await expect(list.getByRole('button')).toHaveCount(1);
+  await expect(list).toContainText('Edmonton');
+  await expect(list).not.toContainText('Calgary');
+  await expect(page.getByRole('button', { name: 'Load more', exact: true })).toHaveCount(0);
+});
+
 test('directory selection prefills support while the administrator is chosen explicitly', async ({
   page,
 }, testInfo) => {
@@ -329,17 +502,21 @@ test('directory selection prefills support while the administrator is chosen exp
     importedAt: '2026-10-25T00:00:00Z',
     alreadyLinked: false,
   };
-  await page.route('**/rest/v1/rpc/search_authority_reference_directory', (route) =>
+  await page.route('**/rest/v1/rpc/search_authority_reference_directory_v2', (route) =>
     route.fulfill({
-      json: [
-        reference,
-        {
-          ...reference,
-          authorityCode: '1235',
-          officialName: 'Already Linked School Division',
-          alreadyLinked: true,
-        },
-      ],
+      json: {
+        total: 2,
+        nextOffset: null,
+        items: [
+          reference,
+          {
+            ...reference,
+            authorityCode: '1235',
+            officialName: 'Already Linked School Division',
+            alreadyLinked: true,
+          },
+        ],
+      },
     }),
   );
   let submitted: Record<string, unknown> | null = null;
@@ -406,7 +583,7 @@ test('search failure preserves manual onboarding with reviewed support details',
   page,
 }) => {
   await installPlatformMock(page, 'success');
-  await page.route('**/rest/v1/rpc/search_authority_reference_directory', (route) =>
+  await page.route('**/rest/v1/rpc/search_authority_reference_directory_v2', (route) =>
     route.fulfill({ status: 503, json: { message: 'unavailable' } }),
   );
   await page.goto('/admin/tenants');

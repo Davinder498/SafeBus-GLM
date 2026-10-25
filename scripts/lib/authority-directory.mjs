@@ -14,6 +14,21 @@ const limits = {
   phone: 40,
   website_url: 500,
 };
+const referenceFields = [
+  'authority_code',
+  'official_name',
+  'authority_category',
+  'address',
+  'city',
+  'province',
+  'postal_code',
+  'email',
+  'phone',
+  'website_url',
+  'source_url',
+  'source_extract_date',
+  'available',
+];
 const headers = [
   'Authority Code',
   'Authority Name',
@@ -157,8 +172,14 @@ export function authorityImportSql({ records, sourceSha256, previousSha256 = nul
   )
     throw new Error('Invalid import digest.');
   const date = records[0].source_extract_date;
-  const columns = Object.keys(records[0]);
-  const json = '[\n' + records.map((row) => JSON.stringify(row)).join(',\n') + '\n]';
+  // Imports own only provincial source fields. Curated search aliases survive refreshes.
+  const columns = referenceFields;
+  const json =
+    '[\n' +
+    records
+      .map((row) => JSON.stringify(Object.fromEntries(columns.map((key) => [key, row[key]]))))
+      .join(',\n') +
+    '\n]';
   // Values are SQL literals with apostrophes escaped; no source content is SQL code.
   return `-- Prepared authority directory import. Apply only in the protected reviewed workflow.
 -- Source: ${AUTHORITY_SOURCE_URL}

@@ -7,6 +7,76 @@ first school authority admin. They review a support contact and address before
 sending the invitation. School authority admins can later edit their published
 support information. Directory refreshes never update accounts or support contacts.
 
+## Common-name search correction — 2026-10-25
+
+A production read-only audit found all 445 source records installed and matching
+a freshly downloaded provincial workbook after the documented website omissions.
+The ordered field fingerprint matches for all 13 imported fields, including the
+source date and availability. Evidence is retained in
+`docs/qa/authority-directory-search-audit-2026-10-25.json`. This establishes import
+consistency, not independent accuracy of every published phone number or email.
+
+The audit also reproduced a search defect: code 3030 exists as **The Calgary
+School Division**, while searches for **Calgary Board of Education** or **CBE**
+have no name match. Alphabetical ordering of all Calgary-city matches also puts
+that authority outside the first 20 results. Code **3030** and **Calgary School
+Division** remain available searches on the observed live version.
+
+The forward correction adds a private `search_aliases` column and six explicitly
+verified aliases for four authorities. Provenance is in
+`config/authority-directory-search-aliases.json`, with each authority's own website
+and review date. These aliases supplement provincial names; they do not rename
+customer accounts or establish exhaustive coverage of every common name.
+
+Search normalizes punctuation/spacing, matches all query tokens, and orders exact
+code/name/alias and name-prefix matches ahead of city-only matches before applying
+the page limit. Results and selected records show common names alongside the
+unchanged provincial source name. The RPC signature, platform role/session/MFA
+checks, private-table access restrictions, and availability rules remain intact.
+
+Monthly source imports explicitly write only the 13 provincial fields. They
+preserve curated aliases, even if a baseline includes that column. Add or revise
+aliases only through a reviewed forward change backed by an authority's own
+publication; do not invent acronyms or infer them from names.
+
+`20261025183313_authority_directory_search_aliases.sql` remains prepared/unapplied.
+Its embedded PostgreSQL tests rehearse and roll back the new column and search
+replacement, then cover CBE, common names, reordered tokens, punctuation, result
+ordering, withdrawn records, permissions, and preservation through a full refresh.
+The live observation above does not claim that this correction is live. Use the
+existing protected review, recovery, rehearsal and release process before rollout.
+
+## Complete city search results — 2026-10-25
+
+A further production read-only count found 110 available reference records whose
+organizational city is Calgary and 77 whose city is Edmonton. The old search
+returned at most 20 with no total or continuation control, explaining why city
+results appeared to stop around B. These are organizational address cities, not
+a guarantee that an authority serves only that city. Name and alias matches can
+also appear in a city query.
+
+`20261025185119_authority_directory_search_pages.sql` adds the platform-only
+`search_authority_reference_directory_v2(text,integer)` RPC with the same matching,
+ranking, availability, active-session and MFA checks. Each response contains at
+most 20 items, the total number of matches, and a nullable next offset. Ordering
+is deterministic, with authority code as the final tie-breaker. The old RPC keeps
+its array response and delegates to the first page. No existing API signature
+changes. The client shows the count and a **Load more** button, preserves loaded
+results on a retryable later-page error, and discards responses for an old query.
+
+Release this pending migration after the aliases correction and before its client.
+Embedded PostgreSQL verifies every Calgary/Edmonton match across all pages,
+totals, invalid offsets, authorization, legacy compatibility and rollback of
+the new function and replacement wrapper. Browser checks use local mocked
+requests; no invitation or notification is sent. Neither pending correction has
+been applied by this work; the hosted read-only count is separate live evidence.
+
+On a constrained local workstation, set `VITEST_MAX_FORKS=1` and
+`VITEST_MIN_FORKS=1` before `pnpm test`. The web test task explicitly passes these
+worker settings through Turbo. Unset CI defaults and all test timeouts are
+unchanged. Run the browser suite separately from the embedded PostgreSQL suite
+to avoid resource contention during database initialization.
+
 ## Initial source review
 
 The [official catalogue](https://open.alberta.ca/opendata/alberta-education-schools-and-authorities)
@@ -64,6 +134,7 @@ support. Those choices remain explicit.
    This command never connects to a database and has no apply mode. It writes a
    change report, the proposed baseline JSON, and `reviewed-import.sql`. For the
    initial empty directory only, use `--initial` instead of `--baseline`.
+
 4. Review additions, changed codes, missing records, source date, count, and
    omitted invalid fields. A missing record becomes unavailable for new selection;
    it is retained for existing account references. Do not automatically accept
