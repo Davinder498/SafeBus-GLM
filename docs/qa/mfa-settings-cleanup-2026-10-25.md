@@ -29,6 +29,11 @@ now includes both Settings pages and the shared MFA card.
 - `pnpm test` completed successfully: 583 web tests, two mobile tests, and 364
   release/database-contract tests. The two affected mobile presentation scenarios
   also passed, for 11 successful browser scenarios in total.
+- The broad CI mobile run exposed a stale title assertion and an ambiguous
+  notification status query caused by the added MFA live region. The MFA value
+  is now ordinary text, leaving notification save feedback as the live status.
+  All three affected notification browser scenarios passed locally after these
+  corrections; the guardian page title assertion now expects Settings.
 - Browser screenshots were inspected locally. The MFA action retains a single
   line on narrow screens.
 

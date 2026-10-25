@@ -568,7 +568,7 @@ test('mobile notification settings autosave independent channel sections with sw
   await page.goto('/notifications/settings');
 
   await expect(
-    page.getByRole('heading', { name: 'Notification settings', level: 1 }),
+    page.getByRole('heading', { name: 'Settings', level: 1 }),
   ).toBeVisible();
   const push = page.getByRole('switch', { name: 'Push notifications' });
   const email = page.getByRole('switch', { name: 'Email notifications' });

@@ -11,7 +11,7 @@ export function MfaSettingsCard() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="font-bold text-slate-950">Multi-factor authentication</h2>
-          <p className="mt-1 text-sm text-slate-600" role="status">
+          <p className="mt-1 text-sm text-slate-600">
             {mfaLoading ? 'Checking' : enabled ? 'On' : 'Off'}
           </p>
         </div>
