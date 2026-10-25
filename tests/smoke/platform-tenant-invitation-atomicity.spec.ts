@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { installLocalOnlyBoundary } from './fixtures/local-only';
 
 const platformUser = {
   id: 'aa000000-0000-0000-0000-000000000001',
@@ -46,6 +47,7 @@ async function installPlatformMock(
   page: Page,
   outcome: 'success' | 'failure' | 'resend' | 'recovery' | 'expired',
 ) {
+  await installLocalOnlyBoundary(page);
   let tenantCreated = ['resend', 'recovery', 'expired'].includes(outcome);
   let invitationStatus = outcome === 'expired' ? 'expired' : pendingInvitation.status;
   let resendRequests = 0;
@@ -296,7 +298,127 @@ async function fillTenantForm(page: Page) {
   await page.getByPlaceholder('School authority admin full name').fill('Successful Admin');
   await page.getByPlaceholder('School authority admin email').fill('successful.admin@example.test');
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await page.getByLabel('Support team name').fill('Transportation office');
+  await page
+    .getByRole('textbox', { name: 'Support email', exact: true })
+    .fill('transport@example.test');
+  await page
+    .getByLabel('School authority address', { exact: true })
+    .fill('123 School Road\nCalgary AB');
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
 }
+
+test('directory selection prefills support while the administrator is chosen explicitly', async ({
+  page,
+}, testInfo) => {
+  await installPlatformMock(page, 'success');
+  const reference = {
+    authorityCode: '1234',
+    officialName: 'Prairie School Division',
+    authorityCategory: 'Public',
+    address: '100 Authority Road',
+    city: 'Calgary',
+    province: 'AB',
+    postalCode: 'T1A 1A1',
+    email: 'office@example.test',
+    phone: '403-555-0100',
+    websiteUrl: 'https://example.test',
+    sourceExtractDate: '2026-10-24',
+    sourceUrl: 'https://education.alberta.ca/media/1626668/authority.xlsx',
+    importedAt: '2026-10-25T00:00:00Z',
+    alreadyLinked: false,
+  };
+  await page.route('**/rest/v1/rpc/search_authority_reference_directory', (route) =>
+    route.fulfill({
+      json: [
+        reference,
+        {
+          ...reference,
+          authorityCode: '1235',
+          officialName: 'Already Linked School Division',
+          alreadyLinked: true,
+        },
+      ],
+    }),
+  );
+  let submitted: Record<string, unknown> | null = null;
+  await page.route('**/.netlify/functions/safebus-onboarding', async (route) => {
+    submitted = route.request().postDataJSON();
+    await route.fallback();
+  });
+  await page.goto('/admin/tenants');
+  await page.getByLabel('Search Alberta school authorities').fill('Prairie');
+  await expect(page.getByRole('button', { name: /Already Linked School Division/ })).toBeDisabled();
+  await page.getByRole('button', { name: /^Prairie School Division/ }).click();
+  await expect(
+    page.getByRole('textbox', { name: 'School authority name', exact: true }),
+  ).toHaveValue(reference.officialName);
+  await expect(page.getByText('Source date: 2026-10-24')).toBeVisible();
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(
+    page.getByRole('textbox', { name: 'School authority admin email', exact: true }),
+  ).toHaveValue('');
+  await page.getByLabel('School authority admin full name').fill('Chosen Admin');
+  await page
+    .getByRole('textbox', { name: 'School authority admin email', exact: true })
+    .fill('chosen.admin@example.test');
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(page.getByRole('textbox', { name: 'Support email', exact: true })).toHaveValue(
+    'office@example.test',
+  );
+  await expect(page.getByLabel('School authority address', { exact: true })).toHaveValue(
+    '100 Authority Road\nCalgary AB T1A 1A1',
+  );
+  await page
+    .getByRole('textbox', { name: 'Support email', exact: true })
+    .fill('transport@example.test');
+  await page.getByRole('checkbox').check();
+  await page.getByRole('textbox', { name: /^Phone/ }).fill('403-555-0199');
+  await expect(page.getByRole('checkbox')).not.toBeChecked();
+  await expect(page.getByRole('button', { name: 'Send invitation', exact: true })).toHaveCount(0);
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  const wizard = page.getByRole('form', { name: 'Invite a school authority' });
+  await expect(wizard).toContainText('chosen.admin@example.test');
+  await expect(wizard).toContainText('transport@example.test');
+  expect(
+    (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()).violations,
+  ).toEqual([]);
+  await page.screenshot({
+    path: testInfo.outputPath('authority-directory-review.png'),
+    fullPage: true,
+  });
+  await page.getByRole('button', { name: 'Send invitation', exact: true }).click();
+  await expect(wizard.getByRole('status')).toContainText(
+    'Invitation accepted by the email provider',
+  );
+  expect(submitted).toMatchObject({
+    onboardingVersion: 2,
+    authorityCode: '1234',
+    adminEmail: 'chosen.admin@example.test',
+    supportConfirmed: true,
+    supportContact: { email: 'transport@example.test', phone: '403-555-0199' },
+  });
+});
+
+test('search failure preserves manual onboarding with reviewed support details', async ({
+  page,
+}) => {
+  await installPlatformMock(page, 'success');
+  await page.route('**/rest/v1/rpc/search_authority_reference_directory', (route) =>
+    route.fulfill({ status: 503, json: { message: 'unavailable' } }),
+  );
+  await page.goto('/admin/tenants');
+  await page.getByLabel('Search Alberta school authorities').fill('Missing authority');
+  await expect(page.getByRole('status')).toContainText('You can enter the details manually');
+  await fillTenantForm(page);
+  await expect(page.getByRole('heading', { name: 'Review invitation', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Send invitation', exact: true }).click();
+  await expect(
+    page.getByRole('form', { name: 'Invite a school authority' }).getByRole('status'),
+  ).toContainText('Invitation accepted by the email provider');
+});
 
 test.describe('platform tenant invitation atomicity', () => {
   test('review supports editing, accessible hints and a recoverable configuration error', async ({
@@ -334,10 +456,12 @@ test.describe('platform tenant invitation atomicity', () => {
       (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()).violations,
     ).toEqual([]);
     await wizard.getByRole('button', { name: 'Continue', exact: true }).click();
+    await wizard.getByRole('button', { name: 'Continue', exact: true }).click();
     await expect(wizard.getByRole('heading', { name: 'Review invitation' })).toBeFocused();
     await wizard.getByRole('button', { name: 'Edit school authority', exact: true }).click();
     await expect(wizard.getByLabel('School authority name')).toHaveValue('Successful Transit');
     await wizard.getByLabel('School authority name').fill('Successful School Division');
+    await wizard.getByRole('button', { name: 'Continue', exact: true }).click();
     await wizard.getByRole('button', { name: 'Continue', exact: true }).click();
     await wizard.getByRole('button', { name: 'Continue', exact: true }).click();
     await expect(wizard).toContainText('Successful School Division');

@@ -4,6 +4,16 @@ SQL here is reviewed source for a future protected release. It is deliberately
 outside the active top-level migration manifest and deployment traversal. Never
 apply these files directly or replay the migration chain against BusSafe.
 
+`20261025155815_authority_reference_directory.sql` adds platform-only reference
+search, optional authority associations, atomic reviewed onboarding support, and
+address-aware support RPCs. `20261025160733_alberta_authority_reference_import.sql`
+is the reviewed initial 445-record official source snapshot (extract date
+2026-10-24). Install schema before data and both before the new clients through
+the protected promotion/release process. Existing launch-ready notification
+defaults remain a release prerequisite; the new finalizer delegates existing
+provisioning rather than replacing it. Neither file is persistently installed.
+See [directory operations and release](../../../docs/operations/authority-reference-directory.md).
+
 `20261024203929_launch_ready_notification_defaults.sql` implements the owner's
 standard launch behavior for new school authorities. The existing tenant trigger
 provisions notification availability automatically, without a manual approval

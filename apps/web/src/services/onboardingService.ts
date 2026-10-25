@@ -1,6 +1,7 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 import { safeBusDisplayText } from '@/utils/brand';
 import { DuplicateIdentifierError } from '@/services/transportationStructureService';
+import type { SupportContactInput } from '@/services/supportDirectoryService';
 
 function client() {
   if (!supabase) throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
@@ -112,6 +113,10 @@ export async function createTenantWithAdmin(input: {
   tenantType: string;
   adminName: string;
   adminEmail: string;
+  onboardingVersion?: 2;
+  authorityCode?: string | null;
+  supportContact?: SupportContactInput;
+  supportConfirmed?: boolean;
 }) {
   return callOnboarding<{
     tenant: { id: string; name: string };

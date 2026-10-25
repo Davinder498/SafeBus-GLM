@@ -1,0 +1,12 @@
+{
+  "migration": "supabase/migrations/pending/20261025155815_authority_reference_directory.sql",
+  "status": "prepared-unapplied",
+  "authenticated": [
+    "get_support_directory_v2()",
+    "platform_check_authority_onboarding(text,jsonb,boolean)",
+    "platform_finalize_tenant_invitation_v2(uuid,text,text,text,text,text,jsonb,boolean)",
+    "search_authority_reference_directory(text)",
+    "update_tenant_support_contact_v2(text,text,text,text,text,text,text)"
+  ],
+  "serviceRole": []
+}

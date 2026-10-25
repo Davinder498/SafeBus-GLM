@@ -21,6 +21,25 @@ const input: SupportContactInput = {
 describe('support directory writes', () => {
   beforeEach(() => rpc.mockReset());
 
+  it('uses the address-aware writer and keeps omission compatible with older callers', async () => {
+    rpc.mockResolvedValue({ data: null, error: null });
+    await updateTenantSupportContact({ ...input, address: '  123 School Road\nCalgary AB  ' });
+    expect(rpc).toHaveBeenLastCalledWith(
+      'update_tenant_support_contact_v2',
+      expect.objectContaining({ p_address: '123 School Road\nCalgary AB' }),
+    );
+    await updateTenantSupportContact({ ...input, address: null });
+    expect(rpc).toHaveBeenLastCalledWith(
+      'update_tenant_support_contact_v2',
+      expect.objectContaining({ p_address: null }),
+    );
+    await updateTenantSupportContact(input);
+    expect(rpc).toHaveBeenLastCalledWith(
+      'update_tenant_support_contact',
+      expect.not.objectContaining({ p_address: expect.anything() }),
+    );
+  });
+
   it.each([updatePlatformSupportContact, updateTenantSupportContact])(
     'explains how to recover from an expired recent-authentication window',
     async (updateContact) => {
@@ -28,7 +47,8 @@ describe('support directory writes', () => {
         data: null,
         error: {
           code: '55006',
-          message: 'Recent authentication is required for this sensitive action. Please sign in again.',
+          message:
+            'Recent authentication is required for this sensitive action. Please sign in again.',
         },
       });
 

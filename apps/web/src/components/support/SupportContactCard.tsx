@@ -1,4 +1,4 @@
-import { Clock, ExternalLink, Mail, Phone } from 'lucide-react';
+import { Clock, ExternalLink, Mail, MapPin, Phone } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import type { SupportContact } from '@/services/supportDirectoryService';
 
@@ -8,6 +8,15 @@ export function SupportContactCard({ title, contact }: { title: string; contact:
       <h2 className="text-xl font-bold text-navy-900">{title}</h2>
       <p className="mt-1 font-semibold text-slate-700">{contact.displayName}</p>
       <div className="mt-4 space-y-3 text-sm">
+        {contact.address && (
+          <div className="flex items-start gap-3 text-slate-600">
+            <MapPin className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+            <div>
+              <p className="font-semibold">School authority address</p>
+              <p className="whitespace-pre-line">{contact.address}</p>
+            </div>
+          </div>
+        )}
         <a
           className="flex min-h-12 items-center gap-3 rounded-lg text-navy-700 underline underline-offset-4"
           href={`mailto:${contact.email}`}

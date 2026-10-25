@@ -422,7 +422,7 @@ export async function installSupabaseMock(
 
       // POST (insert a new trip, or call an RPC)
       if (method === 'POST') {
-        if (table === 'rpc/get_support_directory') {
+        if (table === 'rpc/get_support_directory' || table === 'rpc/get_support_directory_v2') {
           await route.fulfill({
             status: 200,
             contentType: 'application/json',

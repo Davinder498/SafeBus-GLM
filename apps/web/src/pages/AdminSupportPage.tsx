@@ -78,6 +78,7 @@ export function AdminSupportPage() {
               />
             )}
             <SupportContactForm
+              includeAddress
               title="Contact details shown to drivers and guardians"
               contact={directory.tenant}
               saving={saving}
