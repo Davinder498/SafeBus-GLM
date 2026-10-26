@@ -114,6 +114,32 @@ No existing global production guards or migration checksums are weakened.
    to distribute the updated registration bridge, and the existing type-generation
    workflow to refresh canonical hosted types. Do not merge those PRs automatically.
 
+### Existing-installation reconciliation
+
+Run [40410993809](https://github.com/Davinder498/SafeBus-GLM/actions/runs/40410993809)
+passed code validation and deployment credential verification, then stopped while
+capturing the old baseline. Subsequent read-only inspection found all three columns
+and RPCs already absent. All ten live delivery definitions matched the reviewed SQL
+exactly after normalizing only the final statement terminator and line endings.
+Anonymous/authenticated direct execution of those functions remained denied. This
+run did not establish when or how the schema change was installed and did not retain
+a pre-change recovery artifact. Do not describe it as a successful protected install.
+
+The repaired workflow distinguishes two complete states. An unchanged legacy state
+still requires encrypted recovery and rollback rehearsal before applying any SQL.
+An already installed state is accepted only after exact function-definition matching,
+the approved privacy constraint, zero old switches/RPCs/gates, closed execution
+permissions, and RLS on all six delivery/preference tables are verified. Partial
+installation, changed definitions, or widened permissions fail closed.
+
+The existing-state path uses read-only transactions, writes an observation artifact
+with `sqlApplied: false` and `preChangeRecoveryCreated: false`, deploys and validates
+the reviewed sender, then rechecks the exact installed definitions. It never replays
+the migration, reconstructs a fictional backup, or restores old switches merely to
+make rehearsal pass. Installation provenance/recovery evidence remains a separate
+unestablished fact until supplied by the original rollout. Failures report fixed
+diagnostic codes without raw SQL, provider responses, rows, or credentials.
+
 The install mode confirmation is `INSTALL_RECIPIENT_PUSH`; rehearsal-only mode uses
 `REHEARSE_RECIPIENT_PUSH`. Both operate only on reviewed main in the protected
 production environment. No arbitrary SQL path, migration replay, reset, fixture writer,

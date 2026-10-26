@@ -13,7 +13,10 @@ import {
   digest,
   pushRecoverySql,
   rehearseRecipientPush,
+  recipientPushFailureCode,
+  recipientPushState,
   recipientPreferenceDigest,
+  verifyInstalledRecipientPush,
   verifyRecipientPushSchema,
 } from './lib/recipient-push-rollout.mjs';
 
@@ -27,7 +30,7 @@ try {
   if (
     process.env.GITHUB_REF !== 'refs/heads/main' ||
     process.env.SAFEBUS_DEPLOY_ENV !== 'production' ||
-    !['prepare', 'install'].includes(mode) ||
+    !['prepare', 'install', 'verify-existing'].includes(mode) ||
     !/^[1-9][0-9]*$/.test(process.env.GITHUB_RUN_ID ?? '')
   )
     throw new Error('Invalid protected rollout context.');
@@ -62,16 +65,53 @@ try {
     ).rows[0].acquired
   )
     throw new Error('Another schema operation is running.');
-  const capture = async () => {
-    await client.query('begin transaction read only');
+  const readOnly = async (operation) => {
+    await client.query('begin isolation level repeatable read read only');
     try {
       await client.query("set local statement_timeout='5s'; set local lock_timeout='1s'");
-      return await capturePushRecovery(client, signatures);
+      return await operation();
     } finally {
       await client.query('rollback');
     }
   };
-  if (mode === 'prepare') {
+  const capture = () => readOnly(() => capturePushRecovery(client, signatures));
+  if (mode === 'prepare') stage = 'inspect-hosted-state';
+  const state =
+    mode === 'prepare'
+      ? await readOnly(() => recipientPushState(client, migration, config.baseline))
+      : null;
+  if (mode === 'prepare' && state === 'installed') {
+    stage = 'verify-existing-installation';
+    const acceptance = await readOnly(() =>
+      verifyInstalledRecipientPush(client, migration, config.baseline),
+    );
+    await fs.mkdir(directory, { recursive: true });
+    await fs.writeFile(
+      path.join(directory, 'existing.json'),
+      JSON.stringify(
+        {
+          releaseSha,
+          runId: process.env.GITHUB_RUN_ID,
+          binding,
+          observedAt: new Date().toISOString(),
+          migrationSha256: config.migrationSha256,
+          acceptance,
+          observationOnly: true,
+          sqlApplied: false,
+          preChangeRecoveryCreated: false,
+          installationOrigin: 'not-established-by-this-run',
+          notificationSent: false,
+        },
+        null,
+        2,
+      ) + '\n',
+      { flag: 'wx', mode: 0o600 },
+    );
+    await fs.appendFile(process.env.GITHUB_OUTPUT, 'state=installed\n');
+    console.log(
+      'PASS: existing installation exactly matches reviewed SQL; read-only verification, no migration replay or pre-change recovery claim.',
+    );
+  } else if (mode === 'prepare') {
     stage = 'rollback-rehearsal';
     const snapshot = await capture();
     const acceptance = await rehearseRecipientPush(client, migration, signatures);
@@ -104,8 +144,38 @@ try {
       JSON.stringify(evidence, null, 2) + '\n',
       { flag: 'wx', mode: 0o600 },
     );
+    await fs.appendFile(process.env.GITHUB_OUTPUT, 'state=pending\n');
     console.log(
       'PASS: rollback-only rehearsal, unchanged recipient preferences, and encrypted bounded recovery captured.',
+    );
+  } else if (mode === 'verify-existing') {
+    stage = 'verify-existing-installation';
+    const evidence = JSON.parse(await fs.readFile(path.join(directory, 'existing.json'), 'utf8'));
+    if (
+      evidence.releaseSha !== releaseSha ||
+      evidence.runId !== process.env.GITHUB_RUN_ID ||
+      evidence.migrationSha256 !== config.migrationSha256 ||
+      JSON.stringify(evidence.binding) !== JSON.stringify(binding)
+    )
+      throw new Error('Existing installation evidence differs from the reviewed context.');
+    const acceptance = await readOnly(() =>
+      verifyInstalledRecipientPush(client, migration, config.baseline),
+    );
+    console.log(
+      'PASS: reviewed installed definitions rechecked after Firebase validation; no database mutation.',
+    );
+    await fs.writeFile(
+      path.join(directory, 'installation.json'),
+      JSON.stringify(
+        {
+          ...evidence,
+          acceptance,
+          verifiedAt: new Date().toISOString(),
+          firebaseValidationCompleted: true,
+        },
+        null,
+        2,
+      ) + '\n',
     );
   } else {
     if (process.env.SAFEBUS_NOTIFICATION_CONFIRM !== 'INSTALL_RECIPIENT_PUSH')
@@ -167,10 +237,10 @@ try {
       throw error;
     }
   }
-} catch {
+} catch (error) {
   // Do not emit provider errors, SQL, row values, tokens, URLs, or credentials.
   console.error(
-    `Recipient push rollout stopped at ${stage}. No automatic retry or historical replay.`,
+    `Recipient push rollout stopped at ${stage} [${recipientPushFailureCode(error)}]. No automatic retry or historical replay.`,
   );
   process.exitCode = 1;
 } finally {
