@@ -1,0 +1,29 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "observedOn": "2026-10-26",
+  "verificationEvidence": "docs/operations/recipient-push-live-verification-2026-10-26.json",
+  "reviewedPullRequest": "https://github.com/Davinder498/SafeBus-GLM/pull/320",
+  "migration": "supabase/migrations/pending/20261026212046_complete_recipient_push_delivery.sql",
+  "migrationSha256": "9a417621547010556c760753083aaf2b387c44d71fd10d8422e900a4285e72fc",
+  "verification": {
+    "readOnly": true,
+    "reviewedDefinitionsMatched": 10,
+    "protectedDeliveryTables": 6,
+    "anonymousAndAuthenticatedExecutionDenied": true,
+    "legacyColumns": 0,
+    "legacyRpcs": 0,
+    "legacyGates": 0
+  },
+  "installationOrigin": "not-established",
+  "preChangeRecoveryEvidenceEstablished": false,
+  "providerValidation": {
+    "workflowRun": "https://github.com/Davinder498/SafeBus-GLM/actions/runs/40414858665",
+    "firebaseValidated": true,
+    "notificationSent": false
+  },
+  "removedAuthenticated": [
+    "get_tenant_notification_settings()",
+    "set_tenant_notification_delivery_enabled(boolean)",
+    "set_tenant_push_notifications_enabled(boolean)"
+  ]
+}

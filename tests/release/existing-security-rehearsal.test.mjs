@@ -230,17 +230,23 @@ test('acceptance transaction conversion preserves reviewed DO and role checks', 
 
 test('snapshot-specific reconciliation retains the exact existing API signatures', async () => {
   const surface = JSON.parse(await fs.readFile('config/authorization-surface.json', 'utf8'));
+  // This pinned reconciliation predates the catalog-verified retirement. Keep
+  // its historical API snapshot exact without restoring retired live APIs.
+  const retired = JSON.parse(
+    await fs.readFile('config/observed/recipient-push-retirements.json', 'utf8'),
+  ).removedAuthenticated;
+  const historicalAuthenticated = [...surface.authenticated, ...retired];
   const migration = await fs.readFile(RECONCILIATION_FILE, 'utf8');
   const entries = [
     ...migration.matchAll(/\('([a-z0-9_]+\([^']*\))', '(authenticated|service_role)'\)/g),
   ];
-  const expected = [...surface.authenticated, ...surface.serviceRole]
+  const expected = [...historicalAuthenticated, ...surface.serviceRole]
     .filter((signature) => signature !== 'get_admin_student_guardian_links(uuid)')
     .sort();
   assert.deepEqual(entries.map((entry) => entry[1]).sort(), expected);
   for (const [, signature, audience] of entries) {
     assert.ok(
-      (audience === 'authenticated' ? surface.authenticated : surface.serviceRole).includes(
+      (audience === 'authenticated' ? historicalAuthenticated : surface.serviceRole).includes(
         signature,
       ),
     );

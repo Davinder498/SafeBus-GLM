@@ -3761,7 +3761,7 @@ export interface Database {
           p_reverse_dropoff_stop_id?: string | null
           p_reverse_pickup_stop_id?: string | null
           p_route_id: string
-          p_seat_number: number
+          p_seat_number: number | null
           p_student_id: string
         }
         Returns: unknown
@@ -4477,11 +4477,6 @@ export interface Database {
         }
         Returns: unknown
       }
-      get_tenant_notification_settings: {
-        Args: {
-        }
-        Returns: unknown
-      }
       get_tenant_subscription: {
         Args: {
         }
@@ -4977,18 +4972,6 @@ export interface Database {
         }
         Returns: unknown
       }
-      set_tenant_notification_delivery_enabled: {
-        Args: {
-          p_enabled: boolean
-        }
-        Returns: unknown
-      }
-      set_tenant_push_notifications_enabled: {
-        Args: {
-          p_enabled: boolean
-        }
-        Returns: unknown
-      }
       set_trip_operational_status: {
         Args: {
           p_driver_trip_id: string
@@ -5149,13 +5132,13 @@ export interface Database {
       }
       update_tenant_support_contact_v2: {
         Args: {
-          p_address: string
+          p_address: string | null
           p_display_name: string
           p_email: string
-          p_instructions: string
-          p_phone: string
-          p_support_hours: string
-          p_website_url: string
+          p_instructions: string | null
+          p_phone: string | null
+          p_support_hours: string | null
+          p_website_url: string | null
         }
         Returns: unknown
       }

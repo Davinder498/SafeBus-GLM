@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
+import { createHash } from 'node:crypto';
 
 const migrationPath = 'supabase/migrations/0089_authorization_surface_hardening.sql';
 const notificationMigrationPath = 'supabase/migrations/0092_end_to_end_notification_system.sql';
@@ -93,6 +94,56 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
     /\('([a-z0-9_]+)',\s*'(authenticated|service_role)'\)/g,
   )) {
     actual.set(match[1], match[2]);
+  }
+  // The immutable chain remains historical. Only these three reviewed,
+  // catalog-verified retirements change its current public surface.
+  const observed = await readJson('config/observed/recipient-push-retirements.json');
+  const reviewed = await readJson('config/pending/complete-recipient-push.json');
+  assert.equal(observed.projectId, 'ckrkfylsyihwouvesypm');
+  assert.equal(observed.migration, reviewed.migration);
+  assert.equal(observed.migrationSha256, reviewed.migrationSha256);
+  const evidence = await readJson(observed.verificationEvidence);
+  assert.equal(evidence.migrationSha256, reviewed.migrationSha256);
+  assert.equal(
+    evidence.binding.projectRefHash,
+    createHash('sha256').update(observed.projectId).digest('hex'),
+  );
+  assert.deepEqual(evidence.acceptance, {
+    switchesRemoved: true,
+    legacyRpcsRemoved: true,
+    privacyConstraintRetained: true,
+    reviewedDefinitionsMatched: 10,
+    authorizationRetained: true,
+  });
+  assert.equal(evidence.firebaseValidationCompleted, true);
+  assert.equal(evidence.notificationSent, false);
+  assert.equal(evidence.sqlApplied, false);
+  assert.equal(evidence.preChangeRecoveryCreated, false);
+  assert.equal(
+    createHash('sha256')
+      .update((await fs.readFile(observed.migration, 'utf8')).replaceAll('\r\n', '\n'))
+      .digest('hex'),
+    observed.migrationSha256,
+  );
+  assert.deepEqual(observed.removedAuthenticated, [
+    'get_tenant_notification_settings()',
+    'set_tenant_notification_delivery_enabled(boolean)',
+    'set_tenant_push_notifications_enabled(boolean)',
+  ]);
+  assert.deepEqual(observed.removedAuthenticated, reviewed.removedAuthenticated);
+  assert.deepEqual(observed.verification, {
+    readOnly: true,
+    reviewedDefinitionsMatched: 10,
+    protectedDeliveryTables: 6,
+    anonymousAndAuthenticatedExecutionDenied: true,
+    legacyColumns: 0,
+    legacyRpcs: 0,
+    legacyGates: 0,
+  });
+  for (const signature of observed.removedAuthenticated) {
+    const name = signature.slice(0, signature.indexOf('('));
+    assert.equal(actual.get(name), 'authenticated');
+    actual.delete(name);
   }
   const expected = new Map();
   for (const signature of surface.authenticated) {

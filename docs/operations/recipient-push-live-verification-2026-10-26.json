@@ -1,0 +1,26 @@
+{
+  "releaseSha": "06cbe005a5123e20a61c6603fdb0d8ac6dae6ebe",
+  "runId": "40414858665",
+  "binding": {
+    "environment": "production",
+    "databaseTarget": "4c5f662e8ac11d03f02f7d26ac3408a3b6d8ad157bd1541acab75684d7e5f0f4",
+    "projectRefHash": "8df1bfa174b96727c344df67dbd08babe4803565624a19a152edaf2601fee27d",
+    "publicApiOriginHash": "8553e55fff3b57c4305524317061b1d39f749aea77194d24b4598bc0323dd2a3"
+  },
+  "observedAt": "2026-10-26T22:50:03.440Z",
+  "migrationSha256": "9a417621547010556c760753083aaf2b387c44d71fd10d8422e900a4285e72fc",
+  "acceptance": {
+    "switchesRemoved": true,
+    "legacyRpcsRemoved": true,
+    "privacyConstraintRetained": true,
+    "reviewedDefinitionsMatched": 10,
+    "authorizationRetained": true
+  },
+  "observationOnly": true,
+  "sqlApplied": false,
+  "preChangeRecoveryCreated": false,
+  "installationOrigin": "not-established-by-this-run",
+  "notificationSent": false,
+  "verifiedAt": "2026-10-26T22:50:12.789Z",
+  "firebaseValidationCompleted": true
+}
