@@ -131,7 +131,7 @@ describe('guardian shell navigation model', () => {
     const expected = [
       { label: 'Home', to: '/parent', icon: LayoutDashboard },
       { label: 'Buses', to: '/guardian/routes', icon: Bus },
-      { label: 'Updates', to: '/notifications', icon: Bell },
+      { label: 'Notification', to: '/notifications', icon: Bell },
       { label: 'Settings', to: '/notifications/settings', icon: Settings },
     ];
 

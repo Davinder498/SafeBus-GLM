@@ -235,7 +235,7 @@ export function NotificationSettingsPage() {
             />
           )}
         </section>
-        {isGuardian && <MfaSettingsCard />}
+        <MfaSettingsCard />
       </div>
     </DashboardLayout>
   );

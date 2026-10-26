@@ -55,3 +55,6 @@ apps/mobile/.sourcemaps/
 
 # Local Netlify folder
 .netlify
+
+# Local agent logs, build bundles, screenshots and recovery copies
+.codex-artifacts/

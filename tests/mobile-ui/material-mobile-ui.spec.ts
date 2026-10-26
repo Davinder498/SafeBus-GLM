@@ -39,7 +39,10 @@ async function expectMaterialBrand(page: import('@playwright/test').Page) {
   const mark = page.getByTestId('safebus-wordmark').last();
   await expect(mark).toBeVisible();
   await expect(mark).toHaveText('SafeBus');
-  await expect(mark).toHaveCSS('color', 'rgb(23, 43, 58)');
+  const inAppBar = await mark.evaluate((element) =>
+    Boolean(element.closest('[data-ui="app-bar"], [data-ui="public-app-bar"]')),
+  );
+  await expect(mark).toHaveCSS('color', inAppBar ? 'rgb(255, 255, 255)' : 'rgb(23, 43, 58)');
   await expect(mark.locator('img')).toHaveCount(0);
   await expect(mark.locator('svg')).toHaveCount(0);
   await expect(mark).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
@@ -184,7 +187,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   const tabs = page.getByTestId('native-bottom-navigation').getByRole('link');
   await expect(tabs).toHaveCount(4);
   await expect(tabs.filter({ hasText: 'Home' })).toHaveAttribute('aria-current', 'page');
-  await expect(tabs.filter({ hasText: 'Updates' })).toHaveAttribute('href', '/notifications');
+  await expect(tabs.filter({ hasText: 'Notification' })).toHaveAttribute('href', '/notifications');
   await expect(tabs.filter({ hasText: 'Settings' })).toHaveAttribute(
     'href',
     '/notifications/settings',
@@ -567,9 +570,7 @@ test('mobile notification settings autosave independent channel sections with sw
   });
   await page.goto('/notifications/settings');
 
-  await expect(
-    page.getByRole('heading', { name: 'Settings', level: 1 }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible();
   const push = page.getByRole('switch', { name: 'Push notifications' });
   const email = page.getByRole('switch', { name: 'Email notifications' });
   await expect(push).toBeVisible();
@@ -625,7 +626,7 @@ test('mobile notification settings autosave independent channel sections with sw
     .getByRole('link', { name: 'Settings' });
   await expect(settingsTab).toHaveAttribute('aria-current', 'page');
   await expect(
-    page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Updates' }),
+    page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Notification' }),
   ).not.toHaveAttribute('aria-current', 'page');
 
   await expect(page.getByText('Registered Android devices', { exact: true })).toHaveCount(0);
@@ -728,7 +729,7 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
   const inbox = await installNotificationInboxMock(page);
   await page.goto('/notifications');
 
-  await expect(page.getByRole('heading', { name: 'Updates', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Notification', level: 1 })).toBeVisible();
   await expect(page.getByText('1 new', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Mark all read' })).toBeVisible();
   const filters = page.locator('[data-ui="notification-filters"]');
@@ -793,7 +794,7 @@ test('driver updates include assignment, trip, and operational alerts', async ({
   await installNotificationInboxMock(page, { driver: true });
   await page.goto('/notifications');
 
-  await expect(page.getByRole('heading', { name: 'Updates', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Notification', level: 1 })).toBeVisible();
   const filters = page.locator('[data-ui="notification-filters"]');
   const notification = page.locator('[data-ui="notification-card"]');
   await expect(filters.getByRole('combobox')).toHaveCount(0);
@@ -929,7 +930,9 @@ test('driver account menu exposes existing secondary destinations', async ({ pag
   await expect(page.getByRole('menuitem', { name: 'Sign out' })).toBeVisible();
 });
 
-test('driver settings combines assignment delivery and device guidance', async ({ page }) => {
+test('driver settings combines notification, appearance, and account controls', async ({
+  page,
+}) => {
   await installSupabaseMock(page);
   await page.goto('/driver/settings');
 
@@ -940,12 +943,10 @@ test('driver settings combines assignment delivery and device guidance', async (
   await expect(page.getByRole('switch', { name: 'Assignment alerts push' })).toBeVisible();
   await expect(page.getByRole('switch', { name: 'Assignment alerts email' })).toBeVisible();
   await expect(page.getByRole('switch', { name: 'In-app notifications' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Location access' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Location access' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Using your personal phone' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Driver safety' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'View notifications' })).toHaveAttribute(
-    'href',
-    '/notifications',
-  );
+  await expect(page.getByRole('link', { name: 'View notifications' })).toHaveCount(0);
 
   const tabs = page.getByTestId('native-bottom-navigation').getByRole('link');
   await expect(tabs).toHaveCount(4);

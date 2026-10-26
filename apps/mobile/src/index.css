@@ -319,10 +319,6 @@
     backface-visibility: hidden;
   }
 
-  html[data-app-surface='native-mobile'] [data-ui='top-notifications'] {
-    display: none !important;
-  }
-
   html[data-app-surface='native-mobile'] [data-ui='dropdown'] > button {
     min-width: 3rem;
     min-height: 3rem;
@@ -2010,11 +2006,6 @@
     background: var(--color-canvas) !important;
     color: var(--color-text);
   }
-  html[data-app-surface='native-mobile'][data-theme='dark']
-    :is([data-testid='native-bottom-navigation'], [data-ui='app-bar'], [data-ui='public-app-bar']) {
-    background: var(--color-surface) !important;
-    border-color: var(--color-border) !important;
-  }
   html[data-app-surface='native-mobile'][data-theme='dark'] :is(h1, h2, [data-ui='page-title']) {
     color: var(--color-heading) !important;
   }
@@ -2035,12 +2026,6 @@
     border-color: var(--color-control-outline);
     color: var(--color-text);
   }
-  html[data-app-surface='native-mobile'][data-theme='dark'] .sb-bottom-tab {
-    color: var(--color-text-muted) !important;
-  }
-  html[data-app-surface='native-mobile'][data-theme='dark'] .sb-bottom-tab-active {
-    color: var(--color-heading) !important;
-  }
   html[data-app-surface='native-mobile'][data-theme='dark']
     .sb-bottom-tab-active
     .sb-bottom-tab-indicator {
@@ -2058,5 +2043,25 @@
     [data-ui='notification-switch-row']
     input:checked::before {
     background: var(--color-on-action) !important;
+  }
+}
+
+/* Keep the app bar and both edge-to-edge system insets on the navigation blue. */
+@media screen {
+  html[data-app-surface='native-mobile'],
+  html[data-app-surface='native-mobile'] body {
+    background: #172b3a !important;
+  }
+  html[data-app-surface='native-mobile']
+    :is([data-testid='native-bottom-navigation'], [data-ui='app-bar'], [data-ui='public-app-bar']) {
+    background: #172b3a !important;
+    border-color: #172b3a !important;
+    color: #fff;
+    --color-wordmark: #fff;
+  }
+  html[data-app-surface='native-mobile']
+    [data-ui='public-app-bar']
+    [data-testid='safebus-wordmark'] {
+    color: #fff;
   }
 }

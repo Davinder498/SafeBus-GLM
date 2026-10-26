@@ -1,4 +1,5 @@
 import { AppearanceSettingsCard } from '@/components/settings/AppearanceToggle';
+import { MfaSettingsCard } from '@/components/settings/MfaSettingsCard';
 import { useCallback, useEffect, useState } from 'react';
 import type { AdminInboxPreferences } from '@safebus/types';
 import { Link } from 'react-router';
@@ -64,6 +65,7 @@ export function AdminNotificationSettingsPage() {
           }
         />
         <AppearanceSettingsCard />
+        <MfaSettingsCard />
         {error && (
           <p role="alert" className="text-sm text-danger-700">
             {error}

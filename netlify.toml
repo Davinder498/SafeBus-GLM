@@ -12,13 +12,12 @@
 [functions]
   directory = "apps/web/netlify/functions"
 
-# Phase 8: Frequent durable notification queue drain. Database leases, ordering,
-# tenant quotas, and provider limits keep overlapping executions safe.
-# Overlapping executions are safe because the database claim RPC uses `for update skip locked`.
-# Secrets remain server-side; no browser user is required. Manual secure POST invocation
-# to /.netlify/functions/guardian-notification-email remains available for QA.
+# Netlify cron has minute precision. Each run drains tick zero and starts the signed
+# background worker for ticks at 10, 20, 30, 40 and 50 seconds. Database leases,
+# recipient checks, tenant quotas and provider limits still apply to every batch.
+# The existing server credentials stay server-only; no new secret is required.
 [functions."guardian-notification-email-scheduled"]
-  schedule = "*/5 * * * *"
+  schedule = "* * * * *"
 
 # Phase 3: daily retention orchestration. The function defaults to dry-run;
 # SAFEBUS_RETENTION_EXECUTE=true requires approved retention/privacy evidence.

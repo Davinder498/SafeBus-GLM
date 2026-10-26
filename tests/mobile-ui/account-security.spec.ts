@@ -6,6 +6,20 @@ import { expectNoWcagAaViolations } from '../smoke/fixtures/accessibility';
 async function installMfa(page: Page, role: 'guardian' | 'driver', enrolled = false) {
   await installLocalOnlyBoundary(page);
   await installGuardianVisibilityMock(page, { role });
+  if (role === 'driver') {
+    await page.route('**/rest/v1/rpc/*_driver_delivery_preferences_v2', (route) =>
+      route.fulfill({
+        json: {
+          in_app_enabled: true,
+          push_enabled: false,
+          email_enabled: false,
+          assignment_alerts: { in_app: true, push: true, email: true },
+          trip_updates: { in_app: true, push: true, email: false },
+          operational_alerts: { in_app: true, push: true, email: false },
+        },
+      }),
+    );
+  }
   let hasFactor = enrolled;
   let aal = 'aal1';
   let removals = 0;
@@ -131,8 +145,12 @@ for (const role of ['guardian', 'driver'] as const) {
       fullPage: true,
       animations: 'disabled',
     });
-    await page.getByRole('link', { name: 'Manage MFA', exact: true }).click();
-    await page.getByRole('button', { name: 'Remove authenticator', exact: true }).click();
+    if (role === 'driver') {
+      await page.getByRole('switch', { name: 'Multi-factor authentication', exact: true }).click();
+    } else {
+      await page.getByRole('link', { name: 'Manage MFA', exact: true }).click();
+      await page.getByRole('button', { name: 'Remove authenticator', exact: true }).click();
+    }
     expect(fixture.removals()).toBe(0);
     await page.locator('#mfa-code').fill('111111');
     await page
@@ -171,9 +189,7 @@ for (const role of ['guardian', 'driver'] as const) {
       route.fulfill({ status: 503, json: { message: 'Settings unavailable' } }),
     );
     await page.goto('/account');
-    await expect(
-      page.getByRole('button', { name: 'Try again', exact: true }),
-    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Try again', exact: true })).toBeVisible();
     await expect(page.locator('[data-ui="account-security-card"]')).toBeVisible();
     await page.getByRole('link', { name: 'Enable MFA', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Set up authenticator app' })).toBeVisible();
@@ -182,4 +198,59 @@ for (const role of ['guardian', 'driver'] as const) {
       role === 'driver' ? '/driver/settings' : '/notifications/settings',
     );
   });
+}
+
+for (const role of ['guardian', 'driver'] as const) {
+  test(
+    role + ' settings keep appearance inline and notification navigation available',
+    async ({ page }, testInfo) => {
+      await installMfa(page, role);
+      await page.setViewportSize({ width: 320, height: 844 });
+      await page.goto('/account');
+      const settingsPath = role === 'driver' ? '/driver/settings' : '/notifications/settings';
+      const appBar = page.locator('[data-ui="app-bar"]');
+      const appearance = page.locator('[data-ui="appearance-settings"]');
+      await expect(appBar.getByRole('switch', { name: 'Dark mode' })).toHaveCount(0);
+      await expect(appBar).toHaveCSS('background-color', 'rgb(23, 43, 58)');
+      await expect(appBar.getByTestId('safebus-wordmark')).toHaveCSS('color', 'rgb(255, 255, 255)');
+      const heading = await appearance.getByRole('heading', { name: 'Appearance' }).boundingBox();
+      const toggle = await appearance.getByRole('switch', { name: 'Dark mode' }).boundingBox();
+      expect(
+        heading &&
+          toggle &&
+          Math.abs(heading.y + heading.height / 2 - toggle.y - toggle.height / 2),
+      ).toBeLessThan(2);
+      await appearance.getByRole('switch', { name: 'Dark mode' }).click();
+      await expect(appearance.getByRole('switch', { name: 'Dark mode' })).toBeChecked();
+      await expect(appBar).toHaveCSS('background-color', 'rgb(23, 43, 58)');
+      await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
+        'background-color',
+        'rgb(23, 43, 58)',
+      );
+      await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
+      await expect(page.getByRole('heading', { name: 'Location access' })).toHaveCount(0);
+      await expect(page.getByRole('heading', { name: 'Using your personal phone' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Try again', exact: true })).toHaveCount(0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        320,
+      );
+      await page.screenshot({
+        path: testInfo.outputPath(role + '-settings-dark.png'),
+        fullPage: true,
+      });
+      await appBar.getByRole('link', { name: /^Notifications/ }).click();
+      await expect(page).toHaveURL('/notifications');
+      await expect(page.getByRole('heading', { name: 'Notification', exact: true })).toBeVisible();
+      await page.getByRole('link', { name: 'Notification settings', exact: true }).click();
+      await expect(page).toHaveURL(settingsPath);
+      await page.getByRole('switch', { name: 'Multi-factor authentication', exact: true }).click();
+      await expect(page).toHaveURL('/account/security');
+      await expect(page.getByRole('button', { name: 'Set up authenticator app' })).toBeVisible();
+      const dimensions = await page.evaluate(() => ({
+        width: document.documentElement.clientWidth,
+        scroll: document.documentElement.scrollWidth,
+      }));
+      expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.width);
+    },
+  );
 }

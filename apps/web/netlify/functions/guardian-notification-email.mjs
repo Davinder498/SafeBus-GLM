@@ -390,8 +390,8 @@ export async function runDispatcher(event, sendEmail) {
   return dispatchBatch(cfg, sendEmail);
 }
 
-// Called only by the Netlify scheduled-function entry point, which has no public URL.
-// HTTP requests always use runDispatcher and cannot select this execution path.
+// Called by the platform-only scheduled entry point and its signed background worker.
+// The manual HTTP endpoint always uses runDispatcher with its separate secret.
 export async function runScheduledDispatcher(sendEmail) {
   return dispatchBatch(requireConfig(), sendEmail);
 }

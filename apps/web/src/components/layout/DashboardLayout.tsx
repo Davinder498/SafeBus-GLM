@@ -31,7 +31,6 @@ import { useAppSurface, type AppSurface } from '@/contexts/AppSurfaceContext';
 import { useAuth } from '@/contexts/useAuth';
 import { NotificationContext } from '@/contexts/NotificationContext';
 import { Avatar } from '@/components/ui/Avatar';
-import { AppearanceToggle } from '@/components/settings/AppearanceToggle';
 import { BrandMark } from '@/components/ui/BrandMark';
 import { DropdownMenu, DropdownItem, DropdownSeparator } from '@/components/ui/DropdownMenu';
 import { getRoleLabel } from '@/components/ui/RoleBadge';
@@ -238,7 +237,7 @@ export const driverNativeNavItems: DashboardNavItem[] = [
 export const guardianNativeNavItems: DashboardNavItem[] = [
   { label: 'Home', to: '/parent', icon: <LayoutDashboard className="h-5 w-5" /> },
   { label: 'Buses', to: '/guardian/routes', icon: <Bus className="h-5 w-5" /> },
-  { label: 'Updates', to: '/notifications', icon: <Bell className="h-5 w-5" /> },
+  { label: 'Notification', to: '/notifications', icon: <Bell className="h-5 w-5" /> },
   {
     label: 'Settings',
     to: '/notifications/settings',
@@ -352,7 +351,7 @@ export function DashboardLayout({
     >
       {/* Top header */}
       <header
-        className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-white/95 shadow-[0_1px_0_rgb(23_43_58_/_0.06)] backdrop-blur-md"
+        className="sticky top-0 z-40 border-b border-[#172b3a] bg-[#172b3a] text-white shadow-[0_1px_0_rgb(23_43_58_/_0.06)] backdrop-blur-md"
         data-ui="app-bar"
       >
         <div
@@ -363,7 +362,7 @@ export function DashboardLayout({
           {!usesBottomTabs && (
             <button
               type="button"
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 lg:hidden"
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white hover:bg-white/10 lg:hidden"
               aria-label="Open navigation"
               onClick={() => setMobileOpen(true)}
             >
@@ -374,9 +373,9 @@ export function DashboardLayout({
           {/* Brand */}
           <Link to="/" className="flex min-w-0 items-center gap-2.5">
             <span className="flex min-w-0 flex-col leading-tight">
-              <BrandMark className="text-xl" />
+              <BrandMark className="text-xl" inverse />
               {portal !== 'admin' && (
-                <span className="hidden text-xs text-slate-600 min-[360px]:block">
+                <span className="hidden text-xs text-white/80 min-[360px]:block">
                   {portalTitles[portal]} portal
                 </span>
               )}
@@ -387,12 +386,11 @@ export function DashboardLayout({
           <div className="flex-1" />
 
           {/* Right side actions */}
-          <AppearanceToggle compact />
           <div className="flex items-center gap-1.5">
             <Link
               to="/notifications"
               data-ui="top-notifications"
-              className="relative hidden h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 min-[360px]:inline-flex"
+              className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white transition-colors hover:bg-white/10"
               aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : 'Notifications'}
             >
               <Bell className="h-5 w-5" />
@@ -405,18 +403,16 @@ export function DashboardLayout({
 
             <DropdownMenu
               trigger={
-                <span className="flex items-center gap-2.5 rounded-lg py-1.5 pl-1.5 pr-2 transition-colors hover:bg-slate-100">
+                <span className="flex items-center gap-2.5 rounded-lg py-1.5 pl-1.5 pr-2 transition-colors hover:bg-white/10">
                   <Avatar
                     name={displayName}
                     size="sm"
                     tone={usesBottomTabs ? 'native-nav' : 'default'}
                   />
                   <span className="hidden text-left leading-tight sm:block">
-                    <span className="block text-sm font-semibold text-slate-900">
-                      {displayName}
-                    </span>
+                    <span className="block text-sm font-semibold text-white">{displayName}</span>
                     {profile && profile.role !== 'tenant_admin' && (
-                      <span className="block text-xs capitalize text-slate-600">
+                      <span className="block text-xs capitalize text-white/80">
                         {getRoleLabel(profile.role)}
                       </span>
                     )}
@@ -462,7 +458,7 @@ export function DashboardLayout({
                   onClick={() =>
                     navigate(
                       profile.role === 'platform_super_admin'
-                        ? '/admin/pricing'
+                        ? '/notifications/settings'
                         : '/admin/settings',
                     )
                   }

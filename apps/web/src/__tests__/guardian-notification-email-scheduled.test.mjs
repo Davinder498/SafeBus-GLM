@@ -9,6 +9,8 @@ const ORIGINAL_ENV = { ...process.env };
 
 function setEnv(extra = {}) {
   process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.URL = 'https://safebus.example.test';
+  delete process.env.SUPABASE_SECRET_KEY;
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key';
   process.env.SAFEBUS_EMAIL_PROVIDER_API_KEY = 'provider-key';
   process.env.SAFEBUS_EMAIL_FROM = 'noreply@example.test';
@@ -21,11 +23,15 @@ function setEnv(extra = {}) {
 const { createClient } = await import('@supabase/supabase-js');
 
 describe('scheduled notification dispatcher', () => {
-  beforeEach(() => setEnv());
+  beforeEach(() => {
+    setEnv();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 202 }));
+  });
   afterEach(() => {
     process.env = { ...ORIGINAL_ENV };
     vi.resetModules();
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("runs the dispatcher with Netlify's documented next_run schedule payload", async () => {
@@ -53,6 +59,12 @@ describe('scheduled notification dispatcher', () => {
     });
     // Platform-scheduled execution does not need the manual HTTP endpoint's secret.
     expect(client.rpc).toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledWith(
+      new URL(
+        'https://safebus.example.test/.netlify/functions/guardian-notification-email-background',
+      ),
+      expect.objectContaining({ method: 'POST', redirect: 'error' }),
+    );
   });
 
   it('keeps the manual HTTP endpoint closed when its secret is absent', async () => {
@@ -141,11 +153,17 @@ describe('scheduled notification dispatcher', () => {
       await import('../../netlify/functions/guardian-notification-email-scheduled.mjs');
 
     // Mock global fetch so the provider call is intercepted.
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ id: 'resend-scheduled-1' }),
-    });
-    globalThis.fetch = fetchMock;
+    const fetchMock = vi.fn((url) =>
+      Promise.resolve(
+        String(url).includes('-background')
+          ? { status: 202 }
+          : {
+              ok: true,
+              json: () => Promise.resolve({ id: 'resend-scheduled-1' }),
+            },
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
 
     const result = await handler({
       httpMethod: 'POST',
@@ -154,8 +172,16 @@ describe('scheduled notification dispatcher', () => {
     });
     expect(result.statusCode).toBe(200);
     expect(JSON.parse(result.body)).toMatchObject({ claimed: 1, delivered: 1 });
+  });
 
-    delete globalThis.fetch;
+  it('keeps one dispatch but reports a failed background handoff', async () => {
+    vi.mocked(fetch).mockResolvedValue({ status: 200 });
+    const client = { rpc: vi.fn().mockResolvedValue({ data: [], error: null }) };
+    createClient.mockReturnValue(client);
+    const { handler } =
+      await import('../../netlify/functions/guardian-notification-email-scheduled.mjs');
+    expect((await handler()).statusCode).toBe(500);
+    expect(client.rpc).toHaveBeenCalledTimes(1);
   });
 
   it('returns 500 when configuration is missing', async () => {
