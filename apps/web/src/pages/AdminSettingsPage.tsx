@@ -1,3 +1,4 @@
+import { AppearanceSettingsCard } from '@/components/settings/AppearanceSelector';
 import { useEffect, useState } from 'react';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { AdminSettingsNav } from '@/components/settings/AdminSettingsNav';
@@ -76,6 +77,7 @@ export function AdminSettingsPage() {
         />
 
         <AdminSettingsNav role={profile?.role} />
+        <AppearanceSettingsCard />
 
         {loading && (
           <DataState

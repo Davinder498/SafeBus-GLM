@@ -14,7 +14,7 @@ export function BrandMark({ className, inverse = false }: BrandMarkProps) {
     <span
       className={cn(
         'inline-block shrink-0 whitespace-nowrap font-extrabold leading-tight tracking-tight',
-        inverse ? 'text-white' : 'text-[var(--color-brand)]',
+        inverse ? 'text-white' : 'text-[var(--color-wordmark)]',
         className,
       )}
       data-testid="safebus-wordmark"

@@ -1,0 +1,227 @@
+/* Semantic roles shared by the web app and Android's imported stylesheet. */
+:root {
+  --color-wordmark: #172b3a;
+  --color-action: #172b3a;
+  --color-action-hover: #0f2a44;
+  --color-on-action: #ffffff;
+  --color-heading: #172b3a;
+  --color-focus: #405b68;
+  --color-control-outline: #8b9ba5;
+  --color-raised: #f1f5f9;
+  --color-ink: #172b3a;
+}
+
+@media screen {
+  html[data-theme='dark'] {
+    --color-canvas-rgb: 15 23 32;
+    --color-canvas: rgb(var(--color-canvas-rgb));
+    --color-surface-rgb: 24 35 47;
+    --color-surface: rgb(var(--color-surface-rgb));
+    --color-raised-rgb: 34 49 64;
+    --color-raised: rgb(var(--color-raised-rgb));
+    --color-surface-subtle-rgb: 34 49 64;
+    --color-surface-subtle: rgb(var(--color-surface-subtle-rgb));
+    --color-border-rgb: 53 70 88;
+    --color-border: rgb(var(--color-border-rgb));
+    --color-text-rgb: 232 238 245;
+    --color-text: rgb(var(--color-text-rgb));
+    --color-text-muted-rgb: 167 181 197;
+    --color-text-muted: rgb(var(--color-text-muted-rgb));
+    --color-heading-rgb: 252 214 107;
+    --color-heading: rgb(var(--color-heading-rgb));
+    --color-wordmark-rgb: 255 255 255;
+    --color-wordmark: rgb(var(--color-wordmark-rgb));
+    --color-brand-rgb: 156 203 255;
+    --color-brand: rgb(var(--color-brand-rgb));
+    --color-brand-hover-rgb: 194 223 255;
+    --color-brand-hover: rgb(var(--color-brand-hover-rgb));
+    --color-brand-strong-rgb: 23 43 58;
+    --color-brand-strong: rgb(var(--color-brand-strong-rgb));
+    --color-brand-soft-rgb: 34 49 64;
+    --color-brand-soft: rgb(var(--color-brand-soft-rgb));
+    --color-accent-soft-rgb: 34 49 64;
+    --color-accent-soft: rgb(var(--color-accent-soft-rgb));
+    --color-action-rgb: 252 214 107;
+    --color-action: rgb(var(--color-action-rgb));
+    --color-action-hover-rgb: 255 226 148;
+    --color-action-hover: rgb(var(--color-action-hover-rgb));
+    --color-on-action-rgb: 23 43 58;
+    --color-on-action: rgb(var(--color-on-action-rgb));
+    --color-focus-rgb: 156 203 255;
+    --color-focus: rgb(var(--color-focus-rgb));
+    --color-control-outline-rgb: 113 131 152;
+    --color-control-outline: rgb(var(--color-control-outline-rgb));
+    --color-success-text-rgb: 135 216 174;
+    --color-success-text: rgb(var(--color-success-text-rgb));
+    --color-success-surface-rgb: 25 56 46;
+    --color-success-surface: rgb(var(--color-success-surface-rgb));
+    --color-success-strong-rgb: 33 98 70;
+    --color-success-strong: rgb(var(--color-success-strong-rgb));
+    --color-success-outline-rgb: 84 142 113;
+    --color-success-outline: rgb(var(--color-success-outline-rgb));
+    --color-warning-text-rgb: 245 207 131;
+    --color-warning-text: rgb(var(--color-warning-text-rgb));
+    --color-warning-surface-rgb: 60 48 27;
+    --color-warning-surface: rgb(var(--color-warning-surface-rgb));
+    --color-warning-strong-rgb: 115 82 27;
+    --color-warning-strong: rgb(var(--color-warning-strong-rgb));
+    --color-warning-outline-rgb: 161 133 79;
+    --color-warning-outline: rgb(var(--color-warning-outline-rgb));
+    --color-danger-text-rgb: 255 180 171;
+    --color-danger-text: rgb(var(--color-danger-text-rgb));
+    --color-danger-surface-rgb: 66 41 46;
+    --color-danger-surface: rgb(var(--color-danger-surface-rgb));
+    --color-danger-strong-rgb: 148 59 72;
+    --color-danger-strong: rgb(var(--color-danger-strong-rgb));
+    --color-danger-outline-rgb: 188 120 128;
+    --color-danger-outline: rgb(var(--color-danger-outline-rgb));
+    --color-info-text-rgb: 156 203 255;
+    --color-info-text: rgb(var(--color-info-text-rgb));
+    --color-info-surface-rgb: 32 52 74;
+    --color-info-surface: rgb(var(--color-info-surface-rgb));
+    --color-info-strong-rgb: 40 85 116;
+    --color-info-strong: rgb(var(--color-info-strong-rgb));
+    --color-info-outline-rgb: 100 142 175;
+    --color-info-outline: rgb(var(--color-info-outline-rgb));
+    color-scheme: dark;
+  }
+
+  html[data-theme='dark'] :is(h1, h2, [data-ui='page-header'] h3) {
+    color: var(--color-heading) !important;
+  }
+  html[data-theme='dark'] :is(a[aria-current='page'], .sb-bottom-tab-active) {
+    color: var(--color-heading);
+  }
+  html[data-theme='dark'] .bg-mesh {
+    background-image: radial-gradient(at 0% 0%, #223140 0, transparent 55%);
+  }
+  html[data-theme='dark'] .glass {
+    background: var(--color-surface);
+  }
+  html[data-theme='dark'] :is(input, select, textarea) {
+    color: var(--color-text);
+    background-color: var(--color-surface);
+    border-color: var(--color-control-outline);
+    accent-color: var(--color-action);
+  }
+  html[data-theme='dark']
+    :is(input, select, textarea):not([data-invalid]):not([aria-invalid='true']) {
+    border-color: var(--color-control-outline);
+  }
+  html[data-theme='dark'] [data-ui='notification-toggle'] > span {
+    background: var(--color-raised);
+    box-shadow: inset 0 0 0 1px var(--color-control-outline);
+  }
+  html[data-theme='dark'] [data-ui='notification-toggle'] > span > span {
+    background: var(--color-text);
+  }
+  html[data-theme='dark'] [data-ui='notification-toggle'][aria-checked='true'] > span {
+    background: var(--color-action);
+  }
+  html[data-theme='dark'] [data-ui='notification-toggle'][aria-checked='true'] > span > span {
+    background: var(--color-on-action);
+  }
+  html[data-theme='dark'] :is(input, textarea)::placeholder {
+    color: var(--color-text-muted);
+    opacity: 1;
+  }
+  html[data-theme='dark'] :is(input, textarea):autofill {
+    box-shadow: 0 0 0 1000px var(--color-raised) inset;
+    -webkit-text-fill-color: var(--color-text);
+    caret-color: var(--color-text);
+  }
+  html[data-theme='dark'] :focus-visible {
+    --tw-ring-color: var(--color-focus);
+    --tw-ring-offset-color: var(--color-canvas);
+  }
+  html[data-theme='dark'] :is([data-ui='button'][data-variant='primary'], .sb-primary-action) {
+    background: var(--color-action);
+    color: var(--color-on-action);
+  }
+  html[data-theme='dark']
+    :is([data-ui='button'][data-variant='primary'], .sb-primary-action):hover {
+    background: var(--color-action-hover);
+  }
+  html[data-theme='dark'] [data-testid='safebus-wordmark'] {
+    color: var(--color-wordmark);
+  }
+  html[data-theme='dark'] .leaflet-container {
+    background: var(--color-canvas);
+  }
+  html[data-theme='dark']
+    :is(
+      .leaflet-popup-content-wrapper,
+      .leaflet-popup-tip,
+      .leaflet-bar a,
+      .leaflet-control-attribution
+    ) {
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+  html[data-theme='dark'] .leaflet-bar a:hover {
+    background: var(--color-raised);
+  }
+  html[data-theme='dark']
+    :is(.leaflet-control-attribution a, .leaflet-container a.leaflet-popup-close-button) {
+    color: var(--color-focus);
+  }
+  html[data-theme='dark'] .guardian-map-icon--bus {
+    background: var(--color-ink);
+  }
+  html[data-theme='dark'] .guardian-service-line__bus {
+    border-color: var(--color-surface);
+  }
+  html[data-theme='dark'] .guardian-service-line__point > span {
+    box-shadow: 0 0 0 2px var(--color-surface);
+  }
+}
+
+.sb-appearance-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 100%;
+  color: var(--color-text);
+}
+label.sb-appearance-selector select[aria-label='Appearance'] {
+  width: auto;
+  min-height: 44px;
+  border: 1px solid var(--color-control-outline);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  padding: 0.5rem 1.75rem 0.5rem 0.5rem;
+  background-position: right 0.5rem center;
+  font: inherit;
+  font-size: 0.875rem;
+}
+.sb-appearance-selector--compact {
+  gap: 0.25rem;
+}
+.sb-appearance-selector--compact select {
+  max-width: 6.25rem;
+}
+@media print {
+  html {
+    color-scheme: light !important;
+    background: white !important;
+  }
+  body {
+    background: white !important;
+    color: #172b3a;
+  }
+  .sb-appearance-selector {
+    display: none;
+  }
+}
+@media (max-width: 359px) {
+  .sb-appearance-selector--compact select {
+    width: 5.5rem;
+  }
+  [data-ui='public-app-bar'] .sb-primary-action {
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
+  }
+  .sb-appearance-selector--compact > svg {
+    display: none;
+  }
+}

@@ -70,6 +70,8 @@ jobs:
         run: pnpm exec playwright test --workers=4
       - name: Native mobile UI suite
         run: pnpm test:mobile-ui
+      - name: Web and Android appearance and contrast
+        run: pnpm exec playwright test --config playwright.appearance.config.ts
       - name: Production builds for page-loading checks
         run: pnpm build
       - name: Production page loading and failure recovery

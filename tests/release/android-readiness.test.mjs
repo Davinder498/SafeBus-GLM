@@ -24,6 +24,10 @@ const requiredFiles = {
   'docs/governance/google-play-data-safety-notifications.md': '# Data safety\n',
   'docs/governance/google-play-publication.md': '# Play publication\n',
   'package.json': '{}\n',
+  'packages/config/theme-bootstrap.js': 'export const theme = true;\n',
+  'packages/config/theme-html-plugin.js': 'export const plugin = true;\n',
+  'packages/config/theme-html-plugin.d.ts': 'export declare const plugin: true;\n',
+  'packages/config/theme-utilities.js': 'export const utilities = true;\n',
   'playwright.android-store.config.ts': 'export default {};\n',
   'pnpm-lock.yaml': 'lockfileVersion: 9\n',
   'scripts/check-android-readiness.mjs': 'export const check = true;\n',
@@ -235,6 +239,20 @@ test('Android readiness rejects incomplete devices, Play evidence, approvals, an
   await fs.appendFile(path.join(root, 'apps/mobile/index.ts'), 'export const changed = true;\n');
   await assert.rejects(
     verifyAndroidReadiness({ readiness, root, now }),
+    /does not match the current release-controlled source/,
+  );
+});
+
+test('shared theme source changes invalidate Android release evidence', async (t) => {
+  const root = await fixtureRoot();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const readiness = await approvedFixture(root);
+  await fs.appendFile(
+    path.join(root, 'packages/config/theme-bootstrap.js'),
+    'export const changed = true;\n',
+  );
+  await assert.rejects(
+    verifyAndroidReadiness({ readiness, root, now: Date.parse('2026-08-23T12:00:00.000Z') }),
     /does not match the current release-controlled source/,
   );
 });

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, NavLink } from 'react-router';
+import { AppearanceSelector } from '@/components/settings/AppearanceSelector';
 import { BrandMark } from '@/components/ui/BrandMark';
 
 interface PublicLayoutProps {
@@ -26,12 +27,15 @@ export function PublicLayout({ children, overlayHeader = false }: PublicLayoutPr
           >
             <BrandMark />
           </Link>
-          <NavLink
-            to="/login"
-            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand)] px-5 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-brand-hover)]"
-          >
-            Sign in
-          </NavLink>
+          <div className="flex items-center gap-2">
+            <AppearanceSelector compact />
+            <NavLink
+              to="/login"
+              className="sb-primary-action inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand)] px-5 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-brand-hover)]"
+            >
+              Sign in
+            </NavLink>
+          </div>
         </div>
       </header>
       {children}

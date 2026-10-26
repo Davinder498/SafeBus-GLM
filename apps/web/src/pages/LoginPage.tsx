@@ -11,6 +11,7 @@ import { useAppSurface } from '@/contexts/AppSurfaceContext';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
+import { AppearanceSelector } from '@/components/settings/AppearanceSelector';
 import { BrandMark } from '@/components/ui/BrandMark';
 
 export function LoginPage() {
@@ -52,7 +53,10 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[var(--color-canvas)]" data-ui="login-shell">
+    <div className="relative flex min-h-screen bg-[var(--color-canvas)]" data-ui="login-shell">
+      <div className="absolute right-4 top-4 z-10">
+        <AppearanceSelector compact />
+      </div>
       {/* Left brand panel — hidden on small screens */}
       <div className="relative hidden w-1/2 overflow-hidden bg-navy-900 lg:flex lg:flex-col lg:justify-between">
         <div className="absolute inset-0 bg-gradient-to-br from-navy-900 via-navy-800 to-navy-950" />

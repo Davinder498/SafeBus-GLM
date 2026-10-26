@@ -1,3 +1,4 @@
+import { themeUtilities } from '../../packages/config/theme-utilities.js';
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -120,5 +121,5 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [themeUtilities],
 };

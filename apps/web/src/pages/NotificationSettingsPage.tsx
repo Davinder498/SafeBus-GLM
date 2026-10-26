@@ -1,3 +1,4 @@
+import { AppearanceSettingsCard } from '@/components/settings/AppearanceSelector';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BusFront, Route, TriangleAlert } from 'lucide-react';
 import { Navigate } from 'react-router';
@@ -195,6 +196,7 @@ export function NotificationSettingsPage() {
     >
       <div className="mx-auto max-w-2xl space-y-5" data-ui="notification-settings-page">
         <PageHeader title="Settings" />
+        <AppearanceSettingsCard />
         <section aria-label="Notification settings">
           <h2 className="mb-3 text-lg font-bold text-navy-900">Notification settings</h2>
           {isAdmin ? (

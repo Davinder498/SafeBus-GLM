@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { themeHtmlPlugin } from '../../packages/config/theme-html-plugin.js';
 import { fileURLToPath, URL } from 'node:url';
 
 /**
@@ -11,7 +12,7 @@ import { fileURLToPath, URL } from 'node:url';
  * (driver + guardian + auth routes) and Capacitor wrapper.
  */
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), themeHtmlPlugin()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('../web/src', import.meta.url)),

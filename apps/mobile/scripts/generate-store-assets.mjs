@@ -26,6 +26,7 @@ await Promise.all([
   mkdir(mobilePublicDirectory, { recursive: true }),
   mkdir(webPublicDirectory, { recursive: true }),
   mkdir(path.join(androidResDirectory, 'drawable-nodpi'), { recursive: true }),
+  mkdir(path.join(androidResDirectory, 'drawable-night-nodpi'), { recursive: true }),
 ]);
 
 const officialMarkSource = await readFile(masterSourcePath, 'utf8');
@@ -116,9 +117,12 @@ const writeAdaptiveForeground = async (size, outputPath) => {
 };
 
 // A generous transparent canvas keeps the wordmark within Android's splash mask.
-const writeWordmark = async (size, outputPath) => {
+const writeWordmark = async (size, outputPath, inverse = false) => {
   const width = Math.round(size * 0.62);
-  const mark = await sharp(wordmarkSourcePath).resize({ width }).png().toBuffer();
+  const source = inverse
+    ? Buffer.from((await readFile(wordmarkSourcePath, 'utf8')).replaceAll('#172B3A', '#FFFFFF'))
+    : wordmarkSourcePath;
+  const mark = await sharp(source).resize({ width }).png().toBuffer();
   const { height } = await sharp(mark).metadata();
   return sharp({
     create: { width: size, height: size, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
@@ -162,6 +166,11 @@ await Promise.all([
   writeWordmark(192, path.join(webPublicDirectory, 'icon-192.png')),
   writeWordmark(512, path.join(webPublicDirectory, 'icon-512.png')),
   writeWordmark(432, path.join(androidResDirectory, 'drawable-nodpi', 'safebus_splash_icon.png')),
+  writeWordmark(
+    432,
+    path.join(androidResDirectory, 'drawable-night-nodpi', 'safebus_splash_icon.png'),
+    true,
+  ),
   sharp(featureBackground)
     .png({ compressionLevel: 9 })
     .toFile(path.join(playDirectory, 'feature-graphic-1024x500.png')),
