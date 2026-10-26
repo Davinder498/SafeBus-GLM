@@ -16,7 +16,7 @@ const config: CapacitorConfig = {
   appId: 'com.safebusalberta.app',
   appName: 'SafeBus',
   webDir: 'dist',
-  backgroundColor: '#f2f6f7',
+  backgroundColor: '#172b3a',
   server: {
     androidScheme: 'https',
   },
@@ -34,7 +34,7 @@ const config: CapacitorConfig = {
     },
     SystemBars: {
       insetsHandling: 'css',
-      style: 'DEFAULT',
+      style: 'DARK',
       hidden: false,
     },
     SplashScreen: {

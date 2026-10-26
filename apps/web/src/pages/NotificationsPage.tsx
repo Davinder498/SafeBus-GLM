@@ -100,7 +100,7 @@ export function NotificationsPage() {
       ? '/notifications/settings'
       : admin
         ? '/admin/settings/notifications'
-        : null;
+        : '/notifications/settings';
 
   const selectedItem = requestedId && detail?.id === requestedId ? detail : null;
 
@@ -229,7 +229,7 @@ export function NotificationsPage() {
   }
 
   return (
-    <DashboardLayout title="Notifications" portal={portal} navItems={[]} navGroups={navGroups}>
+    <DashboardLayout title="Notification" portal={portal} navItems={[]} navGroups={navGroups}>
       <div
         className={cn(
           isRecipientMobile &&
@@ -241,22 +241,32 @@ export function NotificationsPage() {
           <header className="mb-4" data-ui="notification-mobile-header">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-baseline gap-2">
-                <h1 className="text-xl font-bold tracking-tight text-navy-900">Updates</h1>
+                <h1 className="text-xl font-bold tracking-tight text-navy-900">Notification</h1>
                 {unreadCount > 0 ? (
                   <span className="shrink-0 text-[0.6875rem] font-semibold text-danger-600">
                     {unreadCount > 99 ? '99+' : unreadCount} new
                   </span>
                 ) : null}
               </div>
-              <button
-                type="button"
-                className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg px-1.5 text-xs font-semibold text-navy-700 transition-colors hover:bg-white/70 disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={() => void markAllRead()}
-                disabled={unreadCount === 0}
-              >
-                <CheckCheck className="h-3.5 w-3.5" aria-hidden />
-                Mark all read
-              </button>
+              <div className="flex shrink-0 items-center gap-1">
+                <Link
+                  to={settingsPath}
+                  aria-label="Notification settings"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-navy-700 hover:bg-white/70"
+                >
+                  <Settings className="h-5 w-5" aria-hidden />
+                </Link>
+                <button
+                  type="button"
+                  aria-label="Mark all read"
+                  className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-lg px-1.5 text-xs font-semibold text-navy-700 transition-colors hover:bg-white/70 disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => void markAllRead()}
+                  disabled={unreadCount === 0}
+                >
+                  <CheckCheck className="h-3.5 w-3.5" aria-hidden />
+                  <span className="hidden min-[420px]:inline">Mark all read</span>
+                </button>
+              </div>
             </div>
             <p className="mt-1 text-xs leading-5 text-slate-600">
               {isDriver
@@ -266,7 +276,7 @@ export function NotificationsPage() {
           </header>
         ) : (
           <PageHeader
-            title="Notifications"
+            title="Notification"
             description="Your SafeBus updates."
             action={
               settingsPath ? (

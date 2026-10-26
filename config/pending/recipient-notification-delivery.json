@@ -1,0 +1,60 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261026171535_recipient_notification_delivery.sql",
+  "baseline": [
+    {
+      "signature": "public.claim_guardian_notification_email_batch(integer,integer,integer,integer)",
+      "md5": "fa2d622c11c5cdfcaca4d20adab1529b"
+    },
+    {
+      "signature": "public.claim_push_notification_deliveries(text,integer,integer)",
+      "md5": "6c1ec0d1841f39d923837c908ab68a6a"
+    },
+    {
+      "signature": "public.get_tenant_notification_settings()",
+      "md5": "fef2b45ed8ec77c020e7eb50895388b9"
+    },
+    {
+      "signature": "public.resolve_push_notification_delivery(uuid,text)",
+      "md5": "02464c34f3be902a49c955d6bd2c4132"
+    },
+    {
+      "signature": "public.set_tenant_notification_delivery_enabled(boolean)",
+      "md5": "50892a6c5a83232166fde160a074fa1f"
+    },
+    {
+      "signature": "public.set_tenant_push_notifications_enabled(boolean)",
+      "md5": "79eeb899e805a4baf364499407f05bbc"
+    },
+    {
+      "signature": "safebus_private.enforce_guardian_notification_enqueue()",
+      "md5": "04f6e9917f7a611d99314e82b4d45cf8"
+    },
+    {
+      "signature": "safebus_private.enqueue_driver_assignment_email()",
+      "md5": "ce18c76b314474bf9a5a9cf1d1ebc571"
+    },
+    {
+      "signature": "safebus_private.enqueue_guardian_email_for_notification()",
+      "md5": "412835411574fd1082c640b7221d1ec0"
+    },
+    {
+      "signature": "safebus_private.enqueue_push_for_notification(uuid)",
+      "md5": "42736ae35dbe48f578b088c48122d9c0"
+    },
+    {
+      "signature": "safebus_private.guardian_email_outbox_is_eligible_legacy(uuid)",
+      "md5": "f4c2a7958a214230508bce3aecbfda58"
+    },
+    {
+      "signature": "safebus_private.notification_email_before_announcements(uuid)",
+      "md5": "4b4dd24350d5c8bc35d88d63830ca511"
+    },
+    {
+      "signature": "safebus_private.notification_email_outbox_is_eligible(uuid)",
+      "md5": "d0a4446c5dcf4cf22bcb7f2f4e68a42e"
+    }
+  ],
+  "authenticated": [],
+  "serviceRole": []
+}

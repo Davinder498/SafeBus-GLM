@@ -36,14 +36,20 @@ public class AppearancePlugin extends Plugin {
         String value = preference(activity);
         boolean dark = "dark".equals(value);
         int background = Color.parseColor(dark ? "#0F1720" : "#F2F6F7");
-        activity.getWindow().setBackgroundDrawable(new ColorDrawable(background));
+        // Edge-to-edge system bars show the window beneath the WebView insets.
+        int chrome = Color.parseColor("#172B3A");
+        activity.getWindow().setBackgroundDrawable(new ColorDrawable(chrome));
+        activity.getWindow().setStatusBarColor(chrome);
+        activity.getWindow().setNavigationBarColor(chrome);
+        activity.getWindow().setStatusBarContrastEnforced(false);
+        activity.getWindow().setNavigationBarContrastEnforced(false);
         if (activity.getBridge() != null && activity.getBridge().getWebView() != null) {
             activity.getBridge().getWebView().setBackgroundColor(background);
         }
         WindowInsetsControllerCompat bars = WindowCompat.getInsetsController(
             activity.getWindow(), activity.getWindow().getDecorView());
-        bars.setAppearanceLightStatusBars(!dark);
-        bars.setAppearanceLightNavigationBars(!dark);
+        bars.setAppearanceLightStatusBars(false);
+        bars.setAppearanceLightNavigationBars(false);
     }
 
     private JSObject state() {

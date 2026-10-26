@@ -41,22 +41,29 @@ test('the pre-paint theme works under script-src self without React or inline sc
   await expect(page.locator('script[src*="appearance-bootstrap"]')).toHaveCount(1);
 });
 
-test('the dashboard toggle has only Light and Dark, persists, and ignores device changes', async ({
+test('the settings toggle has only Light and Dark, persists, and ignores device changes', async ({
   page,
 }, info) => {
   const mobile = info.project.name === 'android-webview';
   if (mobile) await installGuardianVisibilityMock(page);
   else await installAdminWorkflowMock(page);
   await page.emulateMedia({ colorScheme: 'dark' });
-  await page.goto(mobile ? '/parent' : '/admin');
+  await page.goto(mobile ? '/notifications/settings' : '/admin/settings');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-  const toggle = page.locator('[data-ui=app-bar]').getByRole('switch', { name: 'Dark mode' });
+  const appBar = page.locator('[data-ui=app-bar]');
+  await expect(appBar.getByRole('switch', { name: 'Dark mode' })).toHaveCount(0);
+  await expect(appBar).toHaveCSS('background-color', 'rgb(23, 43, 58)');
+  await expect(appBar.getByTestId('safebus-wordmark')).toHaveCSS('color', 'rgb(255, 255, 255)');
+  const toggle = page
+    .locator('[data-ui=appearance-settings]')
+    .getByRole('switch', { name: 'Dark mode' });
   await expect(toggle).not.toBeChecked();
   await expect(page.getByRole('combobox', { name: 'Appearance' })).toHaveCount(0);
   await toggle.focus();
   await page.keyboard.press('Space');
   await expect(toggle).toBeChecked();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(appBar).toHaveCSS('background-color', 'rgb(23, 43, 58)');
   await page.reload();
   await expect(toggle).toBeChecked();
   await page.emulateMedia({ colorScheme: 'light' });
@@ -69,7 +76,7 @@ test('the dashboard toggle has only Light and Dark, persists, and ignores device
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
-test('unavailable preference storage keeps the dashboard toggle usable', async ({ page }, info) => {
+test('unavailable preference storage keeps the settings toggle usable', async ({ page }, info) => {
   if (info.project.name === 'android-webview') await installGuardianVisibilityMock(page);
   else await installAdminWorkflowMock(page);
   await page.addInitScript(() => {
@@ -79,8 +86,13 @@ test('unavailable preference storage keeps the dashboard toggle usable', async (
       return original.call(this, key, value);
     };
   });
-  await page.goto(info.project.name === 'android-webview' ? '/parent' : '/admin');
-  await page.locator('[data-ui=app-bar]').getByRole('switch', { name: 'Dark mode' }).click();
+  await page.goto(
+    info.project.name === 'android-webview' ? '/notifications/settings' : '/admin/settings',
+  );
+  await page
+    .locator('[data-ui=appearance-settings]')
+    .getByRole('switch', { name: 'Dark mode' })
+    .click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
 
@@ -90,12 +102,17 @@ test('cross-tab changes update public pages without adding a public toggle', asy
 }, info) => {
   if (info.project.name === 'android-webview') await installGuardianVisibilityMock(page);
   else await installAdminWorkflowMock(page);
-  await page.goto(info.project.name === 'android-webview' ? '/parent' : '/admin');
+  await page.goto(
+    info.project.name === 'android-webview' ? '/notifications/settings' : '/admin/settings',
+  );
   const other = await context.newPage();
   await installLocalOnlyBoundary(other);
   await other.goto('/login');
   await expect(other.getByRole('switch', { name: 'Dark mode' })).toHaveCount(0);
-  await page.locator('[data-ui=app-bar]').getByRole('switch', { name: 'Dark mode' }).click();
+  await page
+    .locator('[data-ui=appearance-settings]')
+    .getByRole('switch', { name: 'Dark mode' })
+    .click();
   await expect(other.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expectNoWcagAaViolations(other, 'dark login');
   if (info.project.name === 'web') {
@@ -152,7 +169,7 @@ for (const role of [
     await expect(page.locator('[data-ui=appearance-settings]')).toBeVisible();
     await expect(page.locator('[data-ui=app-bar]')).toHaveCSS(
       'background-color',
-      /rgba?\(24, 35, 47/,
+      'rgb(23, 43, 58)',
     );
     await expect(page.locator('[data-ui=appearance-settings]')).toHaveCSS(
       'background-color',
@@ -195,12 +212,15 @@ test('platform pricing forms, dropdowns and confirmation dialogs use the same da
     }),
   );
   await page.addInitScript(() => localStorage.setItem('safebus.theme', 'dark'));
-  await page.goto('/admin/pricing');
-  const toggle = page.locator('[data-ui=app-bar]').getByRole('switch', { name: 'Dark mode' });
+  await page.goto('/notifications/settings');
+  const toggle = page
+    .locator('[data-ui=appearance-settings]')
+    .getByRole('switch', { name: 'Dark mode' });
   await expect(toggle).toBeChecked();
   await toggle.click();
   await expect(toggle).not.toBeChecked();
   await toggle.click();
+  await page.goto('/admin/pricing');
   const form = page.getByRole('form', { name: 'New subscription price' });
   await form.getByLabel('Price name').fill('Synthetic preview only');
   await form.getByLabel('Price per bus (CAD)').fill('25');

@@ -29,9 +29,9 @@ function MfaLayout({ children }: { children: ReactNode }) {
   const surface = useAppSurface();
   if (surface === 'web') return <PublicLayout>{children}</PublicLayout>;
   return (
-    <div className="min-h-screen bg-[var(--color-canvas)]">
-      <header className="border-b border-slate-200 bg-white px-5 py-4">
-        <BrandMark className="text-2xl" />
+    <div className="min-h-screen bg-[var(--color-canvas)]" data-ui="public-shell">
+      <header className="border-b border-slate-200 bg-white px-5 py-4" data-ui="public-app-bar">
+        <BrandMark className="text-2xl" inverse />
       </header>
       {children}
     </div>
@@ -46,7 +46,13 @@ export function MfaPage() {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [removing, setRemoving] = useState(false);
+  const [removing, setRemoving] = useState(
+    location.state?.removeAuthenticator === true &&
+      !!profile &&
+      !adminRoles.some((role) => role === profile.role) &&
+      mfaStatus.currentLevel === 'aal2' &&
+      mfaStatus.verifiedFactors.some((factor) => factor.factorType === 'totp'),
+  );
 
   const verifiedFactor = mfaStatus.verifiedFactors.find((factor) => factor.factorType === 'totp');
   const factorId = enrollment?.factorId ?? verifiedFactor?.id ?? null;
@@ -72,7 +78,12 @@ export function MfaPage() {
   if (!profile) return <Navigate to="/login" replace />;
   if (mfaLoading) return <AppLoadingScreen />;
   const returnTo: unknown = location.state?.returnTo;
-  const settingsPath = profile.role === 'driver' ? '/driver/settings' : '/notifications/settings';
+  const settingsPath =
+    profile.role === 'driver'
+      ? '/driver/settings'
+      : isAdmin && profile.role !== 'platform_super_admin'
+        ? '/admin/settings'
+        : '/notifications/settings';
   const destination = managing
     ? settingsPath
     : typeof returnTo === 'string' &&

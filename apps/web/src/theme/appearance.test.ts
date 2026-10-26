@@ -49,7 +49,7 @@ describe('device appearance preference', () => {
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(document.documentElement.style.colorScheme).toBe('dark');
     expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(
-      '#0F1720',
+      '#172b3a',
     );
   });
 

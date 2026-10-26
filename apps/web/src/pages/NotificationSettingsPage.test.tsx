@@ -72,7 +72,7 @@ describe('guardian channel settings', () => {
   it('uses switches and retains category choices while a master is off', async () => {
     await render();
     expect(
-      container.querySelectorAll('[role="switch"]:not([aria-label="Dark mode"])'),
+      container.querySelectorAll('section[aria-label="Notification settings"] [role="switch"]'),
     ).toHaveLength(12);
     expect(container.querySelectorAll('input[type="checkbox"]')).toHaveLength(0);
     await click('In-app notifications');
@@ -124,5 +124,7 @@ it('keeps MFA available when notification settings cannot load', async () => {
   mocks.fetch.mockRejectedValueOnce(new Error('Notification service unavailable'));
   await render();
   expect(container.textContent).toContain('Notification service unavailable');
-  expect(container.querySelector('a[href="/account/security"]')?.textContent).toBe('Enable MFA');
+  expect(container.querySelector('a[href="/account/security"]')?.getAttribute('aria-label')).toBe(
+    'Enable multi-factor authentication',
+  );
 });

@@ -185,6 +185,14 @@ export const appRoutes: RouteObject[] = [
     ),
   },
   {
+    path: '/account/security',
+    element: (
+      <ProtectedRoute allowedRoles={[...adminRoles]}>
+        <MfaPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/notifications',
     element: (
       <ProtectedRoute allowedRoles={[...adminRoles]}>

@@ -4,6 +4,13 @@ import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { AdminNotificationSettingsPage } from './AdminNotificationSettingsPage';
 const mocks = vi.hoisted(() => ({ fetch: vi.fn(), save: vi.fn() }));
+vi.mock('@/contexts/useAuth', () => ({
+  useAuth: () => ({
+    profile: { role: 'tenant_admin' },
+    mfaLoading: false,
+    mfaStatus: { verifiedFactors: [{ id: 'factor', factorType: 'totp' }] },
+  }),
+}));
 vi.mock('@/components/layout/DashboardLayout', () => ({
   DashboardLayout: ({ children }: { children: ReactNode }) => <>{children}</>,
   adminNavGroups: [],

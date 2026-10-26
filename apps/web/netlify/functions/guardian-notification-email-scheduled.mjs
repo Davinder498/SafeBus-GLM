@@ -2,12 +2,12 @@
 //
 // This is a Netlify scheduled function that invokes the same secured dispatcher
 // logic as the manual POST endpoint, but without requiring a browser user or an
-// external scheduler. It is the smallest reliable production-compatible invocation model for the
-// existing guardian notification delivery system.
+// external scheduler. It starts a signed background worker for the remaining
+// ten-second ticks, because Netlify cron itself has minute precision.
 //
 // Scheduling is configured in netlify.toml under:
 //   [functions."guardian-notification-email-scheduled"]
-//     schedule = "*/5 * * * *"
+//     schedule = "* * * * *" (every minute, using the existing server configuration)
 //
 // Overlapping executions are safe because the database claim RPC uses
 // `for update skip locked`, so two concurrent runs will never claim the
@@ -17,6 +17,7 @@
 // manual HTTP endpoint also requires SAFEBUS_NOTIFICATION_DISPATCHER_SECRET.
 
 import { runScheduledDispatcher } from './guardian-notification-email.mjs';
+import { startEmailCadence } from '../lib/notification-email-cadence.mjs';
 
 const json = (statusCode, body) => ({
   statusCode,
@@ -31,12 +32,21 @@ export async function handler() {
   // so it uses the platform's invocation boundary. The separate HTTP endpoint
   // remains secret-protected and cannot request scheduled execution.
 
+  const startedAt = Date.now();
+  let cadenceStarted = false;
+  try {
+    await startEmailCadence(startedAt);
+    cadenceStarted = true;
+  } catch {
+    console.error(JSON.stringify({ result: 'email_cadence_start_failed' }));
+  }
   try {
     const result = await runScheduledDispatcher();
     console.log(
       JSON.stringify({ result: 'scheduled_dispatcher_complete', statusCode: result.statusCode }),
     );
-    return result;
+    // Preserve tick zero even if the background handoff fails, but surface failure.
+    return cadenceStarted ? result : json(500, { error: 'Email cadence start failed.' });
   } catch (e) {
     console.error(JSON.stringify({ result: 'scheduled_dispatcher_error', category: 'unknown' }));
     return json(500, { error: 'Scheduled notification dispatcher failed.' });

@@ -176,7 +176,15 @@
   }
 }
 
-/* Binary switch shared by dashboard headers and settings. */
+/* Dashboard chrome stays blue in both appearance modes. */
+[data-ui='app-bar'] {
+  --color-wordmark: #fff;
+  background-color: #172b3a;
+  border-color: #172b3a;
+  color: #fff;
+}
+
+/* Binary appearance switch in settings. */
 .sb-appearance-toggle {
   display: inline-flex;
   align-items: center;

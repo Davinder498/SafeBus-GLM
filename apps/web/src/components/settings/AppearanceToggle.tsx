@@ -27,8 +27,8 @@ export function AppearanceToggle({ compact = false }: { compact?: boolean }) {
 
 export function AppearanceSettingsCard() {
   return (
-    <Card className="p-5" data-ui="appearance-settings">
-      <h2 className="mb-4 text-lg font-bold text-navy-900">Appearance</h2>
+    <Card className="flex items-center justify-between gap-4 p-5" data-ui="appearance-settings">
+      <h2 className="text-lg font-bold text-navy-900">Appearance</h2>
       <AppearanceToggle />
     </Card>
   );

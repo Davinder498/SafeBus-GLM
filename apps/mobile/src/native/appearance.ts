@@ -39,13 +39,13 @@ export async function installNativeAppearance(): Promise<void> {
     await native.addListener('systemThemeChanged', refreshAppearance);
     let pending = Promise.resolve();
     const synchronize = () => {
-      const { preference, resolved } = getAppearance();
+      const { preference } = getAppearance();
       pending = pending
         .catch(() => undefined)
         .then(async () => {
           await native.setPreference({ preference });
           await SystemBars.setStyle({
-            style: resolved === 'dark' ? SystemBarsStyle.Dark : SystemBarsStyle.Light,
+            style: SystemBarsStyle.Dark,
           });
         });
       // The CSS theme remains usable even if an older installed native wrapper

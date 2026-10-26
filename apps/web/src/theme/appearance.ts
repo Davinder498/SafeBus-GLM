@@ -19,10 +19,13 @@ function apply(preference: ThemePreference) {
   const root = document.documentElement;
   root.dataset.theme = resolved;
   root.style.colorScheme = resolved;
-  root.style.backgroundColor = resolved === 'dark' ? '#0F1720' : '#F2F6F7';
-  document
-    .querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', resolved === 'dark' ? '#0F1720' : '#F2F6F7');
+  root.style.backgroundColor =
+    root.dataset.appSurface === 'native-mobile'
+      ? '#172b3a'
+      : resolved === 'dark'
+        ? '#0F1720'
+        : '#F2F6F7';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#172b3a');
   if (snapshot.preference === preference && snapshot.resolved === resolved) return;
   snapshot = { preference, resolved };
   listeners.forEach((listener) => listener());

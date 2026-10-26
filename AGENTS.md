@@ -125,6 +125,12 @@ This supersedes the isolated-target requirement for this security milestone.
 
 ## Account preferences and interface copy
 
+- Owner direction, 2026-10-26: guardian and driver notification preferences belong
+  to each recipient. Retire school-authority delivery/push preference switches
+  from delivery decisions and disable their legacy mutation endpoints. This
+  supersedes preservation of school-authority preference pauses above. Preserve
+  recipient opt-outs, device permissions, quiet hours, authorization, quotas,
+  account suspensions and platform privacy rejection. Do not auto-subscribe people.
 - Use consistent notification labels across inbox filters and preferences:
   Pickup & drop-off, Trip updates, Assignment alerts, and Operational alerts.
   Show only categories relevant to the current role. Preserve internal category
