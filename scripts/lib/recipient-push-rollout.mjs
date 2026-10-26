@@ -13,6 +13,107 @@ export const LEGACY_RPCS = [
 export const digest = (value) => createHash('sha256').update(value).digest('hex');
 const quote = (value) => '"' + value.replaceAll('"', '""') + '"';
 
+const normalizeDefinition = (value) =>
+  value.replaceAll('\r\n', '\n').trim().replace(/;$/, '').trimEnd();
+
+export function reviewedPushDefinitions(migration, baseline) {
+  const definitions = [
+    ...migration.matchAll(/CREATE OR REPLACE FUNCTION ([a-z_]+\.[a-z_]+)\([\s\S]*?\$function\$;/g),
+  ].map((match) => ({
+    signature: baseline.find((entry) => entry.signature.startsWith(match[1] + '('))?.signature,
+    definition: normalizeDefinition(match[0]),
+  }));
+  if (
+    definitions.length !== 10 ||
+    definitions.some((entry) => !entry.signature) ||
+    new Set(definitions.map((entry) => entry.signature)).size !== 10
+  )
+    throw new Error('Reviewed notification definitions are invalid.');
+  return definitions;
+}
+
+export async function verifyInstalledRecipientPush(client, migration, baseline) {
+  const definitions = reviewedPushDefinitions(migration, baseline);
+  for (const expected of definitions) {
+    const {
+      rows: [actual],
+    } = await client.query('select pg_get_functiondef(to_regprocedure($1)) as definition', [
+      expected.signature,
+    ]);
+    if (!actual?.definition || normalizeDefinition(actual.definition) !== expected.definition)
+      throw new Error('Installed notification definitions differ from reviewed SQL.');
+  }
+  const {
+    rows: [security],
+  } = await client.query(
+    `select
+    (select count(*)::int from unnest($1::text[]) s
+      where has_function_privilege('anon',to_regprocedure(s),'execute')
+        or has_function_privilege('authenticated',to_regprocedure(s),'execute')) as exposed_functions,
+    (select count(*)::int from pg_class c join pg_namespace n on n.oid=c.relnamespace
+      where n.nspname='public' and c.relname=any($2::text[]) and c.relrowsecurity) as protected_tables`,
+    [
+      definitions.map((entry) => entry.signature),
+      [
+        'guardian_notification_delivery_policies',
+        'android_push_devices',
+        'push_notification_outbox',
+        'user_notification_settings',
+        'user_notification_category_preferences',
+        'guardian_student_push_preferences',
+      ],
+    ],
+  );
+  if (security.exposed_functions !== 0 || security.protected_tables !== 6)
+    throw new Error('Installed notification authorization differs from reviewed policy.');
+  return {
+    ...(await verifyRecipientPushSchema(client)),
+    reviewedDefinitionsMatched: 10,
+    authorizationRetained: true,
+  };
+}
+
+export async function recipientPushState(client, migration, baseline) {
+  const {
+    rows: [state],
+  } = await client.query(
+    `select
+    (select count(*)::int from information_schema.columns where table_schema='public'
+      and table_name='guardian_notification_delivery_policies' and column_name=any($1::text[])) as switches,
+    (select count(*)::int from unnest($2::text[]) s where to_regprocedure(s) is not null) as legacy_rpcs`,
+    [SWITCHES, LEGACY_RPCS],
+  );
+  if (state.switches === 3 && state.legacy_rpcs === 3) return 'pending';
+  if (state.switches === 0 && state.legacy_rpcs === 0) {
+    await verifyInstalledRecipientPush(client, migration, baseline);
+    return 'installed';
+  }
+  throw new Error('Notification schema is partially installed.');
+}
+
+export function recipientPushFailureCode(error) {
+  const known = new Map([
+    ['Notification schema is partially installed.', 'PARTIAL_INSTALLATION'],
+    ['Installed notification definitions differ from reviewed SQL.', 'INSTALLED_DEFINITION_DRIFT'],
+    [
+      'Installed notification authorization differs from reviewed policy.',
+      'INSTALLED_AUTHORIZATION_DRIFT',
+    ],
+    ['Reviewed notification definitions are invalid.', 'REVIEWED_DEFINITION_INVALID'],
+    ['Notification function baseline is missing.', 'BASELINE_FUNCTION_MISSING'],
+    ['Notification recovery scope differs.', 'RECOVERY_SCOPE_MISMATCH'],
+    ['Recipient push schema acceptance failed.', 'SCHEMA_ACCEPTANCE_FAILED'],
+    ['Recipient preferences changed.', 'RECIPIENT_PREFERENCES_CHANGED'],
+    ['Notification rehearsal did not restore its baseline.', 'REHEARSAL_RESTORATION_FAILED'],
+  ]);
+  if (known.has(error?.message)) return known.get(error.message);
+  if (error?.code === '55P03') return 'LOCK_TIMEOUT';
+  if (error?.code === '57014') return 'STATEMENT_TIMEOUT';
+  if (error?.code === '42703' || error?.code === '42883') return 'SCHEMA_MISMATCH';
+  if (error?.code === '55000') return 'BASELINE_DRIFT';
+  return 'ROLLOUT_GUARD_FAILED';
+}
+
 export async function capturePushRecovery(client, signatures) {
   const definitions = [];
   for (const signature of [...signatures].sort()) {
@@ -133,7 +234,10 @@ export async function verifyRecipientPushSchema(client) {
     result.switches !== 0 ||
     result.legacy_rpcs !== 0 ||
     result.legacy_gates !== 0 ||
-    !result.approval_constraint?.includes('privacy_approved_at IS NOT NULL')
+    result.approval_constraint
+      ?.replace(/\s|[()]/g, '')
+      .replaceAll('::text', '')
+      .toLowerCase() !== "checkprivacy_review_status<>'approved'orprivacy_approved_atisnotnull"
   )
     throw new Error('Recipient push schema acceptance failed.');
   return { switchesRemoved: true, legacyRpcsRemoved: true, privacyConstraintRetained: true };
