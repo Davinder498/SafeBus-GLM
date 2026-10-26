@@ -31,7 +31,7 @@ import { useAppSurface, type AppSurface } from '@/contexts/AppSurfaceContext';
 import { useAuth } from '@/contexts/useAuth';
 import { NotificationContext } from '@/contexts/NotificationContext';
 import { Avatar } from '@/components/ui/Avatar';
-import { AppearanceSelector } from '@/components/settings/AppearanceSelector';
+import { AppearanceToggle } from '@/components/settings/AppearanceToggle';
 import { BrandMark } from '@/components/ui/BrandMark';
 import { DropdownMenu, DropdownItem, DropdownSeparator } from '@/components/ui/DropdownMenu';
 import { getRoleLabel } from '@/components/ui/RoleBadge';
@@ -387,7 +387,7 @@ export function DashboardLayout({
           <div className="flex-1" />
 
           {/* Right side actions */}
-          <AppearanceSelector compact />
+          <AppearanceToggle compact />
           <div className="flex items-center gap-1.5">
             <Link
               to="/notifications"

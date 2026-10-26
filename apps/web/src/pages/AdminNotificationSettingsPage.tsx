@@ -1,4 +1,4 @@
-import { AppearanceSettingsCard } from '@/components/settings/AppearanceSelector';
+import { AppearanceSettingsCard } from '@/components/settings/AppearanceToggle';
 import { useCallback, useEffect, useState } from 'react';
 import type { AdminInboxPreferences } from '@safebus/types';
 import { Link } from 'react-router';

@@ -48,8 +48,8 @@ public class AppearanceInstrumentedTest {
     }
 
     private void select(String value) throws Exception {
-        javascript("(() => { const s = document.querySelector('select[aria-label=Appearance]'); " +
-            "s.value = '" + value + "'; s.dispatchEvent(new Event('change', {bubbles:true})); })()");
+        javascript("void window.Capacitor.Plugins.SafeBusAppearance.setPreference({preference:'" + value + "'})" +
+            ".then(() => { localStorage.setItem('safebus.theme', '" + value + "'); location.reload(); })");
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         for (int attempt = 0; attempt < 100; attempt++) {
             if (value.equals(context.getSharedPreferences("safebus.appearance", Context.MODE_PRIVATE)
@@ -76,7 +76,7 @@ public class AppearanceInstrumentedTest {
             .getString("safebus.theme", null);
         try {
             launch();
-            awaitJavascript("!!document.querySelector('select[aria-label=Appearance]')");
+            awaitJavascript("!!document.querySelector('[data-ui=login-shell]') && !!window.Capacitor?.Plugins?.SafeBusAppearance");
             select("dark");
             awaitJavascript("document.documentElement.dataset.theme === 'dark'");
             InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
@@ -85,17 +85,15 @@ public class AppearanceInstrumentedTest {
                 activity.finish();
             });
             launch();
-            awaitJavascript("!!document.querySelector('select[aria-label=Appearance]') && document.documentElement.dataset.theme === 'dark'");
-            assertEquals("\"dark\"", javascript("document.querySelector('select[aria-label=Appearance]').value"));
+            awaitJavascript("!!document.querySelector('[data-ui=login-shell]') && document.documentElement.dataset.theme === 'dark'");
+            assertEquals("\"dark\"", javascript("localStorage.getItem('safebus.theme')"));
             select("light");
             awaitJavascript("document.documentElement.dataset.theme === 'light'");
             InstrumentationRegistry.getInstrumentation().runOnMainSync(() ->
                 assertTrue(WindowCompat.getInsetsController(activity.getWindow(), activity.getWindow().getDecorView())
                     .isAppearanceLightStatusBars())
             );
-            select("system");
-            String expected = AppearancePlugin.systemDark() ? "dark" : "light";
-            awaitJavascript("document.documentElement.dataset.theme === '" + expected + "'");
+
         } finally {
             context.getSharedPreferences("safebus.appearance", Context.MODE_PRIVATE).edit()
                 .putString("safebus.theme", previous).commit();

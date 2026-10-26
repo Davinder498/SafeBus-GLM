@@ -1,4 +1,4 @@
-export type ThemePreference = 'system' | 'light' | 'dark';
+export type ThemePreference = 'light' | 'dark';
 export type ResolvedTheme = 'light' | 'dark';
 export interface Appearance {
   preference: ThemePreference;
@@ -7,22 +7,15 @@ export interface Appearance {
 
 const storageKey = 'safebus.theme';
 const listeners = new Set<() => void>();
-let media: MediaQueryList | undefined;
 let initialized = false;
-let nativeSystemDark: boolean | undefined;
-let snapshot: Appearance = { preference: 'system', resolved: 'light' };
+let snapshot: Appearance = { preference: 'light', resolved: 'light' };
 
 export function normalizeThemePreference(value: unknown): ThemePreference {
-  return value === 'light' || value === 'dark' ? value : 'system';
+  return value === 'dark' ? 'dark' : 'light';
 }
 
 function apply(preference: ThemePreference) {
-  const resolved =
-    preference === 'system'
-      ? (nativeSystemDark ?? media?.matches)
-        ? 'dark'
-        : 'light'
-      : preference;
+  const resolved = preference;
   const root = document.documentElement;
   root.dataset.theme = resolved;
   root.style.colorScheme = resolved;
@@ -38,33 +31,24 @@ function apply(preference: ThemePreference) {
 export function initializeAppearance() {
   if (initialized) return;
   initialized = true;
-  media = window.matchMedia?.('(prefers-color-scheme: dark)');
-  let preference: ThemePreference = 'system';
+  let preference: ThemePreference = 'light';
   try {
     preference = normalizeThemePreference(localStorage.getItem(storageKey));
   } catch {
     /* Optional storage. */
   }
   apply(preference);
-  media?.addEventListener('change', () => apply(snapshot.preference));
   window.addEventListener('storage', (event) => {
     if (event.key === storageKey || event.key === null) {
       apply(normalizeThemePreference(event.newValue));
     }
   });
-  // Some Android WebViews do not deliver matchMedia changes while suspended.
+  // Restore browser chrome when returning to the app.
   document.addEventListener('visibilitychange', refreshAppearance);
   window.addEventListener('pageshow', refreshAppearance);
 }
 
 export function refreshAppearance() {
-  media = window.matchMedia?.('(prefers-color-scheme: dark)');
-  apply(snapshot.preference);
-}
-
-/** Android supplies the device setting independently of its app-local theme. */
-export function setNativeSystemTheme(dark: boolean) {
-  nativeSystemDark = dark;
   apply(snapshot.preference);
 }
 

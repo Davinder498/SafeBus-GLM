@@ -2,7 +2,6 @@ package com.safebusalberta.app;
 
 import android.content.Context;
 import android.content.res.Configuration;
-import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -26,13 +25,7 @@ public class AppearancePlugin extends Plugin {
 
     private static int nightMode(String value) {
         if ("dark".equals(value)) return AppCompatDelegate.MODE_NIGHT_YES;
-        if ("light".equals(value)) return AppCompatDelegate.MODE_NIGHT_NO;
-        return AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM;
-    }
-
-    static boolean systemDark() {
-        return (Resources.getSystem().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
-            == Configuration.UI_MODE_NIGHT_YES;
+        return AppCompatDelegate.MODE_NIGHT_NO;
     }
 
     static void applyStartupTheme(Context context) {
@@ -41,7 +34,7 @@ public class AppearancePlugin extends Plugin {
 
     static void updateWindow(MainActivity activity) {
         String value = preference(activity);
-        boolean dark = "dark".equals(value) || (!"light".equals(value) && systemDark());
+        boolean dark = "dark".equals(value);
         int background = Color.parseColor(dark ? "#0F1720" : "#F2F6F7");
         activity.getWindow().setBackgroundDrawable(new ColorDrawable(background));
         if (activity.getBridge() != null && activity.getBridge().getWebView() != null) {
@@ -56,7 +49,6 @@ public class AppearancePlugin extends Plugin {
     private JSObject state() {
         JSObject result = new JSObject();
         result.put("preference", preference(getContext()) == null ? org.json.JSONObject.NULL : preference(getContext()));
-        result.put("systemDark", systemDark());
         return result;
     }
 
@@ -67,8 +59,8 @@ public class AppearancePlugin extends Plugin {
 
     @PluginMethod
     public void setPreference(PluginCall call) {
-        String value = call.getString("preference", "system");
-        if (!"system".equals(value) && !"light".equals(value) && !"dark".equals(value)) {
+        String value = call.getString("preference", "light");
+        if (!"light".equals(value) && !"dark".equals(value)) {
             call.reject("Invalid appearance preference.");
             return;
         }

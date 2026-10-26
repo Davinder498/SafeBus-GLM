@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { Bus, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { WhyChooseUsCarousel } from '@/components/marketing/WhyChooseUsCarousel';
 import { BrandMark } from '@/components/ui/BrandMark';
@@ -110,10 +110,7 @@ export function LandingPage() {
           />
           <div className="relative mx-auto flex max-w-7xl px-4 pb-20 pt-32 sm:px-6 lg:min-h-[42rem] lg:px-8 lg:pb-20 lg:pt-32">
             <div className="flex max-w-xl flex-col justify-center">
-              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-yellow-300 backdrop-blur">
-                <Bus className="h-3.5 w-3.5" /> School transportation visibility
-              </span>
-              <h1 className="mt-5 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+              <h1 className="text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
                 <BrandMark inverse />
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-8 text-navy-100">
