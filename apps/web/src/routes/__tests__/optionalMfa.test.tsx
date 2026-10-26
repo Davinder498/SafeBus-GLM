@@ -114,6 +114,22 @@ async function click(container: HTMLElement, label: string) {
   expect(button).toBeTruthy();
   await act(async () => button?.click());
 }
+it.each(['guardian', 'driver'] as const)(
+  'keeps the %s app bar and navigation on MFA settings',
+  async (role) => {
+    mocks.auth.profile!.role = role;
+    const container = await render();
+    expect(container.querySelector('[data-ui="app-bar"]')).not.toBeNull();
+    expect(container.querySelector('[data-ui="public-app-bar"]')).toBeNull();
+    expect(container.querySelector('[data-testid="native-bottom-navigation"]')).not.toBeNull();
+    expect(container.querySelector('[data-ui="top-notifications"]') !== null).toBe(
+      role === 'driver',
+    );
+    expect(container.querySelector('[data-testid="safebus-wordmark"]')?.textContent).toBe(
+      'SafeBus',
+    );
+  },
+);
 async function submit(container: HTMLElement, code: string) {
   const input = container.querySelector('input')!;
   await act(async () => {

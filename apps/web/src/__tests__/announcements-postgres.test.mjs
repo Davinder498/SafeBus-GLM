@@ -64,6 +64,11 @@ it('broadcasts only within authorized audiences, preserves opt-outs, and dedupli
         'utf8',
       ),
     );
+    const audienceFix = await readFile(
+      '../../supabase/migrations/pending/20261026194051_announcement_guardian_school_scope.sql',
+      'utf8',
+    );
+    await db.exec(audienceFix);
     await db.exec(`
       create trigger driver_scope before insert on user_notifications for each row execute function safebus_private.enforce_driver_assignment_only_notification();
       create trigger visibility before insert on user_notifications for each row execute function safebus_private.capture_notification_inbox_visibility();
@@ -119,6 +124,37 @@ it('broadcasts only within authorized audiences, preserves opt-outs, and dedupli
       db.query('select * from safebus_private.authority_announcements'),
     ).rejects.toMatchObject({ code: '42501' });
     await db.exec('reset role');
+    // Reproduce the hosted guardian's active links to students with no school.
+    // Only authority-wide sends include them; school-admin scope remains strict.
+    await db.exec(`begin; savepoint no_school;
+      update students set school_id=null where id in ('${id(70)}','${id(73)}');`);
+    expect(await audience('all')).toEqual({ guardians: 2, drivers: 2, total: 4 });
+    await send(180);
+    await send(180);
+    expect(
+      (
+        await call(
+          `select count(*)::int as n from user_notifications where source_id='${id(180)}' and recipient_profile_id='${id(30)}'`,
+        )
+      ).n,
+    ).toBe(1);
+    expect(
+      (
+        await call(
+          `select count(*)::int as n from push_notification_outbox o join user_notifications n on n.id=o.notification_id where n.source_id='${id(180)}' and n.recipient_profile_id='${id(30)}'`,
+        )
+      ).n,
+    ).toBe(1);
+    expect(
+      (
+        await call(
+          `select count(*)::int as n from guardian_notification_outbox o join user_notifications n on n.id=o.user_notification_id where n.source_id='${id(180)}' and n.recipient_profile_id='${id(30)}'`,
+        )
+      ).n,
+    ).toBe(1);
+    await db.query("select set_config('request.jwt.claim.sub',$1,false)", [id(21)]);
+    expect(await audience('all')).toEqual({ guardians: 0, drivers: 1, total: 1 });
+    await db.exec('rollback to no_school; release no_school; commit');
     expect((await call('select count(*)::int as n from user_notifications')).n).toBe(4);
     expect((await call('select count(*)::int as n from push_notification_outbox')).n).toBe(2);
     expect((await call('select count(*)::int as n from guardian_notification_outbox')).n).toBe(3);
@@ -268,6 +304,16 @@ it('broadcasts only within authorized audiences, preserves opt-outs, and dedupli
     await expect(
       db.query('select public.get_driver_delivery_preferences_v2()'),
     ).rejects.toMatchObject({ code: '42501' });
+    // The forward guard rejects a changed definition; the recorded rollback
+    // restores the reviewed baseline and permits re-adoption.
+    await expect(db.exec(audienceFix)).rejects.toMatchObject({ code: '55000' });
+    await db.exec(
+      await readFile(
+        '../../docs/operations/announcement-guardian-school-scope-rollback.sql',
+        'utf8',
+      ),
+    );
+    await db.exec(audienceFix);
   } finally {
     await db.close();
   }

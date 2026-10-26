@@ -128,7 +128,9 @@ export function buildFcmMessage(row) {
         destination: '/notifications',
       },
       android: {
-        priority: urgent ? 'HIGH' : 'NORMAL',
+        // Every dispatched message displays a notification. Transport priority
+        // must wake an idle phone even when the alert has informational severity.
+        priority: 'HIGH',
         collapseKey: row.collapse_key,
         notification: {
           channelId: row.android_channel,
