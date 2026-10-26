@@ -135,8 +135,15 @@ for (const role of ['guardian', 'driver'] as const) {
     await page
       .getByRole('link', { name: 'Enable multi-factor authentication', exact: true })
       .click();
+    await expect(page.locator('[data-ui="app-bar"]')).toBeVisible();
+    await expect(page.getByTestId('native-bottom-navigation')).toBeVisible();
+    await expect(page.locator('[data-ui="public-app-bar"]')).toHaveCount(0);
+    await expect(page.locator('[data-ui="top-notifications"]')).toHaveCount(
+      role === 'driver' ? 1 : 0,
+    );
     await page.getByRole('button', { name: 'Set up authenticator app', exact: true }).click();
     await expect(page.getByAltText('Authenticator enrollment QR code')).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath(`${role}-mfa-setup.png`), fullPage: true });
     await expectNoWcagAaViolations(page);
     await page.locator('#mfa-code').fill('123456');
     await page.getByRole('button', { name: 'Enable MFA', exact: true }).click();
@@ -252,7 +259,15 @@ for (const role of ['guardian', 'driver'] as const) {
         path: testInfo.outputPath(role + '-settings-dark.png'),
         fullPage: true,
       });
-      await appBar.getByRole('link', { name: /^Notifications/ }).click();
+      if (role === 'guardian') {
+        await expect(appBar.locator('[data-ui="top-notifications"]')).toHaveCount(0);
+        await page
+          .getByTestId('native-bottom-navigation')
+          .getByRole('link', { name: /^Notification/ })
+          .click();
+      } else {
+        await appBar.getByRole('link', { name: /^Notifications/ }).click();
+      }
       await expect(page).toHaveURL('/notifications');
       await expect(page.getByRole('heading', { name: 'Notification', exact: true })).toBeVisible();
       await page.getByRole('link', { name: 'Notification settings', exact: true }).click();

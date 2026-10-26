@@ -83,6 +83,8 @@ async function mockGuardian(page: Page) {
       });
     if (path.includes('/rpc/get_user_notification_unread_count'))
       return route.fulfill({ status: 200, contentType: 'application/json', body: '112' });
+    if (path.includes('/rpc/get_user_notification_detail'))
+      return route.fulfill({ json: [notification] });
     if (path.includes('/rpc/get_user_notifications'))
       return route.fulfill({
         status: 200,
@@ -110,7 +112,7 @@ test.describe('universal notification inbox', () => {
     await expect(
       page.getByText('The trip was cancelled at 6:00 AM.', { exact: true }),
     ).toBeVisible();
-    await expect(page.getByLabel('Notifications, 112 unread')).toContainText('99+');
+    await expect(page.locator('[data-ui="top-notifications"]')).toHaveCount(0);
     await expect(page.getByRole('link', { name: /Settings/ })).toBeVisible();
   });
   test('opens an inbox notification in an accessible detail view', async ({ page }) => {
@@ -124,7 +126,7 @@ test.describe('universal notification inbox', () => {
     );
     await expect(page.getByRole('heading', { name: 'Notification details' })).toBeVisible();
     await expect(page.getByText('The trip was cancelled at 6:00 AM.', { exact: true })).toHaveCount(
-      2,
+      1,
     );
     await expect(page.getByText('Category', { exact: true })).toHaveCount(0);
     await expect(page.getByText('Priority', { exact: true })).toHaveCount(0);
@@ -139,7 +141,7 @@ test.describe('universal notification inbox', () => {
     await page.goto(`/notifications?notification=${notification.id}`);
     await expect(page.getByRole('heading', { name: 'Notification details' })).toBeVisible();
     await expect(page.getByText('The trip was cancelled at 6:00 AM.', { exact: true })).toHaveCount(
-      2,
+      1,
     );
   });
   test('legacy guardian URL redirects to unified settings', async ({ page }) => {

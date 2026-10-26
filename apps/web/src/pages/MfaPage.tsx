@@ -6,6 +6,11 @@ import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { PublicLayout } from '@/components/layout/PublicLayout';
+import {
+  DashboardLayout,
+  driverNavGroups,
+  guardianNavGroups,
+} from '@/components/layout/DashboardLayout';
 import { AppLoadingScreen } from '@/components/ui/AppLoadingScreen';
 import { BrandMark } from '@/components/ui/BrandMark';
 import { useAppSurface } from '@/contexts/AppSurfaceContext';
@@ -27,13 +32,36 @@ function qrSource(value: string) {
 
 function MfaLayout({ children }: { children: ReactNode }) {
   const surface = useAppSurface();
-  if (surface === 'web') return <PublicLayout>{children}</PublicLayout>;
+  const { profile } = useAuth();
+  const location = useLocation();
+  if (
+    location.pathname === '/account/security' &&
+    (profile?.role === 'driver' || profile?.role === 'guardian')
+  ) {
+    const driver = profile.role === 'driver';
+    return (
+      <DashboardLayout
+        title="Multi-factor authentication"
+        portal={driver ? 'driver' : 'parent'}
+        navItems={[]}
+        navGroups={driver ? driverNavGroups : guardianNavGroups}
+      >
+        {children}
+      </DashboardLayout>
+    );
+  }
+  if (surface === 'web')
+    return (
+      <PublicLayout>
+        <main>{children}</main>
+      </PublicLayout>
+    );
   return (
     <div className="min-h-screen bg-[var(--color-canvas)]" data-ui="public-shell">
       <header className="border-b border-slate-200 bg-white px-5 py-4" data-ui="public-app-bar">
-        <BrandMark className="text-2xl" inverse />
+        <BrandMark className="text-2xl" />
       </header>
-      {children}
+      <main>{children}</main>
     </div>
   );
 }
@@ -192,12 +220,18 @@ export function MfaPage() {
 
   return (
     <MfaLayout>
-      <main className="mx-auto flex min-h-[calc(100svh-184px)] w-full max-w-xl items-start px-4 py-6 sm:items-center sm:px-6 sm:py-12">
+      <section
+        aria-labelledby="mfa-heading"
+        className="mx-auto flex min-h-[calc(100svh-184px)] w-full max-w-xl items-start px-4 py-6 sm:items-center sm:px-6 sm:py-12"
+      >
         <Card className="w-full break-words p-5 sm:p-8">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-navy-50 text-navy-700">
             <ShieldCheck className="h-5 w-5" aria-hidden />
           </span>
-          <h1 className="mt-4 text-2xl font-bold tracking-tight text-navy-900 sm:text-3xl">
+          <h1
+            id="mfa-heading"
+            className="mt-4 text-2xl font-bold tracking-tight text-navy-900 sm:text-3xl"
+          >
             {heading}
           </h1>
           {isAdmin && !removing && (
@@ -323,7 +357,7 @@ export function MfaPage() {
             Sign out
           </button>
         </Card>
-      </main>
+      </section>
     </MfaLayout>
   );
 }

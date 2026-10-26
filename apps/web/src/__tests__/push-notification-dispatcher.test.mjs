@@ -35,6 +35,38 @@ async function testServiceAccount() {
 }
 
 describe('Supabase Android push dispatcher', () => {
+  it.each([
+    'trip_started',
+    'trip_completed',
+    'student_picked_up',
+    'driver_assignment_created',
+    'authority_announcement',
+  ])(
+    'requests idle-phone delivery for informational %s without changing its channel or privacy',
+    (eventType) => {
+      const message = buildFcmMessage({
+        fcm_token: 'synthetic-token',
+        notification_id: 'notice',
+        event_type: eventType,
+        category: 'operations',
+        severity: 'info',
+        title: 'SafeBus update',
+        body: 'Open SafeBus to view this update.',
+        android_channel: 'trip_updates',
+        collapse_key: 'notification-notice',
+      });
+      expect(message.message.android).toMatchObject({
+        priority: 'HIGH',
+        notification: {
+          channelId: 'trip_updates',
+          visibility: 'PRIVATE',
+          defaultVibrateTimings: false,
+        },
+      });
+      expect(message.message.data.notificationId).toBe('notice');
+      expect(message.message.notification.body).toBe('Open SafeBus to view this update.');
+    },
+  );
   it('uses private generic notification-plus-data payloads and stable collapse keys', () => {
     const message = buildFcmMessage({
       fcm_token: 'token',

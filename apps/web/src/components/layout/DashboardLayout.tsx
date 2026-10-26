@@ -387,19 +387,21 @@ export function DashboardLayout({
 
           {/* Right side actions */}
           <div className="flex items-center gap-1.5">
-            <Link
-              to="/notifications"
-              data-ui="top-notifications"
-              className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white transition-colors hover:bg-white/10"
-              aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : 'Notifications'}
-            >
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 ? (
-                <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-600 px-1 text-center text-[10px] font-bold leading-5 text-white">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              ) : null}
-            </Link>
+            {portal !== 'parent' && (
+              <Link
+                to="/notifications"
+                data-ui="top-notifications"
+                className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white transition-colors hover:bg-white/10"
+                aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+              >
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 ? (
+                  <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-600 px-1 text-center text-[10px] font-bold leading-5 text-white">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                ) : null}
+              </Link>
+            )}
 
             <DropdownMenu
               trigger={

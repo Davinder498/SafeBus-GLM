@@ -48,29 +48,39 @@ export function NotificationsPage() {
   const [detailError, setDetailError] = useState<string | null>(null);
   const detailHeadingRef = useRef<HTMLHeadingElement>(null);
   const markedFromLink = useRef(new Set<string>());
+  const previousUnreadCount = useRef(unreadCount);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const rows = await fetchNotifications({
-        limit: 30,
-        unreadOnly,
-        category: category || null,
-      });
-      setItems(rows);
-      setHasMore(rows.length === 30);
-    } catch (caught) {
-      setError(
-        caught instanceof Error ? caught.message : 'Notifications are temporarily unavailable.',
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [category, unreadOnly]);
+  const load = useCallback(
+    async (background = false) => {
+      if (!background) setLoading(true);
+      setError(null);
+      try {
+        const rows = await fetchNotifications({
+          limit: 30,
+          unreadOnly,
+          category: category || null,
+        });
+        setItems(rows);
+        setHasMore(rows.length === 30);
+      } catch (caught) {
+        setError(
+          caught instanceof Error ? caught.message : 'Notifications are temporarily unavailable.',
+        );
+      } finally {
+        if (!background) setLoading(false);
+      }
+    },
+    [category, unreadOnly],
+  );
   useEffect(() => {
     void load();
   }, [load]);
+  useEffect(() => {
+    if (previousUnreadCount.current !== unreadCount) {
+      previousUnreadCount.current = unreadCount;
+      void load(true);
+    }
+  }, [load, unreadCount]);
 
   const admin =
     profile?.role &&
@@ -464,7 +474,12 @@ export function NotificationsPage() {
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            <p className="mt-3 font-semibold text-slate-900">{selectedItem.body}</p>
+            {selectedItem.eventType === 'authority_announcement' && (
+              <h3 className="mt-3 font-bold text-slate-900">{selectedItem.title}</h3>
+            )}
+            <p className="mt-3 whitespace-pre-wrap break-words font-semibold text-slate-900">
+              {selectedItem.body}
+            </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Button
                 variant="secondary"
@@ -506,55 +521,60 @@ export function NotificationsPage() {
           <DataState title="You’re all caught up" message="No notifications match these filters." />
         ) : (
           <div className="space-y-2" data-ui="notification-list">
-            {items.map((item) => (
-              <Card
-                key={item.id}
-                className={cn(
-                  'px-4 py-3',
-                  isRecipientMobile &&
-                    'border-slate-200 bg-white shadow-[0_2px_10px_rgb(15_42_68_/_0.05)]',
-                )}
-                data-ui="notification-card"
-                data-unread={!item.readAt}
-                data-selected={item.id === requestedId}
-                data-severity={item.severity}
-              >
-                {isRecipientMobile ? (
-                  <NotificationUpdateCard
-                    item={item}
-                    onRead={() => void setReadState(item, true)}
-                    onArchive={() => void archive(item)}
-                  />
-                ) : (
-                  <div className="flex items-start justify-between gap-4">
-                    <button
-                      className="min-h-11 min-w-0 flex-1 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-600"
-                      onClick={() => openNotification(item)}
-                      aria-label={`Open notification: ${item.body}`}
-                    >
-                      <span className="flex items-start gap-2">
-                        <span className="font-semibold text-slate-950">{item.body}</span>
-                        {!item.readAt ? (
-                          <span
-                            className="mt-2 h-2 w-2 shrink-0 rounded-full"
-                            data-ui="notification-unread-dot"
-                            aria-label="Unread"
-                          />
-                        ) : null}
-                      </span>
-                    </button>
-                    <Button
-                      variant="ghost"
-                      className="min-h-11 min-w-11"
-                      onClick={() => void archive(item)}
-                      aria-label={`Archive ${item.title}`}
-                    >
-                      <Archive className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-              </Card>
-            ))}
+            {items
+              .filter((item) => item.id !== selectedItem?.id)
+              .map((item) => (
+                <Card
+                  key={item.id}
+                  className={cn(
+                    'px-4 py-3',
+                    isRecipientMobile &&
+                      'border-slate-200 bg-white shadow-[0_2px_10px_rgb(15_42_68_/_0.05)]',
+                  )}
+                  data-ui="notification-card"
+                  data-unread={!item.readAt}
+                  data-selected={item.id === requestedId}
+                  data-severity={item.severity}
+                >
+                  {isRecipientMobile ? (
+                    <NotificationUpdateCard
+                      item={item}
+                      onRead={() => void setReadState(item, true)}
+                      onArchive={() => void archive(item)}
+                    />
+                  ) : (
+                    <div className="flex items-start justify-between gap-4">
+                      <button
+                        className="min-h-11 min-w-0 flex-1 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-600"
+                        onClick={() => openNotification(item)}
+                        aria-label={`Open notification: ${item.body}`}
+                      >
+                        {item.eventType === 'authority_announcement' && (
+                          <span className="mb-1 block font-bold text-slate-950">{item.title}</span>
+                        )}
+                        <span className="flex items-start gap-2">
+                          <span className="font-semibold text-slate-950">{item.body}</span>
+                          {!item.readAt ? (
+                            <span
+                              className="mt-2 h-2 w-2 shrink-0 rounded-full"
+                              data-ui="notification-unread-dot"
+                              aria-label="Unread"
+                            />
+                          ) : null}
+                        </span>
+                      </button>
+                      <Button
+                        variant="ghost"
+                        className="min-h-11 min-w-11"
+                        onClick={() => void archive(item)}
+                        aria-label={`Archive ${item.title}`}
+                      >
+                        <Archive className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </Card>
+              ))}
             {hasMore ? (
               <Button variant="secondary" disabled={loadingMore} onClick={() => void loadMore()}>
                 {loadingMore ? 'Loading…' : 'Load more'}
