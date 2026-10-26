@@ -184,3 +184,41 @@ installation: canonical row, push outbox, worker/provider acceptance, then phone
 and tap into the correct inbox. Never label provider acceptance as device display, or
 send a real announcement/test notification as QA. If validation reports Firebase IAM
 or project/token rejection, request the specific Firebase access needed at that point.
+
+## Protected live verification completed
+
+Run [40414858665](https://github.com/Davinder498/SafeBus-GLM/actions/runs/40414858665)
+succeeded for reviewed main SHA `06cbe005a5123e20a61c6603fdb0d8ac6dae6ebe`.
+It verified the exact existing installation, deployed the reviewed sender, passed
+Firebase authentication/messaging authorization and registered-device payload
+validation at 22:50 UTC on 2026-10-26, then rechecked the installed definitions.
+It applied no SQL and sent no notification. The observation artifact explicitly
+retains the unestablished installation origin and absence of a pre-change backup.
+No additional Firebase access was required for validation.
+The minute scheduler remained active after deployment; the five observed responses
+from 22:52 through 22:56 UTC were all HTTP 200.
+
+The guardian announcement audience helper also matches the reviewed school-scope
+fix from PR #319. The signed Android 1.0.5 bundle (version code 6) passed native
+tests, lint, signing, and source-bound provenance creation in
+[run 40411113718](https://github.com/Davinder498/SafeBus-GLM/actions/runs/40411113718).
+Its source SHA is `892ea5eb6a30a62beffca3b4a231e67faa3dfe98`; subsequent rollout
+repairs changed workflow/verification code rather than the Android implementation.
+The bundle has not been installed on a phone or published to Google Play by this task.
+
+Protected read-only type generation in
+[run 40413273907](https://github.com/Davinder498/SafeBus-GLM/actions/runs/40413273907)
+completed and pushed `automation/database-types-40413273907`. GitHub denied only the
+bot's PR-creation step. The follow-up branch retains that generated schema update,
+removes obsolete RPC fallback supplements and their generated blocks, and corrects
+required-but-nullable argument supplements against the hosted function definitions.
+The active authorization manifest retires exactly the three catalog-verified RPCs;
+historical reconciliation snapshots and immutable migrations remain unchanged.
+
+Provider validation proves configuration and payload acceptance without delivery.
+Actual display on a locked phone and notification-tap navigation still require
+observation of a normal authorized event. No normal push outbox row was available
+during this verification; no event was fabricated or sent as QA.
+
+Contract cleanup validation passed typecheck, lint, build, 660 web tests, 10 mobile
+tests, 367 release tests, and verification of all 125 immutable migration checksums.

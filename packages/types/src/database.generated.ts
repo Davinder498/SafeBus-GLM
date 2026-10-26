@@ -1303,45 +1303,36 @@ export interface Database {
       guardian_notification_delivery_policies: {
         Row: {
           tenant_id: string
-          notifications_enabled: boolean
           privacy_review_status: string
           tenant_daily_limit: number
           tenant_per_minute_limit: number
           privacy_approved_at: string | null
           privacy_approved_by: string | null
           updated_at: string
-          push_notifications_enabled: boolean
           push_tenant_daily_limit: number
           push_tenant_per_minute_limit: number
-          push_delivery_preference_enabled: boolean
         }
         Insert: {
           tenant_id: string
-          notifications_enabled?: boolean
           privacy_review_status?: string
           tenant_daily_limit?: number
           tenant_per_minute_limit?: number
           privacy_approved_at?: string | null
           privacy_approved_by?: string | null
           updated_at?: string
-          push_notifications_enabled?: boolean
           push_tenant_daily_limit?: number
           push_tenant_per_minute_limit?: number
-          push_delivery_preference_enabled?: boolean
         }
         Update: {
           tenant_id?: string
-          notifications_enabled?: boolean
           privacy_review_status?: string
           tenant_daily_limit?: number
           tenant_per_minute_limit?: number
           privacy_approved_at?: string | null
           privacy_approved_by?: string | null
           updated_at?: string
-          push_notifications_enabled?: boolean
           push_tenant_daily_limit?: number
           push_tenant_per_minute_limit?: number
-          push_delivery_preference_enabled?: boolean
         }
         Relationships: [
           {
@@ -2522,6 +2513,7 @@ export interface Database {
           created_at: string
           updated_at: string
           route_trip_pattern_id: string
+          seat_number: number | null
         }
         Insert: {
           id?: string
@@ -2536,6 +2528,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
           route_trip_pattern_id: string
+          seat_number?: number | null
         }
         Update: {
           id?: string
@@ -2550,6 +2543,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
           route_trip_pattern_id?: string
+          seat_number?: number | null
         }
         Relationships: [
           {
@@ -3143,6 +3137,7 @@ export interface Database {
           instructions: string | null
           updated_by: string | null
           updated_at: string
+          address: string | null
         }
         Insert: {
           tenant_id: string
@@ -3154,6 +3149,7 @@ export interface Database {
           instructions?: string | null
           updated_by?: string | null
           updated_at?: string
+          address?: string | null
         }
         Update: {
           tenant_id?: string
@@ -3165,6 +3161,7 @@ export interface Database {
           instructions?: string | null
           updated_by?: string | null
           updated_at?: string
+          address?: string | null
         }
         Relationships: [
           {
@@ -3192,6 +3189,7 @@ export interface Database {
           created_at: string
           updated_at: string
           timezone: string
+          authority_code: string | null
         }
         Insert: {
           id?: string
@@ -3201,6 +3199,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
           timezone?: string
+          authority_code?: string | null
         }
         Update: {
           id?: string
@@ -3210,6 +3209,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
           timezone?: string
+          authority_code?: string | null
         }
         Relationships: []
       }
@@ -3640,6 +3640,15 @@ export interface Database {
         }
         Returns: unknown
       }
+      admin_get_printable_qr: {
+        Args: {
+          p_entity_id: string
+          p_issue_missing?: boolean | null
+          p_kind: string
+          p_original_token?: string | null
+        }
+        Returns: unknown
+      }
       admin_link_student_guardian: {
         Args: {
           p_can_receive_notifications?: boolean | null
@@ -3740,6 +3749,23 @@ export interface Database {
         }
         Returns: unknown
       }
+      admin_set_student_bus_service_with_seat: {
+        Args: {
+          p_bus_id: string
+          p_direction_scope?: string | null
+          p_effective_from?: string | null
+          p_effective_to?: string | null
+          p_existing_assignment_ids?: Array<string> | null
+          p_forward_dropoff_stop_id?: string | null
+          p_forward_pickup_stop_id?: string | null
+          p_reverse_dropoff_stop_id?: string | null
+          p_reverse_pickup_stop_id?: string | null
+          p_route_id: string
+          p_seat_number: number | null
+          p_student_id: string
+        }
+        Returns: unknown
+      }
       admin_set_student_guardian_status: {
         Args: {
           p_admin_note?: string | null
@@ -3813,6 +3839,27 @@ export interface Database {
         }
         Returns: unknown
       }
+      billing_claim_catalog_operation: {
+        Args: {
+          p_action: string
+          p_actor_id: string
+          p_hash: string
+          p_payload: Json
+          p_request_id: string
+        }
+        Returns: unknown
+      }
+      billing_claim_operation: {
+        Args: {
+          p_action: string
+          p_actor_id: string
+          p_hash: string
+          p_payload?: Json | null
+          p_request_id: string
+          p_tenant_id: string
+        }
+        Returns: unknown
+      }
       billing_complete_mutation: {
         Args: {
           p_error_code?: string | null
@@ -3829,9 +3876,59 @@ export interface Database {
         }
         Returns: unknown
       }
+      billing_find_customer: {
+        Args: {
+          p_customer_id: string
+        }
+        Returns: unknown
+      }
+      billing_finish_catalog_operation: {
+        Args: {
+          p_actor_id: string
+          p_request_id: string
+          p_response: Json
+        }
+        Returns: unknown
+      }
+      billing_finish_operation: {
+        Args: {
+          p_request_id: string
+          p_response: Json
+          p_tenant_id: string
+        }
+        Returns: unknown
+      }
       billing_get_internal_state: {
         Args: {
           p_tenant_id: string
+        }
+        Returns: unknown
+      }
+      billing_get_pending_catalog_operation: {
+        Args: {
+          p_actor_id: string
+        }
+        Returns: unknown
+      }
+      billing_get_pending_request: {
+        Args: {
+          p_actor_id: string
+          p_tenant_id: string
+        }
+        Returns: unknown
+      }
+      billing_reserve_capacity: {
+        Args: {
+          p_quantity: number
+          p_request_id: string
+          p_tenant_id: string
+        }
+        Returns: unknown
+      }
+      billing_sync_subscription: {
+        Args: {
+          p_operation_id?: string | null
+          p_state: Json
         }
         Returns: unknown
       }
@@ -3969,6 +4066,15 @@ export interface Database {
         }
         Returns: unknown
       }
+      claim_guardian_notification_email_batch_v2: {
+        Args: {
+          p_batch_size?: number | null
+          p_lease_seconds?: number | null
+          p_max_attempts?: number | null
+          p_provider_limit_per_minute?: number | null
+        }
+        Returns: unknown
+      }
       claim_notification_email_batch: {
         Args: {
           p_batch_size?: number | null
@@ -4083,6 +4189,11 @@ export interface Database {
         }
         Returns: unknown
       }
+      get_admin_bus_services_with_capacity: {
+        Args: {
+        }
+        Returns: unknown
+      }
       get_admin_bus_workspace: {
         Args: {
           p_bus_id: string
@@ -4107,6 +4218,11 @@ export interface Database {
       get_admin_guardian_links: {
         Args: {
           p_guardian_id: string
+        }
+        Returns: unknown
+      }
+      get_admin_inbox_preferences: {
+        Args: {
         }
         Returns: unknown
       }
@@ -4196,6 +4312,19 @@ export interface Database {
         }
         Returns: unknown
       }
+      get_announcement_audience: {
+        Args: {
+          p_audience: string
+        }
+        Returns: unknown
+      }
+      get_authority_announcements: {
+        Args: {
+          p_before_created_at?: string | null
+          p_before_id?: string | null
+        }
+        Returns: unknown
+      }
       get_bulk_invitation_delivery_summary: {
         Args: {
           p_batch_id: string
@@ -4205,6 +4334,11 @@ export interface Database {
       get_bus_qr_start_options: {
         Args: {
           p_qr_token: string
+        }
+        Returns: unknown
+      }
+      get_bus_subscription_access: {
+        Args: {
         }
         Returns: unknown
       }
@@ -4224,6 +4358,11 @@ export interface Database {
         }
         Returns: unknown
       }
+      get_driver_active_trip_student_manifest_v2: {
+        Args: {
+        }
+        Returns: unknown
+      }
       get_driver_completed_trip_history: {
         Args: {
           p_limit?: number | null
@@ -4231,6 +4370,11 @@ export interface Database {
         Returns: unknown
       }
       get_driver_delivery_preferences: {
+        Args: {
+        }
+        Returns: unknown
+      }
+      get_driver_delivery_preferences_v2: {
         Args: {
         }
         Returns: unknown
@@ -4276,6 +4420,11 @@ export interface Database {
         }
         Returns: unknown
       }
+      get_guardian_student_stops_v2: {
+        Args: {
+        }
+        Returns: unknown
+      }
       get_notification_delivery_health_v2: {
         Args: {
         }
@@ -4287,6 +4436,11 @@ export interface Database {
         Returns: unknown
       }
       get_platform_first_admin_invitation_status: {
+        Args: {
+        }
+        Returns: unknown
+      }
+      get_platform_subscription_summaries: {
         Args: {
         }
         Returns: unknown
@@ -4312,14 +4466,14 @@ export interface Database {
         }
         Returns: unknown
       }
-      get_tenant_notification_delivery_summary: {
+      get_support_directory_v2: {
         Args: {
-          p_recent_window_hours?: number | null
         }
         Returns: unknown
       }
-      get_tenant_notification_settings: {
+      get_tenant_notification_delivery_summary: {
         Args: {
+          p_recent_window_hours?: number | null
         }
         Returns: unknown
       }
@@ -4432,10 +4586,24 @@ export interface Database {
         }
         Returns: unknown
       }
+      platform_check_authority_onboarding: {
+        Args: {
+          p_authority_code: string
+          p_support_confirmed: boolean
+          p_support_contact: Json
+        }
+        Returns: unknown
+      }
       platform_emergency_admin_recovery: {
         Args: {
           p_profile_id: string
           p_tenant_id: string
+        }
+        Returns: unknown
+      }
+      platform_finalize_first_admin_reissue: {
+        Args: {
+          p_invitation_id: string
         }
         Returns: unknown
       }
@@ -4451,6 +4619,19 @@ export interface Database {
         }
         Returns: unknown
       }
+      platform_finalize_tenant_invitation_v2: {
+        Args: {
+          p_admin_email: string
+          p_admin_name: string
+          p_auth_user_id: string
+          p_authority_code: string
+          p_support_confirmed: boolean
+          p_support_contact: Json
+          p_tenant_name: string
+          p_tenant_type: string
+        }
+        Returns: unknown
+      }
       platform_find_unprofiled_auth_user: {
         Args: {
           p_email: string
@@ -4458,6 +4639,12 @@ export interface Database {
         Returns: unknown
       }
       platform_is_first_admin_invitation: {
+        Args: {
+          p_invitation_id: string
+        }
+        Returns: unknown
+      }
+      platform_prepare_first_admin_reissue: {
         Args: {
           p_invitation_id: string
         }
@@ -4685,13 +4872,48 @@ export interface Database {
         }
         Returns: unknown
       }
+      search_authority_reference_directory: {
+        Args: {
+          p_query: string
+        }
+        Returns: unknown
+      }
+      search_authority_reference_directory_v2: {
+        Args: {
+          p_offset?: number | null
+          p_query: string
+        }
+        Returns: unknown
+      }
+      send_authority_announcement: {
+        Args: {
+          p_audience: string
+          p_body: string
+          p_expected_recipient_count: number
+          p_id: string
+          p_title: string
+        }
+        Returns: unknown
+      }
       server_get_member_invitation_state: {
         Args: {
           p_email: string
         }
         Returns: unknown
       }
+      set_admin_inbox_preferences: {
+        Args: {
+          p_preferences: Json
+        }
+        Returns: unknown
+      }
       set_driver_delivery_preferences: {
+        Args: {
+          p_preferences: Json
+        }
+        Returns: unknown
+      }
+      set_driver_delivery_preferences_v2: {
         Args: {
           p_preferences: Json
         }
@@ -4747,18 +4969,6 @@ export interface Database {
           p_quiet_hours_start: string
           p_timezone_override: string
           p_urgent_bypass_quiet_hours: boolean
-        }
-        Returns: unknown
-      }
-      set_tenant_notification_delivery_enabled: {
-        Args: {
-          p_enabled: boolean
-        }
-        Returns: unknown
-      }
-      set_tenant_push_notifications_enabled: {
-        Args: {
-          p_enabled: boolean
         }
         Returns: unknown
       }
@@ -4911,6 +5121,18 @@ export interface Database {
       }
       update_tenant_support_contact: {
         Args: {
+          p_display_name: string
+          p_email: string
+          p_instructions: string | null
+          p_phone: string | null
+          p_support_hours: string | null
+          p_website_url: string | null
+        }
+        Returns: unknown
+      }
+      update_tenant_support_contact_v2: {
+        Args: {
+          p_address: string | null
           p_display_name: string
           p_email: string
           p_instructions: string | null

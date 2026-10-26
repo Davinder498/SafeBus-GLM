@@ -134,15 +134,6 @@ const AUTHENTICATED_ONLY_FUNCTIONS = {
     required: new Set(),
   },
   get_tenant_subscription: { properties: {}, required: new Set() },
-  get_tenant_notification_settings: { properties: {}, required: new Set() },
-  set_tenant_notification_delivery_enabled: {
-    properties: { p_enabled: { type: 'boolean' } },
-    required: new Set(['p_enabled']),
-  },
-  set_tenant_push_notifications_enabled: {
-    properties: { p_enabled: { type: 'boolean' } },
-    required: new Set(['p_enabled']),
-  },
   record_student_record_access: {
     properties: { p_student_id: { type: 'string', format: 'uuid' } },
     required: new Set(['p_student_id']),
@@ -159,6 +150,12 @@ const AUTHENTICATED_ONLY_FUNCTIONS = {
 // PostgreSQL allows NULL for these parameters even though PostgREST's OpenAPI
 // metadata describes only their scalar format.
 const NULLABLE_FUNCTION_ARGUMENTS = new Set([
+  'admin_set_student_bus_service_with_seat.p_seat_number',
+  'update_tenant_support_contact_v2.p_phone',
+  'update_tenant_support_contact_v2.p_website_url',
+  'update_tenant_support_contact_v2.p_support_hours',
+  'update_tenant_support_contact_v2.p_instructions',
+  'update_tenant_support_contact_v2.p_address',
   'admin_renew_bus_route_assignment.p_effective_to',
   'admin_set_guardian_access_expiry.p_access_expires_at',
   'admin_update_bus_route_assignment.p_effective_to',

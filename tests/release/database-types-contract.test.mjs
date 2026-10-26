@@ -8,6 +8,18 @@ const root = process.cwd();
 const generatedPath = path.join(root, 'packages/types/src/database.generated.ts');
 const generated = fs.readFileSync(generatedPath, 'utf8');
 
+test('type generation cannot recreate retired authority notification APIs from fallbacks', () => {
+  const emptyMetadata = generateFromOpenApi({ definitions: {}, paths: {} });
+  for (const name of [
+    'get_tenant_notification_settings',
+    'set_tenant_notification_delivery_enabled',
+    'set_tenant_push_notifications_enabled',
+  ]) {
+    assert.doesNotMatch(emptyMetadata, new RegExp(`^\\s{6}${name}:`, 'm'));
+    assert.doesNotMatch(generated, new RegExp(`^\\s{6}${name}:`, 'm'));
+  }
+});
+
 test('OpenAPI RPC nullability preserves required arguments and unknown results', () => {
   const source = generateFromOpenApi({
     definitions: {},
@@ -45,6 +57,41 @@ test('OpenAPI RPC nullability preserves required arguments and unknown results',
   assert.match(contact, /p_phone: string \| null/);
   assert.doesNotMatch(contact, /p_phone\?:/);
   assert.match(contact, /Returns: unknown/);
+});
+
+test('hosted nullable seat and support arguments remain required but accept SQL NULL', () => {
+  for (const [name, properties] of Object.entries({
+    admin_set_student_bus_service_with_seat: { p_seat_number: { type: 'integer' } },
+    update_tenant_support_contact_v2: Object.fromEntries(
+      ['p_phone', 'p_website_url', 'p_support_hours', 'p_instructions', 'p_address'].map(
+        (field) => [field, { type: 'string' }],
+      ),
+    ),
+  })) {
+    const source = generateFromOpenApi({
+      definitions: {},
+      paths: {
+        ['/rpc/' + name]: {
+          post: {
+            parameters: [
+              {
+                in: 'body',
+                schema: {
+                  properties,
+                  required: Object.keys(properties),
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    for (const [field, property] of Object.entries(properties)) {
+      const type = property.type === 'integer' ? 'number' : 'string';
+      assert.match(source, new RegExp(`${field}: ${type} \\| null`));
+      assert.doesNotMatch(source, new RegExp(`${field}\\?:`));
+    }
+  }
 });
 
 test('OpenAPI default arguments can be omitted without making required nullable arguments optional', () => {
