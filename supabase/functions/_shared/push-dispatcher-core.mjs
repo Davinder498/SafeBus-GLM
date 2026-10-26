@@ -306,13 +306,17 @@ export function createFcmSender(serviceAccount, options = {}) {
           authorization: `Bearer ${accessToken}`,
           'content-type': 'application/json',
         },
-        body: JSON.stringify(buildFcmMessage(row)),
+        body: JSON.stringify({
+          ...buildFcmMessage(row),
+          ...(options.validateOnly ? { validate_only: true } : {}),
+        }),
       });
     } catch {
       throw dispatchError('temporary_provider_error', 'NETWORK_ERROR', true);
     }
     const body = await parseJsonResponse(response);
     if (!response.ok) throw fcmErrorFromResponse(response, body, now());
+    if (options.validateOnly) return 'validated_without_delivery';
     if (typeof body?.name !== 'string' || !body.name) {
       throw dispatchError('unknown', 'INVALID_PROVIDER_RESPONSE', true);
     }

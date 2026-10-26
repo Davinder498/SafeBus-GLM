@@ -3,6 +3,15 @@
 import { readFile } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
 import { afterAll, beforeAll, expect, it } from 'vitest';
+import {
+  capturePushRecovery,
+  pushRecoverySql,
+  rehearseRecipientPush,
+} from '../../../../scripts/lib/recipient-push-rollout.mjs';
+import {
+  buildFcmMessage,
+  runPushDispatcher,
+} from '../../../../supabase/functions/_shared/push-dispatcher-core.mjs';
 
 const read = (path) => readFile(`../../${path}`, 'utf8');
 const id = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -59,6 +68,13 @@ beforeAll(async () => {
 
   `);
   const base = await read('supabase/migrations/0092_end_to_end_notification_system.sql');
+  await db.exec('alter table public.push_notification_outbox add provider_message_id text');
+  for (const name of [
+    'safebus_private.send_notification_invalidation',
+    'safebus_private.enqueue_user_notification',
+    'public.complete_push_notification_delivery',
+  ])
+    await db.exec(definition(base, name));
   await db.exec('drop function safebus_private.next_push_availability(uuid,uuid,text)');
   await db.exec(definition(base, 'safebus_private.notification_is_urgent'));
   await db.exec(definition(base, 'safebus_private.next_push_availability'));
@@ -251,3 +267,190 @@ it('retires administrator channel mutations without changing personal preference
       savedPreferences,
     );
   }));
+
+it('completely removes authority switches and RPCs while retaining recipient delivery and privacy', () =>
+  isolated(async () => {
+    await db.exec(await read('docs/operations/recipient-notification-delivery-rollback.sql'));
+    await db.exec(`alter table public.guardian_notification_delivery_policies
+      add constraint guardian_notification_policy_approval_check check (
+      (privacy_review_status='approved' and privacy_approved_at is not null)
+      or (privacy_review_status<>'approved' and notifications_enabled=false))`);
+    const client = {
+      query: async (sql, params) => (params ? db.query(sql, params) : (await db.exec(sql)).at(-1)),
+    };
+    const signatures = JSON.parse(
+      await read('config/pending/complete-recipient-push.json'),
+    ).baseline.map((entry) => entry.signature);
+    const recovery = await capturePushRecovery(client, signatures);
+    const before = await query('select * from user_notification_settings order by profile_id');
+    await db.exec(
+      await read('supabase/migrations/pending/20261026212046_complete_recipient_push_delivery.sql'),
+    );
+    expect(
+      await query(`select column_name from information_schema.columns where table_schema='public'
+      and table_name='guardian_notification_delivery_policies' and column_name in
+      ('notifications_enabled','push_notifications_enabled','push_delivery_preference_enabled')`),
+    ).toEqual([]);
+    expect(
+      (
+        await query(`select to_regprocedure('public.get_tenant_notification_settings()') as legacy`)
+      )[0].legacy,
+    ).toBeNull();
+    for (const name of [
+      'set_tenant_notification_delivery_enabled',
+      'set_tenant_push_notifications_enabled',
+    ])
+      expect(
+        (await query(`select to_regprocedure($1) as legacy`, [`public.${name}(boolean)`]))[0]
+          .legacy,
+      ).toBeNull();
+    expect(await query('select * from user_notification_settings order by profile_id')).toEqual(
+      before,
+    );
+    for (const role of ['guardian', 'driver']) {
+      const args = [id(1), id(role === 'guardian' ? 2 : 3), id(role === 'guardian' ? 10 : 11)];
+      const enqueue = () =>
+        query(
+          `select safebus_private.enqueue_user_notification($1::uuid,$2::uuid,'trip_started',
+        'trip_status','info','driver_trip',$3::uuid,$3::text,now(),null,$3::uuid,null) as id`,
+          args,
+        );
+      const [{ id: notice }] = await enqueue();
+      expect((await enqueue())[0].id).toBeNull();
+      expect(
+        (
+          await query(
+            'select count(*)::int as n from push_notification_outbox where notification_id=$1',
+            [notice],
+          )
+        )[0].n,
+      ).toBe(1);
+    }
+    const messages = [];
+    const rpc = async (name, args) => {
+      if (
+        ![
+          'claim_push_notification_deliveries',
+          'resolve_push_notification_delivery',
+          'complete_push_notification_delivery',
+        ].includes(name)
+      )
+        throw new Error(`Unexpected RPC: ${name}`);
+      const values = Object.values(args);
+      return query(
+        `select * from public.${name}(${values.map((_, i) => '$' + (i + 1)).join(',')})`,
+        values,
+      );
+    };
+    await db.exec(`savepoint suspended; update tenants set status='suspended' where id='${id(1)}'`);
+    let sentWhileSuspended = false;
+    const paused = await runPushDispatcher({
+      workerId: 'paused-worker',
+      rpc,
+      send: async () => {
+        sentWhileSuspended = true;
+        throw new Error('Suspended authority cannot send.');
+      },
+    });
+    expect(paused.claimed).toBe(0);
+    expect(sentWhileSuspended).toBe(false);
+    expect(
+      (
+        await query(
+          "select count(*)::int as n from push_notification_outbox where status='cancelled'",
+        )
+      )[0].n,
+    ).toBe(2);
+    const [{ id: noQueue }] = await emit('guardian', 4);
+    await query('select safebus_private.enqueue_push_for_notification($1)', [noQueue]);
+    expect(
+      (
+        await query(
+          'select count(*)::int as n from push_notification_outbox where notification_id=$1',
+          [noQueue],
+        )
+      )[0].n,
+    ).toBe(0);
+    await db.exec('rollback to suspended');
+    const summary = await runPushDispatcher({
+      workerId: 'synthetic-worker',
+      rpc,
+      send: async (row) => {
+        messages.push(buildFcmMessage(row));
+        return 'projects/test/messages/' + row.notification_id;
+      },
+    });
+    expect(summary).toMatchObject({ claimed: 2, delivered: 2, error: 0, failed: 0 });
+    expect(messages).toHaveLength(2);
+    expect(messages.every((message) => message.message.android.priority === 'HIGH')).toBe(true);
+    expect(
+      (
+        await query(
+          "select count(*)::int as n from push_notification_outbox where status='delivered' and provider_message_id is not null",
+        )
+      )[0].n,
+    ).toBe(2);
+    expect(
+      (
+        await query(`select count(*)::int as n from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+      where n.nspname in ('public','safebus_private') and p.prokind='f'
+      and pg_get_functiondef(p.oid) ~ 'notifications_enabled|push_delivery_preference_enabled'`)
+      )[0].n,
+    ).toBe(0);
+    await db.exec('savepoint privacy');
+    await expect(
+      db.exec(
+        `update guardian_notification_delivery_policies set privacy_approved_at=null where tenant_id='${id(1)}'`,
+      ),
+    ).rejects.toMatchObject({ code: '23514' });
+    await db.exec('rollback to privacy');
+    await db.exec(
+      `update guardian_notification_delivery_policies set privacy_review_status='rejected' where tenant_id='${id(1)}'`,
+    );
+    const [{ id: blocked }] = await emit('guardian', 2);
+    await query('select safebus_private.enqueue_push_for_notification($1)', [blocked]);
+    expect(
+      (
+        await query(
+          'select count(*)::int as n from push_notification_outbox where notification_id=$1',
+          [blocked],
+        )
+      )[0].n,
+    ).toBe(0);
+    await db.exec(pushRecoverySql(recovery));
+    expect(await capturePushRecovery(client, signatures)).toEqual(recovery);
+  }));
+
+it('rehearses the entire rollout and verifies restoration in a separate read-only transaction', async () => {
+  await db.exec(await read('docs/operations/recipient-notification-delivery-rollback.sql'));
+  await db.exec(`alter table public.guardian_notification_delivery_policies
+    add constraint guardian_notification_policy_approval_check check (
+    (privacy_review_status='approved' and privacy_approved_at is not null)
+    or (privacy_review_status<>'approved' and notifications_enabled=false))`);
+  const client = {
+    query: async (sql, params) => (params ? db.query(sql, params) : (await db.exec(sql)).at(-1)),
+  };
+  const signatures = JSON.parse(
+    await read('config/pending/complete-recipient-push.json'),
+  ).baseline.map((entry) => entry.signature);
+  const before = await capturePushRecovery(client, signatures);
+  try {
+    expect(
+      await rehearseRecipientPush(
+        client,
+        await read(
+          'supabase/migrations/pending/20261026212046_complete_recipient_push_delivery.sql',
+        ),
+        signatures,
+      ),
+    ).toEqual({ switchesRemoved: true, legacyRpcsRemoved: true, privacyConstraintRetained: true });
+    expect(await capturePushRecovery(client, signatures)).toEqual(before);
+  } finally {
+    await db.exec(
+      'alter table public.guardian_notification_delivery_policies drop constraint guardian_notification_policy_approval_check',
+    );
+    await db.exec(
+      await read('supabase/migrations/pending/20261026171535_recipient_notification_delivery.sql'),
+    );
+  }
+});
