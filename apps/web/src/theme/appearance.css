@@ -176,29 +176,61 @@
   }
 }
 
-.sb-appearance-selector {
+/* Binary switch shared by dashboard headers and settings. */
+.sb-appearance-toggle {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  max-width: 100%;
-  color: var(--color-text);
-}
-label.sb-appearance-selector select[aria-label='Appearance'] {
-  width: auto;
   min-height: 44px;
-  border: 1px solid var(--color-control-outline);
-  background-color: var(--color-surface);
+  padding: 0.5rem;
+  border-radius: 0.75rem;
   color: var(--color-text);
-  padding: 0.5rem 1.75rem 0.5rem 0.5rem;
-  background-position: right 0.5rem center;
-  font: inherit;
   font-size: 0.875rem;
+  font-weight: 600;
+  flex-shrink: 0;
 }
-.sb-appearance-selector--compact {
-  gap: 0.25rem;
+.sb-appearance-toggle:hover {
+  background: var(--color-raised);
 }
-.sb-appearance-selector--compact select {
-  max-width: 6.25rem;
+.sb-appearance-toggle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.sb-appearance-toggle__track {
+  display: inline-flex;
+  align-items: center;
+  width: 44px;
+  height: 26px;
+  padding: 2px;
+  border: 1px solid var(--color-control-outline);
+  border-radius: 999px;
+  background: var(--color-surface);
+}
+.sb-appearance-toggle__thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-text);
+  color: var(--color-surface);
+  transition: transform 150ms ease;
+}
+.sb-appearance-toggle[aria-checked='true'] .sb-appearance-toggle__track {
+  background: #fcd66b;
+  border-color: #fcd66b;
+}
+.sb-appearance-toggle[aria-checked='true'] .sb-appearance-toggle__thumb {
+  transform: translateX(18px);
+  background: #172b3a;
+  color: #fcd66b;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sb-appearance-toggle__thumb {
+    transition: none;
+  }
 }
 @media print {
   html {
@@ -209,19 +241,13 @@ label.sb-appearance-selector select[aria-label='Appearance'] {
     background: white !important;
     color: #172b3a;
   }
-  .sb-appearance-selector {
+  .sb-appearance-toggle {
     display: none;
   }
 }
 @media (max-width: 359px) {
-  .sb-appearance-selector--compact select {
-    width: 5.5rem;
-  }
   [data-ui='public-app-bar'] .sb-primary-action {
     padding-right: 0.5rem;
     padding-left: 0.5rem;
-  }
-  .sb-appearance-selector--compact > svg {
-    display: none;
   }
 }

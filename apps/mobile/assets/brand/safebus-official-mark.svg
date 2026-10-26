@@ -19,6 +19,7 @@
     <circle cx="308" cy="258" r="18" fill="#C7463D"/>
     <circle cx="512" cy="258" r="13" fill="#A27B2F"/>
     <circle cx="716" cy="258" r="18" fill="#C7463D"/>
+    <text x="512" y="294" text-anchor="middle" fill="#102D43" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" letter-spacing="1">SCHOOL BUS</text>
     <rect x="252" y="302" width="232" height="166" rx="24" fill="#102D43"/>
     <rect x="540" y="302" width="232" height="166" rx="24" fill="#102D43"/>
     <path d="m450 318-60 134h-56l60-134h56Z" fill="#FFFFFF" opacity="0.22"/>

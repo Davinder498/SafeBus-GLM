@@ -2059,9 +2059,4 @@
     input:checked::before {
     background: var(--color-on-action) !important;
   }
-  html[data-app-surface='native-mobile'][data-theme='dark'] .sb-appearance-selector select {
-    background-color: var(--color-surface);
-    color: var(--color-text);
-    border-color: var(--color-control-outline);
-  }
 }

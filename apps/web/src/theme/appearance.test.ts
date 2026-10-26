@@ -2,6 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getAppearance,
   initializeAppearance,
+  normalizeThemePreference,
   refreshAppearance,
   setThemePreference,
   subscribeAppearance,
@@ -31,14 +32,20 @@ beforeEach(() => {
   vi.restoreAllMocks();
   localStorage.clear();
   systemDark(false);
-  setThemePreference('system');
+  setThemePreference('light');
 });
 
 describe('device appearance preference', () => {
-  it('follows live system changes and updates browser chrome', () => {
-    expect(getAppearance()).toEqual({ preference: 'system', resolved: 'light' });
-    systemDark(true);
-    expect(getAppearance()).toEqual({ preference: 'system', resolved: 'dark' });
+  it('migrates removed System and invalid choices to Light', () => {
+    expect(normalizeThemePreference('system')).toBe('light');
+    expect(normalizeThemePreference(null)).toBe('light');
+    expect(normalizeThemePreference('invalid')).toBe('light');
+    expect(normalizeThemePreference('dark')).toBe('dark');
+  });
+  it('changes the selected theme and browser chrome', () => {
+    expect(getAppearance()).toEqual({ preference: 'light', resolved: 'light' });
+    setThemePreference('dark');
+    expect(getAppearance()).toEqual({ preference: 'dark', resolved: 'dark' });
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(document.documentElement.style.colorScheme).toBe('dark');
     expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(
@@ -46,13 +53,16 @@ describe('device appearance preference', () => {
     );
   });
 
-  it('persists an explicit override and ignores device changes until System is restored', () => {
+  it('persists each binary choice and ignores device changes', () => {
     setThemePreference('light');
     systemDark(true);
     expect(getAppearance().resolved).toBe('light');
     expect(localStorage.getItem('safebus.theme')).toBe('light');
-    setThemePreference('system');
+    setThemePreference('dark');
+    systemDark(false);
+    refreshAppearance();
     expect(getAppearance().resolved).toBe('dark');
+    expect(localStorage.getItem('safebus.theme')).toBe('dark');
   });
 
   it('accepts cross-tab changes, reset and invalid stored values without writing them back', () => {
@@ -64,7 +74,7 @@ describe('device appearance preference', () => {
     window.dispatchEvent(
       new StorageEvent('storage', { key: 'safebus.theme', newValue: 'invalid' }),
     );
-    expect(getAppearance().preference).toBe('system');
+    expect(getAppearance().preference).toBe('light');
     window.dispatchEvent(new StorageEvent('storage', { key: null }));
     expect(getAppearance().resolved).toBe('light');
     expect(storageWrite).not.toHaveBeenCalled();

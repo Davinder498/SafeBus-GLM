@@ -22,18 +22,19 @@ function boot(saved, dark, blocked = false) {
   return root;
 }
 describe('pre-paint appearance bootstrap', () => {
-  it('uses the device appearance for a new installation', () => {
-    expect(boot(null, true).dataset.theme).toBe('dark');
+  it('uses Light for a new installation regardless of device appearance', () => {
+    expect(boot(null, true).dataset.theme).toBe('light');
     expect(boot(null, false).dataset.theme).toBe('light');
   });
-  it('honors explicit preferences and defaults invalid values to System', () => {
+  it('honors both choices and migrates removed System and invalid values to Light', () => {
     expect(boot('light', true).dataset.theme).toBe('light');
     expect(boot('dark', false).dataset.theme).toBe('dark');
-    expect(boot('invalid', true).dataset.theme).toBe('dark');
+    expect(boot('system', true).dataset.theme).toBe('light');
+    expect(boot('invalid', true).dataset.theme).toBe('light');
   });
   it('can paint the correct background even with blocked storage and no metadata', () => {
     const root = boot(null, true, true);
-    expect(root.style.colorScheme).toBe('dark');
-    expect(root.style.backgroundColor).toBe('#0F1720');
+    expect(root.style.colorScheme).toBe('light');
+    expect(root.style.backgroundColor).toBe('#F2F6F7');
   });
 });

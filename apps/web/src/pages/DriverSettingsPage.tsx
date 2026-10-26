@@ -1,4 +1,4 @@
-import { AppearanceSettingsCard } from '@/components/settings/AppearanceSelector';
+import { AppearanceSettingsCard } from '@/components/settings/AppearanceToggle';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Bell, ClipboardList, Route, TriangleAlert } from 'lucide-react';
 import { Link } from 'react-router';

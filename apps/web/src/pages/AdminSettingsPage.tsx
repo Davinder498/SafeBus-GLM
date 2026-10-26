@@ -1,4 +1,4 @@
-import { AppearanceSettingsCard } from '@/components/settings/AppearanceSelector';
+import { AppearanceSettingsCard } from '@/components/settings/AppearanceToggle';
 import { useEffect, useState } from 'react';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { AdminSettingsNav } from '@/components/settings/AdminSettingsNav';

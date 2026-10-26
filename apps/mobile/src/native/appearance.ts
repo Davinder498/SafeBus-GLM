@@ -10,7 +10,6 @@ import {
   initializeAppearance,
   normalizeThemePreference,
   refreshAppearance,
-  setNativeSystemTheme,
   setThemePreference,
   subscribeAppearance,
   type ThemePreference,
@@ -18,7 +17,6 @@ import {
 
 interface NativeAppearanceState {
   preference: ThemePreference | null;
-  systemDark: boolean;
 }
 interface NativeAppearancePlugin {
   getPreference(): Promise<NativeAppearanceState>;
@@ -35,14 +33,10 @@ export async function installNativeAppearance(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
   try {
     const saved = await native.getPreference();
-    setNativeSystemTheme(saved.systemDark);
     // On upgrade, adopt the browser preference once; thereafter native storage
     // also survives a WebView storage failure and controls the startup window.
     if (saved.preference !== null) setThemePreference(normalizeThemePreference(saved.preference));
-    await native.addListener('systemThemeChanged', (state) => {
-      setNativeSystemTheme(state.systemDark);
-      refreshAppearance();
-    });
+    await native.addListener('systemThemeChanged', refreshAppearance);
     let pending = Promise.resolve();
     const synchronize = () => {
       const { preference, resolved } = getAppearance();

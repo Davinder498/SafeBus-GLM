@@ -41,74 +41,74 @@ test('the pre-paint theme works under script-src self without React or inline sc
   await expect(page.locator('script[src*="appearance-bootstrap"]')).toHaveCount(1);
 });
 
-test('System follows the device, explicit choice persists, and the compact selector fits', async ({
+test('the dashboard toggle has only Light and Dark, persists, and ignores device changes', async ({
   page,
 }, info) => {
+  const mobile = info.project.name === 'android-webview';
+  if (mobile) await installGuardianVisibilityMock(page);
+  else await installAdminWorkflowMock(page);
   await page.emulateMedia({ colorScheme: 'dark' });
-  await page.goto('/login');
+  await page.goto(mobile ? '/parent' : '/admin');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  const toggle = page.locator('[data-ui=app-bar]').getByRole('switch', { name: 'Dark mode' });
+  await expect(toggle).not.toBeChecked();
+  await expect(page.getByRole('combobox', { name: 'Appearance' })).toHaveCount(0);
+  await toggle.focus();
+  await page.keyboard.press('Space');
+  await expect(toggle).toBeChecked();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toHaveCSS(
-    'color',
-    'rgb(252, 214, 107)',
-  );
-  await expect(page.getByTestId('safebus-wordmark').last()).toHaveCSS(
-    'color',
-    'rgb(255, 255, 255)',
-  );
-  const selector = page.getByLabel('Appearance', { exact: true });
-  await selector.selectOption('light');
   await page.reload();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-  await selector.selectOption('dark');
-  await expect(page.locator('input[type=email]')).toHaveCSS('background-color', 'rgb(24, 35, 47)');
-  await expect(page.locator('[data-variant=primary]')).toHaveCSS(
-    'background-color',
-    'rgb(252, 214, 107)',
-  );
-  await expectNoWcagAaViolations(page, info.project.name + ' dark login');
-  await page.screenshot({ path: info.outputPath('dark-login.png'), fullPage: true });
-  await selector.selectOption('system');
+  await expect(toggle).toBeChecked();
   await page.emulateMedia({ colorScheme: 'light' });
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-  await expectNoWcagAaViolations(page, info.project.name + ' light login');
-  await page.setViewportSize({ width: 320, height: 700 });
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
-  expect(overflow).toBe(false);
-});
-
-test('invalid and unavailable storage keep the theme usable', async ({ page }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem('safebus.theme', 'invalid');
-    Object.defineProperty(Storage.prototype, 'setItem', {
-      value: () => {
-        throw new Error('blocked');
-      },
-    });
-  });
-  await page.emulateMedia({ colorScheme: 'dark' });
-  await page.goto('/login');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await page.getByLabel('Appearance', { exact: true }).selectOption('light');
+  await expectNoWcagAaViolations(page, info.project.name + ' dark dashboard');
+  await page.screenshot({ path: info.outputPath('dark-toggle.png'), fullPage: true });
+  await toggle.press('Enter');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.setViewportSize({ width: 320, height: 700 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
-test('cross-tab preference updates and public screens use the shared theme', async ({
+test('unavailable preference storage keeps the dashboard toggle usable', async ({ page }, info) => {
+  if (info.project.name === 'android-webview') await installGuardianVisibilityMock(page);
+  else await installAdminWorkflowMock(page);
+  await page.addInitScript(() => {
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (key === 'safebus.theme') throw new Error('blocked');
+      return original.call(this, key, value);
+    };
+  });
+  await page.goto(info.project.name === 'android-webview' ? '/parent' : '/admin');
+  await page.locator('[data-ui=app-bar]').getByRole('switch', { name: 'Dark mode' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+});
+
+test('cross-tab changes update public pages without adding a public toggle', async ({
   page,
   context,
-}) => {
-  await page.goto('/login');
+}, info) => {
+  if (info.project.name === 'android-webview') await installGuardianVisibilityMock(page);
+  else await installAdminWorkflowMock(page);
+  await page.goto(info.project.name === 'android-webview' ? '/parent' : '/admin');
   const other = await context.newPage();
   await installLocalOnlyBoundary(other);
-  await other.goto('/privacy');
-  await page.getByLabel('Appearance', { exact: true }).selectOption('dark');
+  await other.goto('/login');
+  await expect(other.getByRole('switch', { name: 'Dark mode' })).toHaveCount(0);
+  await page.locator('[data-ui=app-bar]').getByRole('switch', { name: 'Dark mode' }).click();
   await expect(other.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(other.locator('[data-ui=public-app-bar]')).toHaveCSS(
-    'background-color',
-    /rgba?\(24, 35, 47/,
-  );
-  await expectNoWcagAaViolations(other, 'dark privacy');
-  await other.setViewportSize({ width: 320, height: 700 });
-  expect(await other.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expectNoWcagAaViolations(other, 'dark login');
+  if (info.project.name === 'web') {
+    await other.goto('/');
+    await expect(other.getByRole('switch', { name: 'Dark mode' })).toHaveCount(0);
+    await expect(other.getByText('School transportation visibility', { exact: true })).toHaveCount(
+      0,
+    );
+    await other.screenshot({
+      path: info.outputPath('landing-without-toggle-or-badge.png'),
+      fullPage: true,
+    });
+  }
   await other.close();
 });
 
@@ -118,7 +118,7 @@ test('invitation and password screens inherit appearance before account activati
   await installInvitedUserMock(page, {
     role: info.project.name === 'web' ? 'tenant_admin' : 'guardian',
   });
-  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.addInitScript(() => localStorage.setItem('safebus.theme', 'dark'));
   await page.goto('/accept-invitation');
   await expect(page.getByRole('heading', { name: 'Create your password' })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
@@ -141,7 +141,7 @@ for (const role of [
     if (role === 'guardian' || role === 'driver')
       await installGuardianVisibilityMock(page, { role });
     else await installAdminWorkflowMock(page, role);
-    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.addInitScript(() => localStorage.setItem('safebus.theme', 'dark'));
     await page.goto(
       role === 'driver'
         ? '/driver/settings'
@@ -168,8 +168,8 @@ for (const role of [
     await page.keyboard.press('Escape');
     await page
       .locator('[data-ui=appearance-settings]')
-      .getByLabel('Appearance', { exact: true })
-      .selectOption('light');
+      .getByRole('switch', { name: 'Dark mode' })
+      .click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
     await expect(page.locator('[data-ui=appearance-settings]')).toHaveCSS(
       'background-color',
@@ -194,8 +194,13 @@ test('platform pricing forms, dropdowns and confirmation dialogs use the same da
       },
     }),
   );
-  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.addInitScript(() => localStorage.setItem('safebus.theme', 'dark'));
   await page.goto('/admin/pricing');
+  const toggle = page.locator('[data-ui=app-bar]').getByRole('switch', { name: 'Dark mode' });
+  await expect(toggle).toBeChecked();
+  await toggle.click();
+  await expect(toggle).not.toBeChecked();
+  await toggle.click();
   const form = page.getByRole('form', { name: 'New subscription price' });
   await form.getByLabel('Price name').fill('Synthetic preview only');
   await form.getByLabel('Price per bus (CAD)').fill('25');
@@ -219,7 +224,7 @@ test('guardian map controls and popup stay dark without changing provider tiles'
   test.skip(info.project.name !== 'android-webview');
   await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
   await installMapProviderAvailable(page);
-  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.addInitScript(() => localStorage.setItem('safebus.theme', 'dark'));
   await page.goto('/guardian/live-map?bus=42');
   await expect(page.getByTestId('guardian-fullscreen-map')).toBeVisible();
   await page.getByRole('button', { name: 'Bus 42', exact: true }).press('Enter');

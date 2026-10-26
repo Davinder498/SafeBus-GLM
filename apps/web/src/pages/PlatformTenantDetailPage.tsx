@@ -330,35 +330,32 @@ export function PlatformTenantDetailPage() {
         </Card>
 
         <div>
-          <h2 className="mb-4 text-xl font-bold text-slate-900">Subscription</h2>
-          <SubscriptionOverview subscription={subscription} />
+          <SubscriptionOverview
+            subscription={subscription}
+            action={
+              subscription.configured &&
+              subscription.subscriptionStatus &&
+              !subscription.subscriptionExempt ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  loading={saving === 'reconcile'}
+                  disabled={saving !== null}
+                  leftIcon={<RefreshCw className="h-4 w-4" />}
+                  onClick={() =>
+                    void run(
+                      'reconcile',
+                      () => mutatePlatformSubscription('reconcile', tenantId),
+                      'Subscription reconciled with Stripe.',
+                    )
+                  }
+                >
+                  Refresh billing status
+                </Button>
+              ) : null
+            }
+          />
         </div>
-
-        <Card className="p-5">
-          <h2 className="text-lg font-bold text-slate-900">
-            Billing managed by the school authority
-          </h2>
-
-          {subscription.configured && (
-            <Button
-              className="mt-4"
-              type="button"
-              variant="secondary"
-              loading={saving === 'reconcile'}
-              disabled={saving !== null}
-              leftIcon={<RefreshCw className="h-4 w-4" />}
-              onClick={() =>
-                void run(
-                  'reconcile',
-                  () => mutatePlatformSubscription('reconcile', tenantId),
-                  'Subscription reconciled with Stripe.',
-                )
-              }
-            >
-              Sync from Stripe
-            </Button>
-          )}
-        </Card>
       </div>
     </DashboardLayout>
   );

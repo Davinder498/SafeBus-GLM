@@ -71,7 +71,9 @@ afterEach(async () => {
 describe('guardian channel settings', () => {
   it('uses switches and retains category choices while a master is off', async () => {
     await render();
-    expect(container.querySelectorAll('[role="switch"]')).toHaveLength(12);
+    expect(
+      container.querySelectorAll('[role="switch"]:not([aria-label="Dark mode"])'),
+    ).toHaveLength(12);
     expect(container.querySelectorAll('input[type="checkbox"]')).toHaveLength(0);
     await click('In-app notifications');
     expect(control('Trip updates in-app').disabled).toBe(true);
