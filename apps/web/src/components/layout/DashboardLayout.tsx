@@ -351,7 +351,7 @@ export function DashboardLayout({
     >
       {/* Top header */}
       <header
-        className="sticky top-0 z-40 border-b border-[#172b3a] bg-[#172b3a] text-white shadow-[0_1px_0_rgb(23_43_58_/_0.06)] backdrop-blur-md"
+        className="sticky top-0 z-40 border-b text-white shadow-[0_1px_0_rgb(23_43_58_/_0.06)]"
         data-ui="app-bar"
       >
         <div

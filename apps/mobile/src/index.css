@@ -1148,7 +1148,7 @@
   html[data-app-surface='native-mobile']
     [data-portal='parent'][data-ui='dashboard-shell']
     .sb-bottom-tab-active {
-    color: var(--guardian-yellow);
+    color: #fff;
   }
 
   html[data-app-surface='native-mobile']

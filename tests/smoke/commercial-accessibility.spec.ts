@@ -30,6 +30,10 @@ test.describe('Commercial WCAG 2.2 AA gate', () => {
     await expect(
       page.getByRole('heading', { name: 'Transportation overview', level: 1 }),
     ).toBeVisible();
+    await expect(page.locator('[data-ui="app-bar"]')).toHaveCSS(
+      'background-color',
+      'rgb(23, 43, 58)',
+    );
     await expectNoWcagAaViolations(page, 'Tenant-admin overview');
 
     await page.goto('/admin/trips');

@@ -896,7 +896,9 @@ test('driver support page shows one resolved support contact', async ({ page }) 
   const securityCard = page.locator('[data-ui="account-security-card"]');
   await expect(securityCard).toHaveCount(1);
   await expect(securityCard).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-  await expect(securityCard.getByRole('link', { name: 'Enable MFA' })).toBeVisible();
+  await expect(
+    securityCard.getByRole('link', { name: 'Enable multi-factor authentication' }),
+  ).toBeVisible();
 });
 
 test('driver support page avoids a configuration dead end when no contact is returned', async ({

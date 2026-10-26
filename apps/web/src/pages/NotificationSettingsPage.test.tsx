@@ -125,6 +125,6 @@ it('keeps MFA available when notification settings cannot load', async () => {
   await render();
   expect(container.textContent).toContain('Notification service unavailable');
   expect(container.querySelector('a[href="/account/security"]')?.getAttribute('aria-label')).toBe(
-    'Enable MFA',
+    'Enable multi-factor authentication',
   );
 });

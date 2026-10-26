@@ -78,7 +78,9 @@ it.each(['platform_super_admin', 'tenant_admin', 'school_admin', 'transportation
     expect(toggle.disabled).toBe(true);
     expect(toggle.getAttribute('aria-checked')).toBe('true');
     expect(container.textContent).toContain('Required');
-    const link = container.querySelector<HTMLAnchorElement>('a[aria-label="Manage MFA"]')!;
+    const link = container.querySelector<HTMLAnchorElement>(
+      'a[aria-label="Manage multi-factor authentication"]',
+    )!;
     await act(async () => link.click());
     expect(container.querySelector('[data-testid="destination"]')?.textContent).toContain(
       '/account/security:',

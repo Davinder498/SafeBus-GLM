@@ -17,7 +17,11 @@ export function MfaSettingsCard() {
           <h2 className="font-bold text-slate-950">
             <Link
               to="/account/security"
-              aria-label={enabled ? 'Manage MFA' : 'Enable MFA'}
+              aria-label={
+                enabled
+                  ? 'Manage multi-factor authentication'
+                  : 'Enable multi-factor authentication'
+              }
               className="after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-navy-600"
             >
               Multi-factor authentication
