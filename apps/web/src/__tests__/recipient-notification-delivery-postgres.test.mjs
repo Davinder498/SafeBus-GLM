@@ -7,6 +7,10 @@ import {
   capturePushRecovery,
   pushRecoverySql,
   rehearseRecipientPush,
+  recipientPushFailureCode,
+  recipientPushState,
+  reviewedPushDefinitions,
+  verifyInstalledRecipientPush,
 } from '../../../../scripts/lib/recipient-push-rollout.mjs';
 import {
   buildFcmMessage,
@@ -282,10 +286,66 @@ it('completely removes authority switches and RPCs while retaining recipient del
       await read('config/pending/complete-recipient-push.json'),
     ).baseline.map((entry) => entry.signature);
     const recovery = await capturePushRecovery(client, signatures);
+    const installationConfig = JSON.parse(
+      await read('config/pending/complete-recipient-push.json'),
+    );
+    const reviewedMigration = await read(installationConfig.migration);
+    expect(await recipientPushState(client, reviewedMigration, installationConfig.baseline)).toBe(
+      'pending',
+    );
+    await db.exec('savepoint partial_installation');
+    await db.exec('drop function public.get_tenant_notification_settings()');
+    await expect(
+      recipientPushState(client, reviewedMigration, installationConfig.baseline),
+    ).rejects.toThrow('Notification schema is partially installed.');
+    await db.exec('rollback to partial_installation');
     const before = await query('select * from user_notification_settings order by profile_id');
     await db.exec(
       await read('supabase/migrations/pending/20261026212046_complete_recipient_push_delivery.sql'),
     );
+    for (const entry of reviewedPushDefinitions(reviewedMigration, installationConfig.baseline))
+      await db.exec(`revoke all on function ${entry.signature} from public,anon,authenticated`);
+    for (const table of [
+      'guardian_notification_delivery_policies',
+      'android_push_devices',
+      'push_notification_outbox',
+      'user_notification_settings',
+      'user_notification_category_preferences',
+      'guardian_student_push_preferences',
+    ])
+      await db.exec(`alter table public.${table} enable row level security`);
+    expect(await recipientPushState(client, reviewedMigration, installationConfig.baseline)).toBe(
+      'installed',
+    );
+    expect(
+      await verifyInstalledRecipientPush(client, reviewedMigration, installationConfig.baseline),
+    ).toMatchObject({ reviewedDefinitionsMatched: 10, authorizationRetained: true });
+    await db.exec('savepoint definition_drift');
+    const [{ definition: installedDefinition }] = await query(
+      "select pg_get_functiondef('safebus_private.enqueue_push_for_notification(uuid)'::regprocedure) as definition",
+    );
+    await db.exec(installedDefinition.replace('begin', 'begin\n-- unreviewed change'));
+    await expect(
+      recipientPushState(client, reviewedMigration, installationConfig.baseline),
+    ).rejects.toThrow('Installed notification definitions differ');
+    await db.exec('rollback to definition_drift');
+    await db.exec('savepoint authorization_drift');
+    await db.exec(
+      'grant execute on function safebus_private.enqueue_push_for_notification(uuid) to authenticated',
+    );
+    await expect(
+      recipientPushState(client, reviewedMigration, installationConfig.baseline),
+    ).rejects.toThrow('Installed notification authorization differs');
+    await db.exec('rollback to authorization_drift');
+    await db.exec('savepoint constraint_drift');
+    await db.exec(`alter table public.guardian_notification_delivery_policies
+      drop constraint guardian_notification_policy_approval_check;
+      alter table public.guardian_notification_delivery_policies
+      add constraint guardian_notification_policy_approval_check check (true)`);
+    await expect(
+      recipientPushState(client, reviewedMigration, installationConfig.baseline),
+    ).rejects.toThrow('Recipient push schema acceptance failed.');
+    await db.exec('rollback to constraint_drift');
     expect(
       await query(`select column_name from information_schema.columns where table_schema='public'
       and table_name='guardian_notification_delivery_policies' and column_name in
@@ -453,4 +513,16 @@ it('rehearses the entire rollout and verifies restoration in a separate read-onl
       await read('supabase/migrations/pending/20261026171535_recipient_notification_delivery.sql'),
     );
   }
+});
+
+it('prints only fixed rollout failure codes', () => {
+  expect(recipientPushFailureCode(new Error('sensitive arbitrary database response'))).toBe(
+    'ROLLOUT_GUARD_FAILED',
+  );
+  expect(recipientPushFailureCode({ code: '57014', message: 'sensitive SQL' })).toBe(
+    'STATEMENT_TIMEOUT',
+  );
+  expect(recipientPushFailureCode(new Error('Notification schema is partially installed.'))).toBe(
+    'PARTIAL_INSTALLATION',
+  );
 });
