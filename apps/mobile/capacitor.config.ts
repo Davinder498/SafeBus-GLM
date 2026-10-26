@@ -34,7 +34,7 @@ const config: CapacitorConfig = {
     },
     SystemBars: {
       insetsHandling: 'css',
-      style: 'LIGHT',
+      style: 'DEFAULT',
       hidden: false,
     },
     SplashScreen: {

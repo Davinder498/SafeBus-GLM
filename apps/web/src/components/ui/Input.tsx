@@ -19,6 +19,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       ref={ref}
       type={type}
       data-ui="input"
+      data-invalid={invalid || undefined}
       className={cn(
         'block min-h-11 w-full min-w-0 rounded-lg border bg-white px-3 py-2.5 text-base text-slate-900 shadow-xs sm:text-sm',
         'placeholder:text-slate-400',

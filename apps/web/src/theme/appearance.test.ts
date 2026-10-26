@@ -1,0 +1,91 @@
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  getAppearance,
+  initializeAppearance,
+  refreshAppearance,
+  setThemePreference,
+  subscribeAppearance,
+} from './appearance';
+
+let matches = false;
+const mediaListeners = new Set<() => void>();
+function systemDark(dark: boolean) {
+  matches = dark;
+  mediaListeners.forEach((listener) => listener());
+}
+
+beforeAll(() => {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn(() => ({
+      get matches() {
+        return matches;
+      },
+      addEventListener: (_event: string, listener: () => void) => mediaListeners.add(listener),
+    })),
+  );
+  document.head.innerHTML = '<meta name="theme-color" content="#F2F6F7">';
+  initializeAppearance();
+});
+beforeEach(() => {
+  vi.restoreAllMocks();
+  localStorage.clear();
+  systemDark(false);
+  setThemePreference('system');
+});
+
+describe('device appearance preference', () => {
+  it('follows live system changes and updates browser chrome', () => {
+    expect(getAppearance()).toEqual({ preference: 'system', resolved: 'light' });
+    systemDark(true);
+    expect(getAppearance()).toEqual({ preference: 'system', resolved: 'dark' });
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(document.documentElement.style.colorScheme).toBe('dark');
+    expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(
+      '#0F1720',
+    );
+  });
+
+  it('persists an explicit override and ignores device changes until System is restored', () => {
+    setThemePreference('light');
+    systemDark(true);
+    expect(getAppearance().resolved).toBe('light');
+    expect(localStorage.getItem('safebus.theme')).toBe('light');
+    setThemePreference('system');
+    expect(getAppearance().resolved).toBe('dark');
+  });
+
+  it('accepts cross-tab changes, reset and invalid stored values without writing them back', () => {
+    const storageWrite = vi.spyOn(Storage.prototype, 'setItem');
+    window.dispatchEvent(new StorageEvent('storage', { key: 'safebus.theme', newValue: 'dark' }));
+    expect(getAppearance().resolved).toBe('dark');
+    window.dispatchEvent(new StorageEvent('storage', { key: 'unrelated', newValue: 'light' }));
+    expect(getAppearance().resolved).toBe('dark');
+    window.dispatchEvent(
+      new StorageEvent('storage', { key: 'safebus.theme', newValue: 'invalid' }),
+    );
+    expect(getAppearance().preference).toBe('system');
+    window.dispatchEvent(new StorageEvent('storage', { key: null }));
+    expect(getAppearance().resolved).toBe('light');
+    expect(storageWrite).not.toHaveBeenCalled();
+  });
+
+  it('still changes appearance when storage is unavailable', () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    expect(() => setThemePreference('dark')).not.toThrow();
+    expect(getAppearance().resolved).toBe('dark');
+  });
+
+  it('notifies subscribers only when state changes and stops after unsubscribe', () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeAppearance(listener);
+    setThemePreference('dark');
+    refreshAppearance();
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe();
+    setThemePreference('light');
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+});

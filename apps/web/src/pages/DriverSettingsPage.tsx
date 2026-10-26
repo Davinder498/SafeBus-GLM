@@ -1,3 +1,4 @@
+import { AppearanceSettingsCard } from '@/components/settings/AppearanceSelector';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Bell, ClipboardList, Route, TriangleAlert } from 'lucide-react';
 import { Link } from 'react-router';
@@ -195,6 +196,7 @@ export function DriverSettingsPage() {
           </Link>
         </section>
 
+        <AppearanceSettingsCard />
         <MfaSettingsCard />
 
         <Card className="p-5">

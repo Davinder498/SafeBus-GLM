@@ -232,7 +232,8 @@ export function NotificationsPage() {
     <DashboardLayout title="Notifications" portal={portal} navItems={[]} navGroups={navGroups}>
       <div
         className={cn(
-          isRecipientMobile && '-mx-3 -my-5 min-h-[calc(100vh-5rem)] bg-[#f2f6f7] px-3 py-5',
+          isRecipientMobile &&
+            '-mx-3 -my-5 min-h-[calc(100vh-5rem)] bg-[var(--color-canvas)] px-3 py-5',
         )}
         data-ui="notification-inbox-page"
       >

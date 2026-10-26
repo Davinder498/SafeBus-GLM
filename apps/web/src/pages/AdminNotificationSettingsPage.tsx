@@ -1,3 +1,4 @@
+import { AppearanceSettingsCard } from '@/components/settings/AppearanceSelector';
 import { useCallback, useEffect, useState } from 'react';
 import type { AdminInboxPreferences } from '@safebus/types';
 import { Link } from 'react-router';
@@ -62,6 +63,7 @@ export function AdminNotificationSettingsPage() {
             </Link>
           }
         />
+        <AppearanceSettingsCard />
         {error && (
           <p role="alert" className="text-sm text-danger-700">
             {error}
