@@ -7,6 +7,8 @@ import { installBilling } from '../smoke/fixtures/billing';
 import { installAdminWorkflowMock } from '../smoke/fixtures/admin-workflow';
 import { installInvitedUserMock } from '../smoke/fixtures/invitation';
 import { expectNoWcagAaViolations } from '../smoke/fixtures/accessibility';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 
 test.beforeEach(async ({ page }) => {
   await installLocalOnlyBoundary(page);
@@ -17,19 +19,19 @@ test('the pre-paint theme works under script-src self without React or inline sc
 }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.addInitScript(() => localStorage.setItem('safebus.theme', 'dark'));
+  const source = readFileSync('packages/config/theme-bootstrap.js', 'utf8');
+  const digest = createHash('sha256').update(source).digest('hex').slice(0, 12);
+  const startupScript = `/appearance-bootstrap.${digest}.js`;
   await page.route('**/login', async (route) => {
     const response = await route.fetch();
-    // Remove Vite's development-only React preamble and module entrypoints.
-    // Only the actual blocking bootstrap may set the document appearance.
-    const html = (await response.text()).replace(
-      /<script\b[^>]*type="module"[^>]*>[\s\S]*?<\/script>/g,
-      '',
-    );
+    expect(await response.text()).toContain(`<script src="${startupScript}"></script>`);
+    // A fixed page loads the real startup script without Vite's development
+    // preamble or React. No fetched markup is sanitized or rendered as HTML.
     await route.fulfill({
-      response,
-      body: html,
+      status: 200,
+      contentType: 'text/html',
+      body: `<!doctype html><html lang="en"><head><meta name="theme-color" content="#F2F6F7"><script src="${startupScript}"></script></head><body></body></html>`,
       headers: {
-        ...response.headers(),
         'content-security-policy': "script-src 'self'; style-src 'self' 'unsafe-inline'",
       },
     });
