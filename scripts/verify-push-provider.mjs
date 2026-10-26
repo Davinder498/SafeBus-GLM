@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { createEnvironmentBinding } from './lib/environment-identity.mjs';
 import {
   verifiedDatabaseClient,
   assertReviewedCheckout,
@@ -13,7 +16,18 @@ try {
     process.env.SAFEBUS_DEPLOY_ENV !== 'production'
   )
     throw new Error('Protected production context required.');
-  if (process.env.SUPABASE_URL !== 'https://ckrkfylsyihwouvesypm.supabase.co')
+  const { projectId } = JSON.parse(
+    await readFile('config/pending/complete-recipient-push.json', 'utf8'),
+  );
+  const binding = createEnvironmentBinding({
+    environment: 'production',
+    databaseUrl: process.env.SAFEBUS_DATABASE_URL,
+    supabaseUrl: process.env.SUPABASE_URL,
+  });
+  if (
+    projectId !== 'ckrkfylsyihwouvesypm' ||
+    binding.projectRefHash !== createHash('sha256').update(projectId).digest('hex')
+  )
     throw new Error('Unapproved target.');
   client = verifiedDatabaseClient(
     process.env.SAFEBUS_DATABASE_URL,
