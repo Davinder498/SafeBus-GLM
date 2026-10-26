@@ -461,7 +461,7 @@ test('unconfigured Firebase builds cannot invoke token registration or terminate
   assert.match(nativeDevicePlugin, /getIdentifier\([\s\S]*"google_app_id"/);
   assert.match(nativeDevicePlugin, /result\.put\("pushConfigured", pushConfigured\(\)\)/);
   assert.ok(
-    nativePush.indexOf('if (!pushConfigured)') < nativePush.indexOf('PushNotifications.register()'),
+    nativePush.indexOf('if (!pushConfigured)') < nativePush.indexOf('await registerAndConfirm()'),
   );
   assert.match(nativePush, /available: false/);
   assert.match(authContext, /SafeBusNativePush\?\.available/);

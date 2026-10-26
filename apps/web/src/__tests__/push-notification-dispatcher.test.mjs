@@ -167,6 +167,7 @@ describe('Supabase Android push dispatcher', () => {
     );
     expect(fetchImpl.mock.calls[1][1].headers.authorization).toBe('Bearer access-token');
     const payload = JSON.parse(fetchImpl.mock.calls[1][1].body);
+    expect(payload).not.toHaveProperty('validate_only');
     expect(payload.message.data).toEqual({
       notificationId: 'notification-id',
       eventType: 'trip_started',
@@ -176,6 +177,35 @@ describe('Supabase Android push dispatcher', () => {
     expect(JSON.stringify(payload)).not.toMatch(
       /studentName|routeName|stopName|latitude|longitude/,
     );
+  });
+
+  it('uses Firebase validate_only for credential, IAM, project, and token validation without delivery', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ access_token: 'test-token', expires_in: 3600 }), {
+          status: 200,
+        }),
+      )
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }));
+    const validate = createFcmSender(await testServiceAccount(), { fetchImpl, validateOnly: true });
+    await expect(
+      validate({
+        fcm_token: 'synthetic-device-token',
+        notification_id: 'test',
+        event_type: 'trip_started',
+        category: 'trip_status',
+        severity: 'info',
+        title: 'SafeBus update',
+        body: 'Open SafeBus.',
+        android_channel: 'trip_updates',
+        collapse_key: 'validation',
+      }),
+    ).resolves.toBe('validated_without_delivery');
+    expect(JSON.parse(fetchImpl.mock.calls[1][1].body)).toMatchObject({
+      validate_only: true,
+      message: { android: { priority: 'HIGH' } },
+    });
   });
 
   it('completes a claimed delivery through the leased worker contract', async () => {
