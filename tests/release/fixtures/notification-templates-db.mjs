@@ -57,7 +57,8 @@ export async function createNotificationTemplateDb({ migrate = true } = {}) {
       create unique index email_notification_unique on guardian_notification_outbox(tenant_id,guardian_id,user_notification_id,notification_type) where user_notification_id is not null;
       create or replace function public.is_current_user_session_active() returns boolean language sql stable as $$ select coalesce(current_setting('test.active',true),'true') = 'true' $$;
       create function safebus_private.has_completed_optional_mfa() returns boolean language sql stable as $$ select coalesce(current_setting('test.mfa',true),'true') = 'true' $$;
-      create function public.has_verified_mfa() returns boolean language sql stable as $$ select coalesce(current_setting('test.mfa',true),'true') = 'true' $$;
+      create function auth.jwt() returns jsonb language sql stable as $$ select jsonb_build_object('aal',case when coalesce(current_setting('test.mfa',true),'true')='true' then 'aal2' else 'aal1' end) $$;
+      create function safebus_private.has_verified_mfa() returns boolean language sql stable as $$ select auth.uid() is not null and coalesce(auth.jwt()->>'aal','aal1')='aal2' $$;
       create function safebus_private.enforce_mfa_if_required() returns void language plpgsql as $$ begin
         if not safebus_private.has_completed_optional_mfa() then raise exception 'MFA required'; end if; end; $$;
       create function safebus_private.current_tenant_id() returns uuid language sql stable as $$ select tenant_id from public.profiles where id=auth.uid() $$;
@@ -91,6 +92,9 @@ export async function createNotificationTemplateDb({ migrate = true } = {}) {
       create trigger visibility before insert on user_notifications for each row execute function safebus_private.capture_notification_inbox_visibility();
       create trigger driver_scope before insert on user_notifications for each row execute function safebus_private.enforce_driver_assignment_only_notification();
     `);
+    // Validate the actual forward SQL, including dependency resolution. Historical
+    // fixture bootstrap alone needs deferred body checking; the migration does not.
+    await db.exec('set check_function_bodies=true');
     if (migrate) await db.exec(await readMigration());
     await db.exec(`
       insert into tenants(id) values('${id(1)}'),('${id(99)}');

@@ -33,6 +33,31 @@ beforeAll(async () => {
 }, 60_000);
 afterAll(async () => db?.close());
 
+it('compiles the forward migration against the hosted private MFA layout with body checking enabled', async () => {
+  const [layout] =
+    await query(`select to_regprocedure('public.has_verified_mfa()') is null as public_absent,
+    to_regprocedure('safebus_private.has_verified_mfa()') is not null as private_present,
+    current_setting('check_function_bodies') as body_checking`);
+  expect(layout).toEqual({ public_absent: true, private_present: true, body_checking: 'on' });
+  const [definition] = await query(
+    "select pg_get_functiondef('safebus_private.notification_recipient_can_access(user_notifications)'::regprocedure) as sql",
+  );
+  expect(definition.sql).toContain('safebus_private.has_verified_mfa()');
+  expect(definition.sql).not.toContain('public.has_verified_mfa()');
+});
+
+it('rejects a genuinely missing MFA dependency before applying the forward functions', async () => {
+  const dependencyDb = await createNotificationTemplateDb({ migrate: false });
+  try {
+    await dependencyDb.exec('drop function safebus_private.has_verified_mfa()');
+    await expect(dependencyDb.exec(await readMigration())).rejects.toThrow(
+      'authentication dependencies are missing',
+    );
+  } finally {
+    await dependencyDb.close();
+  }
+}, 30_000);
+
 const expected = {
   trip_started: ['Trip started', 'Outbound trip for route Demo 01 has started with bus Demo 01.'],
   trip_completed: [

@@ -21,6 +21,15 @@ const normalize = (value) => {
 const signatures = (config) =>
   [...config.baseline.map((entry) => entry.signature), ...config.newFunctions].sort();
 
+export async function verifyTemplateDependencies(client, config) {
+  for (const signature of config.authenticationDependencies) {
+    const {
+      rows: [row],
+    } = await client.query('select to_regprocedure($1) is not null as present', [signature]);
+    if (!row.present) throw new Error('TEMPLATE_AUTH_DEPENDENCY_MISSING');
+  }
+}
+
 export function templateDefinitions(sql, config) {
   const entries = [
     ...sql.matchAll(/CREATE OR REPLACE FUNCTION ([a-z_]+\.[a-z_]+)\([\s\S]*?\$function\$;/g),
@@ -69,6 +78,7 @@ export async function templateSnapshot(client, config) {
 }
 
 export async function verifyTemplateInstallation(client, sql, config, recovery = null) {
+  await verifyTemplateDependencies(client, config);
   const snapshot = await templateSnapshot(client, config);
   for (const expected of templateDefinitions(sql, config)) {
     const actual = snapshot.functions.find((entry) => entry.signature === expected.signature);
@@ -159,11 +169,14 @@ export async function templateReadOnly(client, run) {
 }
 
 export async function rehearseTemplates(client, sql, config) {
+  await templateReadOnly(client, () => verifyTemplateDependencies(client, config));
   const before = await templateReadOnly(client, () => templateSnapshot(client, config));
   await client.query('begin isolation level repeatable read');
   let result;
   try {
-    await client.query("set local statement_timeout='5s';set local lock_timeout='1s'");
+    await client.query(
+      "set local statement_timeout='5s';set local lock_timeout='1s';set local check_function_bodies=on",
+    );
     const preferences = await recipientPreferenceDigest(client);
     await client.query(sql);
     result = await verifyTemplateInstallation(client, sql, config, before);
