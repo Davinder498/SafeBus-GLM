@@ -51,6 +51,7 @@ for (const role of ['guardian', 'driver'] as const) {
     await page.goto(`/notifications?notification=${id}`);
     const detail = page.locator('[data-ui="notification-detail-card"]');
     await expect(detail).toBeVisible();
+    await expect(detail.locator('time')).toHaveAttribute('datetime', notice().occurred_at);
     await expect(page.getByRole('heading', { name: 'Service update' })).toHaveCount(1);
     await expect(page.getByText(notice().body, { exact: true })).toHaveCount(1);
     await expect(page.locator('[data-ui="notification-card"]')).toHaveCount(0);

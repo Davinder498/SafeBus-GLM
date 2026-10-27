@@ -1,7 +1,7 @@
 import { act } from 'react';
 import type { ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, useLocation } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppSurfaceProvider, type AppSurface } from '@/contexts/AppSurfaceContext';
 import {
@@ -102,6 +102,35 @@ async function submit(container: HTMLElement) {
 }
 
 describe('surface role access', () => {
+  it('returns to the tapped notification after a successful mobile sign-in', async () => {
+    const path = '/notifications?notification=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+    sessionStorage.setItem('safebus.pendingNotificationPath', path);
+    function Destination() {
+      const location = useLocation();
+      return (
+        <output>
+          {location.pathname}
+          {location.search}
+        </output>
+      );
+    }
+    const guardian = profile('guardian');
+    const auth = authValue({ signIn: vi.fn(async () => guardian) });
+    const container = await render(
+      <>
+        <LoginPage />
+        <Destination />
+      </>,
+      auth,
+      'native-mobile',
+    );
+    const [email, password] = Array.from(container.querySelectorAll('input'));
+    await enter(email, 'guardian@example.test');
+    await enter(password, 'valid-password');
+    await submit(container);
+    expect(container.querySelector('output')?.textContent).toBe(path);
+    expect(auth.signOut).not.toHaveBeenCalled();
+  });
   it('signs a driver out after a successful website login and directs them to mobile', async () => {
     const driver = profile('driver');
     const auth = authValue({

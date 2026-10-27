@@ -74,7 +74,7 @@ function Destination() {
     </p>
   );
 }
-async function render(path = '/account/security', guard = false) {
+async function render(path = '/account/security', guard = false, notification = false) {
   const container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
@@ -97,7 +97,15 @@ async function render(path = '/account/security', guard = false) {
                 )
               }
             />
-            <Route path="/mfa" element={<Destination />} />
+            <Route path="/mfa" element={notification ? <MfaPage /> : <Destination />} />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute allowedRoles={['guardian', 'driver']}>
+                  <Destination />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/notifications/settings" element={<Destination />} />
             <Route path="/driver/settings" element={<Destination />} />
           </Routes>
@@ -142,6 +150,21 @@ async function submit(container: HTMLElement, code: string) {
       ?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })),
   );
 }
+
+it('requires an enrolled authenticator before returning to the exact pushed notification', async () => {
+  const path = '/notifications?notification=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+  mocks.auth.mfaStatus = { currentLevel: 'aal1', nextLevel: 'aal2', verifiedFactors: [factor] };
+  mocks.challengeAndVerify.mockImplementation(async () => {
+    mocks.auth.mfaStatus = { currentLevel: 'aal2', nextLevel: 'aal2', verifiedFactors: [factor] };
+    return { error: null };
+  });
+  const container = await render(path, false, true);
+  expect(container.querySelector('input')).not.toBeNull();
+  expect(container.textContent).not.toContain(path + ':');
+  await submit(container, '123456');
+  expect(mocks.challengeAndVerify).toHaveBeenCalledWith({ factorId: factor.id, code: '123456' });
+  expect(container.textContent).toContain(path + ':');
+});
 
 it.each<ProfileRole>(['guardian', 'driver'])(
   'lets a %s use preferences without enrolling in MFA',

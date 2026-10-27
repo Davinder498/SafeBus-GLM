@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import type { UserNotification } from '@safebus/types';
 import { cn } from '@/utils/cn';
+import { NotificationTime } from '@/utils/notificationTime';
 
 export function NotificationUpdateCard({
   item,
@@ -36,9 +37,7 @@ export function NotificationUpdateCard({
         aria-label={`Update: ${item.body}`}
         aria-expanded={hasMore ? expanded : undefined}
       >
-        {item.eventType === 'authority_announcement' && (
-          <span className="mb-1 block text-sm font-bold text-navy-900">{item.title}</span>
-        )}
+        <span className="mb-1 block text-sm font-bold text-navy-900">{item.title}</span>
         <span className="flex items-start gap-2">
           {!item.readAt && (
             <span
@@ -57,6 +56,9 @@ export function NotificationUpdateCard({
           >
             {item.body}
           </span>
+        </span>
+        <span className="mt-1 block">
+          <NotificationTime occurredAt={item.occurredAt} />
         </span>
         <span className="mt-2 flex items-center justify-between gap-3 border-t border-slate-100 pt-2 text-[0.6875rem] font-medium text-slate-500">
           <span>{item.readAt ? 'Read' : 'New update'}</span>

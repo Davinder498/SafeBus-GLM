@@ -108,6 +108,15 @@ describe('notification detail links', () => {
     expect(mocks.detail).toHaveBeenCalledWith('event-1');
     expect(mocks.read).toHaveBeenCalledWith(['event-1'], true);
     expect(container.querySelector('#notification-detail-heading')).toBe(document.activeElement);
+    expect(container.querySelector('h3')?.textContent).toBe(row.title);
+    expect(container.querySelector('time')?.dateTime).toBe(row.occurredAt);
+  });
+  it('shows event titles and event times in ordinary inbox cards', async () => {
+    mocks.fetch.mockResolvedValue([row]);
+    await render('/notifications');
+    const card = container.querySelector('[data-ui="notification-card"]');
+    expect(card?.textContent).toContain(row.title);
+    expect(card?.querySelector('time')?.dateTime).toBe(row.occurredAt);
   });
   it('does not disclose or mark an unavailable notification', async () => {
     mocks.detail.mockResolvedValue(null);

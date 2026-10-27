@@ -26,6 +26,7 @@ import {
 } from '@/services/notificationService';
 import { cn } from '@/utils/cn';
 import { notificationCategoryChoices } from '@/utils/notificationCategories';
+import { NotificationTime } from '@/utils/notificationTime';
 
 export function NotificationsPage() {
   const [searchParams] = useSearchParams();
@@ -474,12 +475,13 @@ export function NotificationsPage() {
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            {selectedItem.eventType === 'authority_announcement' && (
-              <h3 className="mt-3 font-bold text-slate-900">{selectedItem.title}</h3>
-            )}
+            <h3 className="mt-3 font-bold text-slate-900">{selectedItem.title}</h3>
             <p className="mt-3 whitespace-pre-wrap break-words font-semibold text-slate-900">
               {selectedItem.body}
             </p>
+            <div className="mt-2">
+              <NotificationTime occurredAt={selectedItem.occurredAt} />
+            </div>
             <div className="mt-5 flex flex-wrap gap-2">
               <Button
                 variant="secondary"
@@ -549,9 +551,7 @@ export function NotificationsPage() {
                         onClick={() => openNotification(item)}
                         aria-label={`Open notification: ${item.body}`}
                       >
-                        {item.eventType === 'authority_announcement' && (
-                          <span className="mb-1 block font-bold text-slate-950">{item.title}</span>
-                        )}
+                        <span className="mb-1 block font-bold text-slate-950">{item.title}</span>
                         <span className="flex items-start gap-2">
                           <span className="font-semibold text-slate-950">{item.body}</span>
                           {!item.readAt ? (
@@ -561,6 +561,9 @@ export function NotificationsPage() {
                               aria-label="Unread"
                             />
                           ) : null}
+                        </span>
+                        <span className="mt-1 block">
+                          <NotificationTime occurredAt={item.occurredAt} />
                         </span>
                       </button>
                       <Button

@@ -7,8 +7,8 @@ const rows = [
     event_type: 'trip_late',
     category: 'operations',
     severity: 'warning',
-    title: 'Bus reported late',
-    body: 'Bus 01 on Route 01 was reported late at 1:48 PM on Oct 9, 2026.',
+    title: 'Bus delayed',
+    body: 'Bus 01 is delayed on route 01.',
     occurred_at: '2026-10-09T19:48:00Z',
     created_at: '2026-10-09T19:48:00Z',
     read_at: null,
@@ -20,8 +20,8 @@ const rows = [
     event_type: 'mechanical_disruption',
     category: 'operations',
     severity: 'urgent',
-    title: 'Mechanical disruption',
-    body: 'Bus 02 on Route 02 has a reported mechanical problem at 1:45 PM on Oct 9, 2026.',
+    title: 'Mechanical issue',
+    body: 'A mechanical issue has been reported for bus 02 on route 02.',
     occurred_at: '2026-10-09T19:45:00Z',
     created_at: '2026-10-09T19:45:00Z',
     read_at: null,
@@ -64,6 +64,8 @@ test('tenant exception inbox has compact cards and descriptive, accessible detai
   await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('margin-top', '0px');
   await expect(page.getByText(rows[0].body, { exact: true })).toBeVisible();
   await expect(page.getByText(rows[1].body, { exact: true })).toBeVisible();
+  await expect(cards.first().getByText(rows[0].title, { exact: true })).toBeVisible();
+  await expect(cards.first().locator('time')).toHaveAttribute('datetime', rows[0].occurred_at);
   const gap = await cards.evaluateAll(
     (elements) =>
       elements[1].getBoundingClientRect().top - elements[0].getBoundingClientRect().bottom,
