@@ -1,0 +1,73 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261027120000_notification_templates.sql",
+  "migrationSha256": "a91df1522b1a80479251bf0ddbd42548bf6480bf359256dd8c0ffbdc147da3cf",
+  "baseline": [
+    {
+      "signature": "safebus_private.notification_copy_before_announcements(user_notifications)",
+      "md5": "6960b5492b65c460cc70dcd0d8ee916c",
+      "acl": ["postgres=X/postgres"]
+    },
+    {
+      "signature": "safebus_private.notification_recipient_can_access(user_notifications)",
+      "md5": "6b524d5dcdbe0310ce66321ba6617dc1",
+      "acl": ["postgres=X/postgres", "authenticated=X/postgres"]
+    },
+    {
+      "signature": "public.claim_push_notification_deliveries(text, integer, integer)",
+      "md5": "466769eea73c121a78c0f6b05dbbceef",
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"]
+    },
+    {
+      "signature": "public.resolve_push_notification_delivery(uuid, text)",
+      "md5": "43985ca531ae88317aac4bddc5912dd4",
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"]
+    },
+    {
+      "signature": "safebus_private.on_driver_assignment_notification()",
+      "md5": "55e7973ece7e53c70a6421d540d51e75",
+      "acl": ["postgres=X/postgres"]
+    },
+    {
+      "signature": "safebus_private.on_student_service_notification()",
+      "md5": "c7295279e48b5b308f31ecd6773d610e",
+      "acl": ["postgres=X/postgres"]
+    },
+    {
+      "signature": "safebus_private.on_guardian_access_notification()",
+      "md5": "b0b94963bf6a4378ac2c04044b7954e9",
+      "acl": ["postgres=X/postgres"]
+    },
+    {
+      "signature": "safebus_private.notify_trip_audience(uuid, uuid, uuid, text, text, text, text, uuid, timestamp with time zone)",
+      "md5": "307dd450f688174e9985a37eef0f12fd",
+      "acl": ["postgres=X/postgres"]
+    },
+    {
+      "signature": "safebus_private.on_trip_operational_status_notification()",
+      "md5": "b3660c13b5f14b35ef30d5046c8487b3",
+      "acl": ["postgres=X/postgres"]
+    }
+  ],
+  "newFunctions": [
+    "safebus_private.notification_event_title(text)",
+    "safebus_private.notification_preview_text(text, integer)",
+    "safebus_private.notification_push_copy(public.user_notifications)"
+  ],
+  "triggerRename": {
+    "beforeName": "student_guardians_notify",
+    "afterName": "zzzz_student_guardians_notify",
+    "beforeDefinition": "CREATE TRIGGER student_guardians_notify AFTER INSERT OR UPDATE OF status, access_expires_at ON public.student_guardians FOR EACH ROW EXECUTE FUNCTION safebus_private.on_guardian_access_notification()",
+    "afterDefinition": "CREATE TRIGGER zzzz_student_guardians_notify AFTER INSERT OR UPDATE OF status, access_expires_at ON public.student_guardians FOR EACH ROW EXECUTE FUNCTION safebus_private.on_guardian_access_notification()"
+  },
+  "triggerPrerequisites": [
+    {
+      "name": "student_guardians_sync_push_defaults",
+      "md5": "0dda02cf0537ba168a67de3629f857ef"
+    },
+    {
+      "name": "zz_student_guardians_apply_delivery_defaults",
+      "md5": "634f64d9336e67051d75b418a4d4b9cf"
+    }
+  ]
+}

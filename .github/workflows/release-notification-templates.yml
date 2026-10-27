@@ -1,0 +1,93 @@
+name: Release notification templates
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: Exact reviewed current main commit SHA
+        required: true
+      mode:
+        type: choice
+        options: [rehearse, install]
+        required: true
+      confirmation:
+        description: REHEARSE_NOTIFICATION_TEMPLATES or INSTALL_NOTIFICATION_TEMPLATES
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.ref == 'refs/heads/main' && ((inputs.mode == 'install' && inputs.confirmation == 'INSTALL_NOTIFICATION_TEMPLATES') || (inputs.mode == 'rehearse' && inputs.confirmation == 'REHEARSE_NOTIFICATION_TEMPLATES'))
+    uses: ./.github/workflows/validate-security-install.yml
+    with:
+      git_ref: ${{ inputs.git_ref }}
+
+  release:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      CI: true
+      SAFEBUS_RELEASE_SHA: ${{ inputs.git_ref }}
+      SAFEBUS_DEPLOY_ENV: production
+      SAFEBUS_NOTIFICATION_CONFIRM: ${{ inputs.confirmation }}
+      SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
+      SAFEBUS_DATABASE_CA_CERT: ${{ vars.SAFEBUS_DATABASE_CA_CERT }}
+      SAFEBUS_BACKUP_PUBLIC_KEY: ${{ vars.SAFEBUS_BACKUP_PUBLIC_KEY }}
+      SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_ID: ${{ vars.SUPABASE_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.git_ref }}
+          fetch-depth: 0
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify provider deployment access
+        run: node scripts/verify-push-deployment-access.mjs
+      - name: Reconcile, rehearse and capture encrypted recovery
+        id: prepare
+        run: node scripts/release-notification-templates.mjs prepare
+      - name: Retain encrypted recovery before persistent changes
+        if: steps.prepare.outputs.state == 'pending'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: notification-template-recovery-${{ inputs.git_ref }}-${{ github.run_id }}
+          path: .safebus-release/notification-templates/
+          retention-days: 90
+          if-no-files-found: error
+      - name: Deploy reviewed dispatcher
+        if: inputs.mode == 'install'
+        run: pnpm exec supabase functions deploy push-notification-dispatcher --project-ref "$SUPABASE_PROJECT_ID" --no-verify-jwt --use-api
+      - name: Validate Firebase without sending a notification
+        if: inputs.mode == 'install'
+        run: node scripts/verify-push-provider.mjs
+      - name: Install bounded forward migration
+        if: inputs.mode == 'install' && steps.prepare.outputs.state == 'pending'
+        run: node scripts/release-notification-templates.mjs install
+      - name: Verify exact installed definitions
+        if: inputs.mode == 'install'
+        run: node scripts/release-notification-templates.mjs verify
+      - name: Retain sanitized outcome
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: notification-template-outcome-${{ inputs.git_ref }}-${{ github.run_id }}
+          path: |
+            .safebus-release/notification-templates/installation.json
+            .safebus-release/notification-templates/verification.json
+            .safebus-release/notification-templates/existing.json
+          retention-days: 90
+          if-no-files-found: ignore

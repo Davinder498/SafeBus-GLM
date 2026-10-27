@@ -8,6 +8,7 @@ import {
 } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 import { useAppSurface } from '@/contexts/AppSurfaceContext';
+import { pendingNotificationPath } from '@/utils/notificationNavigation';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
@@ -43,7 +44,7 @@ export function LoginPage() {
         await signOut();
         throw new Error(getSurfaceAccessMessage(appSurface));
       }
-      navigate(getDashboardPath(profile.role), { replace: true });
+      navigate(pendingNotificationPath() ?? getDashboardPath(profile.role), { replace: true });
     } catch (signInError) {
       setError(signInError instanceof Error ? signInError.message : 'Unable to sign in.');
     } finally {

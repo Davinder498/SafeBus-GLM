@@ -10,6 +10,7 @@ import {
 import type { UserNotification } from '@safebus/types';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/useAuth';
+import { pendingNotificationKey, pendingNotificationPath } from '@/utils/notificationNavigation';
 import {
   fetchNotificationPreferences,
   fetchNotifications,
@@ -90,9 +91,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         )
         .catch(() => undefined);
     }
-    const pendingPath = sessionStorage.getItem('safebus.pendingNotificationPath');
-    if (pendingPath?.startsWith('/notifications')) {
-      sessionStorage.removeItem('safebus.pendingNotificationPath');
+    const pendingPath = pendingNotificationPath();
+    if (pendingPath) {
+      sessionStorage.removeItem(pendingNotificationKey);
       if (`${window.location.pathname}${window.location.search}` !== pendingPath)
         window.location.assign(pendingPath);
     }

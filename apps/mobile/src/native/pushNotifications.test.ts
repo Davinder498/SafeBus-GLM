@@ -48,6 +48,8 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllGlobals();
+  sessionStorage.clear();
   delete window.SafeBusNativePush;
 });
 async function bridge() {
@@ -57,6 +59,32 @@ async function bridge() {
 }
 
 describe('confirmed Android push registration', () => {
+  it('persists the exact tapped notification for cold-start and sign-in recovery', async () => {
+    await bridge();
+    const assign = vi.fn();
+    vi.stubGlobal('window', { location: { assign } });
+    const noticeId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+    mocks.listeners.pushNotificationActionPerformed({
+      notification: {
+        data: { notificationId: noticeId, destination: 'https://untrusted.example' },
+      },
+    });
+    expect(assign).toHaveBeenCalledWith(`/notifications?notification=${noticeId}`);
+    expect(sessionStorage.getItem('safebus.pendingNotificationPath')).toBe(
+      `/notifications?notification=${noticeId}`,
+    );
+  });
+  it('refreshes the authorized inbox when a push arrives in the foreground', async () => {
+    await bridge();
+    const listener = vi.fn();
+    window.addEventListener('safebus:push-received', listener);
+    try {
+      mocks.listeners.pushNotificationReceived({ data: { notificationId: 'notice' } });
+      expect(listener).toHaveBeenCalledOnce();
+    } finally {
+      window.removeEventListener('safebus:push-received', listener);
+    }
+  });
   it('keeps unconfigured Firebase builds unavailable without registering or ending the session', async () => {
     mocks.device.mockResolvedValue({ pushConfigured: false });
     const native = await bridge();
