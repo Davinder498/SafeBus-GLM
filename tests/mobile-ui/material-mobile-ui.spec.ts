@@ -444,9 +444,7 @@ test('guardian buses group students and open a clean bus detail view', async ({
   await expect(serviceLine.getByText(/Start/)).toBeVisible();
   await expect(serviceLine.getByText('Drop off: Avery', { exact: true })).toBeVisible();
   await expect(page.getByTestId('guardian-service-line-bus')).toBeVisible();
-  await expect(
-    page.getByText('Next on your service line: Riverside School', { exact: true }),
-  ).toBeVisible();
+  await expect(page.locator('[data-ui="guardian-service-line-note"]')).toHaveCount(0);
   await expect(serviceLine.getByText('Passed')).toBeVisible();
   await expect(serviceLine.getByText('6–9 min')).toHaveCount(0);
   await expect(serviceLine.getByText('19–26 min')).toBeVisible();
@@ -1072,9 +1070,7 @@ test('service line separates live GPS from unavailable route progress', async ({
   const card = page.locator('[data-ui="guardian-service-line-card"]');
   await expect(card.getByText('Live', { exact: true })).toBeVisible();
   await expect(card.getByText('Waiting', { exact: true })).toHaveCount(0);
-  await expect(card).toContainText(
-    'GPS is live, but route position and stop ETAs are unavailable.',
-  );
+  await expect(card.locator('[data-ui="guardian-service-line-note"]')).toHaveCount(0);
   await expect(page.getByTestId('guardian-service-line-bus')).toHaveCount(0);
   fixture.setServiceLines([guardianBusServiceLine()]);
   await page.reload();
