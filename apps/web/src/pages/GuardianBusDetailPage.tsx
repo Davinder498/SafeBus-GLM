@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useVerifiedGuardianData } from '@/hooks/useVerifiedGuardianData';
 import { ArrowLeft, BusFront, MapPin, Navigation, Users } from 'lucide-react';
 import { Link, useParams } from 'react-router';
@@ -24,12 +24,6 @@ import {
   type GuardianBusGroup,
 } from '@/utils/guardianBusGroups';
 
-function formatTimestamp(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-}
-
 function formatGrade(grade: string): string {
   return /^grade\s/i.test(grade) ? grade : `Grade ${grade}`;
 }
@@ -44,12 +38,12 @@ function studentStatus(student: GuardianBusVisibility): string {
 function serviceLineStatus(line: GuardianBusServiceLine): {
   label: string;
   tone: 'success' | 'warning' | 'neutral';
-} {
+} | null {
   if (line.tripStatus === 'paused') {
     return { label: 'Paused', tone: 'warning' };
   }
   if (line.tripStatus === 'inactive') {
-    return { label: 'Inactive', tone: 'neutral' };
+    return null;
   }
   if (line.locationState === 'fresh') {
     return { label: 'Live', tone: 'success' };
@@ -63,7 +57,7 @@ function serviceLineStatus(line: GuardianBusServiceLine): {
   if (line.tripStatus === 'active') {
     return { label: 'Locating', tone: 'neutral' };
   }
-  return { label: 'Inactive', tone: 'neutral' };
+  return null;
 }
 
 export function GuardianBusDetailPage() {
@@ -283,7 +277,7 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
     (progress !== null && line.stops.length > 1
       ? (progress / 100) * (line.stops.length - 1)
       : null);
-  const stops = guardianServiceStops(line.stops);
+  const stops = useMemo(() => guardianServiceStops(line.stops), [line.stops]);
   const progressPosition = guardianServicePosition(stops, routePosition);
   const hasLivePosition =
     line.tripStatus === 'active' && line.locationState === 'fresh' && progressPosition !== null;
@@ -296,7 +290,7 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
 
   useLayoutEffect(() => {
     const container = serviceLineRef.current;
-    if (!container || !hasLivePosition || progressPosition === null) {
+    if (!container) {
       setLineLayout(null);
       return;
     }
@@ -314,7 +308,7 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
         const rect = anchor.getBoundingClientRect();
         return rect.top - containerRect.top + rect.height / 2;
       });
-      const nextLayout = interpolateServiceLinePosition(positions, progressPosition);
+      const nextLayout = interpolateServiceLinePosition(positions, progressPosition ?? 0);
       if (!nextLayout) {
         setLineLayout(null);
         return;
@@ -333,19 +327,17 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
     const observer = new ResizeObserver(measure);
     observer.observe(container);
     return () => observer.disconnect();
-  }, [hasLivePosition, progressPosition, stops.length]);
+  }, [progressPosition, stops]);
   const nextStop = stops.find(({ stop, routeIndex }) =>
     routePosition !== null
       ? routeIndex > routePosition
       : stop.serviceState === 'next' || stop.serviceState === 'upcoming',
   )?.stop;
-  const atStop = stops.find(({ stop }) => stop.serviceState === 'at_stop')?.stop;
-  const announcement = nextStop
-    ? `Next on your service line: ${nextStop.name}.${
-        nextStop.etaStatus === 'unavailable' ? '' : ` ${nextStop.etaLabel}.`
-      }`
-    : atStop
-      ? `Bus is at ${atStop.name}.`
+  const announcement =
+    hasLivePosition && nextStop
+      ? `Next on your service line: ${nextStop.name}.${
+          nextStop.etaStatus === 'unavailable' ? '' : ` ${nextStop.etaLabel}.`
+        }`
       : '';
 
   return (
@@ -353,7 +345,7 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-navy-700">
-            Live service line
+            Service line
           </p>
           <h2 className="mt-1 text-xl font-bold text-navy-900">{line.routeName}</h2>
           <p className="mt-1 text-sm text-gray-600">
@@ -361,9 +353,11 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
             {line.direction === 'reverse' ? 'Return direction' : 'Outbound direction'}
           </p>
         </div>
-        <StatusPill tone={status.tone} dot pulse={status.label === 'Live'}>
-          {status.label}
-        </StatusPill>
+        {status && (
+          <StatusPill tone={status.tone} dot pulse={status.label === 'Live'}>
+            {status.label}
+          </StatusPill>
+        )}
       </div>
 
       {stops.length > 0 ? (
@@ -402,9 +396,7 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
               style={{ top: `${lineLayout.bus}px` }}
               aria-hidden
               data-testid="guardian-service-line-bus"
-            >
-              <BusFront className="h-5 w-5" />
-            </span>
+            />
           )}
 
           {stops.map(({ stop }, index) => (
@@ -425,49 +417,13 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
         </div>
       )}
 
-      {hasLivePosition ? (
-        <div
-          className="mt-4 rounded-2xl p-3 text-sm text-navy-800"
-          data-ui="guardian-service-line-note"
-        >
-          <p className="font-semibold">
-            {atStop
-              ? `Bus is at ${atStop.name}.`
-              : nextStop
-                ? `Next on your service line: ${nextStop.name}`
-                : 'Bus has reached the end of your service line.'}
-          </p>
-          {line.progressSource === 'stop_sequence' && (
-            <p className="mt-1 text-xs text-navy-700">Estimated position</p>
-          )}
-        </div>
-      ) : (
-        <p
-          className="mt-4 rounded-2xl p-3 text-sm text-gray-600"
-          data-ui="guardian-service-line-note"
-        >
-          {line.tripStatus === 'paused'
-            ? 'The school run is paused. Live route position resumes when the run restarts.'
-            : line.tripStatus === 'active' && line.locationState === 'fresh'
-              ? 'GPS is live, but route position and stop ETAs are unavailable. See the live map for the bus location.'
-              : line.locationState === 'invalid'
-                ? 'The latest location cannot be used for this service line. Check the live map for bus location availability.'
-                : line.tripStatus === 'active'
-                  ? 'Waiting for a current location.'
-                  : 'Service inactive.'}
-        </p>
+      {hasLivePosition && line.progressSource === 'stop_sequence' && (
+        <p className="mt-3 text-xs text-gray-500">Estimated position</p>
       )}
 
       <p className="sr-only" aria-live="polite" aria-atomic="true">
         {announcement}
       </p>
-
-      {line.locationRecordedAt && (
-        <p className="mt-3 flex items-center gap-2 text-sm text-gray-600">
-          <Navigation className="h-4 w-4 text-navy-700" aria-hidden /> Last location update{' '}
-          {formatTimestamp(line.locationRecordedAt)}
-        </p>
-      )}
     </Card>
   );
 }
@@ -500,7 +456,7 @@ function ServiceStopPoint({
       data-state={stop.serviceState}
     >
       <span data-service-stop-anchor aria-hidden />
-      <div className="flex min-w-0 items-start justify-between gap-3">
+      <div className="guardian-service-line__details flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-gray-500">
             {positionLabel}
