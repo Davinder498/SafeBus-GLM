@@ -1,0 +1,527 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261028065508_alberta_service_dates.sql",
+  "migrationSha256": "fd5d19bfe1fe271ac24fb0d70268717aa6c1ee4cf910eb7351deb185755d7609",
+  "functions": [
+    {
+      "signature": "public.admin_end_bus_route_service(uuid[])",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "6a6651465ef5930d5372544240be8e27"
+      },
+      "after": {
+        "md5": "4946f536fef05c7b91875ea767987b2b"
+      }
+    },
+    {
+      "signature": "public.admin_renew_bus_route_assignment(uuid, date, date)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "8ad5a953193f2aa4c74070c8f6f79629"
+      },
+      "after": {
+        "md5": "746d80eae78775d120fd9fc714383128"
+      }
+    },
+    {
+      "signature": "public.admin_set_bus_route_service(uuid, uuid, text, date, date, uuid[])",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "b6f7dbc3aaa20a3fb3519ab10d877037"
+      },
+      "after": {
+        "md5": "2453b5c8654b5e33bc57763c5c39d043"
+      }
+    },
+    {
+      "signature": "public.admin_set_driver_bus_assignment(uuid, uuid, date, date, uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "ab6bbad95b22e053480faa2f0f3c9faf"
+      },
+      "after": {
+        "md5": "231c8d882ede44ad61a05f8d9b995aca"
+      }
+    },
+    {
+      "signature": "public.admin_set_student_bus_service(uuid, uuid, uuid, text, uuid, uuid, uuid, uuid, date, date, uuid[])",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "089f271335d3ea960be1d644a2a3880f"
+      },
+      "after": {
+        "md5": "32dbd6429b574603fc8c03baf4ee221e"
+      }
+    },
+    {
+      "signature": "public.admin_set_student_bus_service_status(uuid[], text, boolean)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "3b08a862ccf949da3618bd8d22c1bd2c"
+      },
+      "after": {
+        "md5": "f28456668f730219463d22a4a007ed4b"
+      }
+    },
+    {
+      "signature": "public.admin_set_student_bus_service_with_seat(uuid, uuid, uuid, integer, text, uuid, uuid, uuid, uuid, date, date, uuid[])",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": "b4e1bc1a75ccdcb2ab80fc82b910fbfe"
+      },
+      "after": {
+        "md5": "bf6d0e76440fa8952f005ec7af769326"
+      }
+    },
+    {
+      "signature": "public.get_admin_students_page(integer, integer, text, text, uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "2fbb65200c8a4544052490d58ffd9cab"
+      },
+      "after": {
+        "md5": "f335774d0b9546e09546ae5029f6ed8b"
+      }
+    },
+    {
+      "signature": "public.get_bus_qr_start_options(text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "84fa22f14f1c26ed87f4824ad45ad912"
+      },
+      "after": {
+        "md5": "a76c1a9f60ddc1cf389af6206b1a18e8"
+      }
+    },
+    {
+      "signature": "public.get_guardian_bus_service_lines(text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "1b3d57b64a10bbdf92a15a947bc11dea"
+      },
+      "after": {
+        "md5": "4248a75aba016b879dd7ba6f5c6566c5"
+      }
+    },
+    {
+      "signature": "public.get_guardian_student_stops()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "604a2d9cd81acdde82581e622d7019c5"
+      },
+      "after": {
+        "md5": "6acb0e5a8965108f377596300cd6bfb0"
+      }
+    },
+    {
+      "signature": "public.get_guardian_student_stops_v2()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": "751407842eae877f9b49387b40948e5a"
+      },
+      "after": {
+        "md5": "88ebc49c95cea0c45fcd3170825aef7b"
+      }
+    },
+    {
+      "signature": "public.replace_bus(uuid, uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "a4c9150a50b8cf64ea5862bbfc86b056"
+      },
+      "after": {
+        "md5": "6f6fad3977587aa1037589bc63bd40cb"
+      }
+    },
+    {
+      "signature": "public.start_bus_tracking_from_qr(text, uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "b0dd847e9ae46e032e5f42c0131d18f4"
+      },
+      "after": {
+        "md5": "28d0f3e1b7d4e2337cdebcd4b1b832d9"
+      }
+    },
+    {
+      "signature": "public.substitute_driver(uuid, uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "50f13a0a1c39ece3d5baf4be2a5b69fc"
+      },
+      "after": {
+        "md5": "0e9b4e5d8d11d324163dd7e36efcb830"
+      }
+    },
+    {
+      "signature": "safebus_private.admin_create_student_onboarding_base(jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": "711e4f3013cd6f65b76c415074793a74"
+      },
+      "after": {
+        "md5": "ba0ac0acb613c7a5c093b4c87704965a"
+      }
+    },
+    {
+      "signature": "safebus_private.broadcast_route_tracking_invalidation(uuid, uuid, text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "cf9ec224c91468a097ae7458d134070d"
+      },
+      "after": {
+        "md5": "a7fb90414b77e7b680d359d90f47430e"
+      }
+    },
+    {
+      "signature": "safebus_private.driver_can_read_assigned_route(uuid, uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "f93b8ab5d88421ac1abf96a2d0aba847"
+      },
+      "after": {
+        "md5": "16b0cf31407cba510022cd22139732e5"
+      }
+    },
+    {
+      "signature": "safebus_private.get_current_driver_trip_assignments()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "a35db752b2549dfed1912c52c64566b7"
+      },
+      "after": {
+        "md5": "219751b888d2e97e758a71d1bd18be2d"
+      }
+    },
+    {
+      "signature": "safebus_private.get_guardian_bus_visibility()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "f1a479809bd9af4b9d78d82461992c28"
+      },
+      "after": {
+        "md5": "64b2f115be837939810752b0a05c394f"
+      }
+    },
+    {
+      "signature": "safebus_private.get_guardian_live_trip_visibility()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "93fa46285088df6987e4dbd54c137eae"
+      },
+      "after": {
+        "md5": "fc678c49dfd03d3a947029f46c17e72f"
+      }
+    },
+    {
+      "signature": "safebus_private.get_guardian_student_live_bus_location_state()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "2178591789b01b14ff886e1dd14a7d0a"
+      },
+      "after": {
+        "md5": "18daf4ef8280d6aa77d751d2a8f84b1a"
+      }
+    },
+    {
+      "signature": "safebus_private.prepare_bus_run(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "d74dbc9fef46f2942d897a9b896f76e1"
+      },
+      "after": {
+        "md5": "7770b553fa66738216ac8325b2379cb5"
+      }
+    },
+    {
+      "signature": "safebus_private.start_driver_trip_from_assignment(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "4eaba39afec37909cf75ef074d8b07df"
+      },
+      "after": {
+        "md5": "cf90a1b7a2f20cac6f5697ccb9b0956f"
+      }
+    },
+    {
+      "signature": "safebus_private.start_driver_trip_from_bus(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "3e6380091f972bb6cc97178ac2e0ba82"
+      },
+      "after": {
+        "md5": "2a5cb203f1d2d9d800daf182c8202aa9"
+      }
+    },
+    {
+      "signature": "safebus_private.validate_bus_capacity_reservations()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": "f92bd504feeeea0cee4d5cbd52aa91de"
+      },
+      "after": {
+        "md5": "e495883d304bbe3e889b7dad88b879c6"
+      }
+    },
+    {
+      "signature": "safebus_private.validate_bus_service_seat_capacity()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": "206dfa374369a82e5c3d4e7d1780d278"
+      },
+      "after": {
+        "md5": "658492708931894ef3e3921bcf791441"
+      }
+    },
+    {
+      "signature": "safebus_private.validate_student_seat_capacity()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": "3f08eb8a9e12ac4f4a0192196780bdaa"
+      },
+      "after": {
+        "md5": "1f8fbbdcfff730b619fc61f4041e1bfa"
+      }
+    },
+    {
+      "signature": "public.search_admin_trips(date, date, text, integer, integer)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "6db1660583a142b05ba226391cc58d4b"
+      },
+      "after": {
+        "md5": "90722d16837817d33f5e7105b3d01b30"
+      }
+    }
+  ],
+  "policies": [
+    {
+      "before": {
+        "schemaname": "public",
+        "tablename": "buses",
+        "policyname": "buses select assigned driver",
+        "permissive": "PERMISSIVE",
+        "roles": [
+          "authenticated"
+        ],
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = 'driver'::user_role) AND (tenant_id = safebus_private.current_tenant_id()) AND ((EXISTS ( SELECT 1\n   FROM driver_route_assignments dra\n  WHERE ((dra.bus_id = buses.id) AND (dra.tenant_id = buses.tenant_id) AND (dra.driver_id = safebus_private.current_driver_id()) AND (dra.status = 'active'::text) AND ((dra.effective_from IS NULL) OR (dra.effective_from <= CURRENT_DATE)) AND ((dra.effective_to IS NULL) OR (dra.effective_to >= CURRENT_DATE))))) OR (EXISTS ( SELECT 1\n   FROM driver_trips dt\n  WHERE ((dt.bus_id = buses.id) AND (dt.tenant_id = buses.tenant_id) AND (dt.driver_id = safebus_private.current_driver_id()) AND (dt.status = 'active'::text))))))",
+        "with_check": null
+      },
+      "after": {
+        "schemaname": "public",
+        "tablename": "buses",
+        "policyname": "buses select assigned driver",
+        "permissive": "PERMISSIVE",
+        "roles": [
+          "authenticated"
+        ],
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = 'driver'::user_role) AND (tenant_id = safebus_private.current_tenant_id()) AND ((EXISTS ( SELECT 1\n   FROM driver_route_assignments dra\n  WHERE ((dra.bus_id = buses.id) AND (dra.tenant_id = buses.tenant_id) AND (dra.driver_id = safebus_private.current_driver_id()) AND (dra.status = 'active'::text) AND ((dra.effective_from IS NULL) OR (dra.effective_from <= ((now() AT TIME ZONE 'America/Edmonton'::text))::date)) AND ((dra.effective_to IS NULL) OR (dra.effective_to >= ((now() AT TIME ZONE 'America/Edmonton'::text))::date))))) OR (EXISTS ( SELECT 1\n   FROM driver_trips dt\n  WHERE ((dt.bus_id = buses.id) AND (dt.tenant_id = buses.tenant_id) AND (dt.driver_id = safebus_private.current_driver_id()) AND (dt.status = 'active'::text))))))",
+        "with_check": null
+      }
+    }
+  ],
+  "defaults": [
+    {
+      "before": {
+        "table_schema": "public",
+        "table_name": "bus_run_dispatches",
+        "column_name": "service_date",
+        "column_default": "CURRENT_DATE"
+      },
+      "after": {
+        "table_schema": "public",
+        "table_name": "bus_run_dispatches",
+        "column_name": "service_date",
+        "column_default": "((now() AT TIME ZONE 'America/Edmonton'::text))::date"
+      }
+    },
+    {
+      "before": {
+        "table_schema": "public",
+        "table_name": "driver_trips",
+        "column_name": "service_date",
+        "column_default": "CURRENT_DATE"
+      },
+      "after": {
+        "table_schema": "public",
+        "table_name": "driver_trips",
+        "column_name": "service_date",
+        "column_default": "((now() AT TIME ZONE 'America/Edmonton'::text))::date"
+      }
+    },
+    {
+      "before": {
+        "table_schema": "public",
+        "table_name": "student_bus_assignments",
+        "column_name": "effective_from",
+        "column_default": "CURRENT_DATE"
+      },
+      "after": {
+        "table_schema": "public",
+        "table_name": "student_bus_assignments",
+        "column_name": "effective_from",
+        "column_default": "((now() AT TIME ZONE 'America/Edmonton'::text))::date"
+      }
+    },
+    {
+      "before": {
+        "table_schema": "public",
+        "table_name": "student_route_assignments",
+        "column_name": "effective_from",
+        "column_default": "CURRENT_DATE"
+      },
+      "after": {
+        "table_schema": "public",
+        "table_name": "student_route_assignments",
+        "column_name": "effective_from",
+        "column_default": "((now() AT TIME ZONE 'America/Edmonton'::text))::date"
+      }
+    }
+  ],
+  "repairs": [
+    {
+      "id": "15e88783-5c23-4f58-99f5-60e6f06dfb74",
+      "tenant_id": "e19ab3b1-8346-4779-9fdb-46de90081a07",
+      "started_at": "2026-10-28T00:39:47.930271Z",
+      "before": "2026-10-28",
+      "after": "2026-10-27"
+    }
+  ]
+}

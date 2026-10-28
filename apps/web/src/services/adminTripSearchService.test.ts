@@ -119,6 +119,37 @@ describe('administrative trip search service', () => {
     return { request, lookup };
   }
 
+  it('loads ongoing runs without service-date bounds', async () => {
+    rpc.mockResolvedValue({ data: { rows: [row], totalCount: 1 }, error: null });
+    const result = await searchAdminTrips({
+      ...query,
+      fromDate: null,
+      toDate: null,
+      status: 'ongoing',
+      page: 1,
+    });
+    expect(result.rows[0].status).toBe('paused');
+    expect(rpc).toHaveBeenCalledWith(
+      'search_admin_trips',
+      expect.objectContaining({ p_from_date: null, p_to_date: null, p_status: 'ongoing' }),
+    );
+  });
+
+  it('uses caller RLS and school restriction when an older RPC rejects the combined ongoing status', async () => {
+    const { request } = existingTables({
+      role: 'school_admin',
+      tenant_id: 'tenant-1',
+      school_id: 'school-1',
+      status: 'active',
+    });
+    rpc.mockResolvedValue({ data: null, error: { code: '22023' } });
+    await searchAdminTrips({ ...query, fromDate: null, toDate: null, status: 'ongoing', page: 1 });
+    expect(request.in).toHaveBeenCalledWith('status', ['active', 'paused']);
+    expect(request.eq).toHaveBeenCalledWith('route.school_id', 'school-1');
+    expect(request.gte).not.toHaveBeenCalled();
+    expect(request.lte).not.toHaveBeenCalled();
+  });
+
   it.each(['PGRST202', '42883'])(
     'searches existing RLS tables when RPC is missing (%s)',
     async (code) => {

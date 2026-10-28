@@ -1,0 +1,25 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "verificationDate": "2026-10-28",
+  "mode": "rollback-only transaction followed by independent read-only transaction",
+  "persistentlyInstalled": false,
+  "authentication": "existing active school authority administrator, transaction-local authenticated role and claims",
+  "rehearsal": {
+    "compatible": true,
+    "ongoingVisible": 1,
+    "confirmedTripCorrected": true,
+    "notificationsUnchanged": true
+  },
+  "installedDefinitionHashesMatched": 29,
+  "restoration": {
+    "tripServiceDate": "2026-10-28",
+    "defaultsRestored": true,
+    "driverPolicyRestored": true,
+    "functionsRestored": true
+  },
+  "externalNotificationsSent": false,
+  "limitations": [
+    "No live school-scoped or transportation administrator identities exist for role coverage.",
+    "Client deployment and protected persistent migration installation await reviewed merge."
+  ]
+}

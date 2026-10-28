@@ -89,3 +89,44 @@ test('tenant exception inbox has compact cards and descriptive, accessible detai
     fullPage: true,
   });
 });
+
+test('school authority admin sees trip start and completion in Trip updates', async ({ page }) => {
+  await installAdminWorkflowMock(page);
+  const tripUpdates = [
+    {
+      ...rows[0],
+      id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+      event_type: 'trip_started',
+      category: 'trip_status',
+      severity: 'info',
+      title: 'Trip started',
+      body: 'Outbound trip for route Demo 01 has started with bus Demo 01.',
+    },
+    {
+      ...rows[1],
+      id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
+      event_type: 'trip_completed',
+      category: 'trip_status',
+      severity: 'info',
+      title: 'Trip completed',
+      body: 'Outbound trip for route Demo 01 has been completed by bus Demo 01.',
+    },
+  ];
+  await page.route('**/rest/v1/rpc/get_user_notifications', (route) =>
+    route.fulfill({
+      json:
+        route.request().postDataJSON()?.p_category === 'trip_status'
+          ? tripUpdates
+          : [...tripUpdates, ...rows],
+    }),
+  );
+  await page.route('**/rest/v1/rpc/get_user_notification_unread_count', (route) =>
+    route.fulfill({ json: 4 }),
+  );
+  await page.goto('/notifications');
+  await page.getByRole('button', { name: 'Trip updates' }).click();
+  await expect(page.locator('[data-ui="notification-card"]')).toHaveCount(2);
+  await expect(page.getByText(tripUpdates[0].body, { exact: true })).toBeVisible();
+  await expect(page.getByText(tripUpdates[1].body, { exact: true })).toBeVisible();
+  await expect(page.getByText(rows[0].body, { exact: true })).toHaveCount(0);
+});

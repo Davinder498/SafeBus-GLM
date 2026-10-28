@@ -1,0 +1,32 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261028090000_admin_trip_updates.sql",
+  "migrationSha256": "46bb1350be835d3b8ac56a3762d01e7271828728b787992ee069c3958b93757c",
+  "functions": [
+    {
+      "signature": "safebus_private.capture_notification_inbox_visibility()",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": "09222d7ec08eebd5bbb7bc0b5ed1bd6b"
+      },
+      "after": {
+        "md5": "811adf8f702123e234ebff093f3e2192"
+      }
+    },
+    {
+      "signature": "safebus_private.notify_trip_audience(uuid,uuid,uuid,text,text,text,text,uuid,timestamp with time zone)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": "3dde9189a228401d643531162ad02607"
+      },
+      "after": {
+        "md5": "13aa8d12ec0e2ebecd20685c598b4e76"
+      }
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": []
+}

@@ -7,6 +7,7 @@ import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { searchAdminTrips } from '@/services/adminTripSearchService';
+import { useAdminTripRefresh } from '@/hooks/useAdminTripRefresh';
 import type { AdminTripOverviewItem, AdminTripStatus } from '@/types/adminTripOverview';
 import type {
   AdminTripDateMode,
@@ -46,27 +47,36 @@ export function AdminTripSearchSection() {
     pageSize: 25,
   }));
   const [state, setState] = useState<SearchState>({ kind: 'loading' });
+  const appliedMode = useRef<AdminTripDateMode>('today');
+  const [refreshError, setRefreshError] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const sequence = useRef(0);
 
-  const load = useCallback(async () => {
-    const request = ++sequence.current;
-    setState({ kind: 'loading' });
-    try {
-      const result = await searchAdminTrips(query);
-      if (request !== sequence.current) return;
-      if (result.rows.length === 0 && result.totalCount > 0 && query.page > 1) {
-        setQuery((current) => ({
-          ...current,
-          page: Math.ceil(result.totalCount / current.pageSize),
-        }));
-        return;
+  const load = useCallback(
+    async (background = false) => {
+      const request = ++sequence.current;
+      if (!background) setState({ kind: 'loading' });
+      try {
+        const result = await searchAdminTrips(query);
+        if (request !== sequence.current) return;
+        if (result.rows.length === 0 && result.totalCount > 0 && query.page > 1) {
+          setQuery((current) => ({
+            ...current,
+            page: Math.ceil(result.totalCount / current.pageSize),
+          }));
+          return;
+        }
+        setState({ kind: 'ready', result });
+        setRefreshError(false);
+      } catch {
+        if (request === sequence.current) {
+          if (background) setRefreshError(true);
+          else setState({ kind: 'error' });
+        }
       }
-      setState({ kind: 'ready', result });
-    } catch {
-      if (request === sequence.current) setState({ kind: 'error' });
-    }
-  }, [query]);
+    },
+    [query],
+  );
 
   useEffect(() => {
     void load();
@@ -75,11 +85,26 @@ export function AdminTripSearchSection() {
     };
   }, [load]);
 
+  const refresh = useCallback(
+    (background = true) => {
+      const today = albertaToday();
+      if (appliedMode.current === 'today' && query.fromDate !== today) {
+        sequence.current += 1;
+        setQuery((current) => ({ ...current, fromDate: today, toDate: today, page: 1 }));
+        return;
+      }
+      void load(background);
+    },
+    [query.fromDate, load],
+  );
+  useAdminTripRefresh(refresh);
+
   function applyDates(event: React.FormEvent) {
     event.preventDefault();
     try {
       const bounds = adminTripDateBounds(selection);
       setValidationError(null);
+      appliedMode.current = selection.mode;
       sequence.current += 1;
       setState({ kind: 'loading' });
       setQuery((current) => ({ ...current, ...bounds, page: 1 }));
@@ -117,7 +142,7 @@ export function AdminTripSearchSection() {
           type="button"
           variant="secondary"
           size="sm"
-          onClick={() => void load()}
+          onClick={() => refresh(false)}
           disabled={state.kind === 'loading'}
         >
           {state.kind === 'error' ? 'Retry trips' : 'Refresh trips'}
@@ -221,6 +246,11 @@ export function AdminTripSearchSection() {
         </p>
       </div>
       <div className="mt-3" aria-live="polite" aria-busy={state.kind === 'loading'}>
+        {refreshError && (
+          <p className="mb-3 text-sm font-semibold text-danger-700" role="alert">
+            Trips could not be refreshed. Refresh trips to check again.
+          </p>
+        )}
         {state.kind === 'loading' && (
           <DataState
             title="Loading trips"

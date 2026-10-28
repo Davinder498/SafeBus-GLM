@@ -56,7 +56,8 @@ async function searchExistingTrips(query: AdminTripSearchQuery) {
   if (profile.role === 'school_admin') request = request.eq('route.school_id', profile.school_id!);
   if (query.fromDate) request = request.gte('service_date', query.fromDate);
   if (query.toDate) request = request.lte('service_date', query.toDate);
-  if (query.status) request = request.eq('status', query.status);
+  if (query.status === 'ongoing') request = request.in('status', ['active', 'paused']);
+  else if (query.status) request = request.eq('status', query.status);
   const offset = (query.page - 1) * query.pageSize;
   const { data, count, error } = await request
     .order('service_date', { ascending: false })
@@ -97,7 +98,7 @@ export async function searchAdminTrips(
     query.page < 1 ||
     ![25, 50, 100].includes(query.pageSize) ||
     (query.status !== null &&
-      !['active', 'paused', 'completed', 'cancelled'].includes(query.status)) ||
+      !['active', 'paused', 'completed', 'cancelled', 'ongoing'].includes(query.status)) ||
     (query.fromDate === null) !== (query.toDate === null)
   )
     throw new Error('Choose valid trip search filters.');
@@ -116,6 +117,9 @@ export async function searchAdminTrips(
     p_page_size: query.pageSize,
   });
   if (error?.code === 'PGRST202' || error?.code === '42883') return searchExistingTrips(query);
+  // Older reviewed search functions reject the newly supported combined status.
+  // Keep ongoing trips usable while the forward migration awaits protected release.
+  if (query.status === 'ongoing' && error?.code === '22023') return searchExistingTrips(query);
   if (error) throw new Error('Unable to load trips. Please try again.');
   const result = data as unknown as { rows: AdminTripOverviewRpcRow[]; totalCount: number };
   if (

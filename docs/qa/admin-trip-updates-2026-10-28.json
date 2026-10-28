@@ -1,0 +1,26 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "verificationDate": "2026-10-28",
+  "mode": "rollback-only transaction followed by independent read-only transaction",
+  "persistentlyInstalled": false,
+  "activeTrip": {
+    "existingGuardianStartRows": 1,
+    "existingDriverStartRows": 1,
+    "existingAdminStartRows": 0
+  },
+  "rehearsal": {
+    "functionHashesMatched": 2,
+    "notificationRowsUnchanged": true,
+    "pushRowsUnchanged": true,
+    "emailRowsUnchanged": true,
+    "preferenceRowsUnchanged": true
+  },
+  "restoration": {
+    "originalFunctionHashesMatched": 2
+  },
+  "externalNotificationsSent": false,
+  "limitations": [
+    "The migration applies to future trip status events; existing events are not replayed.",
+    "Persistent installation and client deployment await reviewed merge."
+  ]
+}

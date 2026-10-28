@@ -1,5 +1,9 @@
 # Tenant Overview trip search
 
+The 2026-10-28 active-trip fix is documented in
+`docs/operations/admin-active-trip-visibility-2026-10-28.md`. It adds ongoing runs
+independent of dated history and supersedes the historical adoption status below.
+
 Overview presents Trips followed by Transportation summary and a link to Live
 Operations. Recorded runs only; route management and live monitoring retain their
 existing workflows.
