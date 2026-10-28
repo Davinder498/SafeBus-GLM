@@ -15,6 +15,7 @@ import {
   templateRestoreSql,
   verifyTemplateInstallation,
   rehearseTemplates,
+  verifyTemplateDependencies,
 } from './lib/notification-template-rollout.mjs';
 
 const directory = '.safebus-release/notification-templates';
@@ -61,6 +62,8 @@ try {
   )
     throw new Error('TEMPLATE_DEPLOY_LOCK');
   const capture = () => templateReadOnly(client, () => templateSnapshot(client, config));
+  stage = 'authentication-dependencies';
+  await templateReadOnly(client, () => verifyTemplateDependencies(client, config));
   const identity = {
     releaseSha,
     runId: process.env.GITHUB_RUN_ID,
@@ -140,7 +143,9 @@ try {
     stage = 'install';
     await client.query('begin isolation level repeatable read');
     try {
-      await client.query("set local statement_timeout='5s';set local lock_timeout='1s'");
+      await client.query(
+        "set local statement_timeout='5s';set local lock_timeout='1s';set local check_function_bodies=on",
+      );
       if (
         evidence.snapshotSha256 !==
         templateDigest(JSON.stringify(await templateSnapshot(client, config)))

@@ -1,7 +1,12 @@
 {
   "projectId": "ckrkfylsyihwouvesypm",
+  "authenticationDependencies": [
+    "public.is_current_user_session_active()",
+    "safebus_private.has_completed_optional_mfa()",
+    "safebus_private.has_verified_mfa()"
+  ],
   "migration": "supabase/migrations/pending/20261027120000_notification_templates.sql",
-  "migrationSha256": "a91df1522b1a80479251bf0ddbd42548bf6480bf359256dd8c0ffbdc147da3cf",
+  "migrationSha256": "1225b779d72b0bf995001ab1daef8e691e8b37c5eb26cafd5ab8713f786e640f",
   "baseline": [
     {
       "signature": "safebus_private.notification_copy_before_announcements(user_notifications)",

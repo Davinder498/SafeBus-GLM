@@ -3,6 +3,11 @@
 DO $baseline$
 DECLARE item record;
 BEGIN
+  IF to_regprocedure('safebus_private.has_verified_mfa()') IS NULL
+    OR to_regprocedure('safebus_private.has_completed_optional_mfa()') IS NULL
+    OR to_regprocedure('public.is_current_user_session_active()') IS NULL THEN
+    RAISE EXCEPTION 'Notification template authentication dependencies are missing.' USING ERRCODE = '55000';
+  END IF;
   FOR item IN SELECT * FROM (VALUES
     ('safebus_private.notification_copy_before_announcements(public.user_notifications)', '6960b5492b65c460cc70dcd0d8ee916c'),
     ('safebus_private.notification_recipient_can_access(public.user_notifications)', '6b524d5dcdbe0310ce66321ba6617dc1'),
@@ -129,7 +134,7 @@ AS $function$
     and (n.recipient_role = 'platform_super_admin' or exists (
       select 1 from public.tenants authority where authority.id = n.tenant_id and authority.status = 'active'))
     and (n.recipient_role not in ('tenant_admin', 'school_admin', 'transportation_admin', 'platform_super_admin')
-      or public.has_verified_mfa())
+      or safebus_private.has_verified_mfa())
     and safebus_private.notification_access_before_announcements(n)
     and (n.event_type <> 'authority_announcement' or safebus_private.announcement_recipient_is_current(n));
 $function$;
