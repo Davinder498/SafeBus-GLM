@@ -46,93 +46,61 @@ describe('guardian notification email template', () => {
     expect(`${email.text} ${email.html}`).not.toContain('DoNotRender');
   });
 
-  it('builds a pickup template with first-name-only and tenant-timezone event timestamp', () => {
+  it.each(['student_picked_up', 'student_dropped_off'])(
+    'renders the canonical title and message for %s',
+    (notificationType) => {
+      const notificationTitle =
+        notificationType === 'student_picked_up' ? 'Pickup recorded' : 'Drop-off recorded';
+      const notificationBody =
+        'Alex Morgan was ' +
+        (notificationType === 'student_picked_up' ? 'picked up' : 'dropped off') +
+        ' on Bus 12 at Maple Street.';
+      const email = buildGuardianEventEmail({
+        notificationType,
+        notificationTitle,
+        notificationBody,
+        eventCreatedAt: '2026-07-14T15:30:00Z',
+        tenantTimezone: 'America/Edmonton',
+      });
+      expect(email.subject).toBe('SafeBus: ' + notificationTitle);
+      expect(email.text.split('\n')[0]).toBe(notificationBody);
+      expect(email.html).toContain('<p>' + notificationBody + '</p>');
+      expect(email.text).toContain('Recorded:');
+      expect(email.text).not.toContain('not live child tracking');
+    },
+  );
+
+  it('rejects missing canonical copy instead of reverting to first-name-only email', () => {
+    expect(() =>
+      buildGuardianEventEmail({ notificationType: 'student_picked_up', studentFirstName: 'Alex' }),
+    ).toThrow('canonical_pickup_dropoff_copy_required');
+  });
+
+  it.each([null, 'Not/A/Real_Zone'])(
+    'uses the Alberta timezone for a legacy invalid timezone %s',
+    (tenantTimezone) => {
+      const email = buildGuardianEventEmail({
+        notificationType: 'student_picked_up',
+        notificationTitle: 'Pickup recorded',
+        notificationBody: 'Alex Morgan was picked up on Bus 12 at Maple Street.',
+        eventCreatedAt: '2026-07-14T15:30:00Z',
+        tenantTimezone,
+      });
+      expect(email.text).toContain('America/Edmonton');
+    },
+  );
+
+  it('escapes complete canonical message HTML while preserving plain text', () => {
+    const notificationBody = 'Alex <Morgan> was picked up on Bus 12 at Maple & School.';
     const email = buildGuardianEventEmail({
       notificationType: 'student_picked_up',
-      studentFirstName: 'Avery Marie',
+      notificationTitle: 'Pickup recorded',
+      notificationBody,
       eventCreatedAt: '2026-07-14T15:30:00Z',
-      tenantTimezone: 'America/Edmonton',
     });
-    expect(email.subject).toContain('pickup');
-    expect(email.text).toContain('Avery');
-    expect(email.text).not.toContain('Marie');
-    expect(email.text).toContain('not live child tracking');
-    // Should contain a timezone label, not raw UTC only
-    expect(email.text.length).toBeGreaterThan(0);
-  });
-
-  it('falls back to default Alberta timezone when tenant timezone is invalid', () => {
-    const email = buildGuardianEventEmail({
-      notificationType: 'student_picked_up',
-      studentFirstName: 'Sam',
-      eventCreatedAt: '2026-07-14T15:30:00Z',
-      tenantTimezone: 'Not/A/Real_Zone',
-    });
-    expect(email.text).toContain('Sam');
-    expect(email.text).toContain('not live child tracking');
-  });
-
-  it('falls back to default when tenant timezone is null', () => {
-    const email = buildGuardianEventEmail({
-      notificationType: 'student_dropped_off',
-      studentFirstName: 'Pat',
-      eventCreatedAt: '2026-07-14T15:30:00Z',
-      tenantTimezone: null,
-    });
-    expect(email.text).toContain('drop-off event');
-  });
-
-  it('builds a drop-off template', () => {
-    const email = buildGuardianEventEmail({
-      notificationType: 'student_dropped_off',
-      studentFirstName: 'Sam',
-      eventCreatedAt: '2026-07-14T15:30:00Z',
-      tenantTimezone: 'America/Edmonton',
-    });
-    expect(email.text).toContain('drop-off event');
-  });
-
-  it('uses a safe default first name when student name is empty', () => {
-    const email = buildGuardianEventEmail({
-      notificationType: 'student_picked_up',
-      studentFirstName: '',
-      eventCreatedAt: '2026-07-14T15:30:00Z',
-      tenantTimezone: 'America/Edmonton',
-    });
-    expect(email.text).toContain('your student');
-  });
-
-  it('does not include surname, coordinates, route, stop, bus, driver, or IDs', () => {
-    const email = buildGuardianEventEmail({
-      notificationType: 'student_picked_up',
-      studentFirstName: 'Avery Marie',
-      eventCreatedAt: '2026-07-14T15:30:00Z',
-      tenantTimezone: 'America/Edmonton',
-    });
-    const combined = `${email.subject} ${email.text} ${email.html}`;
-    expect(combined).not.toContain('Marie');
-    expect(combined).not.toMatch(/\d+\.\d{4,}/); // no coordinates
-    // Must not expose route/stop/bus-number/driver identifiers.
-    // Note: "SafeBus" is the brand name and is intentionally present.
-    expect(combined).not.toContain('Route');
-    expect(combined).not.toContain('Stop');
-    expect(combined).not.toMatch(/Bus\s+\d/);
-    expect(combined).not.toContain('Bus Number');
-    expect(combined).not.toContain('Driver');
-    expect(combined).not.toContain('@');
-    expect(combined).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i); // no UUIDs
-  });
-
-  it('escapes HTML in student name', () => {
-    const email = buildGuardianEventEmail({
-      notificationType: 'student_picked_up',
-      studentFirstName: '<script>alert(1)</script>',
-      eventCreatedAt: '2026-07-14T15:30:00Z',
-      tenantTimezone: 'America/Edmonton',
-    });
-    expect(email.html).not.toContain('<script>');
-    // First token is <script>, which after escaping should not appear raw
-    expect(email.html).toContain('<');
+    expect(email.text.split('\n')[0]).toBe(notificationBody);
+    expect(email.html).toContain('Alex &lt;Morgan&gt;');
+    expect(email.html).toContain('Maple &amp; School');
   });
 });
 

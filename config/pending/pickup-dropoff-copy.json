@@ -1,0 +1,125 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "authenticationDependencies": [
+    "public.is_current_user_session_active()",
+    "safebus_private.has_completed_optional_mfa()",
+    "safebus_private.has_verified_mfa()",
+    "safebus_private.guardian_email_outbox_is_eligible(uuid)"
+  ],
+  "baseline": [
+    {
+      "signature": "safebus_private.notification_copy_before_announcements(user_notifications)",
+      "md5": "d8d709cf3a6667031a24914a0bfa5d78",
+      "acl": [
+        "postgres=X/postgres"
+      ]
+    },
+    {
+      "signature": "safebus_private.notification_push_copy(user_notifications)",
+      "md5": "6ec7c2d0cc486cf5faa81ce166b933de",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "safebus_private.on_student_trip_event_notification()",
+      "md5": "e16d5e4a42ca76739d3296e7da0eccde",
+      "acl": [
+        "postgres=X/postgres"
+      ]
+    },
+    {
+      "signature": "public.claim_push_notification_deliveries(text, integer, integer)",
+      "md5": "ed3c664547c96cc29cb2c27938c0c4e8",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "public.resolve_push_notification_delivery(uuid, text)",
+      "md5": "53d7b1c1f98c8ce21a596e088353ca0e",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    }
+  ],
+  "newFunctions": [
+    "safebus_private.pickup_dropoff_event_copy(uuid, uuid, uuid, uuid, text)",
+    "public.resolve_guardian_pickup_dropoff_email_payload(uuid)"
+  ],
+  "newTables": [
+    "safebus_private.pickup_dropoff_event_copies"
+  ],
+  "retainTablesOnRestore": true,
+  "migration": "supabase/migrations/pending/20261028222656_pickup_dropoff_notification_copy.sql",
+  "newFunctionAcls": {
+    "safebus_private.pickup_dropoff_event_copy(uuid, uuid, uuid, uuid, text)": [
+      "postgres=X/postgres"
+    ],
+    "public.resolve_guardian_pickup_dropoff_email_payload(uuid)": [
+      "postgres=X/postgres",
+      "service_role=X/postgres"
+    ]
+  },
+  "table": {
+    "rls": true,
+    "force_rls": false,
+    "acl": [
+      "postgres=arwdDxtm/postgres"
+    ],
+    "columns": [
+      {
+        "name": "student_trip_event_id",
+        "type": "uuid",
+        "required": true
+      },
+      {
+        "name": "tenant_id",
+        "type": "uuid",
+        "required": true
+      },
+      {
+        "name": "student_id",
+        "type": "uuid",
+        "required": true
+      },
+      {
+        "name": "driver_trip_id",
+        "type": "uuid",
+        "required": true
+      },
+      {
+        "name": "event_type",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "title",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "body",
+        "type": "text",
+        "required": true
+      }
+    ],
+    "constraints": [
+      "CHECK ((event_type = ANY (ARRAY['student_picked_up'::text, 'student_dropped_off'::text])))",
+      "PRIMARY KEY (student_trip_event_id)",
+      "FOREIGN KEY (student_trip_event_id) REFERENCES student_trip_events(id) ON DELETE CASCADE",
+      "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE"
+    ],
+    "policies": 0,
+    "triggers": 0
+  },
+  "migrationSha256": "e18655570586bcb901236fbcb18aa3d1f5cbd126908ed6eb8561f9f2050ef71f",
+  "sourceTrigger": {
+    "name": "student_trip_events_notify",
+    "definition": "CREATE TRIGGER student_trip_events_notify AFTER INSERT ON public.student_trip_events FOR EACH ROW EXECUTE FUNCTION safebus_private.on_student_trip_event_notification()",
+    "enabled": "O"
+  }
+}

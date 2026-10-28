@@ -29,6 +29,7 @@ jobs:
     env:
       CI: true
       SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
+      SAFEBUS_DATABASE_CA_CERT: ${{ vars.SAFEBUS_DATABASE_CA_CERT }}
       SAFEBUS_DEPLOY_ENV: production
       SAFEBUS_DEPLOY_CONFIRM: DEPLOY_PRODUCTION
       SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
@@ -41,6 +42,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.git_ref }}
+          fetch-depth: 0
       - name: Resolve approved release SHA
         env:
           REQUESTED_SHA: ${{ inputs.git_ref }}
@@ -54,6 +56,8 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Verify pickup and drop-off database support before releasing email
+        run: node scripts/release-pickup-dropoff-copy.mjs verify
       - name: Verify active Point 6 privacy and legal approval
         run: pnpm privacy:verify
       - name: Verify active Point 8 map readiness

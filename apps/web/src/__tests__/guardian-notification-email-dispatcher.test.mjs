@@ -47,6 +47,33 @@ describe('runDispatcher integration', () => {
     vi.clearAllMocks();
   });
 
+  it('never falls back to generic or first-name email when canonical pickup resolution fails', async () => {
+    const client = mockSupabase((name) =>
+      Promise.resolve(
+        name === 'claim_guardian_notification_email_batch_v2'
+          ? {
+              data: [
+                {
+                  id: 'copy-unavailable',
+                  notification_type: 'student_picked_up',
+                  attempt_count: 1,
+                },
+              ],
+              error: null,
+            }
+          : { data: null, error: { code: 'PGRST202' } },
+      ),
+    );
+    const sendEmail = vi.fn();
+    const result = await runDispatcher(makeEvent(), sendEmail);
+    expect(JSON.parse(result.body)).toMatchObject({ claimed: 1, error: 1 });
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(client.rpc.mock.calls.map(([name]) => name)).toEqual([
+      'claim_guardian_notification_email_batch_v2',
+      'resolve_guardian_pickup_dropoff_email_payload',
+    ]);
+  });
+
   it('returns 401 when dispatcher secret is missing', async () => {
     mockSupabase(() => Promise.resolve({ data: [], error: null }));
     const result = await runDispatcher(makeEvent(''));
@@ -94,7 +121,10 @@ describe('runDispatcher integration', () => {
     const client = mockSupabase((name) => {
       if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: claimedRows, error: null });
-      if (name === 'resolve_guardian_notification_email_payload') {
+      if (
+        name === 'resolve_guardian_notification_email_payload' ||
+        name === 'resolve_guardian_pickup_dropoff_email_payload'
+      ) {
         return Promise.resolve({
           data: [
             {
@@ -102,7 +132,8 @@ describe('runDispatcher integration', () => {
               tenant_id: 't1',
               guardian_id: 'g1',
               recipient_email: 'guardian@example.test',
-              student_first_name: 'Avery',
+              title: 'Pickup recorded',
+              body: 'Avery Morgan was picked up on Bus 12 at Maple Street.',
               notification_type: 'student_picked_up',
               event_created_at: '2026-07-14T15:30:00Z',
               tenant_timezone: 'America/Edmonton',
@@ -147,7 +178,10 @@ describe('runDispatcher integration', () => {
     mockSupabase((name) => {
       if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
-      if (name === 'resolve_guardian_notification_email_payload') {
+      if (
+        name === 'resolve_guardian_notification_email_payload' ||
+        name === 'resolve_guardian_pickup_dropoff_email_payload'
+      ) {
         return Promise.resolve({
           data: [
             {
@@ -155,7 +189,8 @@ describe('runDispatcher integration', () => {
               tenant_id: 't1',
               guardian_id: 'g1',
               recipient_email: 'guardian@example.test',
-              student_first_name: 'Sam',
+              title: 'Drop-off recorded',
+              body: 'Sam Morgan was dropped off on Bus 12 at Maple Street.',
               notification_type: 'student_dropped_off',
               event_created_at: '2026-07-14T16:00:00Z',
               tenant_timezone: 'America/Edmonton',
@@ -172,7 +207,7 @@ describe('runDispatcher integration', () => {
     const result = await runDispatcher(makeEvent('dispatcher-secret'), sendEmail);
     expect(result.statusCode).toBe(200);
     expect(JSON.parse(result.body)).toMatchObject({ claimed: 1, delivered: 1 });
-    expect(sendEmail.mock.calls[0][0].subject).toContain('drop-off');
+    expect(sendEmail.mock.calls[0][0].subject).toBe('SafeBus: Drop-off recorded');
   });
 
   it('delivers a canonical operational notification without student details', async () => {
@@ -188,7 +223,10 @@ describe('runDispatcher integration', () => {
     mockSupabase((name) => {
       if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
-      if (name === 'resolve_guardian_notification_email_payload') {
+      if (
+        name === 'resolve_guardian_notification_email_payload' ||
+        name === 'resolve_guardian_pickup_dropoff_email_payload'
+      ) {
         return Promise.resolve({
           data: [
             {
@@ -227,7 +265,10 @@ describe('runDispatcher integration', () => {
     mockSupabase((name) => {
       if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
-      if (name === 'resolve_guardian_notification_email_payload')
+      if (
+        name === 'resolve_guardian_notification_email_payload' ||
+        name === 'resolve_guardian_pickup_dropoff_email_payload'
+      )
         return Promise.resolve({ data: [], error: null });
       if (name === 'cancel_guardian_notification_email')
         return Promise.resolve({ data: null, error: null });
@@ -253,7 +294,10 @@ describe('runDispatcher integration', () => {
     mockSupabase((name) => {
       if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
-      if (name === 'resolve_guardian_notification_email_payload') {
+      if (
+        name === 'resolve_guardian_notification_email_payload' ||
+        name === 'resolve_guardian_pickup_dropoff_email_payload'
+      ) {
         return Promise.resolve({
           data: [
             {
@@ -261,7 +305,8 @@ describe('runDispatcher integration', () => {
               tenant_id: 't1',
               guardian_id: 'g1',
               recipient_email: '',
-              student_first_name: 'Avery',
+              title: 'Pickup recorded',
+              body: 'Avery Morgan was picked up on Bus 12 at Maple Street.',
               notification_type: 'student_picked_up',
               event_created_at: '2026-07-14T15:30:00Z',
               tenant_timezone: 'America/Edmonton',
@@ -293,7 +338,10 @@ describe('runDispatcher integration', () => {
     mockSupabase((name) => {
       if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
-      if (name === 'resolve_guardian_notification_email_payload') {
+      if (
+        name === 'resolve_guardian_notification_email_payload' ||
+        name === 'resolve_guardian_pickup_dropoff_email_payload'
+      ) {
         return Promise.resolve({
           data: [
             {
@@ -301,7 +349,8 @@ describe('runDispatcher integration', () => {
               tenant_id: 't1',
               guardian_id: 'g1',
               recipient_email: 'not-an-email',
-              student_first_name: 'Avery',
+              title: 'Pickup recorded',
+              body: 'Avery Morgan was picked up on Bus 12 at Maple Street.',
               notification_type: 'student_picked_up',
               event_created_at: '2026-07-14T15:30:00Z',
               tenant_timezone: 'America/Edmonton',
@@ -331,7 +380,10 @@ describe('runDispatcher integration', () => {
     mockSupabase((name) => {
       if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
-      if (name === 'resolve_guardian_notification_email_payload') {
+      if (
+        name === 'resolve_guardian_notification_email_payload' ||
+        name === 'resolve_guardian_pickup_dropoff_email_payload'
+      ) {
         return Promise.resolve({
           data: [
             {
@@ -339,7 +391,8 @@ describe('runDispatcher integration', () => {
               tenant_id: 't1',
               guardian_id: 'g1',
               recipient_email: 'guardian@example.test',
-              student_first_name: 'Avery',
+              title: 'Pickup recorded',
+              body: 'Avery Morgan was picked up on Bus 12 at Maple Street.',
               notification_type: 'student_picked_up',
               event_created_at: '2026-07-14T15:30:00Z',
               tenant_timezone: 'America/Edmonton',
@@ -352,14 +405,12 @@ describe('runDispatcher integration', () => {
         return Promise.resolve({ data: null, error: null });
       return Promise.resolve({ data: null, error: null });
     });
-    const sendEmail = vi
-      .fn()
-      .mockRejectedValue(
-        Object.assign(new Error('provider_error'), {
-          status: 503,
-          providerMessage: 'service_unavailable',
-        }),
-      );
+    const sendEmail = vi.fn().mockRejectedValue(
+      Object.assign(new Error('provider_error'), {
+        status: 503,
+        providerMessage: 'service_unavailable',
+      }),
+    );
     const result = await runDispatcher(makeEvent('dispatcher-secret'), sendEmail);
     expect(JSON.parse(result.body)).toMatchObject({ claimed: 1, retry: 1 });
   });
@@ -377,7 +428,10 @@ describe('runDispatcher integration', () => {
     mockSupabase((name) => {
       if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
-      if (name === 'resolve_guardian_notification_email_payload') {
+      if (
+        name === 'resolve_guardian_notification_email_payload' ||
+        name === 'resolve_guardian_pickup_dropoff_email_payload'
+      ) {
         return Promise.resolve({
           data: [
             {
@@ -385,7 +439,8 @@ describe('runDispatcher integration', () => {
               tenant_id: 't1',
               guardian_id: 'g1',
               recipient_email: 'guardian@example.test',
-              student_first_name: 'Avery',
+              title: 'Pickup recorded',
+              body: 'Avery Morgan was picked up on Bus 12 at Maple Street.',
               notification_type: 'student_picked_up',
               event_created_at: '2026-07-14T15:30:00Z',
               tenant_timezone: 'America/Edmonton',
@@ -418,7 +473,10 @@ describe('runDispatcher integration', () => {
     mockSupabase((name) => {
       if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
-      if (name === 'resolve_guardian_notification_email_payload') {
+      if (
+        name === 'resolve_guardian_notification_email_payload' ||
+        name === 'resolve_guardian_pickup_dropoff_email_payload'
+      ) {
         return Promise.resolve({
           data: [
             {
@@ -426,7 +484,8 @@ describe('runDispatcher integration', () => {
               tenant_id: 't1',
               guardian_id: 'g1',
               recipient_email: 'guardian@example.test',
-              student_first_name: 'Avery',
+              title: 'Pickup recorded',
+              body: 'Avery Morgan was picked up on Bus 12 at Maple Street.',
               notification_type: 'student_picked_up',
               event_created_at: '2026-07-14T15:30:00Z',
               tenant_timezone: 'America/Edmonton',
@@ -439,14 +498,12 @@ describe('runDispatcher integration', () => {
         return Promise.resolve({ data: null, error: null });
       return Promise.resolve({ data: null, error: null });
     });
-    const sendEmail = vi
-      .fn()
-      .mockRejectedValue(
-        Object.assign(new Error('provider_error'), {
-          status: 422,
-          providerMessage: 'validation_error',
-        }),
-      );
+    const sendEmail = vi.fn().mockRejectedValue(
+      Object.assign(new Error('provider_error'), {
+        status: 422,
+        providerMessage: 'validation_error',
+      }),
+    );
     const result = await runDispatcher(makeEvent('dispatcher-secret'), sendEmail);
     expect(JSON.parse(result.body)).toMatchObject({ claimed: 1, failed: 1 });
   });
@@ -465,7 +522,10 @@ describe('runDispatcher integration', () => {
     mockSupabase((name) => {
       if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
-      if (name === 'resolve_guardian_notification_email_payload') {
+      if (
+        name === 'resolve_guardian_notification_email_payload' ||
+        name === 'resolve_guardian_pickup_dropoff_email_payload'
+      ) {
         return Promise.resolve({
           data: [
             {
@@ -473,7 +533,8 @@ describe('runDispatcher integration', () => {
               tenant_id: 't1',
               guardian_id: 'g1',
               recipient_email: 'real@example.test',
-              student_first_name: 'Avery',
+              title: 'Pickup recorded',
+              body: 'Avery Morgan was picked up on Bus 12 at Maple Street.',
               notification_type: 'student_picked_up',
               event_created_at: '2026-07-14T15:30:00Z',
               tenant_timezone: 'America/Edmonton',
@@ -505,7 +566,10 @@ describe('runDispatcher integration', () => {
     mockSupabase((name) => {
       if (name === 'claim_guardian_notification_email_batch_v2')
         return Promise.resolve({ data: [row], error: null });
-      if (name === 'resolve_guardian_notification_email_payload') {
+      if (
+        name === 'resolve_guardian_notification_email_payload' ||
+        name === 'resolve_guardian_pickup_dropoff_email_payload'
+      ) {
         return Promise.resolve({
           data: [
             {
@@ -513,7 +577,8 @@ describe('runDispatcher integration', () => {
               tenant_id: 't1',
               guardian_id: 'g1',
               recipient_email: 'real@example.test',
-              student_first_name: 'Avery',
+              title: 'Pickup recorded',
+              body: 'Avery Morgan was picked up on Bus 12 at Maple Street.',
               notification_type: 'student_picked_up',
               event_created_at: '2026-07-14T15:30:00Z',
               tenant_timezone: 'America/Edmonton',
@@ -554,7 +619,10 @@ describe('runDispatcher integration', () => {
       if (name === 'claim_guardian_notification_email_batch_v2') {
         return Promise.resolve({ data: [row], error: null });
       }
-      if (name === 'resolve_guardian_notification_email_payload') {
+      if (
+        name === 'resolve_guardian_notification_email_payload' ||
+        name === 'resolve_guardian_pickup_dropoff_email_payload'
+      ) {
         return Promise.resolve({ data: [], error: null });
       }
       if (name === 'resolve_notification_email_recipient') {

@@ -2,8 +2,31 @@ import { expect, test } from '@playwright/test';
 import { installGuardianVisibilityMock } from '../smoke/fixtures/guardian-bus-visibility';
 import { installLocalOnlyBoundary } from '../smoke/fixtures/local-only';
 
-for (const role of ['guardian', 'driver'] as const) {
-  test(`${role} sees event titles and separate times in inbox and pushed detail`, async ({
+for (const scenario of [
+  {
+    role: 'guardian',
+    event: 'student_picked_up',
+    category: 'pickup_dropoff',
+    title: 'Pickup recorded',
+    body: 'Alex Morgan was picked up on Bus 12 at Maple Street.',
+  },
+  {
+    role: 'guardian',
+    event: 'student_dropped_off',
+    category: 'pickup_dropoff',
+    title: 'Drop-off recorded',
+    body: 'Alex Morgan was dropped off on Bus 12 at School entrance.',
+  },
+  {
+    role: 'driver',
+    event: 'trip_completed',
+    category: 'trip_status',
+    title: 'Trip completed',
+    body: 'Outbound trip for route Demo 01 has been completed by bus Demo 01.',
+  },
+] as const) {
+  const { role } = scenario;
+  test(`${role} sees ${scenario.event} and separate times in inbox and pushed detail`, async ({
     page,
   }, testInfo) => {
     await installLocalOnlyBoundary(page);
@@ -11,11 +34,11 @@ for (const role of ['guardian', 'driver'] as const) {
     const id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
     const notice = {
       id,
-      event_type: 'trip_completed',
-      category: 'trip_status',
+      event_type: scenario.event,
+      category: scenario.category,
       severity: 'info',
-      title: 'Trip completed',
-      body: 'Outbound trip for route Demo 01 has been completed by bus Demo 01.',
+      title: scenario.title,
+      body: scenario.body,
       occurred_at: '2026-10-27T12:00:00Z',
       created_at: '2026-10-27T12:00:00Z',
       read_at: null,
@@ -48,6 +71,7 @@ for (const role of ['guardian', 'driver'] as const) {
     await expect(page).toHaveURL(new RegExp(`notification=${id}`));
     const detail = page.locator('[data-ui="notification-detail-card"]');
     await expect(detail.getByRole('heading', { name: notice.title, exact: true })).toBeVisible();
+    await expect(detail.getByText(notice.body, { exact: true })).toBeVisible();
     await expect(detail.locator('time')).toHaveAttribute('datetime', notice.occurred_at);
     await expect(page.locator('[data-ui="notification-card"]')).toHaveCount(0);
     await page.screenshot({
