@@ -73,6 +73,19 @@ repeat the standard notification privacy approval already given.
 - Codex reviews.
 - Human approves final merge.
 
+### Standing service authorization — owner direction, 2026-10-28
+
+- The owner authorizes task-related changes in the existing SafeBus Supabase,
+  GitHub, Netlify, and Stripe accounts. Use available connected tools, APIs, CLIs,
+  or computer use as needed without requesting repeated permission for those
+  already-authorized changes.
+- Use the actual permissions of the connected accounts. Report a concrete access
+  or credential problem if it prevents the requested work; do not claim access
+  that has not been verified.
+- Continue the feature-branch, human merge review, recovery, and protected
+  production release workflow. This authorization does not remove account
+  security, required deployment reviewers, recipient consent, or data boundaries.
+
 ## Current Development Setup
 
 - The existing hosted `BusSafe` Supabase project is the sole database and is production.
@@ -244,3 +257,16 @@ pnpm lint
 pnpm build
 pnpm test
 ```
+
+After every completed set of changes, also run the mobile build followed by the
+Android sync, including changes outside the mobile app:
+
+```bash
+pnpm --filter @safebus/mobile build
+pnpm --filter @safebus/mobile cap:sync
+```
+
+Run sync only after the mobile build succeeds so Android receives the current
+bundle. If subsequent edits change the bundle or native configuration, build and
+sync again. Report the result of both commands; do not describe a build or sync
+as an APK/AAB installation, Play publication, or physical-device verification.
