@@ -6,7 +6,7 @@ export type AdminTripDateMode = 'today' | 'date' | 'range' | 'all';
 export interface AdminTripSearchQuery {
   fromDate: string | null;
   toDate: string | null;
-  status: AdminTripStatus | null;
+  status: AdminTripStatus | 'ongoing' | null;
   page: number;
   pageSize: AdminPageSize;
 }

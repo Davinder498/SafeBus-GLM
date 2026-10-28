@@ -8,24 +8,28 @@ import { formatAdminTripDate, formatAdminTripTime } from '@/utils/adminTripDates
 export function AdminTripTable({
   trips,
   timeZone,
+  testId = 'admin-trips-table',
+  resultsLabel = 'Trip results',
 }: {
   trips: AdminTripOverviewItem[];
   timeZone?: string;
+  testId?: string;
+  resultsLabel?: string;
 }) {
   const [notesTripId, setNotesTripId] = useState<string | null>(null);
   const notesPanelId = useId();
   const visibleNotesTripId = trips.some((trip) => trip.id === notesTripId) ? notesTripId : null;
 
   return (
-    <div className="mt-4" data-testid="admin-trips-table">
+    <div className="mt-4" data-testid={testId}>
       <div
         className="overflow-x-auto rounded-lg border border-gray-200"
         tabIndex={0}
         role="region"
-        aria-label="Trip results"
+        aria-label={resultsLabel}
       >
         <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
-          <caption className="sr-only">Recorded trips matching the selected filters</caption>
+          <caption className="sr-only">{resultsLabel}</caption>
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-gray-600">
             <tr>
               {[

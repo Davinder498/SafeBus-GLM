@@ -249,6 +249,17 @@ Do not add these unless the milestone explicitly asks:
 
 ## Required Validation
 
+- Owner direction, 2026-10-28: define acceptance behavior for every affected user
+  type before implementation: school authority admin, school-scoped admin,
+  transportation admin, guardian, driver, and platform admin. Verify each role's
+  permitted events, channels, scope and failure behavior. A passing public-page
+  smoke test or mocked inbox response is not proof of source-event delivery.
+- Retain mandatory MFA for privileged administrators. Guardian and driver MFA
+  enrollment remains optional; users without enrollment retain all features
+  permitted by their normal role, account, subscription and consent rules.
+- The engineer owns preparing, rehearsing, applying and verifying task-related
+  Supabase migrations through the existing reviewed, protected release workflow.
+
 Before final report, run:
 
 ```bash

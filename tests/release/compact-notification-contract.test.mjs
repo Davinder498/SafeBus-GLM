@@ -12,7 +12,7 @@ function definition(name) {
   return match[0];
 }
 
-test('new admin events are exceptions-only and driver assignment enforcement is preserved', () => {
+test('original admin event gate was exception-only and driver assignment enforcement is preserved', () => {
   const trigger = definition('safebus_private.capture_notification_inbox_visibility');
   assert.match(
     trigger,
@@ -34,6 +34,24 @@ test('new admin events are exceptions-only and driver assignment enforcement is 
     definition('safebus_private.notification_recipient_can_access'),
     /driver_can_access_notification\(n\)/,
   );
+});
+
+test('pending forward change admits trip starts and completions to both administrator gates', async () => {
+  const forward = await readFile(
+    'supabase/migrations/pending/20261028090000_admin_trip_updates.sql',
+    'utf8',
+  );
+  assert.match(
+    forward,
+    /new\.event_type not in \(\s*'trip_started', 'trip_completed', 'trip_cancelled'/,
+  );
+  assert.match(
+    forward,
+    /if p_event_type in \(\s*'trip_started', 'trip_completed', 'trip_cancelled'/,
+  );
+  assert.match(forward, /p\.tenant_id = p_tenant_id and p\.status = 'active'/);
+  assert.match(forward, /p\.role = 'school_admin' and p\.school_id = v_school_id/);
+  assert.doesNotMatch(forward, /enforce_driver_assignment_only_notification/);
 });
 
 test('guardian trip audiences require matching bus, route, direction and effective service date', () => {

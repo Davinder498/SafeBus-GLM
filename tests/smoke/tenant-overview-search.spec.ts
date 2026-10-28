@@ -43,7 +43,10 @@ function searchResult(args: SearchArgs) {
       (row) =>
         (!args.p_from_date || row.service_date >= args.p_from_date) &&
         (!args.p_to_date || row.service_date <= args.p_to_date) &&
-        (!args.p_status || row.status === args.p_status),
+        (!args.p_status ||
+          (args.p_status === 'ongoing'
+            ? ['active', 'paused'].includes(row.status)
+            : row.status === args.p_status)),
     )
     .sort(
       (a, b) =>
@@ -59,13 +62,15 @@ async function installOverviewMock(
   page: Page,
   options: { tripError?: boolean; summaryError?: boolean; missingRpc?: boolean } = {},
 ) {
-  await page.clock.setFixedTime(new Date('2026-10-09T05:30:00Z'));
+  await page.clock.install({ time: new Date('2026-10-09T05:30:00Z') });
   await installAdminWorkflowMock(page);
   const requests: SearchArgs[] = [];
   const controls = {
     tripError: !!options.tripError,
     summaryError: !!options.summaryError,
     requests,
+    ongoingRequests: [] as SearchArgs[],
+    ongoingTrips: null as ReturnType<typeof trip>[] | null,
     missingRpc: !!options.missingRpc,
     compatibilityRequests: [] as URL[],
   };
@@ -73,7 +78,8 @@ async function installOverviewMock(
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/rpc/search_admin_trips')) {
       const args = route.request().postDataJSON() as SearchArgs;
-      requests.push(args);
+      if (args.p_status === 'ongoing') controls.ongoingRequests.push(args);
+      else requests.push(args);
       if (controls.missingRpc)
         return route.fulfill({
           status: 404,
@@ -84,7 +90,17 @@ async function installOverviewMock(
         status: controls.tripError ? 500 : 200,
         contentType: 'application/json',
         body: JSON.stringify(
-          controls.tripError ? { message: 'Mock unavailable' } : searchResult(args),
+          controls.tripError
+            ? { message: 'Mock unavailable' }
+            : args.p_status === 'ongoing' && controls.ongoingTrips
+              ? {
+                  rows: controls.ongoingTrips.slice(
+                    (args.p_page - 1) * args.p_page_size,
+                    args.p_page * args.p_page_size,
+                  ),
+                  totalCount: controls.ongoingTrips.length,
+                }
+              : searchResult(args),
         ),
       });
     }
@@ -108,7 +124,8 @@ async function installOverviewMock(
           params
             .getAll('status')
             .find((value) => value.startsWith('eq.'))
-            ?.slice(3) ?? null,
+            ?.slice(3) ??
+          (params.getAll('status').includes('in.(active,paused)') ? 'ongoing' : null),
         p_page: offset / pageSize + 1,
         p_page_size: pageSize,
       });
@@ -211,6 +228,94 @@ test('overview defaults to Alberta today and retains seven summary destinations'
   );
   await expect(search).toContainText(expectedTime);
   await page.screenshot({ path: testInfo.outputPath('tenant-overview.png'), fullPage: true });
+});
+
+test('ongoing runs remain visible across history dates, Alberta midnight and missing GPS', async ({
+  page,
+}) => {
+  const controls = await installOverviewMock(page);
+  controls.ongoingTrips = [
+    trip('overnight', '2026-10-07', 'active'),
+    trip('paused-run', '2026-10-07', 'paused'),
+  ];
+  await page.goto('/admin');
+  const ongoing = page.getByTestId('admin-ongoing-trips');
+  await expect(ongoing.getByRole('heading')).toHaveText('Ongoing trips (2)');
+  await expect(ongoing.locator('tbody tr')).toHaveCount(2);
+  expect(controls.ongoingRequests[0]).toMatchObject({
+    p_from_date: null,
+    p_to_date: null,
+    p_status: 'ongoing',
+  });
+  await page.getByLabel('Dates', { exact: true }).selectOption('date');
+  await page.getByLabel('Service date', { exact: true }).fill('2020-01-01');
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+  await expect(page.getByTestId('admin-trips-empty')).toBeVisible();
+  await expect(ongoing.locator('tbody tr')).toHaveCount(2);
+  await page.clock.setSystemTime(new Date('2026-10-09T06:00:01Z'));
+  await page.clock.runFor(15_100);
+  await expect(ongoing.locator('tbody tr')).toHaveCount(2);
+  await expect(page.getByTestId('trip-search-date-label')).toContainText('2020');
+});
+
+test('ongoing runs update on polling and focus, and failed refresh preserves a labelled last checked list', async ({
+  page,
+}) => {
+  const controls = await installOverviewMock(page);
+  controls.ongoingTrips = [trip('active', '2026-10-08', 'active')];
+  await page.goto('/admin');
+  const ongoing = page.getByTestId('admin-ongoing-trips');
+  await expect(ongoing.locator('tbody tr')).toHaveCount(1);
+  controls.ongoingTrips = [];
+  await page.clock.runFor(15_100);
+  await expect(ongoing).toContainText('No ongoing trips.');
+  controls.ongoingTrips = [trip('new-run', '2026-10-08', 'active')];
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(ongoing).toContainText('Route new-run');
+  controls.tripError = true;
+  await page.clock.runFor(15_100);
+  await expect(ongoing.getByRole('alert')).toContainText('last checked list');
+  await expect(ongoing).toContainText('Route new-run');
+  await expect(ongoing.getByRole('heading')).toHaveText('Ongoing trips (1)');
+  controls.tripError = false;
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect(ongoing.getByRole('alert')).toHaveCount(0);
+});
+
+test('Today rolls over automatically but an applied all-dates search stays unchanged', async ({
+  page,
+}) => {
+  const controls = await installOverviewMock(page);
+  await page.goto('/admin');
+  await expect(page.getByTestId('admin-trips-table')).toBeVisible();
+  await page.clock.setSystemTime(new Date('2026-10-09T06:00:01Z'));
+  await page.clock.runFor(15_100);
+  await expect.poll(() => controls.requests.at(-1)?.p_from_date).toBe('2026-10-09');
+  await page.getByLabel('Dates', { exact: true }).selectOption('all');
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+  await expect(page.getByTestId('admin-pagination')).toContainText('Showing 1-25');
+  await page.clock.setSystemTime(new Date('2026-10-10T06:00:01Z'));
+  await page.clock.runFor(15_100);
+  expect(controls.requests.at(-1)?.p_from_date).toBeNull();
+});
+
+test('ongoing trip pages remain bounded and recover when completed runs remove a page', async ({
+  page,
+}) => {
+  const controls = await installOverviewMock(page);
+  controls.ongoingTrips = Array.from({ length: 26 }, (_, i) =>
+    trip(`ongoing-${i}`, '2026-10-08', 'active'),
+  );
+  await page.goto('/admin');
+  const ongoing = page.getByTestId('admin-ongoing-trips');
+  await expect(ongoing.locator('tbody tr')).toHaveCount(25);
+  await ongoing.getByRole('button', { name: 'Next', exact: true }).click();
+  await expect(ongoing.locator('tbody tr')).toHaveCount(1);
+  controls.ongoingTrips = [controls.ongoingTrips[0]];
+  await page.clock.runFor(15_100);
+  await expect(ongoing).toContainText('Route ongoing-0');
+  await expect(ongoing.getByRole('heading')).toHaveText('Ongoing trips (1)');
+  expect(controls.ongoingRequests.at(-1)?.p_page).toBe(1);
 });
 
 test('historical search reaches beyond 200 recent trips, includes range endpoints and opens notes', async ({

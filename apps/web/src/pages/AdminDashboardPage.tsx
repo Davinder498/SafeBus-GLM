@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { AdminTripSearchSection } from '@/components/admin/AdminTripSearchSection';
+import { AdminOngoingTrips } from '@/components/admin/AdminOngoingTrips';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { Button, buttonClass } from '@/components/ui/Button';
 import { DataState } from '@/components/ui/DataState';
@@ -60,6 +61,7 @@ export function AdminDashboardPage() {
           }
         />
 
+        <AdminOngoingTrips />
         <AdminTripSearchSection />
 
         <section
