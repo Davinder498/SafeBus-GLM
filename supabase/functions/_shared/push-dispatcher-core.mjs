@@ -114,12 +114,13 @@ export function classifyFcmError(error) {
 
 export function buildFcmMessage(row) {
   const urgent = row.severity === 'urgent';
+  const pickupDropoff = ['student_picked_up', 'student_dropped_off'].includes(row.event_type);
   return {
     message: {
       token: row.fcm_token,
       notification: {
-        title: row.title.replace(/\bbussafe\b/gi, 'SafeBus'),
-        body: row.body.replace(/\bbussafe\b/gi, 'SafeBus'),
+        title: pickupDropoff ? row.title : row.title.replace(/\bbussafe\b/gi, 'SafeBus'),
+        body: pickupDropoff ? row.body : row.body.replace(/\bbussafe\b/gi, 'SafeBus'),
       },
       data: {
         notificationId: row.notification_id,

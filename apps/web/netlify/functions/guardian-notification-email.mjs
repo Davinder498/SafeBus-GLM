@@ -31,12 +31,16 @@ function safeLog(details) {
 
 export function buildGuardianEventEmail({
   notificationType,
-  studentFirstName,
+  notificationTitle,
+  notificationBody,
   eventCreatedAt,
   tenantTimezone,
 }) {
   const genericCopy = {
-    authority_announcement: ['School authority announcement', 'Your school authority has sent an operational alert.'],
+    authority_announcement: [
+      'School authority announcement',
+      'Your school authority has sent an operational alert.',
+    ],
     driver_assignment_created: ['Assignment created', 'A SafeBus assignment was created for you.'],
     driver_assignment_changed: ['Assignment changed', 'A SafeBus assignment was changed for you.'],
     driver_assignment_ended: ['Assignment ended', 'A SafeBus assignment was ended for you.'],
@@ -64,7 +68,9 @@ export function buildGuardianEventEmail({
   if (genericCopy) {
     const [subjectLabel, summary] = genericCopy;
     const subject = `SafeBus: ${subjectLabel}`;
-    const isDriverAssignment = notificationType.startsWith('driver_assignment_') || notificationType === 'authority_announcement';
+    const isDriverAssignment =
+      notificationType.startsWith('driver_assignment_') ||
+      notificationType === 'authority_announcement';
     const instruction = isDriverAssignment
       ? 'Open SafeBus to view the update.'
       : 'Open SafeBus to view the update. This email intentionally excludes student details.';
@@ -78,53 +84,39 @@ export function buildGuardianEventEmail({
     };
   }
 
-  const action = notificationType === 'student_picked_up' ? 'pickup' : 'drop-off';
-  const verb = notificationType === 'student_picked_up' ? 'picked up' : 'dropped off';
-  // Validate the tenant timezone by attempting to use it. Fall back to the
-  // default Alberta zone if it is invalid or missing.
+  if (
+    !['student_picked_up', 'student_dropped_off'].includes(notificationType) ||
+    typeof notificationTitle !== 'string' ||
+    !notificationTitle.trim() ||
+    typeof notificationBody !== 'string' ||
+    !notificationBody.trim()
+  ) {
+    throw new Error('canonical_pickup_dropoff_copy_required');
+  }
   let tz = DEFAULT_TZ;
   try {
     if (tenantTimezone) {
-      // This throws for invalid IANA time zones.
       new Intl.DateTimeFormat('en-CA', { timeZone: tenantTimezone });
       tz = tenantTimezone;
     }
   } catch {
-    tz = DEFAULT_TZ;
-  }
-  let zoneLabel;
-  try {
-    const parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: tz,
-      timeZoneName: 'short',
-    }).formatToParts(new Date(eventCreatedAt));
-    zoneLabel = parts.find((p) => p.type === 'timeZoneName')?.value || tz;
-  } catch {
-    zoneLabel = tz;
+    /* Use the Alberta default for legacy invalid timezones. */
   }
   const when = new Intl.DateTimeFormat('en-CA', {
     dateStyle: 'medium',
     timeStyle: 'short',
     timeZone: tz,
   }).format(new Date(eventCreatedAt));
-  const firstToken = String(studentFirstName || '')
-    .trim()
-    .split(/\s+/)[0];
-  const safeFirstName = firstToken || 'your student';
-  const subject = `SafeBus ${action} event recorded`;
-  const text = [
-    `A ${action} event was recorded for ${safeFirstName} at ${when} (${zoneLabel}).`,
-    '',
-    'This message reflects an event recorded by the transportation system. It is not live child tracking and does not independently verify safety or custody.',
-    '',
-    'SafeBus',
-  ].join('\n');
+  const recorded = 'Recorded: ' + when + ' (' + tz + ')';
   return {
-    subject,
-    text,
-    html: `<p>A ${action} event was recorded for ${escapeHtml(safeFirstName)} at ${escapeHtml(when)} (${escapeHtml(zoneLabel)}).</p><p>This message reflects an event recorded by the transportation system. It is not live child tracking and does not independently verify safety or custody.</p><p>SafeBus</p>`,
-    action,
-    verb,
+    subject: 'SafeBus: ' + notificationTitle,
+    text: [notificationBody, '', recorded, '', 'SafeBus'].join('\n'),
+    html:
+      '<p>' +
+      escapeHtml(notificationBody) +
+      '</p><p>' +
+      escapeHtml(recorded) +
+      '</p><p>SafeBus</p>',
   };
 }
 
@@ -233,13 +225,18 @@ export async function sendResendEmail({
 
 async function dispatchOne(supabase, cfg, row, sendEmail = sendResendEmail) {
   const startedAt = Date.now();
+  const isPickupDropoff = ['student_picked_up', 'student_dropped_off'].includes(
+    row.notification_type,
+  );
   const { data: guardianPayloads, error: guardianResolveError } = await supabase.rpc(
-    'resolve_guardian_notification_email_payload',
+    isPickupDropoff
+      ? 'resolve_guardian_pickup_dropoff_email_payload'
+      : 'resolve_guardian_notification_email_payload',
     { p_outbox_id: row.id },
   );
   if (guardianResolveError) throw guardianResolveError;
   let payload = guardianPayloads?.[0];
-  if (!payload) {
+  if (!payload && !isPickupDropoff) {
     const { data: recipients, error: recipientError } = await supabase.rpc(
       'resolve_notification_email_recipient',
       { p_outbox_id: row.id },
@@ -287,8 +284,9 @@ async function dispatchOne(supabase, cfg, row, sendEmail = sendResendEmail) {
   }
   const email = buildGuardianEventEmail({
     notificationType: payload.notification_type,
-    studentFirstName: payload.student_first_name,
-    eventCreatedAt: payload.event_created_at,
+    notificationTitle: payload.title,
+    notificationBody: payload.body,
+    eventCreatedAt: payload.event_occurred_at ?? payload.event_created_at,
     tenantTimezone: payload.tenant_timezone,
   });
   const to =

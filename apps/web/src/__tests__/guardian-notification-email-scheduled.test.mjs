@@ -125,7 +125,10 @@ describe('scheduled notification dispatcher', () => {
             error: null,
           });
         }
-        if (name === 'resolve_guardian_notification_email_payload') {
+        if (
+          name === 'resolve_guardian_notification_email_payload' ||
+          name === 'resolve_guardian_pickup_dropoff_email_payload'
+        ) {
           return Promise.resolve({
             data: [
               {
@@ -133,7 +136,8 @@ describe('scheduled notification dispatcher', () => {
                 tenant_id: 't1',
                 guardian_id: 'g1',
                 recipient_email: 'guardian@example.test',
-                student_first_name: 'Avery',
+                title: 'Pickup recorded',
+                body: 'Avery Morgan was picked up on Bus 12 at Maple Street.',
                 notification_type: 'student_picked_up',
                 event_created_at: '2026-07-14T15:30:00Z',
                 tenant_timezone: 'America/Edmonton',
