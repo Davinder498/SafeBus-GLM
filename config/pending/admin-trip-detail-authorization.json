@@ -1,0 +1,9 @@
+{
+  "status": "prepared-unapplied",
+  "migration": "supabase/migrations/pending/20261028114543_admin_trip_operations_detail.sql",
+  "authenticated": [
+    "get_admin_trip_detail(uuid)",
+    "get_admin_trip_operations(date,date,text,integer,integer)"
+  ],
+  "serviceRole": []
+}

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { AdminPagination } from '@/components/admin/AdminPagination';
 import { AdminTripTable } from '@/components/admin/AdminTripTable';
 import { Button } from '@/components/ui/Button';
@@ -6,9 +7,11 @@ import { DataState } from '@/components/ui/DataState';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { searchAdminTrips } from '@/services/adminTripSearchService';
+import { AdminTripAccessError, fetchAdminTripOperations } from '@/services/adminTripDetailService';
 import { useAdminTripRefresh } from '@/hooks/useAdminTripRefresh';
-import type { AdminTripOverviewItem, AdminTripStatus } from '@/types/adminTripOverview';
+import type { AdminTripStatus } from '@/types/adminTripOverview';
+import type { AdminTripOperation } from '@/types/adminTripDetail';
+import { readTripListQuery } from '@/utils/adminTripListQuery';
 import type {
   AdminTripDateMode,
   AdminTripDateSelection,
@@ -24,8 +27,8 @@ import {
 
 type SearchState =
   | { kind: 'loading' }
-  | { kind: 'error' }
-  | { kind: 'ready'; result: PaginatedResult<AdminTripOverviewItem> };
+  | { kind: 'error'; message: string }
+  | { kind: 'ready'; result: PaginatedResult<AdminTripOperation> };
 
 const statuses: Array<{ value: AdminTripStatus | null; label: string }> = [
   { value: null, label: 'All' },
@@ -36,18 +39,20 @@ const statuses: Array<{ value: AdminTripStatus | null; label: string }> = [
 ];
 
 export function AdminTripSearchSection() {
+  const [params, setParams] = useSearchParams();
+  const [initial] = useState(() => readTripListQuery(params));
   const [selection, setSelection] = useState<AdminTripDateSelection>(() => {
     const today = albertaToday();
-    return { mode: 'today', date: today, fromDate: today, toDate: today };
+    return {
+      mode: initial.mode,
+      date: initial.query.fromDate ?? today,
+      fromDate: initial.query.fromDate ?? today,
+      toDate: initial.query.toDate ?? today,
+    };
   });
-  const [query, setQuery] = useState<AdminTripSearchQuery>(() => ({
-    ...adminTripDateBounds(selection),
-    status: null,
-    page: 1,
-    pageSize: 25,
-  }));
+  const [query, setQuery] = useState<AdminTripSearchQuery>(initial.query);
   const [state, setState] = useState<SearchState>({ kind: 'loading' });
-  const appliedMode = useRef<AdminTripDateMode>('today');
+  const appliedMode = useRef<AdminTripDateMode>(initial.mode);
   const [refreshError, setRefreshError] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const sequence = useRef(0);
@@ -57,7 +62,7 @@ export function AdminTripSearchSection() {
       const request = ++sequence.current;
       if (!background) setState({ kind: 'loading' });
       try {
-        const result = await searchAdminTrips(query);
+        const result = await fetchAdminTripOperations(query);
         if (request !== sequence.current) return;
         if (result.rows.length === 0 && result.totalCount > 0 && query.page > 1) {
           setQuery((current) => ({
@@ -68,10 +73,35 @@ export function AdminTripSearchSection() {
         }
         setState({ kind: 'ready', result });
         setRefreshError(false);
-      } catch {
+      } catch (cause) {
         if (request === sequence.current) {
-          if (background) setRefreshError(true);
-          else setState({ kind: 'error' });
+          if (background && !(cause instanceof AdminTripAccessError)) {
+            setRefreshError(true);
+            setState((current) =>
+              current.kind === 'ready'
+                ? {
+                    ...current,
+                    result: {
+                      ...current.result,
+                      rows: current.result.rows.map((row) =>
+                        row.locationStatus === 'not_applicable'
+                          ? row
+                          : {
+                              ...row,
+                              locationStatus: 'invalid',
+                              etaLabel: null,
+                              nextStopName: null,
+                            },
+                      ),
+                    },
+                  }
+                : current,
+            );
+          } else
+            setState({
+              kind: 'error',
+              message: cause instanceof Error ? cause.message : 'Could not load trips.',
+            });
         }
       }
     },
@@ -85,6 +115,27 @@ export function AdminTripSearchSection() {
     };
   }, [load]);
 
+  useEffect(() => {
+    setParams(
+      (previous) => {
+        const next = new URLSearchParams(previous);
+        for (const [key, value] of Object.entries({
+          tripFrom: query.fromDate,
+          tripTo: query.toDate,
+          tripStatus: query.status,
+          tripPage: String(query.page),
+          tripSize: String(query.pageSize),
+          tripMode: appliedMode.current,
+        })) {
+          if (value === null) next.delete(key);
+          else next.set(key, value);
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  }, [query, setParams]);
+
   const refresh = useCallback(
     (background = true) => {
       const today = albertaToday();
@@ -97,7 +148,23 @@ export function AdminTripSearchSection() {
     },
     [query.fromDate, load],
   );
-  useAdminTripRefresh(refresh);
+  useAdminTripRefresh(refresh, () => {
+    setState((current) =>
+      current.kind === 'ready'
+        ? {
+            ...current,
+            result: {
+              ...current.result,
+              rows: current.result.rows.map((row) =>
+                row.locationStatus === 'not_applicable'
+                  ? row
+                  : { ...row, locationStatus: 'invalid', etaLabel: null, nextStopName: null },
+              ),
+            },
+          }
+        : current,
+    );
+  });
 
   function applyDates(event: React.FormEvent) {
     event.preventDefault();
@@ -248,7 +315,8 @@ export function AdminTripSearchSection() {
       <div className="mt-3" aria-live="polite" aria-busy={state.kind === 'loading'}>
         {refreshError && (
           <p className="mb-3 text-sm font-semibold text-danger-700" role="alert">
-            Trips could not be refreshed. Refresh trips to check again.
+            Trips could not be refreshed. The last checked list is shown. Location and ETA may be
+            out of date.
           </p>
         )}
         {state.kind === 'loading' && (
@@ -261,9 +329,7 @@ export function AdminTripSearchSection() {
           <div data-testid="trip-search-error">
             <div className="rounded-xl border border-danger-200 bg-danger-50 p-4" role="alert">
               <p className="text-sm font-semibold text-danger-700">Could not load trips</p>
-              <p className="mt-1 text-sm text-gray-700">
-                Use Retry trips above to load this section again.
-              </p>
+              <p className="mt-1 text-sm text-gray-700">{state.message}</p>
             </div>
           </div>
         )}

@@ -42,6 +42,17 @@ export type Database = Omit<HostedDatabase, 'public'> & {
       student_bus_assignments: SeatedAssignments;
     };
     Functions: HostedDatabase['public']['Functions'] & {
+      get_admin_trip_operations: {
+        Args: {
+          p_from_date?: string | null;
+          p_to_date?: string | null;
+          p_status?: string | null;
+          p_page?: number;
+          p_page_size?: number;
+        };
+        Returns: Json;
+      };
+      get_admin_trip_detail: { Args: { p_trip_id: string }; Returns: Json };
       search_authority_reference_directory: { Args: { p_query: string }; Returns: Json };
       search_authority_reference_directory_v2: {
         Args: { p_query: string; p_offset?: number };

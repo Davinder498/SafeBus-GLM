@@ -331,7 +331,6 @@ export function TenantInvitationWizard({ onCreated }: { onCreated: () => Promise
                       detail: [
                         support.email.trim(),
                         support.phone,
-                        support.websiteUrl,
                         support.address,
                         support.supportHours,
                         support.instructions,

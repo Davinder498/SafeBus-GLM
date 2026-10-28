@@ -153,7 +153,7 @@ export function AdminAnnouncementsPage() {
   }
   return (
     <DashboardLayout title="Announcements" portal="admin" navItems={[]} navGroups={adminNavGroups}>
-      <div className="mx-auto max-w-3xl space-y-6">
+      <div className="space-y-6">
         <PageHeader
           title="Announcements"
           action={

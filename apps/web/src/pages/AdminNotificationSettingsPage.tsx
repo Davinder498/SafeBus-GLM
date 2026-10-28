@@ -55,7 +55,7 @@ export function AdminNotificationSettingsPage() {
       navItems={[]}
       navGroups={adminNavGroups}
     >
-      <div className="mx-auto max-w-2xl space-y-5">
+      <div className="space-y-5">
         <PageHeader
           title="Notification preferences"
           action={

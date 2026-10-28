@@ -1,0 +1,2449 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261028114543_admin_trip_operations_detail.sql",
+  "migrationSha256": "8c9bef55fb31e352965ddf8da81ff5e003452d690852591bdf268bf261629b4e",
+  "functions": [
+    {
+      "signature": "safebus_private.current_user_role()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "ecc068c18fff12794b7c8b2f39db2e82"
+      },
+      "after": {
+        "md5": "ecc068c18fff12794b7c8b2f39db2e82"
+      }
+    },
+    {
+      "signature": "safebus_private.current_tenant_id()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "e68a443f91a45ebdc6886321ba93920d"
+      },
+      "after": {
+        "md5": "e68a443f91a45ebdc6886321ba93920d"
+      }
+    },
+    {
+      "signature": "safebus_private.current_school_id()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "fe71ec58facecfced0e5c7207682c2a0"
+      },
+      "after": {
+        "md5": "fe71ec58facecfced0e5c7207682c2a0"
+      }
+    },
+    {
+      "signature": "safebus_private.calculate_safe_route_eta(uuid,uuid,uuid,double precision,double precision,double precision,timestamp with time zone)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "0eb0ba1fd165dd3db27e902c8165d86d"
+      },
+      "after": {
+        "md5": "0eb0ba1fd165dd3db27e902c8165d86d"
+      }
+    },
+    {
+      "signature": "safebus_private.has_verified_mfa()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "ce806af4a38645412cb02ed01ea100c1"
+      },
+      "after": {
+        "md5": "ce806af4a38645412cb02ed01ea100c1"
+      }
+    },
+    {
+      "signature": "public.is_current_user_session_active()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "25e1e83b5d4dd9fa4b56a0ce37a53386"
+      },
+      "after": {
+        "md5": "25e1e83b5d4dd9fa4b56a0ce37a53386"
+      }
+    },
+    {
+      "signature": "public.get_admin_trip_operations(date,date,text,integer,integer)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "b9855517ee728e07f7b1793f150fff55"
+      }
+    },
+    {
+      "signature": "public.get_admin_trip_detail(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "990d8f3cec7e3f4c4a9ad60a80a73572"
+      }
+    }
+  ],
+  "policies": [
+    {
+      "before": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "bus_route_assignments",
+        "permissive": "PERMISSIVE",
+        "policyname": "bus_route_assignments insert admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_tenant(tenant_id) AND safebus_private.bus_service_entities_in_tenant(tenant_id, bus_id, route_id))"
+      },
+      "after": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "bus_route_assignments",
+        "permissive": "PERMISSIVE",
+        "policyname": "bus_route_assignments insert admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_tenant(tenant_id) AND safebus_private.bus_service_entities_in_tenant(tenant_id, bus_id, route_id))"
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = 'driver'::user_role) AND (tenant_id = safebus_private.current_tenant_id()) AND (EXISTS ( SELECT 1\n   FROM driver_route_assignments dra\n  WHERE ((dra.driver_id = safebus_private.current_driver_id()) AND (dra.bus_id = bus_route_assignments.bus_id) AND (dra.route_id = bus_route_assignments.route_id) AND (dra.trip_type = bus_route_assignments.trip_type) AND (dra.status = 'active'::text)))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "bus_route_assignments",
+        "permissive": "PERMISSIVE",
+        "policyname": "bus_route_assignments select own driver",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = 'driver'::user_role) AND (tenant_id = safebus_private.current_tenant_id()) AND (EXISTS ( SELECT 1\n   FROM driver_route_assignments dra\n  WHERE ((dra.driver_id = safebus_private.current_driver_id()) AND (dra.bus_id = bus_route_assignments.bus_id) AND (dra.route_id = bus_route_assignments.route_id) AND (dra.trip_type = bus_route_assignments.trip_type) AND (dra.status = 'active'::text)))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "bus_route_assignments",
+        "permissive": "PERMISSIVE",
+        "policyname": "bus_route_assignments select own driver",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = ANY (ARRAY['tenant_admin'::user_role, 'school_admin'::user_role, 'transportation_admin'::user_role])) AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "bus_route_assignments",
+        "permissive": "PERMISSIVE",
+        "policyname": "bus_route_assignments select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = ANY (ARRAY['tenant_admin'::user_role, 'school_admin'::user_role, 'transportation_admin'::user_role])) AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "bus_route_assignments",
+        "permissive": "PERMISSIVE",
+        "policyname": "bus_route_assignments select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "bus_route_assignments",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "bus_route_assignments",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "bus_route_assignments",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "bus_route_assignments",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "DELETE",
+        "qual": "(safebus_private.is_tenant_delete_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "buses",
+        "permissive": "PERMISSIVE",
+        "policyname": "buses delete tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "DELETE",
+        "qual": "(safebus_private.is_tenant_delete_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "buses",
+        "permissive": "PERMISSIVE",
+        "policyname": "buses delete tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "buses",
+        "permissive": "PERMISSIVE",
+        "policyname": "buses insert admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_optional_school(tenant_id, school_id))"
+      },
+      "after": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "buses",
+        "permissive": "PERMISSIVE",
+        "policyname": "buses insert admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_optional_school(tenant_id, school_id))"
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = 'driver'::user_role) AND (tenant_id = safebus_private.current_tenant_id()) AND ((EXISTS ( SELECT 1\n   FROM driver_route_assignments dra\n  WHERE ((dra.bus_id = buses.id) AND (dra.tenant_id = buses.tenant_id) AND (dra.driver_id = safebus_private.current_driver_id()) AND (dra.status = 'active'::text) AND ((dra.effective_from IS NULL) OR (dra.effective_from <= ((now() AT TIME ZONE 'America/Edmonton'::text))::date)) AND ((dra.effective_to IS NULL) OR (dra.effective_to >= ((now() AT TIME ZONE 'America/Edmonton'::text))::date))))) OR (EXISTS ( SELECT 1\n   FROM driver_trips dt\n  WHERE ((dt.bus_id = buses.id) AND (dt.tenant_id = buses.tenant_id) AND (dt.driver_id = safebus_private.current_driver_id()) AND (dt.status = 'active'::text))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "buses",
+        "permissive": "PERMISSIVE",
+        "policyname": "buses select assigned driver",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = 'driver'::user_role) AND (tenant_id = safebus_private.current_tenant_id()) AND ((EXISTS ( SELECT 1\n   FROM driver_route_assignments dra\n  WHERE ((dra.bus_id = buses.id) AND (dra.tenant_id = buses.tenant_id) AND (dra.driver_id = safebus_private.current_driver_id()) AND (dra.status = 'active'::text) AND ((dra.effective_from IS NULL) OR (dra.effective_from <= ((now() AT TIME ZONE 'America/Edmonton'::text))::date)) AND ((dra.effective_to IS NULL) OR (dra.effective_to >= ((now() AT TIME ZONE 'America/Edmonton'::text))::date))))) OR (EXISTS ( SELECT 1\n   FROM driver_trips dt\n  WHERE ((dt.bus_id = buses.id) AND (dt.tenant_id = buses.tenant_id) AND (dt.driver_id = safebus_private.current_driver_id()) AND (dt.status = 'active'::text))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "buses",
+        "permissive": "PERMISSIVE",
+        "policyname": "buses select assigned driver",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (school_id = safebus_private.current_school_id())))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "buses",
+        "permissive": "PERMISSIVE",
+        "policyname": "buses select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (school_id = safebus_private.current_school_id())))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "buses",
+        "permissive": "PERMISSIVE",
+        "policyname": "buses select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "buses",
+        "permissive": "PERMISSIVE",
+        "policyname": "buses select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "buses",
+        "permissive": "PERMISSIVE",
+        "policyname": "buses select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "UPDATE",
+        "qual": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_optional_school(tenant_id, school_id))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "buses",
+        "permissive": "PERMISSIVE",
+        "policyname": "buses update admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_optional_school(tenant_id, school_id))"
+      },
+      "after": {
+        "cmd": "UPDATE",
+        "qual": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_optional_school(tenant_id, school_id))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "buses",
+        "permissive": "PERMISSIVE",
+        "policyname": "buses update admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_optional_school(tenant_id, school_id))"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "buses",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "buses",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "buses",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "buses",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = 'driver'::user_role) AND (tenant_id = safebus_private.current_tenant_id()) AND (driver_id = safebus_private.current_driver_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trip_current_locations",
+        "permissive": "PERMISSIVE",
+        "policyname": "driver_trip_current_locations select own driver",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = 'driver'::user_role) AND (tenant_id = safebus_private.current_tenant_id()) AND (driver_id = safebus_private.current_driver_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trip_current_locations",
+        "permissive": "PERMISSIVE",
+        "policyname": "driver_trip_current_locations select own driver",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trip_current_locations",
+        "permissive": "PERMISSIVE",
+        "policyname": "driver_trip_current_locations select school or transportation a",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trip_current_locations",
+        "permissive": "PERMISSIVE",
+        "policyname": "driver_trip_current_locations select school or transportation a",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trip_current_locations",
+        "permissive": "PERMISSIVE",
+        "policyname": "driver_trip_current_locations select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trip_current_locations",
+        "permissive": "PERMISSIVE",
+        "policyname": "driver_trip_current_locations select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trip_current_locations",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trip_current_locations",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trip_current_locations",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trip_current_locations",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "((( SELECT safebus_private.current_user_role() AS current_user_role) <> 'school_admin'::user_role) OR (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = driver_trip_current_locations.route_id) AND (r.tenant_id = driver_trip_current_locations.tenant_id) AND (r.school_id = ( SELECT safebus_private.current_school_id() AS current_school_id)) AND (r.tenant_id = ( SELECT safebus_private.current_tenant_id() AS current_tenant_id))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trip_current_locations",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_school_location_scope",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "((( SELECT safebus_private.current_user_role() AS current_user_role) <> 'school_admin'::user_role) OR (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = driver_trip_current_locations.route_id) AND (r.tenant_id = driver_trip_current_locations.tenant_id) AND (r.school_id = ( SELECT safebus_private.current_school_id() AS current_school_id)) AND (r.tenant_id = ( SELECT safebus_private.current_tenant_id() AS current_tenant_id))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trip_current_locations",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_school_location_scope",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = 'driver'::user_role) AND (tenant_id = safebus_private.current_tenant_id()) AND (driver_id = safebus_private.current_driver_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trips",
+        "permissive": "PERMISSIVE",
+        "policyname": "driver_trips select own driver",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = 'driver'::user_role) AND (tenant_id = safebus_private.current_tenant_id()) AND (driver_id = safebus_private.current_driver_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trips",
+        "permissive": "PERMISSIVE",
+        "policyname": "driver_trips select own driver",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "((tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR ((safebus_private.current_user_role() = 'school_admin'::user_role) AND (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = driver_trips.route_id) AND (r.tenant_id = driver_trips.tenant_id) AND (r.school_id = safebus_private.current_school_id())))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trips",
+        "permissive": "PERMISSIVE",
+        "policyname": "driver_trips select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "((tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR ((safebus_private.current_user_role() = 'school_admin'::user_role) AND (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = driver_trips.route_id) AND (r.tenant_id = driver_trips.tenant_id) AND (r.school_id = safebus_private.current_school_id())))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trips",
+        "permissive": "PERMISSIVE",
+        "policyname": "driver_trips select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trips",
+        "permissive": "PERMISSIVE",
+        "policyname": "driver_trips select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trips",
+        "permissive": "PERMISSIVE",
+        "policyname": "driver_trips select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trips",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trips",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trips",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "driver_trips",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "DELETE",
+        "qual": "(safebus_private.is_tenant_delete_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "drivers",
+        "permissive": "PERMISSIVE",
+        "policyname": "drivers delete tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "DELETE",
+        "qual": "(safebus_private.is_tenant_delete_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "drivers",
+        "permissive": "PERMISSIVE",
+        "policyname": "drivers delete tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "drivers",
+        "permissive": "PERMISSIVE",
+        "policyname": "drivers insert admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_driver_profile(tenant_id, profile_id))"
+      },
+      "after": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "drivers",
+        "permissive": "PERMISSIVE",
+        "policyname": "drivers insert admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_driver_profile(tenant_id, profile_id))"
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = 'driver'::user_role) AND (tenant_id = safebus_private.current_tenant_id()) AND (profile_id = auth.uid()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "drivers",
+        "permissive": "PERMISSIVE",
+        "policyname": "drivers select own",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = 'driver'::user_role) AND (tenant_id = safebus_private.current_tenant_id()) AND (profile_id = auth.uid()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "drivers",
+        "permissive": "PERMISSIVE",
+        "policyname": "drivers select own",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (EXISTS ( SELECT 1\n   FROM profiles p\n  WHERE ((p.id = drivers.profile_id) AND (p.school_id = safebus_private.current_school_id()))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "drivers",
+        "permissive": "PERMISSIVE",
+        "policyname": "drivers select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (EXISTS ( SELECT 1\n   FROM profiles p\n  WHERE ((p.id = drivers.profile_id) AND (p.school_id = safebus_private.current_school_id()))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "drivers",
+        "permissive": "PERMISSIVE",
+        "policyname": "drivers select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "drivers",
+        "permissive": "PERMISSIVE",
+        "policyname": "drivers select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "drivers",
+        "permissive": "PERMISSIVE",
+        "policyname": "drivers select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "UPDATE",
+        "qual": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_driver_profile(tenant_id, profile_id))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "drivers",
+        "permissive": "PERMISSIVE",
+        "policyname": "drivers update admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_driver_profile(tenant_id, profile_id))"
+      },
+      "after": {
+        "cmd": "UPDATE",
+        "qual": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_driver_profile(tenant_id, profile_id))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "drivers",
+        "permissive": "PERMISSIVE",
+        "policyname": "drivers update admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_driver_profile(tenant_id, profile_id))"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "drivers",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "drivers",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "drivers",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "drivers",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(id = auth.uid())",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "profiles",
+        "permissive": "PERMISSIVE",
+        "policyname": "profiles select own",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(id = auth.uid())",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "profiles",
+        "permissive": "PERMISSIVE",
+        "policyname": "profiles select own",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (school_id = safebus_private.current_school_id())))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "profiles",
+        "permissive": "PERMISSIVE",
+        "policyname": "profiles select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (school_id = safebus_private.current_school_id())))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "profiles",
+        "permissive": "PERMISSIVE",
+        "policyname": "profiles select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "profiles",
+        "permissive": "PERMISSIVE",
+        "policyname": "profiles select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "profiles",
+        "permissive": "PERMISSIVE",
+        "policyname": "profiles select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "profiles",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "profiles",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "(( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa) OR (id = ( SELECT auth.uid() AS uid)))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "profiles",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "(( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa) OR (id = ( SELECT auth.uid() AS uid)))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "profiles",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = 'driver'::user_role) AND (tenant_id = safebus_private.current_tenant_id()) AND (status = 'published'::text) AND (EXISTS ( SELECT 1\n   FROM driver_trips dt\n  WHERE ((dt.route_shape_id = route_shapes.id) AND (dt.tenant_id = route_shapes.tenant_id) AND (dt.driver_id = safebus_private.current_driver_id()) AND (dt.status = 'active'::text)))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_shapes",
+        "permissive": "PERMISSIVE",
+        "policyname": "route_shapes select assigned driver published",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = 'driver'::user_role) AND (tenant_id = safebus_private.current_tenant_id()) AND (status = 'published'::text) AND (EXISTS ( SELECT 1\n   FROM driver_trips dt\n  WHERE ((dt.route_shape_id = route_shapes.id) AND (dt.tenant_id = route_shapes.tenant_id) AND (dt.driver_id = safebus_private.current_driver_id()) AND (dt.status = 'active'::text)))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_shapes",
+        "permissive": "PERMISSIVE",
+        "policyname": "route_shapes select assigned driver published",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_shapes",
+        "permissive": "PERMISSIVE",
+        "policyname": "route_shapes select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_shapes",
+        "permissive": "PERMISSIVE",
+        "policyname": "route_shapes select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_shapes",
+        "permissive": "PERMISSIVE",
+        "policyname": "route_shapes select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_shapes",
+        "permissive": "PERMISSIVE",
+        "policyname": "route_shapes select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_shapes",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_shapes",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_shapes",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_shapes",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_stops",
+        "permissive": "PERMISSIVE",
+        "policyname": "route stops insert tenant admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_route_stop(tenant_id, route_id))"
+      },
+      "after": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_stops",
+        "permissive": "PERMISSIVE",
+        "policyname": "route stops insert tenant admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_route_stop(tenant_id, route_id))"
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = route_stops.route_id) AND (r.school_id = safebus_private.current_school_id()))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_stops",
+        "permissive": "PERMISSIVE",
+        "policyname": "route stops select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = route_stops.route_id) AND (r.school_id = safebus_private.current_school_id()))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_stops",
+        "permissive": "PERMISSIVE",
+        "policyname": "route stops select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_stops",
+        "permissive": "PERMISSIVE",
+        "policyname": "route stops select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_stops",
+        "permissive": "PERMISSIVE",
+        "policyname": "route stops select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "UPDATE",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_stops",
+        "permissive": "PERMISSIVE",
+        "policyname": "route stops update tenant admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_route_stop(tenant_id, route_id))"
+      },
+      "after": {
+        "cmd": "UPDATE",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_stops",
+        "permissive": "PERMISSIVE",
+        "policyname": "route stops update tenant admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_route_stop(tenant_id, route_id))"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_stops",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_stops",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_stops",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_stops",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_patterns",
+        "permissive": "PERMISSIVE",
+        "policyname": "route trip patterns insert tenant admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = route_trip_patterns.route_id) AND (r.tenant_id = route_trip_patterns.tenant_id)))))"
+      },
+      "after": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_patterns",
+        "permissive": "PERMISSIVE",
+        "policyname": "route trip patterns insert tenant admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = route_trip_patterns.route_id) AND (r.tenant_id = route_trip_patterns.tenant_id)))))"
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "((tenant_id = safebus_private.current_tenant_id()) AND (safebus_private.current_user_role() = ANY (ARRAY['tenant_admin'::user_role, 'school_admin'::user_role, 'transportation_admin'::user_role, 'driver'::user_role])) AND ((safebus_private.current_user_role() <> 'school_admin'::user_role) OR (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = route_trip_patterns.route_id) AND (r.school_id = safebus_private.current_school_id()))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_patterns",
+        "permissive": "PERMISSIVE",
+        "policyname": "route trip patterns select tenant operational roles",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "((tenant_id = safebus_private.current_tenant_id()) AND (safebus_private.current_user_role() = ANY (ARRAY['tenant_admin'::user_role, 'school_admin'::user_role, 'transportation_admin'::user_role, 'driver'::user_role])) AND ((safebus_private.current_user_role() <> 'school_admin'::user_role) OR (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = route_trip_patterns.route_id) AND (r.school_id = safebus_private.current_school_id()))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_patterns",
+        "permissive": "PERMISSIVE",
+        "policyname": "route trip patterns select tenant operational roles",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "UPDATE",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_patterns",
+        "permissive": "PERMISSIVE",
+        "policyname": "route trip patterns update tenant admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))"
+      },
+      "after": {
+        "cmd": "UPDATE",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_patterns",
+        "permissive": "PERMISSIVE",
+        "policyname": "route trip patterns update tenant admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_patterns",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_patterns",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_patterns",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_patterns",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "DELETE",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_stop_schedules",
+        "permissive": "PERMISSIVE",
+        "policyname": "route trip schedules delete tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "DELETE",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_stop_schedules",
+        "permissive": "PERMISSIVE",
+        "policyname": "route trip schedules delete tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_stop_schedules",
+        "permissive": "PERMISSIVE",
+        "policyname": "route trip schedules insert tenant admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))"
+      },
+      "after": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_stop_schedules",
+        "permissive": "PERMISSIVE",
+        "policyname": "route trip schedules insert tenant admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))"
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "((tenant_id = safebus_private.current_tenant_id()) AND (safebus_private.current_user_role() = ANY (ARRAY['tenant_admin'::user_role, 'school_admin'::user_role, 'transportation_admin'::user_role, 'driver'::user_role])) AND ((safebus_private.current_user_role() <> 'school_admin'::user_role) OR (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = route_trip_stop_schedules.route_id) AND (r.school_id = safebus_private.current_school_id()))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_stop_schedules",
+        "permissive": "PERMISSIVE",
+        "policyname": "route trip schedules select tenant operational roles",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "((tenant_id = safebus_private.current_tenant_id()) AND (safebus_private.current_user_role() = ANY (ARRAY['tenant_admin'::user_role, 'school_admin'::user_role, 'transportation_admin'::user_role, 'driver'::user_role])) AND ((safebus_private.current_user_role() <> 'school_admin'::user_role) OR (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = route_trip_stop_schedules.route_id) AND (r.school_id = safebus_private.current_school_id()))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_stop_schedules",
+        "permissive": "PERMISSIVE",
+        "policyname": "route trip schedules select tenant operational roles",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "UPDATE",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_stop_schedules",
+        "permissive": "PERMISSIVE",
+        "policyname": "route trip schedules update tenant admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))"
+      },
+      "after": {
+        "cmd": "UPDATE",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_stop_schedules",
+        "permissive": "PERMISSIVE",
+        "policyname": "route trip schedules update tenant admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_stop_schedules",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_stop_schedules",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_stop_schedules",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "route_trip_stop_schedules",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "DELETE",
+        "qual": "(safebus_private.is_tenant_delete_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "routes",
+        "permissive": "PERMISSIVE",
+        "policyname": "routes delete tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "DELETE",
+        "qual": "(safebus_private.is_tenant_delete_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "routes",
+        "permissive": "PERMISSIVE",
+        "policyname": "routes delete tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "routes",
+        "permissive": "PERMISSIVE",
+        "policyname": "routes insert tenant admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_optional_school(tenant_id, school_id))"
+      },
+      "after": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "routes",
+        "permissive": "PERMISSIVE",
+        "policyname": "routes insert tenant admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_optional_school(tenant_id, school_id))"
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "safebus_private.driver_can_read_assigned_route(tenant_id, id)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "routes",
+        "permissive": "PERMISSIVE",
+        "policyname": "routes select assigned driver",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "safebus_private.driver_can_read_assigned_route(tenant_id, id)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "routes",
+        "permissive": "PERMISSIVE",
+        "policyname": "routes select assigned driver",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (school_id = safebus_private.current_school_id())))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "routes",
+        "permissive": "PERMISSIVE",
+        "policyname": "routes select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (school_id = safebus_private.current_school_id())))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "routes",
+        "permissive": "PERMISSIVE",
+        "policyname": "routes select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "routes",
+        "permissive": "PERMISSIVE",
+        "policyname": "routes select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "routes",
+        "permissive": "PERMISSIVE",
+        "policyname": "routes select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "UPDATE",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "routes",
+        "permissive": "PERMISSIVE",
+        "policyname": "routes update tenant admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_optional_school(tenant_id, school_id))"
+      },
+      "after": {
+        "cmd": "UPDATE",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "routes",
+        "permissive": "PERMISSIVE",
+        "policyname": "routes update tenant admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_optional_school(tenant_id, school_id))"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "routes",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "routes",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "routes",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "routes",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "schools",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "schools",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "schools",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "schools",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "((id = safebus_private.current_school_id()) AND (safebus_private.current_user_role() = ANY (ARRAY['driver'::user_role, 'guardian'::user_role])))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "schools",
+        "permissive": "PERMISSIVE",
+        "policyname": "schools select linked school",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "((id = safebus_private.current_school_id()) AND (safebus_private.current_user_role() = ANY (ARRAY['driver'::user_role, 'guardian'::user_role])))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "schools",
+        "permissive": "PERMISSIVE",
+        "policyname": "schools select linked school",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (id = safebus_private.current_school_id())))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "schools",
+        "permissive": "PERMISSIVE",
+        "policyname": "schools select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (id = safebus_private.current_school_id())))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "schools",
+        "permissive": "PERMISSIVE",
+        "policyname": "schools select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "schools",
+        "permissive": "PERMISSIVE",
+        "policyname": "schools select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "schools",
+        "permissive": "PERMISSIVE",
+        "policyname": "schools select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "student_bus_assignments",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "student_bus_assignments",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "student_bus_assignments",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "student_bus_assignments",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "student_bus_assignments",
+        "permissive": "PERMISSIVE",
+        "policyname": "student_bus_assignments insert admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_tenant(tenant_id) AND safebus_private.student_bus_assignment_entities_in_tenant(tenant_id, student_id, bus_route_assignment_id, pickup_stop_id, dropoff_stop_id))"
+      },
+      "after": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "student_bus_assignments",
+        "permissive": "PERMISSIVE",
+        "policyname": "student_bus_assignments insert admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_tenant(tenant_id) AND safebus_private.student_bus_assignment_entities_in_tenant(tenant_id, student_id, bus_route_assignment_id, pickup_stop_id, dropoff_stop_id))"
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "((tenant_id = safebus_private.current_tenant_id()) AND (EXISTS ( SELECT 1\n   FROM (student_guardians sg\n     JOIN guardians g ON ((g.id = sg.guardian_id)))\n  WHERE ((sg.student_id = student_bus_assignments.student_id) AND (sg.status = 'active'::text) AND (g.profile_id = auth.uid()) AND (g.status = 'active'::text)))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "student_bus_assignments",
+        "permissive": "PERMISSIVE",
+        "policyname": "student_bus_assignments select linked guardian",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "((tenant_id = safebus_private.current_tenant_id()) AND (EXISTS ( SELECT 1\n   FROM (student_guardians sg\n     JOIN guardians g ON ((g.id = sg.guardian_id)))\n  WHERE ((sg.student_id = student_bus_assignments.student_id) AND (sg.status = 'active'::text) AND (g.profile_id = auth.uid()) AND (g.status = 'active'::text)))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "student_bus_assignments",
+        "permissive": "PERMISSIVE",
+        "policyname": "student_bus_assignments select linked guardian",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = ANY (ARRAY['tenant_admin'::user_role, 'school_admin'::user_role, 'transportation_admin'::user_role])) AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "student_bus_assignments",
+        "permissive": "PERMISSIVE",
+        "policyname": "student_bus_assignments select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "((safebus_private.current_user_role() = ANY (ARRAY['tenant_admin'::user_role, 'school_admin'::user_role, 'transportation_admin'::user_role])) AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "student_bus_assignments",
+        "permissive": "PERMISSIVE",
+        "policyname": "student_bus_assignments select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "UPDATE",
+        "qual": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_tenant(tenant_id))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "student_bus_assignments",
+        "permissive": "PERMISSIVE",
+        "policyname": "student_bus_assignments update admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_tenant(tenant_id) AND safebus_private.student_bus_assignment_entities_in_tenant(tenant_id, student_id, bus_route_assignment_id, pickup_stop_id, dropoff_stop_id))"
+      },
+      "after": {
+        "cmd": "UPDATE",
+        "qual": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_tenant(tenant_id))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "student_bus_assignments",
+        "permissive": "PERMISSIVE",
+        "policyname": "student_bus_assignments update admin",
+        "schemaname": "public",
+        "with_check": "(safebus_private.is_transportation_write_admin() AND safebus_private.can_write_tenant(tenant_id) AND safebus_private.student_bus_assignment_entities_in_tenant(tenant_id, student_id, bus_route_assignment_id, pickup_stop_id, dropoff_stop_id))"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "student_trip_events",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "student_trip_events",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      }
+    },
+    {
+      "before": null,
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(is_current_user_session_active() AND safebus_private.has_verified_mfa() AND (safebus_private.current_user_role() = ANY (ARRAY['tenant_admin'::user_role, 'school_admin'::user_role, 'transportation_admin'::user_role])) AND (tenant_id = safebus_private.current_tenant_id()) AND (EXISTS ( SELECT 1\n   FROM ((driver_trips dt\n     JOIN routes r ON (((r.id = dt.route_id) AND (r.tenant_id = dt.tenant_id))))\n     JOIN students s ON (((s.id = student_trip_events.student_id) AND (s.tenant_id = dt.tenant_id))))\n  WHERE ((dt.id = student_trip_events.driver_trip_id) AND (dt.tenant_id = student_trip_events.tenant_id) AND ((safebus_private.current_user_role() <> 'school_admin'::user_role) OR ((r.school_id = safebus_private.current_school_id()) AND (s.school_id = safebus_private.current_school_id())))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "student_trip_events",
+        "permissive": "PERMISSIVE",
+        "policyname": "safebus_admin_trip_event_read",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "student_trip_events",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "student_trip_events",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "students",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "students",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "schemaname": "public",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "students",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      },
+      "after": {
+        "cmd": "ALL",
+        "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "students",
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_optional_mfa",
+        "schemaname": "public",
+        "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "DELETE",
+        "qual": "(safebus_private.is_tenant_delete_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "students",
+        "permissive": "PERMISSIVE",
+        "policyname": "students delete tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "DELETE",
+        "qual": "(safebus_private.is_tenant_delete_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "students",
+        "permissive": "PERMISSIVE",
+        "policyname": "students delete tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "students",
+        "permissive": "PERMISSIVE",
+        "policyname": "students insert admin",
+        "schemaname": "public",
+        "with_check": "safebus_private.can_write_student_roster(tenant_id, school_id)"
+      },
+      "after": {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "students",
+        "permissive": "PERMISSIVE",
+        "policyname": "students insert admin",
+        "schemaname": "public",
+        "with_check": "safebus_private.can_write_student_roster(tenant_id, school_id)"
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "safebus_private.can_select_linked_student_as_guardian(id, tenant_id)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "students",
+        "permissive": "PERMISSIVE",
+        "policyname": "students select linked guardian",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "safebus_private.can_select_linked_student_as_guardian(id, tenant_id)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "students",
+        "permissive": "PERMISSIVE",
+        "policyname": "students select linked guardian",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (school_id = safebus_private.current_school_id())))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "students",
+        "permissive": "PERMISSIVE",
+        "policyname": "students select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (school_id = safebus_private.current_school_id())))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "students",
+        "permissive": "PERMISSIVE",
+        "policyname": "students select school or transportation admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "students",
+        "permissive": "PERMISSIVE",
+        "policyname": "students select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      },
+      "after": {
+        "cmd": "SELECT",
+        "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "students",
+        "permissive": "PERMISSIVE",
+        "policyname": "students select tenant admin",
+        "schemaname": "public",
+        "with_check": null
+      }
+    },
+    {
+      "before": {
+        "cmd": "UPDATE",
+        "qual": "safebus_private.can_write_student_roster(tenant_id, school_id)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "students",
+        "permissive": "PERMISSIVE",
+        "policyname": "students update admin",
+        "schemaname": "public",
+        "with_check": "safebus_private.can_write_student_roster(tenant_id, school_id)"
+      },
+      "after": {
+        "cmd": "UPDATE",
+        "qual": "safebus_private.can_write_student_roster(tenant_id, school_id)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "students",
+        "permissive": "PERMISSIVE",
+        "policyname": "students update admin",
+        "schemaname": "public",
+        "with_check": "safebus_private.can_write_student_roster(tenant_id, school_id)"
+      }
+    }
+  ],
+  "defaults": [],
+  "repairs": [],
+  "columnGrants": [
+    {
+      "schema": "public",
+      "table": "student_trip_events",
+      "role": "authenticated",
+      "columns": [
+        "tenant_id",
+        "driver_trip_id",
+        "student_id",
+        "event_type",
+        "event_time",
+        "route_stop_id"
+      ],
+      "before": false,
+      "after": true
+    }
+  ]
+}

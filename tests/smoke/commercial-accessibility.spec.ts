@@ -37,7 +37,7 @@ test.describe('Commercial WCAG 2.2 AA gate', () => {
     await expectNoWcagAaViolations(page, 'Tenant-admin overview');
 
     await page.goto('/admin/trips');
-    await expect(page.getByRole('heading', { name: 'Trip history', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'All trips', level: 1 })).toBeVisible();
     await expectNoWcagAaViolations(page, 'Tenant-admin trip history');
   });
 });

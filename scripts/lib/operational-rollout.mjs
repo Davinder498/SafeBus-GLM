@@ -22,8 +22,11 @@ export async function operationalSnapshot(client, config) {
       from pg_proc p where oid=to_regprocedure($1)`,
       [signature],
     );
-    if (!row) throw new Error('OPERATIONAL_FUNCTION_MISSING');
-    functions.push({ signature, ...row, acl: row.acl.sort() });
+    if (!row) {
+      if (config.functions.find((f) => f.signature === signature)?.before.md5 !== null)
+        throw new Error('OPERATIONAL_FUNCTION_MISSING');
+      functions.push({ signature, definition: null, md5: null, owner: null, acl: [] });
+    } else functions.push({ signature, ...row, acl: row.acl.sort() });
   }
   const policies = [];
   for (const expected of config.policies) {
@@ -33,10 +36,14 @@ export async function operationalSnapshot(client, config) {
       `select schemaname,tablename,policyname,
       permissive,roles::text[],cmd,qual,with_check from pg_policies
       where schemaname=$1 and tablename=$2 and policyname=$3`,
-      [expected.before.schemaname, expected.before.tablename, expected.before.policyname],
+      [
+        (expected.before ?? expected.after).schemaname,
+        (expected.before ?? expected.after).tablename,
+        (expected.before ?? expected.after).policyname,
+      ],
     );
-    if (!row) throw new Error('OPERATIONAL_POLICY_MISSING');
-    policies.push(row);
+    if (!row && expected.before !== null) throw new Error('OPERATIONAL_POLICY_MISSING');
+    policies.push(row ?? null);
   }
   const defaults = [];
   for (const expected of config.defaults) {
@@ -61,7 +68,19 @@ export async function operationalSnapshot(client, config) {
     );
     if (row) repairs.push(row);
   }
-  return { functions, policies, defaults, repairs };
+  const snapshot = { functions, policies, defaults, repairs };
+  if (config.columnGrants) {
+    snapshot.columnGrants = [];
+    for (const grant of config.columnGrants) {
+      const { rows } = await client.query(
+        `select column_name,has_column_privilege($1,quote_ident($2)||'.'||quote_ident($3),column_name,'SELECT') as allowed
+        from information_schema.columns where table_schema=$2 and table_name=$3 and column_name=any($4::text[]) order by column_name`,
+        [grant.role, grant.schema, grant.table, grant.columns],
+      );
+      snapshot.columnGrants.push(rows);
+    }
+  }
+  return snapshot;
 }
 
 export function verifyOperationalSnapshot(snapshot, config, state) {
@@ -69,11 +88,22 @@ export function verifyOperationalSnapshot(snapshot, config, state) {
     const actual = snapshot.functions.find((f) => f.signature === expected.signature);
     if (
       actual?.md5 !== expected[state].md5 ||
-      actual.owner !== expected.owner ||
-      JSON.stringify(actual.acl) !== JSON.stringify([...expected.acl].sort())
+      actual.owner !== (expected[state].md5 === null ? null : expected.owner) ||
+      JSON.stringify(actual.acl) !==
+        JSON.stringify(expected[state].md5 === null ? [] : [...expected.acl].sort())
     )
       throw new Error('OPERATIONAL_FUNCTION_DRIFT');
   }
+  if (
+    config.columnGrants &&
+    !isDeepStrictEqual(
+      snapshot.columnGrants,
+      config.columnGrants.map((g) =>
+        [...g.columns].sort().map((column_name) => ({ column_name, allowed: g[state] })),
+      ),
+    )
+  )
+    throw new Error('OPERATIONAL_GRANT_DRIFT');
   for (const key of ['policies', 'defaults']) {
     if (
       !isDeepStrictEqual(
@@ -104,10 +134,23 @@ export function verifyOperationalSnapshot(snapshot, config, state) {
 }
 
 export function operationalRestoreSql(snapshot, config) {
-  const statements = snapshot.functions.map((f) => f.definition.trim().replace(/;$/, '') + ';');
-  for (const p of snapshot.policies) {
+  const statements = [...snapshot.functions]
+    .reverse()
+    .map((f) =>
+      f.definition === null
+        ? `DROP FUNCTION IF EXISTS ${f.signature};`
+        : f.definition.trim().replace(/;$/, '') + ';',
+    );
+  for (const [index, p] of snapshot.policies.entries()) {
+    if (p === null) {
+      const target = config.policies[index].after;
+      statements.push(
+        `DROP POLICY ${identifier(target.policyname)} ON ${identifier(target.schemaname)}.${identifier(target.tablename)};`,
+      );
+      continue;
+    }
     // These reviewed migrations alter expressions only, preserving policy audience/type.
-    if (!config.policies.some((entry) => entry.before.policyname === p.policyname))
+    if (!config.policies.some((entry) => entry.before?.policyname === p.policyname))
       throw new Error('OPERATIONAL_RECOVERY_SCOPE');
     const name = '"' + p.policyname.replaceAll('"', '""') + '"';
     statements.push(
@@ -116,6 +159,18 @@ export function operationalRestoreSql(snapshot, config) {
         (p.with_check === null ? '' : ` WITH CHECK (${p.with_check})`) +
         ';',
     );
+  }
+  for (const [index, g] of (config.columnGrants ?? []).entries()) {
+    const rows = snapshot.columnGrants[index];
+    for (const allowed of [false, true]) {
+      const columns = rows
+        .filter((row) => row.allowed === allowed)
+        .map((row) => identifier(row.column_name));
+      if (columns.length)
+        statements.push(
+          `${allowed ? 'GRANT' : 'REVOKE'} SELECT (${columns.join(',')}) ON ${identifier(g.schema)}.${identifier(g.table)} ${allowed ? 'TO' : 'FROM'} ${identifier(g.role)};`,
+        );
+    }
   }
   for (const d of snapshot.defaults)
     statements.push(

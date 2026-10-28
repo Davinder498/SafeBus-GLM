@@ -95,6 +95,9 @@ const AdminStudentsPage = lazy(() =>
 const AdminTripsPage = lazy(() =>
   import('@/pages/AdminTripsPage').then((page) => ({ default: page.AdminTripsPage })),
 );
+const AdminTripDetailPage = lazy(() =>
+  import('@/pages/AdminTripDetailPage').then((page) => ({ default: page.AdminTripDetailPage })),
+);
 const AdminUsersPage = lazy(() =>
   import('@/pages/AdminUsersPage').then((page) => ({ default: page.AdminUsersPage })),
 );
@@ -267,6 +270,14 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminTripsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/trips/:tripId',
+    element: (
+      <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
+        <AdminTripDetailPage />
       </ProtectedRoute>
     ),
   },

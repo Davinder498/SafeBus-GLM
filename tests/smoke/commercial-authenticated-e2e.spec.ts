@@ -27,7 +27,7 @@ test.describe('Point 10 authenticated CR1 journeys', () => {
     await expect(page.getByRole('heading', { name: 'Route One', level: 1 })).toBeVisible();
 
     await page.goto('/admin/trips');
-    await expect(page.getByRole('heading', { name: 'Trip history', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'All trips', level: 1 })).toBeVisible();
     await expect(page.getByText('Route One')).toBeVisible();
   });
 

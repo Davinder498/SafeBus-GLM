@@ -355,7 +355,10 @@ export function DashboardLayout({
         data-ui="app-bar"
       >
         <div
-          className="mx-auto flex h-16 max-w-[1400px] min-w-0 items-center gap-2 px-3 sm:gap-4 sm:px-6 lg:px-8"
+          className={cn(
+            'mx-auto flex h-16 min-w-0 items-center gap-2 px-3 sm:gap-4 sm:px-6 lg:px-8',
+            portal === 'admin' ? 'w-full' : 'max-w-[1400px]',
+          )}
           data-ui="app-bar-inner"
         >
           {/* Mobile menu button */}
@@ -481,7 +484,12 @@ export function DashboardLayout({
       </header>
 
       {/* Body: sidebar + main */}
-      <div className="mx-auto flex max-w-[1400px] gap-0 px-0 lg:px-6">
+      <div
+        className={cn(
+          'mx-auto flex gap-0 px-0 lg:px-6',
+          portal === 'admin' ? 'w-full' : 'max-w-[1400px]',
+        )}
+      >
         {/* Desktop sidebar */}
         {!usesBottomTabs && (
           <aside className="sb-sidebar sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto bg-[var(--color-surface)] py-6 lg:block">
