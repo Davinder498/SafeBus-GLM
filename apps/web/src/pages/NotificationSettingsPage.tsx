@@ -194,7 +194,10 @@ export function NotificationSettingsPage() {
       navItems={[]}
       navGroups={nav}
     >
-      <div className="mx-auto max-w-2xl space-y-5" data-ui="notification-settings-page">
+      <div
+        className={isAdmin ? 'space-y-5' : 'mx-auto max-w-2xl space-y-5'}
+        data-ui="notification-settings-page"
+      >
         <PageHeader title="Settings" />
         <AppearanceSettingsCard />
         <section aria-label="Notification settings">

@@ -1,0 +1,38 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "verification": "bounded rollback-only hosted rehearsal",
+  "functionBodiesChecked": true,
+  "baselineRestored": {
+    "newFunctionsAbsent": true,
+    "newPolicyAbsent": true,
+    "sixEventColumnsUnreadable": true
+  },
+  "runtime": {
+    "listCount": 25,
+    "listCallable": true,
+    "detailVisible": true
+  },
+  "persistentInstallation": false,
+  "productionFixturesWritten": false,
+  "externalNotificationsSent": false,
+  "hostedSchoolAndTransportationRoleSamples": false,
+  "roleCoverage": "embedded PostgreSQL tests",
+  "validation": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "webAndMobileBuild": "passed",
+    "webTests": 734,
+    "mobileTests": 12,
+    "releaseTests": 368,
+    "browserChecks": { "primaryRunPassed": 50, "midnightFixtureCorrectionRerunPassed": 2 },
+    "mobileBuild": "passed",
+    "androidSync": "passed",
+    "physicalDeviceVerified": false,
+    "liveMapConfigRead": {
+      "httpStatus": 200,
+      "approvedProviderConfigured": true,
+      "attributionPresent": true
+    }
+  },
+  "migrationSha256": "8c9bef55fb31e352965ddf8da81ff5e003452d690852591bdf268bf261629b4e"
+}

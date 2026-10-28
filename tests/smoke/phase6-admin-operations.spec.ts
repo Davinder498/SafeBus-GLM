@@ -301,6 +301,42 @@ async function installAdminAssignmentsMock(page: Page, role: ProfileRole = 'tena
           await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
           return;
         }
+        if (path.includes('/rpc/get_admin_trip_operations')) {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ rows: [], totalCount: 0 }),
+          });
+          return;
+        }
+        if (path.includes('/rpc/get_admin_trip_detail')) {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              trip: {
+                trip_id: ADMIN.tripId,
+                service_date: '2025-01-01',
+                status: 'active',
+                started_at: '2025-01-01T12:00:00Z',
+                ended_at: null,
+                route_name: routeRow.route_name,
+                route_code: 'R1',
+                trip_pattern_name: 'Outbound',
+                direction: 'forward',
+                bus_label: bus1Row.bus_number,
+                driver_label: 'Driver',
+              },
+              stops: [],
+              students: [],
+              shape: null,
+              location: null,
+              eta: null,
+              mapColor: null,
+            }),
+          });
+          return;
+        }
         if (path.includes('/rpc/get_admin_active_trip_operational_statuses')) {
           await route.fulfill({
             status: 200,
@@ -620,20 +656,16 @@ test.describe('Phase 6 — admin audited guardian access revocation', () => {
 test.describe('Phase 6 — non-ETA dispatch status', () => {
   test('sets a controlled late status and reason without an ETA calculation', async ({ page }) => {
     await installAdminAssignmentsMock(page);
-    await page.goto('/admin/live-trips');
+    await page.goto(`/admin/trips/${ADMIN.tripId}`);
 
-    const row = page.getByTestId(`dispatch-status-${ADMIN.tripId}`);
+    const row = page.getByTestId('admin-trip-detail');
     await expect(row).toBeVisible();
-    await row.getByLabel(`Operational status for bus ${bus1Row.bus_number}`).selectOption('late');
-    await row
-      .getByLabel(`Operational reason for bus ${bus1Row.bus_number}`)
-      .selectOption('traffic');
+    await row.getByLabel('Operational status', { exact: true }).selectOption('late');
+    await row.getByLabel('Operational reason', { exact: true }).selectOption('traffic');
     await row.getByRole('button', { name: 'Update' }).click();
 
-    await expect(row.getByLabel(`Operational status for bus ${bus1Row.bus_number}`)).toHaveValue(
-      'late',
-    );
-    await expect(page.getByText('No ETA is calculated from these values.')).toBeVisible();
+    await expect(row.getByLabel('Operational status', { exact: true })).toHaveValue('late');
+    await expect(row.getByRole('heading', { name: 'Operational status' })).toBeVisible();
   });
 });
 

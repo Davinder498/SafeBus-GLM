@@ -8,7 +8,7 @@ on:
         required: true
       milestone:
         type: choice
-        options: [overview, notifications]
+        options: [overview, notifications, trips]
         required: true
       mode:
         type: choice

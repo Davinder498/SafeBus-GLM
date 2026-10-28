@@ -42,16 +42,6 @@ export function SupportContactFields({
           onChange={(e) => update('phone', e.target.value)}
         />
       </Field>
-      <Field label="Support website" htmlFor="support-website" hint="Optional HTTPS URL">
-        <Input
-          id="support-website"
-          type="url"
-          pattern="https://.*"
-          maxLength={500}
-          value={form.websiteUrl ?? ''}
-          onChange={(e) => update('websiteUrl', e.target.value)}
-        />
-      </Field>
       <Field
         label="Support hours"
         htmlFor="support-hours"

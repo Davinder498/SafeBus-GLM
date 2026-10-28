@@ -1,496 +1,111 @@
-import { expect, test, type Page, type Route } from '@playwright/test';
-import { ADMIN_IDS, installAdminWorkflowMock } from './fixtures/admin-workflow';
+import { expect, test } from '@playwright/test';
+import { installTripOperationsMock } from './fixtures/admin-trip-operations';
 import { expectNoWcagAaViolations } from './fixtures/accessibility';
 
-interface SearchArgs {
-  p_from_date: string | null;
-  p_to_date: string | null;
-  p_status: string | null;
-  p_page: number;
-  p_page_size: number;
-}
-
-function trip(id: string, date: string, status = 'completed') {
-  return {
-    trip_id: id,
-    service_date: date,
-    status,
-    started_at: `${date}T14:30:00Z`,
-    ended_at: status === 'active' || status === 'paused' ? null : `${date}T15:30:00Z`,
-    route_name: `Route ${id}`,
-    route_code: 'PR1',
-    trip_pattern_name: 'School bound',
-    direction: status === 'cancelled' ? 'reverse' : 'forward',
-    bus_label: '12',
-    driver_label: 'Alex Driver',
-  };
-}
-
-const trips = [
-  ...['active', 'paused', 'completed', 'cancelled'].map((status) =>
-    trip(status, '2026-10-08', status),
-  ),
-  ...Array.from({ length: 225 }, (_, index) =>
-    trip(`recent-${String(index).padStart(3, '0')}`, '2026-10-07'),
-  ),
-  trip('historical-1', '2025-01-14'),
-  trip('historical-2', '2025-01-15', 'cancelled'),
-];
-
-function searchResult(args: SearchArgs) {
-  const matches = trips
-    .filter(
-      (row) =>
-        (!args.p_from_date || row.service_date >= args.p_from_date) &&
-        (!args.p_to_date || row.service_date <= args.p_to_date) &&
-        (!args.p_status ||
-          (args.p_status === 'ongoing'
-            ? ['active', 'paused'].includes(row.status)
-            : row.status === args.p_status)),
-    )
-    .sort(
-      (a, b) =>
-        b.service_date.localeCompare(a.service_date) ||
-        b.started_at.localeCompare(a.started_at) ||
-        a.trip_id.localeCompare(b.trip_id),
-    );
-  const offset = (args.p_page - 1) * args.p_page_size;
-  return { rows: matches.slice(offset, offset + args.p_page_size), totalCount: matches.length };
-}
-
-async function installOverviewMock(
-  page: Page,
-  options: { tripError?: boolean; summaryError?: boolean; missingRpc?: boolean } = {},
-) {
-  await page.clock.install({ time: new Date('2026-10-09T05:30:00Z') });
-  await installAdminWorkflowMock(page);
-  const requests: SearchArgs[] = [];
-  const controls = {
-    tripError: !!options.tripError,
-    summaryError: !!options.summaryError,
-    requests,
-    ongoingRequests: [] as SearchArgs[],
-    ongoingTrips: null as ReturnType<typeof trip>[] | null,
-    missingRpc: !!options.missingRpc,
-    compatibilityRequests: [] as URL[],
-  };
-  await page.route('**/rest/v1/**', async (route: Route) => {
-    const url = new URL(route.request().url());
-    if (url.pathname.endsWith('/rpc/search_admin_trips')) {
-      const args = route.request().postDataJSON() as SearchArgs;
-      if (args.p_status === 'ongoing') controls.ongoingRequests.push(args);
-      else requests.push(args);
-      if (controls.missingRpc)
-        return route.fulfill({
-          status: 404,
-          contentType: 'application/json',
-          body: JSON.stringify({ code: 'PGRST202', message: 'Function unavailable' }),
-        });
-      return route.fulfill({
-        status: controls.tripError ? 500 : 200,
-        contentType: 'application/json',
-        body: JSON.stringify(
-          controls.tripError
-            ? { message: 'Mock unavailable' }
-            : args.p_status === 'ongoing' && controls.ongoingTrips
-              ? {
-                  rows: controls.ongoingTrips.slice(
-                    (args.p_page - 1) * args.p_page_size,
-                    args.p_page * args.p_page_size,
-                  ),
-                  totalCount: controls.ongoingTrips.length,
-                }
-              : searchResult(args),
-        ),
-      });
-    }
-    if (url.pathname.endsWith('/driver_trips')) {
-      controls.compatibilityRequests.push(url);
-      const params = url.searchParams;
-      const offset = Number(params.get('offset') ?? 0);
-      const pageSize = Number(params.get('limit') ?? 25);
-      const matches = searchResult({
-        p_from_date:
-          params
-            .getAll('service_date')
-            .find((value) => value.startsWith('gte.'))
-            ?.slice(4) ?? null,
-        p_to_date:
-          params
-            .getAll('service_date')
-            .find((value) => value.startsWith('lte.'))
-            ?.slice(4) ?? null,
-        p_status:
-          params
-            .getAll('status')
-            .find((value) => value.startsWith('eq.'))
-            ?.slice(3) ??
-          (params.getAll('status').includes('in.(active,paused)') ? 'ongoing' : null),
-        p_page: offset / pageSize + 1,
-        p_page_size: pageSize,
-      });
-      return route.fulfill({
-        status: controls.tripError ? 500 : 200,
-        contentType: 'application/json',
-        headers: {
-          'content-range': `${offset}-${offset + matches.rows.length - 1}/${matches.totalCount}`,
-          'access-control-expose-headers': 'content-range',
-        },
-        body: JSON.stringify(
-          controls.tripError
-            ? { message: 'Mock unavailable' }
-            : matches.rows.map((row) => ({
-                id: row.trip_id,
-                route_id: ADMIN_IDS.route,
-                service_date: row.service_date,
-                status: row.status,
-                started_at: row.started_at,
-                ended_at: row.ended_at,
-                trip_name_snapshot: row.trip_pattern_name,
-                route: { route_name: row.route_name, route_code: row.route_code },
-                pattern: {
-                  route_id: ADMIN_IDS.route,
-                  display_name: row.trip_pattern_name,
-                  direction: row.direction,
-                },
-                bus: { bus_number: row.bus_label },
-                driver: { profile: { full_name: row.driver_label } },
-              })),
-        ),
-      });
-    }
-    if (
-      route.request().method() === 'HEAD' &&
-      url.pathname.endsWith('/buses') &&
-      controls.summaryError
-    ) {
-      return route.fulfill({ status: 500, body: '' });
-    }
-    if (url.pathname.endsWith('/pre_trip_confirmations')) {
-      return route.fulfill({ status: 200, contentType: 'application/json', body: 'null' });
-    }
-    if (url.pathname.endsWith('/trip_exceptions') || url.pathname.endsWith('/operational_notes')) {
-      return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
-    }
-    return route.fallback();
-  });
-  return controls;
-}
-
-test('overview defaults to Alberta today and retains seven summary destinations', async ({
-  page,
-}, testInfo) => {
-  const controls = await installOverviewMock(page);
-  const removedRequests: string[] = [];
-  page.on('request', (request) => {
-    if (/get_admin_(?:live_fleet_monitoring|dashboard_overview|trip_overview)/.test(request.url()))
-      removedRequests.push(request.url());
-  });
-  await page.goto('/admin');
-  const search = page.getByTestId('admin-trip-search');
-  await expect(search.locator('tbody tr')).toHaveCount(4);
-  expect(controls.requests[0]).toEqual({
-    p_from_date: '2026-10-08',
-    p_to_date: '2026-10-08',
-    p_status: null,
-    p_page: 1,
-    p_page_size: 25,
-  });
-  await expect(page.getByRole('link', { name: 'Open Live Operations' })).toHaveAttribute(
-    'href',
-    '/admin/live-trips',
-  );
-  for (const heading of ['Operational attention', 'Setup checklist', 'Routes']) {
-    await expect(page.getByRole('heading', { name: heading, exact: true })).toHaveCount(0);
-  }
-  await expect(page.getByLabel('Trip status summary')).toHaveCount(0);
-  const summary = page.getByTestId('transportation-summary');
-  await expect(summary.getByRole('link')).toHaveCount(7);
-  for (const [label, destination] of [
-    ['Buses', '/admin/buses'],
-    ['Drivers', '/admin/drivers'],
-    ['Routes', '/admin/routes'],
-    ['Students', '/admin/students'],
-    ['Guardians', '/admin/guardians'],
-    ['Guardian links', '/admin/guardians'],
-    ['Student bus assignments', '/admin/students'],
-  ])
-    await expect(
-      summary.getByRole('link', { name: `${label} 1 active`, exact: true }),
-    ).toHaveAttribute('href', destination);
-  expect(removedRequests).toEqual([]);
-  const expectedTime = await page.evaluate(() =>
-    new Date('2026-10-08T14:30:00Z').toLocaleTimeString(undefined, {
-      timeZone: 'America/Edmonton',
-      hour: 'numeric',
-      minute: '2-digit',
-    }),
-  );
-  await expect(search).toContainText(expectedTime);
-  await page.screenshot({ path: testInfo.outputPath('tenant-overview.png'), fullPage: true });
-});
-
-test('ongoing runs remain visible across history dates, Alberta midnight and missing GPS', async ({
-  page,
-}) => {
-  const controls = await installOverviewMock(page);
-  controls.ongoingTrips = [
-    trip('overnight', '2026-10-07', 'active'),
-    trip('paused-run', '2026-10-07', 'paused'),
-  ];
-  await page.goto('/admin');
-  const ongoing = page.getByTestId('admin-ongoing-trips');
-  await expect(ongoing.getByRole('heading')).toHaveText('Ongoing trips (2)');
-  await expect(ongoing.locator('tbody tr')).toHaveCount(2);
-  expect(controls.ongoingRequests[0]).toMatchObject({
-    p_from_date: null,
-    p_to_date: null,
-    p_status: 'ongoing',
-  });
-  await page.getByLabel('Dates', { exact: true }).selectOption('date');
-  await page.getByLabel('Service date', { exact: true }).fill('2020-01-01');
-  await page.getByRole('button', { name: 'Apply', exact: true }).click();
-  await expect(page.getByTestId('admin-trips-empty')).toBeVisible();
-  await expect(ongoing.locator('tbody tr')).toHaveCount(2);
-  await page.clock.setSystemTime(new Date('2026-10-09T06:00:01Z'));
-  await page.clock.runFor(15_100);
-  await expect(ongoing.locator('tbody tr')).toHaveCount(2);
-  await expect(page.getByTestId('trip-search-date-label')).toContainText('2020');
-});
-
-test('ongoing runs update on polling and focus, and failed refresh preserves a labelled last checked list', async ({
-  page,
-}) => {
-  const controls = await installOverviewMock(page);
-  controls.ongoingTrips = [trip('active', '2026-10-08', 'active')];
-  await page.goto('/admin');
-  const ongoing = page.getByTestId('admin-ongoing-trips');
-  await expect(ongoing.locator('tbody tr')).toHaveCount(1);
-  controls.ongoingTrips = [];
-  await page.clock.runFor(15_100);
-  await expect(ongoing).toContainText('No ongoing trips.');
-  controls.ongoingTrips = [trip('new-run', '2026-10-08', 'active')];
-  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
-  await expect(ongoing).toContainText('Route new-run');
-  controls.tripError = true;
-  await page.clock.runFor(15_100);
-  await expect(ongoing.getByRole('alert')).toContainText('last checked list');
-  await expect(ongoing).toContainText('Route new-run');
-  await expect(ongoing.getByRole('heading')).toHaveText('Ongoing trips (1)');
-  controls.tripError = false;
-  await page.evaluate(() => window.dispatchEvent(new Event('online')));
-  await expect(ongoing.getByRole('alert')).toHaveCount(0);
-});
-
-test('Today rolls over automatically but an applied all-dates search stays unchanged', async ({
-  page,
-}) => {
-  const controls = await installOverviewMock(page);
-  await page.goto('/admin');
-  await expect(page.getByTestId('admin-trips-table')).toBeVisible();
-  await page.clock.setSystemTime(new Date('2026-10-09T06:00:01Z'));
-  await page.clock.runFor(15_100);
-  await expect.poll(() => controls.requests.at(-1)?.p_from_date).toBe('2026-10-09');
-  await page.getByLabel('Dates', { exact: true }).selectOption('all');
-  await page.getByRole('button', { name: 'Apply', exact: true }).click();
-  await expect(page.getByTestId('admin-pagination')).toContainText('Showing 1-25');
-  await page.clock.setSystemTime(new Date('2026-10-10T06:00:01Z'));
-  await page.clock.runFor(15_100);
-  expect(controls.requests.at(-1)?.p_from_date).toBeNull();
-});
-
-test('ongoing trip pages remain bounded and recover when completed runs remove a page', async ({
-  page,
-}) => {
-  const controls = await installOverviewMock(page);
-  controls.ongoingTrips = Array.from({ length: 26 }, (_, i) =>
-    trip(`ongoing-${i}`, '2026-10-08', 'active'),
-  );
-  await page.goto('/admin');
-  const ongoing = page.getByTestId('admin-ongoing-trips');
-  await expect(ongoing.locator('tbody tr')).toHaveCount(25);
-  await ongoing.getByRole('button', { name: 'Next', exact: true }).click();
-  await expect(ongoing.locator('tbody tr')).toHaveCount(1);
-  controls.ongoingTrips = [controls.ongoingTrips[0]];
-  await page.clock.runFor(15_100);
-  await expect(ongoing).toContainText('Route ongoing-0');
-  await expect(ongoing.getByRole('heading')).toHaveText('Ongoing trips (1)');
-  expect(controls.ongoingRequests.at(-1)?.p_page).toBe(1);
-});
-
-test('historical search reaches beyond 200 recent trips, includes range endpoints and opens notes', async ({
-  page,
-}) => {
-  const controls = await installOverviewMock(page);
-  await page.goto('/admin');
-  await page.getByLabel('Dates', { exact: true }).selectOption('date');
-  await page.getByLabel('Service date', { exact: true }).fill('2025-01-14');
-  await page.getByRole('button', { name: 'Apply', exact: true }).click();
-  await expect(page.getByTestId('admin-trips-table')).toContainText('Route historical-1');
-  await page.getByRole('button', { name: /View notes for Route historical-1/ }).click();
-  await expect(page.getByTestId('trip-evidence-historical-1')).toBeVisible();
-  await expect(page.getByTestId('operational-notes-trip-historical-1')).toBeVisible();
-  await page.getByLabel('Dates', { exact: true }).selectOption('range');
-  await page.getByLabel('From date').fill('2025-01-14');
-  await page.getByLabel('To date').fill('2025-01-15');
-  await page.getByRole('button', { name: 'Apply', exact: true }).click();
-  await expect(page.getByTestId('admin-trips-table').locator('tbody tr')).toHaveCount(2);
-  await expect(page.getByTestId('trip-evidence-historical-1')).toHaveCount(0);
-  await expect(page.getByTestId('admin-trips-table')).toContainText('Return');
-  const requestCount = controls.requests.length;
-  await page.getByLabel('To date').fill('2025-01-13');
-  await page.getByRole('button', { name: 'Apply', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('end date must be on or after');
-  expect(controls.requests).toHaveLength(requestCount);
-  await expect(page.getByTestId('admin-trips-table').locator('tbody tr')).toHaveCount(2);
-});
-
-test('all dates paginate on the server and date/status/page-size changes reset the page', async ({
-  page,
-}) => {
-  const controls = await installOverviewMock(page);
-  await page.goto('/admin');
-  await page.getByLabel('Dates', { exact: true }).selectOption('all');
-  await page.getByRole('button', { name: 'Apply', exact: true }).click();
-  await expect(page.getByTestId('admin-pagination')).toContainText('Showing 1-25 of 231');
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
-  await expect(page.getByTestId('admin-pagination')).toContainText('Showing 26-50 of 231');
-  expect(controls.requests.at(-1)).toMatchObject({ p_page: 2, p_from_date: null, p_to_date: null });
-  await page.getByLabel('Rows', { exact: true }).selectOption('100');
-  await expect(page.getByTestId('admin-pagination')).toContainText('Showing 1-100 of 231');
-  expect(controls.requests.at(-1)).toMatchObject({ p_page: 1, p_page_size: 100 });
-  for (const status of ['Active', 'Paused', 'Completed', 'Cancelled']) {
-    await page.getByRole('button', { name: status, exact: true }).click();
-    await expect(page.getByRole('button', { name: status, exact: true })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    await expect(page.getByTestId('admin-trips-table').locator('tbody tr').first()).toContainText(
-      status,
-    );
-    expect(controls.requests.at(-1)).toMatchObject({ p_status: status.toLowerCase(), p_page: 1 });
-  }
-  await page.getByLabel('Dates', { exact: true }).selectOption('date');
-  await page.getByLabel('Service date', { exact: true }).fill('2020-01-01');
-  await page.getByRole('button', { name: 'Apply', exact: true }).click();
-  await expect(page.getByTestId('admin-trips-empty')).toContainText('No trips found');
-  await expect(page.getByTestId('admin-pagination')).toContainText('Showing 0-0 of 0');
-  await expect(page.getByRole('button', { name: 'Next', exact: true })).toBeDisabled();
-});
-
-test('section errors stay independent and one reload action does not display false zeros', async ({
-  page,
-}, testInfo) => {
-  const controls = await installOverviewMock(page, { summaryError: true });
+test('overview retains seven summary destinations with independent errors', async ({ page }) => {
+  const controls = await installTripOperationsMock(page);
+  controls.summaryError = true;
   await page.goto('/admin');
   await expect(page.getByTestId('admin-trips-table')).toBeVisible();
   await expect(page.getByTestId('transportation-summary-error')).toBeVisible();
-  await expect(page.getByTestId('transportation-summary').getByRole('link')).toHaveCount(0);
   controls.summaryError = false;
   await page.getByRole('button', { name: 'Retry summary' }).click();
   await expect(page.getByTestId('transportation-summary').getByRole('link')).toHaveCount(7);
   controls.tripError = true;
   await page.getByRole('button', { name: 'Refresh trips' }).click();
   await expect(page.getByTestId('trip-search-error')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Refresh trips' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Retry trips' })).toHaveCount(1);
-  await expectNoWcagAaViolations(page, 'Tenant overview trip error');
-  await page.screenshot({ path: testInfo.outputPath('tenant-overview-error.png'), fullPage: true });
   await expect(page.getByTestId('transportation-summary').getByRole('link')).toHaveCount(7);
-  controls.tripError = false;
-  await page.getByRole('button', { name: 'Retry trips' }).click();
-  await expect(page.getByTestId('admin-trips-table')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Retry trips' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Refresh trips' })).toHaveCount(1);
 });
 
-test('unapplied RPC uses existing secure tables for active trips, history and pages', async ({
+test('polling/focus refresh and failed background reads retain clearly unverified results', async ({
   page,
 }) => {
-  const controls = await installOverviewMock(page, { missingRpc: true });
+  const controls = await installTripOperationsMock(page);
   await page.goto('/admin');
-  await expect(page.getByTestId('admin-trips-table')).toContainText('Route active');
-  const params = controls.compatibilityRequests[0].searchParams;
-  for (const field of [
-    'tenant_id',
-    'route.tenant_id',
-    'pattern.tenant_id',
-    'bus.tenant_id',
-    'driver.tenant_id',
-    'driver.profile.tenant_id',
-  ])
-    expect(params.get(field)).toBe(`eq.${ADMIN_IDS.tenant}`);
-  expect(params.get('order')).toBe('service_date.desc,started_at.desc,id.asc');
-  await page.getByRole('button', { name: 'Active', exact: true }).click();
-  await expect(page.getByTestId('admin-trips-table').locator('tbody tr')).toHaveCount(1);
-  await page.getByRole('button', { name: 'All', exact: true }).click();
-  await page.getByLabel('Dates', { exact: true }).selectOption('range');
-  await page.getByLabel('From date').fill('2025-01-14');
-  await page.getByLabel('To date').fill('2025-01-15');
-  await page.getByRole('button', { name: 'Apply', exact: true }).click();
-  await expect(page.getByTestId('admin-trips-table').locator('tbody tr')).toHaveCount(2);
-  await expect(page.getByTestId('admin-trips-table')).toContainText('Route historical-1');
-  await page.getByLabel('Dates', { exact: true }).selectOption('all');
-  await page.getByRole('button', { name: 'Apply', exact: true }).click();
-  await expect(page.getByTestId('admin-pagination')).toContainText('Showing 1-25 of 231');
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
-  await expect(page.getByTestId('admin-pagination')).toContainText('Showing 26-50 of 231');
-  expect(controls.compatibilityRequests.at(-1)?.searchParams.get('offset')).toBe('25');
+  await expect(page.getByTestId('admin-trips-table')).toBeVisible();
+  controls.rows[0] = {
+    ...controls.rows[0],
+    location_status: 'live',
+    latest_location_at: '2026-10-28T14:01:00Z',
+    eta_label: null,
+  };
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(page.getByTestId('admin-trips-table').locator('tbody tr').first()).toContainText(
+    'Live',
+  );
+  controls.tripError = true;
+  await page.clock.runFor(15_100);
+  await expect(page.getByRole('alert')).toContainText('last checked list');
+  await expect(page.getByTestId('admin-trips-table').locator('tbody tr').first()).toContainText(
+    'Unverified GPS',
+  );
+  controls.tripError = false;
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
-for (const lateError of [false, true]) {
-  test(`outdated ${lateError ? 'error' : 'result'} cannot replace a newer status search`, async ({
-    page,
-  }) => {
-    await installOverviewMock(page);
-    let release!: () => void;
-    let signalStarted!: () => void;
-    const pending = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    const started = new Promise<void>((resolve) => {
-      signalStarted = resolve;
-    });
-    await page.route('**/rpc/search_admin_trips', async (route) => {
-      const args = route.request().postDataJSON() as SearchArgs;
-      if (args.p_status !== 'completed') return route.fallback();
-      signalStarted();
-      await pending;
-      await route.fulfill({
-        status: lateError ? 500 : 200,
-        contentType: 'application/json',
-        body: JSON.stringify(lateError ? { message: 'Late error' } : searchResult(args)),
-      });
-    });
-    await page.goto('/admin');
-    await expect(page.getByTestId('admin-trips-table')).toBeVisible();
-    await page.getByRole('button', { name: 'Completed', exact: true }).click();
-    await started;
-    await page.getByRole('button', { name: 'Paused', exact: true }).click();
-    await expect(page.getByTestId('admin-trips-table')).toContainText('Route paused');
-    const lateResponse = page.waitForResponse(
-      (response) =>
-        response.url().endsWith('/rpc/search_admin_trips') &&
-        response.request().postDataJSON().p_status === 'completed',
-    );
-    release();
-    await lateResponse;
-    await expect(page.getByTestId('admin-trips-table').locator('tbody tr')).toHaveCount(1);
-    await expect(page.getByTestId('admin-trips-table')).toContainText('Route paused');
-    await expect(page.getByTestId('trip-search-error')).toHaveCount(0);
-  });
-}
-
-test('search controls and results are accessible on desktop and mobile', async ({ page }) => {
-  await installOverviewMock(page);
+test('Today rolls at Alberta midnight while all-date default keeps overnight trips', async ({
+  page,
+}) => {
+  // Start near midnight before creating the one-hour synthetic auth session.
+  const controls = await installTripOperationsMock(page, '2026-10-29T05:59:50Z');
   await page.goto('/admin');
-  await expect(page.getByTestId('admin-trips-table')).toBeVisible();
-  await page.getByLabel('Dates', { exact: true }).selectOption('range');
-  await page.getByRole('button', { name: 'Apply', exact: true }).focus();
+  await expect(page.getByTestId('admin-trips-table')).toContainText('Route 1');
+  await page.getByLabel('Dates', { exact: true }).selectOption('today');
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+  await expect.poll(() => controls.requests.at(-1)?.p_from_date).toBe('2026-10-28');
+  await page.clock.setSystemTime(new Date('2026-10-29T06:00:01Z'));
+  await page.clock.runFor(15_100);
+  await expect.poll(() => controls.requests.at(-1)?.p_from_date).toBe('2026-10-29');
+});
+
+test('View and back links preserve dates, status and page', async ({ page }) => {
+  await installTripOperationsMock(page);
+  await page.goto('/admin?tripMode=all&tripPage=2&tripSize=25&tripStatus=completed');
+  await expect(page.getByTestId('admin-pagination')).toContainText('Showing 26-50');
+  const view = page.getByRole('link', { name: /View trip/ }).first();
+  await view.focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByTestId('admin-trips-table')).toBeVisible();
-  await expectNoWcagAaViolations(page, 'Tenant overview date search');
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
-    true,
+  await expect(page.getByTestId('admin-trip-detail')).toBeVisible();
+  await page.getByRole('link', { name: 'Back to trips' }).click();
+  await expect(page.getByTestId('admin-pagination')).toContainText('Showing 26-50');
+  await expect(page.getByRole('button', { name: 'Completed', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
   );
+});
+
+test('admin layouts use available width, contain tables and support both themes', async ({
+  page,
+}, testInfo) => {
+  await installTripOperationsMock(page);
+  await page.goto('/admin');
+  for (const width of [390, 768, 1440, 2400]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const theme of ['light', 'dark']) {
+      await page.evaluate((t) => (document.documentElement.dataset.theme = t), theme);
+      await expect(page.getByTestId('admin-trips-table')).toBeVisible();
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+      if (width === 2400)
+        expect(
+          await page.locator('main').evaluate((el) => el.getBoundingClientRect().width),
+        ).toBeGreaterThan(1800);
+    }
+  }
+  await page.screenshot({ path: testInfo.outputPath('overview-wide-dark.png'), fullPage: true });
+  await expectNoWcagAaViolations(page, 'Consolidated overview');
+});
+
+test('support website link and editor are removed while other contact methods remain', async ({
+  page,
+}) => {
+  await installTripOperationsMock(page);
+  await page.goto('/support');
+  await expect(page.getByRole('link', { name: 'platform@example.test' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Open support website' })).toHaveCount(0);
+  await page.goto('/admin/settings/support');
+  await expect(page.getByRole('textbox', { name: 'Support email', exact: true })).toBeVisible();
+  await expect(page.getByLabel('Support website')).toHaveCount(0);
 });

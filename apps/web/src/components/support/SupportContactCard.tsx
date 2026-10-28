@@ -1,4 +1,4 @@
-import { Clock, ExternalLink, Mail, MapPin, Phone } from 'lucide-react';
+import { Clock, Mail, MapPin, Phone } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import type { SupportContact } from '@/services/supportDirectoryService';
 
@@ -29,16 +29,6 @@ export function SupportContactCard({ title, contact }: { title: string; contact:
             href={`tel:${contact.phone}`}
           >
             <Phone className="h-5 w-5 shrink-0" aria-hidden /> {contact.phone}
-          </a>
-        )}
-        {contact.websiteUrl && (
-          <a
-            className="flex min-h-12 items-center gap-3 rounded-lg text-navy-700 underline underline-offset-4"
-            href={contact.websiteUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <ExternalLink className="h-5 w-5 shrink-0" aria-hidden /> Open support website
           </a>
         )}
         {contact.supportHours && (

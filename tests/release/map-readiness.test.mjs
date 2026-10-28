@@ -25,6 +25,7 @@ test('every interactive map minimizes referrer data and fails safely on tile err
   const mapFiles = [
     'apps/web/src/components/guardian/GuardianLiveBusMap.tsx',
     'apps/web/src/components/admin/AdminFleetMap.tsx',
+    'apps/web/src/components/admin/AdminTripMap.tsx',
     'apps/web/src/components/admin/AdminRoutesMap.tsx',
     'apps/web/src/components/admin/RouteStopMapEditor.tsx',
   ];

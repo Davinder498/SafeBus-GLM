@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/useAuth';
 import { useTrackingInvalidations } from '@/hooks/useTrackingInvalidations';
 
 /** Private invalidations are hints; the caller always reloads through its secured query. */
-export function useAdminTripRefresh(refresh: () => void) {
+export function useAdminTripRefresh(refresh: () => void, onDisconnected?: () => void) {
   const { profile } = useAuth();
   const refreshRef = useRef(refresh);
   const lastSignalCheck = useRef(0);
@@ -19,9 +19,10 @@ export function useAdminTripRefresh(refresh: () => void) {
     check();
   }, [check]);
 
-  useTrackingInvalidations({
+  const connection = useTrackingInvalidations({
     topic: profile?.tenant_id ? `safebus:tenant:${profile.tenant_id}` : null,
     onInvalidate,
+    onDisconnected,
   });
 
   useEffect(() => {
@@ -36,4 +37,5 @@ export function useAdminTripRefresh(refresh: () => void) {
       document.removeEventListener('visibilitychange', check);
     };
   }, [check]);
+  return connection;
 }

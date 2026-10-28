@@ -150,7 +150,7 @@ export async function installAdminWorkflowMock(
       await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
       return;
     }
-    if (path.includes('/rpc/search_admin_trips')) {
+    if (path.includes('/rpc/search_admin_trips') || path.includes('/rpc/get_admin_trip_operations')) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
