@@ -150,7 +150,7 @@ export async function installAdminWorkflowMock(
       await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
       return;
     }
-    if (path.includes('/rpc/search_admin_trips') || path.includes('/rpc/get_admin_trip_operations')) {
+    if (path.includes('/rpc/search_admin_trips')) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -158,25 +158,37 @@ export async function installAdminWorkflowMock(
       });
       return;
     }
-    if (path.includes('/rpc/get_admin_trip_overview')) {
+    if (
+      path.includes('/rpc/get_admin_trip_overview') ||
+      path.includes('/rpc/get_admin_trip_operations')
+    ) {
+      const rows = [
+        {
+          trip_id: ADMIN_IDS.trip,
+          service_date: '2026-01-01',
+          status: 'active',
+          started_at: '2026-01-01T08:00:00Z',
+          ended_at: null,
+          route_name: 'Route One',
+          route_code: 'R1',
+          trip_pattern_name: 'Morning service',
+          direction: 'forward',
+          bus_label: 'Bus One',
+          driver_label: 'Test Driver',
+          location_status: 'missing',
+          latest_location_at: null,
+          eta_label: null,
+          next_stop_name: null,
+        },
+      ];
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([
-          {
-            trip_id: ADMIN_IDS.trip,
-            service_date: '2026-01-01',
-            status: 'active',
-            started_at: '2026-01-01T08:00:00Z',
-            ended_at: null,
-            route_name: 'Route One',
-            route_code: 'R1',
-            trip_pattern_name: 'Morning service',
-            direction: 'forward',
-            bus_label: 'Bus One',
-            driver_label: 'Test Driver',
-          },
-        ]),
+        body: JSON.stringify(
+          path.includes('/rpc/get_admin_trip_operations')
+            ? { rows, totalCount: rows.length }
+            : rows,
+        ),
       });
       return;
     }
