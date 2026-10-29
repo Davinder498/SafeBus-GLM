@@ -15,7 +15,8 @@ export function normalizeThemePreference(value: unknown): ThemePreference {
 }
 
 function apply(preference: ThemePreference) {
-  const resolved = preference;
+  const resolved =
+    document.documentElement.dataset.appearanceScope === 'public' ? 'light' : preference;
   const root = document.documentElement;
   root.dataset.theme = resolved;
   root.style.colorScheme = resolved;
@@ -53,6 +54,20 @@ export function initializeAppearance() {
 
 export function refreshAppearance() {
   apply(snapshot.preference);
+}
+
+/** Apply the saved preference only while a web dashboard is mounted. */
+export function activateDashboardAppearance() {
+  initializeAppearance();
+  const root = document.documentElement;
+  const previousScope = root.dataset.appearanceScope;
+  root.dataset.appearanceScope = 'dashboard';
+  refreshAppearance();
+  return () => {
+    if (previousScope === undefined) delete root.dataset.appearanceScope;
+    else root.dataset.appearanceScope = previousScope;
+    refreshAppearance();
+  };
 }
 
 export function setThemePreference(preference: ThemePreference) {
