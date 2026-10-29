@@ -1,0 +1,719 @@
+{
+  "rehearseRestore": true,
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261029000139_unified_notification_delivery.sql",
+  "migrationSha256": "83a09c45c1fa9815c7bbae37942e43433871a2ca21be9b6307d603f6438969af",
+  "functions": [
+    {
+      "signature": "safebus_private.deliver_trip_notification_audience(uuid, uuid, uuid, text, text, text, text, uuid, timestamp with time zone)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "0aa12a0d69a10fee5f113785ea85ab6a"
+      }
+    },
+    {
+      "signature": "public.expand_notification_audiences(integer)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "55056d4d17fdafbce59ba8b61e979302"
+      }
+    },
+    {
+      "signature": "safebus_private.notify_trip_audience(uuid, uuid, uuid, text, text, text, text, uuid, timestamp with time zone)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": "13aa8d12ec0e2ebecd20685c598b4e76"
+      },
+      "after": {
+        "md5": "32b435a33f5f684005f31b7f2e6e2662"
+      }
+    },
+    {
+      "signature": "safebus_private.reserve_notification_capacity(text, uuid, integer, integer)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "b094b98ccee40d2ad9574605489e0fff"
+      }
+    },
+    {
+      "signature": "public.resolve_notification_email_payload(uuid)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "f78396c9e2ef7c7251636bcb24556dce"
+      }
+    },
+    {
+      "signature": "safebus_private.notification_event_title(text)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": "c93f513d47283ba578f9512e87afd470"
+      },
+      "after": {
+        "md5": "c1360ac0adfa10c8355cbf89e99b2ae1"
+      }
+    },
+    {
+      "signature": "safebus_private.pickup_dropoff_event_copy(uuid, uuid, uuid, uuid, text)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": "43a6aa43ac62e9dc1bfc93a9ff8e3af2"
+      },
+      "after": {
+        "md5": "fa3ced9e3889ada3bd1baba7955d1696"
+      }
+    },
+    {
+      "signature": "safebus_private.on_student_trip_event_notification()",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": "7c8c8fab769af318a545bda5638301cf"
+      },
+      "after": {
+        "md5": "234f63a1d034e0c5332e147953228b57"
+      }
+    },
+    {
+      "signature": "safebus_private.notification_copy_before_announcements(user_notifications)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": "77a52408bbf1b30f6e0c38f7f9e61c17"
+      },
+      "after": {
+        "md5": "1e173ddc36bc11a1b8b11f6970633279"
+      }
+    },
+    {
+      "signature": "safebus_private.notification_push_copy(user_notifications)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": "3b7de6391d319b754eabf54d2b0bdbf2"
+      },
+      "after": {
+        "md5": "290f19a0716095ab6d4ce5916c36a201"
+      }
+    },
+    {
+      "signature": "safebus_private.on_trip_operational_status_notification()",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": "45afa708883dd3bd18f56c8b81ec9eef"
+      },
+      "after": {
+        "md5": "725491f7015e46491c2054b5da041532"
+      }
+    },
+    {
+      "signature": "safebus_private.enqueue_user_notification(uuid, uuid, text, text, text, text, uuid, text, timestamp with time zone, uuid, uuid, uuid)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": "36646188bf8054a3e8671f6b8a371b96"
+      },
+      "after": {
+        "md5": "2d35961948e401a87460a0971318f2a9"
+      }
+    },
+    {
+      "signature": "safebus_private.notification_recipient_can_access(user_notifications)",
+      "owner": "postgres",
+      "acl": ["authenticated=X/postgres", "postgres=X/postgres"],
+      "before": {
+        "md5": "48a17749d0dcaed891c7a864ceed42a6"
+      },
+      "after": {
+        "md5": "3f0c8d1c0b8631d911ece18ee8a40391"
+      }
+    },
+    {
+      "signature": "safebus_private.notification_email_outbox_is_eligible(uuid)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": "3aa71f93f292ed3cb56b5191838b78a9"
+      },
+      "after": {
+        "md5": "75be65d257f859d244d3dba2182c87a5"
+      }
+    },
+    {
+      "signature": "safebus_private.push_notification_is_eligible(uuid)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "20cc4b31987032153c15bcdb29dd2975"
+      }
+    },
+    {
+      "signature": "public.resolve_push_notification_delivery(uuid, text)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": "c757bb8a4037b4175c7fbcb3c18b92ac"
+      },
+      "after": {
+        "md5": "235b92f3b2fab53221f06a8a70ecfb6c"
+      }
+    },
+    {
+      "signature": "public.claim_push_notification_deliveries(text, integer, integer)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": "f7140538aa6303d242e391cc46554cfe"
+      },
+      "after": {
+        "md5": "f536f053d670d235be73a42fa1695b08"
+      }
+    },
+    {
+      "signature": "public.claim_guardian_notification_email_batch(integer, integer, integer, integer)",
+      "owner": "postgres",
+      "acl": ["=X/postgres", "postgres=X/postgres"],
+      "before": {
+        "md5": "f08ea91221a6147f0b172f5d93d1e559"
+      },
+      "after": {
+        "md5": "fcec0911c087d6a3f280923f248d52e5"
+      }
+    },
+    {
+      "signature": "public.claim_notification_deliveries(text, text, integer, integer)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "6b0838382d6c8f16ae66084d0b4447c0"
+      }
+    },
+    {
+      "signature": "public.resolve_notification_deliveries(text, text, uuid[])",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "7341fe5e3af73def59e98841e4698c65"
+      }
+    },
+    {
+      "signature": "public.settle_notification_deliveries(text, text, jsonb)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "5fa984fd434c1fe8336f9daa91d6ed32"
+      }
+    }
+  ],
+  "policies": [],
+  "repairs": [],
+  "defaults": [
+    {
+      "before": {
+        "table_schema": "public",
+        "table_name": "guardian_notification_delivery_policies",
+        "column_name": "tenant_daily_limit",
+        "column_default": "500"
+      },
+      "after": {
+        "table_schema": "public",
+        "table_name": "guardian_notification_delivery_policies",
+        "column_name": "tenant_daily_limit",
+        "column_default": "10000000"
+      }
+    },
+    {
+      "before": {
+        "table_schema": "public",
+        "table_name": "guardian_notification_delivery_policies",
+        "column_name": "tenant_per_minute_limit",
+        "column_default": "20"
+      },
+      "after": {
+        "table_schema": "public",
+        "table_name": "guardian_notification_delivery_policies",
+        "column_name": "tenant_per_minute_limit",
+        "column_default": "200000"
+      }
+    },
+    {
+      "before": {
+        "table_schema": "public",
+        "table_name": "guardian_notification_delivery_policies",
+        "column_name": "push_tenant_daily_limit",
+        "column_default": "500"
+      },
+      "after": {
+        "table_schema": "public",
+        "table_name": "guardian_notification_delivery_policies",
+        "column_name": "push_tenant_daily_limit",
+        "column_default": "10000000"
+      }
+    },
+    {
+      "before": {
+        "table_schema": "public",
+        "table_name": "guardian_notification_delivery_policies",
+        "column_name": "push_tenant_per_minute_limit",
+        "column_default": "20"
+      },
+      "after": {
+        "table_schema": "public",
+        "table_name": "guardian_notification_delivery_policies",
+        "column_name": "push_tenant_per_minute_limit",
+        "column_default": "200000"
+      }
+    }
+  ],
+  "relations": [
+    {
+      "name": "safebus_private.pickup_dropoff_event_copies",
+      "before": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": ["postgres=arwdDxtm/postgres"],
+        "columns": [
+          {
+            "name": "student_trip_event_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "tenant_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "student_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "driver_trip_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "event_type",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "title",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "body",
+            "type": "text",
+            "default": null,
+            "required": true
+          }
+        ],
+        "constraints": [
+          "CHECK ((event_type = ANY (ARRAY['student_picked_up'::text, 'student_dropped_off'::text])))",
+          "PRIMARY KEY (student_trip_event_id)",
+          "FOREIGN KEY (student_trip_event_id) REFERENCES student_trip_events(id) ON DELETE CASCADE",
+          "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE"
+        ],
+        "policies": 0
+      },
+      "after": null
+    },
+    {
+      "name": "safebus_release.pickup_dropoff_event_copies",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": ["postgres=arwdDxtm/postgres"],
+        "columns": [
+          {
+            "name": "student_trip_event_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "tenant_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "student_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "driver_trip_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "event_type",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "title",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "body",
+            "type": "text",
+            "default": null,
+            "required": true
+          }
+        ],
+        "constraints": [
+          "CHECK ((event_type = ANY (ARRAY['student_picked_up'::text, 'student_dropped_off'::text])))",
+          "PRIMARY KEY (student_trip_event_id)",
+          "FOREIGN KEY (student_trip_event_id) REFERENCES student_trip_events(id) ON DELETE CASCADE",
+          "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE"
+        ],
+        "policies": 0
+      }
+    },
+    {
+      "name": "safebus_private.notification_dispatch_counters",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": ["postgres=arwdDxtm/postgres"],
+        "columns": [
+          {
+            "name": "channel",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "scope",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "second_start",
+            "type": "timestamp with time zone",
+            "default": "date_trunc('second'::text, now())",
+            "required": true
+          },
+          {
+            "name": "minute_start",
+            "type": "timestamp with time zone",
+            "default": "date_trunc('minute'::text, now())",
+            "required": true
+          },
+          {
+            "name": "day_start",
+            "type": "timestamp with time zone",
+            "default": "date_trunc('day'::text, now())",
+            "required": true
+          },
+          {
+            "name": "second_used",
+            "type": "integer",
+            "default": "0",
+            "required": true
+          },
+          {
+            "name": "minute_used",
+            "type": "integer",
+            "default": "0",
+            "required": true
+          },
+          {
+            "name": "day_used",
+            "type": "integer",
+            "default": "0",
+            "required": true
+          },
+          {
+            "name": "last_served_at",
+            "type": "timestamp with time zone",
+            "default": "'-infinity'::timestamp with time zone",
+            "required": true
+          }
+        ],
+        "constraints": [
+          "CHECK ((channel = ANY (ARRAY['push'::text, 'email'::text])))",
+          "PRIMARY KEY (channel, scope)"
+        ],
+        "policies": 0
+      }
+    },
+    {
+      "name": "safebus_private.notification_audience_queue",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": ["postgres=arwdDxtm/postgres"],
+        "columns": [
+          {
+            "name": "id",
+            "type": "uuid",
+            "default": "gen_random_uuid()",
+            "required": true
+          },
+          {
+            "name": "tenant_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "driver_trip_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "route_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "event_type",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "category",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "severity",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "source_type",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "source_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "occurred_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "attempts",
+            "type": "integer",
+            "default": "0",
+            "required": true
+          },
+          {
+            "name": "available_after",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "required": true
+          },
+          {
+            "name": "failed_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "failure_code",
+            "type": "text",
+            "default": null,
+            "required": false
+          }
+        ],
+        "constraints": [
+          "FOREIGN KEY (driver_trip_id) REFERENCES driver_trips(id) ON DELETE CASCADE",
+          "PRIMARY KEY (id)",
+          "UNIQUE (source_type, source_id, event_type, occurred_at)",
+          "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE"
+        ],
+        "policies": 0
+      }
+    }
+  ],
+  "jobs": [
+    {
+      "name": "safebus-push-notification-dispatcher",
+      "before": {
+        "name": "safebus-push-notification-dispatcher",
+        "schedule": "* * * * *",
+        "active": true,
+        "command_md5": "18654e8b11867b111304574d35407735"
+      },
+      "after": {
+        "name": "safebus-push-notification-dispatcher",
+        "schedule": "20 seconds",
+        "active": true,
+        "command_md5": "18654e8b11867b111304574d35407735"
+      }
+    }
+  ],
+  "quotaRepairs": [
+    {
+      "tenant_id": "49410f95-38da-4eed-aaef-c6b6b98e9a7c",
+      "before": {
+        "tenant_daily_limit": 500,
+        "tenant_per_minute_limit": 20,
+        "push_tenant_daily_limit": 500,
+        "push_tenant_per_minute_limit": 20
+      },
+      "after": {
+        "tenant_daily_limit": 10000000,
+        "tenant_per_minute_limit": 200000,
+        "push_tenant_daily_limit": 10000000,
+        "push_tenant_per_minute_limit": 200000
+      }
+    },
+    {
+      "tenant_id": "a7033cbe-9bc7-4508-89bd-0a19270a2c15",
+      "before": {
+        "tenant_daily_limit": 500,
+        "tenant_per_minute_limit": 20,
+        "push_tenant_daily_limit": 500,
+        "push_tenant_per_minute_limit": 20
+      },
+      "after": {
+        "tenant_daily_limit": 10000000,
+        "tenant_per_minute_limit": 200000,
+        "push_tenant_daily_limit": 10000000,
+        "push_tenant_per_minute_limit": 200000
+      }
+    },
+    {
+      "tenant_id": "e19ab3b1-8346-4779-9fdb-46de90081a07",
+      "before": {
+        "tenant_daily_limit": 500,
+        "tenant_per_minute_limit": 20,
+        "push_tenant_daily_limit": 50,
+        "push_tenant_per_minute_limit": 5
+      },
+      "after": {
+        "tenant_daily_limit": 10000000,
+        "tenant_per_minute_limit": 200000,
+        "push_tenant_daily_limit": 50,
+        "push_tenant_per_minute_limit": 5
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "table": "public.guardian_notification_delivery_policies",
+      "name": "guardian_notification_policy_limits_check",
+      "before": "CHECK (tenant_daily_limit >= 1 AND tenant_daily_limit <= 100000 AND tenant_per_minute_limit >= 1 AND tenant_per_minute_limit <= 1000)",
+      "after": "CHECK (tenant_daily_limit >= 1 AND tenant_daily_limit <= 100000000 AND tenant_per_minute_limit >= 1 AND tenant_per_minute_limit <= 1000000)"
+    },
+    {
+      "table": "public.guardian_notification_delivery_policies",
+      "name": "guardian_notification_policy_push_limits_check",
+      "before": "CHECK (push_tenant_daily_limit >= 1 AND push_tenant_daily_limit <= 100000 AND push_tenant_per_minute_limit >= 1 AND push_tenant_per_minute_limit <= 1000)",
+      "after": "CHECK (push_tenant_daily_limit >= 1 AND push_tenant_daily_limit <= 100000000 AND push_tenant_per_minute_limit >= 1 AND push_tenant_per_minute_limit <= 1000000)"
+    }
+  ],
+  "indexes": [
+    {
+      "schema": "public",
+      "name": "push_notification_due_authority_idx",
+      "before": null,
+      "after": "CREATE INDEX push_notification_due_authority_idx ON public.push_notification_outbox USING btree (tenant_id, available_after, created_at, id) WHERE (status = ANY (ARRAY['pending'::text, 'retry'::text, 'processing'::text]))"
+    },
+    {
+      "schema": "public",
+      "name": "email_notification_due_authority_idx",
+      "before": null,
+      "after": "CREATE INDEX email_notification_due_authority_idx ON public.guardian_notification_outbox USING btree (tenant_id, available_after, created_at, id) WHERE (status = ANY (ARRAY['pending'::text, 'processing'::text]))"
+    }
+  ],
+  "columns": [
+    {
+      "schema": "public",
+      "table": "guardian_notification_outbox",
+      "name": "worker_id",
+      "before": null,
+      "after": {
+        "data_type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      }
+    }
+  ],
+  "tableMoves": [
+    {
+      "before": {
+        "schema": "safebus_private",
+        "table": "pickup_dropoff_event_copies"
+      },
+      "after": {
+        "schema": "safebus_release",
+        "table": "pickup_dropoff_event_copies"
+      }
+    }
+  ],
+  "newTables": [
+    "safebus_private.notification_dispatch_counters",
+    "safebus_private.notification_audience_queue"
+  ],
+  "mustBeEmptyBeforeRestore": ["safebus_private.notification_audience_queue"]
+}

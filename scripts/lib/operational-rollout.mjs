@@ -69,6 +69,84 @@ export async function operationalSnapshot(client, config) {
     if (row) repairs.push(row);
   }
   const snapshot = { functions, policies, defaults, repairs };
+  if (config.columns) {
+    snapshot.columns = [];
+    for (const column of config.columns) {
+      const {
+        rows: [row],
+      } = await client.query(
+        'select data_type,is_nullable,column_default from information_schema.columns where table_schema=$1 and table_name=$2 and column_name=$3',
+        [column.schema, column.table, column.name],
+      );
+      snapshot.columns.push(row ?? null);
+    }
+  }
+  if (config.relations) {
+    snapshot.relations = [];
+    for (const relation of config.relations) {
+      const {
+        rows: [row],
+      } = await client.query(
+        `select c.relrowsecurity as rls,c.relforcerowsecurity as force_rls,
+        pg_get_userbyid(c.relowner) as owner,coalesce(c.relacl,acldefault('r',c.relowner))::text[] as acl,
+        (select jsonb_agg(jsonb_build_object('name',a.attname,'type',format_type(a.atttypid,a.atttypmod),'required',a.attnotnull,'default',pg_get_expr(d.adbin,d.adrelid)) order by a.attnum)
+         from pg_attribute a left join pg_attrdef d on d.adrelid=a.attrelid and d.adnum=a.attnum where a.attrelid=c.oid and a.attnum>0 and not a.attisdropped) as columns,
+        (select jsonb_agg(pg_get_constraintdef(k.oid) order by k.conname) from pg_constraint k where k.conrelid=c.oid and k.contype<>'n') as constraints,
+        (select count(*)::int from pg_policy where polrelid=c.oid) as policies
+        from pg_class c where c.oid=to_regclass($1)`,
+        [relation.name],
+      );
+      snapshot.relations.push(row ?? null);
+    }
+  }
+  if (config.jobs) {
+    snapshot.jobs = [];
+    for (const job of config.jobs) {
+      const {
+        rows: [row],
+      } = await client.query(
+        "select jobname as name,schedule,active,md5(replace(command,chr(13),'')) as command_md5 from cron.job where jobname=$1",
+        [job.name],
+      );
+      snapshot.jobs.push(row ?? null);
+    }
+  }
+  if (config.quotaRepairs) {
+    snapshot.quotaRepairs = [];
+    for (const policy of config.quotaRepairs) {
+      const {
+        rows: [row],
+      } = await client.query(
+        'select tenant_daily_limit,tenant_per_minute_limit,push_tenant_daily_limit,push_tenant_per_minute_limit from public.guardian_notification_delivery_policies where tenant_id=$1',
+        [policy.tenant_id],
+      );
+      snapshot.quotaRepairs.push(row ?? null);
+    }
+  }
+  if (config.constraints) {
+    snapshot.constraints = [];
+    for (const constraint of config.constraints) {
+      const {
+        rows: [row],
+      } = await client.query(
+        'select pg_get_constraintdef(oid,true) as definition from pg_constraint where conrelid=to_regclass($1) and conname=$2',
+        [constraint.table, constraint.name],
+      );
+      snapshot.constraints.push(row?.definition ?? null);
+    }
+  }
+  if (config.indexes) {
+    snapshot.indexes = [];
+    for (const index of config.indexes) {
+      const {
+        rows: [row],
+      } = await client.query(
+        'select indexdef from pg_indexes where schemaname=$1 and indexname=$2',
+        [index.schema, index.name],
+      );
+      snapshot.indexes.push(row?.indexdef ?? null);
+    }
+  }
   if (config.columnGrants) {
     snapshot.columnGrants = [];
     for (const grant of config.columnGrants) {
@@ -84,6 +162,16 @@ export async function operationalSnapshot(client, config) {
 }
 
 export function verifyOperationalSnapshot(snapshot, config, state) {
+  for (const key of ['relations', 'jobs', 'quotaRepairs', 'constraints', 'indexes', 'columns']) {
+    if (
+      config[key] &&
+      !isDeepStrictEqual(
+        snapshot[key],
+        config[key].map((entry) => entry[state]),
+      )
+    )
+      throw new Error('OPERATIONAL_SCHEMA_DRIFT');
+  }
   for (const expected of config.functions) {
     const actual = snapshot.functions.find((f) => f.signature === expected.signature);
     if (
@@ -134,12 +222,58 @@ export function verifyOperationalSnapshot(snapshot, config, state) {
 }
 
 export function operationalRestoreSql(snapshot, config) {
-  const statements = [...snapshot.functions]
-    .reverse()
-    .map((f) =>
-      f.definition === null
-        ? `DROP FUNCTION IF EXISTS ${f.signature};`
-        : f.definition.trim().replace(/;$/, '') + ';',
+  const pendingGuards = (config.mustBeEmptyBeforeRestore ?? []).map((table) => {
+    const [schema, name] = table.split('.');
+    return `DO $restore$ BEGIN IF EXISTS(SELECT 1 FROM ${identifier(schema)}.${identifier(name)} LIMIT 1) THEN RAISE EXCEPTION 'Pending notification audience work must drain before rollback.'; END IF; END $restore$;`;
+  });
+  const moves = (config.tableMoves ?? []).map(
+    (move) =>
+      `ALTER TABLE ${identifier(move.after.schema)}.${identifier(move.after.table)} SET SCHEMA ${identifier(move.before.schema)};`,
+  );
+  const statements = [
+    ...pendingGuards,
+    ...moves,
+    ...[...snapshot.functions]
+      .reverse()
+      .map((f) =>
+        f.definition === null
+          ? `DROP FUNCTION IF EXISTS ${f.signature};`
+          : f.definition.trim().replace(/;$/, '') + ';',
+      ),
+  ];
+  for (const [index, policy] of (config.quotaRepairs ?? []).entries()) {
+    statements.push(
+      `UPDATE public.guardian_notification_delivery_policies SET ${Object.entries(
+        snapshot.quotaRepairs[index],
+      )
+        .map(([key, value]) => identifier(key) + '=' + Number(value))
+        .join(',')} WHERE tenant_id=${literal(policy.tenant_id)}::uuid AND ${Object.entries(
+        policy.after,
+      )
+        .map(([key, value]) => identifier(key) + '=' + Number(value))
+        .join(' AND ')};`,
+    );
+  }
+  for (const [index, constraint] of (config.constraints ?? []).entries()) {
+    const [schema, table] = constraint.table.split('.');
+    statements.push(
+      `ALTER TABLE ${identifier(schema)}.${identifier(table)} DROP CONSTRAINT ${identifier(constraint.name)};`,
+      `ALTER TABLE ${identifier(schema)}.${identifier(table)} ADD CONSTRAINT ${identifier(constraint.name)} ${snapshot.constraints[index]};`,
+    );
+  }
+  for (const [index, job] of (config.jobs ?? []).entries())
+    statements.push(
+      `SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname=${literal(job.name)}),schedule:=${literal(snapshot.jobs[index].schedule)});`,
+    );
+  for (const index of (config.indexes ?? []).filter((entry) => entry.before === null))
+    statements.push(`DROP INDEX ${identifier(index.schema)}.${identifier(index.name)};`);
+  for (const table of [...(config.newTables ?? [])].reverse()) {
+    const [schema, name] = table.split('.');
+    statements.push(`DROP TABLE ${identifier(schema)}.${identifier(name)};`);
+  }
+  for (const column of (config.columns ?? []).filter((entry) => entry.before === null))
+    statements.push(
+      `ALTER TABLE ${identifier(column.schema)}.${identifier(column.table)} DROP COLUMN ${identifier(column.name)};`,
     );
   for (const [index, p] of snapshot.policies.entries()) {
     if (p === null) {
@@ -207,7 +341,7 @@ export async function operationalDataDigest(client) {
     'student_preferences',(select jsonb_agg(to_jsonb(g) order by student_guardian_id,category) from public.guardian_student_push_preferences g),
     'notifications',(select jsonb_agg(to_jsonb(n) order by id) from public.user_notifications n),
     'push',(select jsonb_agg(to_jsonb(o) order by id) from public.push_notification_outbox o),
-    'email',(select jsonb_agg(to_jsonb(o) order by id) from public.guardian_notification_outbox o)
+    'email',(select jsonb_agg(to_jsonb(o)-'worker_id' order by id) from public.guardian_notification_outbox o)
     )::text) as digest`);
   return row.digest;
 }
@@ -227,6 +361,12 @@ export async function rehearseOperational(client, sql, config) {
     result = verifyOperationalSnapshot(await operationalSnapshot(client, config), config, 'after');
     if (data !== (await operationalDataDigest(client)))
       throw new Error('OPERATIONAL_RECIPIENT_DATA_CHANGED');
+    if (config.rehearseRestore) {
+      await client.query(operationalRestoreSql(before, config));
+      verifyOperationalSnapshot(await operationalSnapshot(client, config), config, 'before');
+      if (data !== (await operationalDataDigest(client)))
+        throw new Error('OPERATIONAL_RECOVERY_DATA_CHANGED');
+    }
   } finally {
     await client.query('rollback');
     if (JSON.stringify(before) !== JSON.stringify(await capture()))

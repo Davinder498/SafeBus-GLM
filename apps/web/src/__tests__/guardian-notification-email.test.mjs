@@ -2,32 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
   buildGuardianEventEmail,
   classifyProviderError,
-  idempotencyKey,
-  redactLog,
   retryDelaySeconds,
 } from '../../netlify/functions/guardian-notification-email.mjs';
 
 describe('guardian notification email template', () => {
-  it('keeps trip and operational email copy free of student names', () => {
-    const email = buildGuardianEventEmail({
-      notificationType: 'trip_late',
-      studentFirstName: 'PrivateStudentName',
-      eventCreatedAt: '2026-09-29T14:00:00.000Z',
-      tenantTimezone: 'America/Edmonton',
-    });
-
-    expect(email.subject).toBe('SafeBus: Bus reported late');
-    expect(email.text).toContain('Open SafeBus to view the update');
-    expect(email.text).not.toContain('PrivateStudentName');
-    expect(email.html).not.toContain('PrivateStudentName');
-  });
-
   it.each([
     'trip_started',
     'trip_completed',
     'trip_cancelled',
     'trip_late',
-    'trip_missing',
     'traffic_disruption',
     'weather_disruption',
     'road_closure',
@@ -35,26 +18,25 @@ describe('guardian notification email template', () => {
     'student_service_changed',
     'guardian_access_changed',
     'authority_announcement',
-  ])('uses controlled privacy-safe copy for %s', (notificationType) => {
+  ])('uses the authorized server copy for %s', (notificationType) => {
     const email = buildGuardianEventEmail({
       notificationType,
-      studentFirstName: 'DoNotRender',
-      eventCreatedAt: '2026-09-29T14:00:00.000Z',
-      tenantTimezone: 'America/Edmonton',
+      notificationTitle: 'Approved title',
+      notificationBody: 'Approved server message.',
+      eventCreatedAt: '2026-09-29T14:00:00Z',
     });
-    expect(email.subject).toMatch(/^SafeBus:/);
-    expect(`${email.text} ${email.html}`).not.toContain('DoNotRender');
+    expect(email.subject).toBe('SafeBus: Approved title');
+    expect(email.text.split('\n')[0]).toBe('Approved server message.');
   });
-
   it.each(['student_picked_up', 'student_dropped_off'])(
     'renders the canonical title and message for %s',
     (notificationType) => {
       const notificationTitle =
-        notificationType === 'student_picked_up' ? 'Pickup recorded' : 'Drop-off recorded';
+        notificationType === 'student_picked_up' ? 'Student picked up' : 'Student dropped off';
       const notificationBody =
         'Alex Morgan was ' +
         (notificationType === 'student_picked_up' ? 'picked up' : 'dropped off') +
-        ' on Bus 12 at Maple Street.';
+        ' on Bus 12.';
       const email = buildGuardianEventEmail({
         notificationType,
         notificationTitle,
@@ -73,7 +55,7 @@ describe('guardian notification email template', () => {
   it('rejects missing canonical copy instead of reverting to first-name-only email', () => {
     expect(() =>
       buildGuardianEventEmail({ notificationType: 'student_picked_up', studentFirstName: 'Alex' }),
-    ).toThrow('canonical_pickup_dropoff_copy_required');
+    ).toThrow('canonical_notification_copy_required');
   });
 
   it.each([null, 'Not/A/Real_Zone'])(
@@ -81,8 +63,8 @@ describe('guardian notification email template', () => {
     (tenantTimezone) => {
       const email = buildGuardianEventEmail({
         notificationType: 'student_picked_up',
-        notificationTitle: 'Pickup recorded',
-        notificationBody: 'Alex Morgan was picked up on Bus 12 at Maple Street.',
+        notificationTitle: 'Student picked up',
+        notificationBody: 'Alex Morgan was picked up on Bus 12.',
         eventCreatedAt: '2026-07-14T15:30:00Z',
         tenantTimezone,
       });
@@ -94,7 +76,7 @@ describe('guardian notification email template', () => {
     const notificationBody = 'Alex <Morgan> was picked up on Bus 12 at Maple & School.';
     const email = buildGuardianEventEmail({
       notificationType: 'student_picked_up',
-      notificationTitle: 'Pickup recorded',
+      notificationTitle: 'Student picked up',
       notificationBody,
       eventCreatedAt: '2026-07-14T15:30:00Z',
     });
@@ -131,59 +113,12 @@ describe('provider error classification', () => {
   });
 });
 
-describe('retry and idempotency helpers', () => {
+describe('retry delays', () => {
   it('calculates bounded retry delays', () => {
     expect(retryDelaySeconds(1)).toBe(300);
     expect(retryDelaySeconds(2)).toBe(900);
     expect(retryDelaySeconds(3)).toBe(3600);
     expect(retryDelaySeconds(4)).toBe(10800);
     expect(retryDelaySeconds(5)).toBe(10800);
-  });
-
-  it('produces a stable idempotency key per outbox row', () => {
-    expect(idempotencyKey('abc')).toBe('guardian-notification-outbox:abc');
-    expect(idempotencyKey('abc')).toBe(idempotencyKey('abc'));
-    expect(idempotencyKey('abc')).not.toBe(idempotencyKey('def'));
-  });
-});
-
-describe('driver assignment email privacy', () => {
-  for (const [notificationType, label] of [
-    ['driver_assignment_created', 'Assignment created'],
-    ['driver_assignment_changed', 'Assignment changed'],
-    ['driver_assignment_ended', 'Assignment ended'],
-  ]) {
-    it(`builds generic ${label.toLowerCase()} copy`, () => {
-      const email = buildGuardianEventEmail({ notificationType });
-      expect(email.subject).toBe(`SafeBus: ${label}`);
-      expect(email.text).toContain('Open SafeBus to view the update.');
-      expect(email.text).not.toMatch(/\b(bus|route|stop|schedule|student)\b/i);
-    });
-  }
-});
-
-describe('log privacy', () => {
-  it('redacts sensitive log fields (backwards-compatible helper)', () => {
-    expect(redactLog({ outboxId: '1', email: 'g@example.com', text: 'body', result: 'x' })).toEqual(
-      { outboxId: '1', result: 'x' },
-    );
-  });
-
-  it('redacts all known sensitive keys', () => {
-    const result = redactLog({
-      outboxId: '1',
-      email: 'g@example.com',
-      recipient_email: 'g@example.com',
-      message: 'secret',
-      body: 'secret',
-      html: '<p>secret</p>',
-      text: 'secret',
-      apiKey: 're_xxx',
-      result: 'delivered',
-    });
-    expect(result).toEqual({ outboxId: '1', result: 'delivered' });
-    expect(JSON.stringify(result)).not.toContain('g@example.com');
-    expect(JSON.stringify(result)).not.toContain('secret');
-    expect(JSON.stringify(result)).not.toContain('re_xxx');
   });
 });

@@ -20,7 +20,7 @@ async function signedEvent(startedAt = START) {
   return { httpMethod: 'POST', body: request.body, headers: request.headers };
 }
 
-describe('ten-second email cadence', () => {
+describe('twenty-second email cadence', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(START);
@@ -36,7 +36,7 @@ describe('ten-second email cadence', () => {
     process.env = { ...ORIGINAL_ENV };
   });
 
-  it('dispatches at 10, 20, 30, 40 and 50 seconds then stops before the next minute', async () => {
+  it('dispatches at 0, 20 and 40 seconds then stops before the next minute', async () => {
     const calls = [];
     vi.mocked(runScheduledDispatcher).mockImplementation(async () => {
       calls.push(Date.now() - START);
@@ -46,7 +46,7 @@ describe('ten-second email cadence', () => {
     const running = handler(event);
     await vi.advanceTimersByTimeAsync(60_000);
     expect(await running).toEqual({ statusCode: 200 });
-    expect(calls).toEqual([10_000, 20_000, 30_000, 40_000, 50_000]);
+    expect(calls).toEqual([0, 20_000, 40_000]);
     expect(vi.getTimerCount()).toBe(0);
   });
 
@@ -90,7 +90,7 @@ describe('ten-second email cadence', () => {
     const running = handler(await signedEvent());
     await vi.advanceTimersByTimeAsync(70_000);
     await running;
-    expect(calls).toEqual([10_000, 40_000]);
+    expect(calls).toEqual([0, 40_000]);
   });
 
   it('continues at the next tick after a transient dispatch error', async () => {
@@ -98,7 +98,7 @@ describe('ten-second email cadence', () => {
     const running = handler(await signedEvent());
     await vi.advanceTimersByTimeAsync(60_000);
     expect(await running).toEqual({ statusCode: 200 });
-    expect(runScheduledDispatcher).toHaveBeenCalledTimes(5);
+    expect(runScheduledDispatcher).toHaveBeenCalledTimes(3);
   });
 
   it('does not replay an expired platform retry', async () => {

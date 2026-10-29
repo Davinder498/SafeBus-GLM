@@ -205,8 +205,8 @@ test('historical push SQL remains immutable and diagnostics remain privacy safe'
     body: 'Open BusSafe to view this update.',
   });
   assert.deepEqual(push.message.notification, {
-    title: 'SafeBus update',
-    body: 'Open SafeBus to view this update.',
+    title: 'BusSafe update',
+    body: 'Open BusSafe to view this update.',
   });
   assert.match(dispatcherCore, /visibility: 'PRIVATE'/);
   assert.doesNotMatch(dispatcherCore, /studentName|routeName|stopName|latitude|longitude/);

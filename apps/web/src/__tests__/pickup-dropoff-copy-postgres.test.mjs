@@ -16,7 +16,7 @@ import {
   templateSnapshot,
   templateRestoreSql,
   verifyTemplateInstallation,
-} from '../../../../scripts/lib/pickup-dropoff-copy-rollout.mjs';
+} from '../../../../tests/release/helpers/pickup-dropoff-copy-rollout.mjs';
 
 let db;
 beforeAll(async () => {

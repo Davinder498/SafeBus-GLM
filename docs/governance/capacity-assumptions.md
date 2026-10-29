@@ -2,7 +2,7 @@
 
 Status: customer-selected planning target; remaining assumptions and service
 objectives proposed. No demonstrated application capacity or launch approval.
-Updated: 2026-10-12 (America/Edmonton). Decision: [DL-020](decision-log.md#dl-020--capacity-planning-and-local-workload-simulation).
+Updated: 2026-10-28 (America/Edmonton). Decision: [DL-020](decision-log.md#dl-020--capacity-planning-and-local-workload-simulation).
 
 ## Target and meaning
 
@@ -40,7 +40,7 @@ The machine-readable input is [capacity-workload.json](capacity-workload.json).
 | Linked buses per guardian    |                                   1 | Proposed fan-out assumption; test additional linked buses before commitment                       |
 | Largest tenant share         |                                 20% | Proposed skew in bus traffic; never less than the average share in small scenarios                |
 | Peak login burst             |                       10,000/minute | Proposed one-minute burst, not sustained throughout the operating day                             |
-| Peak notification deliveries |                          100/second | Proposed channel delivery demand, not just notification source events                             |
+| Peak notification deliveries |                        6,667/second | Fifteen-minute student-event wave; two guardians and three enabled channels per event             |
 | Reconnect event              | 50% of buses offline for 15 minutes | Current 3-second collection remains the model while offline                                       |
 | Recovery window              |                           5 minutes | Proposed backlog-drain objective; per-device pacing does not establish this fleet recovery time   |
 | History sensitivity          |                             30 days | Existing draft retention schedule; not approved or proven to be executing                         |
@@ -51,21 +51,29 @@ input; it does not change device cadence or implement pacing/downsampling.
 
 ## Derived peak demand
 
-| Demand                                                  | Calculation / result                                                           |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| New GPS events                                          | 10,000 / 3 = **3,333.33 events/second**                                        |
-| Raw history per operating day                           | 10,000 × 8 × 3,600 / 3 = **96 million events**                                 |
-| Raw history at draft 30-day sensitivity                 | **2.88 billion events**, excluding indexes, WAL and replicas                   |
-| Guardian polling calls                                  | 88,000 × 2 / 15 = **11,733.33 calls/second**                                   |
-| Admin calls                                             | 2,000 × 2 / 30 = **133.33 calls/second**                                       |
-| Login burst                                             | 10,000 / 60 = **166.67 requests/second**                                       |
-| Notification deliveries                                 | **100/second**, with channel/provider semantics still to be specified          |
-| Baseline mixed request/delivery work                    | **15,466.67/second** during the combined stress window                         |
-| Uncoalesced per-guardian GPS invalidations              | 88,000 / 3 = **29,333.33 delivered messages/second**                           |
-| Guardian calls if every invalidation triggers two calls | Polling + refetch = **70,400/second** upper-bound model                        |
-| Hottest tenant GPS share                                | **666.67 new events/second** at 20%                                            |
-| Reconnect backlog                                       | 5,000 buses × 900 / 3 = **1.5 million events**                                 |
-| Extra evenly spread catch-up                            | 1.5 million / 300 = **5,000 events/second**, in addition to ongoing collection |
+| Demand                                                  | Calculation / result                                                               |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| New GPS events                                          | 10,000 / 3 = **3,333.33 events/second**                                            |
+| Raw history per operating day                           | 10,000 × 8 × 3,600 / 3 = **96 million events**                                     |
+| Raw history at draft 30-day sensitivity                 | **2.88 billion events**, excluding indexes, WAL and replicas                       |
+| Guardian polling calls                                  | 88,000 × 2 / 15 = **11,733.33 calls/second**                                       |
+| Admin calls                                             | 2,000 × 2 / 30 = **133.33 calls/second**                                           |
+| Login burst                                             | 10,000 / 60 = **166.67 requests/second**                                           |
+| Notification deliveries                                 | **6,667/second** across inbox, push and email; provider demand is channel-specific |
+| Baseline mixed request/delivery work                    | **22,033.67/second** during the combined stress window                             |
+| Uncoalesced per-guardian GPS invalidations              | 88,000 / 3 = **29,333.33 delivered messages/second**                               |
+| Guardian calls if every invalidation triggers two calls | Polling + refetch = **70,400/second** upper-bound model                            |
+| Hottest tenant GPS share                                | **666.67 new events/second** at 20%                                                |
+| Reconnect backlog                                       | 5,000 buses × 900 / 3 = **1.5 million events**                                     |
+| Extra evenly spread catch-up                            | 1.5 million / 300 = **5,000 events/second**, in addition to ongoing collection     |
+
+The notification sensitivity case includes one million pickup/drop-off source
+events in a fifteen-minute overlap, two guardians per student, and inbox, push
+and email all enabled: 1,000,000 × 2 × 3 / 900 ≈ 6,667 channel deliveries/second.
+Trip alerts, announcements, retries and additional devices add demand. A single
+500,000-event boarding wave within one minute instead needs roughly 8,333 source
+events/second and 50,000 combined deliveries/second with that recipient/channel
+mix. Shortening the dispatch interval cannot establish either capacity.
 
 Events are not SQL-operation counts. Ingestion also updates current location,
 history, authorization, progress and notifications; write amplification must be

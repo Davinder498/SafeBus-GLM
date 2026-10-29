@@ -56,8 +56,10 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Verify pickup and drop-off database support before releasing email
-        run: node scripts/release-pickup-dropoff-copy.mjs verify
+      - name: Verify unified notification database support before releasing clients and email
+        env:
+          SAFEBUS_OPERATIONAL_MILESTONE: delivery
+        run: node scripts/release-operational-fix.mjs verify
       - name: Verify active Point 6 privacy and legal approval
         run: pnpm privacy:verify
       - name: Verify active Point 8 map readiness

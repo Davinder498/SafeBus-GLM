@@ -53,7 +53,7 @@ export function TripDispatchStatus({
         >
           <option value="normal">Normal</option>
           <option value="late">Late</option>
-          <option value="missing">Missing bus</option>
+          <option value="missing">Service unconfirmed</option>
         </Select>
         <Select
           aria-label="Operational reason"

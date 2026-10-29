@@ -12,10 +12,8 @@
 [functions]
   directory = "apps/web/netlify/functions"
 
-# Netlify cron has minute precision. Each run drains tick zero and starts the signed
-# background worker for ticks at 10, 20, 30, 40 and 50 seconds. Database leases,
-# recipient checks, tenant quotas and provider limits still apply to every batch.
-# The existing server credentials stay server-only; no new secret is required.
+# The signed background worker covers each minute's 0/20/40-second slots.
+# Provider calls and queue draining stay outside the short scheduled invocation.
 [functions."guardian-notification-email-scheduled"]
   schedule = "* * * * *"
 

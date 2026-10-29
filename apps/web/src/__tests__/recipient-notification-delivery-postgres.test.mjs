@@ -11,11 +11,9 @@ import {
   recipientPushState,
   reviewedPushDefinitions,
   verifyInstalledRecipientPush,
-} from '../../../../scripts/lib/recipient-push-rollout.mjs';
-import {
-  buildFcmMessage,
-  runPushDispatcher,
-} from '../../../../supabase/functions/_shared/push-dispatcher-core.mjs';
+} from '../../../../tests/release/helpers/recipient-push-rollout.mjs';
+import { buildFcmMessage } from '../../../../supabase/functions/_shared/push-dispatcher-core.mjs';
+import { runPushDispatcher } from '../../../../tests/release/helpers/legacy-push-dispatcher.mjs';
 
 const read = (path) => readFile(`../../${path}`, 'utf8');
 const id = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
