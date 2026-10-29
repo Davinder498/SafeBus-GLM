@@ -241,6 +241,8 @@ function tableFromPath(pathname: string): string {
 }
 
 export interface MockControl {
+  setTripStatus: (status: 'active' | 'paused') => void;
+  setPreTripConfirmed: (confirmed: boolean) => void;
   setActiveTrip: (trip: ReturnType<typeof activeTripRow> | null) => void;
   setAssignments: (assignments: MockDriverAssignmentRpcRow[] | null) => void;
 }
@@ -278,6 +280,13 @@ export async function installSupabaseMock(
     in_app_enabled: true,
     trip_updates: { in_app: true, push: false, email: false },
     operational_alerts: { in_app: true, push: false, email: false },
+  };
+  let preTripConfirmed = false;
+  const setTripStatus = (status: 'active' | 'paused') => {
+    if (currentActiveTrip) currentActiveTrip = { ...currentActiveTrip, status };
+  };
+  const setPreTripConfirmed = (confirmed: boolean) => {
+    preTripConfirmed = confirmed;
   };
 
   const setActiveTrip = (trip: ReturnType<typeof activeTripRow> | null) => {
@@ -385,6 +394,24 @@ export async function installSupabaseMock(
 
       // GET selects
       if (method === 'GET') {
+        if (table === 'pre_trip_confirmations') {
+          await fulfillRows(
+            preTripConfirmed && currentActiveTrip
+              ? [
+                  {
+                    id: 'pre-trip-confirmation-id',
+                    tenant_id: MOCK.tenantId,
+                    driver_trip_id: currentActiveTrip.id,
+                    driver_id: MOCK.driverId,
+                    bus_id: MOCK.busId,
+                    confirmed_at: '2025-01-01T12:01:00.000Z',
+                    created_at: '2025-01-01T12:01:00.000Z',
+                  },
+                ]
+              : [],
+          );
+          return;
+        }
         if (table === 'profiles') {
           await fulfillRows([driverProfile]);
           return;
@@ -474,6 +501,33 @@ export async function installSupabaseMock(
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify(completed),
+          });
+          return;
+        }
+        if (table === 'rpc/pause_driver_trip' || table === 'rpc/resume_driver_trip') {
+          setTripStatus(table === 'rpc/pause_driver_trip' ? 'paused' : 'active');
+          await route.fulfill({ json: currentActiveTrip });
+          return;
+        }
+        if (table === 'rpc/cancel_driver_trip') {
+          const cancelled = { ...currentActiveTrip, status: 'cancelled' };
+          currentActiveTrip = null;
+          await route.fulfill({ json: cancelled });
+          return;
+        }
+        if (table === 'rpc/record_trip_exception') {
+          const body = route.request().postDataJSON();
+          await route.fulfill({
+            json: {
+              id: 'exception-id',
+              tenant_id: MOCK.tenantId,
+              driver_trip_id: body.p_trip_id,
+              driver_id: MOCK.driverId,
+              exception_type: body.p_exception_type,
+              exception_detail: body.p_exception_detail,
+              occurred_at: '2025-01-01T12:05:00.000Z',
+              created_at: '2025-01-01T12:05:00.000Z',
+            },
           });
           return;
         }
@@ -580,6 +634,7 @@ export async function installSupabaseMock(
           return;
         }
         if (table === 'rpc/confirm_pre_trip') {
+          preTripConfirmed = true;
           await route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -684,5 +739,5 @@ export async function installSupabaseMock(
     }
   });
 
-  return { setActiveTrip, setAssignments };
+  return { setActiveTrip, setAssignments, setTripStatus, setPreTripConfirmed };
 }

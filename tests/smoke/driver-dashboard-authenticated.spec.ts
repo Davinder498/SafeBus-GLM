@@ -215,7 +215,8 @@ test.describe('Driver dashboard — authenticated', () => {
 
     const activeTrip = page.getByTestId('driver-active-trip-only');
     await expect(activeTrip).toBeVisible();
-    await activeTrip.getByRole('button', { name: 'End trip' }).click();
+    await activeTrip.getByRole('link', { name: 'Trip actions', exact: true }).click();
+    await page.getByRole('button', { name: 'End trip', exact: true }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByRole('heading', { name: 'End this bus trip?' })).toBeVisible();
     await dialog.getByRole('button', { name: 'End trip' }).click();

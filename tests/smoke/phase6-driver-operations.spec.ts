@@ -1,6 +1,10 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
 import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
 import { FAKE_ACCESS_TOKEN } from './fixtures/phase6-jwt';
+import { installLocalOnlyBoundary } from './fixtures/local-only';
+test.beforeEach(async ({ page }) => {
+  await installLocalOnlyBoundary(page);
+});
 
 /**
  * Phase 6 — Driver transportation operations completion smoke tests.
@@ -84,6 +88,7 @@ function activeTripRow(status = 'active') {
 async function installPhase6DriverMock(page: Page) {
   // The active trip state is mutable so RPCs can transition it.
   let currentTrip: Record<string, unknown> | null = activeTripRow('active');
+  let preTripConfirmed = false;
 
   await page.route('**/*', async (route: Route) => {
     const url = new URL(route.request().url());
@@ -165,6 +170,10 @@ async function installPhase6DriverMock(page: Page) {
       };
 
       if (method === 'GET') {
+        if (path.includes('/pre_trip_confirmations')) {
+          await fulfillRows(preTripConfirmed ? [{ id: 'pre-trip-confirmation-id' }] : []);
+          return;
+        }
         if (path.includes('/profiles')) {
           await fulfillRows([driverProfile]);
           return;
@@ -238,6 +247,7 @@ async function installPhase6DriverMock(page: Page) {
           return;
         }
         if (path.includes('/rpc/confirm_pre_trip')) {
+          preTripConfirmed = true;
           await route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -323,14 +333,20 @@ test.describe('Phase 6 — driver operational controls', () => {
       timeout: 10000,
     });
 
+    await page.getByRole('link', { name: 'Trip actions', exact: true }).click();
     const confirmButton = page.getByTestId('driver-confirm-pre-trip');
     await expect(confirmButton).toBeVisible();
     await confirmButton.click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Confirm pre-trip inspection', exact: true })
+      .click();
 
     await expect(page.getByTestId('pre-trip-confirmed-badge')).toBeVisible({
       timeout: 10000,
     });
-    await expect(confirmButton).toBeDisabled();
+    await page.getByRole('link', { name: 'Trip actions', exact: true }).click();
+    await expect(confirmButton).toHaveCount(0);
   });
 
   test('pause and resume trip transitions the status pill', async ({ page }) => {
@@ -341,16 +357,24 @@ test.describe('Phase 6 — driver operational controls', () => {
       timeout: 10000,
     });
 
+    await page.getByRole('link', { name: 'Trip actions', exact: true }).click();
     // Initially active.
     await expect(page.getByTestId('driver-pause-trip')).toBeVisible();
 
     // Pause.
     await page.getByTestId('driver-pause-trip').click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Pause trip', exact: true }).click();
+    await page.getByRole('link', { name: 'Trip actions', exact: true }).click();
     await expect(page.getByTestId('driver-resume-trip')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('driver-pause-trip')).toHaveCount(0);
 
     // Resume.
     await page.getByTestId('driver-resume-trip').click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Resume trip', exact: true })
+      .click();
+    await page.getByRole('link', { name: 'Trip actions', exact: true }).click();
     await expect(page.getByTestId('driver-pause-trip')).toBeVisible({ timeout: 10000 });
   });
 
@@ -362,11 +386,11 @@ test.describe('Phase 6 — driver operational controls', () => {
       timeout: 10000,
     });
 
-    await page.getByTestId('driver-record-exception-toggle').click();
-    const form = page.getByTestId('driver-exception-form');
+    await page.getByRole('link', { name: 'Record exception', exact: true }).click();
+    await page.getByRole('button', { name: 'Traffic delay', exact: true }).click();
+    const form = page.getByRole('dialog');
     await expect(form).toBeVisible();
 
-    await page.getByLabel('Exception type').selectOption('traffic_delay');
     await page.getByLabel(/Short detail/).fill('railway crossing');
     await form.getByRole('button', { name: 'Record exception' }).click();
 
@@ -383,6 +407,7 @@ test.describe('Phase 6 — driver operational controls', () => {
       timeout: 10000,
     });
 
+    await page.getByRole('link', { name: 'Trip actions', exact: true }).click();
     await page.getByTestId('driver-cancel-trip').click();
     const cancelDialog = page.getByLabel('Cancel this trip?');
     await expect(cancelDialog).toBeVisible({ timeout: 5000 });
