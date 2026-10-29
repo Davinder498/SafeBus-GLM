@@ -1,3 +1,4 @@
+import { runPushDispatcher } from '../../../../tests/release/helpers/legacy-push-dispatcher.mjs';
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildFcmMessage,
@@ -6,7 +7,6 @@ import {
   createGoogleAccessTokenProvider,
   parseRetryAfter,
   retryDelaySeconds,
-  runPushDispatcher,
   timingSafeSecretEqual,
 } from '../../../../supabase/functions/_shared/push-dispatcher-core.mjs';
 
@@ -80,8 +80,8 @@ describe('Supabase Android push dispatcher', () => {
       collapse_key: 'notification-notification-id',
     });
     expect(message.message.notification).toEqual({
-      title: 'SafeBus update',
-      body: 'Open SafeBus to view this update.',
+      title: 'Bussafe update',
+      body: 'Open BUSSAFE to view this update.',
     });
     expect(message.message.data).not.toHaveProperty('studentName');
     expect(message.message.android).toMatchObject({
@@ -113,7 +113,7 @@ describe('Supabase Android push dispatcher', () => {
     await expect(timingSafeSecretEqual('', 'same-secret')).resolves.toBe(false);
   });
 
-  it('signs a scoped Google OAuth assertion and caches the short-lived access token', async () => {
+  it('shares one scoped Google OAuth request across concurrent sends and caches its token', async () => {
     const serviceAccount = await testServiceAccount();
     const fetchImpl = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ access_token: 'access-token', expires_in: 3600 }), {
@@ -125,7 +125,9 @@ describe('Supabase Android push dispatcher', () => {
       fetchImpl,
       now: () => Date.parse('2026-09-02T22:00:00Z'),
     });
-    await expect(getAccessToken()).resolves.toBe('access-token');
+    await expect(Promise.all(Array.from({ length: 50 }, () => getAccessToken()))).resolves.toEqual(
+      Array(50).fill('access-token'),
+    );
     await expect(getAccessToken()).resolves.toBe('access-token');
     expect(fetchImpl).toHaveBeenCalledOnce();
     const parameters = new URLSearchParams(fetchImpl.mock.calls[0][1].body);

@@ -51,7 +51,7 @@ test('calculations include current GPS cadence, polling, invalidations and tenan
   near(peak.realtimeInvalidationsPerSecondUncoalesced, 88000 / 3);
   near(peak.guardianReadsPerSecondWithUncoalescedInvalidations, 70400);
   near(peak.hottestTenantGpsEventsPerSecond, 2000 / 3);
-  near(peak.baselineWorkItemsPerSecond, 15466.6666666667);
+  near(peak.baselineWorkItemsPerSecond, 22033.6666666667);
   near(estimateScenario(small(), 'pilot').hottestTenantGpsEventsPerSecond, 1);
 });
 
@@ -59,7 +59,7 @@ test('reconnect estimates account for captured offline fixes and extra recovery 
   const result = estimateScenario(workload, 'reconnect');
   assert.equal(result.reconnectBacklogEvents, 1500000);
   assert.equal(result.workItemsPerSecond.catchUp, 5000);
-  near(result.baselineWorkItemsPerSecond, 20466.6666666667);
+  near(result.baselineWorkItemsPerSecond, 27033.6666666667);
   near(result.reconnectJoinsPerSecondIfAllUsersRejoin, 100000 / 300);
 });
 
@@ -169,7 +169,7 @@ test('fixture rejection is reported without silent retry or a green generator re
 
 test('a slow fixture records unsent open-loop arrivals rather than hiding overload behind a growing queue', async () => {
   const result = await runLocalSimulation(workload, {
-    scale: 1,
+    scale: 0.5,
     durationMs: 200,
     fixtureDelayMs: 250,
     maxInFlight: 1,

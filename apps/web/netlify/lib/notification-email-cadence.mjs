@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-export const EMAIL_INTERVAL_MS = 10_000;
+export const EMAIL_INTERVAL_MS = 20_000;
 export const EMAIL_WINDOW_MS = 60_000;
 export const EMAIL_BACKGROUND_PATH = '/.netlify/functions/guardian-notification-email-background';
 

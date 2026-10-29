@@ -106,12 +106,37 @@ export async function handleRequest(
       Math.min(Number(readEnvironment('SAFEBUS_PUSH_BATCH_SIZE') || 50), 200),
     );
     const randomUUID = dependencies.randomUUID || (() => crypto.randomUUID());
-    const summary = await runPushDispatcher({
-      rpc,
-      send,
-      workerId: `supabase-edge-${randomUUID()}`,
-      batchSize,
-    });
+    const workerCount = Math.max(
+      1,
+      Math.min(Number(readEnvironment('SAFEBUS_PUSH_WORKERS')) || 4, 8),
+    );
+    const outcomes = await Promise.allSettled(
+      Array.from({ length: workerCount }, () =>
+        runPushDispatcher({
+          rpc,
+          send,
+          workerId: `supabase-edge-${randomUUID()}`,
+          batchSize,
+          concurrency: Math.max(
+            1,
+            Math.min(Number(readEnvironment('SAFEBUS_PUSH_CONCURRENCY')) || 32, 128),
+          ),
+          budgetMs: 15_000,
+        }),
+      ),
+    );
+    const summaries = outcomes.flatMap((outcome) =>
+      outcome.status === 'fulfilled' ? [outcome.value] : [],
+    );
+    if (!summaries.length) throw new Error('push_workers_failed');
+    const summary = summaries.reduce(
+      (total, part) => {
+        for (const key of Object.keys(total) as Array<keyof typeof total>) total[key] += part[key];
+        return total;
+      },
+      { claimed: 0, delivered: 0, retry: 0, failed: 0, cancelled: 0, error: 0 },
+    );
+    summary.error += outcomes.length - summaries.length;
     console.log(JSON.stringify({ result: 'push_dispatch_complete', ...summary }));
     return json(200, summary);
   } catch (error) {

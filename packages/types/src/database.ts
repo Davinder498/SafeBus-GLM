@@ -87,6 +87,37 @@ export type Database = Omit<HostedDatabase, 'public'> & {
         Returns: undefined;
       };
       claim_guardian_notification_email_batch_v2: HostedFunctions['claim_guardian_notification_email_batch'];
+      claim_notification_deliveries: {
+        Args: {
+          p_channel: 'push' | 'email';
+          p_worker_id: string;
+          p_limit?: number;
+          p_provider_minute?: number;
+        };
+        Returns: Json[];
+      };
+      resolve_notification_deliveries: {
+        Args: { p_channel: 'push' | 'email'; p_worker_id: string; p_ids: string[] };
+        Returns: Json[];
+      };
+      settle_notification_deliveries: {
+        Args: { p_channel: 'push' | 'email'; p_worker_id: string; p_results: Json };
+        Returns: number;
+      };
+      expand_notification_audiences: { Args: { p_limit?: number }; Returns: number };
+      resolve_notification_email_payload: {
+        Args: { p_outbox_id: string };
+        Returns: Array<{
+          recipient_profile_id: string;
+          recipient_email: string;
+          notification_type: string;
+          title: string;
+          body: string;
+          event_occurred_at: string;
+          tenant_timezone: string;
+          idempotency_key: string;
+        }>;
+      };
       admin_get_printable_qr: {
         Args: {
           p_kind: string;

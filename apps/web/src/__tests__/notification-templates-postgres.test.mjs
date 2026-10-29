@@ -1,3 +1,4 @@
+import { runPushDispatcher } from '../../../../tests/release/helpers/legacy-push-dispatcher.mjs';
 // @vitest-environment node
 import { readFile } from 'node:fs/promises';
 import { afterAll, beforeAll, expect, it } from 'vitest';
@@ -7,16 +8,13 @@ import {
   readMigration,
   startTrip,
 } from '../../../../tests/release/fixtures/notification-templates-db.mjs';
-import {
-  buildFcmMessage,
-  runPushDispatcher,
-} from '../../../../supabase/functions/_shared/push-dispatcher-core.mjs';
+import { buildFcmMessage } from '../../../../supabase/functions/_shared/push-dispatcher-core.mjs';
 import {
   rehearseTemplates,
   templateSnapshot,
   templateRestoreSql,
   verifyTemplateInstallation,
-} from '../../../../scripts/lib/notification-template-rollout.mjs';
+} from '../../../../tests/release/helpers/notification-template-rollout.mjs';
 
 let db;
 const query = async (sql, args = []) => (await db.query(sql, args)).rows;

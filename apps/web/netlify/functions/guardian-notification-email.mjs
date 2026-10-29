@@ -1,3 +1,4 @@
+import { runDeliveryWorker } from '../../../../supabase/functions/_shared/notification-worker.mjs';
 import { createClient } from '@supabase/supabase-js';
 
 const json = (statusCode, body) => ({
@@ -5,9 +6,8 @@ const json = (statusCode, body) => ({
   headers: { 'content-type': 'application/json' },
   body: JSON.stringify(body),
 });
-const MAX_ATTEMPTS = 5;
 const DEFAULT_BATCH_SIZE = 50;
-const DEFAULT_PROVIDER_LIMIT_PER_MINUTE = 50;
+const DEFAULT_PROVIDER_LIMIT_PER_MINUTE = 600;
 const DEFAULT_TZ = 'America/Edmonton';
 
 // A small allowlist of fields that are safe to appear in dispatcher logs.
@@ -18,6 +18,12 @@ const SAFE_LOG_FIELDS = new Set([
   'attempt',
   'notificationType',
   'durationMs',
+  'claimed',
+  'delivered',
+  'retry',
+  'failed',
+  'cancelled',
+  'error',
 ]);
 
 function safeLog(details) {
@@ -36,62 +42,13 @@ export function buildGuardianEventEmail({
   eventCreatedAt,
   tenantTimezone,
 }) {
-  const genericCopy = {
-    authority_announcement: [
-      'School authority announcement',
-      'Your school authority has sent an operational alert.',
-    ],
-    driver_assignment_created: ['Assignment created', 'A SafeBus assignment was created for you.'],
-    driver_assignment_changed: ['Assignment changed', 'A SafeBus assignment was changed for you.'],
-    driver_assignment_ended: ['Assignment ended', 'A SafeBus assignment was ended for you.'],
-    trip_started: ['Trip started', 'A scheduled bus trip has started.'],
-    trip_completed: ['Trip completed', 'A scheduled bus trip has been completed.'],
-    trip_cancelled: ['Trip cancelled', 'A scheduled bus trip has been cancelled.'],
-    trip_late: ['Bus reported late', 'A bus trip has been reported late.'],
-    trip_missing: ['Bus service update', 'A scheduled bus service may be missing.'],
-    traffic_disruption: ['Traffic disruption', 'A traffic disruption is affecting bus service.'],
-    weather_disruption: ['Weather disruption', 'A weather disruption is affecting bus service.'],
-    road_closure: ['Road closure', 'A road closure is affecting bus service.'],
-    mechanical_disruption: [
-      'Mechanical disruption',
-      'A mechanical issue is affecting bus service.',
-    ],
-    student_service_changed: [
-      'Bus service changed',
-      'A linked bus service assignment has changed.',
-    ],
-    guardian_access_changed: [
-      'SafeBus access changed',
-      'Access to linked transportation information has changed.',
-    ],
-  }[notificationType];
-  if (genericCopy) {
-    const [subjectLabel, summary] = genericCopy;
-    const subject = `SafeBus: ${subjectLabel}`;
-    const isDriverAssignment =
-      notificationType.startsWith('driver_assignment_') ||
-      notificationType === 'authority_announcement';
-    const instruction = isDriverAssignment
-      ? 'Open SafeBus to view the update.'
-      : 'Open SafeBus to view the update. This email intentionally excludes student details.';
-    const text = [summary, '', instruction, '', 'SafeBus'].join('\n');
-    return {
-      subject,
-      text,
-      html: `<p>${escapeHtml(summary)}</p><p>${escapeHtml(instruction)}</p><p>SafeBus</p>`,
-      action: 'update',
-      verb: 'updated',
-    };
-  }
-
   if (
-    !['student_picked_up', 'student_dropped_off'].includes(notificationType) ||
     typeof notificationTitle !== 'string' ||
     !notificationTitle.trim() ||
     typeof notificationBody !== 'string' ||
     !notificationBody.trim()
   ) {
-    throw new Error('canonical_pickup_dropoff_copy_required');
+    throw new Error('canonical_notification_copy_required');
   }
   let tz = DEFAULT_TZ;
   try {
@@ -137,9 +94,6 @@ const ESCAPE_MAP = {
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (c) => ESCAPE_MAP[c]);
 }
-export function idempotencyKey(rowId) {
-  return `guardian-notification-outbox:${rowId}`;
-}
 export function retryDelaySeconds(attempt) {
   return [0, 300, 900, 3600, 10800][Math.max(1, Math.min(attempt, 4))] ?? 10800;
 }
@@ -149,25 +103,6 @@ export function classifyProviderError(status, message = '') {
     return 'permanent_provider_error';
   if (/timeout/i.test(message)) return 'provider_timeout';
   return 'unknown';
-}
-
-async function rpcOrThrow(supabase, name, args) {
-  const result = await supabase.rpc(name, args);
-  if (result?.error) throw result.error;
-  return result?.data;
-}
-
-// Retained for backwards compatibility with Phase 15A tests. New code should prefer safeLog().
-export function redactLog(details) {
-  const copy = { ...details };
-  delete copy.email;
-  delete copy.recipient_email;
-  delete copy.message;
-  delete copy.body;
-  delete copy.html;
-  delete copy.text;
-  delete copy.apiKey;
-  return copy;
 }
 
 function requireConfig() {
@@ -206,6 +141,7 @@ export async function sendResendEmail({
 }) {
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
+    signal: AbortSignal.timeout(10_000),
     headers: {
       authorization: `Bearer ${apiKey}`,
       'content-type': 'application/json',
@@ -221,164 +157,6 @@ export async function sendResendEmail({
     throw err;
   }
   return { providerMessageId: data?.id || null };
-}
-
-async function dispatchOne(supabase, cfg, row, sendEmail = sendResendEmail) {
-  const startedAt = Date.now();
-  const isPickupDropoff = ['student_picked_up', 'student_dropped_off'].includes(
-    row.notification_type,
-  );
-  const { data: guardianPayloads, error: guardianResolveError } = await supabase.rpc(
-    isPickupDropoff
-      ? 'resolve_guardian_pickup_dropoff_email_payload'
-      : 'resolve_guardian_notification_email_payload',
-    { p_outbox_id: row.id },
-  );
-  if (guardianResolveError) throw guardianResolveError;
-  let payload = guardianPayloads?.[0];
-  if (!payload && !isPickupDropoff) {
-    const { data: recipients, error: recipientError } = await supabase.rpc(
-      'resolve_notification_email_recipient',
-      { p_outbox_id: row.id },
-    );
-    if (recipientError) throw recipientError;
-    payload = recipients?.[0];
-  }
-  if (!payload) {
-    await rpcOrThrow(supabase, 'cancel_guardian_notification_email', {
-      p_outbox_id: row.id,
-      p_failure_category: 'eligibility_revoked',
-      p_failure_reason: 'eligibility_revoked',
-    });
-    console.log(
-      JSON.stringify(
-        safeLog({
-          outboxId: row.id,
-          result: 'cancelled',
-          category: 'eligibility_revoked',
-          attempt: row.attempt_count,
-          notificationType: row.notification_type,
-        }),
-      ),
-    );
-    return 'cancelled';
-  }
-  if (!payload.recipient_email || !/^\S+@\S+\.\S+$/.test(payload.recipient_email)) {
-    await rpcOrThrow(supabase, 'cancel_guardian_notification_email', {
-      p_outbox_id: row.id,
-      p_failure_category: 'missing_recipient_email',
-      p_failure_reason: 'missing_recipient_email',
-    });
-    console.log(
-      JSON.stringify(
-        safeLog({
-          outboxId: row.id,
-          result: 'cancelled',
-          category: 'missing_recipient_email',
-          attempt: row.attempt_count,
-          notificationType: row.notification_type,
-        }),
-      ),
-    );
-    return 'cancelled';
-  }
-  const email = buildGuardianEventEmail({
-    notificationType: payload.notification_type,
-    notificationTitle: payload.title,
-    notificationBody: payload.body,
-    eventCreatedAt: payload.event_occurred_at ?? payload.event_created_at,
-    tenantTimezone: payload.tenant_timezone,
-  });
-  const to =
-    cfg.devOverride && process.env.CONTEXT !== 'production'
-      ? cfg.devOverride
-      : payload.recipient_email;
-  if (cfg.devOverride && process.env.CONTEXT !== 'production')
-    console.log(
-      JSON.stringify(
-        safeLog({
-          outboxId: row.id,
-          result: 'dev_recipient_override',
-          attempt: row.attempt_count,
-          notificationType: row.notification_type,
-        }),
-      ),
-    );
-  try {
-    const result = await sendEmail({
-      apiKey: cfg.apiKey,
-      from: cfg.from,
-      fromName: cfg.fromName,
-      to,
-      ...email,
-      idempotency: payload.idempotency_key || idempotencyKey(row.id),
-    });
-    await rpcOrThrow(supabase, 'complete_guardian_notification_email', {
-      p_outbox_id: row.id,
-      p_provider_message_id: result.providerMessageId,
-    });
-    console.log(
-      JSON.stringify(
-        safeLog({
-          outboxId: row.id,
-          result: 'delivered',
-          attempt: row.attempt_count,
-          notificationType: row.notification_type,
-          durationMs: Date.now() - startedAt,
-        }),
-      ),
-    );
-    return 'delivered';
-  } catch (error) {
-    const category = classifyProviderError(
-      error.status || 0,
-      error.providerMessage || error.message,
-    );
-    if (
-      category === 'temporary_provider_error' ||
-      category === 'provider_timeout' ||
-      category === 'unknown'
-    ) {
-      await rpcOrThrow(supabase, 'retry_guardian_notification_email', {
-        p_outbox_id: row.id,
-        p_failure_category: category,
-        p_failure_reason: category,
-        p_retry_after_seconds: retryDelaySeconds(row.attempt_count),
-        p_max_attempts: MAX_ATTEMPTS,
-      });
-      console.log(
-        JSON.stringify(
-          safeLog({
-            outboxId: row.id,
-            result: 'retry',
-            category,
-            attempt: row.attempt_count,
-            notificationType: row.notification_type,
-            durationMs: Date.now() - startedAt,
-          }),
-        ),
-      );
-      return 'retry';
-    }
-    await rpcOrThrow(supabase, 'fail_guardian_notification_email', {
-      p_outbox_id: row.id,
-      p_failure_category: category,
-      p_failure_reason: category,
-    });
-    console.log(
-      JSON.stringify(
-        safeLog({
-          outboxId: row.id,
-          result: 'failed',
-          category,
-          attempt: row.attempt_count,
-          notificationType: row.notification_type,
-          durationMs: Date.now() - startedAt,
-        }),
-      ),
-    );
-    return 'failed';
-  }
 }
 
 export async function runDispatcher(event, sendEmail) {
@@ -410,45 +188,78 @@ async function dispatchBatch(cfg, sendEmail) {
         process.env.SAFEBUS_NOTIFICATION_PROVIDER_LIMIT_PER_MINUTE ||
           DEFAULT_PROVIDER_LIMIT_PER_MINUTE,
       ),
-      1000,
+      600_000,
     ),
   );
-  const { data: rows, error } = await supabase.rpc('claim_guardian_notification_email_batch_v2', {
-    p_batch_size: batchSize,
-    p_lease_seconds: 120,
-    p_max_attempts: MAX_ATTEMPTS,
-    p_provider_limit_per_minute: providerLimit,
-  });
-  if (error) throw error;
-  const summary = {
-    claimed: rows?.length || 0,
-    delivered: 0,
-    retry: 0,
-    failed: 0,
-    cancelled: 0,
-    error: 0,
+  const workers = Math.max(1, Math.min(Number(process.env.SAFEBUS_EMAIL_WORKERS) || 1, 16));
+  const rpc = async (name, args) => {
+    const { data, error } = await supabase.rpc(name, args);
+    if (error) throw error;
+    return data;
   };
-  for (const row of rows || []) {
-    try {
-      const result = await dispatchOne(supabase, cfg, row, sendEmail);
-      summary[result] = (summary[result] || 0) + 1;
-    } catch {
-      // Keep draining independent claims. This row remains protected by its
-      // lease and becomes eligible for recovery when the lease expires.
-      summary.error += 1;
-      console.error(
-        JSON.stringify(
-          safeLog({
-            outboxId: row.id,
-            result: 'row_error',
-            category: 'unknown',
-            attempt: row.attempt_count,
-            notificationType: row.notification_type,
-          }),
-        ),
-      );
-    }
-  }
+  const summaries = await Promise.allSettled(
+    Array.from({ length: workers }, () =>
+      runDeliveryWorker({
+        rpc,
+        channel: 'email',
+        workerId: 'email-' + crypto.randomUUID(),
+        batchSize,
+        concurrency: Math.max(1, Math.min(Number(process.env.SAFEBUS_EMAIL_CONCURRENCY) || 8, 128)),
+        providerMinute: providerLimit,
+        retryDelay: retryDelaySeconds,
+        classify: (error) => ({
+          category: classifyProviderError(
+            error.status || 0,
+            error.providerMessage || error.message,
+          ),
+          code: classifyProviderError(error.status || 0, error.providerMessage || error.message),
+          retry: ['temporary_provider_error', 'provider_timeout', 'unknown'].includes(
+            classifyProviderError(error.status || 0, error.providerMessage || error.message),
+          ),
+        }),
+        send: async (payload) => {
+          if (!payload.recipient_email || !/^\S+@\S+\.\S+$/.test(payload.recipient_email))
+            return {
+              state: 'cancelled',
+              category: 'missing_recipient_email',
+              code: 'missing_recipient_email',
+            };
+          const email = buildGuardianEventEmail({
+            notificationType: payload.notification_type,
+            notificationTitle: payload.title,
+            notificationBody: payload.body,
+            eventCreatedAt: payload.event_occurred_at,
+            tenantTimezone: payload.tenant_timezone,
+          });
+          const result = await (sendEmail || sendResendEmail)({
+            apiKey: cfg.apiKey,
+            from: cfg.from,
+            fromName: cfg.fromName,
+            to:
+              cfg.devOverride && process.env.CONTEXT !== 'production'
+                ? cfg.devOverride
+                : payload.recipient_email,
+            ...email,
+            idempotency: payload.idempotency_key,
+          });
+          return result.providerMessageId;
+        },
+      }),
+    ),
+  );
+  if (summaries.every((result) => result.status === 'rejected'))
+    throw new Error('notification_worker_failed');
+  const summary = summaries.reduce(
+    (total, result) => {
+      if (result.status === 'rejected') {
+        total.error++;
+        return total;
+      }
+      for (const key of Object.keys(total)) total[key] += result.value[key];
+      return total;
+    },
+    { claimed: 0, delivered: 0, retry: 0, failed: 0, cancelled: 0, error: 0 },
+  );
   console.log(
     JSON.stringify(
       safeLog({

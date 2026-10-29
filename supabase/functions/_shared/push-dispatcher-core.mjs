@@ -1,3 +1,4 @@
+import { runDeliveryWorker } from './notification-worker.mjs';
 const MAX_ATTEMPTS = 5;
 const MAX_RETRY_SECONDS = 86_400;
 const GOOGLE_OAUTH_URL = 'https://oauth2.googleapis.com/token';
@@ -114,13 +115,12 @@ export function classifyFcmError(error) {
 
 export function buildFcmMessage(row) {
   const urgent = row.severity === 'urgent';
-  const pickupDropoff = ['student_picked_up', 'student_dropped_off'].includes(row.event_type);
   return {
     message: {
       token: row.fcm_token,
       notification: {
-        title: pickupDropoff ? row.title : row.title.replace(/\bbussafe\b/gi, 'SafeBus'),
-        body: pickupDropoff ? row.body : row.body.replace(/\bbussafe\b/gi, 'SafeBus'),
+        title: row.title,
+        body: row.body,
       },
       data: {
         notificationId: row.notification_id,
@@ -250,14 +250,15 @@ export function createGoogleAccessTokenProvider(serviceAccount, options = {}) {
   serviceAccountFields(serviceAccount);
   let cachedToken = null;
   let expiresAt = 0;
+  let pendingToken;
 
-  return async function getAccessToken() {
-    if (cachedToken && expiresAt - now() > 60_000) return cachedToken;
+  async function requestAccessToken() {
     const assertion = await signServiceAccountJwt(serviceAccount, Math.floor(now() / 1_000));
     let response;
     try {
       response = await fetchImpl(GOOGLE_OAUTH_URL, {
         method: 'POST',
+        signal: AbortSignal.timeout(10_000),
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
@@ -287,6 +288,16 @@ export function createGoogleAccessTokenProvider(serviceAccount, options = {}) {
     cachedToken = body.access_token;
     expiresAt = now() + Math.max(60, Number(body.expires_in) || 3_600) * 1_000;
     return cachedToken;
+  }
+  return async function getAccessToken() {
+    if (cachedToken && expiresAt - now() > 60_000) return cachedToken;
+    if (!pendingToken) pendingToken = requestAccessToken();
+    const request = pendingToken;
+    try {
+      return await request;
+    } finally {
+      if (pendingToken === request) pendingToken = undefined;
+    }
   };
 }
 
@@ -303,6 +314,7 @@ export function createFcmSender(serviceAccount, options = {}) {
     try {
       response = await fetchImpl(endpoint, {
         method: 'POST',
+        signal: AbortSignal.timeout(10_000),
         headers: {
           authorization: `Bearer ${accessToken}`,
           'content-type': 'application/json',
@@ -341,80 +353,31 @@ export async function runPushDispatcher({
   send,
   workerId,
   batchSize = 50,
-  now = () => Date.now(),
+  concurrency = 32,
+  budgetMs = 15_000,
+  now = Date.now,
 }) {
-  const limit = Math.max(1, Math.min(Number(batchSize) || 50, 200));
-  const claims =
-    (await rpc('claim_push_notification_deliveries', {
-      p_worker_id: workerId,
-      p_limit: limit,
-      p_lease_seconds: 120,
-    })) || [];
-  const summary = {
-    claimed: claims.length,
-    delivered: 0,
-    retry: 0,
-    failed: 0,
-    cancelled: 0,
-    error: 0,
-  };
-
-  for (const claim of claims) {
-    let row = claim;
-    try {
-      const resolved = await rpc('resolve_push_notification_delivery', {
-        p_outbox_id: claim.outbox_id,
-        p_worker_id: workerId,
-      });
-      if (!resolved?.[0]) {
-        summary.cancelled += 1;
-        continue;
+  return runDeliveryWorker({
+    rpc,
+    channel: 'push',
+    workerId,
+    send,
+    batchSize,
+    concurrency,
+    budgetMs,
+    now,
+    classify: classifyFcmError,
+    retryDelay: retryDelaySeconds,
+    onFailure: async (failure, row) => {
+      if (failure.category === 'configuration_error') {
+        await bestEffortIncident(rpc, row.tenant_id, 'firebase_authentication');
+        await bestEffortIncident(rpc, null, 'firebase_configuration');
+      } else if (Number(row.attempt_count) >= 5) {
+        if (failure.code === 'QUOTA_EXCEEDED')
+          await bestEffortIncident(rpc, row.tenant_id, 'quota_exhausted');
+        else if (failure.category === 'temporary_provider_error')
+          await bestEffortIncident(rpc, row.tenant_id, 'provider_unavailable');
       }
-      row = resolved[0];
-      const providerMessageId = await send(row);
-      await rpc('complete_push_notification_delivery', {
-        p_outbox_id: row.outbox_id,
-        p_worker_id: workerId,
-        p_provider_message_id: providerMessageId,
-      });
-      summary.delivered += 1;
-    } catch (error) {
-      const classification = classifyFcmError(error);
-      try {
-        if (classification.retry && Number(row.attempt_count) < MAX_ATTEMPTS) {
-          const delay = retryDelaySeconds(row.attempt_count, classification.retryAfter);
-          await rpc('retry_push_notification_delivery', {
-            p_outbox_id: row.outbox_id,
-            p_worker_id: workerId,
-            p_failure_category: classification.category,
-            p_failure_code: classification.code,
-            p_available_after: new Date(now() + delay * 1_000).toISOString(),
-            p_retry_after_seconds: classification.retryAfter,
-          });
-          summary.retry += 1;
-        } else {
-          await rpc('fail_push_notification_delivery', {
-            p_outbox_id: row.outbox_id,
-            p_worker_id: workerId,
-            p_failure_category: classification.category,
-            p_failure_code: classification.code,
-            p_invalidate_device: classification.invalidateDevice,
-          });
-          summary.failed += 1;
-          if (classification.category === 'configuration_error') {
-            await bestEffortIncident(rpc, row.tenant_id, 'firebase_authentication');
-            await bestEffortIncident(rpc, null, 'firebase_configuration');
-          } else if (classification.code === 'QUOTA_EXCEEDED') {
-            await bestEffortIncident(rpc, row.tenant_id, 'quota_exhausted');
-          } else if (classification.category === 'temporary_provider_error') {
-            await bestEffortIncident(rpc, row.tenant_id, 'provider_unavailable');
-          }
-        }
-      } catch {
-        summary.error += 1;
-      }
-    }
-  }
-
-  return summary;
+    },
+  });
 }

@@ -1,0 +1,12 @@
+{
+  "status": "prepared-unapplied",
+  "migration": "supabase/migrations/pending/20261029000139_unified_notification_delivery.sql",
+  "authenticated": [],
+  "serviceRole": [
+    "claim_notification_deliveries(text,text,integer,integer)",
+    "expand_notification_audiences(integer)",
+    "resolve_notification_deliveries(text,text,uuid[])",
+    "resolve_notification_email_payload(uuid)",
+    "settle_notification_deliveries(text,text,jsonb)"
+  ]
+}

@@ -28,7 +28,7 @@
       "concurrentUsers": 1000,
       "admins": 3,
       "loginsPerMinute": 1000,
-      "notificationDeliveriesPerSecond": 5
+      "notificationDeliveriesPerSecond": 67
     },
     "regional": {
       "buses": 1000,
@@ -36,7 +36,7 @@
       "concurrentUsers": 10000,
       "admins": 200,
       "loginsPerMinute": 3000,
-      "notificationDeliveriesPerSecond": 20
+      "notificationDeliveriesPerSecond": 667
     },
     "normal": {
       "buses": 10000,
@@ -44,7 +44,7 @@
       "concurrentUsers": 30000,
       "admins": 2000,
       "loginsPerMinute": 3000,
-      "notificationDeliveriesPerSecond": 50
+      "notificationDeliveriesPerSecond": 1667
     },
     "peak": {
       "buses": 10000,
@@ -52,7 +52,7 @@
       "concurrentUsers": 100000,
       "admins": 2000,
       "loginsPerMinute": 10000,
-      "notificationDeliveriesPerSecond": 100
+      "notificationDeliveriesPerSecond": 6667
     },
     "reconnect": {
       "buses": 10000,
@@ -60,7 +60,7 @@
       "concurrentUsers": 100000,
       "admins": 2000,
       "loginsPerMinute": 10000,
-      "notificationDeliveriesPerSecond": 100
+      "notificationDeliveriesPerSecond": 6667
     }
   }
 }

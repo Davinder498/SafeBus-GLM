@@ -85,8 +85,8 @@ describe('notification detail links', () => {
   it.each(['student_picked_up', 'student_dropped_off'] as const)(
     'preserves the complete shared %s message in web inbox and details',
     async (eventType) => {
-      const title = eventType === 'student_picked_up' ? 'Pickup recorded' : 'Drop-off recorded';
-      const body = `Alex Morgan was ${eventType === 'student_picked_up' ? 'picked up' : 'dropped off'} on Bus 12 at Maple Street.`;
+      const title = eventType === 'student_picked_up' ? 'Student picked up' : 'Student dropped off';
+      const body = `Alex Morgan was ${eventType === 'student_picked_up' ? 'picked up' : 'dropped off'} on Bus 12.`;
       const pickup = { ...row, eventType, category: 'pickup_dropoff' as const, title, body };
       mocks.fetch.mockResolvedValue([pickup]);
       mocks.detail.mockResolvedValue(pickup);
