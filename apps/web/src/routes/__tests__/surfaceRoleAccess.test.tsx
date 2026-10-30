@@ -14,6 +14,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
 import { UpdatePasswordPage } from '@/pages/UpdatePasswordPage';
 import { PublicOnlyRoute } from '@/routes/PublicOnlyRoute';
+import { appRoutes as mobileRoutes } from '../../../../mobile/src/routes/router';
 import { AdminNotAvailablePage } from '../../../../mobile/src/pages/AdminNotAvailablePage';
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -102,6 +103,32 @@ async function submit(container: HTMLElement) {
 }
 
 describe('surface role access', () => {
+  for (const role of [
+    'guardian',
+    'tenant_admin',
+    'school_admin',
+    'transportation_admin',
+    'platform_super_admin',
+  ] as const) {
+    for (const path of ['/driver/trip-actions', '/driver/record-exception']) {
+      it(`denies ${role} access to ${path}`, async () => {
+        const route = mobileRoutes.find((candidate) => candidate.path === path);
+        expect(route).toBeDefined();
+        const container = await render(
+          route!.element,
+          authValue({
+            session: {} as AuthContextValue['session'],
+            profile: profile(role),
+          }),
+          'native-mobile',
+        );
+        expect(container.textContent).toContain(
+          role === 'guardian' ? 'Wrong portal' : 'Use the correct SafeBus app',
+        );
+        expect(container.querySelector('[data-ui="driver-action-card"]')).toBeNull();
+      });
+    }
+  }
   it('returns to the tapped notification after a successful mobile sign-in', async () => {
     const path = '/notifications?notification=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
     sessionStorage.setItem('safebus.pendingNotificationPath', path);

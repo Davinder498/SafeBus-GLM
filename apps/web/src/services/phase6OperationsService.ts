@@ -1,5 +1,7 @@
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 import type { RouteServiceDay } from '@/types/transportation';
+import type { TripExceptionType } from '@/types/tripExceptions';
+export type { TripExceptionType } from '@/types/tripExceptions';
 
 /**
  * Phase 6 transportation operations service.
@@ -41,17 +43,6 @@ export interface OperationalNote {
   created_at: string;
   updated_at: string;
 }
-
-export type TripExceptionType =
-  | 'traffic_delay'
-  | 'weather_delay'
-  | 'mechanical_issue'
-  | 'road_closure'
-  | 'missed_stop'
-  | 'late_arrival'
-  | 'early_arrival'
-  | 'student_issue'
-  | 'other_operational';
 
 export interface TripException {
   id: string;

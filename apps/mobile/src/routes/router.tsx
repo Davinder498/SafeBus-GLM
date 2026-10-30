@@ -25,6 +25,14 @@ const AcceptInvitationPage = lazy(() =>
 const DriverDashboardPage = lazy(() =>
   import('@/pages/DriverDashboardPage').then((page) => ({ default: page.DriverDashboardPage })),
 );
+const DriverTripActionsPage = lazy(() =>
+  import('@/pages/DriverTripActionsPage').then((page) => ({ default: page.DriverTripActionsPage })),
+);
+const DriverTripExceptionPage = lazy(() =>
+  import('@/pages/DriverTripActionsPage').then((page) => ({
+    default: page.DriverTripExceptionPage,
+  })),
+);
 const DriverManifestPage = lazy(() =>
   import('@/pages/DriverManifestPage').then((page) => ({ default: page.DriverManifestPage })),
 );
@@ -178,6 +186,22 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={['driver']}>
         <DriverManifestPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/driver/trip-actions',
+    element: (
+      <ProtectedRoute allowedRoles={['driver']}>
+        <DriverTripActionsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/driver/record-exception',
+    element: (
+      <ProtectedRoute allowedRoles={['driver']}>
+        <DriverTripExceptionPage />
       </ProtectedRoute>
     ),
   },

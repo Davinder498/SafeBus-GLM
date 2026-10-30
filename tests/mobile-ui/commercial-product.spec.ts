@@ -96,8 +96,9 @@ test.describe('Commercial mobile journeys and degraded behavior', () => {
 
     await page
       .getByTestId('driver-active-trip-only')
-      .getByRole('button', { name: 'End trip' })
+      .getByRole('link', { name: 'Trip actions', exact: true })
       .click();
+    await page.getByRole('button', { name: 'End trip', exact: true }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
     expect(writes.filter((write) => write.rpc === 'end_driver_trip')).toHaveLength(0);
     await page.getByRole('dialog').getByRole('button', { name: 'End trip' }).click();
