@@ -16,7 +16,8 @@ test.beforeEach(async ({ page }) => {
 
 test('the pre-paint theme works under script-src self without React or inline script exceptions', async ({
   page,
-}) => {
+}, info) => {
+  const web = info.project.name === 'web';
   await page.emulateMedia({ colorScheme: 'light' });
   await page.addInitScript(() => localStorage.setItem('safebus.theme', 'dark'));
   const source = readFileSync('packages/config/theme-bootstrap.js', 'utf8');
@@ -24,20 +25,22 @@ test('the pre-paint theme works under script-src self without React or inline sc
   const startupScript = `/appearance-bootstrap.${digest}.js`;
   await page.route('**/login', async (route) => {
     const response = await route.fetch();
-    expect(await response.text()).toContain(`<script src="${startupScript}"></script>`);
+    const html = await response.text();
+    expect(html).toContain(`<script src="${startupScript}"></script>`);
+    if (web) expect(html).toContain('data-appearance-scope="public"');
     // A fixed page loads the real startup script without Vite's development
     // preamble or React. No fetched markup is sanitized or rendered as HTML.
     await route.fulfill({
       status: 200,
       contentType: 'text/html',
-      body: `<!doctype html><html lang="en"><head><meta name="theme-color" content="#F2F6F7"><script src="${startupScript}"></script></head><body></body></html>`,
+      body: `<!doctype html><html lang="en"${web ? ' data-appearance-scope="public"' : ''}><head><meta name="theme-color" content="#F2F6F7"><script src="${startupScript}"></script></head><body></body></html>`,
       headers: {
         'content-security-policy': "script-src 'self'; style-src 'self' 'unsafe-inline'",
       },
     });
   });
   await page.goto('/login');
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', web ? 'light' : 'dark');
   await expect(page.locator('script[src*="appearance-bootstrap"]')).toHaveCount(1);
 });
 
@@ -96,7 +99,7 @@ test('unavailable preference storage keeps the settings toggle usable', async ({
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
 
-test('cross-tab changes update public pages without adding a public toggle', async ({
+test('cross-tab changes preserve fixed public web appearance and the saved dashboard choice', async ({
   page,
   context,
 }, info) => {
@@ -107,16 +110,26 @@ test('cross-tab changes update public pages without adding a public toggle', asy
   );
   const other = await context.newPage();
   await installLocalOnlyBoundary(other);
-  await other.goto('/login');
+  await other.goto(info.project.name === 'web' ? '/' : '/login');
   await expect(other.getByRole('switch', { name: 'Dark mode' })).toHaveCount(0);
   await page
     .locator('[data-ui=appearance-settings]')
     .getByRole('switch', { name: 'Dark mode' })
     .click();
-  await expect(other.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expectNoWcagAaViolations(other, 'dark login');
+  await expect(other.locator('html')).toHaveAttribute(
+    'data-theme',
+    info.project.name === 'web' ? 'light' : 'dark',
+  );
   if (info.project.name === 'web') {
+    await expect(other.locator('[data-ui=public-app-bar]')).toHaveCSS(
+      'background-color',
+      'rgba(255, 255, 255, 0.95)',
+    );
+    await other.goto('/login');
+    await expect(other.locator('html')).toHaveAttribute('data-theme', 'light');
+    await expectNoWcagAaViolations(other, 'login');
     await other.goto('/');
+    await expect(other.locator('html')).toHaveAttribute('data-theme', 'light');
     await expect(other.getByRole('switch', { name: 'Dark mode' })).toHaveCount(0);
     await expect(other.getByText('School transportation visibility', { exact: true })).toHaveCount(
       0,
@@ -125,11 +138,21 @@ test('cross-tab changes update public pages without adding a public toggle', asy
       path: info.outputPath('landing-without-toggle-or-badge.png'),
       fullPage: true,
     });
+    // Navigate out of the actual dashboard without reloading React, then back.
+    await page.locator('[data-ui=app-bar] a[href="/"]').click();
+    await expect(page.locator('[data-ui=public-shell]')).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    expect(await page.evaluate(() => localStorage.getItem('safebus.theme'))).toBe('dark');
+    await page.goBack();
+    await expect(page.locator('[data-ui=appearance-settings]')).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  } else {
+    await expectNoWcagAaViolations(other, 'native login');
   }
   await other.close();
 });
 
-test('invitation and password screens inherit appearance before account activation', async ({
+test('web invitation and password screens stay light while native screens retain app appearance', async ({
   page,
 }, info) => {
   await installInvitedUserMock(page, {
@@ -138,12 +161,49 @@ test('invitation and password screens inherit appearance before account activati
   await page.addInitScript(() => localStorage.setItem('safebus.theme', 'dark'));
   await page.goto('/accept-invitation');
   await expect(page.getByRole('heading', { name: 'Create your password' })).toBeVisible();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expectNoWcagAaViolations(page, 'dark invitation');
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-theme',
+    info.project.name === 'web' ? 'light' : 'dark',
+  );
+  await expectNoWcagAaViolations(page, 'invitation');
   await page.goto('/update-password');
   await expect(page.getByRole('heading', { name: 'Choose a new password' })).toBeVisible();
-  await expectNoWcagAaViolations(page, 'dark password');
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-theme',
+    info.project.name === 'web' ? 'light' : 'dark',
+  );
+  await expectNoWcagAaViolations(page, 'password');
 });
+
+for (const width of [1280, 390]) {
+  test(`public pages have one fixed appearance with a saved dark preference at ${width}px`, async ({
+    page,
+  }, info) => {
+    test.skip(info.project.name !== 'web');
+    await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.addInitScript(() => localStorage.setItem('safebus.theme', 'dark'));
+    await page.goto('/');
+    const shell = page.locator('[data-ui=public-shell]');
+    await expect(shell).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    await expect(page.locator('html')).toHaveCSS('color-scheme', 'light');
+    await expect(page.locator('[data-ui=public-app-bar]')).toHaveCSS(
+      'background-color',
+      'rgba(255, 255, 255, 0.95)',
+    );
+    await expect(page.getByRole('switch', { name: 'Dark mode' })).toHaveCount(0);
+    for (const name of ['Contact', 'Privacy']) {
+      await page.locator('footer').getByRole('link', { name, exact: true }).click();
+      await expect(shell).toBeVisible();
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    }
+    await page.goto('/missing-public-page');
+    await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    expect(await page.evaluate(() => localStorage.getItem('safebus.theme'))).toBe('dark');
+  });
+}
 
 for (const role of [
   'tenant_admin',

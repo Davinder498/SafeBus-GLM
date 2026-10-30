@@ -1,6 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getAppearance,
+  activateDashboardAppearance,
   initializeAppearance,
   normalizeThemePreference,
   refreshAppearance,
@@ -32,10 +33,32 @@ beforeEach(() => {
   vi.restoreAllMocks();
   localStorage.clear();
   systemDark(false);
+  delete document.documentElement.dataset.appearanceScope;
   setThemePreference('light');
 });
 
 describe('device appearance preference', () => {
+  it('keeps public pages light through preference and cross-tab changes, then restores the dashboard choice', () => {
+    document.documentElement.dataset.appearanceScope = 'public';
+    setThemePreference('dark');
+    expect(getAppearance()).toEqual({ preference: 'dark', resolved: 'light' });
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(document.documentElement.style.colorScheme).toBe('light');
+    expect(document.documentElement.style.backgroundColor).toBe('rgb(242, 246, 247)');
+    window.dispatchEvent(new StorageEvent('storage', { key: 'safebus.theme', newValue: 'light' }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'safebus.theme', newValue: 'dark' }));
+    refreshAppearance();
+    expect(getAppearance()).toEqual({ preference: 'dark', resolved: 'light' });
+
+    const leaveDashboard = activateDashboardAppearance();
+    expect(getAppearance()).toEqual({ preference: 'dark', resolved: 'dark' });
+    leaveDashboard();
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(localStorage.getItem('safebus.theme')).toBe('dark');
+    const leaveAgain = activateDashboardAppearance();
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    leaveAgain();
+  });
   it('migrates removed System and invalid choices to Light', () => {
     expect(normalizeThemePreference('system')).toBe('light');
     expect(normalizeThemePreference(null)).toBe('light');

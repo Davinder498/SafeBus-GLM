@@ -1,4 +1,4 @@
-import { useContext, useState, type ReactNode } from 'react';
+import { useContext, useLayoutEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate, type NavLinkRenderProps } from 'react-router';
 import {
   LayoutDashboard,
@@ -34,6 +34,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { BrandMark } from '@/components/ui/BrandMark';
 import { DropdownMenu, DropdownItem, DropdownSeparator } from '@/components/ui/DropdownMenu';
 import { getRoleLabel } from '@/components/ui/RoleBadge';
+import { activateDashboardAppearance } from '@/theme/appearance';
 
 export interface DashboardNavItem {
   label: string;
@@ -319,6 +320,9 @@ export function DashboardLayout({
   const displayName = safeBusDisplayText(profile?.full_name ?? 'Account');
   const unreadCount = useContext(NotificationContext)?.unreadCount ?? 0;
   const appSurface = useAppSurface();
+  useLayoutEffect(() => {
+    if (appSurface === 'web') return activateDashboardAppearance();
+  }, [appSurface]);
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigationMode = getDashboardNavigationMode(appSurface, portal);

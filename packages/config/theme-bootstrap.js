@@ -7,7 +7,8 @@
   } catch {
     /* A blocked storage area must not prevent the app from starting. */
   }
-  const dark = preference === 'dark';
+  const dark =
+    document.documentElement.dataset.appearanceScope !== 'public' && preference === 'dark';
   const theme = dark ? 'dark' : 'light';
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;

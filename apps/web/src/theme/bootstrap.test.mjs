@@ -7,8 +7,8 @@ const source = readFileSync(
   new URL('../../../../packages/config/theme-bootstrap.js', import.meta.url),
   'utf8',
 );
-function boot(saved, dark, blocked = false) {
-  const root = { dataset: {}, style: {} };
+function boot(saved, dark, blocked = false, appearanceScope) {
+  const root = { dataset: { appearanceScope }, style: {} };
   runInNewContext(source, {
     localStorage: {
       getItem: () => {
@@ -22,6 +22,12 @@ function boot(saved, dark, blocked = false) {
   return root;
 }
 describe('pre-paint appearance bootstrap', () => {
+  it('keeps public web pages light before React even with a saved dark preference', () => {
+    const root = boot('dark', true, false, 'public');
+    expect(root.dataset.theme).toBe('light');
+    expect(root.style.colorScheme).toBe('light');
+    expect(root.style.backgroundColor).toBe('#F2F6F7');
+  });
   it('uses Light for a new installation regardless of device appearance', () => {
     expect(boot(null, true).dataset.theme).toBe('light');
     expect(boot(null, false).dataset.theme).toBe('light');
