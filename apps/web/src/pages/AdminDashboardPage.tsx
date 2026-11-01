@@ -175,7 +175,7 @@ export function AdminDashboardPage() {
           {operations.kind === 'error' && (
             <div className={panelClass} role="alert">
               <DataState title="Today's operations unavailable" message="Trip statuses could not be verified. No live counts are shown." />
-              <Button variant="secondary" onClick={() => void loadDashboard()}>Retry summary</Button>
+              <Button variant="secondary" onClick={() => void loadDashboard()}>Retry overview</Button>
             </div>
           )}
           {operations.kind === 'ready' && (
