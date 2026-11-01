@@ -1,6 +1,6 @@
 import { AdminDataDownloads } from '@/components/admin/AdminDataDownloads';
-import { useEffect, useState } from 'react';
-import { UserRound } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ClipboardCheck, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { AdminPagination } from '@/components/admin/AdminPagination';
 import { BulkOnboardingPanel } from '@/components/admin/BulkOnboardingPanel';
@@ -23,6 +23,7 @@ import {
 } from '@/services/studentOnboardingService';
 import type { School } from '@/types/organization';
 import type { Student, StudentStatus } from '@/types/studentGuardian';
+import { reviewStudentPage, type StudentReviewKind } from '@/utils/studentRosterReview';
 
 type AdminStudentRow = Student & {
   school_name: string | null;
@@ -38,6 +39,16 @@ type AdminStudentRow = Student & {
   trip_type: 'morning' | 'evening' | null;
   pickup_stop_name: string | null;
   dropoff_stop_name: string | null;
+};
+
+type ReviewFilter = 'all' | 'attention' | 'no-flags';
+
+const reviewTone: Record<StudentReviewKind, 'success' | 'warning' | 'neutral'> = {
+  unassigned: 'warning',
+  partial: 'warning',
+  'possible-match': 'warning',
+  'preview-complete': 'success',
+  inactive: 'neutral',
 };
 
 const studentStatusTone: Record<StudentStatus, 'success' | 'warning' | 'danger' | 'neutral'> = {
@@ -60,10 +71,17 @@ export function AdminStudentsPage() {
   const list = usePaginatedAdminList<AdminStudentRow>('students');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showCsvImport, setShowCsvImport] = useState(false);
+  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('all');
   const [writeError, setWriteError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const canWrite = !!profile && adminRoles.includes(profile.role as (typeof adminRoles)[number]);
+  const reviewByStudent = useMemo(() => reviewStudentPage(list.rows), [list.rows]);
+  const reviewCount = list.rows.filter((row) => reviewByStudent.get(row.id)?.needsReview).length;
+  const filteredRows = list.rows.filter((row) => {
+    const needsReview = reviewByStudent.get(row.id)?.needsReview ?? false;
+    return reviewFilter === 'all' || (reviewFilter === 'attention' ? needsReview : !needsReview);
+  });
 
   useEffect(() => {
     void getVisibleSchools()
@@ -135,7 +153,7 @@ export function AdminStudentsPage() {
         <PageHeader
           eyebrow="Students"
           title="Students"
-          description="Manage student records for your transportation account. Add, edit, and deactivate students."
+          description="Manage the district transportation roster. Review current bus service, open a student to manage guardians and assignments, or import validated student records."
         />
 
         <AdminDataDownloads
@@ -224,6 +242,75 @@ export function AdminStudentsPage() {
           />
         </div>
 
+        <Card className="p-4 sm:p-5" data-testid="district-roster-review">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-navy-50 text-navy-700">
+                <ClipboardCheck className="h-5 w-5" aria-hidden />
+              </span>
+              <div>
+                <h2 className="text-base font-bold text-navy-900">Roster review</h2>
+                <p className="mt-1 max-w-3xl text-sm text-slate-600">
+                  Check bus and stop information here, then open a student to manage guardian links and full transportation assignments.
+                  Flags are previews, not confirmed service failures or duplicate records.
+                </p>
+              </div>
+            </div>
+            <Button type="button" variant="secondary" onClick={() => void list.reload()} disabled={list.loading}>
+              Refresh roster
+            </Button>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <label className="text-sm font-semibold text-slate-700">
+              Roster status
+              <select
+                value={list.status ?? ''}
+                onChange={(event) => list.setStatus(event.target.value || null)}
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"
+              >
+                <option value="">All statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="transferred">Transferred</option>
+                <option value="archived">Archived</option>
+              </select>
+            </label>
+            <label className="text-sm font-semibold text-slate-700">
+              School (optional)
+              <select
+                value={list.schoolId ?? ''}
+                onChange={(event) => list.setSchoolId(event.target.value || null)}
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"
+              >
+                <option value="">All district schools / not assigned</option>
+                {schools.map((school) => (
+                  <option key={school.id} value={school.id}>{school.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm font-semibold text-slate-700">
+              Current-page review
+              <select
+                value={reviewFilter}
+                onChange={(event) => setReviewFilter(event.target.value as ReviewFilter)}
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"
+              >
+                <option value="all">All on this page</option>
+                <option value="attention">Needs review on this page</option>
+                <option value="no-flags">No flags on this page</option>
+              </select>
+            </label>
+          </div>
+          {!list.loading && !list.error && (
+            <p className="mt-3 text-sm text-slate-600" aria-live="polite" data-testid="roster-review-summary">
+              <strong className="text-navy-900">{reviewCount}</strong> of {list.rows.length} student records on this server page have review flags.
+              {list.totalCount > list.rows.length && ' Other district records are on separate pages and have not been checked here.'}
+              {' '}The school filter does not include records with no school selected.
+            </p>
+          )}
+        </Card>
+
         {list.loading && (
           <DataState title="Loading students" message="Fetching student records visible to you." />
         )}
@@ -235,20 +322,21 @@ export function AdminStudentsPage() {
           />
         )}
         {!list.loading && !list.error && list.rows.length > 0 && (
-          <section className="space-y-3">
+          <section className="space-y-3" data-testid="student-roster-results">
             <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-              <table className="w-full min-w-[860px] table-fixed text-left text-sm">
+              <table className="w-full min-w-[980px] table-fixed text-left text-sm">
                 <thead className="border-b border-slate-200 bg-slate-50/80">
                   <tr className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    <th className="w-[24%] px-5 py-3">Student</th>
-                    <th className="w-[18%] px-5 py-3">School</th>
-                    <th className="w-[10%] px-5 py-3">Grade</th>
-                    <th className="w-[36%] px-5 py-3">Bus transportation</th>
-                    <th className="w-[12%] px-5 py-3">Status</th>
+                    <th className="w-[21%] px-5 py-3">Student</th>
+                    <th className="w-[15%] px-5 py-3">School</th>
+                    <th className="w-[8%] px-5 py-3">Grade</th>
+                    <th className="w-[32%] px-5 py-3">Bus transportation</th>
+                    <th className="w-[10%] px-5 py-3">Status</th>
+                    <th className="w-[14%] px-5 py-3">Review</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {list.rows.map((student) => (
+                  {filteredRows.map((student) => (
                     <tr
                       key={student.id}
                       tabIndex={0}
@@ -306,8 +394,25 @@ export function AdminStudentsPage() {
                           {student.status}
                         </StatusPill>
                       </td>
+                      <td className="px-5 py-3" data-testid="student-review-status">
+                        {(() => {
+                          const review = reviewByStudent.get(student.id);
+                          return review ? (
+                            <span className="block" title={review.guidance}>
+                              <StatusPill tone={reviewTone[review.kind]}>{review.label}</StatusPill>
+                            </span>
+                          ) : null;
+                        })()}
+                      </td>
                     </tr>
                   ))}
+                  {filteredRows.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-5 py-8 text-center text-sm text-slate-600">
+                        No matching review flags on this page. Change the current-page filter or move to another page.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
