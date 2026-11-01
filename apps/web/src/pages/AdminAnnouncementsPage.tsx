@@ -13,7 +13,6 @@ import { DataState } from '@/components/ui/DataState';
 import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Select } from '@/components/ui/Select';
-import { useAuth } from '@/contexts/useAuth';
 import {
   announcementAudienceLabels,
   fetchAnnouncementAudience,
@@ -22,7 +21,6 @@ import {
 } from '@/services/announcementService';
 
 export function AdminAnnouncementsPage() {
-  const { profile } = useAuth();
   const [audience, setAudience] = useState<AnnouncementAudience>('all');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -191,7 +189,7 @@ export function AdminAnnouncementsPage() {
               <p className="text-sm text-slate-600" role="status">
                 {countsError ??
                   (count
-                    ? `${count.total} recipients · ${count.guardians} guardians · ${count.drivers} drivers${profile?.role === 'school_admin' ? ' · Your school only' : ''}`
+                    ? `${count.total} recipients · ${count.guardians} guardians · ${count.drivers} drivers`
                     : 'Checking recipients…')}
               </p>
             </div>

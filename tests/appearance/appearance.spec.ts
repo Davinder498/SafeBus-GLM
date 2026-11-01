@@ -215,7 +215,6 @@ for (const width of [1280, 390]) {
 
 for (const role of [
   'tenant_admin',
-  'school_admin',
   'transportation_admin',
   'guardian',
   'driver',

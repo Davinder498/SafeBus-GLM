@@ -105,7 +105,6 @@ describe('notification detail links', () => {
     ['tenant_admin', '/admin/settings/notifications'],
     ['guardian', '/notifications/settings'],
     ['driver', '/driver/settings'],
-    ['school_admin', '/admin/settings/notifications'],
     ['transportation_admin', '/admin/settings/notifications'],
     ['platform_super_admin', '/notifications/settings'],
   ])('shows the permitted settings destination for %s', async (role, destination) => {

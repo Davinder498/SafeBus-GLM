@@ -17,12 +17,17 @@ describe('platform privacy boundary routing', () => {
     for (const role of [
       'platform_super_admin',
       'tenant_admin',
-      'school_admin',
       'transportation_admin',
     ] as const) {
       expect(isRoleAllowedOnSurface(role, 'web')).toBe(true);
       expect(isRoleAllowedOnSurface(role, 'native-mobile')).toBe(false);
     }
+
+    // Retired historical role cannot enter either app surface or route to
+    // an existing portal under any circumstances.
+    expect(isRoleAllowedOnSurface('school_admin', 'web')).toBe(false);
+    expect(isRoleAllowedOnSurface('school_admin', 'native-mobile')).toBe(false);
+    expect(() => getDashboardPath('school_admin')).toThrow('retired');
 
     for (const role of ['driver', 'guardian'] as const) {
       expect(isRoleAllowedOnSurface(role, 'web')).toBe(false);

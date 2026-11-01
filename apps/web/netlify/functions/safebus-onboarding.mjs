@@ -744,23 +744,11 @@ async function inviteAdministrator(event, body) {
   if (fullName.length > 200 || email.length > 320 || !EMAIL_PATTERN.test(email)) {
     return json(400, { error: 'Enter valid administrator details.' });
   }
-  if (!['tenant_admin', 'school_admin', 'transportation_admin'].includes(role)) {
+  if (!['tenant_admin', 'transportation_admin'].includes(role)) {
     return json(400, { error: 'Only administrative roles are supported.' });
   }
-  if (role === 'school_admin' && !schoolId) {
-    return json(400, { error: 'A school assignment is required for a school administrator.' });
-  }
-  if (role === 'school_admin') {
-    const { data: school, error: schoolError } = await ctx.admin
-      .from('schools')
-      .select('id')
-      .eq('id', schoolId)
-      .eq('tenant_id', ctx.caller.tenant_id)
-      .eq('status', 'active')
-      .maybeSingle();
-    if (schoolError || !school) {
-      return json(400, { error: 'Select an active school in your school authority.' });
-    }
+  if (schoolId) {
+    return json(400, { error: 'District administrator invitations cannot be restricted to an individual school.' });
   }
 
   if (!(await requireInvitationRateLimit(ctx))) {
@@ -1054,6 +1042,11 @@ async function action(event, body) {
     return json(500, { error: 'Unable to load the invitation.' });
   }
   if (!inv) return json(404, { error: 'Invitation not found.' });
+  // Legacy individual-school invitations can be revoked but never resent
+  // or reissued. No school may activate an administrative account.
+  if (inv.role === 'school_admin' && next !== 'revoke') {
+    return json(403, { error: 'Individual-school administrator accounts are retired. Revoke this invitation.' });
+  }
   if (ctx.caller.role !== 'platform_super_admin' && inv.tenant_id !== ctx.caller.tenant_id) {
     return json(403, { error: 'Invitation is outside your school authority.' });
   }

@@ -3,14 +3,14 @@
 **Status:** Approved and locked for Commercial Release 1
 **Owner:** Product Owner
 **Phase:** 0 — Product and governance baseline
-**Last updated:** 2026-08-12
+**Last updated:** 2026-11-01
 
 ---
 
 ## 1. What SafeBus is
 
-SafeBus Alberta is a **school transportation operations and live bus
-visibility platform** for Alberta schools, transportation authorities, and the
+SafeBus Alberta is a **district-managed school transportation operations and live bus
+visibility platform** for Alberta school districts/authorities and the
 guardians of transported students.
 
 SafeBus is **not** a Student Information System (SIS). SafeBus is **not** a
@@ -20,6 +20,13 @@ management system.
 SafeBus sits alongside an authority's existing SIS and handles only the
 transportation operations layer: buses, drivers, routes, stops, assignments,
 trips, live bus location, and narrow guardian-facing visibility.
+
+**Tenant boundary:** one school district or school authority per tenant.
+`tenant_admin` is the district/authority administrator. `transportation_admin`
+operates district transportation. Individual schools have **no login or admin
+role** in SafeBus; school records are optional metadata and may be associated
+with many shared buses/routes. The old `school_admin` database enum value is
+retained solely for historical compatibility and must never authorize access.
 
 ## 2. Enforceable architectural rule
 

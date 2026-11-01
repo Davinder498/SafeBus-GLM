@@ -10,7 +10,6 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useAuth } from '@/contexts/useAuth';
 import {
   fetchTenantAdmins,
-  fetchTenantSchools,
   fetchTenantAdminInvitations,
   changeAdminRole,
   transferAdministrator,
@@ -25,7 +24,6 @@ import {
 import type {
   AdminProfile,
   TenantAdminInvitation,
-  TenantSchoolOption,
 } from '@/services/tenantAdminService';
 
 export function AdminAdministratorsPage() {
@@ -35,8 +33,6 @@ export function AdminAdministratorsPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [activeAdminCount, setActiveAdminCount] = useState(0);
-  const [schools, setSchools] = useState<TenantSchoolOption[]>([]);
-  const [schoolSelections, setSchoolSelections] = useState<Record<string, string>>({});
   const [invitations, setInvitations] = useState<TenantAdminInvitation[]>([]);
   const [busy, setBusy] = useState(false);
   const [showInviteForm, setShowInviteForm] = useState(false);
@@ -45,10 +41,7 @@ export function AdminAdministratorsPage() {
 
   const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<
-    'tenant_admin' | 'school_admin' | 'transportation_admin'
-  >('school_admin');
-  const [inviteSchoolId, setInviteSchoolId] = useState('');
+  const [inviteRole, setInviteRole] = useState<'tenant_admin' | 'transportation_admin'>('transportation_admin');
 
   const isAdmin = profile?.role === 'tenant_admin';
 
@@ -56,20 +49,15 @@ export function AdminAdministratorsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [adminList, schoolList, invitationList] = await Promise.all([
+      const [adminList, invitationList] = await Promise.all([
         fetchTenantAdmins(),
-        fetchTenantSchools(),
         fetchTenantAdminInvitations(),
       ]);
       setAdmins(adminList);
-      setSchools(schoolList);
       setInvitations(invitationList);
       setActiveAdminCount(
         adminList.filter((admin) => admin.role === 'tenant_admin' && admin.status === 'active')
           .length,
-      );
-      setSchoolSelections(
-        Object.fromEntries(adminList.map((admin) => [admin.id, admin.school_id ?? ''])),
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to load administrators.');
@@ -93,13 +81,11 @@ export function AdminAdministratorsPage() {
         fullName: inviteName,
         email: inviteEmail,
         role: inviteRole,
-        schoolId: inviteRole === 'school_admin' ? inviteSchoolId || undefined : undefined,
       });
       setSuccess(`Invitation sent to ${inviteEmail}.`);
       setInviteName('');
       setInviteEmail('');
-      setInviteRole('school_admin');
-      setInviteSchoolId('');
+      setInviteRole('transportation_admin');
       setShowInviteForm(false);
       await load();
     } catch (e) {
@@ -109,19 +95,11 @@ export function AdminAdministratorsPage() {
     }
   }
 
-  async function handleRoleChange(profileId: string, newRole: string, schoolId?: string) {
+  async function handleRoleChange(profileId: string, newRole: 'tenant_admin' | 'transportation_admin') {
     setBusy(true);
     setError(null);
     try {
-      const selectedSchoolId = schoolId ?? schoolSelections[profileId] ?? '';
-      if (newRole === 'school_admin' && !selectedSchoolId) {
-        throw new Error('Choose an active school before assigning the school administrator role.');
-      }
-      await changeAdminRole(
-        profileId,
-        newRole,
-        newRole === 'school_admin' ? selectedSchoolId : null,
-      );
+      await changeAdminRole(profileId, newRole);
       setSuccess('Administrator role updated.');
       await load();
     } catch (e) {
@@ -219,7 +197,7 @@ export function AdminAdministratorsPage() {
         <PageHeader
           eyebrow="Administration"
           title="Administrators"
-          description="Manage school authority administrators, school administrators, and transportation administrators. Multiple administrators ensure operational independence."
+          description="Manage school district administrators and district transportation administrators. Multiple administrators ensure operational independence."
           action={
             isAdmin ? (
               <Button type="button" onClick={() => setShowInviteForm((v) => !v)}>
@@ -294,34 +272,9 @@ export function AdminAdministratorsPage() {
                     className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm"
                   >
                     <option value="tenant_admin">School authority administrator</option>
-                    <option value="school_admin">School administrator</option>
                     <option value="transportation_admin">Transportation administrator</option>
                   </select>
                 </div>
-                {inviteRole === 'school_admin' && (
-                  <div>
-                    <label
-                      className="block text-sm font-semibold text-gray-700"
-                      htmlFor="inv-school"
-                    >
-                      School
-                    </label>
-                    <select
-                      id="inv-school"
-                      value={inviteSchoolId}
-                      onChange={(e) => setInviteSchoolId(e.target.value)}
-                      required
-                      className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm"
-                    >
-                      <option value="">Choose a school</option>
-                      {schools.map((school) => (
-                        <option key={school.id} value={school.id}>
-                          {school.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
               </div>
               <div className="flex gap-2">
                 <Button type="submit" loading={busy}>
@@ -358,7 +311,7 @@ export function AdminAdministratorsPage() {
                   </div>
                   {['pending', 'resent', 'failed'].includes(invitation.status) && (
                     <div className="flex gap-2">
-                      <Button
+                      {invitation.role !== 'school_admin' && <Button
                         type="button"
                         size="sm"
                         variant="secondary"
@@ -366,7 +319,7 @@ export function AdminAdministratorsPage() {
                         onClick={() => void handleInvitationAction(invitation, 'resend')}
                       >
                         Resend
-                      </Button>
+                      </Button>}
                       <Button
                         type="button"
                         size="sm"
@@ -419,36 +372,16 @@ export function AdminAdministratorsPage() {
                     <div className="flex flex-wrap gap-2">
                       <select
                         value={admin.role}
-                        onChange={(e) => void handleRoleChange(admin.id, e.target.value)}
-                        disabled={busy || admin.id === profile?.id}
+                        onChange={(e) => void handleRoleChange(admin.id, e.target.value as 'tenant_admin' | 'transportation_admin')}
+                        disabled={busy || admin.id === profile?.id || admin.role === 'school_admin'}
                         className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
                         aria-label={`Change role for ${admin.full_name}`}
                       >
                         <option value="tenant_admin">School authority admin</option>
-                        <option value="school_admin">School admin</option>
+                        {admin.role === 'school_admin' && <option value="school_admin">Retired school role — no access</option>}
                         <option value="transportation_admin">Transportation admin</option>
                       </select>
-                      <select
-                        value={schoolSelections[admin.id] ?? ''}
-                        onChange={(e) => {
-                          const schoolId = e.target.value;
-                          setSchoolSelections((current) => ({ ...current, [admin.id]: schoolId }));
-                          if (admin.role === 'school_admin' && schoolId) {
-                            void handleRoleChange(admin.id, 'school_admin', schoolId);
-                          }
-                        }}
-                        disabled={busy}
-                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                        aria-label={`School scope for ${admin.full_name}`}
-                      >
-                        <option value="">School scope</option>
-                        {schools.map((school) => (
-                          <option key={school.id} value={school.id}>
-                            {school.name}
-                          </option>
-                        ))}
-                      </select>
-                      {admin.role !== 'tenant_admin' && (
+                      {admin.role === 'transportation_admin' && (
                         <Button
                           type="button"
                           size="sm"
@@ -459,7 +392,7 @@ export function AdminAdministratorsPage() {
                           Promote to school authority admin
                         </Button>
                       )}
-                      {(admin.status === 'disabled' || admin.status === 'suspended') && (
+                      {admin.role !== 'school_admin' && (admin.status === 'disabled' || admin.status === 'suspended') && (
                         <Button
                           type="button"
                           size="sm"
@@ -470,7 +403,7 @@ export function AdminAdministratorsPage() {
                           Restore
                         </Button>
                       )}
-                      {admin.status === 'active' && admin.id !== profile?.id && (
+                      {admin.role !== 'school_admin' && admin.status === 'active' && admin.id !== profile?.id && (
                         <Button
                           type="button"
                           size="sm"

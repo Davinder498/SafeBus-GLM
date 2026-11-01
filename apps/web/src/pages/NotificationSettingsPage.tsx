@@ -32,7 +32,7 @@ export function NotificationSettingsPage() {
   const isGuardian = profile?.role === 'guardian';
   const isAdmin = Boolean(
     profile?.role &&
-    ['tenant_admin', 'school_admin', 'transportation_admin', 'platform_super_admin'].includes(
+    ['tenant_admin', 'transportation_admin', 'platform_super_admin'].includes(
       profile.role,
     ),
   );
@@ -127,7 +127,7 @@ export function NotificationSettingsPage() {
   }
   if (
     profile?.role &&
-    ['tenant_admin', 'school_admin', 'transportation_admin'].includes(profile.role)
+    ['tenant_admin', 'transportation_admin'].includes(profile.role)
   ) {
     return <Navigate to="/admin/settings/notifications" replace />;
   }

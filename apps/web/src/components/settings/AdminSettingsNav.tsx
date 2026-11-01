@@ -20,7 +20,7 @@ const settingsItems = [
     to: '/admin/settings',
     end: true,
     icon: Building2,
-    allowedRoles: ['tenant_admin', 'school_admin', 'transportation_admin'],
+    allowedRoles: ['tenant_admin', 'transportation_admin'],
   },
   {
     label: 'Subscription & billing',

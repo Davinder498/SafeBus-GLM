@@ -3,7 +3,7 @@
 **Status:** Draft — awaiting product-owner and security sign-off
 **Owner:** Product Owner
 **Phase:** 0 — Product and governance baseline
-**Last updated:** 2026-08-06
+**Last updated:** 2026-11-01
 
 ---
 
@@ -17,14 +17,13 @@ Phase 1 and the audit design in Phase 2.
 
 ## 2. Product roles (data-access tiers)
 
-These map directly to the roles enforced by `current_user_role()` and RLS.
+One tenant is one **school district / school authority**. Individual schools are optional transportation reference records, not administrative tenants or users. The `school_admin` enum label is legacy-only and grants no supported access once the pending retirement migration is adopted.
 
 | Role | Scope | Can see | Cannot see |
 | --- | --- | --- | --- |
 | **Platform Super Admin** | SafeBus-host side; not a tenant operator | Tenant name/identifier, tenant status, initial admin onboarding status, subscription info, aggregate health/usage counts | Students, guardians, drivers, manifests, routes, stops, live locations, invitation personal data |
-| **Tenant Administrator** | Own tenant only | Everything within their tenant | Other tenants; platform control plane |
-| **School Administrator** | Own school(s) within tenant | School-scoped students, guardians, routes, assignments | Other schools' operational data; tenant-wide admin actions |
-| **Transportation Administrator** | Own tenant operations | Buses, drivers, routes, assignments, trips, live fleet | Other tenants; student personal data beyond operational need |
+| **Tenant Administrator** | Own school district/authority tenant | District-wide transportation management, administrators and records | Other districts; platform control plane |
+| **Transportation Administrator** | Own district transportation operations | District-wide buses, drivers, routes, assignments, trips and live fleet | Other districts; student personal data beyond operational need |
 | **Driver** | Own active trip only | Assigned bus, assigned route, active-trip minimum manifest | Other trips, other drivers' manifests, guardian contact data, tenant-wide data |
 | **Guardian** | Linked students only | The bus assigned to their linked student's active trip; linked student's route info | Other students, other guardians, full manifests, driver identity, other stops |
 | **Anonymous / unauthenticated** | None | Public marketing only | Any operational or personal data |
@@ -55,7 +54,7 @@ These map directly to the roles enforced by `current_user_role()` and RLS.
 
 | Data domain | Owner | Backup |
 | --- | --- | --- |
-| Student identity & guardian links | Tenant Administrator (ops) + Privacy Lead (policy) | School Administrator |
+| Student identity & guardian links | Tenant Administrator (ops) + Privacy Lead (policy) | Transportation Administrator (district operations) |
 | Driver records & licensing attributes | Transportation Administrator | Tenant Administrator |
 | Live location + routes + assignments | Transportation Administrator | Tenant Administrator |
 | Tenant settings & operational metrics | Tenant Administrator | — |

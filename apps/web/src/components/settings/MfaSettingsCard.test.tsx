@@ -69,7 +69,7 @@ it.each(['guardian', 'driver'])(
     );
   },
 );
-it.each(['platform_super_admin', 'tenant_admin', 'school_admin', 'transportation_admin'])(
+it.each(['platform_super_admin', 'tenant_admin', 'transportation_admin'])(
   'keeps %s MFA required and its setup card accessible',
   async (role) => {
     mocks.role = role;

@@ -12,13 +12,14 @@ import {
 export const adminRoles = [
   'platform_super_admin',
   'tenant_admin',
-  'school_admin',
   'transportation_admin',
 ] as const;
 
 export const allowedRoles = [...adminRoles, 'driver', 'guardian'] as const;
 
-export type ProfileRole = (typeof allowedRoles)[number];
+// Retain legacy discriminator for historical administrator records and UI
+// compatibility, but isProfileRole() rejects it as a usable account role.
+export type ProfileRole = (typeof allowedRoles)[number] | 'school_admin';
 
 export interface Profile {
   id: string;
@@ -70,7 +71,9 @@ export function getDashboardPath(
   if (role === 'platform_super_admin') return '/admin/tenants';
   if (adminRoles.includes(role as (typeof adminRoles)[number])) return '/admin';
   if (role === 'driver') return '/driver';
-  return '/parent';
+  if (role === 'guardian') return '/parent';
+  // A historical school_admin account must never fall through to any portal.
+  throw new Error('This individual-school administrator role has been retired.');
 }
 
 export function isRoleAllowedOnSurface(role: ProfileRole, surface: AppSurface): boolean {

@@ -8,7 +8,7 @@ interface RoleBadgeProps {
 const roleLabels: Record<ProfileRole, string> = {
   platform_super_admin: 'Platform super admin',
   tenant_admin: 'School authority admin',
-  school_admin: 'School admin',
+  school_admin: 'Retired school role',
   transportation_admin: 'Transportation admin',
   driver: 'Driver',
   guardian: 'Guardian',
@@ -22,7 +22,6 @@ export function RoleBadge({ role }: RoleBadgeProps) {
   const adminRole =
     role === 'platform_super_admin' ||
     role === 'tenant_admin' ||
-    role === 'school_admin' ||
     role === 'transportation_admin';
 
   return <StatusPill tone={adminRole ? 'info' : 'neutral'}>{getRoleLabel(role)}</StatusPill>;

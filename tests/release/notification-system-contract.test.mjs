@@ -330,7 +330,7 @@ test('tenant notification mutations are audited and narrowly granted', () => {
 test('administrator preferences control only the personal inbox', () => {
   assert.match(
     router,
-    /path: '\/admin\/settings\/notifications'[\s\S]*allowedRoles=\{\['tenant_admin', 'school_admin', 'transportation_admin'\]\}/i,
+    /path: '\/admin\/settings\/notifications'[\s\S]*allowedRoles=\{\['tenant_admin', 'transportation_admin'\]\}/i,
   );
   assert.match(tenantNotificationPage, /fetchAdminInboxPreferences/);
   assert.match(tenantNotificationPage, /saveAdminInboxPreferences/);
@@ -341,7 +341,7 @@ test('administrator preferences control only the personal inbox', () => {
   );
   assert.match(
     notificationSettingsPage,
-    /\['tenant_admin', 'school_admin', 'transportation_admin'\][\s\S]*to="\/admin\/settings\/notifications"/,
+    /\['tenant_admin', 'transportation_admin'\][\s\S]*to="\/admin\/settings\/notifications"/,
   );
   assert.doesNotMatch(adminSettingsNav, /\/admin\/settings\/notifications/);
   assert.match(

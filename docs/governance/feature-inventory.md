@@ -25,6 +25,14 @@ repository. It does not mean production-proven. Commercial Release 1 inclusion
 and the outstanding launch gates are defined in
 [`commercial-release-scope.md`](./commercial-release-scope.md).
 
+**Administrative model (DL-025, 2026-11-01):** Each tenant is a
+school district/school authority. `tenant_admin` manages the district and
+`transportation_admin` manages district transportation. Individual schools
+may appear as optional reference records, but **do not hold accounts, operate
+transportation or define its administrator permission boundary**. The
+historical `school_admin` enum is retired for compatibility and must never
+authorize access. Pending database retirement is not production-proven.
+
 ## 2. Current functionality (in scope)
 
 These are the approved operational capabilities of SafeBus.
