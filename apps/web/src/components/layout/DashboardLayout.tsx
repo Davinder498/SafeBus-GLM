@@ -531,9 +531,9 @@ export function DashboardLayout({
             portal === 'admin' ? 'bg-[#172B3A]' : 'bg-[var(--color-surface)]',
           )}>
             {portal === 'admin' && (
-              <Link to="/admin" className="mb-8 flex items-center gap-3 px-6 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2B84B]">
+              <Link to="/admin" aria-label="SafeBus home" className="mb-8 flex items-center gap-3 px-6 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2B84B]">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F2B84B] text-[#172B3A]"><Bus className="h-6 w-6" aria-hidden /></span>
-                <span className="text-xl font-extrabold tracking-tight">SafeBus</span>
+                <BrandMark className="text-xl" inverse />
               </Link>
             )}
             <SidebarNav groups={groups} portal={portal} />
