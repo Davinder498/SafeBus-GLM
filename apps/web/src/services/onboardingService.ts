@@ -167,8 +167,7 @@ export async function inviteAdministrator(input: {
   tenantId?: string;
   fullName: string;
   email: string;
-  role: 'tenant_admin' | 'school_admin' | 'transportation_admin';
-  schoolId?: string;
+  role: 'tenant_admin' | 'transportation_admin';
 }) {
   return callOnboarding<{ profileId: string; tenantId: string; status: string }>({
     kind: 'inviteAdministrator',
