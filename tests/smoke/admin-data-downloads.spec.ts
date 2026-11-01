@@ -207,7 +207,9 @@ test('bus actions share the desktop row and fit on phones with simplified brandi
   ).toHaveCount(0);
   const brand = page.getByRole('link', { name: 'SafeBus home' });
   await expect(brand.getByTestId('safebus-wordmark')).toHaveText('SafeBus');
-  await expect(brand.locator('svg, img')).toHaveCount(0);
+  // Admin desktop branding intentionally includes a school-bus icon.
+  await expect(brand.locator('svg')).toHaveCount(1);
+  await expect(brand.locator('img')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
