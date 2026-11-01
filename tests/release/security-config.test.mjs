@@ -624,7 +624,7 @@ test('privileged bus and announcement RPC corrections derive district-only autho
     assert.doesNotMatch(snippet, /'tenant_admin'\s*,\s*'transportation_admin'\s*,\s*'school_admin'/);
   }
   for (const snippet of snippets.slice(0, 2)) {
-    assert.match(snippet, /safebus_private\.current_user_role\(\) not in \('tenant_admin', 'transportation_admin'\)/);
+    assert.match(snippet, /not coalesce\(safebus_private\.current_user_role\(\) in \('tenant_admin', 'transportation_admin'\), false\)/);
     assert.match(snippet, /v_caller\.tenant_id/);
     assert.match(snippet, /where id = auth\.uid\(\) and status = 'active'/);
     assert.match(snippet, /safebus_private\.write_audit_event\(/);
