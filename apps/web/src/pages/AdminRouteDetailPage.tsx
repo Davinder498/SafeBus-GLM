@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { DropdownMenu, DropdownItem } from '@/components/ui/DropdownMenu';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { AdminWriteError } from '@/components/admin/TransportationAdminForms';
@@ -57,6 +57,7 @@ interface RouteDetailData {
 
 export function AdminRouteDetailPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [removing, setRemoving] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -140,6 +141,17 @@ export function AdminRouteDetailPage() {
     [data?.profiles],
   );
   const selectedPattern = data?.tripPatterns.find((pattern) => pattern.direction === direction);
+  // Returned identifiers are accepted only when found in this route's
+  // already-authorized, active roster; never write an assignment on return.
+  const returnedBusId = data?.buses.some(
+    (bus) => bus.id === searchParams.get('newBusId') && bus.status === 'active',
+  ) ? searchParams.get('newBusId') ?? undefined : undefined;
+  const returnedServiceId = data?.busServices.some(
+    (service) => service.id === searchParams.get('service'),
+  ) ? searchParams.get('service') ?? undefined : undefined;
+  const returnedDriverId = returnedServiceId && data?.drivers.some(
+    (driver) => driver.id === searchParams.get('newDriverId') && driver.status === 'active',
+  ) ? searchParams.get('newDriverId') ?? undefined : undefined;
   const displayedStops = useMemo(
     () =>
       data
@@ -314,7 +326,15 @@ export function AdminRouteDetailPage() {
                 schedules={data.schedules}
                 services={data.busServices}
                 assignments={data.assignments}
-                onSaved={() => setRevision((n) => n + 1)}
+                returnedBusId={returnedBusId}
+                returnedDriverId={returnedDriverId}
+                returnedServiceId={returnedServiceId}
+                onSaved={() => {
+                  if (searchParams.has('newBusId') || searchParams.has('newDriverId')) {
+                    navigate(`/admin/routes/${data.route.id}#route-service`, { replace: true });
+                  }
+                  setRevision((n) => n + 1);
+                }}
               />
             )}
 
