@@ -14,17 +14,20 @@ export function RouteDriverSetupForm({
   drivers,
   names,
   assignments,
+  initialDriverId,
   onSaved,
 }: {
   service: BusServiceOption;
   drivers: Driver[];
   names: Map<string, string>;
   assignments: DriverRouteAssignment[];
+  /** Verified newly invited driver, never auto-saved. */
+  initialDriverId?: string;
   onSaved(): void;
 }) {
   const [existingId, setExistingId] = useState('');
   const [removing, setRemoving] = useState(false);
-  const [driverId, setDriverId] = useState('');
+  const [driverId, setDriverId] = useState(initialDriverId ?? '');
   const [from, setFrom] = useState(service.effective_from ?? new Date().toISOString().slice(0, 10));
   const [to, setTo] = useState(service.effective_to ?? '');
   const [busy, setBusy] = useState(false);
