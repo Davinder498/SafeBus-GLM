@@ -191,7 +191,7 @@ export function AdminAnnouncementsPage() {
               <p className="text-sm text-slate-600" role="status">
                 {countsError ??
                   (count
-                    ? `${count.total} recipients · ${count.guardians} guardians · ${count.drivers} drivers${profile?.role === 'school_admin' ? ' · Your school only' : ''}`
+                    ? `${count.total} recipients · ${count.guardians} guardians · ${count.drivers} drivers`
                     : 'Checking recipients…')}
               </p>
             </div>
