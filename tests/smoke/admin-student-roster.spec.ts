@@ -396,7 +396,8 @@ test.describe('Milestone 5A.1 — Admin student roster', () => {
     await page.getByLabel('Current-page review').selectOption('no-flags');
     await expect(page.getByTestId('student-roster-row')).toHaveCount(0);
     await expect(page.getByText('No matching review flags on this page.')).toBeVisible();
-    await expect(page.getByTestId('admin-pagination')).toContainText('Showing 1-1 of 10000');
+    // The existing paginator reports the server page range (50), not the one-row mock payload.
+    await expect(page.getByTestId('admin-pagination')).toContainText('Showing 1-50 of 10000');
 
     await page.getByLabel('Current-page review').selectOption('attention');
     await expect(page.getByTestId('student-roster-row')).toHaveCount(1);
