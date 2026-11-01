@@ -292,7 +292,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/admin/announcements',
     element: (
-      <ProtectedRoute allowedRoles={['tenant_admin', 'school_admin', 'transportation_admin']}>
+      <ProtectedRoute allowedRoles={['tenant_admin', 'transportation_admin']}>
         <AdminAnnouncementsPage />
       </ProtectedRoute>
     ),
@@ -300,7 +300,7 @@ export const appRoutes: RouteObject[] = [
   {
     path: '/admin/settings/notifications',
     element: (
-      <ProtectedRoute allowedRoles={['tenant_admin', 'school_admin', 'transportation_admin']}>
+      <ProtectedRoute allowedRoles={['tenant_admin', 'transportation_admin']}>
         <AdminNotificationSettingsPage />
       </ProtectedRoute>
     ),
