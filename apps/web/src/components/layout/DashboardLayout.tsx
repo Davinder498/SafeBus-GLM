@@ -297,7 +297,7 @@ function NavListItem({
           'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
           portal === 'admin'
             ? isActive
-              ? 'bg-[#294B67] font-semibold text-white ring-1 ring-inset ring-white/10 before:mr-0.5 before:block before:h-5 before:w-1 before:shrink-0 before:rounded-full before:bg-[#F2B84B] before:content-['']'
+              ? 'bg-[#294B67] font-semibold text-white ring-1 ring-inset ring-white/10 before:mr-0.5 before:block before:h-5 before:w-1 before:shrink-0 before:rounded-full before:bg-[#F2B84B] before:content-[""]'
               : 'text-[#D6E0E8] hover:bg-white/10 hover:text-white'
             : isActive
               ? 'bg-navy-50 text-navy-700'
