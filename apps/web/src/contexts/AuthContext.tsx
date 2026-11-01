@@ -12,13 +12,14 @@ import {
 export const adminRoles = [
   'platform_super_admin',
   'tenant_admin',
-  'school_admin',
   'transportation_admin',
 ] as const;
 
 export const allowedRoles = [...adminRoles, 'driver', 'guardian'] as const;
 
-export type ProfileRole = (typeof allowedRoles)[number];
+// Retain legacy discriminator for historical administrator records and UI
+// compatibility, but isProfileRole() rejects it as a usable account role.
+export type ProfileRole = (typeof allowedRoles)[number] | 'school_admin';
 
 export interface Profile {
   id: string;
