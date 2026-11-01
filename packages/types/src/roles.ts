@@ -2,7 +2,7 @@
  * SafeBus — User roles.
  *
  * Role hierarchy (high → low privilege within a tenant):
- *   platform_super_admin > tenant_admin > school_admin / transportation_admin > driver / guardian
+ *   platform_super_admin > tenant_admin > transportation_admin > driver / guardian
  *
  * Platform super admin is cross-tenant. All other roles are scoped to a single tenant.
  */
@@ -18,7 +18,6 @@ export type UserRole =
 export const USER_ROLES: readonly UserRole[] = [
   'platform_super_admin',
   'tenant_admin',
-  'school_admin',
   'transportation_admin',
   'driver',
   'guardian',
@@ -27,7 +26,7 @@ export const USER_ROLES: readonly UserRole[] = [
 export const ROLE_LABELS: Record<UserRole, string> = {
   platform_super_admin: 'Platform Super Admin',
   tenant_admin: 'School authority admin',
-  school_admin: 'School Admin',
+  school_admin: 'Retired individual-school role',
   transportation_admin: 'Transportation Admin',
   driver: 'Driver',
   guardian: 'Guardian',
@@ -39,7 +38,6 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 export const ADMIN_ROLES: readonly UserRole[] = [
   'platform_super_admin',
   'tenant_admin',
-  'school_admin',
   'transportation_admin',
 ] as const;
 
@@ -112,18 +110,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'settings:manage',
     'dsar:manage',
   ],
-  school_admin: [
-    'student:read',
-    'student:write',
-    'guardian:read',
-    'guardian:write',
-    'bus:read',
-    'driver:read',
-    'route:read',
-    'trip:read',
-    'import:run',
-    'report:read',
-  ],
+  // Legacy database enum remains for historical records only; no permissions.
+  school_admin: [],
   transportation_admin: [
     'student:read',
     'guardian:read',
