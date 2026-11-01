@@ -64,7 +64,7 @@ test('tenant admin sees only RPC-backed fleet statuses; failed refresh clears la
   await expect(fleet.getByTestId('admin-fleet-list')).toHaveCount(0);
 });
 
-test('school admin never requests tenant fleet data but retains secured trip search', async ({ page }) => {
+test('retired school admin cannot enter Live Operations or request fleet data', async ({ page }) => {
   await installAdminWorkflowMock(page, 'school_admin');
   let fleetRequests = 0;
   await page.route('**/rest/v1/rpc/get_admin_live_fleet_monitoring', (route) => {
@@ -72,8 +72,9 @@ test('school admin never requests tenant fleet data but retains secured trip sea
     return route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });
   });
   await page.goto('/admin/live-trips');
-  await expect(page.getByTestId('school-admin-fleet-restricted')).toBeVisible();
-  await expect(page.getByTestId('admin-trip-search')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Profile setup needed' })).toBeVisible();
+  await expect(page.getByTestId('school-admin-fleet-restricted')).toHaveCount(0);
+  await expect(page.getByTestId('admin-trip-search')).toHaveCount(0);
   await expect(page.getByTestId('admin-fleet-operations')).toHaveCount(0);
   expect(fleetRequests).toBe(0);
 });
