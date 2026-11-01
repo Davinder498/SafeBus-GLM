@@ -5,7 +5,6 @@ import {
   BusFront,
   CalendarClock,
   CircleAlert,
-  Clock3,
   Link2,
   MapPinned,
   PauseCircle,
@@ -70,7 +69,7 @@ function gpsIssueLabel(trip: AdminTripOperation) {
 }
 
 const panelClass =
-  'min-w-0 rounded-2xl border border-[#DCE5EA] bg-[var(--color-surface)] p-4 shadow-sm sm:p-5';
+  'min-w-0 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm sm:p-5';
 const linkFocus =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#405B68] focus-visible:ring-offset-2';
 
@@ -162,8 +161,8 @@ export function AdminDashboardPage() {
         <section aria-labelledby="operations-pulse-title" data-testid="admin-operations-pulse" className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 id="operations-pulse-title" className="text-lg font-bold text-[#172B3A]">Today's operations</h2>
-              <p className="text-xs text-[#5E6F73]">Alberta time. Refresh to check the current operational snapshot.</p>
+              <h2 id="operations-pulse-title" className="text-lg font-bold text-[var(--color-text)]">Today's operations</h2>
+              <p className="text-xs text-[var(--color-text-muted)]">Alberta time. Refresh to check the current operational snapshot.</p>
             </div>
             <Button variant="outline" size="sm" onClick={() => void loadDashboard()}>
               <RefreshCw className="h-4 w-4" aria-hidden /> Refresh overview
@@ -187,21 +186,21 @@ export function AdminDashboardPage() {
                     <Link
                       key={item.label}
                       to={item.to}
-                      className={'group rounded-2xl border border-[#DCE5EA] bg-[var(--color-surface)] p-4 shadow-sm transition-shadow hover:shadow-md ' + linkFocus}
+                      className={'group rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm transition-shadow hover:shadow-md ' + linkFocus}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span className={'flex h-11 w-11 items-center justify-center rounded-xl ' + (
                           item.tone === 'mint' ? 'bg-[#E6F4EE] text-[#185C49]' :
                           item.tone === 'amber' ? 'bg-[#FFF3DC] text-[#925711]' :
-                          'bg-[#EAF1F4] text-[#294555]'
+                          'bg-[var(--color-raised)] text-[var(--color-brand)]'
                         )}>
                           <Icon className="h-5 w-5" aria-hidden />
                         </span>
-                        <ArrowRight className="h-4 w-4 text-[#5E6F73] transition-transform group-hover:translate-x-0.5" aria-hidden />
+                        <ArrowRight className="h-4 w-4 text-[var(--color-text-muted)] transition-transform group-hover:translate-x-0.5" aria-hidden />
                       </div>
-                      <p className="mt-3 text-sm font-medium text-[#405B68]">{item.label}</p>
-                      <p className="mt-1 text-3xl font-bold tracking-tight text-[#172B3A]" data-testid="admin-operations-count">{item.value.toLocaleString()}</p>
-                      <p className="mt-1 text-xs text-[#5E6F73]">{item.detail}</p>
+                      <p className="mt-3 text-sm font-medium text-[var(--color-text-muted)]">{item.label}</p>
+                      <p className="mt-1 text-3xl font-bold tracking-tight text-[var(--color-text)]" data-testid="admin-operations-count">{item.value.toLocaleString()}</p>
+                      <p className="mt-1 text-xs text-[var(--color-text-muted)]">{item.detail}</p>
                     </Link>
                   );
                 })}
@@ -210,18 +209,18 @@ export function AdminDashboardPage() {
                 <section className={panelClass} aria-labelledby="attention-heading" data-testid="admin-operational-attention">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <h3 id="attention-heading" className="text-lg font-bold text-[#172B3A]">Operational attention</h3>
+                      <h3 id="attention-heading" className="text-lg font-bold text-[var(--color-text)]">Operational attention</h3>
                       {attention.length > 0 && (
                         <span className="rounded-full bg-[#FFF3DC] px-2 py-0.5 text-xs font-bold text-[#925711]">{attention.length} shown</span>
                       )}
                     </div>
-                    <Link to="/admin/live-trips" className={'text-sm font-semibold text-[#294555] underline-offset-4 hover:underline ' + linkFocus}>
+                    <Link to="/admin/live-trips" className={'text-sm font-semibold text-[var(--color-brand)] underline-offset-4 hover:underline ' + linkFocus}>
                       Review trips
                     </Link>
                   </div>
-                  <p className="mt-1 text-xs text-[#5E6F73]">From the first 25 active and 25 paused trips; not a complete fleet alert count.</p>
+                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">From the first 25 active and 25 paused trips; not a complete fleet alert count.</p>
                   {attention.length === 0 ? (
-                    <p className="mt-5 rounded-xl bg-[#F6F8FA] p-4 text-sm text-[#405B68]">
+                    <p className="mt-5 rounded-xl bg-[var(--color-raised)] p-4 text-sm text-[var(--color-text-muted)]">
                       No GPS issues or paused trips in the loaded snapshot. Other alerts may still require review.
                     </p>
                   ) : (
@@ -233,12 +232,12 @@ export function AdminDashboardPage() {
                               <CircleAlert className="h-5 w-5" aria-hidden />
                             </span>
                             <div className="min-w-0">
-                              <p className="break-words font-semibold text-[#172B3A]">{trip.routeName}</p>
-                              <p className="text-xs text-[#5E6F73]">Bus {trip.busLabel} · {trip.tripPatternName}</p>
+                              <p className="break-words font-semibold text-[var(--color-text)]">{trip.routeName}</p>
+                              <p className="text-xs text-[var(--color-text-muted)]">Bus {trip.busLabel} · {trip.tripPatternName}</p>
                               <div className="mt-1"><StatusPill tone={tone}>{label}</StatusPill></div>
                             </div>
                           </div>
-                          <Link to={'/admin/trips/' + trip.id} className={'inline-flex min-h-10 items-center rounded-lg border border-[#DCE5EA] px-3 text-xs font-semibold text-[#172B3A] hover:bg-[#F6F8FA] ' + linkFocus}>View trip</Link>
+                          <Link to={'/admin/trips/' + trip.id} className={'inline-flex min-h-10 items-center rounded-lg border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-raised)] ' + linkFocus}>View trip</Link>
                         </li>
                       ))}
                     </ul>
@@ -246,32 +245,32 @@ export function AdminDashboardPage() {
                 </section>
                 <section className={panelClass} aria-labelledby="active-trips-heading">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 id="active-trips-heading" className="text-lg font-bold text-[#172B3A]">Active trip snapshot</h3>
-                    <Link to="/admin/live-trips?tripStatus=active" className={'text-sm font-semibold text-[#294555] underline-offset-4 hover:underline ' + linkFocus}>All trips</Link>
+                    <h3 id="active-trips-heading" className="text-lg font-bold text-[var(--color-text)]">Active trip snapshot</h3>
+                    <Link to="/admin/live-trips?tripStatus=active" className={'text-sm font-semibold text-[var(--color-brand)] underline-offset-4 hover:underline ' + linkFocus}>All trips</Link>
                   </div>
                   {liveTrips.length === 0 ? (
-                    <p className="mt-5 rounded-xl bg-[#F6F8FA] p-4 text-sm text-[#5E6F73]">No active trips in the current snapshot.</p>
+                    <p className="mt-5 rounded-xl bg-[var(--color-raised)] p-4 text-sm text-[var(--color-text-muted)]">No active trips in the current snapshot.</p>
                   ) : (
                     <ul className="mt-3 divide-y divide-[#E7ECF0]">
                       {liveTrips.map((trip) => (
                         <li key={trip.id}>
-                          <Link to={'/admin/trips/' + trip.id} className={'flex min-h-16 items-center justify-between gap-3 rounded-lg py-2 hover:bg-[#F6F8FA] ' + linkFocus}>
+                          <Link to={'/admin/trips/' + trip.id} className={'flex min-h-16 items-center justify-between gap-3 rounded-lg py-2 hover:bg-[var(--color-raised)] ' + linkFocus}>
                             <span className="min-w-0">
-                              <span className="block truncate text-sm font-semibold text-[#172B3A]">{trip.routeName}</span>
-                              <span className="block truncate text-xs text-[#5E6F73]">Bus {trip.busLabel} · {trip.driverLabel}</span>
+                              <span className="block truncate text-sm font-semibold text-[var(--color-text)]">{trip.routeName}</span>
+                              <span className="block truncate text-xs text-[var(--color-text-muted)]">Bus {trip.busLabel} · {trip.driverLabel}</span>
                             </span>
                             <span className="flex shrink-0 items-center gap-2">
                               <StatusPill tone={trip.locationStatus === 'live' ? 'success' : 'warning'}>
                                 {trip.locationStatus === 'live' ? 'GPS live' : 'GPS unavailable'}
                               </StatusPill>
-                              <ArrowRight className="h-4 w-4 text-[#5E6F73]" aria-hidden />
+                              <ArrowRight className="h-4 w-4 text-[var(--color-text-muted)]" aria-hidden />
                             </span>
                           </Link>
                         </li>
                       ))}
                     </ul>
                   )}
-                  <p className="mt-3 text-xs text-[#5E6F73]">
+                  <p className="mt-3 text-xs text-[var(--color-text-muted)]">
                     Checked {new Intl.DateTimeFormat('en-CA', { timeZone: ALBERTA_TIME_ZONE, hour: 'numeric', minute: '2-digit' }).format(operations.checkedAt)} · Refresh for current information.
                   </p>
                 </section>
@@ -283,10 +282,10 @@ export function AdminDashboardPage() {
         <section className={panelClass} aria-labelledby="transportation-summary-heading" data-testid="transportation-summary">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 id="transportation-summary-heading" className="text-lg font-bold text-[#172B3A]">Transportation summary</h2>
-              <p className="mt-1 text-xs text-[#5E6F73]">Active records in your permitted transportation directory.</p>
+              <h2 id="transportation-summary-heading" className="text-lg font-bold text-[var(--color-text)]">Transportation summary</h2>
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">Active records in your permitted transportation directory.</p>
             </div>
-            <CalendarClock className="h-5 w-5 text-[#405B68]" aria-hidden />
+            <CalendarClock className="h-5 w-5 text-[var(--color-text-muted)]" aria-hidden />
           </div>
           <div className="mt-4" aria-live="polite" aria-busy={summary.kind === 'loading'}>
             {summary.kind === 'loading' && (
@@ -306,15 +305,15 @@ export function AdminDashboardPage() {
                     <Link
                       key={item.key}
                       to={item.to}
-                      className={'group flex min-h-32 flex-col justify-between rounded-xl border border-[#E1E8EC] bg-[#F8FAFB] p-4 transition-colors hover:border-[#99ABB3] hover:bg-[#EAF1F4] ' + linkFocus}
+                      className={'group flex min-h-32 flex-col justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-raised)] p-4 transition-colors hover:border-[var(--color-focus)] hover:bg-[var(--color-surface-subtle)] ' + linkFocus}
                     >
                       <span className="flex items-center justify-between gap-2">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EAF1F4] text-[#294555]"><Icon className="h-4 w-4" aria-hidden /></span>
-                        <ArrowRight className="h-4 w-4 text-[#405B68] transition-transform group-hover:translate-x-0.5" aria-hidden />
+                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-raised)] text-[var(--color-brand)]"><Icon className="h-4 w-4" aria-hidden /></span>
+                        <ArrowRight className="h-4 w-4 text-[var(--color-text-muted)] transition-transform group-hover:translate-x-0.5" aria-hidden />
                       </span>
                       <span className="mt-3">
-                        <span className="block text-2xl font-bold text-[#172B3A]">{summary.snapshot[item.key].toLocaleString()}</span>
-                        <span className="block text-sm font-medium text-[#405B68]">{item.label}</span>
+                        <span className="block text-2xl font-bold text-[var(--color-text)]">{summary.snapshot[item.key].toLocaleString()}</span>
+                        <span className="block text-sm font-medium text-[var(--color-text-muted)]">{item.label}</span>
                       </span>
                     </Link>
                   );
@@ -326,8 +325,8 @@ export function AdminDashboardPage() {
 
         <section className="space-y-3" aria-labelledby="trip-search-section-heading">
           <div>
-            <h2 id="trip-search-section-heading" className="text-lg font-bold text-[#172B3A]">Find a trip</h2>
-            <p className="text-xs text-[#5E6F73]">Search trip history and operating services with the existing filters.</p>
+            <h2 id="trip-search-section-heading" className="text-lg font-bold text-[var(--color-text)]">Find a trip</h2>
+            <p className="text-xs text-[var(--color-text-muted)]">Search trip history and operating services with the existing filters.</p>
           </div>
           <AdminTripSearchSection />
         </section>
