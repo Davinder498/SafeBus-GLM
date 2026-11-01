@@ -563,3 +563,41 @@ test('guardian linking only offers active guardians and keeps audit fields table
     /revoke all on function public\.capture_sensitive_admin_audit\(\) from public, anon, authenticated/,
   );
 });
+
+test('only school-district administrative roles can be invited or access the admin web app', async () => {
+  const [auth, roles, routes, layout, settings, admins, api, scope, migration] =
+    await Promise.all([
+      read('apps/web/src/contexts/AuthContext.tsx'),
+      read('packages/types/src/roles.ts'),
+      read('apps/web/src/routes/router.tsx'),
+      read('apps/web/src/components/layout/DashboardLayout.tsx'),
+      read('apps/web/src/components/settings/AdminSettingsNav.tsx'),
+      read('apps/web/src/pages/AdminAdministratorsPage.tsx'),
+      read('apps/web/netlify/functions/safebus-onboarding.mjs'),
+      read('docs/governance/product-scope.md'),
+      read('supabase/migrations/pending/20261101174500_retire_individual_school_admin.sql'),
+    ]);
+  // The historical type remains for generated DB compatibility, but it must
+  // not appear in the active role arrays or create/assign choices.
+  const activeRoles = auth.match(/export const adminRoles = \[([\s\S]*?)\] as const;/)?.[1];
+  assert.ok(activeRoles);
+  assert.doesNotMatch(activeRoles, /school_admin/);
+  const list = roles.match(/export const USER_ROLES:[\s\S]*?= \[([\s\S]*?)\] as const;/)?.[1];
+  assert.ok(list);
+  assert.doesNotMatch(list, /school_admin/);
+  assert.match(roles, /school_admin: \[\]/);
+  assert.doesNotMatch(routes, /'tenant_admin', 'school_admin', 'transportation_admin'/);
+  assert.doesNotMatch(layout, /allowedRoles: \['tenant_admin', 'school_admin'/);
+  assert.doesNotMatch(settings, /allowedRoles: \['tenant_admin', 'school_admin'/);
+  assert.doesNotMatch(admins, /<option value="school_admin">School administrator<\/option>/);
+  assert.doesNotMatch(admins, /onClick=\{\(\) => void handleRoleChange\([^)]*'school_admin'/);
+  assert.match(api, /\['tenant_admin', 'transportation_admin'\]\.includes\(role\)/);
+  assert.match(scope, /Individual schools have \*\*no login or admin/);
+  assert.match(migration, /update public\.profiles[\s\S]*set status = 'suspended'/i);
+  assert.match(migration, /p\.role::text <> 'school_admin'/i);
+  assert.match(migration, /create trigger prevent_individual_school_admin/i);
+  assert.match(migration, /create trigger prevent_individual_school_invitation/i);
+  // The app must preserve historical enum and never auto-promote users.
+  assert.doesNotMatch(migration, /set role\s*=\s*'tenant_admin'/i);
+  assert.doesNotMatch(migration, /drop type .*user_role/i);
+});
