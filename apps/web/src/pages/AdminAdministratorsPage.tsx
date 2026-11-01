@@ -311,7 +311,7 @@ export function AdminAdministratorsPage() {
                   </div>
                   {['pending', 'resent', 'failed'].includes(invitation.status) && (
                     <div className="flex gap-2">
-                      <Button
+                      {invitation.role !== 'school_admin' && <Button
                         type="button"
                         size="sm"
                         variant="secondary"
@@ -319,7 +319,7 @@ export function AdminAdministratorsPage() {
                         onClick={() => void handleInvitationAction(invitation, 'resend')}
                       >
                         Resend
-                      </Button>
+                      </Button>}
                       <Button
                         type="button"
                         size="sm"
@@ -392,7 +392,7 @@ export function AdminAdministratorsPage() {
                           Promote to school authority admin
                         </Button>
                       )}
-                      {(admin.status === 'disabled' || admin.status === 'suspended') && (
+                      {admin.role !== 'school_admin' && (admin.status === 'disabled' || admin.status === 'suspended') && (
                         <Button
                           type="button"
                           size="sm"
@@ -403,7 +403,7 @@ export function AdminAdministratorsPage() {
                           Restore
                         </Button>
                       )}
-                      {admin.status === 'active' && admin.id !== profile?.id && (
+                      {admin.role !== 'school_admin' && admin.status === 'active' && admin.id !== profile?.id && (
                         <Button
                           type="button"
                           size="sm"
