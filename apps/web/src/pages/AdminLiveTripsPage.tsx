@@ -6,9 +6,10 @@ import { useAuth } from '@/contexts/useAuth';
 
 export function AdminLiveTripsPage() {
   const { profile } = useAuth();
-  // The existing fleet RPC is tenant-scoped but does not constrain
-  // school_admin to their school. Never mount the fleet component for that
-  // role. This does not replace the required server-side authorization fix.
+  // School-admin fleet UI remains disabled pending complete spatial-surface
+  // acceptance. The deployed base/viewport fleet RPCs are already school-
+  // scoped, but route overlays still require separate server-side hardening.
+  // The display gate itself is not an authorization boundary.
   const canSeeTenantFleet =
     profile?.role === 'tenant_admin' || profile?.role === 'transportation_admin';
 
