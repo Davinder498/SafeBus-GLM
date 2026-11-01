@@ -13,7 +13,6 @@ import { DataState } from '@/components/ui/DataState';
 import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Select } from '@/components/ui/Select';
-import { useAuth } from '@/contexts/useAuth';
 import {
   announcementAudienceLabels,
   fetchAnnouncementAudience,
@@ -22,7 +21,6 @@ import {
 } from '@/services/announcementService';
 
 export function AdminAnnouncementsPage() {
-  const { profile } = useAuth();
   const [audience, setAudience] = useState<AnnouncementAudience>('all');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
