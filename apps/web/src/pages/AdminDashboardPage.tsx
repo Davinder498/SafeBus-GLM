@@ -133,9 +133,9 @@ export function AdminDashboardPage() {
 
   const kpis = operations.kind === 'ready'
     ? [
-        { label: 'Active trips today', value: operations.activeCount, detail: 'Operating now', icon: BusFront, tone: 'mint', to: '/admin/live-trips?tripStatus=active' },
-        { label: 'Paused trips today', value: operations.pausedCount, detail: 'Require operational review', icon: PauseCircle, tone: 'blue', to: '/admin/live-trips?tripStatus=paused' },
-        { label: 'GPS attention', value: gpsRows.length, detail: 'Among loaded active trips (up to 25)', icon: RadioTower, tone: 'amber', to: '/admin/live-trips?tripStatus=active' },
+        { label: 'Active trips today', value: operations.activeCount, detail: 'Operating now', icon: BusFront, tone: 'mint', to: '/admin/live-trips?tripMode=today&tripStatus=active' },
+        { label: 'Paused trips today', value: operations.pausedCount, detail: 'Require operational review', icon: PauseCircle, tone: 'blue', to: '/admin/live-trips?tripMode=today&tripStatus=paused' },
+        { label: 'GPS attention', value: gpsRows.length, detail: 'Among loaded active trips (up to 25)', icon: RadioTower, tone: 'amber', to: '/admin/live-trips?tripMode=today&tripStatus=active' },
       ]
     : [];
   const liveTrips = operations.kind === 'ready' ? operations.activeRows.slice(0, 5) : [];
