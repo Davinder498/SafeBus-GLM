@@ -85,7 +85,7 @@ export function NotificationsPage() {
 
   const admin =
     profile?.role &&
-    ['tenant_admin', 'school_admin', 'transportation_admin'].includes(profile.role);
+    ['tenant_admin', 'transportation_admin'].includes(profile.role);
   const portal =
     admin || profile?.role === 'platform_super_admin'
       ? 'admin'
