@@ -272,6 +272,10 @@ export function AdminStudentDetailPage() {
   );
   const assigned = transportationGroups.length > 0;
   const rosterActive = detail?.student.status === 'active';
+  const activeGuardianLinks = detail?.guardianLinks.filter((link) => link.status === 'active').length ?? 0;
+  const incompleteSavedStops = detail?.transportationAssignments.filter(
+    (assignment) => !assignment.pickup_stop || !assignment.dropoff_stop,
+  ).length ?? 0;
 
   async function refreshAfterGuardianChange(nextMessage: string) {
     setMessage(nextMessage);
@@ -305,6 +309,32 @@ export function AdminStudentDetailPage() {
               description="Manage the student, guardians, school, bus service, route, and route stops from one place."
             />
 
+            <Card className="p-4 sm:p-5" data-testid="student-workspace-review">
+              <h2 className="font-bold text-navy-900">Transportation record review</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                A read-only overview of saved records. Check guardian invitation status, each bus service direction and effective dates in the sections below.
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <a href="#student-details" className="rounded-xl border border-slate-200 bg-slate-50 p-3 hover:border-navy-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500">
+                  <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Roster status</span>
+                  <span className="mt-1 block font-semibold text-navy-900">{detail.student.status}</span>
+                  <span className="mt-1 block text-xs text-slate-600">School and grade are optional</span>
+                </a>
+                <a href="#student-guardians" className="rounded-xl border border-slate-200 bg-slate-50 p-3 hover:border-navy-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500">
+                  <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Guardian links</span>
+                  <span className="mt-1 block font-semibold text-navy-900">{activeGuardianLinks} active</span>
+                  <span className="mt-1 block text-xs text-slate-600">Check linking and invitation state</span>
+                </a>
+                <a href="#student-transportation" className="rounded-xl border border-slate-200 bg-slate-50 p-3 hover:border-navy-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500">
+                  <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Saved transportation</span>
+                  <span className="mt-1 block font-semibold text-navy-900">{transportationGroups.length} bus-route group{transportationGroups.length === 1 ? '' : 's'}</span>
+                  <span className="mt-1 block text-xs text-slate-600">
+                    {incompleteSavedStops > 0 ? `${incompleteSavedStops} saved direction(s) need stop review` : 'Review both directions and stop details'}
+                  </span>
+                </a>
+              </div>
+            </Card>
+
             {writeError && (
               <Card className="border-danger-200 bg-danger-50 p-4">
                 <p className="text-sm font-semibold text-danger-700">{writeError}</p>
@@ -325,7 +355,7 @@ export function AdminStudentDetailPage() {
                 onCancel={() => setEditing(false)}
               />
             ) : (
-              <Card className="p-5" data-testid="student-details-section">
+              <Card id="student-details" className="scroll-mt-24 p-5" data-testid="student-details-section">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2">
                     <UserRound className="h-5 w-5 text-navy-700" aria-hidden />
@@ -368,7 +398,7 @@ export function AdminStudentDetailPage() {
               />
             )}
 
-            <Card className="p-5" data-testid="student-guardians-section">
+            <Card id="student-guardians" className="scroll-mt-24 p-5" data-testid="student-guardians-section">
               <div className="flex items-center gap-2">
                 <UsersRound className="h-5 w-5 text-navy-700" aria-hidden />
                 <h2 className="text-lg font-bold text-navy-900">Guardians</h2>
@@ -383,7 +413,7 @@ export function AdminStudentDetailPage() {
               )}
             </Card>
 
-            <Card className="p-5" data-testid="student-transportation-section">
+            <Card id="student-transportation" className="scroll-mt-24 p-5" data-testid="student-transportation-section">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
                   <BusFront className="h-5 w-5 text-navy-700" aria-hidden />

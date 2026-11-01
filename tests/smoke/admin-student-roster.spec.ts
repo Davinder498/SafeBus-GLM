@@ -47,7 +47,7 @@ const mockStudent = {
 
 async function installAdminStudentMock(
   page: Page,
-  opts: { students?: (typeof mockStudent)[]; totalCount?: number } = {},
+  opts: { students?: Record<string, unknown>[]; totalCount?: number } = {},
 ) {
   let students: Record<string, unknown>[] = opts.students ?? [];
 
@@ -382,6 +382,38 @@ test.describe('Milestone 5A.1 — Admin student roster', () => {
     await page.goto('/admin/students');
     await expect(page.locator('tbody tr')).toHaveCount(50);
     await expect(page.getByTestId('admin-pagination')).toContainText('Showing 1-50 of 10000');
+  });
+
+  test('district roster review flags current-page transport gaps without claiming a district-wide count', async ({ page }) => {
+    await installAdminStudentMock(page, { students: [mockStudent], totalCount: 10000 });
+    await page.goto('/admin/students');
+
+    const summary = page.getByTestId('roster-review-summary');
+    await expect(summary).toContainText('1 of 1 student records on this server page have review flags.');
+    await expect(summary).toContainText('Other district records are on separate pages');
+    await expect(page.getByTestId('student-review-status')).toContainText('Bus not assigned');
+
+    await page.getByLabel('Current-page review').selectOption('no-flags');
+    await expect(page.getByTestId('student-roster-row')).toHaveCount(0);
+    await expect(page.getByText('No matching review flags on this page.')).toBeVisible();
+    // The existing paginator reports the server page range (50), not the one-row mock payload.
+    await expect(page.getByTestId('admin-pagination')).toContainText('Showing 1-50 of 10000');
+
+    await page.getByLabel('Current-page review').selectOption('attention');
+    await expect(page.getByTestId('student-roster-row')).toHaveCount(1);
+  });
+
+  test('same name and grade in the same school is only a possible match', async ({ page }) => {
+    const rows = [
+      { ...mockStudent, school_id: '11111111-2222-3333-4444-555555555555' },
+      { ...mockStudent, id: 'dddddddd-dddd-dddd-dddd-dddddddddddd', school_id: '11111111-2222-3333-4444-555555555555' },
+    ];
+    await installAdminStudentMock(page, { students: rows });
+    await page.goto('/admin/students');
+
+    await expect(page.getByTestId('student-review-status')).toHaveCount(2);
+    await expect(page.getByTestId('student-review-status').first()).toContainText('Possible match');
+    await expect(page.getByTestId('roster-review-summary')).toContainText('2 of 2');
   });
 
   test('logged-out user is blocked from student roster page', async ({ page }) => {
