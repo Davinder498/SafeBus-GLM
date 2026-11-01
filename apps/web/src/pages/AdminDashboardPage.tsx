@@ -31,6 +31,7 @@ const summaryItems = [
   { label: 'Routes', key: 'routes', to: '/admin/routes', icon: Route },
   { label: 'Students', key: 'students', to: '/admin/students', icon: Users },
   { label: 'Guardians', key: 'guardians', to: '/admin/guardians', icon: UserRound },
+  { label: 'Guardian links', key: 'guardianLinks', to: '/admin/guardians', icon: Link2 },
   { label: 'Student bus assignments', key: 'studentAssignments', to: '/admin/students', icon: Link2 },
 ] as const satisfies ReadonlyArray<{
   label: string;
@@ -174,7 +175,7 @@ export function AdminDashboardPage() {
           {operations.kind === 'error' && (
             <div className={panelClass} role="alert">
               <DataState title="Today's operations unavailable" message="Trip statuses could not be verified. No live counts are shown." />
-              <Button variant="secondary" onClick={() => void loadDashboard()}>Retry overview</Button>
+              <Button variant="secondary" onClick={() => void loadDashboard()}>Retry summary</Button>
             </div>
           )}
           {operations.kind === 'ready' && (
@@ -294,7 +295,7 @@ export function AdminDashboardPage() {
             {summary.kind === 'error' && (
               <div data-testid="transportation-summary-error">
                 <DataState title="Transportation summary unavailable" message="Active record counts could not be verified." />
-                <Button variant="secondary" onClick={() => void loadDashboard()}>Retry overview</Button>
+                <Button variant="secondary" onClick={() => void loadDashboard()}>Retry summary</Button>
               </div>
             )}
             {summary.kind === 'ready' && (
