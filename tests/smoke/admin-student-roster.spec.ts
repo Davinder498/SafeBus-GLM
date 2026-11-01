@@ -47,7 +47,7 @@ const mockStudent = {
 
 async function installAdminStudentMock(
   page: Page,
-  opts: { students?: (typeof mockStudent)[]; totalCount?: number } = {},
+  opts: { students?: Record<string, unknown>[]; totalCount?: number } = {},
 ) {
   let students: Record<string, unknown>[] = opts.students ?? [];
 
