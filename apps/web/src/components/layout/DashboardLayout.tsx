@@ -98,7 +98,7 @@ export const adminNavItems: DashboardNavItem[] = [
     label: 'Announcements',
     to: '/admin/announcements',
     group: 'operations',
-    allowedRoles: ['tenant_admin', 'school_admin', 'transportation_admin'],
+    allowedRoles: ['tenant_admin', 'transportation_admin'],
     icon: <Megaphone className="h-4 w-4" />,
   },
   {
