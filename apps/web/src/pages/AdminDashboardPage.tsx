@@ -1,111 +1,335 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
+import {
+  ArrowRight,
+  BusFront,
+  CalendarClock,
+  CircleAlert,
+  Clock3,
+  Link2,
+  MapPinned,
+  PauseCircle,
+  RadioTower,
+  RefreshCw,
+  Route,
+  UserRound,
+  Users,
+} from 'lucide-react';
 import { AdminTripSearchSection } from '@/components/admin/AdminTripSearchSection';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
-import { Button, buttonClass } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { fetchAdminSetupSnapshot, type AdminSetupSnapshot } from '@/services/adminSetupService';
+import { fetchAdminTripOperations } from '@/services/adminTripDetailService';
+import { albertaToday, ALBERTA_TIME_ZONE } from '@/utils/adminTripDates';
+import type { AdminTripOperation } from '@/types/adminTripDetail';
 
-const summaryItems: Array<{ label: string; key: keyof AdminSetupSnapshot; to: string }> = [
-  { label: 'Buses', key: 'buses', to: '/admin/buses' },
-  { label: 'Drivers', key: 'drivers', to: '/admin/drivers' },
-  { label: 'Routes', key: 'routes', to: '/admin/routes' },
-  { label: 'Students', key: 'students', to: '/admin/students' },
-  { label: 'Guardians', key: 'guardians', to: '/admin/guardians' },
-  { label: 'Guardian links', key: 'guardianLinks', to: '/admin/guardians' },
-  { label: 'Student bus assignments', key: 'studentAssignments', to: '/admin/students' },
-];
+const summaryItems = [
+  { label: 'Buses', key: 'buses', to: '/admin/buses', icon: BusFront },
+  { label: 'Drivers', key: 'drivers', to: '/admin/drivers', icon: UserRound },
+  { label: 'Routes', key: 'routes', to: '/admin/routes', icon: Route },
+  { label: 'Students', key: 'students', to: '/admin/students', icon: Users },
+  { label: 'Guardians', key: 'guardians', to: '/admin/guardians', icon: UserRound },
+  { label: 'Student bus assignments', key: 'studentAssignments', to: '/admin/students', icon: Link2 },
+] as const satisfies ReadonlyArray<{
+  label: string;
+  key: keyof AdminSetupSnapshot;
+  to: string;
+  icon: typeof BusFront;
+}>;
 
 type SummaryState =
-  { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; snapshot: AdminSetupSnapshot };
+  | { kind: 'loading' }
+  | { kind: 'error' }
+  | { kind: 'ready'; snapshot: AdminSetupSnapshot };
+
+type OperationsState =
+  | { kind: 'loading' }
+  | { kind: 'error' }
+  | {
+      kind: 'ready';
+      activeCount: number;
+      pausedCount: number;
+      activeRows: AdminTripOperation[];
+      pausedRows: AdminTripOperation[];
+      checkedAt: Date;
+    };
+
+function isGpsAttention(trip: AdminTripOperation) {
+  return trip.locationStatus === 'stale'
+    || trip.locationStatus === 'missing'
+    || trip.locationStatus === 'invalid';
+}
+
+function gpsIssueLabel(trip: AdminTripOperation) {
+  if (trip.locationStatus === 'stale') return 'GPS update overdue';
+  if (trip.locationStatus === 'missing') return 'No GPS location received';
+  return 'GPS location unavailable';
+}
+
+const panelClass =
+  'min-w-0 rounded-2xl border border-[#DCE5EA] bg-[var(--color-surface)] p-4 shadow-sm sm:p-5';
+const linkFocus =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#405B68] focus-visible:ring-offset-2';
 
 export function AdminDashboardPage() {
   const [summary, setSummary] = useState<SummaryState>({ kind: 'loading' });
+  const [operations, setOperations] = useState<OperationsState>({ kind: 'loading' });
   const sequence = useRef(0);
-  const loadSummary = useCallback(async () => {
+
+  const loadDashboard = useCallback(async () => {
     const request = ++sequence.current;
     setSummary({ kind: 'loading' });
-    try {
-      const snapshot = await fetchAdminSetupSnapshot();
-      if (request === sequence.current) setSummary({ kind: 'ready', snapshot });
-    } catch {
-      if (request === sequence.current) setSummary({ kind: 'error' });
+    setOperations({ kind: 'loading' });
+    const today = albertaToday();
+    const baseQuery = { fromDate: today, toDate: today, page: 1, pageSize: 25 as const };
+    // Existing authorized, bounded trip RPC. Totals come from its exact result count;
+    // GPS issues are only described for the returned rows, never as fleet-wide totals.
+    const [summaryResult, activeResult, pausedResult] = await Promise.allSettled([
+      fetchAdminSetupSnapshot(),
+      fetchAdminTripOperations({ ...baseQuery, status: 'active' }),
+      fetchAdminTripOperations({ ...baseQuery, status: 'paused' }),
+    ]);
+    if (request !== sequence.current) return;
+    if (summaryResult.status === 'fulfilled') {
+      setSummary({ kind: 'ready', snapshot: summaryResult.value });
+    } else {
+      setSummary({ kind: 'error' });
+    }
+    if (activeResult.status === 'fulfilled' && pausedResult.status === 'fulfilled') {
+      setOperations({
+        kind: 'ready',
+        activeCount: activeResult.value.totalCount,
+        pausedCount: pausedResult.value.totalCount,
+        activeRows: activeResult.value.rows,
+        pausedRows: pausedResult.value.rows,
+        checkedAt: new Date(),
+      });
+    } else {
+      setOperations({ kind: 'error' });
     }
   }, []);
 
   useEffect(() => {
-    void loadSummary();
-    return () => {
-      sequence.current += 1;
-    };
-  }, [loadSummary]);
+    void loadDashboard();
+    return () => { sequence.current += 1; };
+  }, [loadDashboard]);
+
+  const gpsRows = operations.kind === 'ready'
+    ? operations.activeRows.filter(isGpsAttention)
+    : [];
+  const attention = operations.kind === 'ready'
+    ? [
+        ...gpsRows.map((trip) => ({ trip, label: gpsIssueLabel(trip), tone: 'warning' as const })),
+        ...operations.pausedRows.map((trip) => ({
+          trip,
+          label: 'Trip paused',
+          tone: 'info' as const,
+        })),
+      ].slice(0, 4)
+    : [];
+
+  const kpis = operations.kind === 'ready'
+    ? [
+        { label: 'Active trips today', value: operations.activeCount, detail: 'Operating now', icon: BusFront, tone: 'mint', to: '/admin/live-trips?tripStatus=active' },
+        { label: 'Paused trips today', value: operations.pausedCount, detail: 'Require operational review', icon: PauseCircle, tone: 'blue', to: '/admin/live-trips?tripStatus=paused' },
+        { label: 'GPS attention', value: gpsRows.length, detail: 'Among loaded active trips (up to 25)', icon: RadioTower, tone: 'amber', to: '/admin/live-trips?tripStatus=active' },
+      ]
+    : [];
+  const liveTrips = operations.kind === 'ready' ? operations.activeRows.slice(0, 5) : [];
 
   return (
-    <DashboardLayout
-      title="Admin Dashboard"
-      portal="admin"
-      navItems={[]}
-      navGroups={adminNavGroups}
-    >
+    <DashboardLayout title="Admin Dashboard" portal="admin" navItems={[]} navGroups={adminNavGroups}>
       <div className="space-y-6" data-testid="tenant-admin-overview">
         <PageHeader
-          eyebrow="Overview"
+          eyebrow="Operations"
           title="Transportation overview"
-          description="Review trips and your transportation records at a glance."
+          description="Today's trips and the transportation records available to your school authority."
           action={
-            <Link to="/admin/live-trips" className={buttonClass({ variant: 'secondary' })}>
+            <Link
+              to="/admin/live-trips"
+              className={'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#F2B84B] px-5 py-2.5 text-sm font-bold text-[#172B3A] hover:bg-[#F8D273] ' + linkFocus}
+            >
+              <MapPinned className="h-4 w-4" aria-hidden />
               Open Live Operations
+              <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
           }
         />
 
-        <AdminTripSearchSection />
+        <section aria-labelledby="operations-pulse-title" data-testid="admin-operations-pulse" className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 id="operations-pulse-title" className="text-lg font-bold text-[#172B3A]">Today's operations</h2>
+              <p className="text-xs text-[#5E6F73]">Alberta time. Refresh to check the current operational snapshot.</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => void loadDashboard()}>
+              <RefreshCw className="h-4 w-4" aria-hidden /> Refresh overview
+            </Button>
+          </div>
+          {operations.kind === 'loading' && (
+            <div className={panelClass}><DataState title="Loading today's operations" message="Checking your authorized trips." /></div>
+          )}
+          {operations.kind === 'error' && (
+            <div className={panelClass} role="alert">
+              <DataState title="Today's operations unavailable" message="Trip statuses could not be verified. No live counts are shown." />
+              <Button variant="secondary" onClick={() => void loadDashboard()}>Retry overview</Button>
+            </div>
+          )}
+          {operations.kind === 'ready' && (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {kpis.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.label}
+                      to={item.to}
+                      className={'group rounded-2xl border border-[#DCE5EA] bg-[var(--color-surface)] p-4 shadow-sm transition-shadow hover:shadow-md ' + linkFocus}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <span className={'flex h-11 w-11 items-center justify-center rounded-xl ' + (
+                          item.tone === 'mint' ? 'bg-[#E6F4EE] text-[#185C49]' :
+                          item.tone === 'amber' ? 'bg-[#FFF3DC] text-[#925711]' :
+                          'bg-[#EAF1F4] text-[#294555]'
+                        )}>
+                          <Icon className="h-5 w-5" aria-hidden />
+                        </span>
+                        <ArrowRight className="h-4 w-4 text-[#5E6F73] transition-transform group-hover:translate-x-0.5" aria-hidden />
+                      </div>
+                      <p className="mt-3 text-sm font-medium text-[#405B68]">{item.label}</p>
+                      <p className="mt-1 text-3xl font-bold tracking-tight text-[#172B3A]" data-testid="admin-operations-count">{item.value.toLocaleString()}</p>
+                      <p className="mt-1 text-xs text-[#5E6F73]">{item.detail}</p>
+                    </Link>
+                  );
+                })}
+              </div>
+              <div className="grid gap-4 xl:grid-cols-[1.1fr_1fr]">
+                <section className={panelClass} aria-labelledby="attention-heading" data-testid="admin-operational-attention">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <h3 id="attention-heading" className="text-lg font-bold text-[#172B3A]">Operational attention</h3>
+                      {attention.length > 0 && (
+                        <span className="rounded-full bg-[#FFF3DC] px-2 py-0.5 text-xs font-bold text-[#925711]">{attention.length} shown</span>
+                      )}
+                    </div>
+                    <Link to="/admin/live-trips" className={'text-sm font-semibold text-[#294555] underline-offset-4 hover:underline ' + linkFocus}>
+                      Review trips
+                    </Link>
+                  </div>
+                  <p className="mt-1 text-xs text-[#5E6F73]">From the first 25 active and 25 paused trips; not a complete fleet alert count.</p>
+                  {attention.length === 0 ? (
+                    <p className="mt-5 rounded-xl bg-[#F6F8FA] p-4 text-sm text-[#405B68]">
+                      No GPS issues or paused trips in the loaded snapshot. Other alerts may still require review.
+                    </p>
+                  ) : (
+                    <ul className="mt-3 divide-y divide-[#E7ECF0]">
+                      {attention.map(({ trip, label, tone }) => (
+                        <li key={trip.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                          <div className="flex min-w-0 items-start gap-3">
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF3DC] text-[#925711]">
+                              <CircleAlert className="h-5 w-5" aria-hidden />
+                            </span>
+                            <div className="min-w-0">
+                              <p className="break-words font-semibold text-[#172B3A]">{trip.routeName}</p>
+                              <p className="text-xs text-[#5E6F73]">Bus {trip.busLabel} · {trip.tripPatternName}</p>
+                              <div className="mt-1"><StatusPill tone={tone}>{label}</StatusPill></div>
+                            </div>
+                          </div>
+                          <Link to={'/admin/trips/' + trip.id} className={'inline-flex min-h-10 items-center rounded-lg border border-[#DCE5EA] px-3 text-xs font-semibold text-[#172B3A] hover:bg-[#F6F8FA] ' + linkFocus}>View trip</Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+                <section className={panelClass} aria-labelledby="active-trips-heading">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 id="active-trips-heading" className="text-lg font-bold text-[#172B3A]">Active trip snapshot</h3>
+                    <Link to="/admin/live-trips?tripStatus=active" className={'text-sm font-semibold text-[#294555] underline-offset-4 hover:underline ' + linkFocus}>All trips</Link>
+                  </div>
+                  {liveTrips.length === 0 ? (
+                    <p className="mt-5 rounded-xl bg-[#F6F8FA] p-4 text-sm text-[#5E6F73]">No active trips in the current snapshot.</p>
+                  ) : (
+                    <ul className="mt-3 divide-y divide-[#E7ECF0]">
+                      {liveTrips.map((trip) => (
+                        <li key={trip.id}>
+                          <Link to={'/admin/trips/' + trip.id} className={'flex min-h-16 items-center justify-between gap-3 rounded-lg py-2 hover:bg-[#F6F8FA] ' + linkFocus}>
+                            <span className="min-w-0">
+                              <span className="block truncate text-sm font-semibold text-[#172B3A]">{trip.routeName}</span>
+                              <span className="block truncate text-xs text-[#5E6F73]">Bus {trip.busLabel} · {trip.driverLabel}</span>
+                            </span>
+                            <span className="flex shrink-0 items-center gap-2">
+                              <StatusPill tone={trip.locationStatus === 'live' ? 'success' : 'warning'}>
+                                {trip.locationStatus === 'live' ? 'GPS live' : 'GPS unavailable'}
+                              </StatusPill>
+                              <ArrowRight className="h-4 w-4 text-[#5E6F73]" aria-hidden />
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="mt-3 text-xs text-[#5E6F73]">
+                    Checked {new Intl.DateTimeFormat('en-CA', { timeZone: ALBERTA_TIME_ZONE, hour: 'numeric', minute: '2-digit' }).format(operations.checkedAt)} · Refresh for current information.
+                  </p>
+                </section>
+              </div>
+            </>
+          )}
+        </section>
 
-        <section
-          className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
-          aria-labelledby="transportation-summary-heading"
-          data-testid="transportation-summary"
-        >
-          <h2 id="transportation-summary-heading" className="text-xl font-bold text-navy-900">
-            Transportation summary
-          </h2>
-
+        <section className={panelClass} aria-labelledby="transportation-summary-heading" data-testid="transportation-summary">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 id="transportation-summary-heading" className="text-lg font-bold text-[#172B3A]">Transportation summary</h2>
+              <p className="mt-1 text-xs text-[#5E6F73]">Active records in your permitted transportation directory.</p>
+            </div>
+            <CalendarClock className="h-5 w-5 text-[#405B68]" aria-hidden />
+          </div>
           <div className="mt-4" aria-live="polite" aria-busy={summary.kind === 'loading'}>
             {summary.kind === 'loading' && (
-              <DataState
-                title="Loading transportation summary"
-                message="Checking your active transportation records."
-              />
+              <DataState title="Loading transportation summary" message="Checking your active transportation records." />
             )}
             {summary.kind === 'error' && (
               <div data-testid="transportation-summary-error">
-                <DataState
-                  title="Transportation summary unavailable"
-                  message="Try loading this section again."
-                />
-                <Button type="button" variant="secondary" onClick={() => void loadSummary()}>
-                  Retry summary
-                </Button>
+                <DataState title="Transportation summary unavailable" message="Active record counts could not be verified." />
+                <Button variant="secondary" onClick={() => void loadDashboard()}>Retry overview</Button>
               </div>
             )}
             {summary.kind === 'ready' && (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {summaryItems.map((item) => (
-                  <Link
-                    key={item.key}
-                    to={item.to}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm hover:border-navy-200 hover:bg-navy-50/50 focus:outline-none focus:ring-2 focus:ring-navy-500 focus:ring-offset-2"
-                  >
-                    <span className="font-semibold text-navy-900">{item.label}</span>
-                    <span className="shrink-0 whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-sm font-semibold text-slate-700">
-                      {summary.snapshot[item.key]} active
-                    </span>
-                  </Link>
-                ))}
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {summaryItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.key}
+                      to={item.to}
+                      className={'group flex min-h-32 flex-col justify-between rounded-xl border border-[#E1E8EC] bg-[#F8FAFB] p-4 transition-colors hover:border-[#99ABB3] hover:bg-[#EAF1F4] ' + linkFocus}
+                    >
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EAF1F4] text-[#294555]"><Icon className="h-4 w-4" aria-hidden /></span>
+                        <ArrowRight className="h-4 w-4 text-[#405B68] transition-transform group-hover:translate-x-0.5" aria-hidden />
+                      </span>
+                      <span className="mt-3">
+                        <span className="block text-2xl font-bold text-[#172B3A]">{summary.snapshot[item.key].toLocaleString()}</span>
+                        <span className="block text-sm font-medium text-[#405B68]">{item.label}</span>
+                      </span>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
+        </section>
+
+        <section className="space-y-3" aria-labelledby="trip-search-section-heading">
+          <div>
+            <h2 id="trip-search-section-heading" className="text-lg font-bold text-[#172B3A]">Find a trip</h2>
+            <p className="text-xs text-[#5E6F73]">Search trip history and operating services with the existing filters.</p>
+          </div>
+          <AdminTripSearchSection />
         </section>
       </div>
     </DashboardLayout>
