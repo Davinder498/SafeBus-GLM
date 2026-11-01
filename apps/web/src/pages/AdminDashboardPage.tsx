@@ -58,14 +58,15 @@ type OperationsState =
     };
 
 function isGpsAttention(trip: AdminTripOperation) {
-  return trip.locationStatus === 'stale'
-    || trip.locationStatus === 'missing'
-    || trip.locationStatus === 'invalid';
+  // Even an unexpected not_applicable value on an active trip must not be
+  // interpreted as a verified GPS fix.
+  return trip.locationStatus !== 'live';
 }
 
 function gpsIssueLabel(trip: AdminTripOperation) {
   if (trip.locationStatus === 'stale') return 'GPS update overdue';
   if (trip.locationStatus === 'missing') return 'No GPS location received';
+  if (trip.locationStatus === 'not_applicable') return 'Trip location not verified';
   return 'GPS location unavailable';
 }
 
