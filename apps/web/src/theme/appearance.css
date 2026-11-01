@@ -276,6 +276,14 @@ html:not([data-theme='dark']) [data-ui='dashboard-shell'][data-portal='admin'] {
   color: #172B3A;
 }
 
+/* Tailwind's custom theme utilities can resolve arbitrary background utilities
+ * to a surface token. Give both admin sidebars an explicit, contrast-safe navy
+ * background in light and dark appearance modes. */
+[data-ui='dashboard-shell'][data-portal='admin'] aside.sb-sidebar {
+  background-color: #172B3A;
+  color: #FFFFFF;
+}
+
 /* Keep dashboard links and cards legible without forcing a light content theme
  * when a user has explicitly selected dark mode. */
 [data-ui='dashboard-shell'][data-portal='admin'] [data-ui='app-bar'] [data-testid='safebus-wordmark'] {
