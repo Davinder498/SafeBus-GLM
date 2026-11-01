@@ -71,7 +71,9 @@ export function getDashboardPath(
   if (role === 'platform_super_admin') return '/admin/tenants';
   if (adminRoles.includes(role as (typeof adminRoles)[number])) return '/admin';
   if (role === 'driver') return '/driver';
-  return '/parent';
+  if (role === 'guardian') return '/parent';
+  // A historical school_admin account must never fall through to any portal.
+  throw new Error('This individual-school administrator role has been retired.');
 }
 
 export function isRoleAllowedOnSurface(role: ProfileRole, surface: AppSurface): boolean {
