@@ -209,3 +209,23 @@ test('Point 8 governance keeps external and operating evidence open', async () =
   assert.match(acceptance, /Pending execution/);
   assert.match(milestone, /Commercial Readiness Remediation 12/);
 });
+
+test('pending route overlay authorization repair keeps the RPC scoped without broadening grants', async () => {
+  const source = await read(
+    'supabase/migrations/pending/20261101160000_admin_live_route_overlay_school_scope.sql',
+  );
+  assert.match(source, /create or replace function public\.get_admin_live_route_overlays\(\)/i);
+  assert.match(source, /security definer/i);
+  assert.match(source, /auth\.uid\(\) is not null/i);
+  assert.match(source, /dt\.tenant_id\s*=\s*safebus_private\.current_tenant_id\(\)/i);
+  assert.match(source, /r\.tenant_id\s*=\s*safebus_private\.current_tenant_id\(\)/i);
+  // Ensure the guard applies to the joined route before GROUP BY aggregates
+  // route stops and geometry. The source function currently lacks this check.
+  const scope = source.slice(source.indexOf(') shape on true'));
+  assert.match(scope, /where[\s\S]*current_user_role\(\)\s*<>\s*'school_admin'[\s\S]*current_school_id\(\) is not null[\s\S]*r\.school_id\s*=\s*safebus_private\.current_school_id\(\)[\s\S]*group by/i);
+  assert.match(source, /revoke all on function public\.get_admin_live_route_overlays\(\)[\s\S]*from public, anon/i);
+  assert.match(source, /grant execute on function public\.get_admin_live_route_overlays\(\)[\s\S]*to authenticated/i);
+  assert.doesNotMatch(source, /drop function public\.get_admin_live_route_overlays/i);
+  // This is a static CI contract; the isolated multi-school integration and
+  // MFA/role fixture remains an explicit approval gate before deployment.
+});
