@@ -86,7 +86,7 @@ begin
 
   return to_jsonb(v_bus) || jsonb_build_object('fleet_number', v_fleet_number);
 end;
-$function$
+$function$;
 
 -- Audited live definition: public.admin_update_bus
 CREATE OR REPLACE FUNCTION public.admin_update_bus(p_bus_id uuid, p_school_id uuid, p_fleet_number text, p_license_plate text, p_capacity integer, p_status text)
@@ -162,7 +162,7 @@ begin
 
   return to_jsonb(v_bus) || jsonb_build_object('fleet_number', v_fleet_number);
 end;
-$function$
+$function$;
 
 -- Audited live definition: safebus_private.require_announcement_admin
 CREATE OR REPLACE FUNCTION safebus_private.require_announcement_admin()
@@ -186,4 +186,4 @@ begin
   end if;
   return v_profile;
 end;
-$function$
+$function$;
