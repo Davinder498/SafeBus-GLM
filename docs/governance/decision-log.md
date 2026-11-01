@@ -544,3 +544,16 @@ When a Phase 0 document is signed off, add an entry here:
 - Signatories: <names/roles>
 - Status: Accepted
 ```
+
+### DL-025 — Retire individual-school administrators; district is the sole transportation tenant
+
+- Date: 2026-11-01
+- Decision: SafeBus transportation is managed by a school district/school authority tenant. Only `tenant_admin` and `transportation_admin` operate district administration. Individual schools have no SafeBus administrative role or account; optional school records are reference metadata, not permission boundaries.
+- Context: The product owner explicitly corrected the unsupported `school_admin` assumption and requested immediate implementation. Prior role inventory and policy design had incorrectly treated individual schools as tenants' independent transportation administrators.
+- Options considered: Retain individual school administrators with scoped permissions vs. eliminate this unsupported application role without changing the underlying district transportation model.
+- Rationale: All buses, drivers, routes and operations are managed by districts, including routes that serve multiple schools or have no school assignment. Keeping an unused role increases attack surface and creates misleading administrative UI.
+- Consequences: Remove the role from supported web logins, route permissions, school admin invitations, and role-change UI. Prepare a protected forward DB correction to suspend any legacy school admin accounts, revoke outstanding school admin invitations, deny new ones (including direct RPC), and return no active role through private authorization. Do not auto-promote legacy accounts, delete historical enum values, or change school associations.
+- Owner: Product Owner
+- Status: Accepted for development; protected production deployment and role-isolation evidence are separately gated.
+- Supersedes: Earlier individual-school administrative permissions in the Phase 0 role matrix; historical migrations remain immutable.
+
