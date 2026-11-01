@@ -8,7 +8,11 @@ for (const path of ['/admin', '/admin/live-trips', '/admin/trips'])
     const table = page.getByTestId('admin-trips-table');
     await expect(table.locator('tbody tr')).toHaveCount(25);
     await expect(table.locator('tbody tr').first()).toContainText('Route 1');
-    await expect(page.getByTestId('admin-live-fleet-map')).toHaveCount(0);
+    if (path === '/admin/live-trips') {
+      await expect(page.getByTestId('admin-fleet-operations')).toBeVisible();
+    } else {
+      await expect(page.getByTestId('admin-fleet-operations')).toHaveCount(0);
+    }
     await expect(page.getByTestId('admin-ongoing-trips')).toHaveCount(0);
     expect(controls.requests[0]).toMatchObject({
       p_from_date: null,
