@@ -196,7 +196,10 @@ test('bus actions share the desktop row and fit on phones with simplified brandi
     ]);
     expect(boxes.every((box) => box && Math.abs(box.y - boxes[0]!.y) < 2)).toBe(true);
     await expect(page.locator('header').getByText('Test Admin', { exact: true })).toBeVisible();
-    await expect(page.locator('header').getByTestId('safebus-wordmark')).toBeVisible();
+    // The mockup moves the desktop brand to the navy sidebar.
+    await expect(
+      page.locator('[data-portal="admin"] aside.sb-sidebar').first().getByText('SafeBus', { exact: true }),
+    ).toBeVisible();
   }
   await expect(page.locator('header').getByText('Admin portal', { exact: true })).toHaveCount(0);
   await expect(
