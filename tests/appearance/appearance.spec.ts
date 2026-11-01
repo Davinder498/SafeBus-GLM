@@ -147,7 +147,7 @@ test('cross-tab changes preserve fixed public web appearance and the saved dashb
       fullPage: true,
     });
     // Navigate out of the actual dashboard without reloading React, then back.
-    await page.locator('[data-ui=app-bar] a[href="/"]').click();
+    await page.getByRole('link', { name: 'SafeBus home' }).click();
     await expect(page.locator('[data-ui=public-shell]')).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
     expect(await page.evaluate(() => localStorage.getItem('safebus.theme'))).toBe('dark');
