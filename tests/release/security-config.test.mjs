@@ -601,3 +601,38 @@ test('only school-district administrative roles can be invited or access the adm
   assert.doesNotMatch(migration, /set role\s*=\s*'tenant_admin'/i);
   assert.doesNotMatch(migration, /drop type .*user_role/i);
 });
+
+test('privileged bus and announcement RPC corrections derive district-only authority', async () => {
+  const sql = await read('supabase/migrations/pending/20261101180000_definer_district_auth_hardening.sql');
+  assert.match(sql, /District-only authorization baseline required/);
+  const snippets = [
+    ['admin_create_bus', 'admin_update_bus'],
+    ['admin_update_bus', 'require_announcement_admin'],
+    ['require_announcement_admin', null],
+  ].map(([start, end]) => {
+    const first = sql.indexOf('-- Audited live definition: ' + (start === 'require_announcement_admin' ? 'safebus_private.' : 'public.') + start);
+    assert.ok(first > 0, 'Missing forward function definition: ' + start);
+    const next = end ? sql.indexOf('-- Audited live definition: ' + (end === 'require_announcement_admin' ? 'safebus_private.' : 'public.') + end) : sql.length;
+    assert.ok(next > first, 'Definition order changed: ' + start);
+    return sql.slice(first, next);
+  });
+  for (const snippet of snippets) {
+    assert.match(snippet, /SECURITY DEFINER/i);
+    assert.match(snippet, /SET search_path TO/i);
+    assert.doesNotMatch(snippet, /v_caller\.role\s*=\s*'school_admin'/);
+    assert.doesNotMatch(snippet, /v_profile\.role\s*=\s*'school_admin'/);
+    assert.doesNotMatch(snippet, /'tenant_admin'\s*,\s*'transportation_admin'\s*,\s*'school_admin'/);
+  }
+  for (const snippet of snippets.slice(0, 2)) {
+    assert.match(snippet, /not coalesce\(safebus_private\.current_user_role\(\) in \('tenant_admin', 'transportation_admin'\), false\)/);
+    assert.match(snippet, /v_caller\.tenant_id/);
+    assert.match(snippet, /where id = auth\.uid\(\) and status = 'active'/);
+    assert.match(snippet, /safebus_private\.write_audit_event\(/);
+  }
+  const announcement = snippets[2];
+  assert.match(announcement, /p\.role in \('tenant_admin', 'transportation_admin'\)/);
+  assert.match(announcement, /public\.is_current_user_session_active\(\)/);
+  assert.match(announcement, /safebus_private\.enforce_mfa_if_required\(\)/);
+  assert.doesNotMatch(sql, /drop function/i);
+  // SQL is pending-only. This CI check is not a multi-role runtime RLS proof.
+});
