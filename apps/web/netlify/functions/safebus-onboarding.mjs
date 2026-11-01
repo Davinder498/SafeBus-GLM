@@ -744,23 +744,11 @@ async function inviteAdministrator(event, body) {
   if (fullName.length > 200 || email.length > 320 || !EMAIL_PATTERN.test(email)) {
     return json(400, { error: 'Enter valid administrator details.' });
   }
-  if (!['tenant_admin', 'school_admin', 'transportation_admin'].includes(role)) {
+  if (!['tenant_admin', 'transportation_admin'].includes(role)) {
     return json(400, { error: 'Only administrative roles are supported.' });
   }
-  if (role === 'school_admin' && !schoolId) {
-    return json(400, { error: 'A school assignment is required for a school administrator.' });
-  }
-  if (role === 'school_admin') {
-    const { data: school, error: schoolError } = await ctx.admin
-      .from('schools')
-      .select('id')
-      .eq('id', schoolId)
-      .eq('tenant_id', ctx.caller.tenant_id)
-      .eq('status', 'active')
-      .maybeSingle();
-    if (schoolError || !school) {
-      return json(400, { error: 'Select an active school in your school authority.' });
-    }
+  if (schoolId) {
+    return json(400, { error: 'District administrator invitations cannot be restricted to an individual school.' });
   }
 
   if (!(await requireInvitationRateLimit(ctx))) {
