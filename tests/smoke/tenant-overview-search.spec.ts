@@ -17,6 +17,35 @@ test('overview retains seven summary destinations with independent errors', asyn
   await expect(page.getByTestId('transportation-summary').getByRole('link')).toHaveCount(7);
 });
 
+
+test('overview pulse uses authorized current-day trips and labels bounded GPS attention', async ({ page }) => {
+  const controls = await installTripOperationsMock(page);
+  controls.rows[0] = {
+    ...controls.rows[0],
+    service_date: '2026-10-28',
+    location_status: 'stale',
+  };
+  controls.rows[1] = { ...controls.rows[1], service_date: '2026-10-28' };
+
+  await page.goto('/admin');
+  const pulse = page.getByTestId('admin-operations-pulse');
+  await expect(pulse.getByTestId('admin-operations-count')).toHaveText(['1', '1', '1']);
+  await expect(pulse).toContainText('Among loaded active trips (up to 25)');
+  await expect(page.getByTestId('admin-operational-attention')).toContainText('GPS update overdue');
+  await expect(page.getByTestId('admin-operational-attention')).toContainText('Trip paused');
+  await expect(page.getByTestId('transportation-summary').getByRole('link')).toHaveCount(7);
+});
+
+test('overview does not represent failed trip reads as zero or live fleet status', async ({ page }) => {
+  const controls = await installTripOperationsMock(page);
+  controls.tripError = true;
+  await page.goto('/admin');
+  const pulse = page.getByTestId('admin-operations-pulse');
+  await expect(pulse).toContainText("Today's operations unavailable");
+  await expect(pulse.getByTestId('admin-operations-count')).toHaveCount(0);
+  await expect(page.getByTestId('transportation-summary').getByRole('link')).toHaveCount(7);
+});
+
 test('polling/focus refresh and failed background reads retain clearly unverified results', async ({
   page,
 }) => {

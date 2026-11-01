@@ -30,7 +30,12 @@ test.describe('Commercial WCAG 2.2 AA gate', () => {
     await expect(
       page.getByRole('heading', { name: 'Transportation overview', level: 1 }),
     ).toBeVisible();
+    // Approved admin treatment: white header with a contrasting navy sidebar.
     await expect(page.locator('[data-ui="app-bar"]')).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+    await expect(page.locator('[data-portal="admin"] aside.sb-sidebar').first()).toHaveCSS(
       'background-color',
       'rgb(23, 43, 58)',
     );

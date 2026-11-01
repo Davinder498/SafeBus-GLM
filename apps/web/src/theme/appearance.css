@@ -259,3 +259,33 @@
     padding-left: 0.5rem;
   }
 }
+
+/* SafeBus tenant-admin shell: approved navy sidebar + neutral, light header.
+ * Scoped to the admin portal; guardian and driver themes remain unchanged. */
+html:not([data-theme='dark']) [data-ui='dashboard-shell'][data-portal='admin'] {
+  --color-canvas: #F6F8FA;
+  --color-raised: #F8FAFB;
+  --color-surface-subtle: #EAF1F4;
+  --color-border: #DCE5EA;
+}
+
+[data-ui='dashboard-shell'][data-portal='admin'] [data-ui='app-bar'] {
+  --color-wordmark: #172B3A;
+  background-color: #FFFFFF;
+  border-color: #DCE5EA;
+  color: #172B3A;
+}
+
+/* Tailwind's custom theme utilities can resolve arbitrary background utilities
+ * to a surface token. Give both admin sidebars an explicit, contrast-safe navy
+ * background in light and dark appearance modes. */
+[data-ui='dashboard-shell'][data-portal='admin'] aside.sb-sidebar {
+  background-color: #172B3A;
+  color: #FFFFFF;
+}
+
+/* Keep dashboard links and cards legible without forcing a light content theme
+ * when a user has explicitly selected dark mode. */
+[data-ui='dashboard-shell'][data-portal='admin'] [data-ui='app-bar'] [data-testid='safebus-wordmark'] {
+  color: #172B3A;
+}

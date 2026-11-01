@@ -55,8 +55,16 @@ test('the settings toggle has only Light and Dark, persists, and ignores device 
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   const appBar = page.locator('[data-ui=app-bar]');
   await expect(appBar.getByRole('switch', { name: 'Dark mode' })).toHaveCount(0);
-  await expect(appBar).toHaveCSS('background-color', 'rgb(23, 43, 58)');
-  await expect(appBar.getByTestId('safebus-wordmark')).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await expect(appBar).toHaveCSS('background-color', mobile ? 'rgb(23, 43, 58)' : 'rgb(255, 255, 255)');
+  await expect(appBar.getByTestId('safebus-wordmark')).toHaveCSS(
+    'color',
+    mobile ? 'rgb(255, 255, 255)' : 'rgb(23, 43, 58)',
+  );
+  if (!mobile) {
+    await expect(page.locator('[data-portal="admin"] aside.sb-sidebar').first()).toHaveCSS(
+      'background-color', 'rgb(23, 43, 58)',
+    );
+  }
   const toggle = page
     .locator('[data-ui=appearance-settings]')
     .getByRole('switch', { name: 'Dark mode' });
@@ -66,7 +74,7 @@ test('the settings toggle has only Light and Dark, persists, and ignores device 
   await page.keyboard.press('Space');
   await expect(toggle).toBeChecked();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(appBar).toHaveCSS('background-color', 'rgb(23, 43, 58)');
+  await expect(appBar).toHaveCSS('background-color', mobile ? 'rgb(23, 43, 58)' : 'rgb(255, 255, 255)');
   await page.reload();
   await expect(toggle).toBeChecked();
   await page.emulateMedia({ colorScheme: 'light' });
@@ -139,7 +147,7 @@ test('cross-tab changes preserve fixed public web appearance and the saved dashb
       fullPage: true,
     });
     // Navigate out of the actual dashboard without reloading React, then back.
-    await page.locator('[data-ui=app-bar] a[href="/"]').click();
+    await page.getByRole('link', { name: 'SafeBus home' }).click();
     await expect(page.locator('[data-ui=public-shell]')).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
     expect(await page.evaluate(() => localStorage.getItem('safebus.theme'))).toBe('dark');
@@ -229,7 +237,7 @@ for (const role of [
     await expect(page.locator('[data-ui=appearance-settings]')).toBeVisible();
     await expect(page.locator('[data-ui=app-bar]')).toHaveCSS(
       'background-color',
-      'rgb(23, 43, 58)',
+      mobile ? 'rgb(23, 43, 58)' : 'rgb(255, 255, 255)',
     );
     await expect(page.locator('[data-ui=appearance-settings]')).toHaveCSS(
       'background-color',
