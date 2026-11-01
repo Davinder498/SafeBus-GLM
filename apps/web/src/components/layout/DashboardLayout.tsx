@@ -306,7 +306,10 @@ function NavListItem({
       }
     >
       {item.icon && (
-        <span className={cn('shrink-0', portal === 'admin' ? (isActive ? 'text-[#F2B84B]' : 'text-[#B9C9D5]') : 'text-slate-400')}>
+        <span className={cn(
+          'shrink-0',
+          portal === 'admin' ? 'text-[#B9C9D5] group-aria-[current=page]:text-[#F2B84B]' : 'text-slate-400',
+        )}>
           {item.icon}
         </span>
       )}
