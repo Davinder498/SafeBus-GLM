@@ -295,13 +295,21 @@ function NavListItem({
       className={({ isActive }: NavLinkRenderProps) =>
         cn(
           'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-          isActive
-            ? 'bg-navy-50 text-navy-700'
-            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+          portal === 'admin'
+            ? isActive
+              ? 'bg-[#294B67] font-semibold text-white ring-1 ring-inset ring-white/10 before:mr-0.5 before:h-5 before:w-1 before:rounded-full before:bg-[#F2B84B]'
+              : 'text-[#D6E0E8] hover:bg-white/10 hover:text-white'
+            : isActive
+              ? 'bg-navy-50 text-navy-700'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
         )
       }
     >
-      {item.icon && <span className="shrink-0 text-slate-400">{item.icon}</span>}
+      {item.icon && (
+        <span className={cn('shrink-0', portal === 'admin' ? (isActive ? 'text-[#F2B84B]' : 'text-[#B9C9D5]') : 'text-slate-400')}>
+          {item.icon}
+        </span>
+      )}
       <span className="truncate">{item.label}</span>
     </NavLink>
   );
@@ -355,7 +363,10 @@ export function DashboardLayout({
     >
       {/* Top header */}
       <header
-        className="sticky top-0 z-40 border-b text-white shadow-[0_1px_0_rgb(23_43_58_/_0.06)]"
+        className={cn(
+          'sticky top-0 z-40 border-b shadow-[0_1px_0_rgb(23_43_58_/_0.06)]',
+          portal === 'admin' ? 'border-[#DCE5EA] bg-white text-[#172B3A]' : 'text-white',
+        )}
         data-ui="app-bar"
       >
         <div
@@ -369,7 +380,10 @@ export function DashboardLayout({
           {!usesBottomTabs && (
             <button
               type="button"
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white hover:bg-white/10 lg:hidden"
+              className={cn(
+                'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg lg:hidden',
+                portal === 'admin' ? 'text-[#172B3A] hover:bg-[#EAF1F4]' : 'text-white hover:bg-white/10',
+              )}
               aria-label="Open navigation"
               onClick={() => setMobileOpen(true)}
             >
@@ -378,9 +392,9 @@ export function DashboardLayout({
           )}
 
           {/* Brand */}
-          <Link to="/" className="flex min-w-0 items-center gap-2.5">
+          <Link to="/" className={cn('min-w-0 items-center gap-2.5', portal === 'admin' ? 'flex lg:hidden' : 'flex')}>
             <span className="flex min-w-0 flex-col leading-tight">
-              <BrandMark className="text-xl" inverse />
+              <BrandMark className="text-xl" inverse={portal !== 'admin'} />
               {portal !== 'admin' && (
                 <span className="hidden text-xs text-white/80 min-[360px]:block">
                   {portalTitles[portal]} portal
@@ -390,7 +404,14 @@ export function DashboardLayout({
             <span className="sr-only"> home</span>
           </Link>
 
-          <div className="flex-1" />
+          {portal === 'admin' && (
+            <div className="hidden min-w-0 flex-1 items-center gap-2 text-sm font-semibold text-[#294555] lg:flex">
+              <Building2 className="h-5 w-5" aria-hidden />
+              <span className="truncate">Transportation administration</span>
+            </div>
+          )}
+          {portal !== 'admin' && <div className="flex-1" />}
+          {portal === 'admin' && <div className="flex-1 lg:hidden" />}
 
           {/* Right side actions */}
           <div className="flex items-center gap-1.5">
@@ -398,7 +419,10 @@ export function DashboardLayout({
               <Link
                 to="/notifications"
                 data-ui="top-notifications"
-                className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white transition-colors hover:bg-white/10"
+                className={cn(
+                  'relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors',
+                  portal === 'admin' ? 'text-[#172B3A] hover:bg-[#EAF1F4]' : 'text-white hover:bg-white/10',
+                )}
                 aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : 'Notifications'}
               >
                 <Bell className="h-5 w-5" />
@@ -412,14 +436,17 @@ export function DashboardLayout({
 
             <DropdownMenu
               trigger={
-                <span className="flex items-center gap-2.5 rounded-lg py-1.5 pl-1.5 pr-2 transition-colors hover:bg-white/10">
+                <span className={cn(
+                  'flex items-center gap-2.5 rounded-lg py-1.5 pl-1.5 pr-2 transition-colors',
+                  portal === 'admin' ? 'hover:bg-[#EAF1F4]' : 'hover:bg-white/10',
+                )}>
                   <Avatar
                     name={displayName}
                     size="sm"
                     tone={usesBottomTabs ? 'native-nav' : 'default'}
                   />
                   <span className="hidden text-left leading-tight sm:block">
-                    <span className="block text-sm font-semibold text-white">{displayName}</span>
+                    <span className={cn('block text-sm font-semibold', portal === 'admin' ? 'text-[#172B3A]' : 'text-white')}>{displayName}</span>
                     {profile && profile.role !== 'tenant_admin' && (
                       <span className="block text-xs capitalize text-white/80">
                         {getRoleLabel(profile.role)}
@@ -490,13 +517,22 @@ export function DashboardLayout({
       {/* Body: sidebar + main */}
       <div
         className={cn(
-          'mx-auto flex gap-0 px-0 lg:px-6',
+          'mx-auto flex gap-0 px-0',
           portal === 'admin' ? 'w-full' : 'max-w-[1400px]',
         )}
       >
         {/* Desktop sidebar */}
         {!usesBottomTabs && (
-          <aside className="sb-sidebar sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto bg-[var(--color-surface)] py-6 lg:block">
+          <aside className={cn(
+            'sb-sidebar sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto py-6 lg:block',
+            portal === 'admin' ? 'bg-[#172B3A]' : 'bg-[var(--color-surface)]',
+          )}>
+            {portal === 'admin' && (
+              <Link to="/admin" className="mb-8 flex items-center gap-3 px-6 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2B84B]">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F2B84B] text-[#172B3A]"><Bus className="h-6 w-6" aria-hidden /></span>
+                <span className="text-xl font-extrabold tracking-tight">SafeBus</span>
+              </Link>
+            )}
             <SidebarNav groups={groups} portal={portal} />
           </aside>
         )}
@@ -508,13 +544,19 @@ export function DashboardLayout({
               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
               onClick={() => setMobileOpen(false)}
             />
-            <aside className="sb-sidebar absolute left-0 top-0 h-full w-72 max-w-[85vw] overflow-y-auto bg-[var(--color-surface)] p-4 shadow-popover animate-slide-in-right">
+            <aside className={cn(
+              'sb-sidebar absolute left-0 top-0 h-full w-72 max-w-[85vw] overflow-y-auto p-4 shadow-popover animate-slide-in-right',
+              portal === 'admin' ? 'bg-[#172B3A]' : 'bg-[var(--color-surface)]',
+            )}>
               <div className="mb-4 flex items-center justify-between">
-                <BrandMark className="text-sm" />
+                <BrandMark className={cn('text-sm', portal === 'admin' && 'text-white')} inverse={portal === 'admin'} />
                 <button
                   type="button"
                   onClick={() => setMobileOpen(false)}
-                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
+                  className={cn(
+                    'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg',
+                    portal === 'admin' ? 'text-white hover:bg-white/10' : 'text-slate-500 hover:bg-slate-100',
+                  )}
                   aria-label="Close navigation"
                 >
                   <X className="h-5 w-5" />
@@ -623,7 +665,10 @@ function SidebarNav({
       {groups.map((group, gi) => (
         <div key={gi} className="space-y-1">
           {group.label && (
-            <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-600">
+            <p className={cn(
+                'px-3 pb-1 text-xs font-semibold uppercase tracking-wider',
+                portal === 'admin' ? 'text-[#B9C9D5]' : 'text-slate-600',
+              )}>
               {group.label}
             </p>
           )}
