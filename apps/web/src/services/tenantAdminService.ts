@@ -138,13 +138,12 @@ export async function fetchTenantAdminInvitations(): Promise<TenantAdminInvitati
 
 export async function changeAdminRole(
   profileId: string,
-  newRole: string,
-  schoolId?: string | null,
+  newRole: 'tenant_admin' | 'transportation_admin',
 ) {
   const { data, error } = await client().rpc('tenant_change_admin_role', {
     p_profile_id: profileId,
     p_new_role: newRole,
-    p_school_id: schoolId ?? null,
+    p_school_id: null,
   });
   if (error) throw new Error(error.message);
   return data;
