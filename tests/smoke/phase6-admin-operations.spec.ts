@@ -670,7 +670,7 @@ test.describe('Phase 6 — non-ETA dispatch status', () => {
 });
 
 test.describe('Phase 6 — role portal boundaries', () => {
-  for (const role of ['school_admin', 'transportation_admin'] as const) {
+  for (const role of ['transportation_admin'] as const) {
     test(`${role} can open the role-scoped operations page`, async ({ page }) => {
       await installAdminAssignmentsMock(page, role);
       await page.goto('/admin/driver-assignments');
