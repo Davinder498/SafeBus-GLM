@@ -457,6 +457,13 @@ test.describe('Admin student workspace', () => {
       await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
     }
 
+    const review = page.getByTestId('student-workspace-review');
+    await expect(review).toContainText('Transportation record review');
+    await expect(review).toContainText('0 active');
+    await expect(review).toContainText('1 bus-route group');
+    await expect(review.locator('a[href="#student-guardians"]')).toBeVisible();
+    await expect(review.locator('a[href="#student-transportation"]')).toBeVisible();
+
     const details = page.getByTestId('student-details-section');
     await expect(details).toContainText('Prairie School');
     await expect(details).not.toContainText('Bus 42');
