@@ -283,7 +283,7 @@ export function RouteSetupPanel({
               <h3 className="font-bold text-navy-900">Attached buses</h3>
               <p className="text-sm text-slate-600">Choose an existing bus, or register a new bus and return here.</p>
             </div>
-            <Link to={addBusHref} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-raised)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]">
+            <Link to={addBusHref} aria-label="Add new bus" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-raised)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]">
               + Add new bus
             </Link>
           </div>
@@ -366,7 +366,7 @@ export function RouteSetupPanel({
           )}
           {services.map((service) => (
             <div key={service.id} className="space-y-2">
-              <Link to={addDriverHref(service.id)} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-raised)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]">
+              <Link to={addDriverHref(service.id)} aria-label={`Add new driver for ${service.trip_name}`} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-raised)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]">
                 + Add new driver for {service.trip_name}
               </Link>
               {returnedDriverId && returnedServiceId === service.id && (
