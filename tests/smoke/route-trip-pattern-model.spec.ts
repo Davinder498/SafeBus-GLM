@@ -333,7 +333,7 @@ test.describe('route corridor and named trips', () => {
   });
 
   test('non-tenant admin cannot see route mutation controls', async ({ page }) => {
-    await mockRoutes(page, 'school_admin');
+    await mockRoutes(page, 'transportation_admin');
     await page.goto('/admin/routes');
     await expect(page.getByRole('heading', { name: 'Route corridors and trips' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Add route' })).toHaveCount(0);
