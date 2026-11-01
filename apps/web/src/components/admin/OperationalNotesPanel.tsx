@@ -39,7 +39,6 @@ export function OperationalNotesPanel({
   const [saving, setSaving] = useState(false);
   const canWrite =
     profile?.role === 'tenant_admin' ||
-    profile?.role === 'school_admin' ||
     profile?.role === 'transportation_admin';
 
   const load = useCallback(async () => {
