@@ -1042,6 +1042,11 @@ async function action(event, body) {
     return json(500, { error: 'Unable to load the invitation.' });
   }
   if (!inv) return json(404, { error: 'Invitation not found.' });
+  // Legacy individual-school invitations can be revoked but never resent
+  // or reissued. No school may activate an administrative account.
+  if (inv.role === 'school_admin' && next !== 'revoke') {
+    return json(403, { error: 'Individual-school administrator accounts are retired. Revoke this invitation.' });
+  }
   if (ctx.caller.role !== 'platform_super_admin' && inv.tenant_id !== ctx.caller.tenant_id) {
     return json(403, { error: 'Invitation is outside your school authority.' });
   }
