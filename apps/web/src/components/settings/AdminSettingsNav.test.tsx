@@ -36,11 +36,16 @@ async function renderSettingsNav(path: string, role: ProfileRole) {
 
 describe('AdminSettingsNav', () => {
   it('keeps tenant-owned support and billing hidden from delegated administrators', async () => {
-    const container = await renderSettingsNav('/admin/settings', 'school_admin');
+    const container = await renderSettingsNav('/admin/settings', 'transportation_admin');
 
     expect(Array.from(container.querySelectorAll('a')).map((link) => link.textContent)).toEqual([
       'School authority',
     ]);
+  });
+
+  it('denies all administrator settings navigation for retired school admins', async () => {
+    const container = await renderSettingsNav('/admin/settings', 'school_admin');
+    expect(container.querySelectorAll('a')).toHaveLength(0);
   });
 
   it('shows billing as a tenant-admin settings section and marks it active', async () => {
