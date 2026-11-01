@@ -40,7 +40,7 @@ begin
 
   if v_caller.id is null
     or v_caller.tenant_id is null
-    or safebus_private.current_user_role() not in ('tenant_admin', 'transportation_admin') then
+    or not coalesce(safebus_private.current_user_role() in ('tenant_admin', 'transportation_admin'), false) then
     raise exception 'An active tenant bus administrator is required.' using errcode = '42501';
   end if;
 
@@ -107,7 +107,7 @@ begin
 
   if v_caller.id is null
     or v_caller.tenant_id is null
-    or safebus_private.current_user_role() not in ('tenant_admin', 'transportation_admin') then
+    or not coalesce(safebus_private.current_user_role() in ('tenant_admin', 'transportation_admin'), false) then
     raise exception 'An active tenant bus administrator is required.' using errcode = '42501';
   end if;
 
