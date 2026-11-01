@@ -23,6 +23,7 @@ export function RouteBusAssignmentForm({
   buses,
   tripPatterns,
   existingAssignments = [],
+  initialBusId,
   onSubmit,
   onCancel,
 }: {
@@ -30,6 +31,8 @@ export function RouteBusAssignmentForm({
   buses: Bus[];
   tripPatterns: RouteTripPattern[];
   existingAssignments?: BusRouteAssignment[];
+  /** The newly created bus is suggested only; the admin must still save. */
+  initialBusId?: string;
   onSubmit: (input: SetBusRouteServiceInput) => Promise<void>;
   onCancel: () => void;
 }) {
@@ -49,7 +52,7 @@ export function RouteBusAssignmentForm({
           ?.direction ?? 'both')
       : 'both',
   );
-  const [busId, setBusId] = useState(existingAssignments[0]?.bus_id ?? '');
+  const [busId, setBusId] = useState(existingAssignments[0]?.bus_id ?? initialBusId ?? '');
   const [effectiveFrom, setEffectiveFrom] = useState(
     existingAssignments[0]?.effective_from ?? new Date().toISOString().slice(0, 10),
   );
