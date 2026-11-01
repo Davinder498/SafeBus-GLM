@@ -63,9 +63,10 @@ function needsAttention(trip: AdminLiveTrip) {
   return trip.locationStatus !== 'live' || trip.issueLabel !== 'OK';
 }
 
-/** Only render for tenant_admin or transportation_admin. The legacy fleet RPC
- * is not school-scoped, so school administrators must not mount this component.
- * This UI gate is not a substitute for server-side RPC authorization. */
+/** Enable for tenant_admin and transportation_admin only while the broader
+ * spatial RPC surface is under review. The deployed base fleet RPC already
+ * applies school scope; this conservative UI gate is not an authorization rule.
+ * Keep school-level fleet-map rollout separate from route-overlay hardening. */
 export function AdminFleetOperationsSection() {
   const tileConfig = useMapTileConfig();
   const [state, setState] = useState<FleetState>({ kind: 'loading' });
