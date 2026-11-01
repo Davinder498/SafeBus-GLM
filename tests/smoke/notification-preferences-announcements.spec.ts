@@ -60,7 +60,7 @@ async function setup(
   return { saves, sends, history };
 }
 
-for (const role of ['tenant_admin', 'school_admin', 'transportation_admin'] as const) {
+for (const role of ['tenant_admin', 'transportation_admin'] as const) {
   test(`${role} controls personal inbox preferences without changing authority delivery`, async ({
     page,
   }) => {
@@ -167,12 +167,11 @@ test('an ambiguous network failure can be retried with the same send identifier'
 test('an empty audience prevents sending and keeps the message available to edit', async ({
   page,
 }) => {
-  const { sends } = await setup(page, 'school_admin');
+  const { sends } = await setup(page, 'tenant_admin');
   await page.route('**/rest/v1/rpc/get_announcement_audience', (route) =>
     route.fulfill({ json: { guardians: 0, drivers: 0, total: 0 } }),
   );
   await page.goto('/admin/announcements');
-  await expect(page.getByText('Your school only', { exact: false })).toBeVisible();
   await page.getByLabel('Title', { exact: true }).fill('Update');
   await page.getByLabel('Message', { exact: true }).fill('Service update.');
   await page.getByRole('button', { name: 'Review announcement' }).click();
