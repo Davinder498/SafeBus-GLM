@@ -297,7 +297,7 @@ function NavListItem({
           'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
           portal === 'admin'
             ? isActive
-              ? 'bg-[#294B67] font-semibold text-white ring-1 ring-inset ring-white/10 before:mr-0.5 before:h-5 before:w-1 before:rounded-full before:bg-[#F2B84B]'
+              ? 'bg-[#294B67] font-semibold text-white ring-1 ring-inset ring-white/10 before:mr-0.5 before:block before:h-5 before:w-1 before:shrink-0 before:rounded-full before:bg-[#F2B84B] before:content-['']'
               : 'text-[#D6E0E8] hover:bg-white/10 hover:text-white'
             : isActive
               ? 'bg-navy-50 text-navy-700'
@@ -451,7 +451,7 @@ export function DashboardLayout({
                   <span className="hidden text-left leading-tight sm:block">
                     <span className={cn('block text-sm font-semibold', portal === 'admin' ? 'text-[#172B3A]' : 'text-white')}>{displayName}</span>
                     {profile && profile.role !== 'tenant_admin' && (
-                      <span className="block text-xs capitalize text-white/80">
+                      <span className={cn('block text-xs capitalize', portal === 'admin' ? 'text-[#5E6F73]' : 'text-white/80')}>
                         {getRoleLabel(profile.role)}
                       </span>
                     )}
@@ -521,7 +521,7 @@ export function DashboardLayout({
       <div
         className={cn(
           'mx-auto flex gap-0 px-0',
-          portal === 'admin' ? 'w-full' : 'max-w-[1400px]',
+          portal === 'admin' ? 'w-full' : 'max-w-[1400px] lg:px-6',
         )}
       >
         {/* Desktop sidebar */}
