@@ -21,6 +21,7 @@ import {
 } from '@/services/transportationStructureService';
 import type { Driver } from '@/types/transportation';
 import { safeBusWorkspaceReturn } from '@/utils/busWorkspace';
+import { safeRouteWorkspaceReturn } from '@/utils/routeWorkspaceReturn';
 
 type DriverRow = Driver & {
   first_name: string | null;
@@ -103,11 +104,12 @@ export function AdminDriversPage() {
         'Driver invitation sent. The email link lets them activate their account securely.',
       );
       await list.reload();
-      const returnTo = safeBusWorkspaceReturn(searchParams.get('returnTo'), window.location.origin);
+      const returnTo = safeBusWorkspaceReturn(searchParams.get('returnTo'), window.location.origin)
+        ?? safeRouteWorkspaceReturn(searchParams.get('returnTo'), window.location.origin);
       if (returnTo && result.driverId) {
         const url = new URL(returnTo, window.location.origin);
         url.searchParams.set('newDriverId', result.driverId);
-        navigate(`${url.pathname}${url.search}`, { replace: true });
+        navigate(`${url.pathname}${url.search}${url.hash}`, { replace: true });
       }
     } catch (error) {
       if (

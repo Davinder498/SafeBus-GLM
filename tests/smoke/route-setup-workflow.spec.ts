@@ -242,6 +242,32 @@ async function assignBus(page: Page) {
   await expect(page.getByRole('form', { name: 'Driver for Outbound bus One' })).toBeVisible();
 }
 
+test('route setup offers safe creation returns without assigning records automatically', async ({ page }) => {
+  const writes = await fixture(page);
+  await open(page);
+  const section = page.locator('#route-service');
+  await expect(page.getByTestId('route-readiness-overview')).toBeVisible();
+  const addBus = section.getByRole('link', { name: 'Add new bus', exact: true });
+  const busUrl = new URL((await addBus.getAttribute('href'))!, 'https://safebus.example');
+  expect(busUrl.pathname).toBe('/admin/buses/new');
+  const busReturn = new URL(busUrl.searchParams.get('returnTo')!);
+  expect(busReturn.pathname).toBe(`/admin/routes/${ADMIN_IDS.route}`);
+  expect(busReturn.hash).toBe('#route-service');
+  expect(writes).toHaveLength(0);
+
+  await assignBus(page);
+  const addDriver = section.getByRole('link', { name: 'Add new driver for Outbound' });
+  await expect(addDriver).toBeVisible();
+  const inviteUrl = new URL((await addDriver.getAttribute('href'))!, 'https://safebus.example');
+  expect(inviteUrl.pathname).toBe('/admin/drivers');
+  expect(inviteUrl.searchParams.get('invite')).toBe('1');
+  const driverReturn = new URL(inviteUrl.searchParams.get('returnTo')!);
+  expect(driverReturn.pathname).toBe(`/admin/routes/${ADMIN_IDS.route}`);
+  expect(driverReturn.searchParams.get('service')).toBe('service-forward');
+  expect(driverReturn.hash).toBe('#route-service');
+  expect(writes.map((write) => write.name)).toEqual(['admin_set_bus_route_service']);
+});
+
 test('sets up route details, bus, driver and student stops without leaving the route', async ({
   page,
 }, info) => {

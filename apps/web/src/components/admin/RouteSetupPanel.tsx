@@ -1,5 +1,7 @@
 import { seatLabel } from '@/utils/studentSeat';
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router';
+import { BusFront, CheckCircle2, CircleAlert, MapPinned, UserRound, UsersRound } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -55,6 +57,9 @@ export function RouteSetupPanel({
   assignments,
   tileConfig,
   onSaved,
+  returnedBusId,
+  returnedDriverId,
+  returnedServiceId,
 }: {
   route: Route;
   stops: RouteStop[];
@@ -68,6 +73,9 @@ export function RouteSetupPanel({
   assignments: DriverRouteAssignment[];
   tileConfig: MapTileConfig;
   onSaved(): void;
+  returnedBusId?: string;
+  returnedDriverId?: string;
+  returnedServiceId?: string;
 }) {
   const { profile } = useAuth();
   const [ending, setEnding] = useState<{ label: string; save(): Promise<void> } | null>(null);
@@ -161,10 +169,60 @@ export function RouteSetupPanel({
     onSaved();
   }
   const eligible = route.status === 'active' && route.definition_status === 'ready';
+  const hasDriverPlan = (serviceId: string) => assignments.some(
+    (assignment) => assignment.bus_route_assignment_id === serviceId && assignment.status === 'active',
+  );
+  const driversPlanned = services.filter((service) => hasDriverPlan(service.id)).length;
+  const routeReturn = `${window.location.origin}/admin/routes/${route.id}#route-service`;
+  const addBusHref = `/admin/buses/new?returnTo=${encodeURIComponent(routeReturn)}`;
+  const addDriverHref = (serviceId: string) =>
+    `/admin/drivers?invite=1&returnTo=${encodeURIComponent(
+      `${window.location.origin}/admin/routes/${route.id}?service=${encodeURIComponent(serviceId)}#route-service`,
+    )}`;
+  useEffect(() => {
+    if (returnedBusId && eligible) {
+      setEditingBus(null);
+      setAddingBus(true);
+    }
+    if (returnedBusId || returnedDriverId) {
+      const section = document.getElementById('route-service');
+      if (section instanceof HTMLDetailsElement) section.open = true;
+      section?.scrollIntoView({ block: 'start' });
+    }
+  }, [returnedBusId, returnedDriverId, eligible]);
   return (
     <div id="setup" data-testid="route-setup" className="space-y-6 scroll-mt-24">
       <Card className="p-5">
-        <h2 className="text-xl font-bold text-navy-900">Route setup</h2>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-navy-900">Route setup</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Plan your service in one workspace. Review each assignment before saving.
+            </p>
+          </div>
+          <span className="rounded-full bg-[#FFF4D8] px-3 py-1 text-xs font-bold text-[#754E17]">
+            Transportation workspace
+          </span>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" data-testid="route-readiness-overview">
+          {[
+            { name: 'Route and stops', complete: eligible, hint: eligible ? 'Ready for service' : 'Complete route details', icon: MapPinned },
+            { name: 'Bus services', complete: services.length > 0, hint: `${services.length} saved`, icon: BusFront },
+            { name: 'Driver plans', complete: services.length > 0 && driversPlanned === services.length, hint: `${driversPlanned} of ${services.length} services`, icon: UserRound },
+            { name: 'Student assignments', complete: !rosterLoading && !rosterError && roster.some((r) => r.status === 'active'), hint: rosterLoading || rosterError ? 'Not verified' : `${new Set(roster.filter((r) => r.status === 'active').map((r) => r.student_id)).size} students`, icon: UsersRound },
+          ].map(({ name, complete, hint, icon: Icon }) => (
+            <div key={name} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-raised)] p-3">
+              <div className="flex items-center justify-between gap-2">
+                <Icon className="h-5 w-5 text-[var(--color-text-muted)]" aria-hidden />
+                {complete ? <CheckCircle2 className="h-4 w-4 text-success-700" aria-label="Saved" /> :
+                  <CircleAlert className="h-4 w-4 text-warning-700" aria-label="Needs review" />}
+              </div>
+              <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">{name}</p>
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">{hint}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-slate-600">These are saved-record indicators, not a certification that a trip is ready to operate. Check road path, date coverage and individual service conflicts before dispatch.</p>
 
         <nav
           aria-label="Route setup sections"
@@ -220,7 +278,20 @@ export function RouteSetupPanel({
           </p>
         )}
         <section aria-label="Bus" className="space-y-4 rounded-xl border border-navy-200 p-4">
-          <h3 className="font-bold text-navy-900">Bus</h3>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="font-bold text-navy-900">Attached buses</h3>
+              <p className="text-sm text-slate-600">Choose an existing bus, or register a new bus and return here.</p>
+            </div>
+            <Link to={addBusHref} aria-label="Add new bus" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-raised)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]">
+              + Add new bus
+            </Link>
+          </div>
+          {returnedBusId && eligible && (
+            <p role="status" className="rounded-lg bg-success-50 p-3 text-sm font-semibold text-success-700">
+              New bus loaded. Review its service direction and dates, then select Assign bus to save.
+            </p>
+          )}
           {addingBus || editingBus ? (
             <RouteBusAssignmentForm
               key={editingBus?.id ?? 'new'}
@@ -228,6 +299,7 @@ export function RouteSetupPanel({
               buses={buses}
               tripPatterns={tripPatterns}
               existingAssignments={editingBus ? [editingBus] : []}
+              initialBusId={!editingBus ? returnedBusId : undefined}
               onCancel={() => {
                 setAddingBus(false);
                 setEditingBus(null);
@@ -284,23 +356,38 @@ export function RouteSetupPanel({
           ))}
         </section>
         <section aria-label="Driver" className="space-y-4 rounded-xl border border-navy-200 p-4">
-          <h3 className="font-bold text-navy-900">Driver</h3>
+          <h3 className="font-bold text-navy-900">Assigned drivers</h3>
+          <p className="text-sm text-slate-600">
+            Choose an existing driver for each saved bus service, or invite a new driver.
+            Sending an invitation does not assign the driver or bypass licence and date checks.
+          </p>
           {services.length === 0 && (
             <p className="text-sm text-gray-600">Assign a bus to set up its driver.</p>
           )}
           {services.map((service) => (
-            <RouteDriverSetupForm
+            <div key={service.id} className="space-y-2">
+              <Link to={addDriverHref(service.id)} aria-label={`Add new driver for ${service.trip_name}`} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-raised)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]">
+                + Add new driver for {service.trip_name}
+              </Link>
+              {returnedDriverId && returnedServiceId === service.id && (
+                <p role="status" className="rounded-lg bg-success-50 p-3 text-sm text-success-700">
+                  New driver loaded. Check licence eligibility and service dates, then save the driver plan.
+                </p>
+              )}
+              <RouteDriverSetupForm
               key={service.id}
               service={service}
               drivers={drivers}
               names={names}
               assignments={assignments}
+              initialDriverId={returnedServiceId === service.id ? returnedDriverId : undefined}
               onSaved={onSaved}
             />
+            </div>
           ))}
         </section>
         <section aria-label="Schedule" className="space-y-3 rounded-xl border border-navy-200 p-4">
-          <h3 className="font-bold text-navy-900">Schedule</h3>
+          <h3 className="font-bold text-navy-900">Service schedule</h3>
 
           <Button
             variant="secondary"

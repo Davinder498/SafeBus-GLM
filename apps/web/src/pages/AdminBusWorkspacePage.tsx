@@ -70,6 +70,7 @@ import type {
   UpdateBusInput,
 } from '@/types/transportation';
 import { cn } from '@/utils/cn';
+import { safeRouteWorkspaceReturn } from '@/utils/routeWorkspaceReturn';
 import {
   BusSubscriptionGate,
   useBusSubscriptionAccess,
@@ -131,6 +132,7 @@ export function AdminBusWorkspacePage() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const routeReturn = safeRouteWorkspaceReturn(searchParams.get('returnTo'), window.location.origin);
   const isNew = !busId;
   const capacity = useBusSubscriptionAccess(isNew);
   const requestedTab = searchParams.get('tab') as WorkspaceTab | null;
@@ -246,7 +248,7 @@ export function AdminBusWorkspacePage() {
 
   function backToBuses() {
     if (!confirmDiscard()) return;
-    navigate('/admin/buses');
+    navigate(isNew && routeReturn ? routeReturn : '/admin/buses');
   }
 
   async function saveBus(input: CreateBusInput | UpdateBusInput) {
@@ -260,7 +262,15 @@ export function AdminBusWorkspacePage() {
       } else {
         const created = await createBus(input as CreateBusInput);
         setDetailsDirty(false);
-        navigate(`/admin/buses/${created.id}?tab=routes`, { replace: true });
+        // Creating a bus from a route never assigns it silently. Return to
+        // the route so the admin can review directions and service dates.
+        if (routeReturn) {
+          const url = new URL(routeReturn, window.location.origin);
+          url.searchParams.set('newBusId', created.id);
+          navigate(`${url.pathname}${url.search}${url.hash}`, { replace: true });
+        } else {
+          navigate(`/admin/buses/${created.id}?tab=routes`, { replace: true });
+        }
       }
     } catch (error) {
       setWriteError(error instanceof Error ? error.message : 'Unable to save this bus.');
