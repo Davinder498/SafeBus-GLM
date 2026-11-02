@@ -1,5 +1,6 @@
 import { StatusPill } from '@/components/ui/StatusPill';
 import type { LocationSharingState } from '@/hooks/useDriverLocationSharing';
+import { formatAdminTripTimestamp } from '@/utils/adminTripDates';
 
 export interface DriverLocationStatusProps {
   supported: boolean;
@@ -8,27 +9,17 @@ export interface DriverLocationStatusProps {
 }
 
 function formatTimestamp(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleString(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
+  return formatAdminTripTimestamp(iso);
 }
 
-export function DriverLocationStatus({
-  supported,
-  state,
-  compact = false,
-}: DriverLocationStatusProps) {
-  const tracking = state.kind === 'waiting' || state.kind === 'sharing' || state.kind === 'offline';
+export function DriverLocationStatus({ supported, state }: DriverLocationStatusProps) {
   const errorMessage = state.kind === 'error' || state.kind === 'denied' ? state.message : null;
 
-  let statusMessage = 'Share your live bus location during this trip.';
+  let statusMessage = 'Location collection is off.';
   let statusTone: 'success' | 'warning' | 'neutral' = 'neutral';
   let statusLabel: string | null = null;
   if (state.kind === 'waiting') {
-    statusMessage = 'Waiting for the first location update...';
+    statusMessage = 'Waiting for a successful location update...';
     statusLabel = 'waiting';
   } else if (state.kind === 'sharing') {
     statusMessage =
@@ -39,12 +30,22 @@ export function DriverLocationStatus({
     statusLabel = state.delivery === 'active' ? 'active' : 'delayed';
   } else if (state.kind === 'offline') {
     statusMessage = state.lastUpdateAt
-      ? `Offline. Last successful update ${formatTimestamp(state.lastUpdateAt)}. Tracking will resume automatically.`
+      ? `Offline. Last successful update ${formatTimestamp(state.lastUpdateAt)}. Delivery can retry when the connection returns while tracking remains authorized.`
       : 'Offline. Waiting to send the first location when the connection returns.';
     statusTone = 'warning';
     statusLabel = 'offline';
+  } else if (state.kind === 'recovering') {
+    statusMessage = state.offline
+      ? 'Location collection is off. Queued updates remain on this phone while offline.'
+      : 'Location collection is off. Queued updates remain on this phone.';
+    if (state.lastUpdateAt)
+      statusMessage += ` Last successful update ${formatTimestamp(state.lastUpdateAt)}.`;
+    statusTone = 'warning';
+    statusLabel = state.offline ? 'offline · pending' : 'pending delivery';
   } else if (state.kind === 'denied') {
     statusMessage = 'Location permission denied.';
+  } else if (state.kind === 'error') {
+    statusMessage = 'Location status could not be confirmed.';
   }
 
   if (!supported) {
@@ -75,14 +76,14 @@ export function DriverLocationStatus({
               {errorMessage}
             </p>
           )}
+          {state.kind === 'error' && state.pendingDelivery && (
+            <p className="mt-1 text-sm text-gray-600">
+              Queued location updates remain on this phone.
+            </p>
+          )}
         </div>
         {statusLabel && <StatusPill tone={statusTone}>{statusLabel}</StatusPill>}
       </div>
-      {!compact && !tracking && !errorMessage && (
-        <p className="mt-2 text-sm text-gray-600">
-          Location permission is being requested automatically.
-        </p>
-      )}
     </div>
   );
 }

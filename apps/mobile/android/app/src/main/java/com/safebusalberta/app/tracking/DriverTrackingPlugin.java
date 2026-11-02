@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
 import android.os.Build;
 import android.provider.Settings;
 
@@ -115,11 +117,14 @@ public class DriverTrackingPlugin extends Plugin {
                 call.getString("trackingToken"), call.getString("deviceCredential"),
                 authorizedUntil, true
             );
-            config.save(store);
+            synchronized (TrackingConfig.class) {
+                config.save(store);
+                TrackingStatusStore.begin(store, config);
+            }
             Intent intent = new Intent(getContext(), DriverTrackingService.class)
                 .setAction(DriverTrackingService.ACTION_START_OR_RESUME);
             ContextCompat.startForegroundService(getContext(), intent);
-            call.resolve(statusObject(store));
+            call.resolve(statusObject(store, call.getString("profileId")));
         } catch (Exception exception) {
             call.reject("Native bus tracking could not be started.", exception);
         }
@@ -143,7 +148,7 @@ public class DriverTrackingPlugin extends Plugin {
     @PluginMethod
     public void getStatus(PluginCall call) {
         try {
-            call.resolve(statusObject(new TrackingCryptoStore(getContext())));
+            call.resolve(statusObject(new TrackingCryptoStore(getContext()), call.getString("profileId")));
         } catch (Exception exception) {
             call.reject("Could not read native tracking status.", exception);
         }
@@ -155,10 +160,15 @@ public class DriverTrackingPlugin extends Plugin {
             synchronized (TrackingConfig.class) {
                 TrackingConfig config = TrackingConfig.load(store);
                 if (config == null) {
-                    call.resolve(statusObject(store));
+                    call.resolve(statusObject(store, call.getString("profileId")));
+                    return;
+                }
+                if (collecting && (config.profileId() == null || !config.profileId().equals(call.getString("profileId")))) {
+                    call.reject("Reopen the active bus before resuming tracking.");
                     return;
                 }
                 config.withCollecting(collecting).save(store);
+                if (collecting) TrackingStatusStore.begin(store, config);
                 if (DriverTrackingService.ACTION_STOP_COLLECTION.equals(action)) {
                     store.put("finish_after_flush", "true");
                 } else if (collecting) {
@@ -167,7 +177,7 @@ public class DriverTrackingPlugin extends Plugin {
             }
             Intent intent = new Intent(getContext(), DriverTrackingService.class).setAction(action);
             ContextCompat.startForegroundService(getContext(), intent);
-            call.resolve(statusObject(store));
+            call.resolve(statusObject(store, call.getString("profileId")));
         } catch (Exception exception) {
             call.reject("Could not change native tracking state.", exception);
         }
@@ -183,17 +193,49 @@ public class DriverTrackingPlugin extends Plugin {
         }
     }
 
-    private JSObject statusObject(TrackingCryptoStore store) {
-        TrackingConfig config = TrackingConfig.load(store);
-        EncryptedLocationQueue queue = new EncryptedLocationQueue(getContext(), store);
-        JSObject result = new JSObject();
-        result.put("configured", config != null);
-        result.put("collecting", config != null && config.collecting
-            && config.authorizedUntil > System.currentTimeMillis());
-        result.put("queuedEvents", queue.size());
-        String acceptedAt = store.get("last_accepted_at");
-        if (acceptedAt != null) result.put("lastAcceptedAt", acceptedAt);
-        return result;
+    private JSObject statusObject(TrackingCryptoStore store, String profileId) throws Exception {
+        synchronized (TrackingConfig.class) {
+            TrackingConfig config = TrackingConfig.load(store);
+            JSONObject metadata = TrackingStatusStore.read(store);
+            JSObject result = new JSObject();
+            result.put("statusVersion", 2);
+            result.put("configured", false);
+            result.put("collecting", false);
+            result.put("queuedEvents", 0);
+            ConnectivityManager manager = (ConnectivityManager) getContext().getSystemService(android.content.Context.CONNECTIVITY_SERVICE);
+            NetworkCapabilities network = manager.getNetworkCapabilities(manager.getActiveNetwork());
+            result.put("connected", network != null && network.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED));
+            boolean ownConfig = profileId != null && config != null && profileId.equals(config.profileId());
+            boolean ownIssue = profileId != null && config == null && profileId.equals(metadata.optString("owner"))
+                && metadata.has("issue");
+            if (!ownConfig && !ownIssue) return result;
+            try (EncryptedLocationQueue queue = new EncryptedLocationQueue(getContext(), store)) {
+                Boolean pending = queue.pendingForSession(ownConfig ? config.trackingToken : metadata.optString("session"));
+                // Exact non-empty counts are intentionally unavailable in v2: obtaining
+                // them would decrypt the entire FIFO every ten seconds.
+                result.put("queuedEvents", Boolean.FALSE.equals(pending) ? 0 : JSONObject.NULL);
+                if (pending != null) result.put("pendingDelivery", pending);
+                else result.put("issue", "delivery_status_unavailable");
+            } catch (Exception ignored) {
+                // A presentation read must not turn a successful start/pause into
+                // an apparent failure or change the collector/upload pump.
+                result.put("queuedEvents", JSONObject.NULL);
+                result.put("issue", "delivery_status_unavailable");
+            }
+            if (ownConfig) {
+                long now = System.currentTimeMillis();
+                boolean authorized = config.authorizedUntil > now && config.authorizedUntil <= now + 18 * 60 * 60 * 1000L + 60_000L;
+                result.put("configured", true);
+                result.put("collecting", config.collecting && authorized);
+                if (TrackingStatusStore.belongsTo(metadata, config)) {
+                    if (metadata.has("lastAcceptedAt")) result.put("lastAcceptedAt", metadata.optString("lastAcceptedAt"));
+                    if (metadata.has("issue")) result.put("issue", metadata.optString("issue"));
+                }
+                if (!authorized) result.put("issue", "authorization_expired");
+                else if (config.collecting && !"always".equals(permissionState())) result.put("issue", "location_permission");
+            } else result.put("issue", metadata.optString("issue"));
+            return result;
+        }
     }
 
     private String permissionState() {

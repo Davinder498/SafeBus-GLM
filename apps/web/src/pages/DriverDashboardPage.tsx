@@ -223,6 +223,14 @@ export function DriverDashboardPage() {
 
         {state.kind === 'ready' && !activeTrip && (
           <div className="space-y-5">
+            {tracking.trackingToken && (
+              <Card className="p-5">
+                <DriverLocationStatus
+                  supported={tracking.location.supported}
+                  state={tracking.location.state}
+                />
+              </Card>
+            )}
             <BusQrStartScanner hasActiveTrip={false} onStarted={handleStarted} />
             <PlannedAssignmentsCard assignments={plannedAssignments} />
           </div>

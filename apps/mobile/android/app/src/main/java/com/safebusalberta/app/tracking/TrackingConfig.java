@@ -1,6 +1,8 @@
 package com.safebusalberta.app.tracking;
 
 import org.json.JSONObject;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 final class TrackingConfig {
     static final String STORE_KEY = "active_tracking_config";
@@ -69,6 +71,17 @@ final class TrackingConfig {
     TrackingConfig withTokens(String nextAccessToken, String nextRefreshToken) {
         return new TrackingConfig(supabaseUrl, anonKey, nextAccessToken, nextRefreshToken,
             trackingToken, deviceCredential, authorizedUntil, collecting);
+    }
+
+    /** Local display scope only; server authentication still verifies the signed JWT. */
+    String profileId() {
+        try {
+            String[] parts = accessToken.split("\\.");
+            if (parts.length != 3) return null;
+            String subject = new JSONObject(new String(Base64.getUrlDecoder().decode(parts[1]),
+                StandardCharsets.UTF_8)).optString("sub", "");
+            return subject.isBlank() ? null : subject;
+        } catch (Exception ignored) { return null; }
     }
 
     TrackingConfig withCollecting(boolean nextCollecting) {

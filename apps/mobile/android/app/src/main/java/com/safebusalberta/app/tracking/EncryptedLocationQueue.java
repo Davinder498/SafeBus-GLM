@@ -88,4 +88,16 @@ final class EncryptedLocationQueue extends SQLiteOpenHelper {
             return cursor.getInt(0);
         }
     }
+
+    /** One encrypted row only: status polling must not scan a rural backlog. */
+    synchronized Boolean pendingForSession(String trackingToken) throws Exception {
+        try (Cursor cursor = getReadableDatabase().query("queued_locations",
+            new String[]{"payload_ciphertext"}, null, null, null, null, "sequence DESC", "1")) {
+            if (!cursor.moveToFirst()) return false;
+            JSONObject payload = new JSONObject(crypto.decrypt(cursor.getString(0)));
+            // A matching tail proves pending delivery. A different tail cannot prove
+            // that this session has no older rows, so report unknown rather than scan.
+            return trackingToken.equals(payload.optString("p_tracking_token")) ? true : null;
+        }
+    }
 }
