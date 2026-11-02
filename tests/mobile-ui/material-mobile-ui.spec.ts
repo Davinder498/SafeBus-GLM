@@ -48,6 +48,24 @@ async function expectMaterialBrand(page: import('@playwright/test').Page) {
   await expect(mark).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
 }
 
+async function expectRedUnreadBadge(
+  page: import('@playwright/test').Page,
+  badge = page.getByTestId('native-bottom-navigation').locator('.sb-bottom-tab-badge'),
+) {
+  await expect(badge).toHaveText('1');
+  // Exercise both CSS palettes without changing the saved appearance preference.
+  for (const [theme, background] of [
+    ['dark', 'rgb(148, 59, 72)'],
+    ['light', 'rgb(180, 35, 51)'],
+  ]) {
+    await page.evaluate((value) => {
+      document.documentElement.dataset.theme = value;
+    }, theme);
+    await expect(badge).toHaveCSS('background-color', background);
+    await expect(badge).toHaveCSS('color', 'rgb(255, 255, 255)');
+  }
+}
+
 async function installNotificationInboxMock(
   page: import('@playwright/test').Page,
   options: { driver?: boolean; body?: string } = {},
@@ -731,6 +749,8 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
 
   await expect(page.getByRole('heading', { name: 'Notification', level: 1 })).toBeVisible();
   await expect(page.getByText('1 new', { exact: true })).toBeVisible();
+  await expectRedUnreadBadge(page);
+  await page.screenshot({ path: testInfo.outputPath('guardian-unread-badge.png') });
   await expect(page.getByRole('button', { name: 'Mark all read' })).toBeVisible();
   const filters = page.locator('[data-ui="notification-filters"]');
   const notification = page.locator('[data-ui="notification-card"]');
@@ -782,6 +802,7 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
   await expect(page.getByRole('button', { name: 'Mark all read' })).toBeDisabled();
   await expect(notification.getByText('Read', { exact: true })).toBeVisible();
   await expect(notification.locator('[data-ui="notification-unread-dot"]')).toHaveCount(0);
+  await expect(page.locator('.sb-bottom-tab-badge')).toHaveCount(0);
 
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('guardian-updates.png'), fullPage: true });
@@ -795,6 +816,9 @@ test('driver updates include assignment, trip, and operational alerts', async ({
   await page.goto('/notifications');
 
   await expect(page.getByRole('heading', { name: 'Notification', level: 1 })).toBeVisible();
+  const unreadBadge = page.locator('[data-ui="top-notifications"] > span');
+  await expectRedUnreadBadge(page, unreadBadge);
+  await page.screenshot({ path: testInfo.outputPath('driver-unread-badge.png') });
   const filters = page.locator('[data-ui="notification-filters"]');
   const notification = page.locator('[data-ui="notification-card"]');
   await expect(filters.getByRole('combobox')).toHaveCount(0);
@@ -825,6 +849,7 @@ test('driver updates include assignment, trip, and operational alerts', async ({
   await expect(shortUpdate).not.toHaveAttribute('aria-expanded');
   await shortUpdate.click();
   await expect(notification.getByText('Read', { exact: true })).toBeVisible();
+  await expect(unreadBadge).toHaveCount(0);
   await expect(page).toHaveURL('/notifications');
   await expect(page.locator('[data-ui="notification-detail-card"]')).toHaveCount(0);
   await expect(page.getByText('View update', { exact: true })).toHaveCount(0);

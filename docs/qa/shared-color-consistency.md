@@ -21,6 +21,7 @@ Web public/sign-in pages keep their fixed light appearance. Dashboard and native
 - Primary actions are `#1D4ED8` in light mode and `#9CCBFF` with dark text in dark mode. Yellow is no longer a general action or heading color.
 - Light canvas is `#F5F7FA`, cards are white, and dark canvas/cards retain their charcoal palette. Placeholder and control borders use readable semantic values.
 - Green means success, amber means attention, red means error/destructive action, blue means information, and gray means neutral. Existing labels and icons continue to communicate meaning without relying on color alone.
+- Unread notification counts use the same solid red background and white number on the guardian navigation tab and driver/admin header in both appearances. Counts still disappear when read, and the existing `99+` cap and accessible unread labels stay unchanged. No role gains a new destination or notification access.
 - Shared utility colors live in `packages/config/theme-colors.js`; semantic component roles live in the web appearance stylesheet imported by mobile. Native layout aliases resolve to those same roles in both modes. Existing saved route/map colors and provider tiles are untouched.
 - Shared styles participate in Turbo's global cache inputs so a web palette edit cannot reuse an older mobile build. Legacy filled action links and filters use the same action colors, with navigation chrome excluded.
 
@@ -44,6 +45,7 @@ Android sync also refreshes generated project paths to the Capacitor 8.6 depende
 | Native-entry browser suite | Complete run: 113 passed and 3 failed; after fixing a neutral status dot and updating two obsolete legal-card border expectations, all 3 failed cases passed on rerun (116 cases covered). |
 | Website smoke suite | Complete run: 359 passed, 2 failed, 7 skips. Both failures were obsolete brand-icon/action-color expectations; after updating them, both affected files passed in full on both projects (26 checks, all 361 website cases accounted for). |
 | Final live-map CTA assertion | Passed on retry. The first attempt timed out while the development route displayed its loading screen; this remains a recorded browser-test flake. |
+| Unread badge follow-up | Both existing guardian/driver inbox cases passed with red/white badge assertions in both themes and badge removal after reading. Driver coverage checks the header badge; guardian coverage checks the navigation-tab badge. Typecheck, lint, web/mobile builds, all 1,273 unit/release checks, mobile build followed by Android sync and debug packaging passed again. All 54 current assets match the Android copy. |
 | `pnpm --filter @safebus/mobile build` then `pnpm --filter @safebus/mobile cap:sync` | Both passed in order after the final stylesheet changes; Android received the current bundle. |
 | Android JVM tests, debug assembly and lint | Passed: 37 JVM tests, `assembleDebug` and `lintDebug`. |
 | Final Android package after sync | `assembleDebug` passed again with the final bundle. All 54 built assets match Android's copied bundle. This is a local debug package, not an installation or publication. |

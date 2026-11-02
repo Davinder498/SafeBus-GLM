@@ -1160,7 +1160,7 @@
     height: 1.15rem;
     border: 2px solid var(--native-border, white);
     border-radius: 999px;
-    background: var(--native-raised, #c62828);
+    background: var(--color-danger-strong);
     padding: 0 0.2rem;
     color: white;
     font-size: 0.55rem;
