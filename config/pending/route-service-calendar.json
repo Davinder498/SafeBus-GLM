@@ -1,0 +1,184 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261102193116_route_service_calendar.sql",
+  "migrationSha256": "695c80641dec33a2711eb5e931bed2d0c47489c4f00a95a16028f4c91ac5a179",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "safebus_private.prepare_bus_run(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "7770b553fa66738216ac8325b2379cb5"
+      },
+      "after": {
+        "md5": "954ca1297c5f3bcc0babc510516829db"
+      }
+    },
+    {
+      "signature": "safebus_private.get_admin_bus_ready_dispatch(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "4b5c708f4c4eac829b546bdcfe2f80b3"
+      },
+      "after": {
+        "md5": "4b5c708f4c4eac829b546bdcfe2f80b3"
+      }
+    },
+    {
+      "signature": "start_bus_tracking_from_qr(text,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "28d0f3e1b7d4e2337cdebcd4b1b832d9"
+      },
+      "after": {
+        "md5": "a796796af9f49f1b5b517d1ad0af9077"
+      }
+    },
+    {
+      "signature": "admin_save_route_definition(jsonb,jsonb,jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "9687d306a9662671539cd4ecdf876894"
+      },
+      "after": {
+        "md5": "5f22a0a496be361b3bdd11b89e1466c8"
+      }
+    },
+    {
+      "signature": "get_bus_qr_start_options(text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "a76c1a9f60ddc1cf389af6206b1a18e8"
+      },
+      "after": {
+        "md5": "97a617e339d98f26181a67c57fcd464f"
+      }
+    },
+    {
+      "signature": "safebus_private.route_calendar_date(timestamp with time zone)",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "3bbfeb5abd8560fbce78cf67b3c28f5b"
+      },
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "safebus_private.route_calendar_today()",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "549852f00d6d848b31a357e2ff5bd9fd"
+      },
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "safebus_private.route_operates_on(uuid,uuid,date)",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "cafc006ed2b6942188d1069e83d31b60"
+      },
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "safebus_private.enforce_new_trip_calendar()",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "875ab9efbd8a8c6e091f6a7b11a5337f"
+      },
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ]
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": [],
+  "columns": [
+    {
+      "schema": "public",
+      "table": "routes",
+      "name": "service_schedule_mode",
+      "before": null,
+      "after": {
+        "data_type": "text",
+        "is_nullable": "NO",
+        "column_default": "'weekly'::text"
+      }
+    },
+    {
+      "schema": "public",
+      "table": "routes",
+      "name": "service_dates",
+      "before": null,
+      "after": {
+        "data_type": "ARRAY",
+        "is_nullable": "NO",
+        "column_default": "'{}'::date[]"
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "table": "public.routes",
+      "name": "routes_service_schedule_check",
+      "before": null,
+      "after": "CHECK ((service_schedule_mode = ANY (ARRAY['weekly'::text, 'dates'::text])) AND cardinality(service_dates) <= 366 AND (cardinality(service_dates) = 0 OR array_ndims(service_dates) = 1) AND array_position(service_dates, NULL::date) IS NULL AND (service_schedule_mode <> 'dates'::text OR status <> 'active'::text OR cardinality(service_dates) > 0))"
+    }
+  ],
+  "triggers": [
+    {
+      "table": "public.driver_trips",
+      "name": "enforce_new_trip_calendar",
+      "before": null,
+      "after": "CREATE TRIGGER enforce_new_trip_calendar BEFORE INSERT ON public.driver_trips FOR EACH ROW EXECUTE FUNCTION safebus_private.enforce_new_trip_calendar()"
+    }
+  ]
+}

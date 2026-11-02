@@ -101,6 +101,11 @@ async function mockRoutes(page: Page, role = 'tenant_admin', existingRoute?: Exi
     }
     if (path.includes('/rpc/admin_save_route_definition')) {
       savedPayload = route.request().postDataJSON();
+      const calendar = (savedPayload as { p_route: { serviceDays: number[] } }).p_route.serviceDays;
+      savedServiceDays = Array.from({ length: 7 }, (_, day_of_week) => ({
+        day_of_week,
+        status: calendar.includes(day_of_week) ? 'active' : 'inactive',
+      }));
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -211,6 +216,8 @@ test.describe('route corridor and named trips', () => {
     await page.getByLabel('Route name').fill('Museum Day');
     await page.getByLabel('Route code').fill('FIELD-1');
     await page.getByLabel('Route kind').selectOption('field_trip');
+    await page.getByLabel('Service date', { exact: true }).fill('2026-11-08');
+    await page.getByRole('button', { name: 'Add date', exact: true }).click();
     await page.getByLabel('Trip name').nth(0).fill('Museum Outbound');
     await page.getByLabel('Trip name').nth(1).fill('Museum Home');
 
@@ -234,7 +241,11 @@ test.describe('route corridor and named trips', () => {
       p_route: { routeKind: string };
       p_stops: Array<{ stopName: string; stopOrder: number }>;
     };
-    expect(payload.p_route.routeKind).toBe('field_trip');
+    expect(payload.p_route).toMatchObject({
+      routeKind: 'field_trip',
+      serviceMode: 'dates',
+      serviceDates: ['2026-11-08'],
+    });
     expect(payload.p_stops.map((stop) => [stop.stopName, stop.stopOrder])).toEqual([
       ['Museum', 1],
       ['School', 2],
@@ -319,7 +330,7 @@ test.describe('route corridor and named trips', () => {
     await page.getByRole('button', { name: 'Save stop details' }).click();
     await page.getByRole('button', { name: 'Save route definition' }).click();
 
-    await expect(page.getByText('Route details, stops and regular schedule saved.')).toBeVisible();
+    await expect(page.getByText('Route details, stops and service calendar saved.')).toBeVisible();
     const payload = mock.savedPayload() as {
       p_route: { id?: string; routeCode: string };
       p_stops: Array<{ stopName: string }>;
@@ -330,6 +341,32 @@ test.describe('route corridor and named trips', () => {
       'Last stop',
       'New stop',
     ]);
+  });
+
+  test('transportation admins can read exact service dates without route mutation controls', async ({
+    page,
+  }) => {
+    const routeId = '33333333-3333-3333-3333-333333333333';
+    await mockRoutes(page, 'transportation_admin', {
+      route: {
+        id: routeId,
+        tenant_id: profile.tenant_id,
+        route_name: 'Weekend route',
+        route_code: 'WKND',
+        route_kind: 'regular',
+        service_schedule_mode: 'dates',
+        service_dates: ['2026-11-08'],
+        status: 'active',
+        definition_status: 'ready',
+        school_id: null,
+      },
+      stops: [],
+      tripPatterns: [],
+    });
+    await page.goto(`/admin/routes/${routeId}`);
+    await page.getByText('Specific dates (1)', { exact: true }).click();
+    await expect(page.getByRole('listitem').filter({ hasText: '2026-11-08' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Edit route details and stops' })).toHaveCount(0);
   });
 
   test('non-tenant admin cannot see route mutation controls', async ({ page }) => {

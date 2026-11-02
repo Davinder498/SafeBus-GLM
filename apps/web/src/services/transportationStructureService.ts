@@ -228,7 +228,7 @@ export async function getVisibleRoutes(): Promise<Route[]> {
   const { data, error } = await client
     .from('routes')
     .select(
-      'id, tenant_id, school_id, route_name, route_code, route_type, route_kind, map_color, definition_status, status, created_at, updated_at',
+      'id, tenant_id, school_id, route_name, route_code, route_type, route_kind, service_schedule_mode, service_dates, map_color, definition_status, status, created_at, updated_at',
     )
     .order('route_code', { ascending: true });
 
@@ -273,7 +273,7 @@ export async function createRoute(input: CreateRouteInput): Promise<Route> {
     .from('routes')
     .insert(input)
     .select(
-      'id, tenant_id, school_id, route_name, route_code, route_type, route_kind, map_color, definition_status, status, created_at, updated_at',
+      'id, tenant_id, school_id, route_name, route_code, route_type, route_kind, service_schedule_mode, service_dates, map_color, definition_status, status, created_at, updated_at',
     )
     .single();
 
@@ -291,7 +291,7 @@ export async function updateRoute(id: string, input: UpdateRouteInput): Promise<
     .update(input)
     .eq('id', id)
     .select(
-      'id, tenant_id, school_id, route_name, route_code, route_type, route_kind, map_color, definition_status, status, created_at, updated_at',
+      'id, tenant_id, school_id, route_name, route_code, route_type, route_kind, service_schedule_mode, service_dates, map_color, definition_status, status, created_at, updated_at',
     )
     .single();
 
@@ -360,7 +360,12 @@ export async function saveRouteDefinition(
 ): Promise<SaveRouteDefinitionResult> {
   const client = requireSupabase();
   const { data, error } = await client.rpc('admin_save_route_definition', {
-    p_route: input.route,
+    p_route: {
+      ...input.route,
+      serviceMode: input.serviceMode ?? 'weekly',
+      serviceDays: input.serviceDays,
+      serviceDates: input.serviceDates ?? [],
+    },
     p_stops: input.stops as unknown as Json,
     p_trip_patterns: input.tripPatterns as unknown as Json,
   });

@@ -1,0 +1,212 @@
+{
+  "functions": [
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "7770b553fa66738216ac8325b2379cb5",
+      "owner": "postgres",
+      "signature": "safebus_private.prepare_bus_run(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.prepare_bus_run(p_bus_route_assignment_id uuid)\n RETURNS bus_run_dispatches\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\ndeclare\n  v_tenant_id uuid := safebus_private.current_tenant_id();\n  v_service public.bus_route_assignments;\n  v_dispatch public.bus_run_dispatches;\nbegin\n  if auth.uid() is null\n    or v_tenant_id is null\n    or not safebus_private.is_transportation_write_admin() then\n    raise exception 'Preparing a bus run requires a tenant operational admin.'\n      using errcode = '42501';\n  end if;\n\n  select bra.* into v_service\n  from public.bus_route_assignments bra\n  join public.buses b\n    on b.id = bra.bus_id and b.tenant_id = bra.tenant_id and b.status = 'active'\n  join public.routes r\n    on r.id = bra.route_id and r.tenant_id = bra.tenant_id\n    and r.status = 'active' and r.definition_status = 'ready'\n  join public.route_trip_patterns rtp\n    on rtp.id = bra.route_trip_pattern_id and rtp.route_id = bra.route_id\n    and rtp.tenant_id = bra.tenant_id and rtp.status = 'active'\n    and not rtp.schedule_review_required\n  where bra.id = p_bus_route_assignment_id\n    and bra.tenant_id = v_tenant_id\n    and bra.status = 'active'\n    and (bra.effective_from is null or bra.effective_from <= ((now() AT TIME ZONE 'America/Edmonton')::date))\n    and (bra.effective_to is null or bra.effective_to >= ((now() AT TIME ZONE 'America/Edmonton')::date))\n  for update of bra;\n\n  if not found then\n    raise exception 'This bus run is not ready today.' using errcode = '55006';\n  end if;\n\n  perform 1 from public.buses b where b.id = v_service.bus_id for update;\n  if exists (\n    select 1 from public.driver_trips dt\n    where dt.bus_id = v_service.bus_id and dt.tenant_id = v_tenant_id and dt.status = 'active'\n  ) then\n    raise exception 'End the active trip before preparing another run.' using errcode = '55006';\n  end if;\n\n  update public.bus_run_dispatches\n  set status = 'cancelled', cancelled_at = now()\n  where tenant_id = v_tenant_id and bus_id = v_service.bus_id and status = 'ready';\n\n  insert into public.bus_run_dispatches(\n    tenant_id, bus_id, bus_route_assignment_id, route_id,\n    route_trip_pattern_id, service_date, prepared_by\n  ) values (\n    v_service.tenant_id, v_service.bus_id, v_service.id, v_service.route_id,\n    v_service.route_trip_pattern_id, ((now() AT TIME ZONE 'America/Edmonton')::date), auth.uid()\n  ) returning * into v_dispatch;\n\n  return v_dispatch;\nend;\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "4b5c708f4c4eac829b546bdcfe2f80b3",
+      "owner": "postgres",
+      "signature": "safebus_private.get_admin_bus_ready_dispatch(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.get_admin_bus_ready_dispatch(p_bus_id uuid)\n RETURNS TABLE(dispatch_id uuid, bus_id uuid, bus_route_assignment_id uuid, service_date date, status text, route_name text, route_code text, trip_name text, prepared_at timestamp with time zone)\n LANGUAGE sql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\n  select d.id, d.bus_id, d.bus_route_assignment_id, d.service_date, d.status,\n    r.route_name, r.route_code, rtp.display_name, d.prepared_at\n  from public.bus_run_dispatches d\n  join public.routes r on r.id = d.route_id and r.tenant_id = d.tenant_id\n  join public.route_trip_patterns rtp\n    on rtp.id = d.route_trip_pattern_id and rtp.tenant_id = d.tenant_id\n  where auth.uid() is not null\n    and safebus_private.is_transportation_write_admin()\n    and d.tenant_id = safebus_private.current_tenant_id()\n    and d.bus_id = p_bus_id\n    and d.status = 'ready'\n  order by d.prepared_at desc\n  limit 1\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "28d0f3e1b7d4e2337cdebcd4b1b832d9",
+      "owner": "postgres",
+      "signature": "start_bus_tracking_from_qr(text,uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.start_bus_tracking_from_qr(p_qr_token text, p_bus_route_assignment_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\ndeclare\n  v_tenant_id uuid := safebus_private.current_tenant_id();\n  v_driver_id uuid := safebus_private.current_driver_id();\n  v_hash text;\n  v_credential public.bus_qr_credentials;\n  v_bus public.buses;\n  v_assignment public.bus_route_assignments;\n  v_pattern public.route_trip_patterns;\n  v_trip public.driver_trips;\n  v_existing_trip public.driver_trips;\n  v_session_token text;\n  v_session_hash text;\nbegin\n  if auth.uid() is null or safebus_private.current_user_role() <> 'driver'\n    or v_tenant_id is null or v_driver_id is null then\n    raise exception 'Only an active driver can scan a bus.' using errcode = '42501';\n  end if;\n  if p_qr_token is null or p_qr_token !~ '^sbus_bus_v1_[A-Za-z0-9_-]{40,80}$'\n    or p_bus_route_assignment_id is null then\n    raise exception 'Bus QR and route choice could not be verified.' using errcode = '22023';\n  end if;\n\n  perform 1 from public.drivers d\n  where d.id = v_driver_id and d.tenant_id = v_tenant_id and d.status = 'active'\n  for update;\n  if not found then\n    raise exception 'An active driver identity is required.' using errcode = '42501';\n  end if;\n\n  v_hash := safebus_private.hash_bus_tracking_token(p_qr_token);\n  select c.* into v_credential\n  from public.bus_qr_credentials c\n  where c.token_hash = v_hash and c.status = 'active'\n  for update;\n  if not found or v_credential.tenant_id <> v_tenant_id then\n    raise exception 'Bus QR could not be verified.' using errcode = 'P0002';\n  end if;\n\n  select b.* into v_bus\n  from public.buses b\n  where b.id = v_credential.bus_id and b.tenant_id = v_tenant_id and b.status = 'active'\n  for update;\n  if not found then\n    raise exception 'This bus is not active.' using errcode = '55006';\n  end if;\n\n  select bra.* into v_assignment\n  from public.bus_route_assignments bra\n  join public.routes r\n    on r.id = bra.route_id and r.tenant_id = bra.tenant_id\n    and r.status = 'active' and r.definition_status = 'ready'\n  join public.route_trip_patterns rtp\n    on rtp.id = bra.route_trip_pattern_id and rtp.route_id = bra.route_id\n    and rtp.tenant_id = bra.tenant_id and rtp.status = 'active'\n    and not rtp.schedule_review_required\n  where bra.id = p_bus_route_assignment_id\n    and bra.bus_id = v_bus.id\n    and bra.tenant_id = v_tenant_id\n  for update of bra;\n  if not found then\n    raise exception 'The selected route direction is not assigned to this bus.' using errcode = 'P0002';\n  end if;\n\n  select rtp.* into v_pattern\n  from public.route_trip_patterns rtp\n  where rtp.id = v_assignment.route_trip_pattern_id\n    and rtp.tenant_id = v_tenant_id;\n\n  select dt.* into v_existing_trip\n  from public.driver_trips dt\n  where dt.driver_id = v_driver_id and dt.tenant_id = v_tenant_id and dt.status = 'active'\n  for update;\n\n  if found then\n    if v_existing_trip.bus_id <> v_bus.id then\n      raise exception 'End your active trip before scanning another bus.' using errcode = '55006';\n    end if;\n    if v_existing_trip.route_id <> v_assignment.route_id\n      or v_existing_trip.route_trip_pattern_id <> v_assignment.route_trip_pattern_id then\n      raise exception 'The active bus run direction cannot be changed while resuming.'\n        using errcode = '55006';\n    end if;\n    v_trip := v_existing_trip;\n  else\n    if v_assignment.status <> 'active'\n      or (v_assignment.effective_from is not null and v_assignment.effective_from > ((now() AT TIME ZONE 'America/Edmonton')::date))\n      or (v_assignment.effective_to is not null and v_assignment.effective_to < ((now() AT TIME ZONE 'America/Edmonton')::date)) then\n      raise exception 'The selected route direction is not active today.' using errcode = '55006';\n    end if;\n    if exists (\n      select 1 from public.driver_trips dt\n      where dt.bus_id = v_bus.id and dt.tenant_id = v_tenant_id and dt.status = 'active'\n    ) then\n      raise exception 'This bus already has an active trip.' using errcode = '55006';\n    end if;\n\n    begin\n      insert into public.driver_trips (\n        tenant_id, driver_id, bus_id, route_id, route_trip_pattern_id,\n        driver_route_assignment_id, route_shape_id, bus_number_snapshot,\n        trip_name_snapshot, trip_type, status, service_date, started_at\n      ) values (\n        v_tenant_id, v_driver_id, v_bus.id, v_assignment.route_id,\n        v_assignment.route_trip_pattern_id, null,\n        safebus_private.current_route_shape_id_for_route(v_assignment.route_id, v_tenant_id),\n        v_bus.bus_number, v_pattern.display_name,\n        case when v_pattern.direction = 'reverse' then 'evening' else 'morning' end,\n        'active', ((now() AT TIME ZONE 'America/Edmonton')::date), now()\n      ) returning * into v_trip;\n    exception when unique_violation then\n      raise exception 'This driver or bus already has an active trip.' using errcode = '55006';\n    end;\n  end if;\n\n  update public.bus_tracking_sessions\n  set status = 'revoked', ended_at = now()\n  where status = 'active'\n    and (driver_trip_id = v_trip.id or driver_id = v_driver_id or bus_id = v_bus.id);\n\n  loop\n    v_session_token := safebus_private.create_bus_tracking_session_token();\n    v_session_hash := safebus_private.hash_bus_tracking_token(v_session_token);\n    exit when not exists (\n      select 1 from public.bus_tracking_sessions where session_token_hash = v_session_hash\n    );\n  end loop;\n\n  insert into public.bus_tracking_sessions (\n    tenant_id, driver_trip_id, driver_id, bus_id, bus_qr_credential_id,\n    session_token_hash\n  ) values (\n    v_tenant_id, v_trip.id, v_driver_id, v_bus.id, v_credential.id,\n    v_session_hash\n  );\n\n  return jsonb_build_object(\n    'trip', to_jsonb(v_trip),\n    'trackingToken', v_session_token,\n    'busNumber', v_bus.bus_number,\n    'resumed', v_existing_trip.id is not null\n  );\nend;\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "9687d306a9662671539cd4ecdf876894",
+      "owner": "postgres",
+      "signature": "admin_save_route_definition(jsonb,jsonb,jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION public.admin_save_route_definition(p_route jsonb, p_stops jsonb, p_trip_patterns jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\ndeclare\n  v_tenant_id uuid := safebus_private.current_tenant_id();\n  v_route_id uuid;\n  v_school_id uuid;\n  v_route_name text;\n  v_route_code text;\n  v_route_kind text;\n  v_map_color text;\n  v_status text;\n  v_ready boolean;\n  v_stop jsonb;\n  v_pattern jsonb;\n  v_stop_id uuid;\n  v_pattern_id uuid;\n  v_client_key text;\n  v_stop_ids jsonb := '{}'::jsonb;\n  v_active_count integer;\nbegin\n  if auth.uid() is null\n    or safebus_private.current_user_role() <> 'tenant_admin'\n    or v_tenant_id is null then\n    raise exception 'Only an active tenant administrator can save route definitions.'\n      using errcode = '42501';\n  end if;\n\n  if jsonb_typeof(p_route) <> 'object'\n    or jsonb_typeof(p_stops) <> 'array'\n    or jsonb_typeof(p_trip_patterns) <> 'array' then\n    raise exception 'Route, stops, and trip patterns must use the documented JSON shape.'\n      using errcode = '22023';\n  end if;\n\n  if exists (\n    select 1\n    from jsonb_object_keys(p_route) key\n    where key not in (\n      'id', 'schoolId', 'routeName', 'routeCode', 'routeKind', 'mapColor', 'status'\n    )\n  ) then\n    raise exception 'Route contains an unsupported field.' using errcode = '22023';\n  end if;\n\n  v_route_id := nullif(p_route->>'id', '')::uuid;\n  v_school_id := nullif(p_route->>'schoolId', '')::uuid;\n  v_route_name := btrim(coalesce(p_route->>'routeName', ''));\n  v_route_code := btrim(coalesce(p_route->>'routeCode', ''));\n  v_route_kind := coalesce(nullif(p_route->>'routeKind', ''), 'regular');\n  v_map_color := upper(coalesce(nullif(p_route->>'mapColor', ''), '#2563EB'));\n  v_status := coalesce(nullif(p_route->>'status', ''), 'inactive');\n\n  if char_length(v_route_name) not between 1 and 100\n    or char_length(v_route_code) not between 1 and 40 then\n    raise exception 'Route name must be 1-100 characters and route code 1-40 characters.'\n      using errcode = '22023';\n  end if;\n  if v_route_kind not in ('regular', 'field_trip')\n    or v_status not in ('active', 'inactive', 'archived')\n    or v_map_color !~ '^#[0-9A-F]{6}$' then\n    raise exception 'Route kind, status, or map color is invalid.' using errcode = '22023';\n  end if;\n  if v_school_id is not null and not exists (\n    select 1 from public.schools s\n    where s.id = v_school_id and s.tenant_id = v_tenant_id and s.status = 'active'\n  ) then\n    raise exception 'Primary school must be active and belong to your tenant.'\n      using errcode = '23514';\n  end if;\n  if exists (\n    select 1 from public.routes r\n    where r.tenant_id = v_tenant_id\n      and lower(r.route_code) = lower(v_route_code)\n      and r.id is distinct from v_route_id\n  ) then\n    raise exception 'A route with this code already exists in your tenant.'\n      using errcode = '23505';\n  end if;\n  if exists (\n    select 1 from public.routes r\n    where r.tenant_id = v_tenant_id\n      and v_status = 'active'\n      and r.status = 'active'\n      and upper(r.map_color) = v_map_color\n      and r.id is distinct from v_route_id\n  ) then\n    raise exception 'Choose a different color from the other active routes.'\n      using errcode = '23505';\n  end if;\n\n  if v_route_id is null then\n    insert into public.routes (\n      tenant_id, school_id, route_name, route_code, route_type,\n      route_kind, map_color, definition_status, status\n    ) values (\n      v_tenant_id, v_school_id, v_route_name, v_route_code,\n      case when v_route_kind = 'field_trip' then 'field_trip' else 'special' end,\n      v_route_kind, v_map_color, 'incomplete', 'inactive'\n    )\n    returning id into v_route_id;\n  else\n    if not exists (\n      select 1 from public.routes r\n      where r.id = v_route_id and r.tenant_id = v_tenant_id\n    ) then\n      raise exception 'Route not found in your tenant.' using errcode = 'P0002';\n    end if;\n    update public.routes\n    set\n      school_id = v_school_id,\n      route_name = v_route_name,\n      route_code = v_route_code,\n      route_type = case when v_route_kind = 'field_trip' then 'field_trip' else 'special' end,\n      route_kind = v_route_kind,\n      map_color = v_map_color,\n      status = 'inactive'\n    where id = v_route_id and tenant_id = v_tenant_id;\n  end if;\n\n  if jsonb_array_length(p_stops) > 500 then\n    raise exception 'A route cannot contain more than 500 stops.' using errcode = '22023';\n  end if;\n\n  -- Move existing orders out of the requested range so swaps/reordering do not\n  -- trip the existing route/order unique constraint mid-transaction.\n  update public.route_stops\n  set stop_order = stop_order + 10000\n  where route_id = v_route_id\n    and tenant_id = v_tenant_id;\n\n  for v_stop in select value from jsonb_array_elements(p_stops)\n  loop\n    if jsonb_typeof(v_stop) <> 'object'\n      or exists (\n        select 1 from jsonb_object_keys(v_stop) key\n        where key not in (\n          'id', 'clientKey', 'schoolId', 'stopName', 'stopOrder',\n          'latitude', 'longitude', 'status'\n        )\n      ) then\n      raise exception 'A stop contains an unsupported field.' using errcode = '22023';\n    end if;\n\n    v_client_key := btrim(coalesce(v_stop->>'clientKey', ''));\n    if v_client_key = '' or char_length(v_client_key) > 100 then\n      raise exception 'Every stop needs a stable client key.' using errcode = '22023';\n    end if;\n    if v_stop_ids ? v_client_key then\n      raise exception 'Stop client keys must be unique.' using errcode = '22023';\n    end if;\n    if char_length(btrim(coalesce(v_stop->>'stopName', ''))) not between 1 and 120\n      or coalesce((v_stop->>'stopOrder')::integer, 0) <= 0\n      or coalesce(v_stop->>'status', 'active') not in ('active', 'inactive') then\n      raise exception 'Each stop needs a valid name, order, and status.'\n        using errcode = '22023';\n    end if;\n    if nullif(v_stop->>'latitude', '') is not null\n      and (v_stop->>'latitude')::numeric not between -90 and 90 then\n      raise exception 'Stop latitude must be between -90 and 90.' using errcode = '22023';\n    end if;\n    if nullif(v_stop->>'longitude', '') is not null\n      and (v_stop->>'longitude')::numeric not between -180 and 180 then\n      raise exception 'Stop longitude must be between -180 and 180.' using errcode = '22023';\n    end if;\n    v_school_id := nullif(v_stop->>'schoolId', '')::uuid;\n    if v_school_id is not null and not exists (\n      select 1 from public.schools s\n      where s.id = v_school_id and s.tenant_id = v_tenant_id and s.status = 'active'\n    ) then\n      raise exception 'A stop school is outside your tenant or inactive.'\n        using errcode = '23514';\n    end if;\n\n    v_stop_id := nullif(v_stop->>'id', '')::uuid;\n    if v_stop_id is null then\n      insert into public.route_stops (\n        tenant_id, route_id, school_id, stop_name, stop_order,\n        planned_arrival_time, latitude, longitude, status\n      ) values (\n        v_tenant_id, v_route_id, v_school_id, btrim(v_stop->>'stopName'),\n        (v_stop->>'stopOrder')::integer, null,\n        nullif(v_stop->>'latitude', '')::numeric,\n        nullif(v_stop->>'longitude', '')::numeric,\n        coalesce(v_stop->>'status', 'active')\n      )\n      returning id into v_stop_id;\n    else\n      update public.route_stops\n      set\n        school_id = v_school_id,\n        stop_name = btrim(v_stop->>'stopName'),\n        stop_order = (v_stop->>'stopOrder')::integer,\n        latitude = nullif(v_stop->>'latitude', '')::numeric,\n        longitude = nullif(v_stop->>'longitude', '')::numeric,\n        status = coalesce(v_stop->>'status', 'active')\n      where id = v_stop_id\n        and route_id = v_route_id\n        and tenant_id = v_tenant_id;\n      if not found then\n        raise exception 'A stop does not belong to this route.' using errcode = '23514';\n      end if;\n    end if;\n    v_stop_ids := v_stop_ids || jsonb_build_object(v_client_key, v_stop_id);\n  end loop;\n\n  update public.route_stops\n  set status = 'archived'\n  where route_id = v_route_id\n    and tenant_id = v_tenant_id\n    and status <> 'archived'\n    and not (id = any (\n      select value::text::uuid\n      from jsonb_each_text(v_stop_ids)\n    ));\n\n  if jsonb_array_length(p_trip_patterns) <> 2\n    or (\n      select count(distinct value->>'direction')\n      from jsonb_array_elements(p_trip_patterns)\n    ) <> 2\n    or exists (\n      select 1 from jsonb_array_elements(p_trip_patterns)\n      where value->>'direction' not in ('forward', 'reverse')\n    ) then\n    raise exception 'Provide exactly one forward and one reverse trip.'\n      using errcode = '22023';\n  end if;\n\n  for v_pattern in select value from jsonb_array_elements(p_trip_patterns)\n  loop\n    if jsonb_typeof(v_pattern) <> 'object'\n      or exists (\n        select 1 from jsonb_object_keys(v_pattern) key\n        where key not in (\n          'id', 'direction', 'displayName', 'status', 'stopTimes'\n        )\n      ) then\n      raise exception 'A trip pattern contains an unsupported field.'\n        using errcode = '22023';\n    end if;\n    if char_length(btrim(coalesce(v_pattern->>'displayName', ''))) not between 1 and 100\n      or coalesce(v_pattern->>'status', 'active') not in ('active', 'inactive')\n      or jsonb_typeof(coalesce(v_pattern->'stopTimes', '{}'::jsonb)) <> 'object' then\n      raise exception 'Trip name, status, or stop times are invalid.'\n        using errcode = '22023';\n    end if;\n    if exists (\n      select 1\n      from jsonb_object_keys(coalesce(v_pattern->'stopTimes', '{}'::jsonb)) key\n      where not (v_stop_ids ? key)\n    ) then\n      raise exception 'A trip time references a stop outside this route.'\n        using errcode = '23514';\n    end if;\n\n    select id into v_pattern_id\n    from public.route_trip_patterns\n    where route_id = v_route_id\n      and tenant_id = v_tenant_id\n      and direction = v_pattern->>'direction'\n    for update;\n\n    if not found then\n      insert into public.route_trip_patterns (\n        tenant_id, route_id, direction, display_name, status,\n        schedule_review_required\n      ) values (\n        v_tenant_id, v_route_id, v_pattern->>'direction',\n        btrim(v_pattern->>'displayName'), coalesce(v_pattern->>'status', 'active'),\n        false\n      )\n      returning id into v_pattern_id;\n    else\n      update public.route_trip_patterns\n      set\n        display_name = btrim(v_pattern->>'displayName'),\n        status = coalesce(v_pattern->>'status', 'active'),\n        schedule_review_required = false\n      where id = v_pattern_id;\n    end if;\n\n    insert into public.route_trip_stop_schedules (\n      tenant_id, route_id, route_trip_pattern_id, route_stop_id,\n      planned_arrival_time\n    )\n    select\n      v_tenant_id,\n      v_route_id,\n      v_pattern_id,\n      (entry.value #>> '{}')::uuid,\n      nullif(v_pattern->'stopTimes'->>entry.key, '')::time\n    from jsonb_each(v_stop_ids) entry\n    on conflict (route_trip_pattern_id, route_stop_id)\n    do update set planned_arrival_time = excluded.planned_arrival_time;\n\n    delete from public.route_trip_stop_schedules schedule\n    where schedule.route_trip_pattern_id = v_pattern_id\n      and not (schedule.route_stop_id = any (\n        select value::text::uuid\n        from jsonb_each_text(v_stop_ids)\n      ));\n  end loop;\n\n  select count(*) into v_active_count\n  from public.route_stops\n  where route_id = v_route_id and status = 'active';\n\n  v_ready := safebus_private.route_definition_is_ready(v_route_id);\n  if v_status = 'active' and not v_ready then\n    raise exception 'An active route requires at least two ordered stops with valid coordinates.'\n      using errcode = '23514';\n  end if;\n\n  update public.routes\n  set\n    definition_status = case when v_ready then 'ready' else 'incomplete' end,\n    status = case when v_status = 'active' and v_ready then 'active' else v_status end\n  where id = v_route_id and tenant_id = v_tenant_id;\n\n  return jsonb_build_object(\n    'routeId', v_route_id,\n    'definitionStatus', case when v_ready then 'ready' else 'incomplete' end,\n    'activeStopCount', v_active_count\n  );\nend;\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "a76c1a9f60ddc1cf389af6206b1a18e8",
+      "owner": "postgres",
+      "signature": "get_bus_qr_start_options(text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_bus_qr_start_options(p_qr_token text)\n RETURNS TABLE(bus_route_assignment_id uuid, bus_number text, route_code text, route_name text, trip_name text, direction text, resumed boolean)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\ndeclare\n  v_tenant_id uuid := safebus_private.current_tenant_id();\n  v_driver_id uuid := safebus_private.current_driver_id();\n  v_hash text;\n  v_bus public.buses;\n  v_existing_trip public.driver_trips;\nbegin\n  if auth.uid() is null or safebus_private.current_user_role() <> 'driver'\n    or v_tenant_id is null or v_driver_id is null then\n    raise exception 'Only an active driver can scan a bus.' using errcode = '42501';\n  end if;\n  if p_qr_token is null or p_qr_token !~ '^sbus_bus_v1_[A-Za-z0-9_-]{40,80}$' then\n    raise exception 'Bus QR could not be verified.' using errcode = '22023';\n  end if;\n  if not exists (\n    select 1 from public.drivers d\n    where d.id = v_driver_id and d.tenant_id = v_tenant_id and d.status = 'active'\n  ) then\n    raise exception 'An active driver identity is required.' using errcode = '42501';\n  end if;\n\n  v_hash := safebus_private.hash_bus_tracking_token(p_qr_token);\n  select b.* into v_bus\n  from public.bus_qr_credentials c\n  join public.buses b on b.id = c.bus_id and b.tenant_id = c.tenant_id\n  where c.token_hash = v_hash\n    and c.status = 'active'\n    and c.tenant_id = v_tenant_id\n    and b.status = 'active';\n  if not found then\n    raise exception 'Bus QR could not be verified.' using errcode = 'P0002';\n  end if;\n\n  select dt.* into v_existing_trip\n  from public.driver_trips dt\n  where dt.driver_id = v_driver_id and dt.tenant_id = v_tenant_id and dt.status = 'active';\n  if found and v_existing_trip.bus_id <> v_bus.id then\n    raise exception 'End your active trip before scanning another bus.' using errcode = '55006';\n  end if;\n\n  return query\n  select bra.id, v_bus.bus_number, r.route_code, r.route_name,\n    rtp.display_name, rtp.direction, v_existing_trip.id is not null\n  from public.bus_route_assignments bra\n  join public.routes r\n    on r.id = bra.route_id and r.tenant_id = bra.tenant_id\n    and r.status = 'active' and r.definition_status = 'ready'\n  join public.route_trip_patterns rtp\n    on rtp.id = bra.route_trip_pattern_id and rtp.route_id = bra.route_id\n    and rtp.tenant_id = bra.tenant_id and rtp.status = 'active'\n    and not rtp.schedule_review_required\n  where bra.tenant_id = v_tenant_id\n    and bra.bus_id = v_bus.id\n    and (\n      (v_existing_trip.id is null\n        and bra.status = 'active'\n        and (bra.effective_from is null or bra.effective_from <= ((now() AT TIME ZONE 'America/Edmonton')::date))\n        and (bra.effective_to is null or bra.effective_to >= ((now() AT TIME ZONE 'America/Edmonton')::date)))\n      or\n      (v_existing_trip.id is not null\n        and bra.route_id = v_existing_trip.route_id\n        and bra.route_trip_pattern_id = v_existing_trip.route_trip_pattern_id)\n    )\n  order by r.route_code, rtp.direction;\nend;\n$function$\n"
+    }
+  ],
+  "route_acl": [
+    "postgres=arwdDxtm/postgres",
+    "authenticated=arwdDxtm/postgres",
+    "service_role=arwdDxtm/postgres"
+  ],
+  "route_policies": [
+    {
+      "cmd": "DELETE",
+      "name": "routes delete tenant admin",
+      "qual": "(safebus_private.is_tenant_delete_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ]
+    },
+    {
+      "cmd": "INSERT",
+      "name": "routes insert tenant admin",
+      "qual": null,
+      "check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_optional_school(tenant_id, school_id))",
+      "roles": [
+        "authenticated"
+      ]
+    },
+    {
+      "cmd": "SELECT",
+      "name": "routes select assigned driver",
+      "qual": "safebus_private.driver_can_read_assigned_route(tenant_id, id)",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ]
+    },
+    {
+      "cmd": "SELECT",
+      "name": "routes select school or transportation admin",
+      "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (school_id = safebus_private.current_school_id())))",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ]
+    },
+    {
+      "cmd": "SELECT",
+      "name": "routes select tenant admin",
+      "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ]
+    },
+    {
+      "cmd": "UPDATE",
+      "name": "routes update tenant admin",
+      "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+      "check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_optional_school(tenant_id, school_id))",
+      "roles": [
+        "authenticated"
+      ]
+    },
+    {
+      "cmd": "ALL",
+      "name": "safebus_active_session",
+      "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+      "check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+      "roles": [
+        "authenticated"
+      ]
+    },
+    {
+      "cmd": "ALL",
+      "name": "safebus_optional_mfa",
+      "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+      "check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+      "roles": [
+        "authenticated"
+      ]
+    }
+  ],
+  "weekly_policies": [
+    {
+      "cmd": "DELETE",
+      "name": "route service days delete admin",
+      "qual": "(safebus_private.is_transportation_write_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_route_stop(tenant_id, route_id))",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ]
+    },
+    {
+      "cmd": "INSERT",
+      "name": "route service days insert admin",
+      "qual": null,
+      "check": "(safebus_private.is_transportation_write_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_route_stop(tenant_id, route_id))",
+      "roles": [
+        "authenticated"
+      ]
+    },
+    {
+      "cmd": "SELECT",
+      "name": "route service days select assigned driver",
+      "qual": "((safebus_private.current_user_role() = 'driver'::user_role) AND (tenant_id = safebus_private.current_tenant_id()) AND (EXISTS ( SELECT 1\n   FROM driver_route_assignments dra\n  WHERE ((dra.route_id = route_service_days.route_id) AND (dra.tenant_id = route_service_days.tenant_id) AND (dra.driver_id = safebus_private.current_driver_id()) AND (dra.status = 'active'::text)))))",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ]
+    },
+    {
+      "cmd": "SELECT",
+      "name": "route service days select school or transportation admin",
+      "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = route_service_days.route_id) AND (r.tenant_id = route_service_days.tenant_id) AND (r.school_id = safebus_private.current_school_id()))))))",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ]
+    },
+    {
+      "cmd": "SELECT",
+      "name": "route service days select tenant admin",
+      "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ]
+    },
+    {
+      "cmd": "UPDATE",
+      "name": "route service days update admin",
+      "qual": "(safebus_private.is_transportation_write_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_route_stop(tenant_id, route_id))",
+      "check": "(safebus_private.is_transportation_write_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_route_stop(tenant_id, route_id))",
+      "roles": [
+        "authenticated"
+      ]
+    },
+    {
+      "cmd": "ALL",
+      "name": "safebus_active_session",
+      "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+      "check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+      "roles": [
+        "authenticated"
+      ]
+    },
+    {
+      "cmd": "ALL",
+      "name": "safebus_optional_mfa",
+      "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+      "check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+      "roles": [
+        "authenticated"
+      ]
+    }
+  ]
+}
