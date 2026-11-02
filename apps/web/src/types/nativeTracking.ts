@@ -1,8 +1,18 @@
 export interface NativeTrackingStatus {
   configured: boolean;
   collecting: boolean;
-  queuedEvents: number;
+  queuedEvents: number | null;
+  pendingDelivery?: boolean;
   lastAcceptedAt?: string;
+  statusVersion?: 2;
+  connected?: boolean;
+  issue?:
+    | 'authorization_expired'
+    | 'authorization_rejected'
+    | 'authentication_expired'
+    | 'queue_unavailable'
+    | 'delivery_status_unavailable'
+    | 'location_permission';
 }
 
 export interface NativeTrackingPermissionState {

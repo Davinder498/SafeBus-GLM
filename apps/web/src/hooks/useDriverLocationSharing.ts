@@ -1,3 +1,4 @@
+import { nativeTrackingPresentation } from '@/utils/nativeTrackingPresentation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   isFatalLocationUpdateError,
@@ -7,10 +8,11 @@ import {
 export type LocationSharingState =
   | { kind: 'inactive' }
   | { kind: 'waiting' }
+  | { kind: 'recovering'; offline: boolean; lastUpdateAt: string | null }
   | { kind: 'sharing'; lastUpdateAt: string; delivery: 'active' | 'delayed' }
   | { kind: 'offline'; lastUpdateAt: string | null }
   | { kind: 'denied'; message: string }
-  | { kind: 'error'; message: string };
+  | { kind: 'error'; message: string; pendingDelivery?: boolean };
 
 export interface UseDriverLocationSharingResult {
   state: LocationSharingState;
@@ -36,8 +38,8 @@ export function useDriverLocationSharing(
   autoStart = false,
 ): UseDriverLocationSharingResult {
   const nativeTracking = typeof window !== 'undefined' ? window.SafeBusNativeTracking : undefined;
-  const supported = Boolean(nativeTracking) ||
-    (typeof navigator !== 'undefined' && 'geolocation' in navigator);
+  const supported =
+    Boolean(nativeTracking) || (typeof navigator !== 'undefined' && 'geolocation' in navigator);
   const [state, setState] = useState<LocationSharingState>({ kind: 'inactive' });
   const watchIdRef = useRef<number | null>(null);
   const trackingTokenRef = useRef(trackingToken);
@@ -50,6 +52,10 @@ export function useDriverLocationSharing(
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
   const flushRef = useRef<() => void>(() => undefined);
+  const nativeRefreshRef = useRef<() => void>(() => undefined);
+  const nativeSequenceRef = useRef(0);
+  const nativeActionRef = useRef(false);
+  const nativeObservationRef = useRef(trackingToken);
   trackingTokenRef.current = trackingToken;
 
   const clearTimer = useCallback(() => {
@@ -72,7 +78,37 @@ export function useDriverLocationSharing(
     retryAttemptRef.current = 0;
     clearTimer();
     clearWatcher();
-    if (nativeTracking) void nativeTracking.pause();
+    if (nativeTracking) {
+      nativeActionRef.current = true;
+      const token = trackingTokenRef.current;
+      const request = ++nativeSequenceRef.current;
+      void nativeTracking
+        .pause()
+        .then((status) => {
+          if (
+            mountedRef.current &&
+            token === trackingTokenRef.current &&
+            request === nativeSequenceRef.current
+          )
+            setState(nativeTrackingPresentation(status, navigator.onLine));
+        })
+        .catch(() => {
+          if (
+            mountedRef.current &&
+            token === trackingTokenRef.current &&
+            request === nativeSequenceRef.current
+          )
+            setState({
+              kind: 'error',
+              message: 'Could not verify native tracking status. Reopen SafeBus.',
+            });
+        })
+        .finally(() => {
+          if (request === nativeSequenceRef.current) nativeActionRef.current = false;
+        });
+      if (mountedRef.current) setState({ kind: 'waiting' });
+      return;
+    }
     if (mountedRef.current) setState({ kind: 'inactive' });
   }, [clearTimer, clearWatcher, nativeTracking]);
 
@@ -164,28 +200,36 @@ export function useDriverLocationSharing(
     if (!trackingTokenRef.current) return;
 
     if (nativeTracking) {
+      nativeActionRef.current = true;
       sharingRequestedRef.current = true;
       setState({ kind: 'waiting' });
-      void nativeTracking.resume().then((status) => {
-        if (!mountedRef.current || !sharingRequestedRef.current) return;
-        if (status.collecting && status.lastAcceptedAt) {
-          lastUpdateAtRef.current = status.lastAcceptedAt;
-          setState({
-            kind: 'sharing',
-            lastUpdateAt: status.lastAcceptedAt,
-            delivery: status.queuedEvents === 0 ? 'active' : 'delayed',
-          });
-        } else if (status.collecting) {
-          setState({ kind: 'waiting' });
-        }
-      }).catch((error: unknown) => {
-        if (mountedRef.current) {
-          setState({
-            kind: 'error',
-            message: error instanceof Error ? error.message : 'Native location sharing could not be started.',
-          });
-        }
-      });
+      const token = trackingTokenRef.current;
+      const request = ++nativeSequenceRef.current;
+      void nativeTracking
+        .resume()
+        .then((status) => {
+          if (
+            !mountedRef.current ||
+            token !== trackingTokenRef.current ||
+            request !== nativeSequenceRef.current
+          )
+            return;
+          setState(nativeTrackingPresentation(status, navigator.onLine));
+        })
+        .catch(() => {
+          if (
+            mountedRef.current &&
+            token === trackingTokenRef.current &&
+            request === nativeSequenceRef.current
+          )
+            setState({
+              kind: 'error',
+              message: 'Could not verify native tracking status. Reopen SafeBus.',
+            });
+        })
+        .finally(() => {
+          if (request === nativeSequenceRef.current) nativeActionRef.current = false;
+        });
       return;
     }
 
@@ -229,42 +273,112 @@ export function useDriverLocationSharing(
   }, [clearTimer, clearWatcher, nativeTracking, supported]);
 
   useEffect(() => {
-    if (!nativeTracking || !trackingToken) return undefined;
+    if (!nativeTracking) return undefined;
+    nativeObservationRef.current = trackingToken;
+    nativeActionRef.current = false;
+    lastUpdateAtRef.current = null;
+    setState(trackingToken ? { kind: 'waiting' } : { kind: 'inactive' });
+    if (!trackingToken) return undefined;
+    let active = true;
+    let inFlight = false;
+    let watchdog: number | undefined;
     const updateNativeState = async () => {
+      if (inFlight || nativeActionRef.current) return;
+      inFlight = true;
+      const request = ++nativeSequenceRef.current;
+      watchdog = window.setTimeout(() => {
+        if (
+          active &&
+          mountedRef.current &&
+          trackingTokenRef.current === trackingToken &&
+          request === nativeSequenceRef.current
+        )
+          setState({
+            kind: 'error',
+            message: 'Could not verify native tracking status. Reopen SafeBus.',
+          });
+      }, 15_000);
       try {
         const status = await nativeTracking.getStatus();
-        if (!mountedRef.current) return;
-        if (!status.configured || !status.collecting) {
-          setState({ kind: 'inactive' });
-        } else if (status.lastAcceptedAt) {
-          lastUpdateAtRef.current = status.lastAcceptedAt;
-          setState({
-            kind: 'sharing',
-            lastUpdateAt: status.lastAcceptedAt,
-            delivery: status.queuedEvents === 0 ? 'active' : 'delayed',
-          });
-        } else if (status.queuedEvents > 0) {
-          setState({ kind: 'offline', lastUpdateAt: null });
-        } else {
-          setState({ kind: 'waiting' });
-        }
+        if (
+          !active ||
+          !mountedRef.current ||
+          trackingTokenRef.current !== trackingToken ||
+          request !== nativeSequenceRef.current
+        )
+          return;
+        const next = nativeTrackingPresentation(status, navigator.onLine);
+        lastUpdateAtRef.current = 'lastUpdateAt' in next ? next.lastUpdateAt : null;
+        setState(next);
       } catch {
-        // The foreground notification remains authoritative while the WebView is suspended.
+        if (
+          active &&
+          mountedRef.current &&
+          trackingTokenRef.current === trackingToken &&
+          request === nativeSequenceRef.current
+        )
+          setState({
+            kind: 'error',
+            message: 'Could not verify native tracking status. Reopen SafeBus.',
+          });
+      } finally {
+        window.clearTimeout(watchdog);
+        inFlight = false;
       }
     };
+    nativeRefreshRef.current = () => void updateNativeState();
     void updateNativeState();
     const timer = window.setInterval(() => void updateNativeState(), 10_000);
-    return () => window.clearInterval(timer);
+    return () => {
+      active = false;
+      nativeSequenceRef.current += 1;
+      nativeRefreshRef.current = () => undefined;
+      window.clearInterval(timer);
+      window.clearTimeout(watchdog);
+    };
   }, [nativeTracking, trackingToken]);
 
   useEffect(() => {
+    if (!nativeTracking || state.kind !== 'sharing' || state.delivery !== 'active') return;
+    const lastUpdateAt = state.lastUpdateAt;
+    const timer = window.setTimeout(
+      () =>
+        setState((current) =>
+          current.kind === 'sharing' && current.lastUpdateAt === lastUpdateAt
+            ? { ...current, delivery: 'delayed' }
+            : current,
+        ),
+      Math.max(0, Date.parse(lastUpdateAt) + 120_001 - Date.now()),
+    );
+    return () => window.clearTimeout(timer);
+  }, [nativeTracking, state]);
+
+  useEffect(() => {
     const handleOffline = () => {
+      if (nativeTracking && trackingTokenRef.current) {
+        setState((current) =>
+          current.kind === 'recovering'
+            ? { ...current, offline: true }
+            : current.kind === 'error' || current.kind === 'inactive'
+              ? current
+              : {
+                  kind: 'offline',
+                  lastUpdateAt: 'lastUpdateAt' in current ? current.lastUpdateAt : null,
+                },
+        );
+        nativeRefreshRef.current();
+        return;
+      }
       if (sharingRequestedRef.current) {
         clearTimer();
         setState({ kind: 'offline', lastUpdateAt: lastUpdateAtRef.current });
       }
     };
     const handleOnline = () => {
+      if (nativeTracking) {
+        nativeRefreshRef.current();
+        return;
+      }
       if (sharingRequestedRef.current) {
         retryAttemptRef.current = 0;
         lastAttemptAtRef.current = 0;
@@ -277,15 +391,15 @@ export function useDriverLocationSharing(
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('online', handleOnline);
     };
-  }, [clearTimer]);
+  }, [clearTimer, nativeTracking]);
 
   useEffect(() => {
-    if (!trackingToken) stop();
-  }, [trackingToken, stop]);
+    if (!trackingToken && !nativeTracking) stop();
+  }, [trackingToken, stop, nativeTracking]);
 
   useEffect(() => {
-    if (trackingToken && autoStart && !sharingRequestedRef.current) start();
-  }, [trackingToken, autoStart, start]);
+    if (!nativeTracking && trackingToken && autoStart && !sharingRequestedRef.current) start();
+  }, [trackingToken, autoStart, start, nativeTracking]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -297,5 +411,11 @@ export function useDriverLocationSharing(
     };
   }, [clearTimer, clearWatcher]);
 
-  return { state, supported, start, stop };
+  const visibleState: LocationSharingState =
+    nativeTracking && nativeObservationRef.current !== trackingToken
+      ? trackingToken
+        ? { kind: 'waiting' }
+        : { kind: 'inactive' }
+      : state;
+  return { state: visibleState, supported, start, stop };
 }

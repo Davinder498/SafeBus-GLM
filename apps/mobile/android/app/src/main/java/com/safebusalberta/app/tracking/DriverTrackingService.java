@@ -199,6 +199,7 @@ public final class DriverTrackingService extends Service implements LocationList
                     }
                 }
             } catch (Exception ignored) {}
+            TrackingStatusStore.issue(store, config, "queue_unavailable");
             updateNotification("Tracking stopped — secure queue unavailable");
             flushQueue();
         }
@@ -253,7 +254,7 @@ public final class DriverTrackingService extends Service implements LocationList
             );
             if (UploadHttpPolicy.retryable(refresh.statusCode)) return LocationUploadPump.Result.retry(refresh.retryAfterMs);
             if (refresh.statusCode < 200 || refresh.statusCode >= 300) {
-                return haltUploadsIfCurrent(config, "Authentication expired — reopen SafeBus");
+                return haltUploadsIfCurrent(config, "Authentication expired — reopen SafeBus", "authentication_expired");
             }
             JSONObject body = new JSONObject(refresh.body);
             // Preserve a concurrent pause/end and do not overwrite a replacement trip's configuration.
@@ -270,7 +271,7 @@ public final class DriverTrackingService extends Service implements LocationList
         }
         if (UploadHttpPolicy.retryable(result.statusCode)) return LocationUploadPump.Result.retry(result.retryAfterMs);
         if (result.statusCode < 200 || result.statusCode >= 300) {
-            return haltUploadsIfCurrent(config, "Tracking authorization was rejected");
+            return haltUploadsIfCurrent(config, "Tracking authorization was rejected", "authorization_rejected");
         }
         JSONObject response = new JSONObject(result.body);
         boolean accepted = response.optBoolean("accepted", false);
@@ -282,7 +283,8 @@ public final class DriverTrackingService extends Service implements LocationList
         queue.remove(entry.sequence);
         if (accepted) {
             String recordedAt = response.optString("recordedAt", null);
-            if (recordedAt != null) store.put("last_accepted_at", recordedAt);
+            if (recordedAt != null) TrackingStatusStore.accepted(store, config,
+                entry.payload.optString("p_tracking_token"), recordedAt);
         }
         synchronized (TrackingConfig.class) {
             TrackingConfig current = TrackingConfig.load(store);
@@ -311,9 +313,10 @@ public final class DriverTrackingService extends Service implements LocationList
             && current.refreshToken.equals(sent.refreshToken);
     }
 
-    private LocationUploadPump.Result haltUploadsIfCurrent(TrackingConfig sent, String message) {
+    private LocationUploadPump.Result haltUploadsIfCurrent(TrackingConfig sent, String message, String issue) {
         synchronized (TrackingConfig.class) {
             if (!isCurrentAuthorization(sent)) return LocationUploadPump.Result.retry(0);
+            TrackingStatusStore.issue(store, sent, issue);
             stopFromServer(message);
             stopForeground(STOP_FOREGROUND_REMOVE);
             stopSelf();
@@ -353,6 +356,7 @@ public final class DriverTrackingService extends Service implements LocationList
     }
 
     private void stopForExpiredAuthorization() {
+        TrackingStatusStore.issue(store, TrackingConfig.load(store), "authorization_expired");
         stopLocationUpdates();
         store.remove(TrackingConfig.STORE_KEY);
         store.remove("finish_after_flush");

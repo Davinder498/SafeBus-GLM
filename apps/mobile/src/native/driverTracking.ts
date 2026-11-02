@@ -15,6 +15,7 @@ interface DeviceInfo extends NativeTrackingPermissionState {
 }
 
 interface StartOptions {
+  profileId: string;
   supabaseUrl: string;
   anonKey: string;
   accessToken: string;
@@ -30,10 +31,10 @@ interface DriverTrackingNativePlugin {
   openAppSettings: () => Promise<void>;
   openLocationServices: () => Promise<void>;
   start: (options: StartOptions) => Promise<NativeTrackingStatus>;
-  pause: () => Promise<NativeTrackingStatus>;
-  resume: () => Promise<NativeTrackingStatus>;
-  stop: () => Promise<NativeTrackingStatus>;
-  getStatus: () => Promise<NativeTrackingStatus>;
+  pause: (options: { profileId?: string }) => Promise<NativeTrackingStatus>;
+  resume: (options: { profileId?: string }) => Promise<NativeTrackingStatus>;
+  stop: (options: { profileId?: string }) => Promise<NativeTrackingStatus>;
+  getStatus: (options: { profileId?: string }) => Promise<NativeTrackingStatus>;
 }
 
 interface DeviceRegistrationResult {
@@ -53,6 +54,21 @@ export function openNativeAppSettings(): Promise<void> {
 }
 
 export function installNativeDriverTrackingBridge(): void {
+  const scoped = async (method: 'pause' | 'resume' | 'stop' | 'getStatus') => {
+    let profileId: string | undefined;
+    try {
+      const session = await supabase?.auth.getSession();
+      if (session?.error) throw session.error;
+      profileId = session?.data.session?.user.id;
+    } catch (error) {
+      if (method === 'getStatus' || method === 'resume') throw error;
+      // A failed Auth read must never prevent the privacy action of stopping collection.
+    }
+    // Even after sign-out, stop/pause must stop collection; their response is unscoped/empty.
+    if (!profileId && (method === 'getStatus' || method === 'resume'))
+      return { statusVersion: 2 as const, configured: false, collecting: false, queuedEvents: 0 };
+    return nativePlugin[method]({ profileId });
+  };
   const bridge: SafeBusNativeTrackingBridge = {
     async prepare() {
       let device = await nativePlugin.getDeviceInfo();
@@ -113,6 +129,7 @@ export function installNativeDriverTrackingBridge(): void {
       if (bindError) throw new Error(bindError.message);
 
       await nativePlugin.start({
+        profileId: sessionResult.data.session.user.id,
         supabaseUrl: supabaseEnv.url,
         anonKey: supabaseEnv.anonKey,
         accessToken: sessionResult.data.session.access_token,
@@ -122,10 +139,10 @@ export function installNativeDriverTrackingBridge(): void {
         authorizedUntil: Date.now() + 18 * 60 * 60 * 1_000,
       });
     },
-    pause: () => nativePlugin.pause(),
-    resume: () => nativePlugin.resume(),
-    stop: () => nativePlugin.stop(),
-    getStatus: () => nativePlugin.getStatus(),
+    pause: () => scoped('pause'),
+    resume: () => scoped('resume'),
+    stop: () => scoped('stop'),
+    getStatus: () => scoped('getStatus'),
   };
   window.SafeBusNativeTracking = bridge;
 }
