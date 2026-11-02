@@ -147,6 +147,18 @@ export async function operationalSnapshot(client, config) {
       snapshot.indexes.push(row?.indexdef ?? null);
     }
   }
+  if (config.triggers) {
+    snapshot.triggers = [];
+    for (const trigger of config.triggers) {
+      const {
+        rows: [row],
+      } = await client.query(
+        'select pg_get_triggerdef(oid) as definition from pg_trigger where tgrelid=to_regclass($1) and tgname=$2 and not tgisinternal',
+        [trigger.table, trigger.name],
+      );
+      snapshot.triggers.push(row?.definition ?? null);
+    }
+  }
   if (config.columnGrants) {
     snapshot.columnGrants = [];
     for (const grant of config.columnGrants) {
@@ -162,7 +174,15 @@ export async function operationalSnapshot(client, config) {
 }
 
 export function verifyOperationalSnapshot(snapshot, config, state) {
-  for (const key of ['relations', 'jobs', 'quotaRepairs', 'constraints', 'indexes', 'columns']) {
+  for (const key of [
+    'relations',
+    'jobs',
+    'quotaRepairs',
+    'constraints',
+    'indexes',
+    'columns',
+    'triggers',
+  ]) {
     if (
       config[key] &&
       !isDeepStrictEqual(
@@ -233,6 +253,12 @@ export function operationalRestoreSql(snapshot, config) {
   const statements = [
     ...pendingGuards,
     ...moves,
+    ...(config.triggers ?? [])
+      .filter((trigger) => trigger.before === null)
+      .map(
+        (trigger) =>
+          `DROP TRIGGER ${identifier(trigger.name)} ON ${trigger.table.split('.').map(identifier).join('.')};`,
+      ),
     ...[...snapshot.functions]
       .reverse()
       .map((f) =>
@@ -258,7 +284,11 @@ export function operationalRestoreSql(snapshot, config) {
     const [schema, table] = constraint.table.split('.');
     statements.push(
       `ALTER TABLE ${identifier(schema)}.${identifier(table)} DROP CONSTRAINT ${identifier(constraint.name)};`,
-      `ALTER TABLE ${identifier(schema)}.${identifier(table)} ADD CONSTRAINT ${identifier(constraint.name)} ${snapshot.constraints[index]};`,
+      ...(snapshot.constraints[index] === null
+        ? []
+        : [
+            `ALTER TABLE ${identifier(schema)}.${identifier(table)} ADD CONSTRAINT ${identifier(constraint.name)} ${snapshot.constraints[index]};`,
+          ]),
     );
   }
   for (const [index, job] of (config.jobs ?? []).entries())

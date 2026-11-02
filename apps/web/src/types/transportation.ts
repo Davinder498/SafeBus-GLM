@@ -3,6 +3,7 @@ export type DriverStatus = 'active' | 'inactive' | 'suspended' | 'archived';
 export type RouteStatus = 'active' | 'inactive' | 'archived';
 export type RouteType = 'morning' | 'afternoon' | 'special' | 'field_trip';
 export type RouteKind = 'regular' | 'field_trip';
+export type RouteServiceMode = 'weekly' | 'dates';
 export type RouteDefinitionStatus = 'incomplete' | 'ready';
 export type RouteDirection = 'forward' | 'reverse';
 export type DirectionScope = 'both' | RouteDirection;
@@ -56,6 +57,8 @@ export interface Route {
   route_code: string;
   route_type: RouteType;
   route_kind: RouteKind;
+  service_schedule_mode?: RouteServiceMode;
+  service_dates?: string[];
   map_color: string;
   definition_status: RouteDefinitionStatus;
   status: RouteStatus;
@@ -143,6 +146,8 @@ export interface SaveRouteDefinitionInput {
   stops: RouteDefinitionStopInput[];
   tripPatterns: RouteDefinitionTripInput[];
   serviceDays: number[];
+  serviceMode?: RouteServiceMode;
+  serviceDates?: string[];
 }
 
 export interface SaveRouteDefinitionResult {

@@ -8,6 +8,8 @@ const routeRecord = {
   route_name: 'Route One',
   route_code: 'R1',
   route_kind: 'regular',
+  service_schedule_mode: 'weekly',
+  service_dates: [] as string[],
   map_color: '#2563eb',
   definition_status: 'ready',
   status: 'active',
@@ -96,10 +98,6 @@ async function fixture(
       case 'route_trip_stop_schedules':
         return reply([]);
       case 'route_service_days':
-        if (request.request().method() === 'POST' && options.rejectDaysOnce && !daysRejected) {
-          daysRejected = true;
-          return reply({ message: 'Unavailable' }, 503);
-        }
         return reply(
           [1, 2, 3, 4, 5].map((day_of_week) => ({
             route_id: ADMIN_IDS.route,
@@ -131,7 +129,16 @@ async function fixture(
         return reply([{ id: 'student-one', label: 'Alex Test', school_name: null }]);
       case 'admin_save_route_definition':
         writes.push({ name, args });
-        record = { ...record, route_name: args.p_route.routeName };
+        if (options.rejectDaysOnce && !daysRejected) {
+          daysRejected = true;
+          return reply({ message: 'Calendar could not be saved.' }, 503);
+        }
+        record = {
+          ...record,
+          route_name: args.p_route.routeName,
+          service_schedule_mode: args.p_route.serviceMode,
+          service_dates: args.p_route.serviceDates,
+        };
         return reply({ routeId: ADMIN_IDS.route, definitionStatus: 'ready', activeStopCount: 2 });
       case 'admin_set_bus_route_service':
         writes.push({ name, args });
@@ -242,7 +249,9 @@ async function assignBus(page: Page) {
   await expect(page.getByRole('form', { name: 'Driver for Outbound bus One' })).toBeVisible();
 }
 
-test('route setup offers safe creation returns without assigning records automatically', async ({ page }) => {
+test('route setup offers safe creation returns without assigning records automatically', async ({
+  page,
+}) => {
   const writes = await fixture(page);
   await open(page);
   const section = page.locator('#route-service');
@@ -473,7 +482,7 @@ test('failed roster loading blocks student edits and keeps review unverified', a
   await expect(page.locator('#route-review')).toContainText('Students: Not verified');
 });
 
-test('retrying partial route creation keeps the saved route identity', async ({ page }) => {
+test('retrying a failed atomic route save preserves inputs and creates once', async ({ page }) => {
   const writes = await fixture(page, { rejectDaysOnce: true });
   await page.goto('/admin/routes');
   await page.getByRole('link', { name: 'Add route', exact: true }).click();
@@ -490,13 +499,7 @@ test('retrying partial route creation keeps the saved route identity', async ({ 
     await page.getByRole('button', { name: 'Save stop details' }).click();
   }
   await page.getByRole('button', { name: 'Save route definition' }).click();
-  await expect(
-    page
-      .getByText(
-        'Route details saved, but operating days were not saved. Retry saving to finish this route.',
-      )
-      .first(),
-  ).toBeVisible();
+  await expect(page.getByText('Calendar could not be saved.').first()).toBeVisible();
   await page.getByRole('button', { name: 'Save route definition' }).click();
   await expect(page).toHaveURL(`/admin/routes/${ADMIN_IDS.route}#setup`);
   await expect(page.getByRole('heading', { name: 'New route', exact: true })).toBeVisible();
@@ -504,7 +507,8 @@ test('retrying partial route creation keeps the saved route identity', async ({ 
   const routeWrites = writes.filter((w) => w.name === 'admin_save_route_definition');
   expect(routeWrites).toHaveLength(2);
   expect(routeWrites[0].args.p_route).not.toHaveProperty('id');
-  expect(routeWrites[1].args.p_route).toMatchObject({ id: ADMIN_IDS.route });
+  expect(routeWrites[1].args.p_route).not.toHaveProperty('id');
+  expect(routeWrites[1].args).toEqual(routeWrites[0].args);
 });
 
 test('a failed service read blocks setup until a successful reload', async ({ page }) => {
@@ -517,4 +521,54 @@ test('a failed service read blocks setup until a successful reload', async ({ pa
   options.rejectServices = false;
   await page.getByRole('button', { name: 'Retry route loading' }).click();
   await expect(page.getByTestId('route-setup')).toBeVisible();
+});
+
+test('regular routes can use exact weekend dates and reject an empty active date list', async ({
+  page,
+}) => {
+  const writes = await fixture(page);
+  await page.goto(`/admin/routes/${ADMIN_IDS.route}`);
+  await page.getByRole('button', { name: 'Edit route details and stops' }).click();
+  await page.getByRole('combobox', { name: 'Schedule', exact: true }).selectOption('dates');
+  await page.getByRole('button', { name: 'Save route definition' }).click();
+  await expect(
+    page.getByText('Select at least one valid service date', { exact: false }),
+  ).toBeVisible();
+  expect(writes).toHaveLength(0);
+  for (const date of ['2026-11-08', '2026-11-01']) {
+    await page.getByLabel('Service date', { exact: true }).fill(date);
+    await page.getByRole('button', { name: 'Add date', exact: true }).click();
+  }
+  await page.getByLabel('Service date', { exact: true }).fill('2026-11-08');
+  await expect(page.getByRole('button', { name: 'Add date', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Remove service date 2026-11-01' }).click();
+  await page.getByRole('button', { name: 'Save route definition' }).click();
+  await expect(page.getByText('Route details, stops and service calendar saved.')).toBeVisible();
+  expect(writes[0].args.p_route).toMatchObject({
+    routeKind: 'regular',
+    serviceMode: 'dates',
+    serviceDates: ['2026-11-08'],
+  });
+  await page.getByText('Specific dates (1)', { exact: true }).click();
+  await expect(page.getByRole('listitem').filter({ hasText: '2026-11-08' })).toBeVisible();
+});
+
+test('an administrator can close every weekday without switching route status', async ({
+  page,
+}) => {
+  const writes = await fixture(page);
+  await page.goto(`/admin/routes/${ADMIN_IDS.route}`);
+  await page.getByRole('button', { name: 'Edit route details and stops' }).click();
+  for (const day of ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'])
+    await page.getByRole('checkbox', { name: day, exact: true }).uncheck();
+  await expect(
+    page.getByText('This route is closed for new trips on every weekday.'),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Save route definition' }).click();
+  await expect(page.getByText('Route details, stops and service calendar saved.')).toBeVisible();
+  expect(writes[0].args.p_route).toMatchObject({
+    status: 'active',
+    serviceMode: 'weekly',
+    serviceDays: [],
+  });
 });

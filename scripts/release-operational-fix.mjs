@@ -20,6 +20,7 @@ import {
 const mode = process.argv[2];
 const milestone = process.env.SAFEBUS_OPERATIONAL_MILESTONE;
 const manifests = {
+  calendar: 'config/pending/route-service-calendar.json',
   reporting: 'config/pending/privileged-admin-mfa.json',
   delivery: 'config/pending/unified-notification-delivery.json',
   overview: 'config/pending/admin-active-trip-visibility.json',
