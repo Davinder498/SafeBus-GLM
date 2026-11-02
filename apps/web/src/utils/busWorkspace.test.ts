@@ -1,10 +1,45 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   busAssignmentEffectiveStatus,
   busAssignmentEndDate,
   busWorkspaceLifecycle,
   safeBusWorkspaceReturn,
 } from '@/utils/busWorkspace';
+
+afterEach(() => vi.useRealTimers());
+
+it.each([
+  ['2026-01-16T01:00:00Z', '2026-01-15'],
+  ['2026-07-16T01:00:00Z', '2026-07-15'],
+  ['2026-11-03T01:00:00Z', '2026-11-02'],
+  ['2026-11-02T06:30:00Z', '2026-11-02'],
+])('uses Alberta dates for current, upcoming and end-date defaults at %s', (instant, day) => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(instant));
+  const endsToday = { status: 'active', effective_from: '2025-01-01', effective_to: day };
+  const startsNextUtcDay = {
+    status: 'active',
+    effective_from: new Date(instant).toISOString().slice(0, 10),
+    effective_to: null,
+  };
+  expect(busWorkspaceLifecycle(endsToday)).toBe('current');
+  expect(busAssignmentEffectiveStatus(endsToday)).toBe('active');
+  expect(busAssignmentEndDate({ effective_from: '2025-01-01', effective_to: null })).toBe(day);
+  if (startsNextUtcDay.effective_from > day) {
+    expect(busWorkspaceLifecycle(startsNextUtcDay)).toBe('upcoming');
+    expect(busAssignmentEffectiveStatus(startsNextUtcDay)).toBe('scheduled');
+  }
+});
+
+it('moves plans to history exactly at Alberta midnight', () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  const plan = { status: 'active', effective_from: '2026-11-02', effective_to: '2026-11-02' };
+  vi.setSystemTime(new Date('2026-11-03T05:59:59Z'));
+  expect(busWorkspaceLifecycle(plan)).toBe('current');
+  vi.setSystemTime(new Date('2026-11-03T06:00:00Z'));
+  expect(busWorkspaceLifecycle(plan)).toBe('history');
+  expect(busAssignmentEffectiveStatus(plan)).toBe('expired');
+});
 
 describe('bus workspace assignment lifecycle', () => {
   const currentDate = '2026-07-25';
