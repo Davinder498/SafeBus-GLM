@@ -1,3 +1,4 @@
+import { albertaToday } from '@/utils/adminTripDates';
 import { useCallback, useEffect, useState } from 'react';
 import { ClipboardCheck, Settings2, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
@@ -43,7 +44,13 @@ function formatPlanDate(value: string | null) {
   }).format(new Date(`${value}T00:00:00Z`));
 }
 
-function PlannedAssignmentsCard({ assignments }: { assignments: PlannedDriverAssignment[] }) {
+function PlannedAssignmentsCard({
+  assignments,
+  today,
+}: {
+  assignments: PlannedDriverAssignment[];
+  today: string;
+}) {
   return (
     <Card className="p-5" data-testid="driver-planned-assignments">
       <div className="flex items-center justify-between gap-3">
@@ -62,7 +69,6 @@ function PlannedAssignmentsCard({ assignments }: { assignments: PlannedDriverAss
       ) : (
         <div className="mt-4 space-y-3">
           {assignments.map((assignment) => {
-            const today = new Date().toISOString().slice(0, 10);
             const upcoming = !!assignment.effective_from && assignment.effective_from > today;
             return (
               <div key={assignment.id} className="rounded-lg border border-slate-200 p-4">
@@ -164,7 +170,7 @@ export function DriverDashboardPage() {
 
   const activeTrip = state.kind === 'ready' ? state.activeTrip : null;
   const plannedAssignments = state.kind === 'ready' ? state.plannedAssignments : [];
-  const today = new Date().toISOString().slice(0, 10);
+  const today = albertaToday();
   const currentPlans = plannedAssignments.filter(
     (assignment) =>
       (!assignment.effective_from || assignment.effective_from <= today) &&
@@ -232,7 +238,7 @@ export function DriverDashboardPage() {
               </Card>
             )}
             <BusQrStartScanner hasActiveTrip={false} onStarted={handleStarted} />
-            <PlannedAssignmentsCard assignments={plannedAssignments} />
+            <PlannedAssignmentsCard assignments={plannedAssignments} today={today} />
           </div>
         )}
 
@@ -332,7 +338,7 @@ export function DriverDashboardPage() {
               </Card>
             )}
 
-            <PlannedAssignmentsCard assignments={plannedAssignments} />
+            <PlannedAssignmentsCard assignments={plannedAssignments} today={today} />
 
             {(!tracking.trackingToken ||
               tracking.location.state.kind === 'denied' ||

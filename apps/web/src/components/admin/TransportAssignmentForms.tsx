@@ -1,3 +1,4 @@
+import { albertaToday } from '@/utils/adminTripDates';
 import { useMemo, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import type { CreateAssignmentInput } from '@/types/driverAssignments';
@@ -54,7 +55,7 @@ export function RouteBusAssignmentForm({
   );
   const [busId, setBusId] = useState(existingAssignments[0]?.bus_id ?? initialBusId ?? '');
   const [effectiveFrom, setEffectiveFrom] = useState(
-    existingAssignments[0]?.effective_from ?? new Date().toISOString().slice(0, 10),
+    existingAssignments[0]?.effective_from ?? albertaToday(),
   );
   const [effectiveTo, setEffectiveTo] = useState(existingAssignments[0]?.effective_to ?? '');
   const [saving, setSaving] = useState(false);
@@ -189,7 +190,7 @@ export function BusDriverAssignmentForm({
 }) {
   const [serviceId, setServiceId] = useState(services[0]?.id ?? '');
   const [driverId, setDriverId] = useState('');
-  const [effectiveFrom, setEffectiveFrom] = useState(new Date().toISOString().slice(0, 10));
+  const [effectiveFrom, setEffectiveFrom] = useState(albertaToday());
   const [effectiveTo, setEffectiveTo] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
