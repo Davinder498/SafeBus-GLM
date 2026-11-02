@@ -1,0 +1,86 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261102015745_restore_privileged_admin_mfa.sql",
+  "migrationSha256": "a1499021790333813be58f6f6e79e9afcce727e186aa7703d71cb80580578219",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "safebus_private.has_verified_mfa()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "ce806af4a38645412cb02ed01ea100c1"
+      },
+      "after": {
+        "md5": "ce806af4a38645412cb02ed01ea100c1"
+      }
+    },
+    {
+      "signature": "safebus_private.enforce_active_api_session()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "d64d2cfd09e9d80cc37da97dd166a5d3"
+      },
+      "after": {
+        "md5": "7a77de9d70d58b4e3f9c1a78f71fd42d"
+      }
+    },
+    {
+      "signature": "safebus_private.has_completed_optional_mfa()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "993c7430149d80d7b5ed93be04a9fb55"
+      },
+      "after": {
+        "md5": "f2169c0652e9c6b9284c1b366f38611d"
+      }
+    },
+    {
+      "signature": "public.complete_invited_account()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "d7c430105e2b241e5938b9c1486ce53f"
+      },
+      "after": {
+        "md5": "d7c430105e2b241e5938b9c1486ce53f"
+      }
+    },
+    {
+      "signature": "public.enforce_new_password_policy(text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "fdef91973c112f4cdebabb608d9d5c69"
+      },
+      "after": {
+        "md5": "fdef91973c112f4cdebabb608d9d5c69"
+      }
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": []
+}

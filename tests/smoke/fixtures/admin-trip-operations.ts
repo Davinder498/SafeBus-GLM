@@ -22,9 +22,13 @@ export function operation(n: number, status = 'completed', date = '2026-10-28') 
   };
 }
 
-export async function installTripOperationsMock(page: Page, time = '2026-10-28T14:01:00Z') {
+export async function installTripOperationsMock(
+  page: Page,
+  time = '2026-10-28T14:01:00Z',
+  role: 'tenant_admin' | 'transportation_admin' = 'tenant_admin',
+) {
   await page.clock.install({ time: new Date(time) });
-  await installAdminWorkflowMock(page);
+  await installAdminWorkflowMock(page, role);
   const controls = {
     rows: [
       operation(1, 'active', '2026-10-27'),

@@ -7,7 +7,7 @@ export function AdminTripsPage() {
     <DashboardLayout title="All trips" portal="admin" navItems={[]} navGroups={adminNavGroups}>
       <div className="space-y-5">
         <PageHeader eyebrow="Operations" title="All trips" />
-        <AdminTripSearchSection />
+        <AdminTripSearchSection reporting />
       </div>
     </DashboardLayout>
   );

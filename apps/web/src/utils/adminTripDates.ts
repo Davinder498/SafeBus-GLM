@@ -1,16 +1,14 @@
 import type { AdminTripDateSelection } from '@/types/adminTripSearch';
+import moment from 'moment-timezone/moment-timezone';
+import edmontonTimezone from '@/data/edmontonTimezone.json';
+
+// One zone from pinned moment-timezone (MIT), IANA 2026f; avoid shipping the world's zone data.
+moment.tz.load(edmontonTimezone);
 
 export const ALBERTA_TIME_ZONE = 'America/Edmonton';
 
 export function albertaToday(now = new Date()): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: ALBERTA_TIME_ZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(now);
-  const part = (type: string) => parts.find((item) => item.type === type)?.value;
-  return `${part('year')}-${part('month')}-${part('day')}`;
+  return moment(now).tz(ALBERTA_TIME_ZONE).format('YYYY-MM-DD');
 }
 
 function validDate(value: string): boolean {
@@ -42,7 +40,18 @@ export function formatAdminTripDate(value: string): string {
 
 export function formatAdminTripTime(value: string, timeZone?: string): string {
   const date = new Date(value);
+  if (timeZone === ALBERTA_TIME_ZONE)
+    return Number.isNaN(date.getTime())
+      ? 'Unavailable'
+      : moment(date).tz(timeZone).format('h:mm A');
   return Number.isNaN(date.getTime())
     ? value
     : date.toLocaleTimeString(undefined, { timeZone, hour: 'numeric', minute: '2-digit' });
+}
+
+/** Bundled IANA data avoids dependence on browser/OS timezone updates. */
+export function formatAdminTripTimestamp(value: string, timeZone = ALBERTA_TIME_ZONE): string {
+  const date = new Date(value);
+  if (!value || Number.isNaN(date.getTime())) return 'Not recorded';
+  return moment(date).tz(timeZone).format('YYYY-MM-DD h:mm A [UTC]Z');
 }

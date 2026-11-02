@@ -1,3 +1,10 @@
+import { AdminTripEvidenceTable } from '@/components/admin/AdminTripEvidenceTable';
+import {
+  searchAdminTripExceptions,
+  searchAdminTripDispatchFlags,
+} from '@/services/adminTripReportService';
+import type { AdminTripReportQuery, AdminTripEvidence } from '@/types/adminTripReport';
+import { TRIP_EXCEPTION_TYPES } from '@/types/tripExceptions';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { AdminPagination } from '@/components/admin/AdminPagination';
@@ -12,11 +19,7 @@ import { useAdminTripRefresh } from '@/hooks/useAdminTripRefresh';
 import type { AdminTripStatus } from '@/types/adminTripOverview';
 import type { AdminTripOperation } from '@/types/adminTripDetail';
 import { readTripListQuery } from '@/utils/adminTripListQuery';
-import type {
-  AdminTripDateMode,
-  AdminTripDateSelection,
-  AdminTripSearchQuery,
-} from '@/types/adminTripSearch';
+import type { AdminTripDateMode, AdminTripDateSelection } from '@/types/adminTripSearch';
 import type { PaginatedResult } from '@/types/pagination';
 import {
   adminTripDateBounds,
@@ -28,7 +31,11 @@ import {
 type SearchState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; result: PaginatedResult<AdminTripOperation> };
+  | {
+      kind: 'ready';
+      result: PaginatedResult<AdminTripOperation>;
+      evidence?: PaginatedResult<AdminTripEvidence>;
+    };
 
 const statuses: Array<{ value: AdminTripStatus | null; label: string }> = [
   { value: null, label: 'All' },
@@ -38,7 +45,7 @@ const statuses: Array<{ value: AdminTripStatus | null; label: string }> = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-export function AdminTripSearchSection() {
+export function AdminTripSearchSection({ reporting = false }: { reporting?: boolean }) {
   const [params, setParams] = useSearchParams();
   const [initial] = useState(() => readTripListQuery(params));
   const [selection, setSelection] = useState<AdminTripDateSelection>(() => {
@@ -50,32 +57,61 @@ export function AdminTripSearchSection() {
       toDate: initial.query.toDate ?? today,
     };
   });
-  const [query, setQuery] = useState<AdminTripSearchQuery>(initial.query);
+  const [query, setQuery] = useState<AdminTripReportQuery>(() => ({
+    ...initial.query,
+    view:
+      reporting && ['exceptions', 'dispatch'].includes(params.get('tripView') ?? '')
+        ? (params.get('tripView') as 'exceptions' | 'dispatch')
+        : 'history',
+    exceptionType:
+      TRIP_EXCEPTION_TYPES.find((t) => t.value === params.get('tripException'))?.value ?? null,
+    flag: ['late', 'missing'].includes(params.get('tripFlag') ?? '')
+      ? (params.get('tripFlag') as 'late' | 'missing')
+      : null,
+  }));
   const [state, setState] = useState<SearchState>({ kind: 'loading' });
   const appliedMode = useRef<AdminTripDateMode>(initial.mode);
   const [refreshError, setRefreshError] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const sequence = useRef(0);
+  const controller = useRef<AbortController | null>(null);
 
   const load = useCallback(
     async (background = false) => {
       const request = ++sequence.current;
+      controller.current?.abort();
+      const pending = new AbortController();
+      controller.current = pending;
       if (!background) setState({ kind: 'loading' });
       try {
-        const result = await fetchAdminTripOperations(query);
+        const evidence =
+          query.view === 'history'
+            ? undefined
+            : await (
+                query.view === 'exceptions'
+                  ? searchAdminTripExceptions
+                  : searchAdminTripDispatchFlags
+              )(query, pending.signal);
+        const result: PaginatedResult<AdminTripOperation> = evidence
+          ? { ...evidence, rows: [] }
+          : await fetchAdminTripOperations(query, pending.signal);
         if (request !== sequence.current) return;
-        if (result.rows.length === 0 && result.totalCount > 0 && query.page > 1) {
+        if (
+          (evidence?.rows ?? result.rows).length === 0 &&
+          result.totalCount > 0 &&
+          query.page > 1
+        ) {
           setQuery((current) => ({
             ...current,
             page: Math.ceil(result.totalCount / current.pageSize),
           }));
           return;
         }
-        setState({ kind: 'ready', result });
+        setState({ kind: 'ready', result, evidence });
         setRefreshError(false);
       } catch (cause) {
-        if (request === sequence.current) {
-          if (background && !(cause instanceof AdminTripAccessError)) {
+        if (request === sequence.current && !pending.signal.aborted) {
+          if (query.view === 'history' && background && !(cause instanceof AdminTripAccessError)) {
             setRefreshError(true);
             setState((current) =>
               current.kind === 'ready'
@@ -112,6 +148,7 @@ export function AdminTripSearchSection() {
     void load();
     return () => {
       sequence.current += 1;
+      controller.current?.abort();
     };
   }, [load]);
 
@@ -126,6 +163,9 @@ export function AdminTripSearchSection() {
           tripPage: String(query.page),
           tripSize: String(query.pageSize),
           tripMode: appliedMode.current,
+          ...(reporting
+            ? { tripView: query.view, tripException: query.exceptionType, tripFlag: query.flag }
+            : {}),
         })) {
           if (value === null) next.delete(key);
           else next.set(key, value);
@@ -134,7 +174,7 @@ export function AdminTripSearchSection() {
       },
       { replace: true },
     );
-  }, [query, setParams]);
+  }, [query, reporting, setParams]);
 
   const refresh = useCallback(
     (background = true) => {
@@ -180,7 +220,7 @@ export function AdminTripSearchSection() {
     }
   }
 
-  function updateQuery(next: Partial<AdminTripSearchQuery>) {
+  function updateQuery(next: Partial<AdminTripReportQuery>) {
     sequence.current += 1;
     setState({ kind: 'loading' });
     setQuery((current) => ({ ...current, page: 1, ...next }));
@@ -216,6 +256,79 @@ export function AdminTripSearchSection() {
         </Button>
       </div>
 
+      {reporting && (
+        <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Trip report view">
+          {(
+            [
+              { value: 'history', label: 'Trip history' },
+              { value: 'exceptions', label: 'Driver exceptions' },
+              { value: 'dispatch', label: 'Dispatch flags' },
+            ] as const
+          ).map((view) => (
+            <Button
+              key={view.value}
+              type="button"
+              variant={query.view === view.value ? 'primary' : 'secondary'}
+              aria-pressed={query.view === view.value}
+              onClick={() => updateQuery({ view: view.value })}
+            >
+              {view.label}
+            </Button>
+          ))}
+        </div>
+      )}
+      {reporting && (
+        <p className="mt-3 text-sm text-gray-600">
+          Route and driver names reflect current records. Saved trip and bus labels are used when
+          available.
+        </p>
+      )}
+      {query.view === 'dispatch' && (
+        <p className="mt-3 text-sm text-gray-600">
+          Latest saved dispatcher flags. This is not a history of every status change.
+        </p>
+      )}
+      {query.view === 'exceptions' && (
+        <Field label="Exception category" htmlFor="trip-exception-category" className="mt-4">
+          <Select
+            id="trip-exception-category"
+            value={query.exceptionType ?? ''}
+            onChange={(event) =>
+              updateQuery({
+                exceptionType:
+                  TRIP_EXCEPTION_TYPES.find((t) => t.value === event.target.value)?.value ?? null,
+              })
+            }
+          >
+            <option value="">All categories</option>
+            {TRIP_EXCEPTION_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
+      {query.view === 'dispatch' && (
+        <Field label="Recorded flag" htmlFor="trip-recorded-flag" className="mt-4">
+          <Select
+            id="trip-recorded-flag"
+            value={query.flag ?? ''}
+            onChange={(event) =>
+              updateQuery({
+                flag:
+                  event.target.value === 'late' || event.target.value === 'missing'
+                    ? event.target.value
+                    : null,
+              })
+            }
+          >
+            <option value="">Late and missing</option>
+            <option value="late">Marked late</option>
+            <option value="missing">Marked missing</option>
+          </Select>
+        </Field>
+      )}
       <form className="mt-4" onSubmit={applyDates} noValidate>
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
           <Field label="Dates" htmlFor="trip-date-mode">
@@ -335,15 +448,28 @@ export function AdminTripSearchSection() {
         )}
         {state.kind === 'ready' && (
           <>
-            {state.result.rows.length === 0 ? (
+            {(state.evidence?.rows ?? state.result.rows).length === 0 ? (
               <div data-testid="admin-trips-empty">
                 <DataState
-                  title="No trips found"
-                  message="No recorded trips match the selected dates and status."
+                  title={query.view === 'history' ? 'No trips found' : 'No recorded evidence found'}
+                  message={
+                    query.view === 'history'
+                      ? 'No recorded trips match the selected dates and status.'
+                      : 'No recorded evidence matches these service dates and filters.'
+                  }
                 />
               </div>
+            ) : state.evidence ? (
+              <AdminTripEvidenceTable
+                rows={state.evidence.rows}
+                dispatch={query.view === 'dispatch'}
+              />
             ) : (
-              <AdminTripTable trips={state.result.rows} timeZone={ALBERTA_TIME_ZONE} />
+              <AdminTripTable
+                trips={state.result.rows}
+                timeZone={ALBERTA_TIME_ZONE}
+                recordedTimes={reporting}
+              />
             )}
             <div className="mt-4">
               <AdminPagination

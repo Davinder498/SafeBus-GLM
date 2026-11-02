@@ -9,7 +9,11 @@ export const dateBaseline = async () =>
 export const searchBaseline = async () =>
   JSON.parse(await read('tests/release/fixtures/admin-ongoing-search-hosted-20261028.json'));
 export const serviceDateMigration = () =>
-  read('supabase/migrations/pending/20261028065508_alberta_service_dates.sql');
+  // PostgreSQL deparses policies with LF. Windows checkouts must not put CRLF
+  // inside the migration's exact policy-expression guard string.
+  read('supabase/migrations/pending/20261028065508_alberta_service_dates.sql').then((sql) =>
+    sql.replace(/\r\n/g, '\n'),
+  );
 
 export async function serviceDateDb() {
   const db = new PGlite();

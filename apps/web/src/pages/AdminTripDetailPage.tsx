@@ -20,7 +20,7 @@ import type { AdminTripDetail } from '@/types/adminTripDetail';
 import {
   ALBERTA_TIME_ZONE,
   formatAdminTripDate,
-  formatAdminTripTime,
+  formatAdminTripTimestamp,
 } from '@/utils/adminTripDates';
 import {
   tripLocationLabel,
@@ -28,7 +28,7 @@ import {
   verifiedTripLocation,
 } from '@/utils/adminTripPresentation';
 
-const time = (value: string) => formatAdminTripTime(value, ALBERTA_TIME_ZONE);
+const time = (value: string) => formatAdminTripTimestamp(value);
 
 export function AdminTripDetailPage() {
   const { tripId = '' } = useParams();
@@ -167,13 +167,15 @@ export function AdminTripDetailPage() {
                     `${detail.trip.tripPatternName} · ${directionLabel(detail.trip.direction)}`,
                   ],
                   ['Bus', detail.trip.busLabel],
-                  ['Driver', detail.trip.driverLabel],
+                  ['Recorded driver', detail.trip.driverLabel],
                   ['Service date', formatAdminTripDate(detail.trip.serviceDate)],
                   ['ETA', verified ? (detail.eta?.label ?? 'Unavailable') : 'Unavailable'],
                   ['Next stop', verified ? (detail.eta?.nextStop ?? 'Unavailable') : 'Unavailable'],
-                  ['Start', time(detail.trip.startedAt)],
+                  ['Planned start', 'Unavailable'],
+                  ['Actual start', time(detail.trip.startedAt)],
+                  ['Planned end', 'Unavailable'],
                   [
-                    'End',
+                    'Actual end',
                     detail.trip.endedAt
                       ? time(detail.trip.endedAt)
                       : ongoing
@@ -198,11 +200,7 @@ export function AdminTripDetailPage() {
                     ? [
                         [
                           'Last GPS update',
-                          detail.location
-                            ? new Date(detail.location.recordedAt).toLocaleString(undefined, {
-                                timeZone: ALBERTA_TIME_ZONE,
-                              })
-                            : 'Not recorded',
+                          detail.location ? time(detail.location.recordedAt) : 'Not recorded',
                         ],
                         [
                           'Speed',
@@ -246,7 +244,9 @@ export function AdminTripDetailPage() {
               <Card className="p-5">
                 <h2 className="text-lg font-bold text-navy-900">Service line</h2>
                 <p className="mt-2 text-xs text-gray-600">
-                  Available route stops and schedule; historical stop snapshots were not saved.
+                  Current route stops and schedule; historical planned times were not saved. Planned
+                  trip start and end are unavailable. Route and driver names reflect current
+                  records.
                   {position !== null ? ' Bus progress is estimated from GPS.' : ''}
                 </p>
                 {detail.stops.length ? (
@@ -264,7 +264,11 @@ export function AdminTripDetailPage() {
                           {index + 1}. {stop.name}
                         </p>
                         <p className="mt-1 text-sm text-gray-600">
-                          {stop.plannedTime ? stop.plannedTime.slice(0, 5) : 'Time not recorded'}
+                          Current scheduled arrival:{' '}
+                          {stop.plannedTime ? stop.plannedTime.slice(0, 5) : 'Not recorded'}
+                        </p>
+                        <p className="mt-1 text-sm text-gray-600">
+                          Actual stop arrival: Not recorded
                         </p>
                         {position !== null && Math.floor(position) === index && (
                           <p className="mt-1 text-sm font-semibold text-navy-700">
