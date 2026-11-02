@@ -21,21 +21,6 @@
 }
 
 @layer base {
-  :root {
-    --color-brand: #172b3a;
-    --color-brand-hover: #0f2a44;
-    --color-brand-strong: #0f2a44;
-    --color-brand-soft: #ddf2f4;
-    --color-accent: #fcd66b;
-    --color-accent-soft: #d8edf5;
-    --color-canvas: #f2f6f7;
-    --color-surface: #ffffff;
-    --color-surface-subtle: #ddf2f4;
-    --color-border: #d7e1e4;
-    --color-text: #172b3a;
-    --color-text-muted: #5e6f73;
-  }
-
   html {
     font-family:
       'Inter',
@@ -54,7 +39,9 @@
 
   /* WCAG 2.1 AA: visible focus indicator */
   *:focus-visible {
-    @apply outline-none ring-2 ring-navy-500 ring-offset-2;
+    @apply outline-none ring-2 ring-offset-2;
+    --tw-ring-color: var(--color-focus);
+    --tw-ring-offset-color: var(--color-surface);
   }
 
   /* Modern, smoother scrollbar */
@@ -91,19 +78,15 @@
     min-width: 44px;
   }
 
-  /* Modern gradient mesh background for auth/public surfaces */
+  /* Quiet, shared canvas for auth/public surfaces. */
   .bg-mesh {
     background-color: var(--color-canvas);
-    background-image:
-      radial-gradient(at 0% 0%, rgb(221 242 244 / 0.72) 0px, transparent 50%),
-      radial-gradient(at 98% 1%, rgb(216 237 245 / 0.7) 0px, transparent 50%),
-      radial-gradient(at 50% 100%, rgb(23 43 58 / 0.08) 0px, transparent 50%);
   }
 
   /* Glassy card overlay used on auth surfaces */
   .glass {
     border-color: var(--color-border);
-    background: rgb(255 255 255 / 0.92);
+    background: var(--color-surface);
     @apply border backdrop-blur-xl;
   }
 }

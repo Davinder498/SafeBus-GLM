@@ -35,7 +35,7 @@ public class AppearancePlugin extends Plugin {
     static void updateWindow(MainActivity activity) {
         String value = preference(activity);
         boolean dark = "dark".equals(value);
-        int background = Color.parseColor(dark ? "#0F1720" : "#F2F6F7");
+        int background = Color.parseColor(dark ? "#0F1720" : "#F5F7FA");
         // Edge-to-edge system bars show the window beneath the WebView insets.
         int chrome = Color.parseColor("#172B3A");
         activity.getWindow().setBackgroundDrawable(new ColorDrawable(chrome));

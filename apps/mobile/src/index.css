@@ -269,7 +269,7 @@
     [data-ui='app-bar'] {
     border-color: var(--mobile-outline);
     background: var(--guardian-yellow-card-strong);
-    box-shadow: 0 3px 0 rgb(90 70 18 / 0.1);
+    box-shadow: 0 3px 0 rgb(15 23 42 / 0.1);
   }
 
   html[data-app-surface='native-mobile']
@@ -286,8 +286,8 @@
     border-color: var(--mobile-outline);
     background: var(--native-surface, white);
     box-shadow:
-      0 2px 0 rgb(90 70 18 / 0.08),
-      0 12px 28px rgb(90 70 18 / 0.1);
+      0 2px 0 rgb(15 23 42 / 0.08),
+      0 12px 28px rgb(15 23 42 / 0.1);
   }
 
   html[data-app-surface='native-mobile']
@@ -475,15 +475,6 @@
     white-space: nowrap;
   }
 
-  html[data-app-surface='native-mobile'] [data-portal='parent'] [data-ui='status-pill'] {
-    min-height: auto;
-    border-radius: 0;
-    background: transparent !important;
-    padding: 0.25rem 0;
-    box-shadow: none;
-    --tw-ring-shadow: 0 0 #0000;
-  }
-
   html[data-app-surface='native-mobile'] [data-ui='manual-refresh-card'] {
     display: none;
   }
@@ -602,7 +593,7 @@
     [data-ui='guardian-email-notifications'] {
     border-color: var(--mobile-outline);
     background: var(--guardian-yellow-card);
-    box-shadow: 0 8px 24px rgb(90 70 18 / 0.1);
+    box-shadow: 0 8px 24px rgb(15 23 42 / 0.1);
   }
 
   html[data-app-surface='native-mobile']
@@ -751,7 +742,7 @@
   html[data-app-surface='native-mobile'] [data-ui='guardian-map-app-bar'] {
     border-color: var(--mobile-outline);
     background: var(--guardian-yellow-card-strong);
-    box-shadow: 0 3px 0 rgb(90 70 18 / 0.1);
+    box-shadow: 0 3px 0 rgb(15 23 42 / 0.1);
   }
 
   html[data-app-surface='native-mobile']
@@ -790,7 +781,7 @@
     overflow: hidden;
     border: 2px solid var(--mobile-outline);
     background: var(--guardian-yellow-card-strong);
-    box-shadow: 0 14px 30px rgb(90 70 18 / 0.16);
+    box-shadow: 0 14px 30px rgb(15 23 42 / 0.16);
   }
 
   html[data-app-surface='native-mobile']
@@ -811,35 +802,35 @@
     [data-portal='parent']
     [data-testid='guardian-home-bus-card']
     [data-ui='status-pill'][data-tone='success'] {
-    color: var(--native-text, #166534) !important;
+    color: var(--status-text) !important;
   }
 
   html[data-app-surface='native-mobile']
     [data-portal='parent']
     [data-testid='guardian-home-bus-card']
     [data-ui='status-pill'][data-tone='warning'] {
-    color: var(--native-text, #854d0e) !important;
+    color: var(--status-text) !important;
   }
 
   html[data-app-surface='native-mobile']
     [data-portal='parent']
     [data-testid='guardian-home-bus-card']
     [data-ui='status-pill'][data-tone='danger'] {
-    color: var(--native-text, #9f1239) !important;
+    color: var(--status-text) !important;
   }
 
   html[data-app-surface='native-mobile']
     [data-portal='parent']
     [data-testid='guardian-home-bus-card']
     [data-ui='status-pill'][data-tone='info'] {
-    color: var(--native-text, #075985) !important;
+    color: var(--status-text) !important;
   }
 
   html[data-app-surface='native-mobile']
     [data-portal='parent']
     [data-testid='guardian-home-bus-card']
     [data-ui='status-pill'][data-tone='neutral'] {
-    color: var(--native-text, #475569) !important;
+    color: var(--status-text) !important;
   }
 
   html[data-app-surface='native-mobile'] [data-testid='guardian-home-student-card'] {
@@ -861,8 +852,8 @@
     border: 2px solid var(--mobile-outline);
     background: var(--guardian-yellow-card-strong);
     box-shadow:
-      0 2px 0 rgb(90 70 18 / 0.08),
-      0 12px 28px rgb(90 70 18 / 0.1);
+      0 2px 0 rgb(15 23 42 / 0.08),
+      0 12px 28px rgb(15 23 42 / 0.1);
     transition:
       transform 150ms ease,
       border-color 150ms ease,
@@ -871,7 +862,7 @@
 
   html[data-app-surface='native-mobile'] a:hover [data-ui='guardian-bus-card'] {
     border-color: var(--mobile-outline);
-    box-shadow: 0 17px 34px rgb(90 70 18 / 0.2);
+    box-shadow: 0 17px 34px rgb(15 23 42 / 0.2);
   }
 
   html[data-app-surface='native-mobile']
@@ -888,7 +879,7 @@
     border: 2px solid var(--mobile-outline);
     border-radius: 1.5rem;
     background: var(--guardian-yellow-card-strong);
-    box-shadow: 0 16px 36px rgb(90 70 18 / 0.14);
+    box-shadow: 0 16px 36px rgb(15 23 42 / 0.14);
   }
 
   html[data-app-surface='native-mobile'] [data-ui='guardian-bus-detail-summary'] {
@@ -898,38 +889,38 @@
   html[data-app-surface='native-mobile']
     [data-ui='guardian-bus-detail-hero']
     [data-ui='status-pill'][data-tone='success'] {
-    color: var(--native-text, #166534) !important;
+    color: var(--status-text) !important;
   }
 
   html[data-app-surface='native-mobile']
     [data-ui='guardian-bus-detail-hero']
     [data-ui='status-pill'][data-tone='warning'] {
-    color: var(--native-text, #854d0e) !important;
+    color: var(--status-text) !important;
   }
 
   html[data-app-surface='native-mobile']
     [data-ui='guardian-bus-detail-hero']
     [data-ui='status-pill'][data-tone='danger'] {
-    color: var(--native-text, #9f1239) !important;
+    color: var(--status-text) !important;
   }
 
   html[data-app-surface='native-mobile']
     [data-ui='guardian-bus-detail-hero']
     [data-ui='status-pill'][data-tone='info'] {
-    color: var(--native-text, #075985) !important;
+    color: var(--status-text) !important;
   }
 
   html[data-app-surface='native-mobile']
     [data-ui='guardian-bus-detail-hero']
     [data-ui='status-pill'][data-tone='neutral'] {
-    color: var(--native-text, #475569) !important;
+    color: var(--status-text) !important;
   }
 
   html[data-app-surface='native-mobile']
     [data-ui='guardian-bus-detail-hero']
     [data-ui='status-pill'][data-tone='neutral']
     > span {
-    background: var(--native-raised, #64748b);
+    background: var(--status-text);
     box-shadow: 0 0 0 2px rgb(100 116 139 / 0.14);
   }
 
@@ -937,7 +928,7 @@
     [data-ui='guardian-bus-detail-hero']
     [data-ui='status-pill'][data-tone='success']
     > span {
-    background: var(--native-raised, #16a34a);
+    background: var(--status-text);
     box-shadow: 0 0 0 2px rgb(22 163 74 / 0.14);
   }
 
@@ -945,8 +936,8 @@
     border: 2px solid var(--mobile-outline);
     background: var(--guardian-yellow-card);
     box-shadow:
-      0 2px 0 rgb(90 70 18 / 0.08),
-      0 12px 28px rgb(90 70 18 / 0.1);
+      0 2px 0 rgb(15 23 42 / 0.08),
+      0 12px 28px rgb(15 23 42 / 0.1);
   }
 
   /* Share stop/track geometry with the web app; only native colors vary. */
@@ -1218,7 +1209,7 @@
     [data-ui='dropdown-panel'] {
     border: 2px solid var(--mobile-outline);
     background: var(--guardian-yellow-card);
-    box-shadow: 0 18px 42px rgb(90 70 18 / 0.2);
+    box-shadow: 0 18px 42px rgb(15 23 42 / 0.2);
   }
 
   html[data-app-surface='native-mobile']
@@ -1232,7 +1223,7 @@
   html[data-app-surface='native-mobile']
     [data-portal='parent'][data-ui='dashboard-shell']
     [data-ui='dropdown-separator'] {
-    background: rgb(90 70 18 / 0.24);
+    background: rgb(15 23 42 / 0.24);
   }
 
   html[data-app-surface='native-mobile']
@@ -1240,7 +1231,7 @@
     [data-ui='dropdown']
     > button
     > span:hover {
-    background: rgb(90 70 18 / 0.1);
+    background: rgb(15 23 42 / 0.1);
   }
 
   html[data-app-surface='native-mobile']
@@ -1291,8 +1282,8 @@
     border-radius: 1.5rem;
     background: var(--guardian-yellow-card);
     box-shadow:
-      0 2px 0 rgb(90 70 18 / 0.08),
-      0 12px 28px rgb(90 70 18 / 0.1);
+      0 2px 0 rgb(15 23 42 / 0.08),
+      0 12px 28px rgb(15 23 42 / 0.1);
   }
 
   html[data-app-surface='native-mobile']
@@ -1381,8 +1372,8 @@
     background: var(--guardian-yellow-card);
     padding: 1.25rem;
     box-shadow:
-      0 2px 0 rgb(90 70 18 / 0.08),
-      0 12px 28px rgb(90 70 18 / 0.1);
+      0 2px 0 rgb(15 23 42 / 0.08),
+      0 12px 28px rgb(15 23 42 / 0.1);
   }
 
   html[data-app-surface='native-mobile']
@@ -1431,7 +1422,7 @@
     [data-ui='notification-card'][data-selected='true'] {
     box-shadow:
       0 0 0 3px rgb(23 43 58 / 0.16),
-      0 12px 28px rgb(90 70 18 / 0.12);
+      0 12px 28px rgb(15 23 42 / 0.12);
   }
 
   html[data-app-surface='native-mobile']
@@ -1617,7 +1608,7 @@
     appearance: none;
     border: 0;
     border-radius: 999px;
-    background: var(--native-raised, #64748b);
+    background: var(--color-text-muted);
     transition: background-color 150ms ease;
   }
 
@@ -1919,10 +1910,10 @@
 }
 
 @media screen {
-  html[data-app-surface='native-mobile'][data-theme='dark'] {
+  html[data-app-surface='native-mobile'] {
     --native-surface: var(--color-surface);
     --native-raised: var(--color-raised);
-    --native-strong: var(--color-raised);
+    --native-strong: var(--color-action);
     --native-text: var(--color-text);
     --native-muted: var(--color-text-muted);
     --native-border: var(--color-border);
@@ -1930,11 +1921,11 @@
     --native-danger-strong: var(--color-danger-strong);
     --native-warning-text: var(--color-warning-text);
     --native-warning-strong: var(--color-warning-strong);
-    --mobile-primary: var(--color-focus);
-    --mobile-primary-hover: var(--color-brand-hover);
-    --mobile-primary-container: var(--color-raised);
+    --mobile-primary: var(--color-action);
+    --mobile-primary-hover: var(--color-action-hover);
+    --mobile-primary-container: var(--color-selection);
     --mobile-accent: var(--color-focus);
-    --mobile-accent-container: var(--color-raised);
+    --mobile-accent-container: var(--color-selection);
     --mobile-surface: var(--color-canvas);
     --mobile-on-surface: var(--color-text);
     --mobile-muted: var(--color-text-muted);
@@ -1947,11 +1938,11 @@
     --guardian-navy: var(--color-text);
     background: var(--color-canvas);
   }
-  html[data-app-surface='native-mobile'][data-theme='dark'] body,
-  html[data-app-surface='native-mobile'][data-theme='dark'] #root {
+  html[data-app-surface='native-mobile'] body,
+  html[data-app-surface='native-mobile'] #root {
     background: var(--color-canvas);
   }
-  html[data-app-surface='native-mobile'][data-theme='dark']
+  html[data-app-surface='native-mobile']
     :is(
       [data-ui='dashboard-shell'],
       [data-ui='public-shell'],
@@ -1962,40 +1953,41 @@
     background: var(--color-canvas) !important;
     color: var(--color-text);
   }
-  html[data-app-surface='native-mobile'][data-theme='dark'] :is(h1, h2, [data-ui='page-title']) {
+  html[data-app-surface='native-mobile'] :is(h1, h2, h3, [data-ui='page-title']) {
     color: var(--color-heading) !important;
   }
-  html[data-app-surface='native-mobile'][data-theme='dark']
+  html[data-app-surface='native-mobile']
     [data-ui='button'][data-variant='primary'],
-  html[data-app-surface='native-mobile'][data-theme='dark']
+  html[data-app-surface='native-mobile']
     [data-ui='notification-filter-controls']
     button[aria-pressed='true'] {
     background: var(--color-action) !important;
     border-color: var(--color-action) !important;
     color: var(--color-on-action) !important;
   }
-  html[data-app-surface='native-mobile'][data-theme='dark']
+  html[data-app-surface='native-mobile']
     [data-ui='button'][data-variant='primary']:hover {
     background: var(--color-action-hover) !important;
   }
-  html[data-app-surface='native-mobile'][data-theme='dark'] :is(input, select, textarea) {
-    border-color: var(--color-control-outline);
+  html[data-app-surface='native-mobile'] :is(input, select, textarea) {
     color: var(--color-text);
   }
-  html[data-app-surface='native-mobile'][data-theme='dark']
+  html[data-app-surface='native-mobile'] :is(input, select, textarea):not([data-invalid]):not([aria-invalid='true']) { border-color: var(--color-control-outline); }
+  html[data-app-surface='native-mobile'] :is(input, select, textarea):is([data-invalid], [aria-invalid='true']) { border-color: var(--color-danger-text); }
+  html[data-app-surface='native-mobile']
     .sb-bottom-tab-active
     .sb-bottom-tab-indicator {
     background: var(--color-action) !important;
     color: var(--color-on-action) !important;
   }
-  html[data-app-surface='native-mobile'][data-theme='dark'] input[role='switch']:checked,
-  html[data-app-surface='native-mobile'][data-theme='dark']
+  html[data-app-surface='native-mobile'] input[role='switch']:checked,
+  html[data-app-surface='native-mobile']
     [data-ui='notification-switch-row']
     input:checked {
     background: var(--color-action) !important;
   }
-  html[data-app-surface='native-mobile'][data-theme='dark'] input[role='switch']:checked::before,
-  html[data-app-surface='native-mobile'][data-theme='dark']
+  html[data-app-surface='native-mobile'] input[role='switch']:checked::before,
+  html[data-app-surface='native-mobile']
     [data-ui='notification-switch-row']
     input:checked::before {
     background: var(--color-on-action) !important;
@@ -2019,5 +2011,37 @@
     [data-ui='public-app-bar']
     [data-testid='safebus-wordmark'] {
     color: #fff;
+  }
+
+  /* Legacy native components resolve to the shared palette in both modes. */
+  html[data-app-surface='native-mobile'] [data-portal][data-ui='dashboard-shell'] [data-testid='native-bottom-navigation'] .sb-bottom-tab {
+    color: var(--color-nav-muted);
+  }
+  html[data-app-surface='native-mobile'] [data-portal][data-ui='dashboard-shell'] [data-testid='native-bottom-navigation'] .sb-bottom-tab > .truncate {
+    color: inherit;
+  }
+  html[data-app-surface='native-mobile'] [data-portal][data-ui='dashboard-shell'] [data-testid='native-bottom-navigation'] .sb-bottom-tab-active {
+    color: var(--color-nav-focus);
+  }
+  html[data-app-surface='native-mobile'] [data-testid='native-bottom-navigation'] .sb-bottom-tab:focus-visible {
+    --tw-ring-color: var(--color-nav-focus);
+    outline: 2px solid var(--color-nav-focus);
+    outline-offset: -2px;
+  }
+  html[data-app-surface='native-mobile'] [data-ui='avatar'],
+  html[data-app-surface='native-mobile'] [data-portal][data-ui='dashboard-shell'] [data-ui='avatar'][data-tone='native-nav'] {
+    background: var(--color-nav) !important;
+    color: var(--color-on-nav) !important;
+  }
+  html[data-app-surface='native-mobile'] [data-ui='guardian-icon-tile'] {
+    background: var(--color-selection);
+    color: var(--color-action);
+  }
+  html[data-app-surface='native-mobile'] [data-ui='public-shell'] [data-ui='card'],
+  html[data-app-surface='native-mobile'] [data-ui='login-card'] {
+    border-color: var(--mobile-card-outline);
+  }
+  html[data-app-surface='native-mobile'] [data-ui='status-pill'] .status-pill__dot {
+    background: var(--status-text);
   }
 }

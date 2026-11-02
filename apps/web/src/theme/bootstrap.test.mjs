@@ -26,7 +26,7 @@ describe('pre-paint appearance bootstrap', () => {
     const root = boot('dark', true, false, 'public');
     expect(root.dataset.theme).toBe('light');
     expect(root.style.colorScheme).toBe('light');
-    expect(root.style.backgroundColor).toBe('#F2F6F7');
+    expect(root.style.backgroundColor).toBe('#F5F7FA');
   });
   it('uses Light for a new installation regardless of device appearance', () => {
     expect(boot(null, true).dataset.theme).toBe('light');
@@ -41,6 +41,6 @@ describe('pre-paint appearance bootstrap', () => {
   it('can paint the correct background even with blocked storage and no metadata', () => {
     const root = boot(null, true, true);
     expect(root.style.colorScheme).toBe('light');
-    expect(root.style.backgroundColor).toBe('#F2F6F7');
+    expect(root.style.backgroundColor).toBe('#F5F7FA');
   });
 });

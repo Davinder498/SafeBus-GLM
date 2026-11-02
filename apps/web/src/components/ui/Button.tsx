@@ -11,13 +11,13 @@ const buttonVariants = cva(
         primary:
           'bg-[var(--color-action)] text-[var(--color-on-action)] shadow-sm hover:bg-[var(--color-action-hover)] focus-visible:ring-[var(--color-focus)]',
         secondary:
-          'bg-navy-50 text-navy-700 hover:bg-navy-100 focus-visible:ring-navy-500 border border-navy-100',
+          'bg-[var(--color-selection)] text-[var(--color-action)] hover:bg-[var(--color-raised)] focus-visible:ring-[var(--color-focus)] border border-[var(--color-border)]',
         danger:
-          'bg-danger-600 text-white shadow-sm hover:bg-danger-700 focus-visible:ring-danger-500',
+          'bg-[var(--color-danger-strong)] text-[var(--color-on-strong)] shadow-sm hover:brightness-90 focus-visible:ring-[var(--color-focus)]',
         ghost:
           'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-navy-500',
         success:
-          'bg-success-600 text-white shadow-sm hover:bg-success-700 focus-visible:ring-success-500',
+          'bg-[var(--color-success-strong)] text-[var(--color-on-strong)] shadow-sm hover:brightness-90 focus-visible:ring-[var(--color-focus)]',
         outline:
           'border border-[var(--color-border)] bg-[var(--color-surface)] text-slate-700 shadow-xs hover:bg-[var(--color-surface-subtle)] hover:text-slate-900 focus-visible:ring-navy-500',
       },

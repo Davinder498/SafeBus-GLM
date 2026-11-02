@@ -19,7 +19,7 @@ test('landing page loads without third-party font requests', async ({ page }) =>
   await expect(wordmark.locator('svg')).toHaveCount(0);
   await expect(header.getByRole('link', { name: 'Sign in' })).toHaveCSS(
     'background-color',
-    'rgb(23, 43, 58)',
+    'rgb(29, 78, 216)',
   );
   await expect(header).toHaveCSS('position', 'fixed');
   await expect(header).toHaveCSS('border-radius', '20px');

@@ -207,11 +207,8 @@ test('bus actions share the desktop row and fit on phones with simplified brandi
   ).toHaveCount(0);
   const brand = page.getByRole('link', { name: 'SafeBus home' });
   await expect(brand.getByTestId('safebus-wordmark')).toHaveText('SafeBus');
-  // The desktop sidebar includes the bus icon. The compact mobile
-  // header keeps the existing text-only mark.
-  await expect(brand.locator('svg')).toHaveCount(
-    testInfo.project.name === 'desktop-chromium' ? 1 : 0,
-  );
+  // Screen branding stays text-only in the sidebar and compact header.
+  await expect(brand.locator('svg')).toHaveCount(0);
   await expect(brand.locator('img')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,

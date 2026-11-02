@@ -17,7 +17,7 @@ export function GuardianIconTile({ children, className, size = 'md' }: GuardianI
   return (
     <span
       className={cn(
-        'flex shrink-0 items-center justify-center bg-navy-900 text-yellow-300 shadow-sm',
+        'flex shrink-0 items-center justify-center bg-[var(--color-selection)] text-[var(--color-action)] shadow-sm',
         sizeClasses[size],
         className,
       )}

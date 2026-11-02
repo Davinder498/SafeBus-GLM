@@ -121,7 +121,7 @@ export function LandingPage() {
               <div className="mt-8 flex flex-col sm:flex-row">
                 <Link
                   to="/contact"
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-yellow-400 px-5 py-3 font-bold text-navy-900 shadow-lg shadow-yellow-400/20 transition-all hover:bg-yellow-300 hover:shadow-yellow-400/30"
+                  className="sb-primary-action inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 font-bold shadow-lg transition-colors"
                 >
                   Request a consultation <ArrowRight className="h-4 w-4" />
                 </Link>
@@ -199,7 +199,7 @@ export function LandingPage() {
                             )}
                             <h4
                               id={`${section.id}-heading`}
-                              className="text-xl font-bold tracking-tight text-yellow-400"
+                              className="text-xl font-bold tracking-tight text-white"
                             >
                               {section.title}
                             </h4>
@@ -236,14 +236,14 @@ export function LandingPage() {
           <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:min-h-[42rem] lg:px-8 lg:py-12">
             <div className="flex max-w-lg flex-col gap-8">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-yellow-300">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white">
                   The SafeBus difference
                 </p>
                 <h2
                   id="why-choose-us-heading"
                   className="mt-5 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl"
                 >
-                  Why choose <span className="text-yellow-400">us</span>
+                  Why choose us
                 </h2>
                 <p className="mt-6 max-w-md text-lg leading-8 text-navy-100">
                   Local roots. A clear purpose. School transportation built around the people who

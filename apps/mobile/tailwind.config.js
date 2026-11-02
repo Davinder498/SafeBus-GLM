@@ -1,3 +1,4 @@
+import { safeBusColors } from '../../packages/config/theme-colors.js';
 import { themeUtilities } from '../../packages/config/theme-utilities.js';
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -9,74 +10,7 @@ export default {
   ],
   theme: {
     extend: {
-      colors: {
-        // Darker muted copy preserves AA contrast on the softened app surfaces.
-        slate: {
-          500: '#52666A',
-        },
-        // Prairie Transit blue — matches the web application.
-        navy: {
-          50: '#F2F4F5',
-          100: '#E3E8EA',
-          200: '#C4CFD4',
-          300: '#99ABB3',
-          400: '#687F8A',
-          500: '#405B68',
-          600: '#294555',
-          700: '#172B3A',
-          800: '#0F2A44',
-          900: '#0C1E2A',
-          950: '#07131C',
-        },
-        yellow: {
-          50: '#FFFBF2',
-          100: '#FFF4D8',
-          200: '#FDE5A9',
-          300: '#F8D273',
-          400: '#F2B84B',
-          500: '#E3A234',
-          600: '#C78322',
-          700: '#9B6919',
-          800: '#754E17',
-          900: '#5A3C14',
-        },
-        success: {
-          50: '#F1F9F6',
-          100: '#E6F4EE',
-          200: '#C8E7DA',
-          300: '#96D1BA',
-          400: '#58AF90',
-          500: '#328E6D',
-          600: '#238064',
-          700: '#185C49',
-          800: '#164B3D',
-          900: '#133E34',
-        },
-        warning: {
-          50: '#FFFAF0',
-          100: '#FFF3DC',
-          200: '#FDE2B3',
-          300: '#F5C97E',
-          400: '#E4A342',
-          500: '#CF861F',
-          600: '#C27A1A',
-          700: '#925711',
-          800: '#70430D',
-          900: '#59370F',
-        },
-        danger: {
-          50: '#FFF5F6',
-          100: '#FCEAEC',
-          200: '#F6CDD1',
-          300: '#ECA5AC',
-          400: '#DD747E',
-          500: '#CF5963',
-          600: '#C64B55',
-          700: '#A13A44',
-          800: '#87313A',
-          900: '#702C34',
-        },
-      },
+      colors: safeBusColors,
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
         mono: ['Roboto Mono', 'ui-monospace', 'monospace'],
