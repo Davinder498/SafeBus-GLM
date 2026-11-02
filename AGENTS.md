@@ -2,7 +2,7 @@
 
 SafeBus Alberta is a school transportation operations and live bus visibility platform.
 
-SafeBus serves Alberta schools and school authorities only.
+SafeBus serves Alberta school districts and school authorities as its customer tenants. Individual schools are optional organizational records only, not independent customers or app administrator accounts.
 
 Use **School authority** for the customer account and **School authority admin**
 for its primary administrator in user-facing text. Preserve each authority's
@@ -18,6 +18,12 @@ It is not a full school management system.
 Core product principle:
 
 > Track the bus, not the child.
+
+## Current Codex handoff and district-only rule — 2026-11-01
+
+Read [docs/PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md) at the start of work. PR #339 is merged. The school authority/district is the sole customer tenant: `tenant_admin` and `transportation_admin` operate district-wide. Individual schools have **no administrative accounts, login role, or portal**. The legacy `school_admin` role may remain only as inert historical compatibility/audit data. Never reactivate, invite, authorize, or add features for it. School records are optional metadata and can share buses and routes. This current rule supersedes older references to school-scoped administrators in historical acceptance instructions.
+
+The owner is finishing approved competitor-comparison workflow improvements in VS Code with Codex doing implementation and ChatGPT assisting with planning/review. Inspect `main` and actual PRs before declaring the remaining backlog. Do not invent missing features or change working business logic without explicit approval. Routine Supabase Security Advisor cleanup is deferred until comparison follow-ups finish; immediately report critical exploitable findings.
 
 ## Required launch behavior — owner direction, 2026-10-24
 
@@ -69,9 +75,8 @@ repeat the standard notification privacy approval already given.
 - Use feature branches.
 - Open a pull request for review.
 - Do not merge without human approval.
-- GLM may build.
-- Codex reviews.
-- Human approves final merge.
+- Codex in VS Code may implement approved milestones; ChatGPT assists with scope and review.
+- The owner approves scope and final merge; independent code/security review remains required before release.
 
 ### Standing service authorization — owner direction, 2026-10-28
 
@@ -250,8 +255,8 @@ Do not add these unless the milestone explicitly asks:
 ## Required Validation
 
 - Owner direction, 2026-10-28: define acceptance behavior for every affected user
-  type before implementation: school authority admin, school-scoped admin,
-  transportation admin, guardian, driver, and platform admin. Verify each role's
+  type before implementation: school authority admin, transportation admin,
+  guardian, driver, and platform admin. Historical school-admin accounts are denied. Verify each role's
   permitted events, channels, scope and failure behavior. A passing public-page
   smoke test or mocked inbox response is not proof of source-event delivery.
 - Retain mandatory MFA for privileged administrators. Guardian and driver MFA
