@@ -1,3 +1,4 @@
+import { albertaToday } from '@/utils/adminTripDates';
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 import type {
   AssignmentStatus,
@@ -100,7 +101,7 @@ export async function fetchAdminPlannedDriverAssignments(
  * history.
  */
 export async function fetchOwnPlannedDriverAssignments(): Promise<PlannedDriverAssignment[]> {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = albertaToday();
   const { data, error } = await requireSupabase()
     .from('driver_route_assignments')
     .select(ownPlannedAssignmentColumns)

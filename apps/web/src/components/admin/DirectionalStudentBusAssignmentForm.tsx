@@ -1,3 +1,4 @@
+import { albertaToday } from '@/utils/adminTripDates';
 import { useMemo, useState, type FormEvent } from 'react';
 import { StudentSearchPicker } from '@/components/admin/StudentSearchPicker';
 import { SeatNumberField } from '@/components/admin/SeatNumberField';
@@ -91,7 +92,7 @@ export function DirectionalStudentBusAssignmentForm({
         initialReverse.dropoff_stop_id !== initialForward?.pickup_stop_id),
   );
   const [effectiveFrom, setEffectiveFrom] = useState(
-    assignments[0]?.effective_from ?? new Date().toISOString().slice(0, 10),
+    assignments[0]?.effective_from ?? albertaToday(),
   );
   const [effectiveTo, setEffectiveTo] = useState(assignments[0]?.effective_to ?? '');
   const [error, setError] = useState<string | null>(null);

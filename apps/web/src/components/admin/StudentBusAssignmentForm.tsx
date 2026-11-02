@@ -1,3 +1,4 @@
+import { albertaToday } from '@/utils/adminTripDates';
 import { useMemo, useState, type FormEvent } from 'react';
 import { StudentSearchPicker } from '@/components/admin/StudentSearchPicker';
 import { SeatNumberField } from '@/components/admin/SeatNumberField';
@@ -40,9 +41,7 @@ export function StudentBusAssignmentForm({
   const [seatNumber, setSeatNumber] = useState(String(assignment?.seat_number ?? ''));
   const [pickupStopId, setPickupStopId] = useState(assignment?.pickup_stop_id ?? '');
   const [dropoffStopId, setDropoffStopId] = useState(assignment?.dropoff_stop_id ?? '');
-  const [effectiveFrom, setEffectiveFrom] = useState(
-    assignment?.effective_from ?? new Date().toISOString().slice(0, 10),
-  );
+  const [effectiveFrom, setEffectiveFrom] = useState(assignment?.effective_from ?? albertaToday());
   const [effectiveTo, setEffectiveTo] = useState(assignment?.effective_to ?? '');
   const [status, setStatus] = useState<StudentBusAssignmentStatus>(assignment?.status ?? 'active');
   const [error, setError] = useState<string | null>(null);

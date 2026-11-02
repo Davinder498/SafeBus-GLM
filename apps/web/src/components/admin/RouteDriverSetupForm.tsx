@@ -1,3 +1,4 @@
+import { albertaToday } from '@/utils/adminTripDates';
 import { useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import {
@@ -28,7 +29,7 @@ export function RouteDriverSetupForm({
   const [existingId, setExistingId] = useState('');
   const [removing, setRemoving] = useState(false);
   const [driverId, setDriverId] = useState(initialDriverId ?? '');
-  const [from, setFrom] = useState(service.effective_from ?? new Date().toISOString().slice(0, 10));
+  const [from, setFrom] = useState(service.effective_from ?? albertaToday());
   const [to, setTo] = useState(service.effective_to ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,9 +41,7 @@ export function RouteDriverSetupForm({
     const plan = plans.find((a) => a.id === id);
     setExistingId(id);
     setDriverId(plan?.driver_id ?? '');
-    setFrom(
-      plan?.effective_from ?? service.effective_from ?? new Date().toISOString().slice(0, 10),
-    );
+    setFrom(plan?.effective_from ?? service.effective_from ?? albertaToday());
     setTo(plan?.effective_to ?? service.effective_to ?? '');
     setMessage(null);
     setError(null);
