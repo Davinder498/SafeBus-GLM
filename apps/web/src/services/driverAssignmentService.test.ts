@@ -1,9 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { rpc } = vi.hoisted(() => ({ rpc: vi.fn() }));
-vi.mock('@/lib/supabase', () => ({ supabase: { rpc }, supabaseConfigError: null }));
+const { rpc, from } = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn() }));
+vi.mock('@/lib/supabase', () => ({ supabase: { rpc, from }, supabaseConfigError: null }));
 
-import { setPlannedDriverAssignment } from './driverAssignmentService';
+import {
+  fetchOwnPlannedDriverAssignments,
+  setPlannedDriverAssignment,
+} from './driverAssignmentService';
 
 const input = {
   driverId: 'driver-id',
@@ -11,6 +14,50 @@ const input = {
   effectiveFrom: '2026-09-18',
   effectiveTo: '2026-12-31',
 };
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
+
+describe('driver plans use the inclusive Alberta service day', () => {
+  it.each([
+    ['2026-01-16T01:00:00Z', '2026-01-15'],
+    ['2026-07-16T01:00:00Z', '2026-07-15'],
+    ['2026-11-03T01:00:00Z', '2026-11-02'],
+    ['2026-11-02T06:30:00Z', '2026-11-02'],
+    ['2026-11-03T05:59:59Z', '2026-11-02'],
+    ['2026-11-03T06:00:00Z', '2026-11-03'],
+  ])('keeps plans ending today visible at %s', async (instant, expectedDay) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(instant));
+    const filters = { eq: vi.fn(), or: vi.fn(), order: vi.fn() };
+    const stored = {
+      id: 'plan',
+      status: 'active',
+      effective_from: '2024-02-29',
+      effective_to: expectedDay,
+      trip_type: 'morning',
+      bus: { bus_number: '12' },
+      route: { route_code: 'R', route_name: 'Rural' },
+      trip_pattern: { direction: 'forward', display_name: 'Outbound' },
+    };
+    const query = {
+      select: vi.fn(() => query),
+      eq: filters.eq.mockImplementation(() => query),
+      or: filters.or.mockImplementation(() => query),
+      order: filters.order.mockImplementation(() => query),
+      then: (resolve: (value: unknown) => unknown) =>
+        Promise.resolve({ data: [stored], error: null }).then(resolve),
+    };
+    from.mockReturnValue(query);
+    const plans = await fetchOwnPlannedDriverAssignments();
+    expect(from).toHaveBeenLastCalledWith('driver_route_assignments');
+    expect(filters.eq).toHaveBeenCalledWith('status', 'active');
+    expect(filters.or).toHaveBeenCalledWith(`effective_to.is.null,effective_to.gte.${expectedDay}`);
+    expect(plans[0]).toMatchObject({ effective_from: '2024-02-29', effective_to: expectedDay });
+  });
+});
 
 describe('planned driver assignment saves', () => {
   beforeEach(() => {

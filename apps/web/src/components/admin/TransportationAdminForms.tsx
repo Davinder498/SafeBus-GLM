@@ -1,3 +1,4 @@
+import { albertaToday } from '@/utils/adminTripDates';
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -793,9 +794,7 @@ export function StudentRouteAssignmentForm({
   const [routeId, setRouteId] = useState(assignment?.route_id ?? routes[0]?.id ?? '');
   const [pickupStopId, setPickupStopId] = useState(assignment?.pickup_stop_id ?? '');
   const [dropoffStopId, setDropoffStopId] = useState(assignment?.dropoff_stop_id ?? '');
-  const [effectiveFrom, setEffectiveFrom] = useState(
-    assignment?.effective_from ?? new Date().toISOString().slice(0, 10),
-  );
+  const [effectiveFrom, setEffectiveFrom] = useState(assignment?.effective_from ?? albertaToday());
   const [effectiveTo, setEffectiveTo] = useState(assignment?.effective_to ?? '');
   const [status, setStatus] = useState<StudentRouteAssignmentStatus>(
     assignment?.status ?? 'active',
@@ -1033,7 +1032,7 @@ export function DriverAssignmentForm({
   const [busId, setBusId] = useState('');
   const [routeId, setRouteId] = useState('');
   const [tripPatternId, setTripPatternId] = useState('');
-  const [effectiveFrom, setEffectiveFrom] = useState(new Date().toISOString().slice(0, 10));
+  const [effectiveFrom, setEffectiveFrom] = useState(albertaToday());
   const [effectiveTo, setEffectiveTo] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>('idle');

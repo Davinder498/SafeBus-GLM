@@ -1,3 +1,4 @@
+import { albertaToday } from '@/utils/adminTripDates';
 export type BusWorkspaceLifecycle = 'current' | 'upcoming' | 'history';
 export type BusAssignmentEffectiveStatus =
   'active' | 'scheduled' | 'expired' | 'inactive' | 'archived';
@@ -10,7 +11,7 @@ type DatedAssignment = {
 
 export function busWorkspaceLifecycle(
   item: DatedAssignment,
-  currentDate = new Date().toISOString().slice(0, 10),
+  currentDate = albertaToday(),
 ): BusWorkspaceLifecycle {
   if (item.status !== 'active' || (item.effective_to && item.effective_to < currentDate)) {
     return 'history';
@@ -21,7 +22,7 @@ export function busWorkspaceLifecycle(
 
 export function busAssignmentEffectiveStatus(
   item: DatedAssignment,
-  currentDate = new Date().toISOString().slice(0, 10),
+  currentDate = albertaToday(),
 ): BusAssignmentEffectiveStatus {
   if (item.status === 'archived') return 'archived';
   if (item.status !== 'active') return 'inactive';
@@ -32,7 +33,7 @@ export function busAssignmentEffectiveStatus(
 
 export function busAssignmentEndDate(
   item: Pick<DatedAssignment, 'effective_from' | 'effective_to'>,
-  currentDate = new Date().toISOString().slice(0, 10),
+  currentDate = albertaToday(),
 ) {
   const requestedEnd =
     item.effective_from && currentDate < item.effective_from ? item.effective_from : currentDate;

@@ -1,3 +1,4 @@
+import { albertaToday } from '@/utils/adminTripDates';
 import { useMemo, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import type { OrganizationProfile } from '@/types/organization';
@@ -75,9 +76,7 @@ export function BusWorkspaceRouteForm({
       : 'both',
   );
   const [effectiveFrom, setEffectiveFrom] = useState(
-    mode === 'renew'
-      ? new Date().toISOString().slice(0, 10)
-      : (initialAssignment?.effective_from ?? new Date().toISOString().slice(0, 10)),
+    mode === 'renew' ? albertaToday() : (initialAssignment?.effective_from ?? albertaToday()),
   );
   const [effectiveTo, setEffectiveTo] = useState(
     mode === 'renew' ? '' : (initialAssignment?.effective_to ?? ''),
@@ -250,7 +249,7 @@ export function BusWorkspaceDriverForm({
     () => new Map(profiles.map((profile) => [profile.id, profile.full_name])),
     [profiles],
   );
-  const today = new Date().toISOString().slice(0, 10);
+  const today = albertaToday();
   const [driverId, setDriverId] = useState(initialDriverId ?? assignment?.driver_id ?? '');
   const [effectiveFrom, setEffectiveFrom] = useState(
     assignment?.effective_from ??
@@ -392,7 +391,7 @@ export function DriverPlannedBusAssignmentForm({
   const initialServiceId = assignment?.bus_route_assignment_id ?? eligibleServices[0]?.id ?? '';
   const [serviceId, setServiceId] = useState(initialServiceId);
   const selectedService = eligibleServices.find((service) => service.id === serviceId) ?? null;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = albertaToday();
   const [effectiveFrom, setEffectiveFrom] = useState(
     assignment?.effective_from ??
       (selectedService?.effective_from && selectedService.effective_from > today
