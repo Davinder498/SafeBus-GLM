@@ -1,3 +1,4 @@
+import { formatAdminTripTimestamp } from '@/utils/adminTripDates';
 import { useCallback, useEffect, useState } from 'react';
 import { OperationalNotesPanel } from '@/components/admin/OperationalNotesPanel';
 import { Card } from '@/components/ui/Card';
@@ -56,7 +57,7 @@ export function TripOperationalEvidencePanel({
             <p className="mt-3 text-sm text-gray-700">
               Pre-trip:{' '}
               {confirmation
-                ? `Confirmed ${new Date(confirmation.confirmed_at).toLocaleString(undefined, { timeZone })}`
+                ? `Confirmed ${formatAdminTripTimestamp(confirmation.confirmed_at, timeZone)}`
                 : 'Not recorded'}
             </p>
             <h3 className="mt-5 font-bold text-navy-900">Exceptions</h3>
@@ -73,7 +74,7 @@ export function TripOperationalEvidencePanel({
                       <p className="mt-1 text-gray-700">{exception.exception_detail}</p>
                     )}
                     <p className="mt-1 text-xs text-gray-500">
-                      {new Date(exception.occurred_at).toLocaleString(undefined, { timeZone })}
+                      {formatAdminTripTimestamp(exception.occurred_at, timeZone)}
                     </p>
                   </li>
                 ))}

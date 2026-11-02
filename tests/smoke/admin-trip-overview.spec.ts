@@ -14,7 +14,7 @@ for (const path of ['/admin', '/admin/live-trips', '/admin/trips'])
       await expect(page.getByTestId('admin-fleet-operations')).toHaveCount(0);
     }
     await expect(page.getByTestId('admin-ongoing-trips')).toHaveCount(0);
-    expect(controls.requests[0]).toMatchObject({
+    expect(controls.requests.find(request => request.p_from_date === null && request.p_status === null)).toMatchObject({
       p_from_date: null,
       p_to_date: null,
       p_page: 1,

@@ -1,0 +1,57 @@
+[
+  {
+    "signature": "safebus_private.has_verified_mfa()",
+    "definition": "CREATE OR REPLACE FUNCTION safebus_private.has_verified_mfa()\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\n  select auth.uid() is not null\n    and coalesce(auth.jwt() ->> 'aal', 'aal1') = 'aal2';\n$function$\n",
+    "md5": "ce806af4a38645412cb02ed01ea100c1",
+    "owner": "postgres",
+    "acl": [
+      "postgres=X/postgres",
+      "authenticated=X/postgres",
+      "service_role=X/postgres"
+    ]
+  },
+  {
+    "signature": "safebus_private.enforce_active_api_session()",
+    "definition": "CREATE OR REPLACE FUNCTION safebus_private.enforce_active_api_session()\n RETURNS void\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog', 'public', 'auth', 'pg_temp'\nAS $function$\ndeclare\n  v_path text := ltrim(current_setting('request.path', true), '/');\n  v_method text := current_setting('request.method', true);\nbegin\n  if auth.role() = 'service_role' then return; end if;\n  if v_path = 'rpc/is_current_user_session_active'\n     and v_method in ('GET', 'HEAD', 'POST') then return; end if;\n  if not public.is_current_user_session_active() then\n    raise exception 'An active SafeBus session is required.' using errcode = '42501';\n  end if;\n  if safebus_private.has_completed_optional_mfa() then return; end if;\n  if v_path = 'profiles' and v_method in ('GET', 'HEAD') then return; end if;\n  if v_path in ('rpc/register_current_user_session', 'rpc/record_own_auth_event')\n     and v_method = 'POST' then return; end if;\n  raise exception 'Complete multi-factor authentication to continue.' using errcode = '42501';\nend;\n$function$\n",
+    "md5": "d64d2cfd09e9d80cc37da97dd166a5d3",
+    "owner": "postgres",
+    "acl": [
+      "postgres=X/postgres",
+      "authenticated=X/postgres",
+      "service_role=X/postgres"
+    ]
+  },
+  {
+    "signature": "safebus_private.has_completed_optional_mfa()",
+    "definition": "CREATE OR REPLACE FUNCTION safebus_private.has_completed_optional_mfa()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'auth', 'pg_temp'\nAS $function$\n  select auth.uid() is not null and (\n    coalesce(auth.jwt() ->> 'aal', 'aal1') = 'aal2'\n    or not exists (\n      select 1 from public.profiles p\n      join auth.mfa_factors f on f.user_id = p.id and f.status = 'verified'\n      where p.id = auth.uid() and p.role in ('guardian', 'driver')\n    )\n  );\n$function$\n",
+    "md5": "993c7430149d80d7b5ed93be04a9fb55",
+    "owner": "postgres",
+    "acl": [
+      "postgres=X/postgres",
+      "authenticated=X/postgres",
+      "service_role=X/postgres"
+    ]
+  },
+  {
+    "signature": "public.complete_invited_account()",
+    "definition": "CREATE OR REPLACE FUNCTION public.complete_invited_account()\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\ndeclare\n  v_profile public.profiles%rowtype;\n  v_password_hash text;\nbegin\n  if auth.uid() is null then\n    raise exception 'Sign in through a valid invitation before completing account setup.'\n      using errcode = '42501';\n  end if;\n\n  select * into v_profile from public.profiles where id = auth.uid() for update;\n  if v_profile.id is null then\n    raise exception 'The invited SafeBus profile was not found.' using errcode = 'P0002';\n  end if;\n  if v_profile.status = 'active' then\n    return jsonb_build_object('profileId', v_profile.id, 'role', v_profile.role, 'status', 'active');\n  end if;\n  if v_profile.status <> 'invited' then\n    raise exception 'This SafeBus account is not available for invitation setup.' using errcode = '22023';\n  end if;\n  if v_profile.role <> 'platform_super_admin' and not exists (\n    select 1 from public.tenants t where t.id = v_profile.tenant_id and t.status = 'active'\n  ) then\n    raise exception 'This SafeBus organization is not active.' using errcode = '22023';\n  end if;\n  if not exists (\n    select 1 from public.tenant_onboarding_invitations i\n    where i.invited_profile_id = auth.uid()\n      and i.status in ('pending', 'resent')\n      and i.expires_at > now()\n  ) then\n    raise exception 'This invitation is expired, revoked, cancelled, or no longer valid.'\n      using errcode = '22023';\n  end if;\n\n  select u.encrypted_password into v_password_hash\n  from auth.users u\n  where u.id = auth.uid() and u.email_confirmed_at is not null;\n  if nullif(v_password_hash, '') is null then\n    raise exception 'Create a password before completing account setup.' using errcode = '22023';\n  end if;\n\n  update public.profiles set status = 'active'\n  where id = auth.uid() and status = 'invited';\n  update public.tenant_onboarding_invitations\n  set status = 'activated', cancelled_at = null,\n      delivery_status = case when delivery_status in ('pending', 'processing') then 'sent' else delivery_status end\n  where invited_profile_id = auth.uid()\n    and status in ('pending', 'resent') and expires_at > now();\n\n  return jsonb_build_object('profileId', v_profile.id, 'role', v_profile.role, 'status', 'active');\nend;\n$function$\n",
+    "md5": "d7c430105e2b241e5938b9c1486ce53f",
+    "owner": "postgres",
+    "acl": [
+      "postgres=X/postgres",
+      "authenticated=X/postgres",
+      "service_role=X/postgres"
+    ]
+  },
+  {
+    "signature": "public.enforce_new_password_policy(text)",
+    "definition": "CREATE OR REPLACE FUNCTION public.enforce_new_password_policy(p_password text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\nbegin\n  if auth.uid() is null then\n    raise exception 'Authentication is required to change a password.' using errcode = '42501';\n  end if;\n  if not safebus_private.validate_password_policy(p_password) then\n    raise exception 'Password does not meet the SafeBus password policy.' using errcode = '22023';\n  end if;\n  if safebus_private.is_compromised_password(p_password) then\n    raise exception 'Choose a password that is not present in the compromised-password list.' using errcode = '22023';\n  end if;\nend;\n$function$\n",
+    "md5": "fdef91973c112f4cdebabb608d9d5c69",
+    "owner": "postgres",
+    "acl": [
+      "postgres=X/postgres",
+      "authenticated=X/postgres",
+      "service_role=X/postgres"
+    ]
+  }
+]

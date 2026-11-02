@@ -3,7 +3,11 @@ import { useEffect, useState } from 'react';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { directionLabel } from '@/services/adminTripOverviewService';
 import type { AdminTripOverviewItem } from '@/types/adminTripOverview';
-import { formatAdminTripDate, formatAdminTripTime } from '@/utils/adminTripDates';
+import {
+  formatAdminTripDate,
+  formatAdminTripTime,
+  formatAdminTripTimestamp,
+} from '@/utils/adminTripDates';
 import type { AdminTripOperation } from '@/types/adminTripDetail';
 import { tripLocationLabel } from '@/utils/adminTripPresentation';
 
@@ -12,11 +16,13 @@ export function AdminTripTable({
   timeZone,
   testId = 'admin-trips-table',
   resultsLabel = 'Trip results',
+  recordedTimes = false,
 }: {
   trips: (AdminTripOverviewItem | AdminTripOperation)[];
   timeZone?: string;
   testId?: string;
   resultsLabel?: string;
+  recordedTimes?: boolean;
 }) {
   const location = useLocation();
   const operational = trips.some((trip) => 'locationStatus' in trip);
@@ -49,10 +55,10 @@ export function AdminTripTable({
               {[
                 'Route and direction',
                 'Bus',
-                'Driver',
+                recordedTimes ? 'Recorded driver' : 'Driver',
                 'Service date',
-                'Start',
-                'End',
+                recordedTimes ? 'Actual start' : 'Start',
+                recordedTimes ? 'Actual end' : 'End',
                 'Status',
                 ...(operational ? ['Location status', 'ETA / issue'] : []),
                 'Details',
@@ -91,11 +97,15 @@ export function AdminTripTable({
                     {formatAdminTripDate(trip.serviceDate)}
                   </td>
                   <td className="whitespace-nowrap px-3 py-3 text-gray-700">
-                    {formatAdminTripTime(trip.startedAt, timeZone)}
+                    {recordedTimes
+                      ? formatAdminTripTimestamp(trip.startedAt)
+                      : formatAdminTripTime(trip.startedAt, timeZone)}
                   </td>
                   <td className="whitespace-nowrap px-3 py-3 text-gray-700">
                     {trip.endedAt
-                      ? formatAdminTripTime(trip.endedAt, timeZone)
+                      ? recordedTimes
+                        ? formatAdminTripTimestamp(trip.endedAt)
+                        : formatAdminTripTime(trip.endedAt, timeZone)
                       : trip.status === 'active' || trip.status === 'paused'
                         ? 'In progress'
                         : 'Not recorded'}

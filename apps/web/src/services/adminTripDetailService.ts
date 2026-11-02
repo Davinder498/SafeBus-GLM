@@ -32,6 +32,7 @@ function failure(error: { code?: string }) {
 
 export async function fetchAdminTripOperations(
   query: AdminTripSearchQuery,
+  signal?: AbortSignal,
 ): Promise<PaginatedResult<AdminTripOperation>> {
   const { data, error } = await client().rpc('get_admin_trip_operations', {
     p_from_date: query.fromDate,
@@ -39,7 +40,7 @@ export async function fetchAdminTripOperations(
     p_status: query.status,
     p_page: query.page,
     p_page_size: query.pageSize,
-  });
+  }).abortSignal(signal ?? new AbortController().signal);
   if (error) throw failure(error);
   const result = data as unknown as { rows: OperationRow[]; totalCount: number };
   return {

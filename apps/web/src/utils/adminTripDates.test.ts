@@ -5,6 +5,7 @@ import {
   ALBERTA_TIME_ZONE,
   formatAdminTripDate,
   formatAdminTripTime,
+  formatAdminTripTimestamp,
 } from '@/utils/adminTripDates';
 
 describe('Alberta trip service dates', () => {
@@ -53,23 +54,23 @@ describe('Alberta trip service dates', () => {
     expect(() => adminTripDateBounds({ ...selection, mode: 'range' })).toThrow('end date');
   });
 
-  it('formats timestamps in Alberta time and leaves service dates as calendar dates', () => {
-    const winter = '2026-01-09T14:30:00Z';
-    const summer = '2026-07-09T14:30:00Z';
-    const expected = (value: string) =>
-      new Date(value).toLocaleTimeString(undefined, {
-        timeZone: ALBERTA_TIME_ZONE,
-        hour: 'numeric',
-        minute: '2-digit',
-      });
-    expect(formatAdminTripTime(winter, ALBERTA_TIME_ZONE)).toBe(expected(winter));
-    expect(formatAdminTripTime(summer, ALBERTA_TIME_ZONE)).toBe(expected(summer));
+  it('formats recorded timestamps with bundled historical and current Alberta rules', () => {
+    expect(formatAdminTripTime('2026-01-09T14:30:00Z', ALBERTA_TIME_ZONE)).toBe('7:30 AM');
+    expect(formatAdminTripTime('2026-07-09T14:30:00Z', ALBERTA_TIME_ZONE)).toBe('8:30 AM');
+    expect(formatAdminTripTimestamp('2026-03-08T08:59:00Z')).toBe('2026-03-08 1:59 AM UTC-07:00');
+    expect(formatAdminTripTimestamp('2026-03-08T09:01:00Z')).toBe('2026-03-08 3:01 AM UTC-06:00');
+    expect(formatAdminTripTimestamp('2025-11-02T07:30:00Z')).toBe('2025-11-02 1:30 AM UTC-06:00');
+    expect(formatAdminTripTimestamp('2025-11-02T08:30:00Z')).toBe('2025-11-02 1:30 AM UTC-07:00');
+    expect(formatAdminTripTimestamp('2026-11-02T14:00:00Z')).toBe('2026-11-02 8:00 AM UTC-06:00');
+    expect(formatAdminTripTimestamp('2026-11-02T05:59:00Z')).toBe('2026-11-01 11:59 PM UTC-06:00');
+    expect(albertaToday(new Date('2026-11-02T06:30:00Z'))).toBe('2026-11-02');
+    expect(formatAdminTripTimestamp('invalid')).toBe('Not recorded');
+    expect(formatAdminTripTime('invalid', ALBERTA_TIME_ZONE)).toBe('Unavailable');
     expect(formatAdminTripDate('2026-01-09')).toBe(
       new Date('2026-01-09T12:00:00Z').toLocaleDateString(undefined, {
         timeZone: 'UTC',
         dateStyle: 'medium',
       }),
     );
-    expect(formatAdminTripTime('invalid', ALBERTA_TIME_ZONE)).toBe('invalid');
   });
 });
