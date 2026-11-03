@@ -132,6 +132,12 @@ const NotFoundPage = lazy(() =>
   import('@/pages/NotFoundPage').then((page) => ({ default: page.NotFoundPage })),
 );
 const MfaPage = lazy(() => import('@/pages/MfaPage').then((page) => ({ default: page.MfaPage })));
+const AccountSecurityPage = lazy(() =>
+  import('@/pages/AccountSecurityPage').then((page) => ({ default: page.AccountSecurityPage })),
+);
+const ChangePasswordPage = lazy(() =>
+  import('@/pages/ChangePasswordPage').then((page) => ({ default: page.ChangePasswordPage })),
+);
 const PrivacyPolicyPage = lazy(() =>
   import('@/pages/PrivacyPolicyPage').then((page) => ({ default: page.PrivacyPolicyPage })),
 );
@@ -189,6 +195,22 @@ export const appRoutes: RouteObject[] = [
   },
   {
     path: '/account/security',
+    element: (
+      <ProtectedRoute allowedRoles={[...adminRoles]}>
+        <AccountSecurityPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/account/security/password',
+    element: (
+      <ProtectedRoute allowedRoles={[...adminRoles]}>
+        <ChangePasswordPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/account/security/mfa',
     element: (
       <ProtectedRoute allowedRoles={[...adminRoles]}>
         <MfaPage />

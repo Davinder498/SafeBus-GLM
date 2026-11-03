@@ -529,6 +529,12 @@ export function DashboardLayout({
               )}
               <DropdownItem
                 icon={<ShieldCheck className="h-4 w-4" />}
+                onClick={() => navigate('/account/security')}
+              >
+                Account security
+              </DropdownItem>
+              <DropdownItem
+                icon={<ShieldCheck className="h-4 w-4" />}
                 onClick={() => navigate('/privacy')}
               >
                 Privacy Notice

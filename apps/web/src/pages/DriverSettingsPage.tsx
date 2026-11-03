@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { MfaSettingsCard } from '@/components/settings/MfaSettingsCard';
+import { AccountSecurityLinkCard } from '@/components/settings/AccountSecurityLinkCard';
 import {
   fetchDriverDeliveryPreferences,
   saveDriverDeliveryPreferences,
@@ -179,7 +179,7 @@ export function DriverSettingsPage() {
         </section>
 
         <AppearanceSettingsCard />
-        <MfaSettingsCard />
+        <AccountSecurityLinkCard />
 
         <Card className="border-warning-200 bg-warning-50 p-5">
           <h2 className="font-bold text-navy-900">Driver safety</h2>

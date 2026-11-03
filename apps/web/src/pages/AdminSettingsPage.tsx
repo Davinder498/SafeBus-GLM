@@ -1,5 +1,5 @@
 import { AppearanceSettingsCard } from '@/components/settings/AppearanceToggle';
-import { MfaSettingsCard } from '@/components/settings/MfaSettingsCard';
+import { AccountSecurityLinkCard } from '@/components/settings/AccountSecurityLinkCard';
 import { useEffect, useState } from 'react';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { AdminSettingsNav } from '@/components/settings/AdminSettingsNav';
@@ -79,7 +79,7 @@ export function AdminSettingsPage() {
 
         <AdminSettingsNav role={profile?.role} />
         <AppearanceSettingsCard />
-        <MfaSettingsCard />
+        <AccountSecurityLinkCard />
 
         {loading && (
           <DataState

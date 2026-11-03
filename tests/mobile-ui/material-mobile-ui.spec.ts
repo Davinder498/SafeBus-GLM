@@ -922,7 +922,7 @@ test('driver support page shows one resolved support contact', async ({ page }) 
   await expect(securityCard).toHaveCount(1);
   await expect(securityCard).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(
-    securityCard.getByRole('link', { name: 'Enable multi-factor authentication' }),
+    securityCard.getByRole('link', { name: /Account security/ }),
   ).toBeVisible();
 });
 

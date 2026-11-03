@@ -74,7 +74,7 @@ function Destination() {
     </p>
   );
 }
-async function render(path = '/account/security', guard = false, notification = false) {
+async function render(path = '/account/security/mfa', guard = false, notification = false) {
   const container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
@@ -86,7 +86,7 @@ async function render(path = '/account/security', guard = false, notification = 
         <MemoryRouter initialEntries={[path]}>
           <Routes>
             <Route
-              path="/account/security"
+              path="/account/security/mfa"
               element={
                 guard ? (
                   <ProtectedRoute allowedRoles={['guardian', 'driver', 'tenant_admin']}>
@@ -107,6 +107,7 @@ async function render(path = '/account/security', guard = false, notification = 
               }
             />
             <Route path="/notifications/settings" element={<Destination />} />
+            <Route path="/account/security" element={<Destination />} />
             <Route path="/driver/settings" element={<Destination />} />
           </Routes>
         </MemoryRouter>
@@ -170,7 +171,7 @@ it.each<ProfileRole>(['guardian', 'driver'])(
   'lets a %s use preferences without enrolling in MFA',
   async (role) => {
     mocks.auth.profile!.role = role;
-    expect((await render('/account/security', true)).textContent).toContain(
+    expect((await render('/account/security/mfa', true)).textContent).toContain(
       'Preferences available',
     );
   },
@@ -180,18 +181,18 @@ it.each<ProfileRole>(['guardian', 'driver', 'tenant_admin'])(
   async (role) => {
     mocks.auth.profile!.role = role;
     mocks.auth.mfaStatus = { currentLevel: 'aal1', nextLevel: 'aal2', verifiedFactors: [factor] };
-    const c = await render('/account/security?tab=security#authenticator', true);
+    const c = await render('/account/security/mfa?tab=security#authenticator', true);
     expect(c.textContent).toContain('/mfa');
-    expect(c.textContent).toContain('/account/security?tab=security#authenticator');
+    expect(c.textContent).toContain('/account/security/mfa?tab=security#authenticator');
   },
 );
 it('keeps MFA mandatory for an administrator without an enrolled factor', async () => {
   mocks.auth.profile!.role = 'tenant_admin';
-  expect((await render('/account/security', true)).textContent).toContain('/mfa');
+  expect((await render('/account/security/mfa', true)).textContent).toContain('/mfa');
 });
 it('allows an enrolled user after verification', async () => {
   mocks.auth.mfaStatus = { currentLevel: 'aal2', nextLevel: 'aal2', verifiedFactors: [factor] };
-  expect((await render('/account/security', true)).textContent).toContain('Preferences available');
+  expect((await render('/account/security/mfa', true)).textContent).toContain('Preferences available');
 });
 it('lets a guardian enroll and verify an authenticator from account settings', async () => {
   const c = await render();
@@ -203,7 +204,7 @@ it('lets a guardian enroll and verify an authenticator from account settings', a
   expect(c.querySelector('img')?.src).toContain('%3Csvg%2F%3E');
   await submit(c, '123456');
   expect(mocks.challengeAndVerify).toHaveBeenCalledWith({ factorId: 'new-factor', code: '123456' });
-  expect(c.textContent).toContain('/notifications/settings:');
+  expect(c.textContent).toContain('/account/security:');
 });
 it('requires a new code to remove MFA even in an already verified session', async () => {
   mocks.auth.mfaStatus = { currentLevel: 'aal2', nextLevel: 'aal2', verifiedFactors: [factor] };
@@ -216,7 +217,7 @@ it('requires a new code to remove MFA even in an already verified session', asyn
   expect(mocks.challengeAndVerify.mock.invocationCallOrder[0]).toBeLessThan(
     mocks.unenroll.mock.invocationCallOrder[0],
   );
-  expect(c.textContent).toContain('/notifications/settings:');
+  expect(c.textContent).toContain('/account/security:');
 });
 it('keeps the authenticator when fresh verification fails', async () => {
   mocks.auth.mfaStatus = { currentLevel: 'aal2', nextLevel: 'aal2', verifiedFactors: [factor] };
@@ -233,5 +234,5 @@ it('returns a driver to Driver settings after enrollment', async () => {
   const c = await render();
   await click(c, 'Set up authenticator app');
   await submit(c, '123456');
-  expect(c.textContent).toContain('/driver/settings:');
+  expect(c.textContent).toContain('/account/security:');
 });
