@@ -50,10 +50,12 @@ export function UpdatePasswordPage() {
       // An administrator may resend the initial invitation using Supabase's
       // recovery email. Updating the password alone must not leave that profile
       // in the invited state; complete the existing server-authorized activation.
-      const nextProfile =
-        profile?.status === 'invited'
-          ? await completeInvitation(password)
-          : (await updatePassword(password), profile);
+      let nextProfile = profile;
+      if (profile?.status === 'invited') {
+        nextProfile = await completeInvitation(password);
+      } else {
+        await updatePassword(password);
+      }
       if (!nextProfile || nextProfile.status !== 'active') {
         throw new Error('SafeBus could not verify this account. Contact your administrator.');
       }
