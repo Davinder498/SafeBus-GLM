@@ -190,9 +190,9 @@ export function AdminRouteDetailPage() {
     )
       ? (searchParams.get('newDriverId') ?? undefined)
       : undefined;
-  function selectWorkspaceTab(tab: RouteWorkspaceTab) {
+  function selectWorkspaceTab(tab: RouteWorkspaceTab, openEditor = false) {
     setActiveTab(tab);
-    const hash = tab === 'route' ? '#route-workspace'
+    const hash = tab === 'route' ? (openEditor ? '#route-details' : '#route-workspace')
       : tab === 'assignments' ? '#route-service'
       : tab === 'students' ? '#route-students' : '#setup';
     navigate({ pathname: location.pathname, search: location.search, hash }, { replace: true });
