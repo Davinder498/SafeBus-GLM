@@ -71,9 +71,9 @@ function gpsIssueLabel(trip: AdminTripOperation) {
 }
 
 const panelClass =
-  'min-w-0 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm sm:p-5';
+  'min-w-0 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-sm sm:p-6';
 const linkFocus =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#405B68] focus-visible:ring-offset-2';
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] focus-visible:ring-offset-2';
 
 export function AdminDashboardPage() {
   const [summary, setSummary] = useState<SummaryState>({ kind: 'loading' });
@@ -147,7 +147,7 @@ export function AdminDashboardPage() {
         <PageHeader
           eyebrow="Operations"
           title="Transportation overview"
-          description="Today's trips and the transportation records available to your school authority."
+          description="A clear view of today's trip activity, GPS attention, and your authorized transportation records."
           action={
             <Link
               to="/admin/live-trips"
@@ -188,13 +188,13 @@ export function AdminDashboardPage() {
                     <Link
                       key={item.label}
                       to={item.to}
-                      className={'group rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm transition-shadow hover:shadow-md ' + linkFocus}
+                      className={'group min-w-0 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-sm transition-all hover:border-[var(--color-focus)] hover:shadow-md ' + linkFocus}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span className={'flex h-11 w-11 items-center justify-center rounded-xl ' + (
-                          item.tone === 'mint' ? 'bg-[#E6F4EE] text-[#185C49]' :
-                          item.tone === 'amber' ? 'bg-[#FFF3DC] text-[#925711]' :
-                          'bg-[var(--color-raised)] text-[var(--color-brand)]'
+                          item.tone === 'mint' ? 'bg-[var(--color-success-surface)] text-[var(--color-success-text)]' :
+                          item.tone === 'amber' ? 'bg-[var(--color-warning-surface)] text-[var(--color-warning-text)]' :
+                          'bg-[var(--color-selection)] text-[var(--color-action)]'
                         )}>
                           <Icon className="h-5 w-5" aria-hidden />
                         </span>
@@ -213,7 +213,7 @@ export function AdminDashboardPage() {
                     <div className="flex items-center gap-2">
                       <h3 id="attention-heading" className="text-lg font-bold text-[var(--color-text)]">Operational attention</h3>
                       {attention.length > 0 && (
-                        <span className="rounded-full bg-[#FFF3DC] px-2 py-0.5 text-xs font-bold text-[#925711]">{attention.length} shown</span>
+                        <span className="rounded-full bg-[var(--color-warning-surface)] px-2 py-0.5 text-xs font-bold text-[var(--color-warning-text)]">{attention.length} shown</span>
                       )}
                     </div>
                     <Link to="/admin/live-trips" className={'text-sm font-semibold text-[var(--color-brand)] underline-offset-4 hover:underline ' + linkFocus}>
@@ -226,11 +226,11 @@ export function AdminDashboardPage() {
                       No GPS issues or paused trips in the loaded snapshot. Other alerts may still require review.
                     </p>
                   ) : (
-                    <ul className="mt-3 divide-y divide-[#E7ECF0]">
+                    <ul className="mt-3 divide-y divide-[var(--color-border)]">
                       {attention.map(({ trip, label, tone }) => (
                         <li key={trip.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                           <div className="flex min-w-0 items-start gap-3">
-                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF3DC] text-[#925711]">
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-warning-surface)] text-[var(--color-warning-text)]">
                               <CircleAlert className="h-5 w-5" aria-hidden />
                             </span>
                             <div className="min-w-0">
@@ -307,10 +307,10 @@ export function AdminDashboardPage() {
                     <Link
                       key={item.key}
                       to={item.to}
-                      className={'group flex min-h-32 flex-col justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-raised)] p-4 transition-colors hover:border-[var(--color-focus)] hover:bg-[var(--color-surface-subtle)] ' + linkFocus}
+                      className={'group flex min-h-32 min-w-0 flex-col justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-4 transition-all hover:border-[var(--color-focus)] hover:bg-[var(--color-surface)] hover:shadow-sm ' + linkFocus}
                     >
                       <span className="flex items-center justify-between gap-2">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-raised)] text-[var(--color-brand)]"><Icon className="h-4 w-4" aria-hidden /></span>
+                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-selection)] text-[var(--color-action)]"><Icon className="h-4 w-4" aria-hidden /></span>
                         <ArrowRight className="h-4 w-4 text-[var(--color-text-muted)] transition-transform group-hover:translate-x-0.5" aria-hidden />
                       </span>
                       <span className="mt-3">
