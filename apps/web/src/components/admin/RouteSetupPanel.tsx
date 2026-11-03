@@ -596,48 +596,6 @@ export function RouteSetupPanel({
         )}
       </RouteSetupSection>
       )}
-      {activeTab === 'overview' && (
-      <RouteSetupSection id="route-review" title="Review saved setup">
-        <ul className="mt-3 space-y-2 text-sm">
-          <li>
-            Route: {eligible ? 'Active with complete stops' : 'Needs route details or activation'}
-          </li>
-          <li>
-            Road path:{' '}
-            {pathPublished === null
-              ? 'Not verified'
-              : pathPublished
-                ? 'Published for new runs'
-                : 'Needs a reviewed published path'}
-          </li>
-          <li>Bus services: {services.length}</li>
-          <li>
-            Drivers:{' '}
-            {
-              services.filter((s) =>
-                assignments.some(
-                  (a) => a.bus_route_assignment_id === s.id && a.status === 'active',
-                ),
-              ).length
-            }{' '}
-            of {services.length} bus services have a saved driver plan. Check their date coverage
-            above.
-          </li>
-          <li>
-            Students:{' '}
-            {rosterLoading || rosterError
-              ? 'Not verified'
-              : new Set(roster.filter((a) => a.status === 'active').map((a) => a.student_id))
-                  .size}{' '}
-            assigned. Review pickup/drop-off stops above.
-          </li>
-        </ul>
-        <p className="mt-3 text-sm text-gray-600">
-          Start a new run to use a newly published road path. Runs already in progress keep their
-          original path.
-        </p>
-      </RouteSetupSection>
-      )}
       {endingError && (
         <p role="alert" className="text-danger-700">
           {endingError}
