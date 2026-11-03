@@ -389,8 +389,13 @@ test('sets up route details, bus, driver and student stops without leaving the r
     },
   );
   await page.getByRole('button', { name: 'Assignments', exact: true }).click();
-  await page.getByRole('button', { name: 'Edit driver', exact: true }).first().click();
-  await page.getByRole('form', { name: 'Driver for Outbound bus One' }).getByRole('button', { name: 'Remove driver plan', exact: true }).click();
+  const outboundCard = page.getByTestId('route-service-card-service-forward');
+  const outboundDriverForm = outboundCard.getByRole('form', { name: 'Driver for Outbound bus One' });
+  if ((await outboundDriverForm.count()) === 0) {
+    await outboundCard.getByRole('button', { name: /^(Edit driver|Assign driver)$/ }).click();
+  }
+  await outboundDriverForm.getByRole('combobox', { name: 'Driver plan' }).selectOption('driver-plan');
+  await outboundDriverForm.getByRole('button', { name: 'Remove driver plan', exact: true }).click();
   await page
     .getByRole('dialog')
     .getByRole('button', { name: 'Remove driver plan', exact: true })
@@ -596,6 +601,7 @@ test('regular routes can use exact weekend dates and reject an empty active date
     serviceMode: 'dates',
     serviceDates: ['2026-11-08'],
   });
+  await page.getByRole('button', { name: 'Overview', exact: true }).click();
   await page.getByText('Specific dates (1)', { exact: true }).click();
   await expect(page.getByRole('listitem').filter({ hasText: '2026-11-08' })).toBeVisible();
 });
