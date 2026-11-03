@@ -51,7 +51,7 @@ it.each(['guardian', 'driver'])(
     expect(toggle.getAttribute('aria-checked')).toBe('false');
     await act(async () => toggle.click());
     expect(container.querySelector('[data-testid="destination"]')?.textContent).toBe(
-      '/account/security:{"removeAuthenticator":false}',
+      '/account/security/mfa:{"removeAuthenticator":false}',
     );
     mocks.enabled = true;
     await act(async () =>
@@ -65,7 +65,7 @@ it.each(['guardian', 'driver'])(
     expect(toggle.getAttribute('aria-checked')).toBe('true');
     await act(async () => toggle.click());
     expect(container.querySelector('[data-testid="destination"]')?.textContent).toBe(
-      '/account/security:{"removeAuthenticator":true}',
+      '/account/security/mfa:{"removeAuthenticator":true}',
     );
   },
 );
