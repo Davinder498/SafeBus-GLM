@@ -48,7 +48,7 @@ import type { RouteServiceDay } from '@/types/transportation';
 type RouteWorkspaceTab = 'overview' | 'route' | 'assignments' | 'students';
 
 function workspaceTabFromHash(hash: string): RouteWorkspaceTab {
-  if (hash === '#route-details' || hash === '#road-path') return 'route';
+  if (hash === '#route-details' || hash === '#route-workspace' || hash === '#road-path') return 'route';
   if (hash === '#route-service') return 'assignments';
   if (hash === '#route-students') return 'students';
   return 'overview';
@@ -192,7 +192,7 @@ export function AdminRouteDetailPage() {
       : undefined;
   function selectWorkspaceTab(tab: RouteWorkspaceTab) {
     setActiveTab(tab);
-    const hash = tab === 'route' ? '#route-details'
+    const hash = tab === 'route' ? '#route-workspace'
       : tab === 'assignments' ? '#route-service'
       : tab === 'students' ? '#route-students' : '#setup';
     navigate({ pathname: location.pathname, search: location.search, hash }, { replace: true });
@@ -242,7 +242,7 @@ export function AdminRouteDetailPage() {
             <PageHeader
               eyebrow={data.route.route_code}
               title={data.route.route_name}
-              description="Set up route details, stops, road path, bus, driver and students here."
+              description="Manage this route, its stops, bus services, drivers and student assignments from one workspace."
               action={
                 profile?.role === 'tenant_admin' && (
                   <DropdownMenu
