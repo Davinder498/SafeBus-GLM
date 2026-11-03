@@ -60,12 +60,12 @@ test.describe('Simplified tenant admin workflow', () => {
     await page.getByRole('link', { name: 'Open route Route One', exact: true }).click();
     await expect(page).toHaveURL(`/admin/routes/${ids.route}`);
     await expect(page.getByRole('heading', { name: 'Route One', level: 1 })).toBeVisible();
-    await expect(page.getByText('Pickup Stop')).toBeVisible();
     await expect(page.getByTestId('admin-routes-map')).toBeVisible();
+    await page.getByRole('button', { name: 'Route & Stops', exact: true }).click();
     await page.getByRole('button', { name: 'Edit route details and stops' }).click();
-    await expect(page).toHaveURL(`/admin/routes/${ids.route}`);
+    await expect(page).toHaveURL(/#route-workspace$/);
     await expect(
-      page.getByRole('heading', { name: '1. Route details and stops', level: 2 }),
+      page.getByRole('heading', { name: 'Route details, schedule and stops', level: 2 }),
     ).toBeVisible();
     await expect(page.getByLabel('Route name')).toHaveValue('Route One');
     await expect(page.getByLabel('Stop name')).toHaveValue('Pickup Stop');
@@ -79,8 +79,7 @@ test.describe('Simplified tenant admin workflow', () => {
 
     await expect(page.getByTestId('admin-routes-map-tile-error')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('admin-routes-map-fallback')).toContainText('Route One');
-    await expect(page.getByText('Pickup Stop')).toBeVisible();
-
+    await page.getByRole('button', { name: 'Route & Stops', exact: true }).click();
     await page.getByRole('button', { name: 'Edit route details and stops' }).click();
     await expect(page.getByTestId('route-stop-map-tile-error')).toBeVisible({ timeout: 10000 });
     await expect(page.getByLabel('Latitude')).toHaveValue('51.0447');
