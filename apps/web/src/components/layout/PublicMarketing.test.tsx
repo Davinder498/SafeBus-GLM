@@ -57,6 +57,13 @@ describe('public marketing navigation', () => {
     const whyChooseUs = container.querySelector('#why-choose-us');
     expect(whyChooseUs?.querySelector('h2')?.textContent?.trim()).toBe('Why choose us');
     expect(whyChooseUs?.querySelectorAll('article')).toHaveLength(5);
+    const educationSection = container.querySelector('#education');
+    expect(educationSection?.querySelector('h2')?.textContent).toBe('5% of profits. A brighter future.');
+    expect(educationSection?.textContent).toContain('5% of its profits');
+    expect(educationSection?.textContent).not.toContain('revenue');
+    const finalConsultation = container.querySelector('section[aria-labelledby="contact-heading"]');
+    expect(educationSection?.nextElementSibling).toBe(finalConsultation);
+
     expect(container.textContent).not.toContain('Track the bus, not the child');
     expect(container.textContent).not.toContain('Open demo');
     expect(container.textContent).not.toContain('View demo portals');
