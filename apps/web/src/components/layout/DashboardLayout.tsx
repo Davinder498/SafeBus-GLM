@@ -1,4 +1,4 @@
-import { useContext, useLayoutEffect, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate, type NavLinkRenderProps } from 'react-router';
 import {
   LayoutDashboard,
@@ -327,6 +327,48 @@ export function DashboardLayout({
   }, [appSurface]);
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const drawerRef = useRef<HTMLElement>(null);
+  const drawerCloseRef = useRef<HTMLButtonElement>(null);
+  const drawerTriggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const priorFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    drawerCloseRef.current?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setMobileOpen(false);
+      }
+      if (event.key !== 'Tab' || !drawerRef.current) return;
+      const controls = Array.from(
+        drawerRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not(:disabled), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => element.getClientRects().length > 0 || element === document.activeElement);
+      const first = controls[0];
+      const last = controls.at(-1);
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      if (priorFocus?.isConnected) priorFocus.focus();
+      else drawerTriggerRef.current?.focus();
+    };
+  }, [mobileOpen]);
+
   const navigationMode = getDashboardNavigationMode(appSurface, portal);
   const usesBottomTabs = navigationMode === 'bottom-tabs';
   const bottomTabItems = portal === 'driver' ? driverNativeNavItems : guardianNativeNavItems;
@@ -378,7 +420,10 @@ export function DashboardLayout({
                 'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg lg:hidden',
                 portal === 'admin' ? 'text-[var(--color-text)] hover:bg-[var(--color-raised)]' : 'text-white hover:bg-white/10',
               )}
+              ref={drawerTriggerRef}
               aria-label="Open navigation"
+              aria-controls="safebus-mobile-navigation"
+              aria-expanded={mobileOpen}
               onClick={() => setMobileOpen(true)}
             >
               <Menu className="h-5 w-5" />
@@ -537,7 +582,13 @@ export function DashboardLayout({
               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
               onClick={() => setMobileOpen(false)}
             />
-            <aside className={cn(
+            <aside
+              ref={drawerRef}
+              id="safebus-mobile-navigation"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Navigation"
+              className={cn(
               'sb-sidebar absolute left-0 top-0 h-full w-72 max-w-[85vw] overflow-y-auto p-4 shadow-popover animate-slide-in-right',
               portal === 'admin' ? 'bg-[#172B3A]' : 'bg-[var(--color-surface)]',
             )}>
@@ -550,6 +601,7 @@ export function DashboardLayout({
                     'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg',
                     portal === 'admin' ? 'text-white hover:bg-white/10' : 'text-slate-500 hover:bg-slate-100',
                   )}
+                  ref={drawerCloseRef}
                   aria-label="Close navigation"
                 >
                   <X className="h-5 w-5" />
