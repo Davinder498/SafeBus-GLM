@@ -239,7 +239,8 @@ describe('surface role access', () => {
     await submit(container);
 
     expect(auth.signOut).toHaveBeenCalledOnce();
-    expect(container.textContent).toContain('Your account is ready. Open the SafeBus mobile app');
+    expect(container.textContent).toContain('Your account is ready');
+    expect(container.textContent).toContain('Open the SafeBus mobile app to sign in');
   });
 
   it('updates a driver password on web, signs out, and directs them to mobile', async () => {
@@ -257,8 +258,67 @@ describe('surface role access', () => {
     await submit(container);
 
     expect(auth.signOut).toHaveBeenCalledOnce();
-    expect(container.textContent).toContain(
-      'Your password is updated. Open the SafeBus mobile app',
-    );
+    expect(container.textContent).toContain('Your password is updated');
+    expect(container.textContent).toContain('Open the SafeBus mobile app to sign in');
+  });
+
+  it('activates a guardian invitation on the website and explains the mobile handoff', async () => {
+    const invited = profile('guardian', 'invited');
+    const active = profile('guardian');
+    const auth = authValue({
+      session: {} as AuthContextValue['session'],
+      profile: invited,
+      completeInvitation: vi.fn(async () => active),
+      signOut: vi.fn(async () => undefined),
+    });
+    const container = await render(<AcceptInvitationPage />, auth);
+    const [password, confirmation] = Array.from(container.querySelectorAll('input'));
+    await enter(password, 'long-secure-password');
+    await enter(confirmation, 'long-secure-password');
+    await submit(container);
+    expect(auth.completeInvitation).toHaveBeenCalledOnce();
+    expect(auth.signOut).toHaveBeenCalledOnce();
+    expect(container.querySelector('[data-ui="mobile-account-ready"]')).not.toBeNull();
+    expect(container.textContent).toContain('parents and');
+  });
+
+  it('activates an invited driver following a password-recovery resend', async () => {
+    const invited = profile('driver', 'invited');
+    const active = profile('driver');
+    const auth = authValue({
+      session: {} as AuthContextValue['session'],
+      profile: invited,
+      completeInvitation: vi.fn(async () => active),
+      updatePassword: vi.fn(async () => undefined),
+      signOut: vi.fn(async () => undefined),
+    });
+    const container = await render(<UpdatePasswordPage />, auth);
+    const [password, confirmation] = Array.from(container.querySelectorAll('input'));
+    await enter(password, 'long-secure-password');
+    await enter(confirmation, 'long-secure-password');
+    await submit(container);
+    expect(auth.completeInvitation).toHaveBeenCalledOnce();
+    expect(auth.updatePassword).not.toHaveBeenCalled();
+    expect(auth.signOut).toHaveBeenCalledOnce();
+    expect(container.textContent).toContain('Your account is ready');
+  });
+
+  it('does not reactivate an already-active guardian during an ordinary password reset', async () => {
+    const active = profile('guardian');
+    const auth = authValue({
+      session: {} as AuthContextValue['session'],
+      profile: active,
+      completeInvitation: vi.fn(async () => active),
+      updatePassword: vi.fn(async () => undefined),
+      signOut: vi.fn(async () => undefined),
+    });
+    const container = await render(<UpdatePasswordPage />, auth);
+    const [password, confirmation] = Array.from(container.querySelectorAll('input'));
+    await enter(password, 'long-secure-password');
+    await enter(confirmation, 'long-secure-password');
+    await submit(container);
+    expect(auth.updatePassword).toHaveBeenCalledOnce();
+    expect(auth.completeInvitation).not.toHaveBeenCalled();
+    expect(container.textContent).toContain('Your password is updated');
   });
 });

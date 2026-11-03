@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { KeyRound } from 'lucide-react';
+import { MobileAccountReady } from '@/components/auth/MobileAccountReady';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -19,12 +20,13 @@ const minimumPasswordLength = 12;
 export function UpdatePasswordPage() {
   const navigate = useNavigate();
   const appSurface = useAppSurface();
-  const { session, profile, loading, authError, configError, updatePassword, signOut } = useAuth();
+  const { session, profile, loading, authError, configError, updatePassword, completeInvitation, signOut } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [surfaceCompletion, setSurfaceCompletion] = useState<string | null>(null);
+  const [mobileReady, setMobileReady] = useState(false);
   const [recoveryError] = useState(() => {
     const message = sessionStorage.getItem('safebus.passwordRecoveryError');
     sessionStorage.removeItem('safebus.passwordRecoveryError');
@@ -45,19 +47,33 @@ export function UpdatePasswordPage() {
 
     setSubmitting(true);
     try {
-      await updatePassword(password);
-      if (profile?.status === 'active' && !isRoleAllowedOnSurface(profile.role, appSurface)) {
+      // An administrator may resend the initial invitation using Supabase's
+      // recovery email. Updating the password alone must not leave that profile
+      // in the invited state; complete the existing server-authorized activation.
+      let nextProfile = profile;
+      if (profile?.status === 'invited') {
+        nextProfile = await completeInvitation(password);
+      } else {
+        await updatePassword(password);
+      }
+      if (!nextProfile || nextProfile.status !== 'active') {
+        throw new Error('SafeBus could not verify this account. Contact your administrator.');
+      }
+      if (!isRoleAllowedOnSurface(nextProfile.role, appSurface)) {
         await signOut();
-        setSurfaceCompletion(
-          profile.role === 'driver' || profile.role === 'guardian'
-            ? 'Your password is updated. Open the SafeBus mobile app to sign in.'
-            : getSurfaceAccessMessage(appSurface),
-        );
+        if (nextProfile.role === 'driver' || nextProfile.role === 'guardian') {
+          setMobileReady(true);
+        } else {
+          setSurfaceCompletion(getSurfaceAccessMessage(appSurface));
+        }
         return;
       }
-      navigate(profile?.status === 'active' ? getDashboardPath(profile.role) : '/login', {
-        replace: true,
-      });
+      navigate(
+        nextProfile.role === 'tenant_admin' && profile?.status === 'invited'
+          ? '/admin/settings/billing'
+          : getDashboardPath(nextProfile.role),
+        { replace: true },
+      );
     } catch (updateError) {
       setError(updateError instanceof Error ? updateError.message : 'Unable to update password.');
     } finally {
@@ -88,6 +104,8 @@ export function UpdatePasswordPage() {
             </div>
           )}
 
+          {mobileReady && <MobileAccountReady passwordReset={profile?.status !== 'invited'} />}
+
           {surfaceCompletion && (
             <div
               className="mt-6 rounded-lg border border-success-200 bg-success-50 p-4 text-sm font-medium text-success-800"
@@ -97,7 +115,7 @@ export function UpdatePasswordPage() {
             </div>
           )}
 
-          {!surfaceCompletion && !loading && !session && (
+          {!surfaceCompletion && !mobileReady && !loading && !session && (
             <div className="mt-6">
               <div className="rounded-lg border border-warning-200 bg-warning-50 p-4 text-sm text-warning-800">
                 {authError ?? 'This password reset link is invalid or expired. Request a new link.'}
@@ -111,11 +129,11 @@ export function UpdatePasswordPage() {
             </div>
           )}
 
-          {!surfaceCompletion && loading && (
+          {!surfaceCompletion && !mobileReady && loading && (
             <p className="mt-6 text-sm text-slate-600">Checking the secure reset link...</p>
           )}
 
-          {!surfaceCompletion && !loading && session && (
+          {!surfaceCompletion && !mobileReady && !loading && session && (
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
               <Field label="New password" htmlFor="new-password" required>
                 <Input

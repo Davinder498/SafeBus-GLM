@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { KeyRound, ShieldCheck } from 'lucide-react';
+import { MobileAccountReady } from '@/components/auth/MobileAccountReady';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -26,6 +27,7 @@ export function AcceptInvitationPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [surfaceCompletion, setSurfaceCompletion] = useState<string | null>(null);
+  const [mobileReady, setMobileReady] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,11 +46,11 @@ export function AcceptInvitationPage() {
       const nextProfile = await completeInvitation(password);
       if (!isRoleAllowedOnSurface(nextProfile.role, appSurface)) {
         await signOut();
-        setSurfaceCompletion(
-          nextProfile.role === 'driver' || nextProfile.role === 'guardian'
-            ? 'Your account is ready. Open the SafeBus mobile app to sign in.'
-            : getSurfaceAccessMessage(appSurface),
-        );
+        if (nextProfile.role === 'driver' || nextProfile.role === 'guardian') {
+          setMobileReady(true);
+        } else {
+          setSurfaceCompletion(getSurfaceAccessMessage(appSurface));
+        }
         return;
       }
       navigate(
@@ -105,6 +107,8 @@ export function AcceptInvitationPage() {
             </div>
           )}
 
+          {mobileReady && <MobileAccountReady />}
+
           {surfaceCompletion && (
             <div
               className="mt-6 rounded-lg border border-success-200 bg-success-50 p-4 text-sm font-medium text-success-800"
@@ -133,7 +137,7 @@ export function AcceptInvitationPage() {
             </div>
           )}
 
-          {!surfaceCompletion && !session && (
+          {!surfaceCompletion && !mobileReady && !session && (
             <div className="mt-6">
               <div className="rounded-lg border border-warning-200 bg-warning-50 p-4 text-sm text-warning-800">
                 {authError ??
@@ -148,7 +152,7 @@ export function AcceptInvitationPage() {
             </div>
           )}
 
-          {!surfaceCompletion && session && unavailableStatus && (
+          {!surfaceCompletion && !mobileReady && session && unavailableStatus && (
             <div className="mt-6">
               <div className="rounded-lg border border-danger-200 bg-danger-50 p-4 text-sm text-danger-700">
                 This account is {unavailableStatus}. Ask your administrator to reactivate it.
@@ -164,7 +168,7 @@ export function AcceptInvitationPage() {
             </div>
           )}
 
-          {!surfaceCompletion && session && !profile && (
+          {!surfaceCompletion && !mobileReady && session && !profile && (
             <div className="mt-6">
               <div className="rounded-lg border border-danger-200 bg-danger-50 p-4 text-sm text-danger-700">
                 {authError ?? 'SafeBus could not find the profile connected to this invitation.'}
@@ -180,7 +184,7 @@ export function AcceptInvitationPage() {
             </div>
           )}
 
-          {!surfaceCompletion && session && profile?.status === 'invited' && (
+          {!surfaceCompletion && !mobileReady && session && profile?.status === 'invited' && (
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
               <Field label="New password" htmlFor="invitation-password" required>
                 <Input
