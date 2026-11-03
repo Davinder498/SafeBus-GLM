@@ -189,8 +189,8 @@ export function RouteSetupPanel({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-xl font-bold text-navy-900">Route setup</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Plan your service in one workspace. Review each assignment before saving.
+            <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+              Review saved setup, or select a status to edit that part of this route.
             </p>
           </div>
           <span className="rounded-full bg-[var(--color-info-surface)] px-3 py-1 text-xs font-bold text-[var(--color-info-text)]">
@@ -204,7 +204,12 @@ export function RouteSetupPanel({
             { name: 'Driver plans', complete: services.length > 0 && driversPlanned === services.length, hint: `${driversPlanned} of ${services.length} services`, icon: UserRound },
             { name: 'Student assignments', complete: !rosterLoading && !rosterError && roster.some((r) => r.status === 'active'), hint: rosterLoading || rosterError ? 'Not verified' : `${new Set(roster.filter((r) => r.status === 'active').map((r) => r.student_id)).size} students`, icon: UsersRound },
           ].map(({ name, complete, hint, icon: Icon }) => (
-            <div key={name} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-raised)] p-3">
+            <button
+              type="button"
+              key={name}
+              onClick={() => onRequestTab?.(name === 'Route and stops' ? 'route' : name === 'Student assignments' ? 'students' : 'assignments')}
+              className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-4 text-left transition-colors hover:border-[var(--color-focus)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]"
+            >
               <div className="flex items-center justify-between gap-2">
                 <Icon className="h-5 w-5 text-[var(--color-text-muted)]" aria-hidden />
                 {complete ? <CheckCircle2 className="h-4 w-4 text-success-700" aria-label="Saved" /> :
@@ -212,26 +217,11 @@ export function RouteSetupPanel({
               </div>
               <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">{name}</p>
               <p className="mt-1 text-xs text-[var(--color-text-muted)]">{hint}</p>
-            </div>
+            </button>
           ))}
         </div>
-        <p className="mt-2 text-xs text-slate-600">These are saved-record indicators, not a certification that a trip is ready to operate. Check road path, date coverage and individual service conflicts before dispatch.</p>
+        <p className="mt-4 text-xs leading-5 text-[var(--color-text-muted)]">Saved-record indicators are not dispatch approval. Verify road path, service dates and conflicts before operating.</p>
 
-        <nav
-          aria-label="Route setup sections"
-          onClick={(event) => {
-            const link = (event.target as HTMLElement).closest('a');
-            const section = link && document.getElementById(link.hash.slice(1));
-            if (section instanceof HTMLDetailsElement) section.open = true;
-          }}
-          className="mt-4 flex flex-wrap gap-3 text-sm font-semibold text-navy-700"
-        >
-          <a href="#route-details">1. Details and stops</a>
-          <a href="#road-path">2. Road path</a>
-          <a href="#route-service">3. Bus, driver and schedule</a>
-          <a href="#route-students">4. Students</a>
-          <a href="#route-review">5. Review</a>
-        </nav>
         {message && (
           <p role="status" className="mt-4 text-sm text-success-700">
             {message}
