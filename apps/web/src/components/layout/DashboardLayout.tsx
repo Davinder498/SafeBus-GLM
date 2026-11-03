@@ -448,7 +448,11 @@ export function DashboardLayout({
           {portal === 'admin' && (
             <div className="hidden min-w-0 flex-1 items-center gap-2 text-sm font-semibold text-[var(--color-text-muted)] lg:flex">
               <Building2 className="h-5 w-5" aria-hidden />
-              <span className="truncate">Transportation administration</span>
+              <span className="truncate">
+                {profile?.role === 'platform_super_admin'
+                  ? 'Platform administration'
+                  : 'Transportation administration'}
+              </span>
             </div>
           )}
           {portal !== 'admin' && <div className="flex-1" />}
