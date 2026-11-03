@@ -95,6 +95,12 @@ const AccountSettingsPage = lazy(() =>
   import('@/pages/AccountSettingsPage').then((page) => ({ default: page.AccountSettingsPage })),
 );
 const MfaPage = lazy(() => import('@/pages/MfaPage').then((page) => ({ default: page.MfaPage })));
+const AccountSecurityPage = lazy(() =>
+  import('@/pages/AccountSecurityPage').then((page) => ({ default: page.AccountSecurityPage })),
+);
+const ChangePasswordPage = lazy(() =>
+  import('@/pages/ChangePasswordPage').then((page) => ({ default: page.ChangePasswordPage })),
+);
 const MobileSupportPage = lazy(() =>
   import('@/pages/MobileSupportPage').then((page) => ({ default: page.MobileSupportPage })),
 );
@@ -129,6 +135,22 @@ export const appRoutes: RouteObject[] = [
   },
   {
     path: '/account/security',
+    element: (
+      <ProtectedRoute allowedRoles={['driver', 'guardian']}>
+        <AccountSecurityPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/account/security/password',
+    element: (
+      <ProtectedRoute allowedRoles={['driver', 'guardian']}>
+        <ChangePasswordPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/account/security/mfa',
     element: (
       <ProtectedRoute allowedRoles={['driver', 'guardian']}>
         <MfaPage />
