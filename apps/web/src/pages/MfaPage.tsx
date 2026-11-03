@@ -10,6 +10,8 @@ import {
   DashboardLayout,
   driverNavGroups,
   guardianNavGroups,
+  adminNavGroups,
+  platformNavGroups,
 } from '@/components/layout/DashboardLayout';
 import { AppLoadingScreen } from '@/components/ui/AppLoadingScreen';
 import { BrandMark } from '@/components/ui/BrandMark';
@@ -34,18 +36,13 @@ function MfaLayout({ children }: { children: ReactNode }) {
   const surface = useAppSurface();
   const { profile } = useAuth();
   const location = useLocation();
-  if (
-    location.pathname === '/account/security' &&
-    (profile?.role === 'driver' || profile?.role === 'guardian')
-  ) {
-    const driver = profile.role === 'driver';
+  if (location.pathname === '/account/security/mfa' && profile) {
+    const portal = profile.role === 'driver' ? 'driver' : profile.role === 'guardian' ? 'parent' : 'admin';
+    const groups = profile.role === 'driver' ? driverNavGroups
+      : profile.role === 'guardian' ? guardianNavGroups
+      : profile.role === 'platform_super_admin' ? platformNavGroups : adminNavGroups;
     return (
-      <DashboardLayout
-        title="Multi-factor authentication"
-        portal={driver ? 'driver' : 'parent'}
-        navItems={[]}
-        navGroups={driver ? driverNavGroups : guardianNavGroups}
-      >
+      <DashboardLayout title="Multi-factor authentication" portal={portal} navItems={[]} navGroups={groups}>
         {children}
       </DashboardLayout>
     );
@@ -88,7 +85,7 @@ export function MfaPage() {
   const isAdmin = profile
     ? adminRoles.includes(profile.role as (typeof adminRoles)[number])
     : false;
-  const managing = location.pathname === '/account/security';
+  const managing = location.pathname === '/account/security/mfa';
 
   const heading = useMemo(() => {
     if (removing) return 'Verify to remove authenticator';
@@ -106,14 +103,8 @@ export function MfaPage() {
   if (!profile) return <Navigate to="/login" replace />;
   if (mfaLoading) return <AppLoadingScreen />;
   const returnTo: unknown = location.state?.returnTo;
-  const settingsPath =
-    profile.role === 'driver'
-      ? '/driver/settings'
-      : isAdmin && profile.role !== 'platform_super_admin'
-        ? '/admin/settings'
-        : '/notifications/settings';
   const destination = managing
-    ? settingsPath
+    ? '/account/security'
     : typeof returnTo === 'string' &&
         returnTo.startsWith('/') &&
         !returnTo.startsWith('//') &&
@@ -192,7 +183,7 @@ export function MfaPage() {
         });
         setRemoving(false);
         setCode('');
-        if (!isAdmin) navigate(settingsPath, { replace: true });
+        if (!isAdmin) navigate('/account/security', { replace: true });
         return;
       }
       await refreshMfa();
@@ -320,7 +311,7 @@ export function MfaPage() {
 
           {!isAdmin && managing && !verifiedFactor && (
             <Link
-              to={settingsPath}
+              to="/account/security"
               className="mt-5 inline-flex min-h-11 items-center font-semibold text-navy-700"
             >
               Back to settings
