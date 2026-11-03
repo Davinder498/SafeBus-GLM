@@ -241,6 +241,7 @@ async function open(page: Page, capture = false) {
   await expect(page.getByRole('heading', { name: 'Route setup', exact: true })).toBeVisible();
 }
 async function assignBus(page: Page) {
+  await page.getByRole('button', { name: 'Assignments', exact: true }).click();
   const section = page.locator('#route-service');
   await section.getByRole('button', { name: 'Assign bus to route', exact: true }).click();
   await section.getByRole('combobox', { name: 'Bus', exact: true }).selectOption(ADMIN_IDS.bus);
@@ -254,8 +255,9 @@ test('route setup offers safe creation returns without assigning records automat
 }) => {
   const writes = await fixture(page);
   await open(page);
-  const section = page.locator('#route-service');
   await expect(page.getByTestId('route-readiness-overview')).toBeVisible();
+  await page.getByRole('button', { name: 'Assignments', exact: true }).click();
+  const section = page.locator('#route-service');
   const addBus = section.getByRole('link', { name: 'Add new bus', exact: true });
   const busUrl = new URL((await addBus.getAttribute('href'))!, 'https://safebus.example');
   expect(busUrl.pathname).toBe('/admin/buses/new');
@@ -282,11 +284,13 @@ test('sets up route details, bus, driver and student stops without leaving the r
 }, info) => {
   const writes = await fixture(page);
   await open(page, true);
+  await page.getByRole('button', { name: 'Route & Stops', exact: true }).click();
   await page.getByRole('button', { name: 'Edit route details and stops' }).click();
   await page.getByLabel('Route name', { exact: true }).fill('North School');
   await expect(page.locator('#route-details input[type=date]')).toHaveCount(0);
   await page.getByRole('button', { name: 'Save route definition' }).click();
   await expect(page.getByRole('heading', { name: 'North School', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Edit road path', exact: true }).click();
   await expect(page.getByTestId('route-path-editor')).toBeVisible();
   await assignBus(page);
   const driver = page.getByRole('form', { name: 'Driver for Outbound bus One' });
@@ -305,6 +309,7 @@ test('sets up route details, bus, driver and student stops without leaving the r
       .p_existing_assignment_id,
   ).toBe('driver-plan');
   await expect(page.locator('#route-review')).toContainText('1 of 2');
+  await page.getByRole('button', { name: 'Students', exact: true }).click();
   await page.getByRole('button', { name: 'Assign student to route', exact: true }).click();
   const section = page.locator('#route-students');
   await section.getByRole('searchbox', { name: 'Search students' }).fill('Alex');
@@ -336,7 +341,9 @@ test('sets up route details, bus, driver and student stops without leaving the r
     writes.filter((w) => w.name === 'admin_set_student_bus_service_with_seat').at(-1)?.args
       .p_existing_assignment_ids,
   ).toEqual(['student-service-forward', 'student-service-reverse']);
+  await page.getByRole('button', { name: 'Assignments', exact: true }).click();
   await page.locator('#route-service').screenshot({ path: info.outputPath('route-service.png') });
+  await page.getByRole('button', { name: 'Students', exact: true }).click();
   await section.getByRole('button', { name: 'Student service actions' }).click();
   await section.getByRole('menuitem', { name: 'End student service' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'End service', exact: true }).click();
@@ -348,11 +355,13 @@ test('sets up route details, bus, driver and student stops without leaving the r
       p_end_service: true,
     },
   );
-  await driver.getByRole('button', { name: 'Remove driver plan', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit driver', exact: true }).first().click();
+  await page.getByRole('form', { name: 'Driver for Outbound bus One' }).getByRole('button', { name: 'Remove driver plan', exact: true }).click();
   await page
     .getByRole('dialog')
     .getByRole('button', { name: 'Remove driver plan', exact: true })
     .click();
+  await page.getByRole('button', { name: 'Assignments', exact: true }).click();
   await expect(page.locator('#route-review')).toContainText('0 of 2');
 });
 
@@ -423,6 +432,7 @@ test('ending bus service respects the active run rejection', async ({ page }) =>
     .click();
   await expect(page.getByText(/End this route’s active bus service assignments/)).toBeVisible();
   expect(writes.filter((w) => w.name === 'update_route')).toHaveLength(0);
+  await page.getByRole('button', { name: 'Assignments', exact: true }).click();
   await page.getByRole('button', { name: 'Bus One: Outbound', exact: true }).click();
   await page.getByRole('menuitem', { name: 'End bus service' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'End service', exact: true }).click();
@@ -475,10 +485,12 @@ test('failed roster loading blocks student edits and keeps review unverified', a
   await fixture(page, { rejectRoster: true });
   await open(page);
   await assignBus(page);
+  await page.getByRole('button', { name: 'Students', exact: true }).click();
   await expect(page.locator('#route-students').getByRole('alert')).toContainText(
     'could not be loaded',
   );
   await expect(page.getByRole('button', { name: 'Assign student to route' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Overview', exact: true }).click();
   await expect(page.locator('#route-review')).toContainText('Students: Not verified');
 });
 
@@ -528,6 +540,7 @@ test('regular routes can use exact weekend dates and reject an empty active date
 }) => {
   const writes = await fixture(page);
   await page.goto(`/admin/routes/${ADMIN_IDS.route}`);
+  await page.getByRole('button', { name: 'Route & Stops', exact: true }).click();
   await page.getByRole('button', { name: 'Edit route details and stops' }).click();
   await page.getByRole('combobox', { name: 'Schedule', exact: true }).selectOption('dates');
   await page.getByRole('button', { name: 'Save route definition' }).click();
@@ -558,6 +571,7 @@ test('an administrator can close every weekday without switching route status', 
 }) => {
   const writes = await fixture(page);
   await page.goto(`/admin/routes/${ADMIN_IDS.route}`);
+  await page.getByRole('button', { name: 'Route & Stops', exact: true }).click();
   await page.getByRole('button', { name: 'Edit route details and stops' }).click();
   for (const day of ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'])
     await page.getByRole('checkbox', { name: day, exact: true }).uncheck();
