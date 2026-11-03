@@ -125,16 +125,15 @@ for (const role of ['guardian', 'driver'] as const) {
     const fixture = await installMfa(page, role);
     await page.goto('/account');
     await expect(
-      page.getByRole('link', { name: 'Enable multi-factor authentication', exact: true }),
+      page.locator('[data-ui="account-security-card"] a'),
     ).toBeVisible();
     await page.locator('header button[aria-haspopup="menu"]').click();
-    await expect(page.getByRole('menuitem', { name: 'Account security', exact: true })).toHaveCount(
-      0,
-    );
+    await expect(page.getByRole('menuitem', { name: 'Account security', exact: true })).toBeVisible();
     await page.keyboard.press('Escape');
     await page
-      .getByRole('link', { name: 'Enable multi-factor authentication', exact: true })
+      .getByRole('link', { name: 'Account security', exact: false })
       .click();
+    await page.getByRole('link', { name: 'Enable multi-factor authentication' }).click();
     await expect(page.locator('[data-ui="app-bar"]')).toBeVisible();
     await expect(page.getByTestId('native-bottom-navigation')).toBeVisible();
     await expect(page.locator('[data-ui="public-app-bar"]')).toHaveCount(0);
@@ -148,10 +147,10 @@ for (const role of ['guardian', 'driver'] as const) {
     await page.locator('#mfa-code').fill('123456');
     await page.getByRole('button', { name: 'Enable MFA', exact: true }).click();
     await expect(page).toHaveURL(
-      role === 'driver' ? '/driver/settings' : '/notifications/settings',
+      '/account/security',
     );
     await expect(
-      page.getByRole('link', { name: 'Manage multi-factor authentication', exact: true }),
+      page.locator('[data-ui="account-security-card"] a'),
     ).toBeVisible();
     await page.screenshot({
       path: testInfo.outputPath(`${role}-account-security.png`),
@@ -162,7 +161,7 @@ for (const role of ['guardian', 'driver'] as const) {
       await page.getByRole('switch', { name: 'Multi-factor authentication', exact: true }).click();
     } else {
       await page
-        .getByRole('link', { name: 'Manage multi-factor authentication', exact: true })
+        .getByRole('link', { name: 'Account security', exact: false })
         .click();
       await page.getByRole('button', { name: 'Remove authenticator', exact: true }).click();
     }
@@ -178,10 +177,10 @@ for (const role of ['guardian', 'driver'] as const) {
       .getByRole('button', { name: 'Verify and remove authenticator', exact: true })
       .click();
     await expect(page).toHaveURL(
-      role === 'driver' ? '/driver/settings' : '/notifications/settings',
+      '/account/security',
     );
     await expect(
-      page.getByRole('link', { name: 'Enable multi-factor authentication', exact: true }),
+      page.locator('[data-ui="account-security-card"] a'),
     ).toBeVisible();
     expect(fixture.removals()).toBe(1);
   });
@@ -193,10 +192,10 @@ for (const role of ['guardian', 'driver'] as const) {
     await page.locator('#mfa-code').fill('123456');
     await page.getByRole('button', { name: 'Verify and continue', exact: true }).click();
     await expect(page).toHaveURL(
-      role === 'driver' ? '/driver/settings' : '/notifications/settings',
+      '/account/security',
     );
     await expect(
-      page.getByRole('link', { name: 'Manage multi-factor authentication', exact: true }),
+      page.locator('[data-ui="account-security-card"] a'),
     ).toBeVisible();
   });
 }
@@ -210,13 +209,12 @@ for (const role of ['guardian', 'driver'] as const) {
     await page.goto('/account');
     await expect(page.getByRole('button', { name: 'Try again', exact: true })).toBeVisible();
     await expect(page.locator('[data-ui="account-security-card"]')).toBeVisible();
-    await page
-      .getByRole('link', { name: 'Enable multi-factor authentication', exact: true })
-      .click();
+    await page.locator('[data-ui="account-security-card"] a').click();
+    await page.getByRole('link', { name: 'Enable multi-factor authentication' }).click();
     await expect(page.getByRole('button', { name: 'Set up authenticator app' })).toBeVisible();
     await page.getByRole('link', { name: 'Back to settings', exact: true }).click();
     await expect(page).toHaveURL(
-      role === 'driver' ? '/driver/settings' : '/notifications/settings',
+      '/account/security',
     );
   });
 }
@@ -274,6 +272,7 @@ for (const role of ['guardian', 'driver'] as const) {
       await expect(page).toHaveURL(settingsPath);
       await page.getByRole('switch', { name: 'Multi-factor authentication', exact: true }).click();
       await expect(page).toHaveURL('/account/security');
+      await page.getByRole('link', { name: 'Enable multi-factor authentication' }).click();
       await expect(page.getByRole('button', { name: 'Set up authenticator app' })).toBeVisible();
       const dimensions = await page.evaluate(() => ({
         width: document.documentElement.clientWidth,
