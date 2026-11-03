@@ -88,7 +88,7 @@ export function DropdownMenu({ trigger, children, align = 'right', className }: 
         aria-expanded={open}
         aria-controls={menuId}
         onClick={() => {
-          initialFocus.current = null;
+          if (!open) initialFocus.current = 'first';
           setOpen((value) => !value);
         }}
         onKeyDown={onTriggerKeyDown}
