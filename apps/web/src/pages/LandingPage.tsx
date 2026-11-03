@@ -9,6 +9,7 @@ import {
   RadioTower,
   Route,
   ShieldCheck,
+  GraduationCap,
   Smartphone,
 } from 'lucide-react';
 import { PublicLayout } from '@/components/layout/PublicLayout';
@@ -428,6 +429,40 @@ export function LandingPage() {
               </p>
             </div>
             <WhyChooseUsCarousel />
+          </div>
+        </section>
+
+        {/* Commitment refers to future profit allocations, not completed donations. */}
+        <section
+          id="education"
+          aria-labelledby="education-heading"
+          className="scroll-mt-28 bg-[#F5F7FA] py-20 sm:py-24"
+        >
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="grid items-center gap-8 overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-7 shadow-sm sm:p-10 lg:grid-cols-[1fr_auto] lg:gap-14 lg:p-14">
+              <div className="max-w-3xl">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-700">
+                  Our commitment to education
+                </p>
+                <h2
+                  id="education-heading"
+                  className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-navy-900 sm:text-4xl"
+                >
+                  5% of profits. A brighter future.
+                </h2>
+                <p className="mt-5 text-base leading-8 text-slate-600 sm:text-lg">
+                  SafeBus is committed to allocating 5% of its profits to initiatives that support
+                  children&apos;s education. We believe every school journey should be part of a
+                  bigger journey toward opportunity.
+                </p>
+              </div>
+              <div
+                aria-hidden="true"
+                className="flex h-28 w-28 items-center justify-center rounded-[2rem] bg-yellow-100 text-navy-900 sm:h-36 sm:w-36"
+              >
+                <GraduationCap className="h-14 w-14 sm:h-16 sm:w-16" strokeWidth={1.5} />
+              </div>
+            </div>
           </div>
         </section>
 
