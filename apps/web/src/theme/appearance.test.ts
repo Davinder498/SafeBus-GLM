@@ -26,7 +26,7 @@ beforeAll(() => {
       addEventListener: (_event: string, listener: () => void) => mediaListeners.add(listener),
     })),
   );
-  document.head.innerHTML = '<meta name="theme-color" content="#F2F6F7">';
+  document.head.innerHTML = '<meta name="theme-color" content="#F5F7FA">';
   initializeAppearance();
 });
 beforeEach(() => {
@@ -44,7 +44,7 @@ describe('device appearance preference', () => {
     expect(getAppearance()).toEqual({ preference: 'dark', resolved: 'light' });
     expect(document.documentElement.dataset.theme).toBe('light');
     expect(document.documentElement.style.colorScheme).toBe('light');
-    expect(document.documentElement.style.backgroundColor).toBe('rgb(242, 246, 247)');
+    expect(document.documentElement.style.backgroundColor).toBe('rgb(245, 247, 250)');
     window.dispatchEvent(new StorageEvent('storage', { key: 'safebus.theme', newValue: 'light' }));
     window.dispatchEvent(new StorageEvent('storage', { key: 'safebus.theme', newValue: 'dark' }));
     refreshAppearance();

@@ -48,6 +48,24 @@ async function expectMaterialBrand(page: import('@playwright/test').Page) {
   await expect(mark).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
 }
 
+async function expectRedUnreadBadge(
+  page: import('@playwright/test').Page,
+  badge = page.getByTestId('native-bottom-navigation').locator('.sb-bottom-tab-badge'),
+) {
+  await expect(badge).toHaveText('1');
+  // Exercise both CSS palettes without changing the saved appearance preference.
+  for (const [theme, background] of [
+    ['dark', 'rgb(148, 59, 72)'],
+    ['light', 'rgb(180, 35, 51)'],
+  ]) {
+    await page.evaluate((value) => {
+      document.documentElement.dataset.theme = value;
+    }, theme);
+    await expect(badge).toHaveCSS('background-color', background);
+    await expect(badge).toHaveCSS('color', 'rgb(255, 255, 255)');
+  }
+}
+
 async function installNotificationInboxMock(
   page: import('@playwright/test').Page,
   options: { driver?: boolean; body?: string } = {},
@@ -139,7 +157,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(page.getByRole('heading', { name: 'My Buses', level: 1 })).toBeVisible();
   await expect(page.locator('[data-ui="dashboard-shell"]')).toHaveCSS(
     'background-color',
-    'rgb(242, 246, 247)',
+    'rgb(245, 247, 250)',
   );
   await expectMaterialBrand(page);
   await expect(page.getByText('Track the assigned bus during an active school run.')).toHaveCount(
@@ -155,10 +173,10 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(homeBusCard).not.toContainText('live');
   await expect(homeBusCard).not.toContainText('View bus details');
   await expect(homeBusCard).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-  await expect(homeBusCard).toHaveCSS('border-color', 'rgb(220, 229, 228)');
+  await expect(homeBusCard).toHaveCSS('border-color', 'rgb(215, 222, 232)');
   await expect(page.locator('[data-ui="dashboard-shell"]')).toHaveCSS(
     'background-color',
-    'rgb(242, 246, 247)',
+    'rgb(245, 247, 250)',
   );
   await expect(page.getByTestId('guardian-home-student-card')).toHaveCSS(
     'background-color',
@@ -166,11 +184,11 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   );
   await expect(page.getByTestId('guardian-home-student-card')).toHaveCSS(
     'border-color',
-    'rgb(220, 229, 228)',
+    'rgb(215, 222, 232)',
   );
   await expect(
     page.getByTestId('guardian-home-student-card').locator(':scope > div:last-child'),
-  ).toHaveCSS('border-top-color', 'rgb(220, 229, 228)');
+  ).toHaveCSS('border-top-color', 'rgb(215, 222, 232)');
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
     'rgb(23, 43, 58)',
@@ -207,7 +225,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(page.getByRole('heading', { name: 'Bus 42 live map' })).toBeVisible();
   await expect(page.getByTestId('guardian-fullscreen-map')).toHaveCSS(
     'background-color',
-    'rgb(242, 246, 247)',
+    'rgb(245, 247, 250)',
   );
   await expect(page.locator('[data-ui="guardian-map-app-bar"]')).toHaveCSS(
     'background-color',
@@ -494,6 +512,8 @@ test('guardian buses group students and open a clean bus detail view', async ({
     'href',
     '/guardian/live-map?bus=42',
   );
+  await expect(page.getByRole('link', { name: 'See live map' })).toHaveCSS('background-color', 'rgb(29, 78, 216)');
+  await expect(page.getByRole('link', { name: 'See live map' })).toHaveCSS('color', 'rgb(255, 255, 255)');
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('guardian-bus-details.png'), fullPage: true });
 
@@ -501,10 +521,10 @@ test('guardian buses group students and open a clean bus detail view', async ({
   const inactiveStatus = page
     .locator('[data-ui="guardian-bus-detail-hero"]')
     .getByText('Inactive', { exact: true });
-  await expect(inactiveStatus).toHaveCSS('color', 'rgb(71, 85, 105)');
+  await expect(inactiveStatus).toHaveCSS('color', 'rgb(82, 97, 116)');
   await expect(inactiveStatus.locator('> span')).toHaveCSS(
     'background-color',
-    'rgb(100, 116, 139)',
+    'rgb(82, 97, 116)',
   );
 
   guardianMock.setServiceLines([
@@ -587,7 +607,7 @@ test('mobile notification settings autosave independent channel sections with sw
   await expect(page.getByRole('button', { name: 'Save notification settings' })).toHaveCount(0);
   await expect(page.locator('[data-ui="dashboard-shell"]')).toHaveCSS(
     'background-color',
-    'rgb(242, 246, 247)',
+    'rgb(245, 247, 250)',
   );
   await expect(
     page.locator('[data-ui="notification-delivery-cards"] [data-ui="card"]').first(),
@@ -729,18 +749,20 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
 
   await expect(page.getByRole('heading', { name: 'Notification', level: 1 })).toBeVisible();
   await expect(page.getByText('1 new', { exact: true })).toBeVisible();
+  await expectRedUnreadBadge(page);
+  await page.screenshot({ path: testInfo.outputPath('guardian-unread-badge.png') });
   await expect(page.getByRole('button', { name: 'Mark all read' })).toBeVisible();
   const filters = page.locator('[data-ui="notification-filters"]');
   const notification = page.locator('[data-ui="notification-card"]');
   await expect(page.locator('[data-ui="notification-inbox-page"]')).toHaveCSS(
     'background-color',
-    'rgb(242, 246, 247)',
+    'rgb(245, 247, 250)',
   );
   await expect(filters).toHaveCSS('margin-bottom', '16px');
   await expect(page.getByRole('button', { name: 'All 1' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('button', { name: 'All 1' })).toHaveCSS(
     'background-color',
-    'rgb(35, 92, 120)',
+    'rgb(29, 78, 216)',
   );
   await expect(page.getByRole('button', { name: 'Unread 1' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Operational alerts' })).toBeVisible();
@@ -748,11 +770,11 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
   await expect(filters.getByRole('checkbox')).toHaveCount(0);
   await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('gap', '8px');
   await expect(notification).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-  await expect(notification).toHaveCSS('border-color', 'rgb(220, 229, 228)');
+  await expect(notification).toHaveCSS('border-color', 'rgb(215, 222, 232)');
   await expect(notification).toHaveCSS('padding', '12px 16px');
   await expect(notification.locator('[data-ui="notification-unread-dot"]')).toHaveCSS(
     'background-color',
-    'rgb(207, 89, 99)',
+    'rgb(180, 35, 51)',
   );
   await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
@@ -780,6 +802,7 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
   await expect(page.getByRole('button', { name: 'Mark all read' })).toBeDisabled();
   await expect(notification.getByText('Read', { exact: true })).toBeVisible();
   await expect(notification.locator('[data-ui="notification-unread-dot"]')).toHaveCount(0);
+  await expect(page.locator('.sb-bottom-tab-badge')).toHaveCount(0);
 
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('guardian-updates.png'), fullPage: true });
@@ -793,6 +816,9 @@ test('driver updates include assignment, trip, and operational alerts', async ({
   await page.goto('/notifications');
 
   await expect(page.getByRole('heading', { name: 'Notification', level: 1 })).toBeVisible();
+  const unreadBadge = page.locator('[data-ui="top-notifications"] > span');
+  await expectRedUnreadBadge(page, unreadBadge);
+  await page.screenshot({ path: testInfo.outputPath('driver-unread-badge.png') });
   const filters = page.locator('[data-ui="notification-filters"]');
   const notification = page.locator('[data-ui="notification-card"]');
   await expect(filters.getByRole('combobox')).toHaveCount(0);
@@ -800,7 +826,7 @@ test('driver updates include assignment, trip, and operational alerts', async ({
   await expect(page.getByRole('button', { name: 'All 1' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'All 1' })).toHaveCSS(
     'background-color',
-    'rgb(35, 92, 120)',
+    'rgb(29, 78, 216)',
   );
   await expect(page.getByRole('button', { name: 'Unread 1' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Assignment alerts' })).toBeVisible();
@@ -809,7 +835,7 @@ test('driver updates include assignment, trip, and operational alerts', async ({
   await expect(filters.locator('[data-ui="notification-filter-controls"]')).toHaveCSS('gap', '8px');
   await expect(page.locator('[data-ui="notification-list"]')).toHaveCSS('gap', '8px');
   await expect(notification).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-  await expect(notification).toHaveCSS('border-color', 'rgb(220, 229, 228)');
+  await expect(notification).toHaveCSS('border-color', 'rgb(215, 222, 232)');
   await expect(notification).toHaveCSS('padding', '12px 16px');
   await expect(notification.getByText('Your planned work assignment has changed.')).toHaveCount(1);
   await expect(
@@ -823,6 +849,7 @@ test('driver updates include assignment, trip, and operational alerts', async ({
   await expect(shortUpdate).not.toHaveAttribute('aria-expanded');
   await shortUpdate.click();
   await expect(notification.getByText('Read', { exact: true })).toBeVisible();
+  await expect(unreadBadge).toHaveCount(0);
   await expect(page).toHaveURL('/notifications');
   await expect(page.locator('[data-ui="notification-detail-card"]')).toHaveCount(0);
   await expect(page.getByText('View update', { exact: true })).toHaveCount(0);
@@ -1011,7 +1038,7 @@ for (const path of ['/privacy', '/account-deletion']) {
     await expect(header).toHaveCSS('padding-top', '32px');
     await expect(page.locator('main [data-ui="card"]')).toHaveCSS(
       'border-top-color',
-      'rgb(141, 183, 201)',
+      'rgb(215, 222, 232)',
     );
     for (const scrollY of [500, 100, 0]) {
       await page.evaluate((y) => window.scrollTo(0, y), scrollY);

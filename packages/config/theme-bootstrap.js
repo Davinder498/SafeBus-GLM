@@ -12,8 +12,8 @@
   const theme = dark ? 'dark' : 'light';
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
-  document.documentElement.style.backgroundColor = dark ? '#0F1720' : '#F2F6F7';
+  document.documentElement.style.backgroundColor = dark ? '#0F1720' : '#F5F7FA';
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', dark ? '#0F1720' : '#F2F6F7');
+    ?.setAttribute('content', dark ? '#0F1720' : '#F5F7FA');
 })();

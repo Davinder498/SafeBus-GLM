@@ -151,7 +151,7 @@ export function AdminDashboardPage() {
           action={
             <Link
               to="/admin/live-trips"
-              className={'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#F2B84B] px-5 py-2.5 text-sm font-bold text-[#172B3A] hover:bg-[#F8D273] ' + linkFocus}
+              className={'sb-primary-action inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold ' + linkFocus}
             >
               <MapPinned className="h-4 w-4" aria-hidden />
               Open Live Operations

@@ -185,7 +185,7 @@ export function RouteSetupPanel({
               Plan your service in one workspace. Review each assignment before saving.
             </p>
           </div>
-          <span className="rounded-full bg-[#FFF4D8] px-3 py-1 text-xs font-bold text-[#754E17]">
+          <span className="rounded-full bg-[var(--color-info-surface)] px-3 py-1 text-xs font-bold text-[var(--color-info-text)]">
             Transportation workspace
           </span>
         </div>

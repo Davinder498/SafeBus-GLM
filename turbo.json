@@ -3,7 +3,9 @@
   "globalDependencies": [
     "**/.env.*local",
     "packages/config/theme-*.js",
-    "packages/config/theme-*.d.ts"
+    "packages/config/theme-*.d.ts",
+    "apps/web/src/theme/appearance.css",
+    "apps/web/src/index.css"
   ],
   "globalEnv": ["NODE_ENV", "CI"],
   "tasks": {

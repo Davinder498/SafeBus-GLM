@@ -294,22 +294,13 @@ function NavListItem({
       onClick={onNavigate}
       className={({ isActive }: NavLinkRenderProps) =>
         cn(
-          'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-          portal === 'admin'
-            ? isActive
-              ? 'bg-[#294B67] font-semibold text-white ring-1 ring-inset ring-white/10 before:mr-0.5 before:block before:h-5 before:w-1 before:shrink-0 before:rounded-full before:bg-[#F2B84B] before:content-[""]'
-              : 'text-[#D6E0E8] hover:bg-white/10 hover:text-white'
-            : isActive
-              ? 'bg-navy-50 text-navy-700'
-              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+          'sb-nav-link group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+          isActive && 'font-semibold',
         )
       }
     >
       {item.icon && (
-        <span className={cn(
-          'shrink-0',
-          portal === 'admin' ? 'text-[#B9C9D5] group-aria-[current=page]:text-[#F2B84B]' : 'text-slate-400',
-        )}>
+        <span className="shrink-0">
           {item.icon}
         </span>
       )}
@@ -368,7 +359,7 @@ export function DashboardLayout({
       <header
         className={cn(
           'sticky top-0 z-40 border-b shadow-[0_1px_0_rgb(23_43_58_/_0.06)]',
-          portal === 'admin' ? 'border-[#DCE5EA] bg-white text-[#172B3A]' : 'text-white',
+          portal === 'admin' ? 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]' : 'text-white',
         )}
         data-ui="app-bar"
       >
@@ -385,7 +376,7 @@ export function DashboardLayout({
               type="button"
               className={cn(
                 'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg lg:hidden',
-                portal === 'admin' ? 'text-[#172B3A] hover:bg-[#EAF1F4]' : 'text-white hover:bg-white/10',
+                portal === 'admin' ? 'text-[var(--color-text)] hover:bg-[var(--color-raised)]' : 'text-white hover:bg-white/10',
               )}
               aria-label="Open navigation"
               onClick={() => setMobileOpen(true)}
@@ -408,7 +399,7 @@ export function DashboardLayout({
           </Link>
 
           {portal === 'admin' && (
-            <div className="hidden min-w-0 flex-1 items-center gap-2 text-sm font-semibold text-[#294555] lg:flex">
+            <div className="hidden min-w-0 flex-1 items-center gap-2 text-sm font-semibold text-[var(--color-text-muted)] lg:flex">
               <Building2 className="h-5 w-5" aria-hidden />
               <span className="truncate">Transportation administration</span>
             </div>
@@ -424,13 +415,13 @@ export function DashboardLayout({
                 data-ui="top-notifications"
                 className={cn(
                   'relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors',
-                  portal === 'admin' ? 'text-[#172B3A] hover:bg-[#EAF1F4]' : 'text-white hover:bg-white/10',
+                  portal === 'admin' ? 'text-[var(--color-text)] hover:bg-[var(--color-raised)]' : 'text-white hover:bg-white/10',
                 )}
                 aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : 'Notifications'}
               >
                 <Bell className="h-5 w-5" />
                 {unreadCount > 0 ? (
-                  <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-600 px-1 text-center text-[10px] font-bold leading-5 text-white">
+                  <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[var(--color-danger-strong)] px-1 text-center text-[10px] font-bold leading-5 text-white">
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 ) : null}
@@ -441,7 +432,7 @@ export function DashboardLayout({
               trigger={
                 <span className={cn(
                   'flex items-center gap-2.5 rounded-lg py-1.5 pl-1.5 pr-2 transition-colors',
-                  portal === 'admin' ? 'hover:bg-[#EAF1F4]' : 'hover:bg-white/10',
+                  portal === 'admin' ? 'hover:bg-[var(--color-raised)]' : 'hover:bg-white/10',
                 )}>
                   <Avatar
                     name={displayName}
@@ -449,9 +440,9 @@ export function DashboardLayout({
                     tone={usesBottomTabs ? 'native-nav' : 'default'}
                   />
                   <span className="hidden text-left leading-tight sm:block">
-                    <span className={cn('block text-sm font-semibold', portal === 'admin' ? 'text-[#172B3A]' : 'text-white')}>{displayName}</span>
+                    <span className={cn('block text-sm font-semibold', portal === 'admin' ? 'text-[var(--color-text)]' : 'text-white')}>{displayName}</span>
                     {profile && profile.role !== 'tenant_admin' && (
-                      <span className={cn('block text-xs capitalize', portal === 'admin' ? 'text-[#5E6F73]' : 'text-white/80')}>
+                      <span className={cn('block text-xs capitalize', portal === 'admin' ? 'text-[var(--color-text-muted)]' : 'text-white/80')}>
                         {getRoleLabel(profile.role)}
                       </span>
                     )}
@@ -531,8 +522,7 @@ export function DashboardLayout({
             portal === 'admin' ? 'bg-[#172B3A]' : 'bg-[var(--color-surface)]',
           )}>
             {portal === 'admin' && (
-              <Link to="/" aria-label="SafeBus home" className="mb-8 flex items-center gap-3 px-6 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2B84B]">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F2B84B] text-[#172B3A]"><Bus className="h-6 w-6" aria-hidden /></span>
+              <Link to="/" aria-label="SafeBus home" className="mb-8 flex items-center gap-3 px-6 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-nav-focus)]">
                 <BrandMark className="text-xl" inverse />
               </Link>
             )}

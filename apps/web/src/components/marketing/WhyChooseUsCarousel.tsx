@@ -116,7 +116,7 @@ export function WhyChooseUsCarousel() {
       onBlurCapture={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setHasFocus(false);
       }}
-      className="w-full min-w-0 max-w-md rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-yellow-300"
+      className="w-full min-w-0 max-w-md rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-[var(--color-nav-focus)]"
     >
       <div
         id="why-choose-us-cards"
@@ -138,10 +138,10 @@ export function WhyChooseUsCarousel() {
               className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent"
             />
             <div className="relative">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-yellow-200/30 bg-yellow-400/15 text-yellow-300">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/30 bg-white/10 text-[var(--color-nav-focus)]">
                 <Icon className="h-6 w-6" aria-hidden="true" />
               </div>
-              <h3 className="mt-5 text-2xl font-bold leading-tight tracking-tight text-yellow-300">
+              <h3 className="mt-5 text-2xl font-bold leading-tight tracking-tight text-white">
                 {title}
               </h3>
               <p className="mt-3 text-base leading-7 text-white">{description}</p>
@@ -159,11 +159,11 @@ export function WhyChooseUsCarousel() {
               aria-current={index === activeIndex ? 'true' : undefined}
               aria-controls="why-choose-us-cards"
               onClick={() => setActiveIndex(index)}
-              className="flex h-11 w-8 items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300"
+              className="flex h-11 w-8 items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-nav-focus)]"
             >
               <span
                 aria-hidden="true"
-                className={`h-2 rounded-full transition-all motion-reduce:transition-none ${index === activeIndex ? 'w-7 bg-yellow-300' : 'w-2 bg-white/50 hover:bg-white'}`}
+                className={`h-2 rounded-full transition-all motion-reduce:transition-none ${index === activeIndex ? 'w-7 bg-[var(--color-nav-focus)]' : 'w-2 bg-white/50 hover:bg-white'}`}
               />
             </button>
           ))}
