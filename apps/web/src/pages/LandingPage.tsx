@@ -391,7 +391,7 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Preserve the existing claims and carousel mechanics while updating the surrounding layout. */}
+        {/* A sleek, readable glass carousel over the real parked-bus photograph. */}
         <section
           id="why-choose-us"
           aria-labelledby="why-choose-us-heading"
@@ -404,24 +404,25 @@ export function LandingPage() {
             height={940}
             loading="lazy"
             decoding="async"
-            className="absolute inset-0 -z-20 h-full w-full object-cover object-[60%_center]"
+            className="absolute inset-0 -z-20 h-full w-full object-cover object-[65%_center]"
           />
           <div
             aria-hidden="true"
-            className="absolute inset-0 -z-10 bg-navy-950/80 lg:bg-gradient-to-r lg:from-navy-950/95 lg:via-navy-950/80 lg:to-navy-950/40 lg:bg-transparent"
+            className="absolute inset-0 -z-10 bg-gradient-to-r from-navy-950/90 via-navy-950/65 to-navy-950/35"
           />
-          <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:min-h-[35rem] lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-24">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-yellow-300">
+          <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 lg:min-h-[42rem] lg:grid-cols-[0.8fr_1.2fr] lg:gap-12 lg:px-8 lg:py-24">
+            <div className="min-w-0">
+              <p className="flex items-center gap-3 text-xs font-bold uppercase tracking-[0.18em] text-yellow-300 sm:text-sm">
+                <span className="h-1 w-9 shrink-0 rounded-full bg-yellow-400" aria-hidden="true" />
                 The SafeBus difference
               </p>
               <h2
                 id="why-choose-us-heading"
-                className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl"
+                className="mt-6 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl"
               >
                 Why choose us
               </h2>
-              <p className="mt-5 max-w-lg text-base leading-8 text-navy-100 sm:text-lg">
+              <p className="mt-6 max-w-lg text-lg leading-8 text-white/90 sm:text-xl">
                 Local roots. A clear purpose. School transportation built around the people who
                 count on it every day.
               </p>
