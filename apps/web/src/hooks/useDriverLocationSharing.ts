@@ -19,6 +19,7 @@ export interface UseDriverLocationSharingResult {
   supported: boolean;
   start: () => void;
   stop: () => void;
+  stopAndConfirm: () => Promise<void>;
 }
 
 const MIN_UPDATE_INTERVAL_MS = 3_000;
@@ -72,7 +73,7 @@ export function useDriverLocationSharing(
     }
   }, [supported]);
 
-  const stop = useCallback(() => {
+  const stopAndConfirm = useCallback(async () => {
     sharingRequestedRef.current = false;
     latestFixRef.current = null;
     retryAttemptRef.current = 0;
@@ -82,35 +83,50 @@ export function useDriverLocationSharing(
       nativeActionRef.current = true;
       const token = trackingTokenRef.current;
       const request = ++nativeSequenceRef.current;
-      void nativeTracking
-        .pause()
-        .then((status) => {
-          if (
-            mountedRef.current &&
-            token === trackingTokenRef.current &&
-            request === nativeSequenceRef.current
-          )
-            setState(nativeTrackingPresentation(status, navigator.onLine));
-        })
-        .catch(() => {
-          if (
-            mountedRef.current &&
-            token === trackingTokenRef.current &&
-            request === nativeSequenceRef.current
-          )
-            setState({
-              kind: 'error',
-              message: 'Could not verify native tracking status. Reopen SafeBus.',
-            });
-        })
-        .finally(() => {
-          if (request === nativeSequenceRef.current) nativeActionRef.current = false;
-        });
+      let timeout: ReturnType<typeof setTimeout> | undefined;
       if (mountedRef.current) setState({ kind: 'waiting' });
+      try {
+        const status = await Promise.race([
+          nativeTracking.pause(),
+          new Promise<never>((_, reject) => {
+            timeout = setTimeout(() => reject(new Error('Local stop timed out.')), 15_000);
+          }),
+        ]);
+        if (status.statusVersion !== 2 || status.collecting !== false)
+          throw new Error('The native collector did not confirm a stop.');
+        if (
+          mountedRef.current &&
+          token === trackingTokenRef.current &&
+          request === nativeSequenceRef.current
+        )
+          setState(nativeTrackingPresentation(status, navigator.onLine));
+      } catch {
+        const message =
+          'Could not confirm that location sharing stopped. Try again or force stop SafeBus in your phone settings.';
+        if (
+          mountedRef.current &&
+          token === trackingTokenRef.current &&
+          request === nativeSequenceRef.current
+        )
+          setState({
+            kind: 'error',
+            message,
+          });
+        throw new Error(message);
+      } finally {
+        clearTimeout(timeout);
+        if (request === nativeSequenceRef.current) nativeActionRef.current = false;
+      }
       return;
     }
     if (mountedRef.current) setState({ kind: 'inactive' });
   }, [clearTimer, clearWatcher, nativeTracking]);
+
+  // Background cleanup callers retain their non-throwing API. Explicit trip
+  // actions await stopAndConfirm so they cannot announce an unverified stop.
+  const stop = useCallback(() => {
+    void stopAndConfirm().catch(() => undefined);
+  }, [stopAndConfirm]);
 
   const scheduleFlush = useCallback(
     (delayMs: number) => {
@@ -154,6 +170,10 @@ export function useDriverLocationSharing(
         setState({ kind: 'sharing', lastUpdateAt: result.recorded_at, delivery: 'active' });
       }
     } catch (error) {
+      // A late failure from a pre-stop request cannot restore a fix, a retry
+      // timer, or a sharing indicator after the driver has stopped collection.
+      if (!mountedRef.current || !sharingRequestedRef.current || token !== trackingTokenRef.current)
+        return;
       if (isFatalLocationUpdateError(error)) {
         sharingRequestedRef.current = false;
         clearWatcher();
@@ -185,7 +205,7 @@ export function useDriverLocationSharing(
       scheduleFlush(delay);
     } finally {
       inFlightRef.current = false;
-      if (latestFixRef.current && retryAttemptRef.current === 0) {
+      if (sharingRequestedRef.current && latestFixRef.current && retryAttemptRef.current === 0) {
         scheduleFlush(MIN_UPDATE_INTERVAL_MS);
       }
     }
@@ -240,8 +260,15 @@ export function useDriverLocationSharing(
     lastAttemptAtRef.current = 0;
     setState({ kind: 'waiting' });
 
+    const observedToken = trackingTokenRef.current;
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
+        if (
+          !mountedRef.current ||
+          !sharingRequestedRef.current ||
+          observedToken !== trackingTokenRef.current
+        )
+          return;
         latestFixRef.current = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
@@ -252,6 +279,12 @@ export function useDriverLocationSharing(
         flushRef.current();
       },
       (error) => {
+        if (
+          !mountedRef.current ||
+          !sharingRequestedRef.current ||
+          observedToken !== trackingTokenRef.current
+        )
+          return;
         clearWatcher();
         sharingRequestedRef.current = false;
         if (error.code === 1) {
@@ -417,5 +450,5 @@ export function useDriverLocationSharing(
         ? { kind: 'waiting' }
         : { kind: 'inactive' }
       : state;
-  return { state: visibleState, supported, start, stop };
+  return { state: visibleState, supported, start, stop, stopAndConfirm };
 }

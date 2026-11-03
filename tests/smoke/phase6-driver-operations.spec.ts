@@ -325,6 +325,76 @@ async function installPhase6DriverMock(page: Page) {
 }
 
 test.describe('Phase 6 — driver operational controls', () => {
+  for (const action of ['pause', 'end', 'cancel'] as const) {
+    test(`${action} stops the local collector before an offline server preflight`, async ({
+      page,
+    }) => {
+      await installPhase6DriverMock(page);
+      await page.addInitScript(() => {
+        let collecting = true;
+        const status = () => ({
+          statusVersion: 2 as const,
+          configured: true,
+          collecting,
+          queuedEvents: 1,
+          pendingDelivery: true,
+          connected: false,
+        });
+        window.SafeBusNativeTracking = {
+          prepare: async () => ({
+            locationPermission: 'always',
+            notificationPermission: 'granted',
+          }),
+          openAppSettings: async () => undefined,
+          openLocationServices: async () => undefined,
+          activate: async () => {
+            collecting = true;
+          },
+          resume: async () => {
+            collecting = true;
+            return status();
+          },
+          pause: async () => {
+            collecting = false;
+            return status();
+          },
+          stop: async () => {
+            collecting = false;
+            return status();
+          },
+          getStatus: async () => status(),
+        };
+      });
+      await page.goto('/driver');
+      await expect(page.getByRole('heading', { name: 'Bus P6', level: 1 })).toBeVisible();
+      await page.getByRole('link', { name: 'Trip actions', exact: true }).click();
+      await expect(page.getByTestId(`driver-${action}-trip`)).toBeVisible();
+      let collectingAtPreflight: boolean | undefined;
+      await page.route('**/rest/v1/driver_trips*', async (route) => {
+        collectingAtPreflight = await page.evaluate(
+          async () => (await window.SafeBusNativeTracking!.getStatus()).collecting,
+        );
+        await route.abort('internetdisconnected');
+      });
+      await page.getByTestId(`driver-${action}-trip`).click();
+      const dialog = page.getByRole('dialog');
+      await dialog
+        .getByRole('button', {
+          name: `${action === 'pause' ? 'Pause' : action === 'end' ? 'End' : 'Cancel'} trip`,
+          exact: true,
+        })
+        .click();
+      // The client may retry a transport failure. Collection must already be
+      // off during that wait; an offline request must not report a saved trip.
+      await expect.poll(() => collectingAtPreflight).toBe(false);
+      await expect(dialog.getByText(/Location sharing stopped on this phone/)).toBeVisible();
+      const stopped = await page.evaluate(async () => window.SafeBusNativeTracking!.getStatus());
+      expect(stopped.collecting).toBe(false);
+      expect(stopped.pendingDelivery).toBe(true);
+      await expect(page.getByTestId('driver-action-trip-context')).toContainText('active');
+    });
+  }
+
   test('pre-trip confirmation records and shows badge', async ({ page }) => {
     await installPhase6DriverMock(page);
     await page.goto('/driver');
