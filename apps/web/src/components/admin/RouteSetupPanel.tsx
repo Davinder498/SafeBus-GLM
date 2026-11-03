@@ -184,6 +184,7 @@ export function RouteSetupPanel({
   }, [returnedBusId, returnedDriverId, eligible]);
   return (
     <div id="setup" data-testid="route-setup" className="space-y-6 scroll-mt-24">
+      {activeTab === 'overview' && (
       <Card className="p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -237,7 +238,10 @@ export function RouteSetupPanel({
           </p>
         )}
       </Card>
-      <RouteSetupSection id="route-details" title="1. Route details and stops">
+      )}
+      {activeTab === 'route' && (
+      <>
+      <RouteSetupSection id="route-details" title="Route details, schedule and stops">
         {setupError && <p role="alert">{setupError}</p>}
         {editing && setup && !setupError ? (
           <RouteWithStopsForm
@@ -257,13 +261,33 @@ export function RouteSetupPanel({
           </Button>
         )}
       </RouteSetupSection>
-      <RoutePathEditor
-        route={route}
-        stops={stops}
-        tileConfig={tileConfig}
-        onPublishedStateChange={setPathPublished}
-      />
-      <RouteSetupSection id="route-service" title="3. Bus, driver and schedule">
+      <Card className="p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-[var(--color-text)]">Road path</h2>
+            <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+              Open specialist road-drawing and GeoJSON tools only when you need to change the path.
+            </p>
+          </div>
+          <Button variant="secondary" aria-expanded={showRoadEditor} onClick={() => setShowRoadEditor((value) => !value)}>
+            {showRoadEditor ? 'Close path editor' : 'Edit road path'}
+          </Button>
+        </div>
+        {showRoadEditor && (
+          <div className="mt-4">
+            <RoutePathEditor
+              route={route}
+              stops={stops}
+              tileConfig={tileConfig}
+              onPublishedStateChange={setPathPublished}
+            />
+          </div>
+        )}
+      </Card>
+      </>
+      )}
+      {activeTab === 'assignments' && (
+      <RouteSetupSection id="route-service" title="Bus, driver and service dates">
         {!eligible && (
           <p className="text-sm text-warning-700">
             Save complete stops and activate the route in Route details before assigning a bus.
@@ -425,7 +449,9 @@ export function RouteSetupPanel({
           ))}
         </section>
       </RouteSetupSection>
-      <RouteSetupSection id="route-students" title="4. Students and pickup/drop-off stops">
+      )}
+      {activeTab === 'students' && (
+      <RouteSetupSection id="route-students" title="Students and pickup/drop-off stops">
         {rosterLoading && <p>Loading student assignments…</p>}
         {rosterError && (
           <div>
@@ -523,7 +549,9 @@ export function RouteSetupPanel({
           </>
         )}
       </RouteSetupSection>
-      <RouteSetupSection id="route-review" title="5. Review saved setup">
+      )}
+      {activeTab === 'overview' && (
+      <RouteSetupSection id="route-review" title="Review saved setup">
         <ul className="mt-3 space-y-2 text-sm">
           <li>
             Route: {eligible ? 'Active with complete stops' : 'Needs route details or activation'}
@@ -563,6 +591,7 @@ export function RouteSetupPanel({
           original path.
         </p>
       </RouteSetupSection>
+      )}
       {endingError && (
         <p role="alert" className="text-danger-700">
           {endingError}
