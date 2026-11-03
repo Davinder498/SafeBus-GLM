@@ -476,6 +476,21 @@ export function RouteSetupPanel({
         )}
         {!rosterLoading && !rosterError && (
           <>
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+              <label className="w-full max-w-sm text-sm font-semibold text-[var(--color-text)]">
+                Search assigned students
+                <input
+                  type="search"
+                  value={studentSearch}
+                  onChange={(event) => setStudentSearch(event.target.value)}
+                  placeholder="Search by student name"
+                  className="mt-2 min-h-11 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]"
+                />
+              </label>
+              <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                {new Set(roster.filter((a) => a.status === 'active').map((a) => a.student_id)).size} assigned students
+              </span>
+            </div>
             {studentForm ? (
               <DirectionalStudentBusAssignmentForm
                 key={studentForm.map((a) => a.id).join(',') || 'new'}
@@ -505,12 +520,12 @@ export function RouteSetupPanel({
               </p>
             )}
             <ul className="space-y-3">
-              {groups.map((group) => (
-                <li key={group.id} className="rounded-lg border border-navy-200 p-3 text-sm">
-                  <p className="font-semibold">{group.assignments[0].student_name}</p>
-                  <p>Service status: {group.status}</p>
+              {groups.filter((group) => (group.assignments[0]?.student_name ?? '').toLocaleLowerCase().includes(studentSearch.trim().toLocaleLowerCase())).map((group) => (
+                <li key={group.id} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-sm shadow-sm">
+                  <p className="text-base font-bold text-[var(--color-text)]">{group.assignments[0].student_name}</p>
+                  <p className="mt-1 text-xs font-semibold text-[var(--color-text-muted)]">Service status: {group.status}</p>
                   {group.assignments.map((a) => (
-                    <p key={a.id}>
+                    <p key={a.id} className="mt-3 rounded-lg bg-[var(--color-surface-subtle)] p-3 leading-6 text-[var(--color-text-muted)]">
                       {services.find((s) => s.id === a.bus_route_assignment_id)?.trip_name} ·{' '}
                       {a.pickup_stop_name ?? 'Pickup not selected'} →{' '}
                       {a.dropoff_stop_name ?? 'Drop-off not selected'} · {a.effective_from} –{' '}
@@ -554,6 +569,10 @@ export function RouteSetupPanel({
                 </li>
               ))}
             </ul>
+            {groups.length > 0 && studentSearch.trim() &&
+              !groups.some((group) => (group.assignments[0]?.student_name ?? '').toLocaleLowerCase().includes(studentSearch.trim().toLocaleLowerCase())) && (
+                <p className="text-sm text-[var(--color-text-muted)]">No assigned students match the search.</p>
+              )}
           </>
         )}
       </RouteSetupSection>
