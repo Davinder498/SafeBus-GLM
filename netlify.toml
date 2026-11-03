@@ -5,9 +5,9 @@
 [build.environment]
   NODE_VERSION = "24"
   PNPM_VERSION = "11.9.0"
-  # The inquiry recipient is the public contact-page mailbox, not a credential.
-  # Exempt only this value; keep scanning source and build output for other secrets.
-  SECRETS_SCAN_OMIT_KEYS = "SAFEBUS_INQUIRY_TO"
+  # The inquiry mailbox and Supabase project URL are public, not credentials.
+  # Keep scanning all other values, including Supabase and Stripe secret keys.
+  SECRETS_SCAN_OMIT_KEYS = "SAFEBUS_INQUIRY_TO,SUPABASE_URL"
 
 [functions]
   directory = "apps/web/netlify/functions"
