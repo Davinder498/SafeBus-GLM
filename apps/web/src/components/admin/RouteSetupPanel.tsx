@@ -288,166 +288,184 @@ export function RouteSetupPanel({
       )}
       {activeTab === 'assignments' && (
       <RouteSetupSection id="route-service" title="Bus, driver and service dates">
-        {!eligible && (
-          <p className="text-sm text-warning-700">
-            Save complete stops and activate the route in Route details before assigning a bus.
-          </p>
-        )}
-        <section aria-label="Bus" className="space-y-4 rounded-xl border border-navy-200 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h3 className="font-bold text-navy-900">Attached buses</h3>
-              <p className="text-sm text-slate-600">Choose an existing bus, or register a new bus and return here.</p>
-            </div>
-            <Link to={addBusHref} aria-label="Add new bus" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-raised)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]">
-              + Add new bus
-            </Link>
-          </div>
-          {returnedBusId && eligible && (
-            <p role="status" className="rounded-lg bg-success-50 p-3 text-sm font-semibold text-success-700">
-              New bus loaded. Review its service direction and dates, then select Assign bus to save.
+        <div className="space-y-5">
+          {!eligible && (
+            <p role="status" className="rounded-xl bg-[var(--color-warning-surface)] p-4 text-sm font-semibold text-[var(--color-warning-text)]">
+              Complete and activate the route and its stops before assigning a bus.
             </p>
           )}
-          {addingBus || editingBus ? (
-            <RouteBusAssignmentForm
-              key={editingBus?.id ?? 'new'}
-              route={route}
-              buses={buses}
-              tripPatterns={tripPatterns}
-              existingAssignments={editingBus ? [editingBus] : []}
-              initialBusId={!editingBus ? returnedBusId : undefined}
-              onCancel={() => {
-                setAddingBus(false);
-                setEditingBus(null);
-              }}
-              onSubmit={async (input) => {
-                await setBusRouteService({ ...input, routeId: route.id });
-                setAddingBus(false);
-                setEditingBus(null);
-                setMessage('Bus service saved. Choose its driver below.');
-                onSaved();
-              }}
-            />
-          ) : (
-            <Button disabled={!eligible} onClick={() => setAddingBus(true)}>
-              Assign bus to route
-            </Button>
-          )}
-          {services.length === 0 && (
-            <p className="text-sm text-gray-600">No bus service has been assigned.</p>
-          )}
-          {services.map((service) => (
-            <div key={service.id} className="space-y-3">
-              <DropdownMenu
-                trigger={
-                  <span className="inline-flex rounded-lg border border-navy-200 px-3 py-2 font-semibold text-navy-700">
-                    Bus {service.bus_number}: {service.trip_name}
-                  </span>
-                }
-                align="left"
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="max-w-xl text-sm leading-6 text-[var(--color-text-muted)]">
+              Manage each bus service and its planned driver together. The Bus workspace uses the same saved assignments.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to={addBusHref}
+                aria-label="Add new bus"
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-raised)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]"
               >
-                <DropdownItem
-                  disabled={!eligible}
-                  onClick={() => {
-                    setAddingBus(false);
-                    setEditingBus(service);
-                  }}
-                >
-                  Edit bus service: {service.trip_name}
-                </DropdownItem>
-                <DropdownItem
-                  destructive
-                  onClick={() => {
-                    setEndingError(null);
-                    setEnding({
-                      label: `${service.trip_name} bus service`,
-                      save: () => endBusRouteService([service.id]),
-                    });
-                  }}
-                >
-                  End bus service
-                </DropdownItem>
-              </DropdownMenu>
-            </div>
-          ))}
-        </section>
-        <section aria-label="Driver" className="space-y-4 rounded-xl border border-navy-200 p-4">
-          <h3 className="font-bold text-navy-900">Assigned drivers</h3>
-          <p className="text-sm text-slate-600">
-            Choose an existing driver for each saved bus service, or invite a new driver.
-            Sending an invitation does not assign the driver or bypass licence and date checks.
-          </p>
-          {services.length === 0 && (
-            <p className="text-sm text-gray-600">Assign a bus to set up its driver.</p>
-          )}
-          {services.map((service) => (
-            <div key={service.id} className="space-y-2">
-              <Link to={addDriverHref(service.id)} aria-label={`Add new driver for ${service.trip_name}`} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-raised)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]">
-                + Add new driver for {service.trip_name}
+                Add new bus
               </Link>
-              {returnedDriverId && returnedServiceId === service.id && (
-                <p role="status" className="rounded-lg bg-success-50 p-3 text-sm text-success-700">
-                  New driver loaded. Check licence eligibility and service dates, then save the driver plan.
-                </p>
-              )}
-              <RouteDriverSetupForm
-              key={service.id}
-              service={service}
-              drivers={drivers}
-              names={names}
-              assignments={assignments}
-              initialDriverId={returnedServiceId === service.id ? returnedDriverId : undefined}
-              onSaved={onSaved}
-            />
-            </div>
-          ))}
-        </section>
-        <section aria-label="Schedule" className="space-y-3 rounded-xl border border-navy-200 p-4">
-          <h3 className="font-bold text-navy-900">Service schedule</h3>
-
-          <Button
-            variant="secondary"
-            disabled={!setup || !!setupError}
-            onClick={() => {
-              setEditing(true);
-              const section = document.getElementById('route-details');
-              if (section instanceof HTMLDetailsElement) section.open = true;
-              section?.scrollIntoView();
-            }}
-          >
-            Edit operating days and stop times
-          </Button>
-          {services.length === 0 && (
-            <p className="text-sm text-gray-600">No bus service dates have been assigned.</p>
-          )}
-          {services.map((service) => (
-            <div
-              key={service.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-navy-50 p-3 text-sm"
-            >
-              <div>
-                <p className="font-semibold text-navy-900">
-                  {service.trip_name} / Bus {service.bus_number}
-                </p>
-                <p>
-                  {service.effective_from ?? 'No start limit'} to{' '}
-                  {service.effective_to ?? 'No end date'}
-                </p>
-              </div>
-              <Button
-                variant="secondary"
-                disabled={!eligible}
-                onClick={() => {
-                  setAddingBus(false);
-                  setEditingBus(service);
-                  document.getElementById('route-service')?.scrollIntoView();
-                }}
-              >
-                Edit service dates
+              <Button disabled={!eligible} onClick={() => { setEditingBus(null); setAddingBus(true); }}>
+                Assign bus to route
               </Button>
             </div>
-          ))}
-        </section>
+          </div>
+          {returnedBusId && eligible && (
+            <p role="status" className="rounded-xl bg-[var(--color-success-surface)] p-3 text-sm font-medium text-[var(--color-success-text)]">
+              New bus loaded. Review the direction and dates, then select Assign bus to save.
+            </p>
+          )}
+          {(addingBus || editingBus) && (
+            <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-4">
+              <h3 className="mb-3 text-base font-bold text-[var(--color-text)]">
+                {editingBus ? 'Edit ' + editingBus.trip_name + ' bus service' : 'Add bus service'}
+              </h3>
+              <RouteBusAssignmentForm
+                key={editingBus?.id ?? 'new'}
+                route={route}
+                buses={buses}
+                tripPatterns={tripPatterns}
+                existingAssignments={editingBus ? [editingBus] : []}
+                initialBusId={!editingBus ? returnedBusId : undefined}
+                onCancel={() => { setAddingBus(false); setEditingBus(null); }}
+                onSubmit={async (input) => {
+                  await setBusRouteService({ ...input, routeId: route.id });
+                  setAddingBus(false);
+                  setEditingBus(null);
+                  setMessage('Bus service saved. Choose its driver below.');
+                  onSaved();
+                }}
+              />
+            </div>
+          )}
+          {services.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-5 text-sm text-[var(--color-text-muted)]">
+              No bus service assigned yet. Choose an existing bus or add a new one to begin.
+            </p>
+          ) : (
+            <div className="space-y-3" aria-label="Saved bus services">
+              {services.map((service) => {
+                const plan = assignments.find(
+                  (assignment) => assignment.bus_route_assignment_id === service.id && assignment.status === 'active',
+                );
+                const driver = drivers.find((item) => item.id === plan?.driver_id);
+                const driverName = names.get(driver?.profile_id ?? '') ?? 'Not assigned';
+                const firstUnplanned = services.find((item) => !hasDriverPlan(item.id))?.id;
+                const driverOpen = editingDriverServiceId === service.id ||
+                  (editingDriverServiceId === null && firstUnplanned === service.id);
+                return (
+                  <div key={service.id} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm sm:p-5">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-lg font-bold text-[var(--color-text)]">{service.trip_name}</h3>
+                          <span className="rounded-full bg-[var(--color-selection)] px-3 py-1 text-xs font-semibold text-[var(--color-action)]">
+                            Bus {service.bus_number}
+                          </span>
+                        </div>
+                        <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                          <div>
+                            <dt className="text-xs font-semibold text-[var(--color-text-muted)]">Planned driver</dt>
+                            <dd className="mt-1 font-semibold text-[var(--color-text)]">{driverName}</dd>
+                          </div>
+                          <div>
+                            <dt className="text-xs font-semibold text-[var(--color-text-muted)]">Bus service dates</dt>
+                            <dd className="mt-1 font-semibold text-[var(--color-text)]">
+                              {service.effective_from ?? 'No start limit'} – {service.effective_to ?? 'No end date'}
+                            </dd>
+                          </div>
+                        </dl>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={!eligible}
+                          onClick={() => { setAddingBus(false); setEditingBus(service); }}
+                        >
+                          Edit bus / dates
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          aria-expanded={driverOpen}
+                          onClick={() => setEditingDriverServiceId(driverOpen ? 'closed' : service.id)}
+                        >
+                          {driverOpen ? 'Close driver' : plan ? 'Edit driver' : 'Assign driver'}
+                        </Button>
+                        <DropdownMenu
+                          trigger={
+                            <span className="inline-flex rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-semibold text-[var(--color-text)]">
+                              Bus {service.bus_number}: {service.trip_name}
+                            </span>
+                          }
+                          align="right"
+                        >
+                          <DropdownItem
+                            disabled={!eligible}
+                            onClick={() => { setAddingBus(false); setEditingBus(service); }}
+                          >
+                            Edit bus service: {service.trip_name}
+                          </DropdownItem>
+                          <DropdownItem
+                            destructive
+                            onClick={() => {
+                              setEndingError(null);
+                              setEnding({
+                                label: service.trip_name + ' bus service',
+                                save: () => endBusRouteService([service.id]),
+                              });
+                            }}
+                          >
+                            End bus service
+                          </DropdownItem>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                    {returnedServiceId === service.id && returnedDriverId && (
+                      <p role="status" className="mt-4 rounded-xl bg-[var(--color-success-surface)] p-3 text-sm text-[var(--color-success-text)]">
+                        New driver loaded. Verify eligibility and service dates, then save the plan.
+                      </p>
+                    )}
+                    {driverOpen && (
+                      <div className="mt-4 space-y-3 border-t border-[var(--color-border)] pt-4">
+                        <Link
+                          to={addDriverHref(service.id)}
+                          aria-label={'Add new driver for ' + service.trip_name}
+                          className="inline-flex min-h-11 items-center rounded-lg border border-[var(--color-border)] px-4 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-raised)]"
+                        >
+                          Add new driver for {service.trip_name}
+                        </Link>
+                        <RouteDriverSetupForm
+                          key={service.id}
+                          service={service}
+                          drivers={drivers}
+                          names={names}
+                          assignments={assignments}
+                          initialDriverId={returnedServiceId === service.id ? returnedDriverId : undefined}
+                          onSaved={onSaved}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[var(--color-surface-subtle)] p-4">
+            <p className="max-w-lg text-sm text-[var(--color-text-muted)]">
+              Operating days and stop times belong to the route. Individual bus service dates are edited above.
+            </p>
+            <Button
+              variant="secondary"
+              disabled={!setup || !!setupError}
+              onClick={() => { setEditing(true); onRequestTab?.('route'); }}
+            >
+              Edit operating days and stop times
+            </Button>
+          </div>
+        </div>
       </RouteSetupSection>
       )}
       {activeTab === 'students' && (
