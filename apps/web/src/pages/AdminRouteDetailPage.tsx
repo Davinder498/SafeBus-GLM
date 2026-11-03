@@ -82,6 +82,7 @@ export function AdminRouteDetailPage() {
   const [activeTab, setActiveTab] = useState<RouteWorkspaceTab>(() =>
     workspaceTabFromHash(window.location.hash),
   );
+  const [dirtyTab, setDirtyTab] = useState<RouteWorkspaceTab | null>(null);
   useEffect(() => {
     setActiveTab(workspaceTabFromHash(location.hash));
   }, [location.hash]);
@@ -191,6 +192,9 @@ export function AdminRouteDetailPage() {
       ? (searchParams.get('newDriverId') ?? undefined)
       : undefined;
   function selectWorkspaceTab(tab: RouteWorkspaceTab, openEditor = false) {
+    if (tab !== activeTab && dirtyTab === activeTab &&
+      !window.confirm('Leave this section? Unsaved form changes will be lost.')) return;
+    setDirtyTab(null);
     setActiveTab(tab);
     const hash = tab === 'route' ? (openEditor ? '#route-details' : '#route-workspace')
       : tab === 'assignments' ? '#route-service'
@@ -215,7 +219,12 @@ export function AdminRouteDetailPage() {
       navItems={[]}
       navGroups={adminNavGroups}
     >
-      <div className="space-y-6">
+      <div
+        className="space-y-6"
+        onChangeCapture={(event) => {
+          if ((event.target as HTMLElement).closest('form')) setDirtyTab(activeTab);
+        }}
+      >
         <Link
           to="/admin/routes"
           className="inline-flex text-sm font-semibold text-navy-700 hover:underline"
@@ -505,7 +514,7 @@ export function AdminRouteDetailPage() {
                     returnedBusId={returnedBusId}
                     returnedDriverId={returnedDriverId}
                     returnedServiceId={returnedServiceId}
-                    onSaved={() => { setRevision((n) => n + 1); }}
+                    onSaved={() => { setDirtyTab(null); setRevision((n) => n + 1); }}
                   />
                 )}
                 <Card className="p-5 shadow-sm">
@@ -576,7 +585,7 @@ export function AdminRouteDetailPage() {
                 returnedBusId={returnedBusId}
                 returnedDriverId={returnedDriverId}
                 returnedServiceId={returnedServiceId}
-                onSaved={() => setRevision((n) => n + 1)}
+                onSaved={() => { setDirtyTab(null); setRevision((n) => n + 1); }}
               />
             )}
 
@@ -603,6 +612,7 @@ export function AdminRouteDetailPage() {
                   if (searchParams.has('newBusId') || searchParams.has('newDriverId')) {
                     navigate('/admin/routes/' + data.route.id + '#route-service', { replace: true });
                   }
+                  setDirtyTab(null);
                   setRevision((n) => n + 1);
                 }}
               />
