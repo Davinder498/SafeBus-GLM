@@ -190,6 +190,11 @@ export function RouteSetupPanel({
   }, [returnedBusId, returnedDriverId, eligible]);
   return (
     <div id="setup" data-testid="route-setup" className="space-y-6 scroll-mt-24">
+      {message && (
+        <p role="status" className="rounded-xl border border-[var(--color-success-outline)] bg-[var(--color-success-surface)] p-4 text-sm font-semibold text-[var(--color-success-text)]">
+          {message}
+        </p>
+      )}
       {activeTab === 'overview' && (
       <Card className="p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -228,11 +233,6 @@ export function RouteSetupPanel({
         </div>
         <p className="mt-4 text-xs leading-5 text-[var(--color-text-muted)]">Saved-record indicators are not dispatch approval. Verify road path, service dates and conflicts before operating.</p>
 
-        {message && (
-          <p role="status" className="mt-4 text-sm text-success-700">
-            {message}
-          </p>
-        )}
       </Card>
       )}
       {activeTab === 'route' && (
