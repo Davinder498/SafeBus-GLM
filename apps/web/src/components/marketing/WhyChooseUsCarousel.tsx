@@ -191,7 +191,7 @@ export function WhyChooseUsCarousel() {
             <button
               key={card.title}
               type="button"
-              aria-label={\`Show reason \${index + 1}: \${card.title}\`}
+              aria-label={'Show reason ' + (index + 1) + ': ' + card.title}
               aria-current={index === activeIndex ? 'true' : undefined}
               aria-controls="why-choose-us-cards"
               onClick={() => setActiveIndex(index)}
