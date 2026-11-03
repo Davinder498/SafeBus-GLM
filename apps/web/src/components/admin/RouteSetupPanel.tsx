@@ -96,7 +96,7 @@ export function RouteSetupPanel({
   const [setup, setSetup] = useState<{ routes: Route[]; days: RouteServiceDay[] } | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [pathPublished, setPathPublished] = useState<boolean | null>(null);
+  const [, setPathPublished] = useState<boolean | null>(null);
   const names = useMemo(() => new Map(profiles.map((p) => [p.id, p.full_name])), [profiles]);
   const busIds = useMemo(() => [...new Set(services.map((s) => s.bus_id))].sort(), [services]);
   useEffect(() => {
