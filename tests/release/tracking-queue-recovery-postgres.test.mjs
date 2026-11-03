@@ -300,6 +300,23 @@ test('protected rollout rehearses exact hosted definitions, ACLs and rollback wi
       config = await readConfig(),
       sql = await queueMigration();
     assert.equal(createHash('sha256').update(sql).digest('hex'), config.migrationSha256);
+    const pending = JSON.parse(
+      await fs.readFile(
+        new URL('../../config/pending/tracking-queue-authorization.json', import.meta.url),
+        'utf8',
+      ),
+    );
+    const active = JSON.parse(
+      await fs.readFile(
+        new URL('../../config/authorization-surface.json', import.meta.url),
+        'utf8',
+      ),
+    );
+    assert.equal(pending.status, 'prepared-unapplied');
+    assert.equal(pending.migration, config.migration);
+    assert.deepEqual(pending.authenticated, ['authorize_driver_tracking_queue(text,text)']);
+    assert.deepEqual(pending.serviceRole, []);
+    assert.equal(active.authenticated.includes(pending.authenticated[0]), false);
     const before = await operationalSnapshot(client, config);
     verifyOperationalSnapshot(before, config, 'before');
     await rehearseOperational(client, sql, config);

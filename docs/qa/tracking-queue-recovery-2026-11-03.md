@@ -63,9 +63,15 @@ acceptance evidence; source and local fixtures do not prove live operation.
    before the transaction commits. Verify all ten function definitions/ACLs and
    confirm `authorize_driver_tracking_queue(text,text)` is available in the Data
    API. The migration only changes function definitions and grants, not records.
-3. Refresh generated database types through the existing protected type-refresh
-   workflow after installation. Review its generated change normally; do not
-   represent the forward RPC as already present in the hosted generated types.
+3. After installation, retain the protected `installation.json` and
+   `verification.json` evidence. Refresh generated database types through the
+   existing protected type-refresh workflow. Adopt the verified new RPC into the
+   active authorization inventory with an observed record bound to that exact
+   migration digest and workflow evidence, following the existing observed
+   adoption pattern. Review these source changes normally. The prepared RPC
+   allowlist in this PR deliberately does not change the active inventory or
+   represent the new function as already installed. Complete this adoption before
+   the next full release authorization audit and Android distribution.
 4. Build and field-test the reviewed signed Android candidate only after the
    server change is verified. The first event of each authorization must pass
    the coordinate-free protocol check. Missing/incompatible recovery service
