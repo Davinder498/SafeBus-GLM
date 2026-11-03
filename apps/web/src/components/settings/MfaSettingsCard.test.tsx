@@ -83,7 +83,7 @@ it.each(['platform_super_admin', 'tenant_admin', 'transportation_admin'])(
     )!;
     await act(async () => link.click());
     expect(container.querySelector('[data-testid="destination"]')?.textContent).toContain(
-      '/account/security:',
+      '/account/security/mfa:',
     );
   },
 );
