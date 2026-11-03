@@ -104,6 +104,18 @@ describe('DashboardLayout navigation presentation', () => {
     expect(container.querySelector('aside')).not.toBeNull();
   });
 
+  it('traps mobile drawer focus and restores it to its trigger on Escape', async () => {
+    const container = await renderDriverLayout();
+    const trigger = container.querySelector<HTMLButtonElement>('button[aria-label="Open navigation"]')!;
+    await act(async () => trigger.click());
+    const drawer = container.querySelector<HTMLElement>('[role="dialog"][aria-label="Navigation"]')!;
+    const close = drawer.querySelector<HTMLButtonElement>('[aria-label="Close navigation"]')!;
+    expect(document.activeElement).toBe(close);
+    await act(async () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    expect(container.querySelector('[role="dialog"][aria-label="Navigation"]')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
   it('renders four active-aware tabs without a drawer on the native surface', async () => {
     const container = await renderDriverLayout('native-mobile');
     const navigation = container.querySelector('[data-testid="native-bottom-navigation"]');
