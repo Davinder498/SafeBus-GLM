@@ -461,6 +461,19 @@ export function RouteSetupPanel({
               Edit operating days and stop times
             </Button>
           </div>
+          <div id="route-review" className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-4 text-sm">
+            <p className="font-semibold text-[var(--color-text)]">
+              Drivers: {driversPlanned} of {services.length} bus services have a saved driver plan.
+            </p>
+            <p className="mt-1 text-[var(--color-text-muted)]">
+              Student assignments: {rosterLoading || rosterError
+                ? 'Not verified'
+                : new Set(roster.filter((a) => a.status === 'active').map((a) => a.student_id)).size}
+            </p>
+            <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+              These are saved records, not confirmation of date coverage or dispatch readiness.
+            </p>
+          </div>
         </div>
       </RouteSetupSection>
       )}
