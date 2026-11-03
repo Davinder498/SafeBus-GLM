@@ -1,64 +1,113 @@
-import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
 import { cn } from '@/utils/cn';
 
 interface DropdownMenuProps {
-  /** The trigger element (e.g., a button or avatar). */
   trigger: ReactNode;
   children: ReactNode;
-  /** Horizontal alignment of the floating panel. */
   align?: 'left' | 'right';
   className?: string;
 }
 
-/**
- * Minimal, accessible dropdown menu.
- *
- * - Click trigger to toggle, click outside or press Escape to close.
- * - Keyboard: roving focus is intentionally minimal; items are focusable buttons.
- * - `aria-expanded` + `aria-haspopup` wired on the trigger wrapper.
- *
- * No external dependencies — purely presentational + behaviour.
- */
 export function DropdownMenu({ trigger, children, align = 'right', className }: DropdownMenuProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+  const initialFocus = useRef<'first' | 'last' | null>(null);
+
+  const menuItems = () =>
+    Array.from(panelRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ?? []);
+
+  const closeMenu = (restoreFocus = false) => {
+    setOpen(false);
+    if (restoreFocus) triggerRef.current?.focus();
+  };
 
   useEffect(() => {
     if (!open) return;
-    const handleClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
+    const items = menuItems();
+    if (initialFocus.current === 'first') items[0]?.focus();
+    if (initialFocus.current === 'last') items.at(-1)?.focus();
+    initialFocus.current = null;
+
+    const handleClick = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        closeMenu();
       }
     };
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+    const handleFocus = (event: FocusEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        closeMenu();
+      }
+    };
+    const handleKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeMenu(true);
+      }
     };
     document.addEventListener('mousedown', handleClick);
+    document.addEventListener('focusin', handleFocus);
     document.addEventListener('keydown', handleKey);
     return () => {
       document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('focusin', handleFocus);
       document.removeEventListener('keydown', handleKey);
     };
   }, [open]);
 
+  const onTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      initialFocus.current = event.key === 'ArrowDown' ? 'first' : 'last';
+      setOpen(true);
+    }
+  };
+
+  const onPanelKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const items = menuItems();
+    if (!items.length) return;
+    const index = items.indexOf(document.activeElement as HTMLButtonElement);
+    if (event.key === 'Home') items[0]?.focus();
+    else if (event.key === 'End') items.at(-1)?.focus();
+    else {
+      const delta = event.key === 'ArrowDown' ? 1 : -1;
+      items[(index + delta + items.length) % items.length]?.focus();
+    }
+  };
+
   return (
     <div ref={containerRef} className="relative inline-block" data-ui="dropdown">
       <button
+        ref={triggerRef}
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-navy-500 focus-visible:ring-offset-2"
+        aria-controls={menuId}
+        onClick={() => {
+          initialFocus.current = null;
+          setOpen((value) => !value);
+        }}
+        onKeyDown={onTriggerKeyDown}
+        className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] focus-visible:ring-offset-2"
       >
         {trigger}
       </button>
       {open && (
         <div
+          ref={panelRef}
+          id={menuId}
           role="menu"
           data-ui="dropdown-panel"
-          onClick={() => setOpen(false)}
+          onKeyDown={onPanelKeyDown}
+          onClick={(event) => {
+            if ((event.target as HTMLElement).closest('[role="menuitem"]')) closeMenu(true);
+          }}
           className={cn(
-            'absolute z-50 mt-2 min-w-[12rem] overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-popover animate-scale-in',
+            'absolute z-50 mt-2 min-w-[12rem] overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1 text-[var(--color-text)] shadow-popover animate-scale-in',
             align === 'right' ? 'right-0' : 'left-0',
             className,
           )}
@@ -86,14 +135,15 @@ export function DropdownItem({
   return (
     <button
       role="menuitem"
+      tabIndex={-1}
       data-ui="dropdown-item"
       data-destructive={destructive}
       className={cn(
         'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors',
         destructive
-          ? 'text-danger-600 hover:bg-danger-50'
-          : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900',
-        'focus:outline-none focus-visible:bg-slate-100',
+          ? 'text-[var(--color-danger-text)] hover:bg-[var(--color-danger-surface)]'
+          : 'text-[var(--color-text)] hover:bg-[var(--color-raised)]',
+        'focus:outline-none focus-visible:bg-[var(--color-raised)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus)]',
         className,
       )}
       {...props}
@@ -105,12 +155,12 @@ export function DropdownItem({
 }
 
 export function DropdownSeparator() {
-  return <div className="my-1 h-px bg-slate-100" data-ui="dropdown-separator" />;
+  return <div role="separator" className="my-1 h-px bg-[var(--color-border)]" data-ui="dropdown-separator" />;
 }
 
 export function DropdownLabel({ children }: { children: ReactNode }) {
   return (
-    <p className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
+    <p className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
       {children}
     </p>
   );
