@@ -269,6 +269,20 @@ test('route workspace shows one focused task at a time, with advanced maps hidde
   await expect(page.locator('#route-service')).toHaveCount(0);
 });
 
+test('warns before discarding unsaved route form changes when switching sections', async ({ page }) => {
+  await fixture(page);
+  await open(page);
+  await page.getByRole('button', { name: 'Route & Stops', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit route details and stops', exact: true }).click();
+  await page.getByLabel('Route name', { exact: true }).fill('Unsaved route draft');
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await page.getByRole('button', { name: 'Assignments', exact: true }).click();
+  await expect(page.locator('#route-details').getByLabel('Route name')).toHaveValue('Unsaved route draft');
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Assignments', exact: true }).click();
+  await expect(page.locator('#route-service')).toBeVisible();
+});
+
 test('route setup offers safe creation returns without assigning records automatically', async ({
   page,
 }) => {
