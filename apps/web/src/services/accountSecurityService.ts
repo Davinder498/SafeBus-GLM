@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@safebus/types/database';
 import { supabase, supabaseConfigError, supabaseEnv } from '@/lib/supabase';
 
 /**
@@ -25,7 +26,7 @@ export async function changeOwnPassword(currentPassword: string, newPassword: st
   const policy = await supabase.rpc('enforce_new_password_policy', { p_password: newPassword });
   if (policy.error) throw new Error('Your new password does not meet SafeBus password requirements.');
 
-  const verifier = createClient(supabaseEnv.url, supabaseEnv.anonKey, {
+  const verifier = createClient<Database>(supabaseEnv.url, supabaseEnv.anonKey, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
   try {
