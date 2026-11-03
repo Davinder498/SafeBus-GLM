@@ -110,6 +110,8 @@ async function installPathRpcMock(
 async function openEditor(page: Page) {
   await page.goto('/admin/routes');
   await page.getByRole('link', { name: 'Open route Route One', exact: true }).click();
+  await page.getByRole('button', { name: 'Route & Stops', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit road path', exact: true }).click();
   const editor = page.getByTestId('route-path-editor');
   await expect(editor.getByRole('combobox', { name: 'Saved path versions' })).toBeVisible();
   await expect(editor.getByRole('button', { name: 'Draw on map' })).toBeEnabled();
@@ -166,6 +168,7 @@ test('draws and undoes points, imports a curved road, saves a draft and publishe
   });
   await editor.screenshot({ path: testInfo.outputPath('road-path-published.png') });
   await page.reload();
+  await page.getByRole('button', { name: 'Edit road path', exact: true }).click();
   await expect(editor.getByText(/Published path: version 2/)).toBeVisible();
   await expect(editor.getByRole('button', { name: 'Publish reviewed path' })).toHaveCount(0);
   await editor.getByRole('button', { name: 'Undo last point' }).click();
@@ -210,6 +213,8 @@ test('a map outage prevents publishing a saved draft', async ({ page }) => {
   await installMapProviderOutage(page);
   const writes = await installPathRpcMock(page, { saved: true });
   await page.goto(`/admin/routes/${ADMIN_IDS.route}`);
+  await page.getByRole('button', { name: 'Route & Stops', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit road path', exact: true }).click();
   const editor = page.getByTestId('route-path-editor');
   await expect(editor.getByText(/The map is unavailable/)).toBeVisible();
   await expect(editor.getByRole('checkbox', { name: /I reviewed/ })).toBeDisabled();
@@ -222,6 +227,8 @@ test('failed version loading blocks all path writes', async ({ page }) => {
   await installMapProviderAvailable(page);
   const writes = await installPathRpcMock(page, { rejectLoad: true });
   await page.goto(`/admin/routes/${ADMIN_IDS.route}`);
+  await page.getByRole('button', { name: 'Route & Stops', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit road path', exact: true }).click();
   const editor = page.getByTestId('route-path-editor');
   await expect(editor.getByRole('alert')).toContainText('could not load the saved road paths');
   await expect(editor.getByRole('button', { name: 'Save draft', exact: true })).toHaveCount(0);
