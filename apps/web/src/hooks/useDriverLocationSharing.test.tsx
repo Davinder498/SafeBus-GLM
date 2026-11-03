@@ -6,6 +6,7 @@ import {
   type UseDriverLocationSharingResult,
 } from './useDriverLocationSharing';
 import type { NativeTrackingStatus } from '@/types/nativeTracking';
+import { updateBusTrackingLocation } from '@/services/driverLocationService';
 
 vi.mock('@/services/driverLocationService', () => ({
   updateBusTrackingLocation: vi.fn(),
@@ -20,6 +21,7 @@ let status: NativeTrackingStatus;
 const getStatus = vi.fn();
 const resume = vi.fn();
 const pause = vi.fn();
+const originalGeolocation = Object.getOwnPropertyDescriptor(navigator, 'geolocation');
 function Harness({ token }: { token: string | null }) {
   location = useDriverLocationSharing(token, true);
   return <span>{JSON.stringify(location.state)}</span>;
@@ -68,6 +70,8 @@ afterEach(async () => {
   delete window.SafeBusNativeTracking;
   vi.useRealTimers();
   vi.restoreAllMocks();
+  if (originalGeolocation) Object.defineProperty(navigator, 'geolocation', originalGeolocation);
+  else Reflect.deleteProperty(navigator, 'geolocation');
 });
 it('observes a paused collector without automatically resuming it', async () => {
   status.collecting = false;
@@ -165,4 +169,99 @@ it('clears status when the current account or trip is removed', async () => {
   expect(location.state.kind).toBe('inactive');
   expect(getStatus).toHaveBeenCalledTimes(1);
   expect(resume).not.toHaveBeenCalled();
+});
+
+it('confirms collection off while retaining pending native delivery', async () => {
+  status.queuedEvents = 3;
+  await render();
+  await act(async () => location.stopAndConfirm());
+  expect(pause).toHaveBeenCalledOnce();
+  expect(location.state).toMatchObject({ kind: 'recovering' });
+  expect(resume).not.toHaveBeenCalled();
+});
+
+it.each([
+  { statusVersion: 2, collecting: true, queuedEvents: 0, configured: true },
+  { collecting: false, queuedEvents: 0, configured: true },
+  { statusVersion: 2, queuedEvents: 0, configured: true },
+])('rejects an unverified local stop acknowledgement: %j', async (response) => {
+  await render();
+  pause.mockResolvedValue(response);
+  await act(async () => {
+    await expect(location.stopAndConfirm()).rejects.toThrow('Could not confirm');
+  });
+  expect(location.state.kind).toBe('error');
+  expect(resume).not.toHaveBeenCalled();
+});
+
+it('propagates native stop errors and does not restart after reconnecting', async () => {
+  await render();
+  pause.mockRejectedValue(new Error('Local storage unavailable'));
+  await act(async () => {
+    await expect(location.stopAndConfirm()).rejects.toThrow('force stop SafeBus');
+  });
+  await act(async () => window.dispatchEvent(new Event('online')));
+  expect(resume).not.toHaveBeenCalled();
+});
+
+it('bounds an unresponsive stop and ignores its late acknowledgement', async () => {
+  await render();
+  let resolve!: (value: NativeTrackingStatus) => void;
+  pause.mockReturnValue(
+    new Promise<NativeTrackingStatus>((done) => {
+      resolve = done;
+    }),
+  );
+  await act(async () => {
+    const result = expect(location.stopAndConfirm()).rejects.toThrow('Could not confirm');
+    await vi.advanceTimersByTimeAsync(15_000);
+    await result;
+  });
+  expect(location.state.kind).toBe('error');
+  await act(async () => resolve({ ...status, collecting: false }));
+  expect(location.state.kind).toBe('error');
+  expect(resume).not.toHaveBeenCalled();
+});
+
+it('keeps the browser collector off when an in-flight location request fails after stop', async () => {
+  delete window.SafeBusNativeTracking;
+  let onFix!: PositionCallback;
+  let onError!: PositionErrorCallback;
+  const clearWatch = vi.fn();
+  Object.defineProperty(navigator, 'geolocation', {
+    configurable: true,
+    value: {
+      watchPosition: vi.fn((callback: PositionCallback, error: PositionErrorCallback) => {
+        onFix = callback;
+        onError = error;
+        return 7;
+      }),
+      clearWatch,
+    },
+  });
+  let reject!: (error: Error) => void;
+  vi.mocked(updateBusTrackingLocation).mockReturnValueOnce(
+    new Promise((_, fail) => {
+      reject = fail;
+    }),
+  );
+  await render('browser-session');
+  await act(async () =>
+    onFix({
+      coords: { latitude: 53.5, longitude: -113.5, accuracy: 5, heading: null, speed: null },
+    } as GeolocationPosition),
+  );
+  expect(updateBusTrackingLocation).toHaveBeenCalledOnce();
+  await act(async () => location.stopAndConfirm());
+  expect(clearWatch).toHaveBeenCalledWith(7);
+  expect(location.state.kind).toBe('inactive');
+  await act(async () => {
+    onFix({ coords: { latitude: 53.6, longitude: -113.6 } } as GeolocationPosition);
+    onError({ code: 2 } as GeolocationPositionError);
+  });
+  expect(location.state.kind).toBe('inactive');
+  await act(async () => reject(new Error('Offline')));
+  await act(async () => vi.advanceTimersByTimeAsync(30_000));
+  expect(location.state.kind).toBe('inactive');
+  expect(updateBusTrackingLocation).toHaveBeenCalledOnce();
 });

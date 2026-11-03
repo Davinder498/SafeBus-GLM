@@ -54,19 +54,28 @@ export function openNativeAppSettings(): Promise<void> {
 }
 
 export function installNativeDriverTrackingBridge(): void {
+  let stopGeneration = 0;
+  const requireUninterruptedStart = (generation: number) => {
+    if (generation !== stopGeneration)
+      throw new Error(
+        'Location sharing was stopped. Choose Resume trip or scan the bus again to restart.',
+      );
+  };
   const scoped = async (method: 'pause' | 'resume' | 'stop' | 'getStatus') => {
-    let profileId: string | undefined;
-    try {
-      const session = await supabase?.auth.getSession();
-      if (session?.error) throw session.error;
-      profileId = session?.data.session?.user.id;
-    } catch (error) {
-      if (method === 'getStatus' || method === 'resume') throw error;
-      // A failed Auth read must never prevent the privacy action of stopping collection.
+    // Stop collection before touching Auth: getSession can wait for a token
+    // refresh or another tab's lock while this phone is offline. The native
+    // privacy actions do not need identity and return no account metadata.
+    if (method === 'pause' || method === 'stop') {
+      stopGeneration += 1;
+      return nativePlugin[method]({});
     }
-    // Even after sign-out, stop/pause must stop collection; their response is unscoped/empty.
-    if (!profileId && (method === 'getStatus' || method === 'resume'))
+    const generation = stopGeneration;
+    const session = await supabase?.auth.getSession();
+    if (session?.error) throw session.error;
+    const profileId = session?.data.session?.user.id;
+    if (!profileId)
       return { statusVersion: 2 as const, configured: false, collecting: false, queuedEvents: 0 };
+    if (method === 'resume') requireUninterruptedStart(generation);
     return nativePlugin[method]({ profileId });
   };
   const bridge: SafeBusNativeTrackingBridge = {
@@ -83,6 +92,7 @@ export function installNativeDriverTrackingBridge(): void {
     openAppSettings: () => nativePlugin.openAppSettings(),
     openLocationServices: () => nativePlugin.openLocationServices(),
     async activate(trackingToken) {
+      const generation = stopGeneration;
       if (!supabase || !supabaseEnv.url || !supabaseEnv.anonKey) {
         throw new Error('Supabase is not configured for native tracking.');
       }
@@ -90,6 +100,7 @@ export function installNativeDriverTrackingBridge(): void {
         nativePlugin.getDeviceInfo(),
         supabase.auth.getSession(),
       ]);
+      requireUninterruptedStart(generation);
       if (device.locationPermission !== 'always') {
         throw new Error(
           device.locationPermission === 'foreground_only'
@@ -113,6 +124,7 @@ export function installNativeDriverTrackingBridge(): void {
         p_notice_version: DRIVER_LOCATION_NOTICE_VERSION,
       });
       if (error) throw new Error(error.message);
+      requireUninterruptedStart(generation);
       const registration = data as unknown as DeviceRegistrationResult;
       if (
         !registration?.deviceCredential ||
@@ -127,6 +139,7 @@ export function installNativeDriverTrackingBridge(): void {
         p_device_credential: registration.deviceCredential,
       });
       if (bindError) throw new Error(bindError.message);
+      requireUninterruptedStart(generation);
 
       await nativePlugin.start({
         profileId: sessionResult.data.session.user.id,

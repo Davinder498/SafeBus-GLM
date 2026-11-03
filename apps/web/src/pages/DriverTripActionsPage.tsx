@@ -47,7 +47,8 @@ const TRIP_ACTIONS = {
   end: {
     label: 'End trip',
     title: 'End this bus trip?',
-    consequence: 'Location sharing and pickup/drop-off recording will stop immediately.',
+    consequence:
+      'Location sharing on this phone will stop immediately. Ending the trip and pickup/drop-off recording requires a connection.',
     success: 'Trip ended. Location sharing stopped.',
     icon: Bus,
   },
@@ -55,7 +56,7 @@ const TRIP_ACTIONS = {
     label: 'Cancel trip',
     title: 'Cancel this trip?',
     consequence:
-      'Location sharing and pickup/drop-off recording will stop. The cancellation and optional reason will be recorded. This cannot be undone.',
+      'Location sharing on this phone will stop immediately. Recording the cancellation requires a connection. Once recorded, it cannot be undone.',
     success: 'Trip cancelled and recorded in the audit trail.',
     icon: Square,
   },
@@ -85,6 +86,10 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [stale, setStale] = useState(false);
+  const [locationStopped, setLocationStopped] = useState(false);
+  const [localStopError, setLocalStopError] = useState<string | null>(null);
+  const localStopPending = useRef(false);
+  const [stoppingLocally, setStoppingLocally] = useState(false);
   const pending = useRef(false);
   const mounted = useRef(false);
   const [loadVersion, setLoadVersion] = useState(0);
@@ -135,6 +140,34 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
     setError(null);
   }, []);
 
+  async function stopLocalCollection() {
+    await tracking.location.stopAndConfirm();
+    if (mounted.current) {
+      setLocationStopped(true);
+      setLocalStopError(null);
+    }
+  }
+
+  async function stopWithoutLoadedTrip() {
+    if (localStopPending.current) return;
+    localStopPending.current = true;
+    setStoppingLocally(true);
+    setLocalStopError(null);
+    try {
+      await stopLocalCollection();
+    } catch (cause) {
+      if (mounted.current)
+        setLocalStopError(
+          cause instanceof Error
+            ? cause.message
+            : 'Could not confirm that location sharing stopped.',
+        );
+    } finally {
+      localStopPending.current = false;
+      if (mounted.current) setStoppingLocally(false);
+    }
+  }
+
   async function submit() {
     if (!selection || !trip || pending.current || stale) return;
     const text = detail.trim();
@@ -150,7 +183,16 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
     pending.current = true;
     setBusy(true);
     setError(null);
+    let stoppedForAction = false;
     try {
+      // A network preflight must never gate the privacy action. Pause locally
+      // for every stop action, preserving queued delivery and the ability to
+      // retry the exact server operation without resuming collection.
+      if (selection.kind === 'action' && ['pause', 'end', 'cancel'].includes(selection.value)) {
+        await stopLocalCollection();
+        stoppedForAction = true;
+      }
+      if (!mounted.current) return;
       const currentTrip = await fetchActiveDriverTrip();
       if (!mounted.current) return;
       if (
@@ -176,11 +218,11 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
         switch (selection.value) {
           case 'pause':
             await pauseDriverTrip(trip.id);
-            tracking.location.stop();
             break;
           case 'resume':
             await resumeDriverTrip(trip.id);
             tracking.location.start();
+            setLocationStopped(false);
             break;
           case 'end':
             await endDriverTrip(trip.id);
@@ -201,7 +243,12 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
     } catch (cause) {
       if (mounted.current)
         setError(
-          cause instanceof Error ? cause.message : 'Could not save this action. Please try again.',
+          (stoppedForAction
+            ? 'Location sharing stopped on this phone. The trip action has not been confirmed. '
+            : '') +
+            (cause instanceof Error
+              ? cause.message
+              : 'Could not save this action. Please try again.'),
         );
     } finally {
       pending.current = false;
@@ -228,6 +275,29 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
           <ArrowLeft className="h-5 w-5" aria-hidden /> Back to active bus
         </Link>
         <PageHeader title={title} />
+        {locationStopped && !selection && (
+          <p
+            role="status"
+            className="rounded-lg border border-warning-200 bg-warning-50 p-3 text-sm font-semibold text-navy-900"
+          >
+            Location sharing stopped on this phone. The saved trip status changes only after the
+            server confirms your action.
+          </p>
+        )}
+        {!trip && tracking.trackingToken && tracking.location.supported && (
+          <Button
+            variant="danger"
+            loading={stoppingLocally}
+            onClick={() => void stopWithoutLoadedTrip()}
+          >
+            Stop location sharing on this phone
+          </Button>
+        )}
+        {localStopError && (
+          <p role="alert" className="text-sm font-semibold text-danger-700">
+            {localStopError}
+          </p>
+        )}
         {state.kind === 'loading' && (
           <DataState title="Loading active trip" message="Checking the current bus trip." />
         )}
@@ -306,6 +376,12 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
             {busLabel} · {trip.trip_name_snapshot ?? 'Prepared run'}
           </p>
           {action && <p className="text-sm text-slate-600">{action.consequence}</p>}
+          {locationStopped && busy && (
+            <p role="status" className="text-sm font-semibold text-navy-900">
+              Location sharing stopped on this phone. Waiting for the server to confirm the trip
+              action.
+            </p>
+          )}
           {(selection.kind === 'exception' || selection.value === 'cancel') && (
             <Field
               label={
