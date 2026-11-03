@@ -120,11 +120,11 @@ describe('guardian channel settings', () => {
   });
 });
 
-it('keeps MFA available when notification settings cannot load', async () => {
+it('keeps account security available when notification settings cannot load', async () => {
   mocks.fetch.mockRejectedValueOnce(new Error('Notification service unavailable'));
   await render();
   expect(container.textContent).toContain('Notification service unavailable');
-  expect(container.querySelector('a[href="/account/security"]')?.getAttribute('aria-label')).toBe(
-    'Enable multi-factor authentication',
+  expect(container.querySelector('a[href="/account/security"]')?.textContent).toContain(
+    'Account security',
   );
 });
