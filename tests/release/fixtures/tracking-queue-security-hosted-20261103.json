@@ -1,0 +1,21 @@
+{
+  "observedAt": "2026-11-03",
+  "projectId": "ckrkfylsyihwouvesypm",
+  "readOnly": true,
+  "functions": [
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "25e1e83b5d4dd9fa4b56a0ce37a53386",
+      "owner": "postgres",
+      "signature": "is_current_user_session_active()",
+      "definition": "CREATE OR REPLACE FUNCTION public.is_current_user_session_active()\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'auth', 'pg_temp'\nAS $function$\ndeclare\n  v_user_id uuid;\n  v_session_text text;\n  v_session_id uuid;\nbegin\n  -- Read claims once. Invalid JSON or a malformed subject also denies access;\n  -- do not suppress permission, connection, or other database failures.\n  begin\n    v_user_id := auth.uid();\n    v_session_text := auth.jwt() ->> 'session_id';\n  exception when invalid_text_representation then\n    return false;\n  end;\n\n  if v_user_id is null or v_session_text is null\n     or v_session_text !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then\n    return false;\n  end if;\n  -- This is a separate procedural statement after validation, not a SQL CASE\n  -- around a subquery. Queries receive a typed UUID, never unvalidated JWT text.\n  v_session_id := v_session_text::uuid;\n\n  return exists (\n    select 1 from auth.sessions s\n    where s.id = v_session_id and s.user_id = v_user_id\n      and (s.not_after is null or s.not_after > statement_timestamp())\n  ) and not exists (\n    select 1 from public.user_sessions us\n    where us.id = v_session_id and us.user_id = v_user_id\n      and us.revoked_at is not null\n  );\nend;\n$function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "f2169c0652e9c6b9284c1b366f38611d",
+      "owner": "postgres",
+      "signature": "safebus_private.has_completed_optional_mfa()",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.has_completed_optional_mfa()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'auth', 'pg_temp'\nAS $function$\r\n  select auth.uid() is not null and (\r\n    coalesce(auth.jwt() ->> 'aal', 'aal1') = 'aal2'\r\n    or (\r\n      not exists (\r\n        select 1 from public.profiles p\r\n        where p.id = auth.uid()\r\n          and p.role in ('tenant_admin', 'transportation_admin', 'platform_super_admin', 'school_admin')\r\n      )\r\n      and not exists (\r\n        select 1 from public.profiles p\r\n        join auth.mfa_factors f on f.user_id = p.id and f.status = 'verified'\r\n        where p.id = auth.uid() and p.role in ('guardian', 'driver')\r\n      )\r\n    )\r\n  );\r\n$function$\n"
+    }
+  ]
+}

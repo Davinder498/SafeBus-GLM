@@ -11,6 +11,7 @@ export interface NativeTrackingStatus {
     | 'authorization_rejected'
     | 'authentication_expired'
     | 'queue_unavailable'
+    | 'queue_recovery_unavailable'
     | 'delivery_status_unavailable'
     | 'location_permission';
 }

@@ -82,6 +82,24 @@ final class EncryptedLocationQueue extends SQLiteOpenHelper {
             new String[]{Long.toString(sequence)});
     }
 
+    /** Only the explicitly denied session at the FIFO head, in bounded batches. */
+    synchronized int retireDeniedSession(String session) throws Exception {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            int removed = TrackingQueueRecovery.retireDeniedHead(new TrackingQueueRecovery.RejectedQueue() {
+                private Entry head;
+                @Override public String headSession() throws Exception {
+                    head = peek();
+                    return head == null ? null : head.payload.optString("p_tracking_token");
+                }
+                @Override public void removeHead() { remove(head.sequence); }
+            }, session);
+            db.setTransactionSuccessful();
+            return removed;
+        } finally { db.endTransaction(); }
+    }
+
     synchronized int size() {
         try (Cursor cursor = getReadableDatabase().rawQuery("SELECT COUNT(*) FROM queued_locations", null)) {
             cursor.moveToFirst();

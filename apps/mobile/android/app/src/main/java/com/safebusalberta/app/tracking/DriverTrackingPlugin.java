@@ -105,6 +105,10 @@ public class DriverTrackingPlugin extends Plugin {
             }
         }
         try {
+            if (!TrackingQueueRecovery.approvedEndpoint(call.getString("supabaseUrl"))) {
+                call.reject("This tracking queue requires the approved SafeBus server.");
+                return;
+            }
             long authorizedUntil = call.getLong("authorizedUntil", System.currentTimeMillis() + 18 * 60 * 60 * 1000L);
             if (authorizedUntil <= System.currentTimeMillis()) {
                 call.reject("The trip tracking authorization has expired.", "TRACKING_AUTHORIZATION_EXPIRED");

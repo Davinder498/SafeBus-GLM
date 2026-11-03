@@ -53,6 +53,7 @@ public final class DriverTrackingService extends Service implements LocationList
     private final ScheduledThreadPoolExecutor networkExecutor = new ScheduledThreadPoolExecutor(1);
     private LocationUploadPump uploadPump;
     private final TrackingHttpClient httpClient = new TrackingHttpClient();
+    private final TrackingQueueRecovery recovery = new TrackingQueueRecovery();
     private volatile boolean destroyed;
     private static final String RETRY_NOT_BEFORE = "upload_retry_not_before";
     private long lastCapturedAt;
@@ -99,7 +100,8 @@ public final class DriverTrackingService extends Service implements LocationList
         startForeground(NOTIFICATION_ID, buildNotification("Starting secure bus tracking…"));
 
         TrackingConfig config = TrackingConfig.load(store);
-        if (config == null || config.authorizedUntil <= System.currentTimeMillis()
+        if (config == null || config.profileId() == null || !TrackingQueueRecovery.approvedEndpoint(config.supabaseUrl)
+            || config.authorizedUntil <= System.currentTimeMillis()
             || config.authorizedUntil > System.currentTimeMillis() + MAX_AUTHORIZATION_MS + 60_000L) {
             stopForExpiredAuthorization();
             return START_NOT_STICKY;
@@ -244,7 +246,28 @@ public final class DriverTrackingService extends Service implements LocationList
         if (entry == null) return LocationUploadPump.Result.progress();
         TrackingConfig config = TrackingConfig.load(store);
         if (!maySend(config)) return LocationUploadPump.Result.halted();
-        TrackingHttpClient.Result result = postEvent(config, entry.payload);
+        if (!isCurrentAuthorization(config)) return LocationUploadPump.Result.retry(0);
+        String eventSession = entry.payload.optString("p_tracking_token");
+        if (recovery.hasDenial(config.supabaseUrl, config.profileId(), config.trackingToken,
+                config.deviceCredential, eventSession)) {
+            queue.retireDeniedSession(eventSession);
+            return LocationUploadPump.Result.progress();
+        }
+        boolean proving = !recovery.hasProof(config.supabaseUrl, config.profileId(),
+            config.trackingToken, config.deviceCredential, eventSession);
+        // Never send an old payload's coordinates under a replacement account.
+        // Authorization is a separate paced attempt; ingestion rechecks it too.
+        TrackingHttpClient.Result result;
+        if (proving) {
+            JSONObject proof = new JSONObject().put("p_tracking_token", eventSession)
+                .put("p_device_credential", config.deviceCredential);
+            result = request(config.supabaseUrl + "/rest/v1/rpc/authorize_driver_tracking_queue",
+                config.anonKey, config.accessToken, proof.toString());
+        } else {
+            JSONObject payload = new JSONObject(entry.payload.toString());
+            payload.put("p_device_credential", config.deviceCredential);
+            result = postEvent(config, payload);
+        }
         if (result.statusCode == 401) {
             if (!maySend(TrackingConfig.load(store))) return LocationUploadPump.Result.halted();
             if (!isCurrentAuthorization(config)) return LocationUploadPump.Result.retry(0);
@@ -271,9 +294,36 @@ public final class DriverTrackingService extends Service implements LocationList
         }
         if (UploadHttpPolicy.retryable(result.statusCode)) return LocationUploadPump.Result.retry(result.retryAfterMs);
         if (result.statusCode < 200 || result.statusCode >= 300) {
+            if (!proving && TrackingQueueRecovery.rejectedOldEvent(result.statusCode, config.trackingToken, eventSession)) {
+                // Revocation can race a prior proof. Retire this denied event;
+                // the next attempt must prove current device authorization again.
+                recovery.invalidate();
+                queue.remove(entry.sequence);
+                return LocationUploadPump.Result.progress();
+            }
+            if (proving && result.statusCode == 404)
+                return haltUploadsIfCurrent(config, "Tracking recovery is unavailable — reopen SafeBus", "queue_recovery_unavailable");
             return haltUploadsIfCurrent(config, "Tracking authorization was rejected", "authorization_rejected");
         }
         JSONObject response = new JSONObject(result.body);
+        if (proving) {
+            if (response.optInt("protocolVersion", 0) != 1 || !(response.opt("authorized") instanceof Boolean))
+                return haltUploadsIfCurrent(config, "Tracking recovery is unavailable — reopen SafeBus", "queue_recovery_unavailable");
+            if (!isCurrentAuthorization(config)) return LocationUploadPump.Result.retry(0);
+            if (!response.getBoolean("authorized")) {
+                if (eventSession.equals(config.trackingToken))
+                    return haltUploadsIfCurrent(config, "Tracking authorization was rejected", "authorization_rejected");
+                // A large denied backlog cannot hold up a replacement session.
+                // Batches stop at the first different session and never upload.
+                recovery.deny(config.supabaseUrl, config.profileId(), config.trackingToken,
+                    config.deviceCredential, eventSession);
+                queue.retireDeniedSession(eventSession);
+                return LocationUploadPump.Result.progress();
+            }
+            recovery.remember(config.supabaseUrl, config.profileId(), config.trackingToken,
+                config.deviceCredential, eventSession);
+            return LocationUploadPump.Result.progress();
+        }
         boolean accepted = response.optBoolean("accepted", false);
         String reason = response.optString("rejectionReason", "");
         boolean discardable = accepted || reason.equals("stale_fix")
@@ -288,7 +338,8 @@ public final class DriverTrackingService extends Service implements LocationList
         }
         synchronized (TrackingConfig.class) {
             TrackingConfig current = TrackingConfig.load(store);
-            if (current != null && current.trackingToken.equals(config.trackingToken)
+            if (current != null && TrackingStatusScope.acceptsAcknowledgement(current.profileId(),
+                    current.trackingToken, config.profileId(), config.trackingToken, eventSession)
                 && response.optBoolean("stopTracking", false)) {
                 if ("paused".equals(response.optString("tripState"))) pauseFromServer();
                 else stopFromServer("Trip is no longer active — tracking stopped");
@@ -299,7 +350,8 @@ public final class DriverTrackingService extends Service implements LocationList
 
     private boolean maySend(TrackingConfig config) {
         if (destroyed) return false;
-        if (config == null || config.authorizedUntil <= System.currentTimeMillis()
+        if (config == null || config.profileId() == null || !TrackingQueueRecovery.approvedEndpoint(config.supabaseUrl)
+            || config.authorizedUntil <= System.currentTimeMillis()
             || config.authorizedUntil > System.currentTimeMillis() + MAX_AUTHORIZATION_MS + 60_000L) {
             stopForExpiredAuthorization();
             return false;
@@ -310,6 +362,9 @@ public final class DriverTrackingService extends Service implements LocationList
     private boolean isCurrentAuthorization(TrackingConfig sent) {
         TrackingConfig current = TrackingConfig.load(store);
         return current != null && current.trackingToken.equals(sent.trackingToken)
+            && current.deviceCredential.equals(sent.deviceCredential)
+            && current.supabaseUrl.equals(sent.supabaseUrl)
+            && current.profileId() != null && current.profileId().equals(sent.profileId())
             && current.refreshToken.equals(sent.refreshToken);
     }
 

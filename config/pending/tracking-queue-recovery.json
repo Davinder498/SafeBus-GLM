@@ -1,0 +1,121 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261103225142_tracking_queue_session_recovery.sql",
+  "migrationSha256": "b1ff145828f0b94c44b5cab7ff1406596cfc3f18a58c0dd3c9ca1d7152a844fd",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "public.bind_driver_tracking_device(text,uuid,text)",
+      "owner": "postgres",
+      "acl": ["authenticated=X/postgres", "postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": "c7598236b9a5360c9675fc1762d60501"
+      },
+      "after": {
+        "md5": "c7598236b9a5360c9675fc1762d60501"
+      }
+    },
+    {
+      "signature": "public.end_driver_trip(uuid)",
+      "owner": "postgres",
+      "acl": ["authenticated=X/postgres", "postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": "f5dd81be59a2cbc661c1c1c7a1971341"
+      },
+      "after": {
+        "md5": "f5dd81be59a2cbc661c1c1c7a1971341"
+      }
+    },
+    {
+      "signature": "public.ingest_driver_location_event(text,text,uuid,bigint,timestamp with time zone,double precision,double precision,double precision,double precision,double precision,integer,text)",
+      "owner": "postgres",
+      "acl": ["authenticated=X/postgres", "postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": "398c3dc6a9556a498b04458110104925"
+      },
+      "after": {
+        "md5": "c2f8f6b1d08b713a684f4aaacd46b12c"
+      }
+    },
+    {
+      "signature": "public.pause_driver_trip(uuid)",
+      "owner": "postgres",
+      "acl": ["authenticated=X/postgres", "postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": "d050fd4fd9112115a36a6eff50fc3ca1"
+      },
+      "after": {
+        "md5": "d050fd4fd9112115a36a6eff50fc3ca1"
+      }
+    },
+    {
+      "signature": "public.register_android_byod_tracking_device(uuid,text,text,text)",
+      "owner": "postgres",
+      "acl": ["authenticated=X/postgres", "postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": "26dd37678a2bc3110aff1192bb0ce675"
+      },
+      "after": {
+        "md5": "26dd37678a2bc3110aff1192bb0ce675"
+      }
+    },
+    {
+      "signature": "public.revoke_driver_tracking_devices(uuid)",
+      "owner": "postgres",
+      "acl": ["authenticated=X/postgres", "postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": "0aa847706bd4898ae2d00ce8c19ccfd6"
+      },
+      "after": {
+        "md5": "0aa847706bd4898ae2d00ce8c19ccfd6"
+      }
+    },
+    {
+      "signature": "public.start_bus_tracking_from_qr(text,uuid)",
+      "owner": "postgres",
+      "acl": ["authenticated=X/postgres", "postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": "a796796af9f49f1b5b517d1ad0af9077"
+      },
+      "after": {
+        "md5": "b51f7588cc33a6acb75981b44e633b25"
+      }
+    },
+    {
+      "signature": "public.is_current_user_session_active()",
+      "owner": "postgres",
+      "acl": ["authenticated=X/postgres", "postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": "25e1e83b5d4dd9fa4b56a0ce37a53386"
+      },
+      "after": {
+        "md5": "25e1e83b5d4dd9fa4b56a0ce37a53386"
+      }
+    },
+    {
+      "signature": "safebus_private.has_completed_optional_mfa()",
+      "owner": "postgres",
+      "acl": ["authenticated=X/postgres", "postgres=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": "f2169c0652e9c6b9284c1b366f38611d"
+      },
+      "after": {
+        "md5": "f2169c0652e9c6b9284c1b366f38611d"
+      }
+    },
+    {
+      "signature": "public.authorize_driver_tracking_queue(text,text)",
+      "owner": "postgres",
+      "acl": ["authenticated=X/postgres", "postgres=X/postgres"],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "366d39e4b89d268a2a29368d1643b0c5"
+      }
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": []
+}
