@@ -41,7 +41,7 @@ export function ConfirmDialog({
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    panelRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
+    panelRef.current?.querySelector<HTMLButtonElement>('[data-ui="button"]:not(:disabled)')?.focus();
 
     return () => {
       document.body.style.overflow = previousOverflow;
