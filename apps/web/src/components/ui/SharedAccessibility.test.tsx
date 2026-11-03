@@ -51,6 +51,20 @@ describe('shared field accessibility', () => {
     expect(container.querySelector('label')?.htmlFor).toBe('authority');
   });
 
+  it('associates errors with legacy native input controls nested in wrappers', async () => {
+    await render(
+      <Field label="Search" htmlFor="search-native" error="Enter search text." required>
+        <div><input id="search-native" type="text" /></div>
+      </Field>,
+    );
+    const input = container.querySelector<HTMLInputElement>('#search-native')!;
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(input.getAttribute('aria-required')).toBe('true');
+    expect(document.getElementById(input.getAttribute('aria-describedby')!)?.textContent).toBe(
+      'Enter search text.',
+    );
+  });
+
   it('connects select and textarea errors to their own controls', async () => {
     await render(
       <>
