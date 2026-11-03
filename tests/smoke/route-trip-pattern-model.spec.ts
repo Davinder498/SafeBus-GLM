@@ -322,6 +322,7 @@ test.describe('route corridor and named trips', () => {
 
     await page.goto('/admin/routes');
     await page.getByRole('link', { name: 'Open route Demo Route 01' }).click();
+    await page.getByRole('button', { name: 'Route & Stops', exact: true }).click();
     await page.getByRole('button', { name: 'Edit route details and stops' }).click();
     await page.getByRole('button', { name: 'Add stop' }).click();
     await page.getByLabel('Stop name').fill('New stop');
