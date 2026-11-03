@@ -67,7 +67,7 @@ export function Field({ label, htmlFor, hint, error, required = false, children,
     if (!control || control.hasAttribute('data-ui')) return;
     if (!control.id) control.id = controlId;
     const prior = (control.getAttribute('aria-describedby') ?? '')
-      .split(/\\s+/).filter((id) => id && id !== hintId && id !== errorId);
+      .split(/\s+/).filter((id) => id && id !== hintId && id !== errorId);
     const nextIds = Array.from(new Set([...prior, ...(descriptionIds?.split(' ') ?? [])]));
     if (nextIds.length) control.setAttribute('aria-describedby', nextIds.join(' '));
     else control.removeAttribute('aria-describedby');
