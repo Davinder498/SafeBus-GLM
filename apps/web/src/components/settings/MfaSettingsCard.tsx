@@ -16,7 +16,7 @@ export function MfaSettingsCard() {
         <div>
           <h2 className="font-bold text-slate-950">
             <Link
-              to="/account/security"
+              to="/account/security/mfa"
               aria-label={
                 enabled
                   ? 'Manage multi-factor authentication'
@@ -37,7 +37,7 @@ export function MfaSettingsCard() {
             checked={enabled}
             disabled={mfaLoading || (required && enabled)}
             onChange={() =>
-              navigate('/account/security', {
+              navigate('/account/security/mfa', {
                 state: { removeAuthenticator: enabled && !required },
               })
             }
