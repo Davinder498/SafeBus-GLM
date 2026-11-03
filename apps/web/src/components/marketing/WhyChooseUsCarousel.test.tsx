@@ -68,20 +68,20 @@ async function click(label: string) {
   await act(async () => button(label).click());
 }
 
-async function advance(milliseconds = 3000) {
+async function advance(milliseconds = 6000) {
   await act(async () => vi.advanceTimersByTime(milliseconds));
 }
 
 describe('Why choose us carousel', () => {
-  it('shows one reason at a time, changes after three seconds and loops', async () => {
+  it('shows one reason at a time, changes after six seconds and loops', async () => {
     await render();
     expect(container.querySelectorAll('article')).toHaveLength(5);
     expect(container.querySelectorAll('article[aria-hidden="false"]')).toHaveLength(1);
     expect(title()).toBe('Security at the core');
-    await advance(2999);
+    await advance(5999);
     expect(title()).toBe('Security at the core');
     await advance(1);
-    expect(title()).toBe('5% for brighter futures');
+    expect(title()).toBe('5% of profits for brighter futures');
     for (let index = 0; index < 4; index++) await advance();
     expect(title()).toBe('Security at the core');
     expect(container.querySelector('#why-choose-us-cards')?.getAttribute('aria-live')).toBe('off');
@@ -112,7 +112,7 @@ describe('Why choose us carousel', () => {
     ).toContain('reason 5');
   });
 
-  it('pauses while hovered or focused and waits three seconds after interaction ends', async () => {
+  it('pauses while hovered or focused and waits six seconds after interaction ends', async () => {
     await render();
     const region = container.querySelector<HTMLDivElement>('[aria-roledescription="carousel"]')!;
     await act(async () => region.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })));
@@ -120,11 +120,11 @@ describe('Why choose us carousel', () => {
     expect(title()).toBe('Security at the core');
     await act(async () => region.dispatchEvent(new MouseEvent('mouseout', { bubbles: true })));
     await advance();
-    expect(title()).toBe('5% for brighter futures');
-    await act(async () => button('Show reason 2: 5% for brighter futures').focus());
+    expect(title()).toBe('5% of profits for brighter futures');
+    await act(async () => button('Show reason 2: 5% of profits for brighter futures').focus());
     await advance(6000);
-    expect(title()).toBe('5% for brighter futures');
-    await act(async () => button('Show reason 2: 5% for brighter futures').blur());
+    expect(title()).toBe('5% of profits for brighter futures');
+    await act(async () => button('Show reason 2: 5% of profits for brighter futures').blur());
     await advance();
     expect(title()).toBe('Proudly Alberta-based');
   });
@@ -135,11 +135,11 @@ describe('Why choose us carousel', () => {
     expect(title()).toBe('Security at the core');
     await act(async () => intersect([{ isIntersecting: true }]));
     await advance();
-    expect(title()).toBe('5% for brighter futures');
+    expect(title()).toBe('5% of profits for brighter futures');
     vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
     await act(async () => document.dispatchEvent(new Event('visibilitychange')));
     await advance(6000);
-    expect(title()).toBe('5% for brighter futures');
+    expect(title()).toBe('5% of profits for brighter futures');
     vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
     await act(async () => document.dispatchEvent(new Event('visibilitychange')));
     await advance();
@@ -151,8 +151,8 @@ describe('Why choose us carousel', () => {
     await render();
     await advance(6000);
     expect(title()).toBe('Security at the core');
-    await click('Show reason 2: 5% for brighter futures');
-    expect(title()).toBe('5% for brighter futures');
+    await click('Show reason 2: 5% of profits for brighter futures');
+    expect(title()).toBe('5% of profits for brighter futures');
     reducedMotion = false;
     await act(async () => motionChange());
     await advance();
@@ -161,6 +161,32 @@ describe('Why choose us carousel', () => {
     await act(async () => motionChange());
     await advance(6000);
     expect(title()).toBe('Proudly Alberta-based');
+  });
+
+  it('supports persistent user pause and explicit resume', async () => {
+    await render();
+    expect(title()).toBe('Security at the core');
+    await click('Pause automatic rotation');
+    await advance(12000);
+    expect(title()).toBe('Security at the core');
+    expect(button('Resume automatic rotation').getAttribute('aria-pressed')).toBe('true');
+    await click('Resume automatic rotation');
+    await advance();
+    expect(title()).toBe('5% of profits for brighter futures');
+  });
+
+  it('does not describe the education commitment as revenue', async () => {
+    await render();
+    expect(container.textContent).toContain('5% of its profits');
+    expect(container.textContent).not.toContain('5% of our revenue');
+  });
+
+  it('provides previous and next controls', async () => {
+    await render();
+    await click('Next reason');
+    expect(title()).toBe('5% of profits for brighter futures');
+    await click('Previous reason');
+    expect(title()).toBe('Security at the core');
   });
 
   it('cleans up the rotation timer on unmount', async () => {
