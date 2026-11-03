@@ -116,13 +116,13 @@ describe('DashboardLayout navigation presentation', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
-  it('renders four active-aware tabs without a drawer on the native surface', async () => {
+  it('renders active-aware tabs without a drawer on the native surface', async () => {
     const container = await renderDriverLayout('native-mobile');
     const navigation = container.querySelector('[data-testid="native-bottom-navigation"]');
     const tabs = Array.from(navigation?.querySelectorAll('a') ?? []);
 
     expect(navigation).not.toBeNull();
-    expect(tabs.map((tab) => tab.textContent)).toEqual(['Scan', 'Riders', 'History', 'Settings']);
+    expect(tabs.map((tab) => tab.textContent)).toEqual(['Scan', 'Riders', 'History', 'Settings', 'Account']);
     expect(tabs.find((tab) => tab.getAttribute('aria-current') === 'page')?.textContent).toBe(
       'History',
     );
@@ -173,5 +173,6 @@ describe('DashboardLayout navigation presentation', () => {
       container.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'),
     ).find((item) => item.textContent?.trim() === 'Driver settings');
     expect(settingsButton).toBeUndefined();
+    expect(container.querySelector('[role="menu"]')?.textContent).not.toContain('Account security');
   });
 });

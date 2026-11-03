@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Bell, Bus, History, LayoutDashboard, List, Settings } from 'lucide-react';
+import { Bell, Bus, History, LayoutDashboard, List, Settings, UserCircle } from 'lucide-react';
 import type { ReactElement } from 'react';
 import {
   adminNavItems,
@@ -94,17 +94,19 @@ describe('driver shell navigation model', () => {
       ['Trip history', '/driver/history'],
       ['Pickup & drop-off', '/driver/pickup-drop-off'],
       ['Settings', '/driver/settings'],
+      ['Account', '/account/security'],
       ['Profile', '/driver/profile'],
       ['Support', '/support'],
     ]);
   });
 
-  it('uses four daily-workflow tabs in the native app', () => {
+  it('keeps daily workflows and Account in the native navigation', () => {
     const expected = [
       { label: 'Scan', to: '/driver', icon: Bus },
       { label: 'Riders', to: '/driver/pickup-drop-off', icon: List },
       { label: 'History', to: '/driver/history', icon: History },
       { label: 'Settings', to: '/driver/settings', icon: Settings },
+      { label: 'Account', to: '/account/security', icon: UserCircle },
     ];
 
     expect(driverNativeNavItems).toHaveLength(expected.length);
@@ -124,6 +126,7 @@ describe('guardian shell navigation model', () => {
       ['Pickup & drop-off', '/guardian/events'],
       ['Notifications', '/notifications'],
       ['Support', '/support'],
+      ['Account', '/account/security'],
     ]);
   });
 
@@ -133,6 +136,7 @@ describe('guardian shell navigation model', () => {
       { label: 'Buses', to: '/guardian/routes', icon: Bus },
       { label: 'Notification', to: '/notifications', icon: Bell },
       { label: 'Settings', to: '/notifications/settings', icon: Settings },
+      { label: 'Account', to: '/account/security', icon: UserCircle },
     ];
 
     expect(guardianNativeNavItems).toHaveLength(expected.length);

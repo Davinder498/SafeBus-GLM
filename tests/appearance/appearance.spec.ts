@@ -76,7 +76,7 @@ test('the settings toggle has only Light and Dark, persists, and ignores device 
   if (mobile) await installGuardianVisibilityMock(page);
   else await installAdminWorkflowMock(page);
   await page.emulateMedia({ colorScheme: 'dark' });
-  await page.goto(mobile ? '/notifications/settings' : '/admin/settings');
+  await page.goto(mobile ? '/account/security' : '/admin/settings');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   const appBar = page.locator('[data-ui=app-bar]');
   await expect(appBar.getByRole('switch', { name: 'Dark mode' })).toHaveCount(0);
@@ -130,7 +130,7 @@ test('unavailable preference storage keeps the settings toggle usable', async ({
     };
   });
   await page.goto(
-    info.project.name === 'android-webview' ? '/notifications/settings' : '/admin/settings',
+    info.project.name === 'android-webview' ? '/account/security' : '/admin/settings',
   );
   await page
     .locator('[data-ui=appearance-settings]')
@@ -146,7 +146,7 @@ test('cross-tab changes preserve fixed public web appearance and the saved dashb
   if (info.project.name === 'android-webview') await installGuardianVisibilityMock(page);
   else await installAdminWorkflowMock(page);
   await page.goto(
-    info.project.name === 'android-webview' ? '/notifications/settings' : '/admin/settings',
+    info.project.name === 'android-webview' ? '/account/security' : '/admin/settings',
   );
   const other = await context.newPage();
   await installLocalOnlyBoundary(other);
@@ -261,15 +261,26 @@ for (const role of ['tenant_admin', 'transportation_admin', 'guardian', 'driver'
           ? '/notifications/settings'
           : '/admin/settings',
     );
-    await expect(page.locator('[data-ui=appearance-settings]')).toBeVisible();
+    if (!mobile) {
+      await expect(page.getByRole('navigation', { name: 'Settings sections' }).getByRole('link', { name: 'Account', exact: true })).toHaveAttribute('aria-current', 'page');
+      await expect(page.locator('[data-ui=account-security-card]')).toHaveCount(1);
+      await page.goto('/admin/settings/notifications');
+      await expect(page.getByRole('heading', { name: 'Notification preferences', exact: true })).toBeVisible();
+      await expect(page.locator('[data-ui=appearance-settings]')).toHaveCount(0);
+      await expect(page.locator('[data-ui=account-security-card]')).toHaveCount(0);
+      await page.goto('/admin/settings');
+    }
+    await expect(page.locator('[data-ui=appearance-settings]')).toHaveCount(mobile ? 0 : 1);
     await expect(page.locator('[data-ui=app-bar]')).toHaveCSS(
       'background-color',
       mobile ? 'rgb(23, 43, 58)' : 'rgb(24, 35, 47)',
     );
-    await expect(page.locator('[data-ui=appearance-settings]')).toHaveCSS(
-      'background-color',
-      'rgb(24, 35, 47)',
-    );
+    if (!mobile) {
+      await expect(page.locator('[data-ui=appearance-settings]')).toHaveCSS(
+        'background-color',
+        'rgb(24, 35, 47)',
+      );
+    }
     await expectNoWcagAaViolations(page, `${role} dark settings`);
     await page.screenshot({ path: info.outputPath(role + '-dark-settings.png'), fullPage: true });
     await page.locator('[data-ui=dropdown] > button').click();
@@ -278,6 +289,10 @@ for (const role of ['tenant_admin', 'transportation_admin', 'guardian', 'driver'
       'rgb(24, 35, 47)',
     );
     await page.keyboard.press('Escape');
+    if (mobile) {
+      await page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }).click();
+      await expect(page.locator('[data-ui=appearance-settings]')).toBeVisible();
+    }
     await page
       .locator('[data-ui=appearance-settings]')
       .getByRole('switch', { name: 'Dark mode' })
@@ -308,13 +323,20 @@ test('platform pricing forms, dropdowns and confirmation dialogs use the same da
   );
   await page.addInitScript(() => localStorage.setItem('safebus.theme', 'dark'));
   await page.goto('/notifications/settings');
-  const toggle = page
-    .locator('[data-ui=appearance-settings]')
-    .getByRole('switch', { name: 'Dark mode' });
+  await expect(page.locator('[data-ui=appearance-settings]')).toHaveCount(0);
+  await expect(page.locator('[data-ui=account-security-card]')).toHaveCount(0);
+  await page.locator('header button[aria-haspopup="menu"]').click();
+  await expect(page.getByRole('menuitem', { name: 'Account security', exact: true })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await page.getByRole('navigation', { name: 'Primary', exact: true }).getByRole('link', { name: 'Account', exact: true }).click();
+  await expect(page).toHaveURL('/account/security');
+  await expect(page.getByRole('heading', { name: 'Account security', exact: true })).toBeVisible();
+  const toggle = page.locator('[data-ui=appearance-settings]').getByRole('switch', { name: 'Dark mode' });
   await expect(toggle).toBeChecked();
   await toggle.click();
   await expect(toggle).not.toBeChecked();
   await toggle.click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.goto('/admin/pricing');
   const form = page.getByRole('form', { name: 'New subscription price' });
   await form.getByLabel('Price name').fill('Synthetic preview only');

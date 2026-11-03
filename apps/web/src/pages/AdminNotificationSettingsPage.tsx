@@ -1,5 +1,3 @@
-import { AppearanceSettingsCard } from '@/components/settings/AppearanceToggle';
-import { AccountSecurityLinkCard } from '@/components/settings/AccountSecurityLinkCard';
 import { useCallback, useEffect, useState } from 'react';
 import type { AdminInboxPreferences } from '@safebus/types';
 import { Link } from 'react-router';
@@ -64,8 +62,6 @@ export function AdminNotificationSettingsPage() {
             </Link>
           }
         />
-        <AppearanceSettingsCard />
-        <AccountSecurityLinkCard />
         {error && (
           <p role="alert" className="text-sm text-danger-700">
             {error}

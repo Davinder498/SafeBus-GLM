@@ -1,4 +1,3 @@
-import { AppearanceSettingsCard } from '@/components/settings/AppearanceToggle';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BusFront, Route, TriangleAlert } from 'lucide-react';
 import { Navigate } from 'react-router';
@@ -17,7 +16,6 @@ import { Button } from '@/components/ui/Button';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/contexts/useAuth';
-import { AccountSecurityLinkCard } from '@/components/settings/AccountSecurityLinkCard';
 import {
   fetchGuardianDeliveryPreferences,
   saveGuardianDeliveryPreferences,
@@ -199,7 +197,6 @@ export function NotificationSettingsPage() {
         data-ui="notification-settings-page"
       >
         <PageHeader title="Settings" />
-        <AppearanceSettingsCard />
         <section aria-label="Notification settings">
           <h2 className="mb-3 text-lg font-bold text-navy-900">Notification settings</h2>
           {isAdmin ? (
@@ -238,7 +235,6 @@ export function NotificationSettingsPage() {
             />
           )}
         </section>
-        <AccountSecurityLinkCard />
       </div>
     </DashboardLayout>
   );

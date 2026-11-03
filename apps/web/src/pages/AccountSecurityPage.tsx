@@ -4,6 +4,7 @@ import { DashboardLayout, adminNavGroups, driverNavGroups, guardianNavGroups, pl
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { MfaSettingsCard } from '@/components/settings/MfaSettingsCard';
+import { AppearanceSettingsCard } from '@/components/settings/AppearanceToggle';
 import { useAuth } from '@/contexts/useAuth';
 
 export function AccountSecurityPage() {
@@ -17,6 +18,9 @@ export function AccountSecurityPage() {
     <DashboardLayout title="Account security" portal={portal} navItems={[]} navGroups={groups}>
       <div className="mx-auto max-w-2xl space-y-5" data-ui="account-security-page">
         <PageHeader eyebrow="Settings" title="Account security" description="Manage your password and sign-in security." />
+        {(role === 'driver' || role === 'guardian' || role === 'platform_super_admin') && (
+          <AppearanceSettingsCard />
+        )}
         <Card className="p-5">
           <Link
             to="/account/security/password"
