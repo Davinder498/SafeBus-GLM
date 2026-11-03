@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { Building2, ChevronRight, Search } from 'lucide-react';
+import { Building2, ChevronRight, Clock3, CreditCard, Search } from 'lucide-react';
 import { DashboardLayout, platformNavItems } from '@/components/layout/DashboardLayout';
 import { TenantInvitationWizard } from '@/components/subscription/TenantInvitationWizard';
 import { Card } from '@/components/ui/Card';
@@ -15,7 +15,7 @@ import {
 import { fetchPlatformBillingSummaries, formatBillingDate } from '@/services/subscriptionService';
 import type { PlatformBillingSummary } from '@/types/subscription';
 
-const inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm';
+const inputClass = 'min-h-11 w-full rounded-lg border border-[var(--color-control-outline)] bg-[var(--color-surface)] px-3 py-2.5 text-sm text-[var(--color-text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]';
 export function PlatformTenantsPage() {
   const [tenants, setTenants] = useState<PlatformTenantSummary[]>([]);
   const [billing, setBilling] = useState<PlatformBillingSummary[]>([]);
@@ -70,34 +70,45 @@ export function PlatformTenantsPage() {
     <DashboardLayout title="Platform Admin" portal="admin" navItems={platformNavItems}>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Platform onboarding"
-          title="School authority onboarding"
-          description="Welcome new school authorities and follow their progress from invitation to an operational fleet."
+          eyebrow="Platform administration"
+          title="School authority management"
+          description="Review school authority accounts, onboarding progress, and subscription readiness."
           icon={<Building2 className="h-6 w-6" />}
+          action={
+            <a href="#invite-school-authority" className="sb-primary-action inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold">
+              Invite a school authority <ChevronRight className="h-4 w-4" aria-hidden />
+            </a>
+          }
         />
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
           {[
-            ['School authorities', tenants.length],
-            [
-              'Awaiting activation',
-              tenants.filter((t) => t.tenant_admin_status === 'invited').length,
-            ],
-            ['Trial subscriptions', billing.filter((b) => b.status === 'trialing').length],
-          ].map(([label, value]) => (
-            <Card key={label} className="p-3 sm:p-5">
-              <p className="text-xs font-medium text-slate-500 sm:text-sm">{label}</p>
-              <p className="mt-2 text-2xl font-bold text-navy-900 sm:text-3xl">
+            { label: 'School authorities', value: tenants.length, icon: Building2 },
+            { label: 'Awaiting activation', value: tenants.filter((t) => t.tenant_admin_status === 'invited').length, icon: Clock3 },
+            { label: 'Trial subscriptions', value: billing.filter((b) => b.status === 'trialing').length, icon: CreditCard },
+          ].map(({ label, value, icon: Icon }) => (
+            <Card key={label} className="border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm sm:p-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-[var(--color-text-muted)]">{label}</p>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-selection)] text-[var(--color-action)]">
+                  <Icon className="h-5 w-5" aria-hidden />
+                </span>
+              </div>
+              <p className="mt-3 text-3xl font-bold tracking-tight text-[var(--color-text)]">
                 {loading ? '—' : value}
               </p>
             </Card>
           ))}
         </div>
-        <TenantInvitationWizard onCreated={load} />
         <section aria-labelledby="tenant-directory-heading" className="space-y-4">
           <div>
-            <h2 id="tenant-directory-heading" className="text-xl font-bold text-navy-900">
-              Your school authorities
-            </h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 id="tenant-directory-heading" className="text-xl font-bold text-[var(--color-text)]">
+                School authority directory
+              </h2>
+              <span className="text-sm font-semibold text-[var(--color-text-muted)]" aria-live="polite">
+                {loading ? 'Loading' : `${visible.length} shown`}
+              </span>
+            </div>
           </div>
           <Card className="p-4">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -193,12 +204,12 @@ export function PlatformTenantsPage() {
               message={
                 tenants.length
                   ? 'Try another search or filter.'
-                  : 'Invite your first school authority above.'
+                  : 'Use the invitation form below to add your first school authority.'
               }
             />
           ) : (
             <Card className="relative overflow-hidden">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus)]" tabIndex={0} role="region" aria-label="Scroll school authority directory">
                 <table className="w-full min-w-[760px] text-left text-sm">
                   <caption className="sr-only">
                     School authority onboarding and subscription directory
@@ -299,6 +310,9 @@ export function PlatformTenantsPage() {
             </Card>
           )}
         </section>
+        <div id="invite-school-authority" className="scroll-mt-24">
+          <TenantInvitationWizard onCreated={load} />
+        </div>
       </div>
     </DashboardLayout>
   );

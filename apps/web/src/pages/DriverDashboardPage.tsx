@@ -52,17 +52,14 @@ function PlannedAssignmentsCard({
   today: string;
 }) {
   return (
-    <Card className="p-5" data-testid="driver-planned-assignments">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-gray-500">Administrative guidance</p>
-          <h2 className="mt-1 text-lg font-bold text-navy-900">Your planned assignments</h2>
-        </div>
+    <Card className="rounded-2xl p-5 shadow-sm sm:p-6" data-testid="driver-planned-assignments">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-bold text-[var(--color-text)]">Your planned assignments</h2>
         <StatusPill tone="info">Planned</StatusPill>
       </div>
 
       {assignments.length === 0 ? (
-        <p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
+        <p className="mt-4 rounded-xl bg-[var(--color-raised)] p-4 text-sm leading-6 text-[var(--color-text-muted)]">
           No current or upcoming assignments are planned. You can still scan any eligible school
           authority bus when directed by operations.
         </p>
@@ -71,7 +68,7 @@ function PlannedAssignmentsCard({
           {assignments.map((assignment) => {
             const upcoming = !!assignment.effective_from && assignment.effective_from > today;
             return (
-              <div key={assignment.id} className="rounded-lg border border-slate-200 p-4">
+              <div key={assignment.id} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="font-bold text-navy-900">Bus {assignment.bus_number}</p>
@@ -198,7 +195,7 @@ export function DriverDashboardPage() {
       <div className="mx-auto max-w-3xl space-y-5">
         {!activeTrip && (
           <PageHeader
-            eyebrow="Driver GPS"
+            eyebrow="Driver workspace"
             title="Scan the bus to start"
             description="Scan the QR inside the bus, choose its route direction, and use this phone as the bus GPS."
           />
@@ -245,13 +242,13 @@ export function DriverDashboardPage() {
         {state.kind === 'ready' && activeTrip && (
           <div className="space-y-5" data-testid="driver-active-trip-only">
             <Card
-              className="border-success-200 p-5 ring-1 ring-success-100"
+              className="overflow-hidden rounded-2xl border-[var(--color-success-outline)] p-5 shadow-sm sm:p-6"
               data-testid="driver-active-bus-card"
             >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-gray-500">Active bus</p>
-                  <h1 className="mt-1 text-2xl font-bold text-navy-900">
+              <div className="flex flex-col gap-4 border-b border-[var(--color-border)] pb-5 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">Current trip</p>
+                  <h1 className="mt-2 break-words text-3xl font-extrabold tracking-tight text-[var(--color-text)]">
                     {activeTrip.bus_number_snapshot
                       ? `Bus ${activeTrip.bus_number_snapshot}`
                       : 'Active bus'}
@@ -286,7 +283,7 @@ export function DriverDashboardPage() {
                 </p>
               )}
 
-              <div className="mt-4 border-t border-slate-100 pt-4">
+              <div className="mt-5 rounded-xl bg-[var(--color-surface-subtle)] p-4">
                 <DriverLocationStatus
                   supported={tracking.location.supported}
                   state={tracking.location.state}

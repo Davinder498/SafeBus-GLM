@@ -20,7 +20,7 @@ export function PageHeader({ eyebrow, title, description, icon, badge, action }:
     >
       <div className="flex min-w-0 items-start gap-3 sm:gap-4">
         {icon && (
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-navy-50 text-navy-600 ring-1 ring-inset ring-navy-100">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--color-selection)] text-[var(--color-action)] ring-1 ring-inset ring-[var(--color-border)]">
             {icon}
           </div>
         )}
@@ -29,7 +29,7 @@ export function PageHeader({ eyebrow, title, description, icon, badge, action }:
             <div className="mb-1.5">
               {badge ?? (
                 <p
-                  className="text-xs font-semibold uppercase tracking-[0.1em] text-navy-600"
+                  className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-text-muted)]"
                   data-ui="page-eyebrow"
                 >
                   {eyebrow}
@@ -38,14 +38,14 @@ export function PageHeader({ eyebrow, title, description, icon, badge, action }:
             </div>
           )}
           <h1
-            className="break-words text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl"
+            className="break-words text-2xl font-bold tracking-tight text-[var(--color-text)] sm:text-3xl"
             data-ui="page-title"
           >
             {title}
           </h1>
           {description && (
             <p
-              className={cn('mt-2 max-w-3xl text-sm leading-6 text-slate-600')}
+              className={cn('mt-2 max-w-3xl text-sm leading-6 text-[var(--color-text-muted)]')}
               data-ui="page-description"
             >
               {description}

@@ -96,11 +96,11 @@ export function ParentDashboardPage() {
             const status = guardianBusStatus(group);
             const content = (
               <Card
-                className="p-5"
+                className="rounded-2xl border-[var(--color-border)] p-5 shadow-sm sm:p-6"
                 data-testid="guardian-home-bus-card"
                 data-ui="guardian-bus-card"
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="flex min-w-0 items-start gap-3">
                     <GuardianIconTile>
                       <BusFront className="h-6 w-6" aria-hidden />
@@ -119,7 +119,7 @@ export function ParentDashboardPage() {
                   </StatusPill>
                 </div>
 
-                <div className="mt-4 rounded-2xl border border-navy-900/15 bg-navy-900/5 p-3">
+                <div className="mt-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-4">
                   <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-navy-700">
                     <Users className="h-4 w-4" aria-hidden /> Assigned students
                   </p>
@@ -140,7 +140,7 @@ export function ParentDashboardPage() {
               <Link
                 key={group.key}
                 to={guardianBusDetailsPath(group.busNumber)}
-                className="block rounded-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-300"
+                className="block rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] focus-visible:ring-offset-2"
                 data-testid="guardian-home-bus-link"
               >
                 <span className="sr-only">View details for Bus {group.busNumber}</span>
@@ -157,8 +157,8 @@ export function ParentDashboardPage() {
             data-testid="guardian-home-my-kids"
             className="space-y-3"
           >
-            <h2 id="my-kids-heading" className="text-xl font-bold text-navy-900">
-              My Kids
+            <h2 id="my-kids-heading" className="text-xl font-bold text-[var(--color-text)]">
+              Linked students
             </h2>
             {state.buses.map((student) => {
               const assignments =
@@ -169,7 +169,7 @@ export function ParentDashboardPage() {
               return (
                 <Card
                   key={student.studentId}
-                  className="p-5"
+                  className="rounded-2xl border-[var(--color-border)] p-5 shadow-sm sm:p-6"
                   data-testid="guardian-home-student-card"
                   data-ui="guardian-student-card"
                 >
@@ -187,7 +187,7 @@ export function ParentDashboardPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="mt-4 border-t border-gray-200 pt-4">
+                  <div className="mt-4 border-t border-[var(--color-border)] pt-4">
                     <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
                       <MapPin className="h-4 w-4" aria-hidden /> Stop information
                     </p>
@@ -202,7 +202,7 @@ export function ParentDashboardPage() {
                         {assignments.map((assignment, index) => (
                           <li
                             key={`${assignment.direction}:${assignment.tripName}:${index}`}
-                            className="rounded-xl bg-slate-50 p-3 text-sm"
+                            className="rounded-xl bg-[var(--color-surface-subtle)] p-4 text-sm"
                           >
                             <p className="font-bold text-navy-900">{assignment.tripName}</p>
                             <p className="mt-1 text-gray-600">{seatLabel(assignment.seatNumber)}</p>
@@ -226,7 +226,7 @@ export function ParentDashboardPage() {
         {state.kind === 'ready' &&
           appSurface === 'web' &&
           state.buses.map((bus) => (
-            <Card key={bus.studentId} className="p-5" data-testid="guardian-home-bus-card">
+            <Card key={bus.studentId} className="rounded-2xl border-[var(--color-border)] p-5 shadow-sm sm:p-6" data-testid="guardian-home-bus-card">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-gray-500">{bus.studentName}</p>
