@@ -250,6 +250,25 @@ async function assignBus(page: Page) {
   await expect(page.getByRole('form', { name: 'Driver for Outbound bus One' })).toBeVisible();
 }
 
+test('route workspace shows one focused task at a time, with advanced maps hidden by default', async ({ page }) => {
+  await fixture(page);
+  await open(page);
+  const navigation = page.getByRole('navigation', { name: 'Route workspace' });
+  await expect(navigation.getByRole('button', { name: 'Overview', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('#route-service')).toHaveCount(0);
+  await expect(page.locator('#road-path')).toHaveCount(0);
+  await navigation.getByRole('button', { name: 'Route & Stops', exact: true }).click();
+  await expect(page.locator('#route-details')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Edit road path', exact: true })).toBeVisible();
+  await expect(page.getByTestId('route-path-editor')).toHaveCount(0);
+  await navigation.getByRole('button', { name: 'Assignments', exact: true }).click();
+  await expect(page.locator('#route-service')).toBeVisible();
+  await expect(page.locator('#route-details')).toHaveCount(0);
+  await navigation.getByRole('button', { name: 'Students', exact: true }).click();
+  await expect(page.locator('#route-students')).toBeVisible();
+  await expect(page.locator('#route-service')).toHaveCount(0);
+});
+
 test('route setup offers safe creation returns without assigning records automatically', async ({
   page,
 }) => {
