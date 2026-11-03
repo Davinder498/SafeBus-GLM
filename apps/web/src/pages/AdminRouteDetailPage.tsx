@@ -41,6 +41,8 @@ import type {
   RouteTripStopSchedule,
 } from '@/types/transportation';
 import { activeDriverForBusService } from '@/utils/transportAssignments';
+import { getVisibleRouteServiceDays } from '@/services/phase6OperationsService';
+import type { RouteServiceDay } from '@/types/transportation';
 
 interface RouteDetailData {
   route: Route;
@@ -53,6 +55,7 @@ interface RouteDetailData {
   profiles: OrganizationProfile[];
   tripPatterns: RouteTripPattern[];
   schedules: RouteTripStopSchedule[];
+  serviceDays: RouteServiceDay[];
 }
 
 export function AdminRouteDetailPage() {
@@ -84,6 +87,7 @@ export function AdminRouteDetailPage() {
       getVisibleRouteTripPatterns(),
       getVisibleRouteTripStopSchedules(),
       fetchAdminBusServices(),
+      getVisibleRouteServiceDays(),
     ])
       .then(
         ([
@@ -97,6 +101,7 @@ export function AdminRouteDetailPage() {
           patterns,
           schedules,
           busServices,
+          serviceDays,
         ]) => {
           if (!mounted) return;
           const route = routes.find((item) => item.id === routeId);
@@ -121,6 +126,7 @@ export function AdminRouteDetailPage() {
             profiles,
             tripPatterns: patterns.filter((pattern) => pattern.route_id === route.id),
             schedules: schedules.filter((schedule) => schedule.route_id === route.id),
+            serviceDays: serviceDays.filter((day) => day.route_id === route.id),
           });
         },
       )
@@ -145,13 +151,21 @@ export function AdminRouteDetailPage() {
   // already-authorized, active roster; never write an assignment on return.
   const returnedBusId = data?.buses.some(
     (bus) => bus.id === searchParams.get('newBusId') && bus.status === 'active',
-  ) ? searchParams.get('newBusId') ?? undefined : undefined;
+  )
+    ? (searchParams.get('newBusId') ?? undefined)
+    : undefined;
   const returnedServiceId = data?.busServices.some(
     (service) => service.id === searchParams.get('service'),
-  ) ? searchParams.get('service') ?? undefined : undefined;
-  const returnedDriverId = returnedServiceId && data?.drivers.some(
-    (driver) => driver.id === searchParams.get('newDriverId') && driver.status === 'active',
-  ) ? searchParams.get('newDriverId') ?? undefined : undefined;
+  )
+    ? (searchParams.get('service') ?? undefined)
+    : undefined;
+  const returnedDriverId =
+    returnedServiceId &&
+    data?.drivers.some(
+      (driver) => driver.id === searchParams.get('newDriverId') && driver.status === 'active',
+    )
+      ? (searchParams.get('newDriverId') ?? undefined)
+      : undefined;
   const displayedStops = useMemo(
     () =>
       data
@@ -306,6 +320,43 @@ export function AdminRouteDetailPage() {
                 </p>
               </Card>
             </section>
+
+            <Card className="p-5">
+              <h2 className="text-base font-bold text-navy-900">Service calendar</h2>
+              {data.route.service_schedule_mode === 'dates' ? (
+                <details className="mt-3">
+                  <summary className="cursor-pointer font-semibold">
+                    Specific dates ({data.route.service_dates?.length ?? 0})
+                  </summary>
+                  <ul className="mt-3 grid max-h-60 gap-2 overflow-y-auto sm:grid-cols-3">
+                    {(data.route.service_dates ?? []).map((date) => (
+                      <li key={date}>{date}</li>
+                    ))}
+                  </ul>
+                </details>
+              ) : (
+                <p className="mt-3 text-sm text-slate-700">
+                  {data.serviceDays.length === 0
+                    ? 'Every day'
+                    : data.serviceDays
+                        .filter((day) => day.status === 'active')
+                        .sort((a, b) => a.day_of_week - b.day_of_week)
+                        .map(
+                          (day) =>
+                            [
+                              'Sunday',
+                              'Monday',
+                              'Tuesday',
+                              'Wednesday',
+                              'Thursday',
+                              'Friday',
+                              'Saturday',
+                            ][day.day_of_week],
+                        )
+                        .join(', ') || 'Closed for new trips on every weekday'}
+                </p>
+              )}
+            </Card>
 
             <AdminRoutesMap
               routes={[{ route: data.route, stops: data.stops }]}

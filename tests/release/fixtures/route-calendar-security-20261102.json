@@ -1,0 +1,466 @@
+{
+  "policies": [
+    {
+      "cmd": "DELETE",
+      "qual": "(safebus_private.is_transportation_write_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_route_stop(tenant_id, route_id))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_service_days",
+      "permissive": "PERMISSIVE",
+      "policyname": "route service days delete admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_service_days",
+      "permissive": "PERMISSIVE",
+      "policyname": "route service days insert admin",
+      "schemaname": "public",
+      "with_check": "(safebus_private.is_transportation_write_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_route_stop(tenant_id, route_id))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((safebus_private.current_user_role() = 'driver'::user_role) AND (tenant_id = safebus_private.current_tenant_id()) AND (EXISTS ( SELECT 1\n   FROM driver_route_assignments dra\n  WHERE ((dra.route_id = route_service_days.route_id) AND (dra.tenant_id = route_service_days.tenant_id) AND (dra.driver_id = safebus_private.current_driver_id()) AND (dra.status = 'active'::text)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_service_days",
+      "permissive": "PERMISSIVE",
+      "policyname": "route service days select assigned driver",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = route_service_days.route_id) AND (r.tenant_id = route_service_days.tenant_id) AND (r.school_id = safebus_private.current_school_id()))))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_service_days",
+      "permissive": "PERMISSIVE",
+      "policyname": "route service days select school or transportation admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_service_days",
+      "permissive": "PERMISSIVE",
+      "policyname": "route service days select tenant admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(safebus_private.is_transportation_write_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_route_stop(tenant_id, route_id))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_service_days",
+      "permissive": "PERMISSIVE",
+      "policyname": "route service days update admin",
+      "schemaname": "public",
+      "with_check": "(safebus_private.is_transportation_write_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_route_stop(tenant_id, route_id))"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_service_days",
+      "permissive": "RESTRICTIVE",
+      "policyname": "safebus_active_session",
+      "schemaname": "public",
+      "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_service_days",
+      "permissive": "RESTRICTIVE",
+      "policyname": "safebus_optional_mfa",
+      "schemaname": "public",
+      "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_stops",
+      "permissive": "PERMISSIVE",
+      "policyname": "route stops insert tenant admin",
+      "schemaname": "public",
+      "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_route_stop(tenant_id, route_id))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = route_stops.route_id) AND (r.school_id = safebus_private.current_school_id()))))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_stops",
+      "permissive": "PERMISSIVE",
+      "policyname": "route stops select school or transportation admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_stops",
+      "permissive": "PERMISSIVE",
+      "policyname": "route stops select tenant admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_stops",
+      "permissive": "PERMISSIVE",
+      "policyname": "route stops update tenant admin",
+      "schemaname": "public",
+      "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_route_stop(tenant_id, route_id))"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_stops",
+      "permissive": "RESTRICTIVE",
+      "policyname": "safebus_active_session",
+      "schemaname": "public",
+      "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_stops",
+      "permissive": "RESTRICTIVE",
+      "policyname": "safebus_optional_mfa",
+      "schemaname": "public",
+      "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_trip_patterns",
+      "permissive": "PERMISSIVE",
+      "policyname": "route trip patterns insert tenant admin",
+      "schemaname": "public",
+      "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = route_trip_patterns.route_id) AND (r.tenant_id = route_trip_patterns.tenant_id)))))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((tenant_id = safebus_private.current_tenant_id()) AND (safebus_private.current_user_role() = ANY (ARRAY['tenant_admin'::user_role, 'school_admin'::user_role, 'transportation_admin'::user_role, 'driver'::user_role])) AND ((safebus_private.current_user_role() <> 'school_admin'::user_role) OR (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = route_trip_patterns.route_id) AND (r.school_id = safebus_private.current_school_id()))))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_trip_patterns",
+      "permissive": "PERMISSIVE",
+      "policyname": "route trip patterns select tenant operational roles",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_trip_patterns",
+      "permissive": "PERMISSIVE",
+      "policyname": "route trip patterns update tenant admin",
+      "schemaname": "public",
+      "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_trip_patterns",
+      "permissive": "RESTRICTIVE",
+      "policyname": "safebus_active_session",
+      "schemaname": "public",
+      "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_trip_patterns",
+      "permissive": "RESTRICTIVE",
+      "policyname": "safebus_optional_mfa",
+      "schemaname": "public",
+      "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_trip_stop_schedules",
+      "permissive": "PERMISSIVE",
+      "policyname": "route trip schedules delete tenant admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_trip_stop_schedules",
+      "permissive": "PERMISSIVE",
+      "policyname": "route trip schedules insert tenant admin",
+      "schemaname": "public",
+      "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((tenant_id = safebus_private.current_tenant_id()) AND (safebus_private.current_user_role() = ANY (ARRAY['tenant_admin'::user_role, 'school_admin'::user_role, 'transportation_admin'::user_role, 'driver'::user_role])) AND ((safebus_private.current_user_role() <> 'school_admin'::user_role) OR (EXISTS ( SELECT 1\n   FROM routes r\n  WHERE ((r.id = route_trip_stop_schedules.route_id) AND (r.school_id = safebus_private.current_school_id()))))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_trip_stop_schedules",
+      "permissive": "PERMISSIVE",
+      "policyname": "route trip schedules select tenant operational roles",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_trip_stop_schedules",
+      "permissive": "PERMISSIVE",
+      "policyname": "route trip schedules update tenant admin",
+      "schemaname": "public",
+      "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_trip_stop_schedules",
+      "permissive": "RESTRICTIVE",
+      "policyname": "safebus_active_session",
+      "schemaname": "public",
+      "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "route_trip_stop_schedules",
+      "permissive": "RESTRICTIVE",
+      "policyname": "safebus_optional_mfa",
+      "schemaname": "public",
+      "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(safebus_private.is_tenant_delete_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "routes",
+      "permissive": "PERMISSIVE",
+      "policyname": "routes delete tenant admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "routes",
+      "permissive": "PERMISSIVE",
+      "policyname": "routes insert tenant admin",
+      "schemaname": "public",
+      "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_optional_school(tenant_id, school_id))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "safebus_private.driver_can_read_assigned_route(tenant_id, id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "routes",
+      "permissive": "PERMISSIVE",
+      "policyname": "routes select assigned driver",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(safebus_private.is_school_or_transportation_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND ((safebus_private.current_user_role() = 'transportation_admin'::user_role) OR (school_id = safebus_private.current_school_id())))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "routes",
+      "permissive": "PERMISSIVE",
+      "policyname": "routes select school or transportation admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "routes",
+      "permissive": "PERMISSIVE",
+      "policyname": "routes select tenant admin",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "routes",
+      "permissive": "PERMISSIVE",
+      "policyname": "routes update tenant admin",
+      "schemaname": "public",
+      "with_check": "(safebus_private.is_tenant_admin() AND (tenant_id = safebus_private.current_tenant_id()) AND safebus_private.can_write_optional_school(tenant_id, school_id))"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "routes",
+      "permissive": "RESTRICTIVE",
+      "policyname": "safebus_active_session",
+      "schemaname": "public",
+      "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "routes",
+      "permissive": "RESTRICTIVE",
+      "policyname": "safebus_optional_mfa",
+      "schemaname": "public",
+      "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+    }
+  ],
+  "functions": [
+    {
+      "signature": "safebus_private.can_write_optional_school(uuid,uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.can_write_optional_school(p_tenant_id uuid, p_school_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\r\n  select\r\n    case\r\n      when p_school_id is null then safebus_private.can_write_tenant(p_tenant_id)\r\n      else safebus_private.can_write_school(p_tenant_id, p_school_id)\r\n    end;\r\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.can_write_route_stop(uuid,uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.can_write_route_stop(p_tenant_id uuid, p_route_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\r\n  select exists (\r\n    select 1\r\n    from public.routes r\r\n    where r.id = p_route_id\r\n      and r.tenant_id = p_tenant_id\r\n      and safebus_private.can_write_optional_school(r.tenant_id, r.school_id)\r\n  );\r\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.current_driver_id()",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.current_driver_id()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\r\n  select id\r\n  from public.drivers\r\n  where profile_id = auth.uid()\r\n    and tenant_id = safebus_private.current_tenant_id()\r\n    and status = 'active'\r\n  limit 1;\r\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.current_school_id()",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.current_school_id()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'auth', 'pg_temp'\nAS $function$\n  select p.school_id from public.profiles p\n  where p.id = auth.uid() and p.status = 'active' and public.is_current_user_session_active()\n  limit 1;\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.current_tenant_id()",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.current_tenant_id()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'auth', 'pg_temp'\nAS $function$\n  select p.tenant_id from public.profiles p\n  join public.tenants t on t.id = p.tenant_id and t.status = 'active'\n  where p.id = auth.uid() and p.status = 'active' and public.is_current_user_session_active()\n  limit 1;\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.current_user_role()",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.current_user_role()\n RETURNS user_role\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'auth', 'pg_temp'\nAS $function$\n  select p.role\n  from public.profiles p\n  left join public.tenants t on t.id = p.tenant_id\n  where p.id = auth.uid()\n    and p.status = 'active'\n    and p.role::text <> 'school_admin'\n    and (p.role = 'platform_super_admin' or t.status = 'active')\n    and public.is_current_user_session_active()\n  limit 1;\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.enforce_active_api_session()",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.enforce_active_api_session()\n RETURNS void\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog', 'public', 'auth', 'pg_temp'\nAS $function$\r\ndeclare\r\n  v_path text := ltrim(current_setting('request.path', true), '/');\r\n  v_method text := current_setting('request.method', true);\r\nbegin\r\n  if auth.role() = 'service_role' then return; end if;\r\n  if v_path = 'rpc/is_current_user_session_active'\r\n     and v_method in ('GET', 'HEAD', 'POST') then return; end if;\r\n  if not public.is_current_user_session_active() then\r\n    raise exception 'An active SafeBus session is required.' using errcode = '42501';\r\n  end if;\r\n  if safebus_private.has_completed_optional_mfa() then return; end if;\r\n  if v_path = 'profiles' and v_method in ('GET', 'HEAD') then return; end if;\r\n  if v_path in ('rpc/register_current_user_session', 'rpc/record_own_auth_event',\r\n               'rpc/enforce_new_password_policy', 'rpc/complete_invited_account')\r\n     and v_method = 'POST' then return; end if;\r\n  raise exception 'Complete multi-factor authentication to continue.' using errcode = '42501';\r\nend;\r\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.has_completed_optional_mfa()",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.has_completed_optional_mfa()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'auth', 'pg_temp'\nAS $function$\r\n  select auth.uid() is not null and (\r\n    coalesce(auth.jwt() ->> 'aal', 'aal1') = 'aal2'\r\n    or (\r\n      not exists (\r\n        select 1 from public.profiles p\r\n        where p.id = auth.uid()\r\n          and p.role in ('tenant_admin', 'transportation_admin', 'platform_super_admin', 'school_admin')\r\n      )\r\n      and not exists (\r\n        select 1 from public.profiles p\r\n        join auth.mfa_factors f on f.user_id = p.id and f.status = 'verified'\r\n        where p.id = auth.uid() and p.role in ('guardian', 'driver')\r\n      )\r\n    )\r\n  );\r\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.has_verified_mfa()",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.has_verified_mfa()\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\r\n  select auth.uid() is not null\r\n    and coalesce(auth.jwt() ->> 'aal', 'aal1') = 'aal2';\r\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.is_school_or_transportation_admin()",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.is_school_or_transportation_admin()\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\r\n  select coalesce(\r\n    safebus_private.current_user_role() in ('school_admin', 'transportation_admin'),\r\n    false\r\n  );\r\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.is_tenant_admin()",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.is_tenant_admin()\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\r\n  select coalesce(safebus_private.current_user_role() = 'tenant_admin', false);\r\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.is_transportation_write_admin()",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.is_transportation_write_admin()\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\r\n  select coalesce(\r\n    safebus_private.current_user_role() in ('tenant_admin', 'school_admin', 'transportation_admin'),\r\n    false\r\n  );\r\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.can_write_school(uuid,uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.can_write_school(p_tenant_id uuid, p_school_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\r\n  select coalesce(\r\n    (\r\n      safebus_private.current_user_role() in ('tenant_admin', 'transportation_admin')\r\n      and p_tenant_id = safebus_private.current_tenant_id()\r\n      and exists (select 1 from public.schools s where s.id = p_school_id and s.tenant_id = p_tenant_id)\r\n    )\r\n    or (\r\n      safebus_private.current_user_role() = 'school_admin'\r\n      and p_tenant_id = safebus_private.current_tenant_id()\r\n      and p_school_id = safebus_private.current_school_id()\r\n    ),\r\n    false\r\n  );\r\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.can_write_tenant(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.can_write_tenant(p_tenant_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\r\n  select coalesce(\r\n    safebus_private.current_user_role() in ('tenant_admin', 'school_admin', 'transportation_admin')\r\n    and p_tenant_id = safebus_private.current_tenant_id(),\r\n    false\r\n  );\r\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.driver_can_read_assigned_route(uuid,uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.driver_can_read_assigned_route(p_tenant_id uuid, p_route_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\n  select\n    auth.uid() is not null\n    and safebus_private.current_user_role() = 'driver'\n    and p_tenant_id = safebus_private.current_tenant_id()\n    and p_route_id is not null\n    and exists (\n      select 1\n      from public.drivers d\n      where d.id = safebus_private.current_driver_id()\n        and d.tenant_id = p_tenant_id\n        and d.status = 'active'\n    )\n    and (\n      exists (\n        select 1\n        from public.driver_route_assignments dra\n        where dra.route_id = p_route_id\n          and dra.tenant_id = p_tenant_id\n          and dra.driver_id = safebus_private.current_driver_id()\n          and dra.status = 'active'\n          and (dra.effective_from is null or dra.effective_from <= ((now() AT TIME ZONE 'America/Edmonton')::date))\n          and (dra.effective_to is null or dra.effective_to >= ((now() AT TIME ZONE 'America/Edmonton')::date))\n      )\n      or exists (\n        select 1\n        from public.driver_trips dt\n        where dt.route_id = p_route_id\n          and dt.tenant_id = p_tenant_id\n          and dt.driver_id = safebus_private.current_driver_id()\n          and dt.status = 'active'\n      )\n    );\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.is_tenant_delete_admin()",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.is_tenant_delete_admin()\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\r\n  select coalesce(\r\n    safebus_private.current_user_role() in (\r\n      'platform_super_admin',\r\n      'tenant_admin'\r\n    ),\r\n    false\r\n  );\r\n$function$\n"
+    }
+  ]
+}

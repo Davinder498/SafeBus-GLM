@@ -7,6 +7,18 @@ type SeatedAssignments = Omit<HostedAssignments, 'Row' | 'Insert' | 'Update'> & 
   Update: HostedAssignments['Update'] & { seat_number?: number | null };
 };
 type HostedFunctions = HostedDatabase['public']['Functions'];
+type HostedRoutes = HostedDatabase['public']['Tables']['routes'];
+type CalendarRoutes = Omit<HostedRoutes, 'Row' | 'Insert' | 'Update'> & {
+  Row: HostedRoutes['Row'] & { service_schedule_mode: 'weekly' | 'dates'; service_dates: string[] };
+  Insert: HostedRoutes['Insert'] & {
+    service_schedule_mode?: 'weekly' | 'dates';
+    service_dates?: string[];
+  };
+  Update: HostedRoutes['Update'] & {
+    service_schedule_mode?: 'weekly' | 'dates';
+    service_dates?: string[];
+  };
+};
 type DriverManifestSeatRow = {
   active_trip_id: string;
   student_id: string | null;
@@ -38,8 +50,9 @@ type GuardianStudentSeatRow = {
 // Regenerate database.generated.ts only after the protected production release.
 export type Database = Omit<HostedDatabase, 'public'> & {
   public: Omit<HostedDatabase['public'], 'Functions' | 'Tables'> & {
-    Tables: Omit<HostedDatabase['public']['Tables'], 'student_bus_assignments'> & {
+    Tables: Omit<HostedDatabase['public']['Tables'], 'student_bus_assignments' | 'routes'> & {
       student_bus_assignments: SeatedAssignments;
+      routes: CalendarRoutes;
     };
     Functions: HostedDatabase['public']['Functions'] & {
       get_admin_trip_operations: {

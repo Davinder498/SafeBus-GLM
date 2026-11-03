@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { RouteStopMapEditor } from '@/components/admin/RouteStopMapEditor';
 import { Button } from '@/components/ui/Button';
 import { useMapTileConfig } from '@/hooks/useMapTileConfig';
+import { validRouteServiceDate } from '@/utils/routeCalendar';
 import type { School } from '@/types/organization';
 import type {
   Route,
@@ -10,6 +11,7 @@ import type {
   RouteKind,
   RouteStatus,
   RouteServiceDay,
+  RouteServiceMode,
   RouteStop,
   RouteTripPattern,
   RouteTripStopSchedule,
@@ -91,8 +93,17 @@ export function RouteWithStopsForm({
     const activeDays = existingServiceDays
       .filter((day) => day.status === 'active')
       .map((day) => day.day_of_week);
-    return activeDays.length > 0 || route ? activeDays : [1, 2, 3, 4, 5];
+    return existingServiceDays.length > 0
+      ? activeDays
+      : route
+        ? [0, 1, 2, 3, 4, 5, 6]
+        : [1, 2, 3, 4, 5];
   });
+  const [serviceMode, setServiceMode] = useState<RouteServiceMode>(
+    route?.service_schedule_mode ?? (route?.route_kind === 'field_trip' ? 'dates' : 'weekly'),
+  );
+  const [serviceDates, setServiceDates] = useState<string[]>(route?.service_dates ?? []);
+  const [dateToAdd, setDateToAdd] = useState('');
   const [stops, setStops] = useState<RouteDefinitionStopInput[]>(() =>
     existingStops
       .filter((stop) => stop.status !== 'archived')
@@ -263,6 +274,16 @@ export function RouteWithStopsForm({
       setFormError(issue);
       return;
     }
+    if (
+      serviceDates.some((date) => !validRouteServiceDate(date)) ||
+      serviceDates.length > 366 ||
+      (status === 'active' && serviceMode === 'dates' && serviceDates.length === 0)
+    ) {
+      setFormError(
+        'Select at least one valid service date for an active date-specific route (maximum 366 dates).',
+      );
+      return;
+    }
 
     setSubmitState('saving');
     try {
@@ -285,6 +306,8 @@ export function RouteWithStopsForm({
           ),
         })),
         serviceDays,
+        serviceMode,
+        serviceDates: [...serviceDates].sort(),
       });
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Unable to save route.');
@@ -331,7 +354,10 @@ export function RouteWithStopsForm({
             <select
               className={fieldClassName}
               value={routeKind}
-              onChange={(e) => setRouteKind(e.target.value as RouteKind)}
+              onChange={(e) => {
+                setRouteKind(e.target.value as RouteKind);
+                if (e.target.value === 'field_trip') setServiceMode('dates');
+              }}
             >
               <option value="regular">Regular service</option>
               <option value="field_trip">Field trip</option>
@@ -387,31 +413,97 @@ export function RouteWithStopsForm({
       </section>
 
       <section className="rounded-lg border border-gray-200 bg-white p-5">
-        <h3 className="text-base font-bold text-navy-900">Service days</h3>
+        <h3 className="text-base font-bold text-navy-900">Service calendar</h3>
+        <label className={labelClassName}>
+          Schedule
+          <select
+            className={fieldClassName}
+            value={serviceMode}
+            onChange={(event) => setServiceMode(event.target.value as RouteServiceMode)}
+          >
+            <option value="weekly">Weekly weekdays</option>
+            <option value="dates">Specific dates</option>
+          </select>
+        </label>
 
-        <div className="mt-4 flex flex-wrap gap-3">
-          {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(
-            (label, dayOfWeek) => (
-              <label
-                key={label}
-                className="flex min-h-11 items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700"
-              >
+        {serviceMode === 'weekly' ? (
+          <div className="mt-4 flex flex-wrap gap-3">
+            {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(
+              (label, dayOfWeek) => (
+                <label
+                  key={label}
+                  className="flex min-h-11 items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700"
+                >
+                  <input
+                    type="checkbox"
+                    checked={serviceDays.includes(dayOfWeek)}
+                    onChange={(event) =>
+                      setServiceDays((current) =>
+                        event.target.checked
+                          ? [...current, dayOfWeek].sort((a, b) => a - b)
+                          : current.filter((day) => day !== dayOfWeek),
+                      )
+                    }
+                  />
+                  {label}
+                </label>
+              ),
+            )}
+          </div>
+        ) : (
+          <div className="mt-4 space-y-3">
+            <div className="flex flex-wrap items-end gap-3">
+              <label className={labelClassName}>
+                Service date
                 <input
-                  type="checkbox"
-                  checked={serviceDays.includes(dayOfWeek)}
-                  onChange={(event) =>
-                    setServiceDays((current) =>
-                      event.target.checked
-                        ? [...current, dayOfWeek].sort((a, b) => a - b)
-                        : current.filter((day) => day !== dayOfWeek),
-                    )
-                  }
+                  className={fieldClassName}
+                  type="date"
+                  value={dateToAdd}
+                  onChange={(event) => setDateToAdd(event.target.value)}
                 />
-                {label}
               </label>
-            ),
-          )}
-        </div>
+              <Button
+                type="button"
+                disabled={
+                  !validRouteServiceDate(dateToAdd) ||
+                  serviceDates.includes(dateToAdd) ||
+                  serviceDates.length >= 366
+                }
+                onClick={() => {
+                  setServiceDates((current) => [...current, dateToAdd].sort());
+                  setDateToAdd('');
+                }}
+              >
+                Add date
+              </Button>
+            </div>
+            {serviceDates.length === 0 && (
+              <p className="text-sm text-slate-600">No service dates selected.</p>
+            )}
+            <ul className="space-y-2">
+              {serviceDates.map((date) => (
+                <li className="flex items-center justify-between gap-3" key={date}>
+                  <span>{date}</span>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    aria-label={`Remove service date ${date}`}
+                    onClick={() =>
+                      setServiceDates((current) => current.filter((value) => value !== date))
+                    }
+                  >
+                    Remove
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {serviceMode === 'weekly' && serviceDays.length === 0 && (
+          <p role="status" className="mt-3 text-sm text-warning-700">
+            This route is closed for new trips on every weekday.
+          </p>
+        )}
       </section>
 
       <section className="rounded-lg border border-gray-200 bg-white p-5">

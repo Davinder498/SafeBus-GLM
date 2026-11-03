@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { RouteWithStopsForm } from '@/components/admin/RouteWithStopsForm';
 import { AdminWriteError } from '@/components/admin/TransportationAdminForms';
@@ -8,7 +8,6 @@ import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/contexts/useAuth';
 import { getVisibleSchools } from '@/services/adminOrganizationService';
-import { saveRouteServiceDays } from '@/services/phase6OperationsService';
 import { getVisibleRoutes, saveRouteDefinition } from '@/services/transportationStructureService';
 import type { School } from '@/types/organization';
 import type { Route, SaveRouteDefinitionInput } from '@/types/transportation';
@@ -16,7 +15,6 @@ import type { Route, SaveRouteDefinitionInput } from '@/types/transportation';
 export function AdminRouteCreatePage() {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const pendingCreatedRouteId = useRef<string | null>(null);
   const [settings, setSettings] = useState<{ routes: Route[]; schools: School[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
@@ -37,23 +35,7 @@ export function AdminRouteCreatePage() {
 
   async function save(payload: SaveRouteDefinitionInput) {
     if (!profile?.tenant_id) throw new Error('An active school authority is required.');
-    const saveId = pendingCreatedRouteId.current;
-    const input = saveId ? { ...payload, route: { ...payload.route, id: saveId } } : payload;
-    const result = await saveRouteDefinition(input);
-    if (saveId && result.routeId !== saveId)
-      throw new Error('The route update returned an unexpected route. Reload and try again.');
-    pendingCreatedRouteId.current = result.routeId;
-    try {
-      await saveRouteServiceDays({
-        tenantId: profile.tenant_id,
-        routeId: result.routeId,
-        activeDays: payload.serviceDays,
-      });
-    } catch {
-      throw new Error(
-        'Route details saved, but operating days were not saved. Retry saving to finish this route.',
-      );
-    }
+    const result = await saveRouteDefinition(payload);
     navigate(`/admin/routes/${result.routeId}#setup`, { replace: true });
   }
 

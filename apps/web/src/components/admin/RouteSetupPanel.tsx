@@ -12,10 +12,7 @@ import {
   fetchAdminBusWorkspace,
   type AdminBusStudentAssignment,
 } from '@/services/adminBusWorkspaceService';
-import {
-  getVisibleRouteServiceDays,
-  saveRouteServiceDays,
-} from '@/services/phase6OperationsService';
+import { getVisibleRouteServiceDays } from '@/services/phase6OperationsService';
 import {
   setBusRouteService,
   endBusRouteService,
@@ -152,20 +149,8 @@ export function RouteSetupPanel({
     });
     if (result.routeId !== route.id)
       throw new Error('Unexpected route returned. Reload before continuing.');
-    try {
-      await saveRouteServiceDays({
-        tenantId: profile.tenant_id,
-        routeId: route.id,
-        activeDays: payload.serviceDays,
-      });
-    } catch {
-      onSaved();
-      throw new Error(
-        'Route details saved, but operating days were not saved. Retry saving these settings.',
-      );
-    }
     setEditing(false);
-    setMessage('Route details, stops and regular schedule saved.');
+    setMessage('Route details, stops and service calendar saved.');
     onSaved();
   }
   const eligible = route.status === 'active' && route.definition_status === 'ready';

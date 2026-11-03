@@ -5,6 +5,8 @@ export function isLikelyBusQrToken(value: string): boolean {
 }
 
 export function mapBusQrStartError(message: string): string {
+  if (message.includes('closed for new trips today'))
+    return 'This route is closed for new trips today. Contact your transportation team.';
   if (message.includes('route direction is not assigned') || message.includes('not active today')) {
     return 'That route direction is no longer available for this bus. Scan again to refresh.';
   }
