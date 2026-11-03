@@ -355,6 +355,7 @@ test('sets up route details, bus, driver and student stops without leaving the r
       p_end_service: true,
     },
   );
+  await page.getByRole('button', { name: 'Assignments', exact: true }).click();
   await page.getByRole('button', { name: 'Edit driver', exact: true }).first().click();
   await page.getByRole('form', { name: 'Driver for Outbound bus One' }).getByRole('button', { name: 'Remove driver plan', exact: true }).click();
   await page
