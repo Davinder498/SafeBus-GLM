@@ -300,9 +300,9 @@ test('protected rollout rehearses exact hosted definitions, ACLs and rollback wi
       config = await readConfig(),
       sql = await queueMigration();
     assert.equal(createHash('sha256').update(sql).digest('hex'), config.migrationSha256);
-    const pending = JSON.parse(
+    const observed = JSON.parse(
       await fs.readFile(
-        new URL('../../config/pending/tracking-queue-authorization.json', import.meta.url),
+        new URL('../../config/observed/tracking-queue-authorization.json', import.meta.url),
         'utf8',
       ),
     );
@@ -312,11 +312,11 @@ test('protected rollout rehearses exact hosted definitions, ACLs and rollback wi
         'utf8',
       ),
     );
-    assert.equal(pending.status, 'prepared-unapplied');
-    assert.equal(pending.migration, config.migration);
-    assert.deepEqual(pending.authenticated, ['authorize_driver_tracking_queue(text,text)']);
-    assert.deepEqual(pending.serviceRole, []);
-    assert.equal(active.authenticated.includes(pending.authenticated[0]), false);
+    assert.equal(observed.migration, config.migration);
+    assert.deepEqual(observed.addedAuthenticated, ['authorize_driver_tracking_queue(text,text)']);
+    assert.deepEqual(observed.deniedServiceRole, observed.addedAuthenticated);
+    assert.equal(active.authenticated.includes(observed.addedAuthenticated[0]), true);
+    assert.equal(active.serviceRole.includes(observed.addedAuthenticated[0]), false);
     const before = await operationalSnapshot(client, config);
     verifyOperationalSnapshot(before, config, 'before');
     await rehearseOperational(client, sql, config);

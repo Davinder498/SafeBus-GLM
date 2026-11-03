@@ -8,6 +8,23 @@ const root = process.cwd();
 const generatedPath = path.join(root, 'packages/types/src/database.generated.ts');
 const generated = fs.readFileSync(generatedPath, 'utf8');
 
+test('driver queue contract survives service-role metadata omission with both credentials required', () => {
+  const metadataWithoutDriverRpc = generateFromOpenApi({ definitions: {}, paths: {} });
+  const block = metadataWithoutDriverRpc.match(/      authorize_driver_tracking_queue: \{[\s\S]*?\n      \}/)?.[0];
+  assert.ok(block);
+  assert.match(block, /p_device_credential: string/);
+  assert.match(block, /p_tracking_token: string/);
+  assert.doesNotMatch(block, /p_(?:device_credential|tracking_token)\?:/);
+  assert.match(block, /Returns: unknown/);
+  assert.ok(generated.includes(block));
+  const evidence = JSON.parse(fs.readFileSync(
+    'docs/operations/tracking-queue-live-verification-2026-11-03.json', 'utf8',
+  ));
+  assert.deepEqual(evidence.rpc.argumentNames.slice().sort(), ['p_device_credential', 'p_tracking_token']);
+  assert.equal(evidence.rpc.resultType, 'jsonb');
+  assert.equal(evidence.rpc.serviceRoleExecute, false);
+});
+
 test('type generation cannot recreate retired authority notification APIs from fallbacks', () => {
   const emptyMetadata = generateFromOpenApi({ definitions: {}, paths: {} });
   for (const name of [

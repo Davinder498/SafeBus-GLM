@@ -1,0 +1,16 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "observedOn": "2026-11-03",
+  "reviewedPullRequest": "https://github.com/Davinder498/SafeBus-GLM/pull/358",
+  "migration": "supabase/migrations/pending/20261103225142_tracking_queue_session_recovery.sql",
+  "migrationSha256": "b1ff145828f0b94c44b5cab7ff1406596cfc3f18a58c0dd3c9ca1d7152a844fd",
+  "verificationEvidence": "docs/operations/tracking-queue-live-verification-2026-11-03.json",
+  "addedAuthenticated": [
+    "authorize_driver_tracking_queue(text,text)"
+  ],
+  "deniedServiceRole": [
+    "authorize_driver_tracking_queue(text,text)"
+  ],
+  "installationOrigin": "owner-reported; not established by protected workflow evidence",
+  "preChangeRecoveryEvidenceEstablished": false
+}

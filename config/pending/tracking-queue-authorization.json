@@ -1,6 +1,0 @@
-{
-  "status": "prepared-unapplied",
-  "migration": "supabase/migrations/pending/20261103225142_tracking_queue_session_recovery.sql",
-  "authenticated": ["authorize_driver_tracking_queue(text,text)"],
-  "serviceRole": []
-}
