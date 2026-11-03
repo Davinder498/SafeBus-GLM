@@ -76,7 +76,7 @@ export function RouteSetupPanel({
   returnedDriverId?: string;
   returnedServiceId?: string;
   activeTab?: 'overview' | 'route' | 'assignments' | 'students';
-  onRequestTab?: (tab: 'overview' | 'route' | 'assignments' | 'students') => void;
+  onRequestTab?: (tab: 'overview' | 'route' | 'assignments' | 'students', openEditor?: boolean) => void;
 }) {
   const { profile } = useAuth();
   const [ending, setEnding] = useState<{ label: string; save(): Promise<void> } | null>(null);
@@ -456,7 +456,7 @@ export function RouteSetupPanel({
             <Button
               variant="secondary"
               disabled={!setup || !!setupError}
-              onClick={() => { setEditing(true); onRequestTab?.('route'); }}
+              onClick={() => onRequestTab?.('route', true)}
             >
               Edit operating days and stop times
             </Button>
