@@ -165,6 +165,12 @@ export function RouteSetupPanel({
     (assignment) => assignment.bus_route_assignment_id === serviceId && assignment.status === 'active',
   );
   const driversPlanned = services.filter((service) => hasDriverPlan(service.id)).length;
+  useEffect(() => {
+    if (activeTab !== 'assignments' || editingDriverServiceId !== null) return;
+    const firstUnplanned = services.find((service) => !hasDriverPlan(service.id));
+    if (firstUnplanned) setEditingDriverServiceId(firstUnplanned.id);
+  }, [activeTab, assignments, editingDriverServiceId, services]);
+
   const routeReturn = `${window.location.origin}/admin/routes/${route.id}#route-service`;
   const addBusHref = `/admin/buses/new?returnTo=${encodeURIComponent(routeReturn)}`;
   const addDriverHref = (serviceId: string) =>
