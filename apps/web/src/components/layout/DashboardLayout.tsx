@@ -364,8 +364,10 @@ export function DashboardLayout({
     return () => {
       document.removeEventListener('keydown', onKeyDown);
       document.body.style.overflow = previousOverflow;
-      if (priorFocus?.isConnected) priorFocus.focus();
-      else drawerTriggerRef.current?.focus();
+      // Always return to the control that opened this drawer, even when
+      // script-driven clicks did not move focus to that trigger first.
+      const restoreTarget = drawerTriggerRef.current ?? priorFocus;
+      if (restoreTarget?.isConnected) restoreTarget.focus();
     };
   }, [mobileOpen]);
 
