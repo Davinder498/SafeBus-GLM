@@ -151,10 +151,10 @@ function BusDetails({
 
   return (
     <>
-      <Card className="overflow-hidden" data-ui="guardian-bus-detail-hero">
-        <div className="p-5 text-navy-900" data-ui="guardian-bus-detail-summary">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
+      <Card className="overflow-hidden rounded-2xl border-[var(--color-border)] shadow-sm" data-ui="guardian-bus-detail-hero">
+        <div className="p-5 text-[var(--color-text)] sm:p-6" data-ui="guardian-bus-detail-summary">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <GuardianIconTile size="lg">
                 <BusFront className="h-7 w-7" aria-hidden />
               </GuardianIconTile>
@@ -162,7 +162,7 @@ function BusDetails({
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-navy-700">
                   Assigned bus
                 </p>
-                <h2 className="mt-1 text-4xl font-extrabold tracking-tight">
+                <h2 className="mt-1 break-words text-4xl font-extrabold tracking-tight">
                   Bus {group.busNumber}
                 </h2>
               </div>
@@ -171,8 +171,8 @@ function BusDetails({
               {busStatus.label}
             </StatusPill>
           </div>
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-navy-900/10 bg-navy-900/5 p-3">
+          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-4">
               <p className="text-xs font-semibold text-navy-700">License plate</p>
               <p className="mt-1 font-bold">{group.licensePlate ?? 'Not available'}</p>
             </div>
@@ -233,7 +233,7 @@ function BusDetails({
 
       <Link
         to={liveMapPath}
-        className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-navy-800 px-5 py-3 font-bold text-white shadow-lg shadow-navy-900/10 hover:bg-navy-900"
+        className="sb-primary-action inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-bold shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] focus-visible:ring-offset-2"
       >
         <MapPin className="h-5 w-5" aria-hidden /> See live map
       </Link>
@@ -341,7 +341,7 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
       : '';
 
   return (
-    <Card className="p-5" data-ui="guardian-service-line-card">
+    <Card className="rounded-2xl border-[var(--color-border)] p-5 shadow-sm sm:p-6" data-ui="guardian-service-line-card">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-navy-700">
@@ -476,11 +476,11 @@ function ServiceStopPoint({
         </div>
         {stop.etaStatus !== 'unavailable' && (
           <div className="shrink-0 text-right">
-            <p className="guardian-service-line__eta text-sm font-extrabold text-navy-800">
+            <p className="guardian-service-line__eta text-base font-extrabold text-[var(--color-text)]">
               {stop.etaLabel}
             </p>
             {stop.etaMinMinutes !== null && stop.etaMaxMinutes !== null && (
-              <p className="mt-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-gray-500">
+              <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
                 Live ETA
               </p>
             )}

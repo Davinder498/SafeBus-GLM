@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
-import { ArrowLeft, Building2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Building2, CheckCircle2, CircleDashed, RefreshCw } from 'lucide-react';
 import { DashboardLayout, platformNavItems } from '@/components/layout/DashboardLayout';
 import { SubscriptionOverview } from '@/components/subscription/SubscriptionOverview';
 import { Button } from '@/components/ui/Button';
@@ -205,13 +205,18 @@ export function PlatformTenantDetailPage() {
               </Button>
             </div>
           </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="School authority setup readiness">
             {readiness(summary).map(([label, ready]) => (
-              <div key={label} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {label}
-                </p>
-                <p className="mt-1 text-sm font-bold text-slate-900">
+              <div key={label} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-[var(--color-text)]">{label}</p>
+                  {ready ? (
+                    <CheckCircle2 className="h-5 w-5 shrink-0 text-[var(--color-success-text)]" aria-hidden />
+                  ) : (
+                    <CircleDashed className="h-5 w-5 shrink-0 text-[var(--color-text-muted)]" aria-hidden />
+                  )}
+                </div>
+                <p className="mt-2 text-xs font-medium text-[var(--color-text-muted)]">
                   {ready ? 'Configured' : 'Not configured'}
                 </p>
               </div>
