@@ -70,6 +70,7 @@ export const platformNavItems: DashboardNavItem[] = [
   { label: 'School authorities', to: '/admin/tenants', icon: <Building2 className="h-4 w-4" /> },
   { label: 'Pricing & discounts', to: '/admin/pricing', icon: <CreditCard className="h-4 w-4" /> },
   { label: 'Support', to: '/admin/platform-support', icon: <CircleHelp className="h-4 w-4" /> },
+  { label: 'Account', to: '/account/security', icon: <UserCircle className="h-4 w-4" /> },
 ];
 
 export const platformNavGroups: DashboardNavGroup[] = [
@@ -193,6 +194,7 @@ export const driverNavGroups: DashboardNavGroup[] = [
         icon: <List className="h-4 w-4" />,
       },
       { label: 'Settings', to: '/driver/settings', icon: <Settings className="h-4 w-4" /> },
+      { label: 'Account', to: '/account/security', icon: <UserCircle className="h-4 w-4" /> },
       { label: 'Profile', to: '/driver/profile', icon: <UserCircle className="h-4 w-4" /> },
       { label: 'Support', to: '/support', icon: <CircleHelp className="h-4 w-4" /> },
     ],
@@ -220,6 +222,7 @@ export const guardianNavGroups: DashboardNavGroup[] = [
         icon: <Bell className="h-4 w-4" />,
       },
       { label: 'Support', to: '/support', icon: <CircleHelp className="h-4 w-4" /> },
+      { label: 'Account', to: '/account/security', icon: <UserCircle className="h-4 w-4" /> },
     ],
   },
 ];
@@ -233,6 +236,7 @@ export const driverNativeNavItems: DashboardNavItem[] = [
   },
   { label: 'History', to: '/driver/history', icon: <History className="h-5 w-5" /> },
   { label: 'Settings', to: '/driver/settings', icon: <Settings className="h-5 w-5" /> },
+  { label: 'Account', to: '/account/security', icon: <UserCircle className="h-5 w-5" /> },
 ];
 
 export const guardianNativeNavItems: DashboardNavItem[] = [
@@ -244,6 +248,7 @@ export const guardianNativeNavItems: DashboardNavItem[] = [
     to: '/notifications/settings',
     icon: <Settings className="h-5 w-5" />,
   },
+  { label: 'Account', to: '/account/security', icon: <UserCircle className="h-5 w-5" /> },
 ];
 
 /* -------------------------------- helpers --------------------------------- */
@@ -527,12 +532,6 @@ export function DashboardLayout({
                   </DropdownItem>
                 </>
               )}
-              <DropdownItem
-                icon={<ShieldCheck className="h-4 w-4" />}
-                onClick={() => navigate('/account/security')}
-              >
-                Account security
-              </DropdownItem>
               <DropdownItem
                 icon={<ShieldCheck className="h-4 w-4" />}
                 onClick={() => navigate('/privacy')}

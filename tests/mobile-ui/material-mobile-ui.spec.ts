@@ -203,7 +203,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(studentCard).toContainText('Riverside School');
 
   const tabs = page.getByTestId('native-bottom-navigation').getByRole('link');
-  await expect(tabs).toHaveCount(4);
+  await expect(tabs).toHaveCount(5);
   await expect(tabs.filter({ hasText: 'Home' })).toHaveAttribute('aria-current', 'page');
   await expect(tabs.filter({ hasText: 'Notification' })).toHaveAttribute('href', '/notifications');
   await expect(tabs.filter({ hasText: 'Settings' })).toHaveAttribute(
@@ -871,7 +871,7 @@ test('driver active-trip shell keeps daily actions touch friendly', async ({ pag
   await expectMaterialBrand(page);
 
   const tabs = page.getByTestId('native-bottom-navigation').getByRole('link');
-  await expect(tabs).toHaveCount(4);
+  await expect(tabs).toHaveCount(5);
   await expect(tabs.filter({ hasText: 'Scan' })).toHaveAttribute('aria-current', 'page');
 
   const actionableButtons = page.locator(
@@ -918,12 +918,11 @@ test('driver support page shows one resolved support contact', async ({ page }) 
 
   await page.goto('/account');
   await expect(page).toHaveURL('/driver/settings');
-  const securityCard = page.locator('[data-ui="account-security-card"]');
-  await expect(securityCard).toHaveCount(1);
-  await expect(securityCard).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(page.locator('[data-ui="account-security-card"]')).toHaveCount(0);
+  await expect(page.locator('[data-ui="appearance-settings"]')).toHaveCount(0);
   await expect(
-    securityCard.getByRole('link', { name: /Account security/ }),
-  ).toBeVisible();
+    page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }),
+  ).toHaveAttribute('href', '/account/security');
 });
 
 test('driver support page avoids a configuration dead end when no contact is returned', async ({
@@ -957,7 +956,7 @@ test('driver account menu exposes existing secondary destinations', async ({ pag
   await expect(page.getByRole('menuitem', { name: 'Sign out' })).toBeVisible();
 });
 
-test('driver settings combines notification, appearance, and account controls', async ({
+test('driver settings keeps notification controls separate from Account', async ({
   page,
 }) => {
   await installSupabaseMock(page);
@@ -976,9 +975,9 @@ test('driver settings combines notification, appearance, and account controls', 
   await expect(page.getByRole('link', { name: 'View notifications' })).toHaveCount(0);
 
   const tabs = page.getByTestId('native-bottom-navigation').getByRole('link');
-  await expect(tabs).toHaveCount(4);
-  await expect(tabs.last()).toContainText('Settings');
-  await expect(tabs.last()).toHaveAttribute('aria-current', 'page');
+  await expect(tabs).toHaveCount(5);
+  await expect(tabs.last()).toContainText('Account');
+  await expect(tabs.filter({ hasText: 'Settings' })).toHaveAttribute('aria-current', 'page');
   await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
   await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('color', 'rgb(255, 255, 255)');
   await expectTouchTargets(page.locator('[data-ui="notification-channel-control"]'));

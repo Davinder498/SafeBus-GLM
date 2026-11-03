@@ -39,7 +39,7 @@ describe('AdminSettingsNav', () => {
     const container = await renderSettingsNav('/admin/settings', 'transportation_admin');
 
     expect(Array.from(container.querySelectorAll('a')).map((link) => link.textContent)).toEqual([
-      'School authority',
+      'Account',
     ]);
   });
 

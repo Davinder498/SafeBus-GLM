@@ -1,4 +1,3 @@
-import { AppearanceSettingsCard } from '@/components/settings/AppearanceToggle';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ClipboardList, Route, TriangleAlert } from 'lucide-react';
 import type { DriverDeliveryPreferences, PushPermissionState } from '@safebus/types';
@@ -11,7 +10,6 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { AccountSecurityLinkCard } from '@/components/settings/AccountSecurityLinkCard';
 import {
   fetchDriverDeliveryPreferences,
   saveDriverDeliveryPreferences,
@@ -177,9 +175,6 @@ export function DriverSettingsPage() {
             />
           )}
         </section>
-
-        <AppearanceSettingsCard />
-        <AccountSecurityLinkCard />
 
         <Card className="border-warning-200 bg-warning-50 p-5">
           <h2 className="font-bold text-navy-900">Driver safety</h2>

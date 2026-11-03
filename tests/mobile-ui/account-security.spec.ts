@@ -125,12 +125,12 @@ for (const role of ['guardian', 'driver'] as const) {
     const fixture = await installMfa(page, role);
     await page.goto('/account');
     await expect(
-      page.locator('[data-ui="account-security-card"] a'),
+      page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }),
     ).toBeVisible();
     await page.locator('header button[aria-haspopup="menu"]').click();
-    await expect(page.getByRole('menuitem', { name: 'Account security', exact: true })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Account security', exact: true })).toHaveCount(0);
     await page.keyboard.press('Escape');
-    await page.locator('[data-ui="account-security-card"] a').click();
+    await page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }).click();
     await page.getByRole('link', { name: 'Enable multi-factor authentication' }).click();
     await expect(page.locator('[data-ui="app-bar"]')).toBeVisible();
     await expect(page.getByTestId('native-bottom-navigation')).toBeVisible();
@@ -174,7 +174,7 @@ for (const role of ['guardian', 'driver'] as const) {
       '/account/security',
     );
     await expect(
-      page.locator('[data-ui="account-security-card"] a'),
+      page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }),
     ).toBeVisible();
     expect(fixture.removals()).toBe(1);
   });
@@ -189,7 +189,7 @@ for (const role of ['guardian', 'driver'] as const) {
       role === 'driver' ? '/driver/settings' : '/notifications/settings',
     );
     await expect(
-      page.locator('[data-ui="account-security-card"] a'),
+      page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }),
     ).toBeVisible();
   });
 }
@@ -202,8 +202,8 @@ for (const role of ['guardian', 'driver'] as const) {
     );
     await page.goto('/account');
     await expect(page.getByRole('button', { name: 'Try again', exact: true })).toBeVisible();
-    await expect(page.locator('[data-ui="account-security-card"]')).toBeVisible();
-    await page.locator('[data-ui="account-security-card"] a').click();
+    await expect(page.locator('[data-ui="account-security-card"]')).toHaveCount(0);
+    await page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }).click();
     await page.getByRole('link', { name: 'Enable multi-factor authentication' }).click();
     await expect(page.getByRole('button', { name: 'Set up authenticator app' })).toBeVisible();
     await page.getByRole('link', { name: 'Back to settings', exact: true }).click();
@@ -215,10 +215,11 @@ for (const role of ['guardian', 'driver'] as const) {
 
 for (const role of ['guardian', 'driver'] as const) {
   test(
-    role + ' settings keep appearance inline and notification navigation available',
+    role + ' settings omit duplicate cards and keep Account navigation available',
     async ({ page }, testInfo) => {
       await installMfa(page, role);
       await page.setViewportSize({ width: 320, height: 844 });
+      await page.addInitScript(() => localStorage.setItem('safebus.theme', 'dark'));
       await page.goto('/account');
       const settingsPath = role === 'driver' ? '/driver/settings' : '/notifications/settings';
       const appBar = page.locator('[data-ui="app-bar"]');
@@ -226,15 +227,8 @@ for (const role of ['guardian', 'driver'] as const) {
       await expect(appBar.getByRole('switch', { name: 'Dark mode' })).toHaveCount(0);
       await expect(appBar).toHaveCSS('background-color', 'rgb(23, 43, 58)');
       await expect(appBar.getByTestId('safebus-wordmark')).toHaveCSS('color', 'rgb(255, 255, 255)');
-      const heading = await appearance.getByRole('heading', { name: 'Appearance' }).boundingBox();
-      const toggle = await appearance.getByRole('switch', { name: 'Dark mode' }).boundingBox();
-      expect(
-        heading &&
-          toggle &&
-          Math.abs(heading.y + heading.height / 2 - toggle.y - toggle.height / 2),
-      ).toBeLessThan(2);
-      await appearance.getByRole('switch', { name: 'Dark mode' }).click();
-      await expect(appearance.getByRole('switch', { name: 'Dark mode' })).toBeChecked();
+      await expect(appearance).toHaveCount(0);
+      await expect(page.locator('[data-ui="account-security-card"]')).toHaveCount(0);
       await expect(appBar).toHaveCSS('background-color', 'rgb(23, 43, 58)');
       await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
         'background-color',
@@ -264,7 +258,7 @@ for (const role of ['guardian', 'driver'] as const) {
       await expect(page.getByRole('heading', { name: 'Notification', exact: true })).toBeVisible();
       await page.getByRole('link', { name: 'Notification settings', exact: true }).click();
       await expect(page).toHaveURL(settingsPath);
-      await page.locator('[data-ui="account-security-card"] a').click();
+      await page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }).click();
       await expect(page).toHaveURL('/account/security');
       await page.getByRole('link', { name: 'Enable multi-factor authentication' }).click();
       await expect(page).toHaveURL('/account/security/mfa');

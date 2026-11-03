@@ -16,7 +16,7 @@ const settingsItems = [
     allowedRoles: ['tenant_admin'],
   },
   {
-    label: 'School authority',
+    label: 'Account',
     to: '/admin/settings',
     end: true,
     icon: Building2,
