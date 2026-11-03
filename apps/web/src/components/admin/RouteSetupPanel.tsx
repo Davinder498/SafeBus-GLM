@@ -351,7 +351,7 @@ export function RouteSetupPanel({
                 const driverOpen = editingDriverServiceId === service.id ||
                   (editingDriverServiceId === null && firstUnplanned === service.id);
                 return (
-                  <div key={service.id} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm sm:p-5">
+                  <div key={service.id} data-testid={'route-service-card-' + service.id} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm sm:p-5">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
