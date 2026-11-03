@@ -12,6 +12,8 @@ const issues: Record<NonNullable<NativeTrackingStatus['issue']>, string> = {
   authentication_expired: 'Tracking sign-in expired. Sign in again before restarting tracking.',
   queue_unavailable:
     'Location collection stopped because secure storage is unavailable. Reopen SafeBus before restarting tracking.',
+  queue_recovery_unavailable:
+    'Location collection stopped because the SafeBus recovery service is unavailable. Contact your school authority for support.',
   delivery_status_unavailable: 'Pending delivery status could not be confirmed. Reopen SafeBus.',
   location_permission:
     'Location collection is unavailable. Check precise background location permission and location services in Android settings.',

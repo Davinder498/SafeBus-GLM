@@ -62,6 +62,7 @@ describe('truthful native delivery presentation', () => {
     'authorization_expired',
     'authorization_rejected',
     'queue_unavailable',
+    'queue_recovery_unavailable',
     'location_permission',
   ] as const)('shows %s even with a recent acknowledgement', (issue) => {
     expect(present({ ...status, issue, queuedEvents: 1 }, true, now)).toMatchObject({
