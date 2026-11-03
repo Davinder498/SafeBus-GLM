@@ -526,6 +526,7 @@ export function RouteSetupPanel({
                   setStudentForm(null);
                   setMessage('Student service and stops saved.');
                   setStudentRevision((n) => n + 1);
+                  onSaved();
                 }}
               />
             ) : (
