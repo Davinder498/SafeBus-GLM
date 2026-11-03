@@ -8,7 +8,7 @@ import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/contexts/useAuth';
-import { supabase, supabaseConfigError } from '@/lib/supabase';
+import { changeOwnPassword } from '@/services/accountSecurityService';
 
 const minimumPasswordLength = 12;
 type PasswordFieldName = 'current' | 'next' | 'confirm';
@@ -53,40 +53,15 @@ export function ChangePasswordPage() {
       setError('New password and confirmation do not match.');
       return;
     }
-    if (!supabase) {
-      setError(supabaseConfigError ?? 'Account security is unavailable.');
-      return;
-    }
 
     setSaving(true);
     try {
-      // Retain the existing SafeBus server-side password policy.
-      const policy = await supabase.rpc('enforce_new_password_policy', { p_password: next });
-      if (policy.error) {
-        setError('Your new password does not meet the SafeBus password requirements.');
-        return;
-      }
-      // Supabase MUST have "Require current password when changing password"
-      // enabled in Auth settings; then current_password is verified server-side.
-      const updated = await supabase.auth.updateUser({
-        current_password: current,
-        password: next,
-      });
-      if (updated.error) {
-        setError('Unable to change your password. Check your current password and try again.');
-        return;
-      }
-
+      await changeOwnPassword(current, next);
       setCurrent('');
       setNext('');
       setConfirm('');
       setVisible([]);
       setSaved(true);
-      void supabase.rpc('record_own_auth_event', {
-        p_action: 'auth.password_changed',
-        p_outcome: 'success',
-        p_detail: {},
-      });
     } catch {
       setError('Unable to change your password right now. Please try again.');
     } finally {
