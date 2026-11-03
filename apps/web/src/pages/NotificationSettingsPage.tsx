@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/contexts/useAuth';
-import { MfaSettingsCard } from '@/components/settings/MfaSettingsCard';
+import { AccountSecurityLinkCard } from '@/components/settings/AccountSecurityLinkCard';
 import {
   fetchGuardianDeliveryPreferences,
   saveGuardianDeliveryPreferences,
@@ -238,7 +238,7 @@ export function NotificationSettingsPage() {
             />
           )}
         </section>
-        <MfaSettingsCard />
+        <AccountSecurityLinkCard />
       </div>
     </DashboardLayout>
   );
