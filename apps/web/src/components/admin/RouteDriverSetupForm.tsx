@@ -26,11 +26,17 @@ export function RouteDriverSetupForm({
   initialDriverId?: string;
   onSaved(): void;
 }) {
-  const [existingId, setExistingId] = useState('');
+  const activePlans = assignments.filter(
+    (assignment) => assignment.bus_route_assignment_id === service.id && assignment.status === 'active',
+  );
+  // For the common single-plan case, editing starts with the saved assignment
+  // instead of requiring administrators to reselect it in a second dropdown.
+  const initialPlan = activePlans.length === 1 ? activePlans[0] : null;
+  const [existingId, setExistingId] = useState(initialPlan?.id ?? '');
   const [removing, setRemoving] = useState(false);
-  const [driverId, setDriverId] = useState(initialDriverId ?? '');
-  const [from, setFrom] = useState(service.effective_from ?? albertaToday());
-  const [to, setTo] = useState(service.effective_to ?? '');
+  const [driverId, setDriverId] = useState(initialDriverId ?? initialPlan?.driver_id ?? '');
+  const [from, setFrom] = useState(initialPlan?.effective_from ?? service.effective_from ?? albertaToday());
+  const [to, setTo] = useState(initialPlan?.effective_to ?? service.effective_to ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
