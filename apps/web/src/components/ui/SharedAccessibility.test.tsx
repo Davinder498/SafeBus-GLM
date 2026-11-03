@@ -1,4 +1,4 @@
-import { act } from 'react';
+import { act, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -28,7 +28,7 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-async function render(node: React.ReactNode) {
+async function render(node: ReactNode) {
   await act(async () => root.render(node));
 }
 
