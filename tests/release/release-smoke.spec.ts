@@ -10,7 +10,7 @@ test('landing page loads without third-party font requests', async ({ page }) =>
   });
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'SafeBus', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Every bus. Every route. One clear view.', level: 1 })).toBeVisible();
   const header = page.getByRole('banner');
   const wordmark = header.getByRole('link', { name: 'SafeBus home' });
   await expect(wordmark).toHaveText('SafeBus');
