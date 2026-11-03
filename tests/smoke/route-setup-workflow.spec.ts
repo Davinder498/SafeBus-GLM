@@ -491,7 +491,7 @@ test('failed roster loading blocks student edits and keeps review unverified', a
   );
   await expect(page.getByRole('button', { name: 'Assign student to route' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Overview', exact: true }).click();
-  await expect(page.locator('#route-review')).toContainText('Students: Not verified');
+  await expect(page.getByTestId('route-readiness-overview')).toContainText('Not verified');
 });
 
 test('retrying a failed atomic route save preserves inputs and creates once', async ({ page }) => {
