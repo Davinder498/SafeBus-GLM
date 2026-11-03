@@ -443,6 +443,28 @@ export function AdminRouteDetailPage() {
                             : 'Not assigned (optional)'}
                         </dd>
                       </div>
+                      <div>
+                        <dt className="text-xs font-semibold text-[var(--color-text-muted)]">Saved stops</dt>
+                        <dd className="mt-2">
+                          {data.stops.length === 0 ? (
+                            <p className="text-sm text-[var(--color-text-muted)]">No stops added yet.</p>
+                          ) : (
+                            <ul className="space-y-1.5 text-sm text-[var(--color-text)]">
+                              {data.stops.slice(0, 5).map((stop, index) => (
+                                <li key={stop.id} className="flex gap-2">
+                                  <span className="font-semibold text-[var(--color-action)]">{index + 1}.</span>
+                                  <span>{stop.stop_name}</span>
+                                </li>
+                              ))}
+                              {data.stops.length > 5 && (
+                                <li className="text-xs text-[var(--color-text-muted)]">
+                                  +{data.stops.length - 5} more stops in Route &amp; Stops
+                                </li>
+                              )}
+                            </ul>
+                          )}
+                        </dd>
+                      </div>
                     </dl>
                   </Card>
                 </div>
