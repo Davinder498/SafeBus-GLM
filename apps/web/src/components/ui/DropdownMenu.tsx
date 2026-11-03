@@ -86,7 +86,7 @@ export function DropdownMenu({ trigger, children, align = 'right', className }: 
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-controls={menuId}
+        aria-controls={open ? menuId : undefined}
         onClick={() => {
           if (!open) initialFocus.current = 'first';
           setOpen((value) => !value);
