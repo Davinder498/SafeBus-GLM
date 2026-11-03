@@ -57,6 +57,8 @@ export function RouteSetupPanel({
   returnedBusId,
   returnedDriverId,
   returnedServiceId,
+  activeTab = 'overview',
+  onRequestTab,
 }: {
   route: Route;
   stops: RouteStop[];
@@ -73,6 +75,8 @@ export function RouteSetupPanel({
   returnedBusId?: string;
   returnedDriverId?: string;
   returnedServiceId?: string;
+  activeTab?: 'overview' | 'route' | 'assignments' | 'students';
+  onRequestTab?: (tab: 'overview' | 'route' | 'assignments' | 'students') => void;
 }) {
   const { profile } = useAuth();
   const [ending, setEnding] = useState<{ label: string; save(): Promise<void> } | null>(null);
@@ -81,6 +85,9 @@ export function RouteSetupPanel({
   const [editing, setEditing] = useState(window.location.hash === '#route-details');
   const [addingBus, setAddingBus] = useState(false);
   const [editingBus, setEditingBus] = useState<BusServiceOption | null>(null);
+  const [editingDriverServiceId, setEditingDriverServiceId] = useState<string | null>(returnedServiceId ?? null);
+  const [showRoadEditor, setShowRoadEditor] = useState(window.location.hash === '#road-path');
+  const [studentSearch, setStudentSearch] = useState('');
   const [studentForm, setStudentForm] = useState<AdminBusStudentAssignment[] | null>(null);
   const [studentRevision, setStudentRevision] = useState(0);
   const [roster, setRoster] = useState<AdminBusStudentAssignment[]>([]);
