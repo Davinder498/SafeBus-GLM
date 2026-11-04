@@ -102,7 +102,6 @@ export function AdminSettingsPage() {
                 <Field label="Name" value={profile.full_name ?? 'Not provided'} />
                 <Field label="Email" value={profile.email} />
                 <Field label="Profile status" value={profile.status} />
-                <Field label="Profile id" value={profile.id} />
               </div>
             </Card>
 
@@ -124,7 +123,6 @@ export function AdminSettingsPage() {
                     label="Type"
                     value={tenant ? schoolAuthorityTypeLabel(tenant.type) : 'Not available'}
                   />
-                  <Field label="Account ID" value={profile.tenant_id ?? 'Not assigned'} />
                 </div>
               </Card>
             </section>

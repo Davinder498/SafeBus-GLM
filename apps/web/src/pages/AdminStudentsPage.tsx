@@ -304,7 +304,7 @@ export function AdminStudentsPage() {
           </div>
           {!list.loading && !list.error && (
             <p className="mt-3 text-sm text-slate-600" aria-live="polite" data-testid="roster-review-summary">
-              <strong className="text-navy-900">{reviewCount}</strong> of {list.rows.length} student records on this server page have review flags.
+              <strong className="text-navy-900">{reviewCount}</strong> of {list.rows.length} student records on this page have review flags.
               {list.totalCount > list.rows.length && ' Other district records are on separate pages and have not been checked here.'}
               {' '}The school filter does not include records with no school selected.
             </p>
