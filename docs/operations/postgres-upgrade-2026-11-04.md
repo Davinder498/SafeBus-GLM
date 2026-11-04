@@ -55,9 +55,48 @@ Protected run 41914886601 completed successfully on reviewed main 4e3e831.
 Fresh read-only inspection confirmed the corrected function MD5
 `0bd79a388362468846db861d3bf86e92` and destructive deletion disabled. Encrypted
 recovery and outcome artifacts were retained by that run. The subsequent all-12
-policy rollback-only acceptance was dispatched as run 41919312941 on merged
-PR #373 main `bd8df6ea8e6b625e207382b018fd780b88d55b52`; completion is not
-asserted until its protected verification succeeds.
+policy rollback-only acceptance passed in run 41919312941 on merged PR #373 main
+`bd8df6ea8e6b625e207382b018fd780b88d55b52`. Its downloaded verification artifact
+confirmed every policy completed, rollback verified, destructive deletion disabled,
+zero rows deleted and no notification sent. The artifact ZIP SHA-256 is
+`af4cdf716b9854801fd6ff437bf81100b2c8934960489640fb4252723158baf1`.
+
+## Recovery export for the adopted database
+
+Fresh inspection shows an adopted production identity and release ledger. The
+old security-installation backup deliberately rejects this state; preserve that
+guard because its recovery evidence is used for a different historical process.
+The dedicated `Capture encrypted platform recovery export` workflow addresses
+this maintenance prerequisite with `BACKUP_PLATFORM_RECOVERY_ENCRYPTED` and an
+exact reviewed current-main SHA. Production environment review still applies.
+
+It verifies the existing production identity, API privacy, approved CA, encryption
+public key and PostgreSQL 17 tools, then exports the whole logical database from
+one consistent snapshot directly into authenticated encryption. Roles are exported
+without passwords. A schema-operation advisory lock and before/after catalog
+comparison detect concurrent changes; any failure fails the workflow. Database
+transactions and dump processes are read-only. No plaintext data dump is written.
+
+The new receipt is `encrypted-platform-export`, separate from the legacy
+`encrypted-logical-export` used for security adoption. Its flags explicitly require
+catalog review and deny baseline acceptance, upgrade authorization and verified
+restoration. Capturing recovery must work when drift is discovered; it must never
+make that drift an approved baseline. The old security recovery verifier cannot
+accept this new purpose as its own evidence.
+
+The resulting artifact is run/SHA-bound and expires after seven days. The owner
+must retain it before expiry and keep the private decryption key securely outside
+CI. No key is generated, rotated or exposed by this change. Catalog metadata is
+retained alongside encrypted dump envelopes; application rows stay encrypted.
+Storage object bytes and provider-managed secrets are outside this logical export.
+A successful capture is not proof of decryptability or restoration, and is not a
+launch or upgrade approval.
+
+Upgrade prerequisite inspection was dispatched on merged PR #374 main
+`df37ecc860483918e45644050d2548bc8beb8e42` as run 41922260568. Its outcome is
+not asserted here. A fresh read-only database check still reports PostgreSQL17.6
+and Edmonton winter conversion at 07:00 for 2027-01-15T14:00Z, so the timezone
+repair remains pending.
 
 ## Provider references
 
