@@ -598,6 +598,43 @@ test('search failure preserves manual onboarding with reviewed support details',
 });
 
 test.describe('platform tenant invitation atomicity', () => {
+  for (const [name, contentType, body] of [
+    ['HTML fallback', 'text/html', '<html>SafeBus</html>'],
+    ['truncated response', 'application/json', '{incomplete'],
+    ['empty confirmation', 'application/json', '{}'],
+  ]) {
+    test(`an ${name} cannot show invitation success or clear the review form`, async ({ page }) => {
+      await installPlatformMock(page, 'success');
+      let attempts = 0;
+      await page.route('**/.netlify/functions/safebus-onboarding', async (route) => {
+        attempts += 1;
+        if (attempts > 1) return route.fallback();
+        await route.fulfill({ status: 200, contentType, body });
+      });
+      await page.goto('/admin/tenants');
+      await fillTenantForm(page);
+      const wizard = page.getByRole('form', { name: 'Invite a school authority' });
+      await wizard.getByRole('button', { name: 'Send invitation', exact: true }).click();
+      await expect(wizard.getByRole('alert')).toContainText(
+        'Refresh the current status before trying again',
+      );
+      await expect(wizard.getByRole('status')).toHaveCount(0);
+      await expect(
+        page.getByRole('heading', { name: 'Review invitation', exact: true }),
+      ).toBeVisible();
+      await expect(wizard).toContainText('successful.admin@example.test');
+      expect(attempts).toBe(1);
+
+      // Only an explicit user retry can send another request. A confirmed result
+      // still completes the existing workflow and resets its form normally.
+      await wizard.getByRole('button', { name: 'Send invitation', exact: true }).click();
+      await expect(wizard.getByRole('status')).toContainText(
+        'Invitation accepted by the email provider for successful.admin@example.test',
+      );
+      expect(attempts).toBe(2);
+    });
+  }
+
   test('review supports editing, accessible hints and a recoverable configuration error', async ({
     page,
   }, testInfo) => {

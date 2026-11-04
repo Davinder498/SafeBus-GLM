@@ -72,7 +72,11 @@ async function fixture(
     const method = request.request().method();
     const args = ['POST', 'PATCH'].includes(method) ? request.request().postDataJSON() : {};
     const reply = (data: unknown, status = 200) =>
-      request.fulfill({ status, contentType: 'application/json', body: JSON.stringify(Array.isArray(data) ? mockTablePage(request.request(), data) : data) });
+      request.fulfill({
+        status,
+        contentType: 'application/json',
+        body: JSON.stringify(Array.isArray(data) ? mockTablePage(request.request(), data) : data),
+      });
     switch (name) {
       case 'routes':
         if (method === 'DELETE') {
@@ -91,7 +95,11 @@ async function fixture(
         }
         return reply([record]);
       case 'get_admin_paginated_list':
-        if (args.p_entity === 'drivers') return reply({ rows: [{ id: ADMIN_IDS.driver, full_name: 'Test Admin', status: 'active' }], totalCount: 1 });
+        if (args.p_entity === 'drivers')
+          return reply({
+            rows: [{ id: ADMIN_IDS.driver, full_name: 'Test Admin', status: 'active' }],
+            totalCount: 1,
+          });
         return reply({ rows: [record], totalCount: 1, page: 1, pageSize: 50 });
       case 'route_stops':
         return reply(stops);
@@ -117,12 +125,14 @@ async function fixture(
         return reply(assignments);
       case 'bus_route_assignments':
         if (options.rejectServices) return reply({ message: 'Service read denied' }, 403);
-        return reply(services.map((service) => ({
-          ...service,
-          buses: { bus_number: service.bus_number, capacity: 40 },
-          routes: { route_name: service.route_name, route_code: service.route_code },
-          route_trip_patterns: { display_name: service.trip_name, direction: service.direction },
-        })));
+        return reply(
+          services.map((service) => ({
+            ...service,
+            buses: { bus_number: service.bus_number, capacity: 40 },
+            routes: { route_name: service.route_name, route_code: service.route_code },
+            route_trip_patterns: { display_name: service.trip_name, direction: service.direction },
+          })),
+        );
       case 'get_admin_bus_services_with_capacity':
         if (options.rejectServices) return reply({ message: 'Service read denied' }, 403);
         return reply(services);
@@ -262,11 +272,16 @@ async function assignBus(page: Page) {
   await expect(page.getByRole('form', { name: 'Driver for Outbound bus One' })).toBeVisible();
 }
 
-test('route workspace shows one focused task at a time, with advanced maps hidden by default', async ({ page }) => {
+test('route workspace shows one focused task at a time, with advanced maps hidden by default', async ({
+  page,
+}) => {
   await fixture(page);
   await open(page);
   const navigation = page.getByRole('navigation', { name: 'Route workspace' });
-  await expect(navigation.getByRole('button', { name: 'Overview', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(navigation.getByRole('button', { name: 'Overview', exact: true })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
   await expect(page.locator('#route-service')).toHaveCount(0);
   await expect(page.locator('#road-path')).toHaveCount(0);
   await navigation.getByRole('button', { name: 'Route & Stops', exact: true }).click();
@@ -281,7 +296,9 @@ test('route workspace shows one focused task at a time, with advanced maps hidde
   await expect(page.locator('#route-service')).toHaveCount(0);
 });
 
-test('warns before discarding unsaved route form changes when switching sections', async ({ page }) => {
+test('warns before discarding unsaved route form changes when switching sections', async ({
+  page,
+}) => {
   await fixture(page);
   await open(page);
   await page.getByRole('button', { name: 'Route & Stops', exact: true }).click();
@@ -289,7 +306,9 @@ test('warns before discarding unsaved route form changes when switching sections
   await page.getByLabel('Route name', { exact: true }).fill('Unsaved route draft');
   page.once('dialog', (dialog) => dialog.dismiss());
   await page.getByRole('button', { name: 'Assignments', exact: true }).click();
-  await expect(page.locator('#route-details').getByLabel('Route name')).toHaveValue('Unsaved route draft');
+  await expect(page.locator('#route-details').getByLabel('Route name')).toHaveValue(
+    'Unsaved route draft',
+  );
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Assignments', exact: true }).click();
   await expect(page.locator('#route-service')).toBeVisible();
@@ -339,8 +358,7 @@ test('sets up route details, bus, driver and student stops without leaving the r
   await expect(page.getByTestId('route-path-editor')).toBeVisible();
   await assignBus(page);
   const driver = page.getByRole('form', { name: 'Driver for Outbound bus One' });
-  await driver
-    .getByRole('button', { name: 'Driver Choose driver', exact: true }).click();
+  await driver.getByRole('button', { name: 'Driver Choose driver', exact: true }).click();
   await page.getByRole('button', { name: 'Test Admin', exact: true }).click();
   await driver.getByRole('button', { name: 'Save driver and dates' }).click();
   await expect(driver.getByRole('status')).toContainText('saved');
@@ -402,11 +420,15 @@ test('sets up route details, bus, driver and student stops without leaving the r
   );
   await page.getByRole('button', { name: 'Assignments', exact: true }).click();
   const outboundCard = page.getByTestId('route-service-card-service-forward');
-  const outboundDriverForm = outboundCard.getByRole('form', { name: 'Driver for Outbound bus One' });
+  const outboundDriverForm = outboundCard.getByRole('form', {
+    name: 'Driver for Outbound bus One',
+  });
   if ((await outboundDriverForm.count()) === 0) {
     await outboundCard.getByRole('button', { name: /^(Edit driver|Assign driver)$/ }).click();
   }
-  await outboundDriverForm.getByRole('combobox', { name: 'Driver plan' }).selectOption('driver-plan');
+  await outboundDriverForm
+    .getByRole('combobox', { name: 'Driver plan' })
+    .selectOption('driver-plan');
   await outboundDriverForm.getByRole('button', { name: 'Remove driver plan', exact: true }).click();
   await page
     .getByRole('dialog')
@@ -503,8 +525,7 @@ test('a rejected driver save preserves the saved bus and does not claim setup is
   await open(page);
   await assignBus(page);
   const driver = page.getByRole('form', { name: 'Driver for Outbound bus One' });
-  await driver
-    .getByRole('button', { name: 'Driver Choose driver', exact: true }).click();
+  await driver.getByRole('button', { name: 'Driver Choose driver', exact: true }).click();
   await page.getByRole('button', { name: 'Test Admin', exact: true }).click();
   await driver.getByRole('button', { name: 'Save driver and dates' }).click();
   await expect(driver.getByRole('alert')).toContainText('already has a planned driver');
@@ -523,6 +544,9 @@ test('edits bus dates against the existing service id', async ({ page }) => {
   await section.getByRole('menuitem', { name: 'Edit bus service: Outbound' }).click();
   await section.getByLabel('Effective to', { exact: true }).fill('2027-06-30');
   await section.getByRole('button', { name: 'Save bus service', exact: true }).click();
+  await expect
+    .poll(() => writes.filter((w) => w.name === 'admin_set_bus_route_service').length)
+    .toBe(2);
   expect(writes.filter((w) => w.name === 'admin_set_bus_route_service').at(-1)?.args).toMatchObject(
     {
       p_existing_assignment_ids: ['service-forward'],

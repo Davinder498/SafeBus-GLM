@@ -14,7 +14,11 @@ async function installTenantAdminMock(page: Page, outcome: 'success' | 'gateway'
   await page.addInitScript(
     ({ user }) => {
       const session = {
-        access_token: ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ', 'smoke-test-signature'].join('.'),
+        access_token: [
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+          'eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAiLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDIiLCJhbXIiOlt7Im1ldGhvZCI6InRvdHAiLCJ0aW1lc3RhbXAiOjQxMDI0NDAwMDB9XSwiZXhwIjo0MTAyNDQ0ODAwfQ',
+          'smoke-test-signature',
+        ].join('.'),
         refresh_token: 'tenant-admin-refresh-token',
         token_type: 'bearer',
         expires_in: 3600,
@@ -133,11 +137,16 @@ test.describe('guardian member invitation', () => {
     await fillGuardianForm(page);
     await page.getByRole('button', { name: 'Send invitation' }).click();
 
-    await expect(page.getByRole('alert')).toContainText('We could not reach the onboarding service.');
-    await expect(page.getByRole('alert')).toContainText('try again once');
+    await expect(page.getByRole('alert')).toContainText('SafeBus could not confirm the result.');
+    await expect(page.getByRole('alert')).toContainText(
+      'Refresh the current status before trying again',
+    );
     await expect(page.getByRole('alert')).not.toContainText('HTTP 502');
     await expect(page.getByRole('alert')).not.toContainText('SUPABASE_SECRET_KEY');
     await expect(page.getByLabel('Email address')).toHaveValue('guardian@example.test');
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Guardian invitation sent' }),
+    ).toHaveCount(0);
   });
 
   test('a confirmed invitation names the recipient and closes the form', async ({ page }) => {
