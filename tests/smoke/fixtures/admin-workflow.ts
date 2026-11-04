@@ -1,3 +1,4 @@
+import { mockTablePage } from './postgrest';
 import { type Page, type Route } from '@playwright/test';
 import { blockUnexpectedSupabaseRestAccess } from './supabase-mock';
 
@@ -107,7 +108,7 @@ export async function installAdminWorkflowMock(
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(single ? currentProfile : [currentProfile]),
+        body: JSON.stringify(single ? currentProfile : mockTablePage(route.request(), [currentProfile])),
       });
       return;
     }
@@ -317,9 +318,13 @@ export async function installAdminWorkflowMock(
       await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
       return;
     }
-    if (table === 'get_admin_paginated_list') {
+    if (table === 'bus_route_assignments') {
+      await route.fulfill({ json: [] });
+      return;
+    }
+    if (table === 'get_admin_buses_page' || table === 'get_admin_paginated_list') {
       const args = route.request().postDataJSON();
-      const items = rows[args.p_entity as keyof typeof rows] ?? [];
+      const items = rows[table === 'get_admin_buses_page' ? 'buses' : args.p_entity as keyof typeof rows] ?? [];
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -351,7 +356,7 @@ export async function installAdminWorkflowMock(
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(rows[table]),
+        body: JSON.stringify(mockTablePage(route.request(), rows[table])),
       });
       return;
     }

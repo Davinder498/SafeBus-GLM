@@ -17,6 +17,8 @@ const mocks = vi.hoisted(() => ({
   confirmPreTrip: vi.fn(),
   getPreTripConfirmation: vi.fn(),
   recordException: vi.fn(),
+  saveTripAction: vi.fn(),
+  confirmTripAction: vi.fn(),
 }));
 vi.mock('@/components/layout/DashboardLayout', () => ({
   DashboardLayout: ({ children }: { children: ReactNode }) => <main>{children}</main>,
@@ -27,6 +29,8 @@ vi.mock('@/contexts/DriverTrackingContext', () => ({
     trackingToken: 'native-service-active',
     location: { supported: true, stopAndConfirm: mocks.stopAndConfirm, start: mocks.start },
     clearTracking: mocks.clearTracking,
+    saveTripAction: mocks.saveTripAction,
+    confirmTripAction: mocks.confirmTripAction,
   }),
 }));
 vi.mock('@/services/driverTripService', () => ({
@@ -139,11 +143,13 @@ it.each(['pause', 'end', 'cancel'] as const)(
     await confirm();
     expect(mocks.stopAndConfirm).toHaveBeenCalledOnce();
     expect(mocks.fetch).toHaveBeenCalledTimes(1);
+    expect(mocks.saveTripAction).not.toHaveBeenCalled();
     expect(mocks[action]).not.toHaveBeenCalled();
     mocks.fetch.mockRejectedValueOnce(new Error('Offline'));
     await act(async () => resolve());
+    expect(mocks.saveTripAction).toHaveBeenCalledWith(trip, action, null);
     expect(document.querySelector('dialog')?.textContent).toContain(
-      'Location sharing stopped on this phone. The trip action has not been confirmed. Offline',
+      'Location sharing stopped on this phone. The trip action has not been confirmed. It is saved for automatic retry while you are signed in. Offline',
     );
     expect(mocks[action]).not.toHaveBeenCalled();
     expect(mocks.start).not.toHaveBeenCalled();
@@ -271,4 +277,18 @@ it('does not stop the collector for pre-trip inspection', async () => {
   await confirm();
   expect(mocks.stopAndConfirm).not.toHaveBeenCalled();
   expect(mocks.confirmPreTrip).toHaveBeenCalledWith('trip-a');
+});
+
+it('keeps collection off and reports a durable-storage failure before any trip write', async () => {
+  await render();
+  mocks.saveTripAction.mockImplementationOnce(() => { throw new Error('This phone could not save the action.'); });
+  await choose('end');
+  await confirm();
+  expect(mocks.stopAndConfirm).toHaveBeenCalledOnce();
+  expect(mocks.fetch).toHaveBeenCalledTimes(1);
+  expect(mocks.end).not.toHaveBeenCalled();
+  expect(mocks.start).not.toHaveBeenCalled();
+  expect(document.querySelector('dialog')?.textContent).toContain('Location sharing stopped on this phone');
+  expect(document.querySelector('dialog')?.textContent).toContain('could not save');
+  expect(document.querySelector('dialog')?.textContent).not.toContain('saved for automatic retry');
 });

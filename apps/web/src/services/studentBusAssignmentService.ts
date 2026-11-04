@@ -1,3 +1,4 @@
+import { collectVisibleRows } from './visibleRows';
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 import type {
   BusRouteAssignment,
@@ -48,7 +49,25 @@ function client() {
   return supabase;
 }
 
-export async function fetchAdminBusServices(): Promise<BusServiceOption[]> {
+export async function fetchAdminBusServices(routeId?: string): Promise<BusServiceOption[]> {
+  if (routeId) {
+    type Joined = BusRouteAssignment & {
+      buses: { bus_number: string; capacity: number | null } | null;
+      routes: { route_name: string; route_code: string } | null;
+      route_trip_patterns: { display_name: string; direction: 'forward' | 'reverse' } | null;
+    };
+    const rows = await collectVisibleRows<Joined>((from, to) => client()
+      .from('bus_route_assignments')
+      .select('*, buses!bus_route_assignments_bus_id_fkey(bus_number,capacity), routes!bus_route_assignments_route_id_fkey(route_name,route_code), route_trip_patterns!bus_route_assignments_route_trip_pattern_id_fkey(display_name,direction)')
+      .eq('route_id', routeId).order('id').range(from, to));
+    return rows.map((row) => {
+      if (!row.buses || !row.routes || !row.route_trip_patterns)
+        throw new Error('Bus service details are unavailable. Reload and check your access.');
+      return { ...row, bus_number: row.buses.bus_number, bus_capacity: row.buses.capacity,
+        route_name: row.routes.route_name, route_code: row.routes.route_code,
+        trip_name: row.route_trip_patterns.display_name, direction: row.route_trip_patterns.direction };
+    });
+  }
   const { data, error } = await client().rpc('get_admin_bus_services_with_capacity');
   if (error) throw new Error('Unable to load bus services.');
   return (data ?? []) as unknown as BusServiceOption[];

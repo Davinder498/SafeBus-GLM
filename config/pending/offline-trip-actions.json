@@ -1,0 +1,145 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261104021243_queued_trip_stop_action.sql",
+  "migrationSha256": "9a92d101b9e3677633e945ca86d3d976fcc40fd7d13eebc533d77dda9417df25",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "public.cancel_driver_trip(uuid,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "1de46b0c659d8d77bd798511aa4991f6"
+      },
+      "after": {
+        "md5": "1de46b0c659d8d77bd798511aa4991f6"
+      }
+    },
+    {
+      "signature": "public.end_driver_trip(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "f5dd81be59a2cbc661c1c1c7a1971341"
+      },
+      "after": {
+        "md5": "f5dd81be59a2cbc661c1c1c7a1971341"
+      }
+    },
+    {
+      "signature": "public.is_current_user_session_active()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "25e1e83b5d4dd9fa4b56a0ce37a53386"
+      },
+      "after": {
+        "md5": "25e1e83b5d4dd9fa4b56a0ce37a53386"
+      }
+    },
+    {
+      "signature": "public.pause_driver_trip(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "d050fd4fd9112115a36a6eff50fc3ca1"
+      },
+      "after": {
+        "md5": "d050fd4fd9112115a36a6eff50fc3ca1"
+      }
+    },
+    {
+      "signature": "safebus_private.current_driver_id()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "ec75f59b3611827bc2ab289fa2c86368"
+      },
+      "after": {
+        "md5": "ec75f59b3611827bc2ab289fa2c86368"
+      }
+    },
+    {
+      "signature": "safebus_private.current_tenant_id()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "e68a443f91a45ebdc6886321ba93920d"
+      },
+      "after": {
+        "md5": "e68a443f91a45ebdc6886321ba93920d"
+      }
+    },
+    {
+      "signature": "safebus_private.current_user_role()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "fd48c7951fd33dcedb3d1d1ef90fd556"
+      },
+      "after": {
+        "md5": "fd48c7951fd33dcedb3d1d1ef90fd556"
+      }
+    },
+    {
+      "signature": "safebus_private.has_completed_optional_mfa()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "f2169c0652e9c6b9284c1b366f38611d"
+      },
+      "after": {
+        "md5": "f2169c0652e9c6b9284c1b366f38611d"
+      }
+    },
+    {
+      "signature": "public.apply_driver_trip_stop_action(uuid,text,timestamp with time zone,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "ec197e57945656ca6ea8b9e87595d27a"
+      }
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": []
+}

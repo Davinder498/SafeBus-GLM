@@ -1,3 +1,4 @@
+import { collectVisibleRows } from './visibleRows';
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 import type { RouteServiceDay } from '@/types/transportation';
 import type { TripExceptionType } from '@/types/tripExceptions';
@@ -336,16 +337,13 @@ export interface AdminTripOperationalStatus {
   status_set_at: string | null;
 }
 
-export async function getVisibleRouteServiceDays(): Promise<RouteServiceDay[]> {
-  const client = requireSupabase();
-  const { data, error } = await client
-    .from('route_service_days')
-    .select('id, tenant_id, route_id, day_of_week, status, created_at, updated_at')
-    .order('route_id')
-    .order('day_of_week');
-
-  if (error) throw new Error('Unable to load route service days.');
-  return (data ?? []) as RouteServiceDay[];
+export async function getVisibleRouteServiceDays(routeId?: string): Promise<RouteServiceDay[]> {
+  return collectVisibleRows<RouteServiceDay>((from, to) => {
+    let request = requireSupabase().from('route_service_days')
+      .select('id, tenant_id, route_id, day_of_week, status, created_at, updated_at');
+    if (routeId) request = request.eq('route_id', routeId);
+    return request.order('id').range(from, to);
+  });
 }
 
 export async function saveRouteServiceDays(input: {
