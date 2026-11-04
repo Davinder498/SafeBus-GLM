@@ -204,6 +204,7 @@ and `1.0.0`. Configure these protected secrets:
 - `SAFEBUS_ANDROID_KEYSTORE_PASSWORD`
 - `SAFEBUS_ANDROID_KEY_ALIAS`
 - `SAFEBUS_ANDROID_KEY_PASSWORD`
+- `SAFEBUS_FIREBASE_GOOGLE_SERVICES_BASE64`
 - `VITE_SUPABASE_ANON_KEY`
 
 Configure `VITE_SUPABASE_URL` as an environment variable. From Android Studio,

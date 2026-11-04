@@ -339,6 +339,7 @@ export function DashboardLayout({
   useEffect(() => {
     if (!mobileOpen) return;
     const priorFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const drawerTrigger = drawerTriggerRef.current;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     drawerCloseRef.current?.focus();
@@ -371,7 +372,7 @@ export function DashboardLayout({
       document.body.style.overflow = previousOverflow;
       // Always return to the control that opened this drawer, even when
       // script-driven clicks did not move focus to that trigger first.
-      const restoreTarget = drawerTriggerRef.current ?? priorFocus;
+      const restoreTarget = drawerTrigger ?? priorFocus;
       if (restoreTarget?.isConnected) restoreTarget.focus();
     };
   }, [mobileOpen]);

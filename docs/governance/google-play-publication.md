@@ -55,7 +55,7 @@ Use no real names, customer identifiers, routes, coordinates, notifications, or 
 ## Artifact and track sequence
 
 1. Enrol in Play App Signing with a Google-managed app-signing key. Generate a separate SafeBus upload key and keep encrypted and offline backups.
-2. Configure the protected `android-production` GitHub environment with the five missing secrets documented in [mobile-app-setup.md](../mobile-app-setup.md). Require human approval on the environment.
+2. Verify the protected `android-production` GitHub environment against [mobile-app-setup.md](../mobile-app-setup.md). On November 3, 2026, all six required secret names and the public URL variable were present, with required reviewers and protected-branch restrictions. Values and signed-artifact validity remain unverified; do not replace the existing upload key.
 3. Run the Android workflow for an exact reviewed 40-character commit. The original internal build used version code `1`; the first SafeBus-branded candidate uses version code `2` and version name `1.0.1`.
 4. Retain the signed AAB and `safebus-android-provenance.json`. Confirm the source digest, AAB SHA-256, signing-certificate SHA-256, package, and version.
 5. Upload the workflow AAB to Internal Testing. Do not upload the obsolete August 15 local bundle.
