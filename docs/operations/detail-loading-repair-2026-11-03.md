@@ -23,3 +23,6 @@ drivers and platform admins gain no directory access. A failed refresh must stil
 block the workspace and offer retry. No notification events or channels change.
 Browser fixtures must honor table ranges, preserve RPC/single response shapes,
 and exercise the searchable bus and driver controls without relaxing assertions.
+Metadata refreshes with unchanged bus/service data must not reload the
+student roster and close its action menu. Student saves and changed membership
+or service details must still reload the roster, with edits blocked on load failure.

@@ -719,7 +719,8 @@ async function mockBusWorkspace(
     }
     if (path.includes('/profiles')) {
       const single =
-        (route.request().headers().accept ?? '').includes('object+json');
+        (route.request().headers().accept ?? '').includes('object+json') ||
+        url.searchParams.get('id')?.startsWith('eq.');
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -778,7 +779,8 @@ async function mockBusWorkspace(
     }
     if (path.includes('/rest/v1/drivers')) {
       const single =
-        (route.request().headers().accept ?? '').includes('object+json');
+        (route.request().headers().accept ?? '').includes('object+json') ||
+        url.searchParams.get('id')?.startsWith('eq.');
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
