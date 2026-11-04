@@ -3,6 +3,10 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { installBinding, readInstallInputs } from './lib/existing-security-install.mjs';
 import { assertBackupReleaseState } from './lib/backup-release-state.mjs';
+import {
+  observePlatformRecoveryCatalog,
+  platformRecoveryAttestation,
+} from './lib/platform-recovery-state.mjs';
 import { digest, assertPrivateApiSchemaHidden } from './lib/existing-security-rehearsal.mjs';
 import {
   captureEncryptedDump,
@@ -21,15 +25,26 @@ let capturedCatalog;
 try {
   const releaseSha = process.env.SAFEBUS_RELEASE_SHA;
   assertReviewedCheckout(releaseSha);
-  if (process.env.SAFEBUS_BACKUP_CONFIRM !== 'BACKUP_EXISTING_SECURITY_ENCRYPTED')
+  const platformRecovery =
+    process.env.SAFEBUS_BACKUP_CONFIRM === 'BACKUP_PLATFORM_RECOVERY_ENCRYPTED';
+  if (
+    !platformRecovery &&
+    process.env.SAFEBUS_BACKUP_CONFIRM !== 'BACKUP_EXISTING_SECURITY_ENCRYPTED'
+  )
     throw new Error('Explicit encrypted backup confirmation is required.');
+  if (platformRecovery && process.env.GITHUB_REF !== 'refs/heads/main')
+    throw new Error('Platform recovery requires reviewed main.');
   const binding = installBinding({
     environment: process.env.SAFEBUS_DEPLOY_ENV,
     databaseUrl: process.env.SAFEBUS_DATABASE_URL,
     supabaseUrl: process.env.SUPABASE_URL,
     confirmation: 'INSTALL_EXISTING_SECURITY_0123_0122_0124',
   });
-  const plan = await readInstallInputs();
+  const plan = platformRecovery ? undefined : await readInstallInputs();
+  const captureCatalog = () =>
+    platformRecovery
+      ? observePlatformRecoveryCatalog(client, binding)
+      : assertBackupReleaseState(client);
   const publicKeyPem = process.env.SAFEBUS_BACKUP_PUBLIC_KEY;
   publicBackupKey(publicKeyPem);
   const version = execFileSync('pg_dump', ['--version'], { encoding: 'utf8' });
@@ -64,10 +79,14 @@ try {
     );
     if (Math.floor(server.rows[0].version / 10000) !== 17)
       throw new Error('Review backup tools for this server version.');
-    const catalog = await assertBackupReleaseState(client);
+    const catalog = await captureCatalog();
     capturedCatalog = catalog;
     const createdAt = new Date().toISOString();
-    const output = path.resolve('.safebus-release/existing-security-backup');
+    const output = path.resolve(
+      platformRecovery
+        ? '.safebus-release/platform-recovery'
+        : '.safebus-release/existing-security-backup',
+    );
     await fs.mkdir(output, { recursive: true });
     const caFile = path.join(process.env.RUNNER_TEMP, 'safebus-approved-db-ca.pem');
     await fs.writeFile(caFile, ca, { flag: 'wx', mode: 0o600 });
@@ -96,11 +115,11 @@ try {
     const backup = {
       format: 1,
       environment: 'production',
-      mode: 'encrypted-logical-export',
+      mode: platformRecovery ? 'encrypted-platform-export' : 'encrypted-logical-export',
       releaseSha,
       runId,
       ...binding,
-      inputs: plan.inputs,
+      ...(platformRecovery ? platformRecoveryAttestation() : { inputs: plan.inputs }),
       catalogSha256: digest(JSON.stringify(catalog)),
       createdAt,
       exportCompletedAt: new Date().toISOString(),
@@ -122,10 +141,7 @@ try {
   try {
     await client.query("set local statement_timeout='30s'");
     await client.query("set local lock_timeout='2s'");
-    if (
-      digest(JSON.stringify(await assertBackupReleaseState(client))) !==
-      digest(JSON.stringify(capturedCatalog))
-    )
+    if (digest(JSON.stringify(await captureCatalog())) !== digest(JSON.stringify(capturedCatalog)))
       throw new Error('Database schema changed during export; capture a fresh backup.');
   } finally {
     await client.query('rollback');

@@ -471,3 +471,67 @@ test('observed source failures have safe diagnostic codes without printing arbit
     ),
   );
 });
+
+test('platform recovery observes an adopted database without accepting its release baseline', async (t) => {
+  const { observePlatformRecoveryCatalog, platformRecoveryAttestation } =
+    await import('../../scripts/lib/platform-recovery-state.mjs');
+  const { db, client, args, recovery } = await fixture(t);
+  await registerObservedBaseline(client, { ...args, mode: 'adopt', recovery });
+  await db.exec('begin transaction read only');
+  try {
+    const captured = await observePlatformRecoveryCatalog(client, args.binding);
+    assert.equal(captured.publicFingerprint, args.contract.schemaFingerprint);
+    await assert.rejects(
+      observePlatformRecoveryCatalog(client, { ...args.binding, databaseTarget: '0'.repeat(64) }),
+      /does not match/,
+    );
+    await assert.rejects(
+      observePlatformRecoveryCatalog(client, { ...args.binding, environment: 'staging' }),
+      /production/,
+    );
+  } finally {
+    await db.exec('rollback');
+  }
+  // Recovery capture must be possible even when drift needs separate review.
+  await db.exec('alter table public.fixture_rows add column changed boolean');
+  await db.exec('begin transaction read only');
+  try {
+    const captured = await observePlatformRecoveryCatalog(client, args.binding);
+    assert.notEqual(captured.publicFingerprint, args.contract.schemaFingerprint);
+    assert.deepEqual(platformRecoveryAttestation(), {
+      purpose: 'postgres-platform-maintenance',
+      catalogReviewRequired: true,
+      baselineAccepted: false,
+      upgradeAuthorized: false,
+      fullRestoreVerified: false,
+    });
+    await assert.rejects(
+      inspectObservedBaseline(client, args.manifest, args.binding, args.contract),
+      /drift/,
+    );
+  } finally {
+    await db.exec('rollback');
+  }
+});
+
+test('platform export preserves encryption, protected execution and the original adoption guard', async () => {
+  const workflow = await fs.readFile('.github/workflows/backup-platform-recovery.yml', 'utf8');
+  for (const gate of [
+    'environment: production',
+    'validate-security-install.yml',
+    'BACKUP_PLATFORM_RECOVERY_ENCRYPTED',
+    'platform-recovery-${{ env.SAFEBUS_RELEASE_SHA }}-${{ github.run_id }}',
+  ])
+    assert.ok(workflow.includes(gate));
+  const original = await fs.readFile('scripts/lib/backup-release-state.mjs', 'utf8');
+  assert.match(original, /requires an unadopted, reviewed source/);
+  const script = await fs.readFile('scripts/backup-existing-security.mjs', 'utf8');
+  for (const gate of [
+    'begin isolation level repeatable read read only',
+    'pg_export_snapshot()',
+    'captureEncryptedDump',
+    '--no-role-passwords',
+    'Database schema changed during export',
+  ])
+    assert.ok(script.includes(gate));
+});
