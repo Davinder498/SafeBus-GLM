@@ -1376,6 +1376,7 @@ export interface Database {
           dead_lettered_at: string | null
           user_notification_id: string | null
           recipient_profile_id: string
+          worker_id: string | null
         }
         Insert: {
           id?: string
@@ -1401,6 +1402,7 @@ export interface Database {
           dead_lettered_at?: string | null
           user_notification_id?: string | null
           recipient_profile_id: string
+          worker_id?: string | null
         }
         Update: {
           id?: string
@@ -1426,6 +1428,7 @@ export interface Database {
           dead_lettered_at?: string | null
           user_notification_id?: string | null
           recipient_profile_id?: string
+          worker_id?: string | null
         }
         Relationships: [
           {
@@ -2346,6 +2349,8 @@ export interface Database {
           route_kind: string | null
           map_color: string | null
           definition_status: string
+          service_schedule_mode: string
+          service_dates: Array<string>
         }
         Insert: {
           id?: string
@@ -2360,6 +2365,8 @@ export interface Database {
           route_kind?: string | null
           map_color?: string | null
           definition_status?: string
+          service_schedule_mode?: string
+          service_dates: Array<string>
         }
         Update: {
           id?: string
@@ -2374,6 +2381,8 @@ export interface Database {
           route_kind?: string | null
           map_color?: string | null
           definition_status?: string
+          service_schedule_mode?: string
+          service_dates?: Array<string>
         }
         Relationships: [
           {
@@ -3820,6 +3829,13 @@ export interface Database {
         }
         Returns: unknown
       }
+      authorize_driver_tracking_queue: {
+        Args: {
+          p_device_credential: string
+          p_tracking_token: string
+        }
+        Returns: unknown
+      }
       billing_begin_mutation: {
         Args: {
           p_action: string
@@ -3969,13 +3985,6 @@ export interface Database {
         }
         Returns: unknown
       }
-      authorize_driver_tracking_queue: {
-        Args: {
-          p_device_credential: string
-          p_tracking_token: string
-        }
-        Returns: unknown
-      }
       bind_driver_tracking_device: {
         Args: {
           p_device_credential: string
@@ -4082,6 +4091,15 @@ export interface Database {
         }
         Returns: unknown
       }
+      claim_notification_deliveries: {
+        Args: {
+          p_channel: string
+          p_limit?: number | null
+          p_provider_minute?: number | null
+          p_worker_id: string
+        }
+        Returns: unknown
+      }
       claim_notification_email_batch: {
         Args: {
           p_batch_size?: number | null
@@ -4146,6 +4164,12 @@ export interface Database {
       enforce_new_password_policy: {
         Args: {
           p_password: string
+        }
+        Returns: unknown
+      }
+      expand_notification_audiences: {
+        Args: {
+          p_limit?: number | null
         }
         Returns: unknown
       }
@@ -4310,6 +4334,22 @@ export interface Database {
           p_school_id?: string | null
           p_search?: string | null
           p_status?: string | null
+        }
+        Returns: unknown
+      }
+      get_admin_trip_detail: {
+        Args: {
+          p_trip_id: string
+        }
+        Returns: unknown
+      }
+      get_admin_trip_operations: {
+        Args: {
+          p_from_date?: string | null
+          p_page?: number | null
+          p_page_size?: number | null
+          p_status?: string | null
+          p_to_date?: string | null
         }
         Returns: unknown
       }
@@ -4754,6 +4794,26 @@ export interface Database {
         }
         Returns: unknown
       }
+      resolve_guardian_pickup_dropoff_email_payload: {
+        Args: {
+          p_outbox_id: string
+        }
+        Returns: unknown
+      }
+      resolve_notification_deliveries: {
+        Args: {
+          p_channel: string
+          p_ids: Array<string>
+          p_worker_id: string
+        }
+        Returns: unknown
+      }
+      resolve_notification_email_payload: {
+        Args: {
+          p_outbox_id: string
+        }
+        Returns: unknown
+      }
       resolve_notification_email_recipient: {
         Args: {
           p_outbox_id: string
@@ -4984,6 +5044,14 @@ export interface Database {
           p_driver_trip_id: string
           p_operational_status: string
           p_reason_code?: string | null
+        }
+        Returns: unknown
+      }
+      settle_notification_deliveries: {
+        Args: {
+          p_channel: string
+          p_results: Json
+          p_worker_id: string
         }
         Returns: unknown
       }
