@@ -1,3 +1,4 @@
+import { collectVisibleRows, collectVisibleIds } from './visibleRows';
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 import type { Json } from '@safebus/types/database';
 import type {
@@ -78,17 +79,17 @@ export function describeBusError(error: { message?: string; code?: string }): Er
   return new Error('We could not save the bus. Check the bus details and try again.');
 }
 
-export async function getVisibleBuses(): Promise<Bus[]> {
-  const client = requireSupabase();
-  const { data, error } = await client
-    .from('buses')
-    .select(
-      'id, tenant_id, school_id, bus_number, license_plate, capacity, status, created_at, updated_at',
-    )
-    .order('bus_number', { ascending: true });
+export async function getVisibleBuses(ids?: string[]): Promise<Bus[]> {
+  if (ids) return collectVisibleIds(ids, (chunk) => readBusRows(chunk));
+  return readBusRows();
+}
 
-  if (error) throw new Error(error.message);
-  return (data ?? []) as Bus[];
+async function readBusRows(ids?: string[]): Promise<Bus[]> {
+  return collectVisibleRows<Bus>((from, to) => {
+    let request = requireSupabase().from('buses').select('id, tenant_id, school_id, bus_number, license_plate, capacity, status, created_at, updated_at');
+    if (ids) request = request.in('id', ids);
+    return request.order('bus_number').order('id').range(from, to);
+  });
 }
 
 export async function createBus(input: CreateBusInput): Promise<AdminBus> {
@@ -137,17 +138,17 @@ export async function deleteBus(id: string): Promise<void> {
   }
 }
 
-export async function getVisibleDrivers(): Promise<Driver[]> {
-  const client = requireSupabase();
-  const { data, error } = await client
-    .from('drivers')
-    .select(
-      'id, tenant_id, profile_id, employee_number, phone, license_number, license_issue_date, license_expiry_date, license_class, address_line1, address_line2, city, province, postal_code, status, created_at, updated_at',
-    )
-    .order('created_at', { ascending: false });
+export async function getVisibleDrivers(ids?: string[]): Promise<Driver[]> {
+  if (ids) return collectVisibleIds(ids, (chunk) => readDriverRows(chunk));
+  return readDriverRows();
+}
 
-  if (error) throw new Error(error.message);
-  return (data ?? []) as Driver[];
+async function readDriverRows(ids?: string[]): Promise<Driver[]> {
+  return collectVisibleRows<Driver>((from, to) => {
+    let request = requireSupabase().from('drivers').select('id, tenant_id, profile_id, employee_number, phone, license_number, license_issue_date, license_expiry_date, license_class, address_line1, address_line2, city, province, postal_code, status, created_at, updated_at');
+    if (ids) request = request.in('id', ids);
+    return request.order('created_at', { ascending: false }).order('id').range(from, to);
+  });
 }
 
 export async function createDriver(input: CreateDriverInput): Promise<Driver> {
@@ -223,22 +224,17 @@ export async function deleteDriver(id: string): Promise<void> {
   }
 }
 
-export async function getVisibleRoutes(): Promise<Route[]> {
-  const client = requireSupabase();
-  const { data, error } = await client
-    .from('routes')
-    .select(
-      'id, tenant_id, school_id, route_name, route_code, route_type, route_kind, service_schedule_mode, service_dates, map_color, definition_status, status, created_at, updated_at',
-    )
-    .order('route_code', { ascending: true });
+export async function getVisibleRoutes(ids?: string[]): Promise<Route[]> {
+  if (ids) return collectVisibleIds(ids, (chunk) => readRouteRows(chunk));
+  return readRouteRows();
+}
 
-  if (error) {
-    if (import.meta.env.DEV) {
-      console.error('Failed to load routes', error);
-    }
-    throw new Error(error.message || 'Unable to load routes. Please try again.');
-  }
-  return (data ?? []) as Route[];
+async function readRouteRows(ids?: string[]): Promise<Route[]> {
+  return collectVisibleRows<Route>((from, to) => {
+    let request = requireSupabase().from('routes').select('id, tenant_id, school_id, route_name, route_code, route_type, route_kind, service_schedule_mode, service_dates, map_color, definition_status, status, created_at, updated_at');
+    if (ids) request = request.in('id', ids);
+    return request.order('route_code').order('id').range(from, to);
+  });
 }
 
 /**
@@ -317,42 +313,43 @@ export async function deleteRoute(id: string): Promise<void> {
   if (!data?.length) throw new Error('This route was not deleted. Reload and check your access.');
 }
 
-export async function getVisibleRouteStops(): Promise<RouteStop[]> {
-  const client = requireSupabase();
-  const { data, error } = await client
-    .from('route_stops')
-    .select(
-      'id, tenant_id, route_id, school_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at',
-    )
-    .order('stop_order', { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return (data ?? []) as RouteStop[];
+export async function getVisibleRouteStops(ids?: string[]): Promise<RouteStop[]> {
+  if (ids) return collectVisibleIds(ids, (chunk) => readRouteStopRows(chunk));
+  return readRouteStopRows();
 }
 
-export async function getVisibleRouteTripPatterns(): Promise<RouteTripPattern[]> {
-  const client = requireSupabase();
-  const { data, error } = await client
-    .from('route_trip_patterns')
-    .select(
-      'id, tenant_id, route_id, direction, display_name, status, schedule_review_required, created_at, updated_at',
-    )
-    .order('direction', { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return (data ?? []) as RouteTripPattern[];
+async function readRouteStopRows(ids?: string[]): Promise<RouteStop[]> {
+  return collectVisibleRows<RouteStop>((from, to) => {
+    let request = requireSupabase().from('route_stops').select('id, tenant_id, route_id, school_id, stop_name, stop_order, planned_arrival_time, latitude, longitude, status, created_at, updated_at');
+    if (ids) request = request.in('route_id', ids);
+    return request.order('stop_order').order('id').range(from, to);
+  });
 }
 
-export async function getVisibleRouteTripStopSchedules(): Promise<RouteTripStopSchedule[]> {
-  const client = requireSupabase();
-  const { data, error } = await client
-    .from('route_trip_stop_schedules')
-    .select(
-      'id, tenant_id, route_id, route_trip_pattern_id, route_stop_id, planned_arrival_time, created_at, updated_at',
-    );
+export async function getVisibleRouteTripPatterns(ids?: string[]): Promise<RouteTripPattern[]> {
+  if (ids) return collectVisibleIds(ids, (chunk) => readRouteTripPatternRows(chunk));
+  return readRouteTripPatternRows();
+}
 
-  if (error) throw new Error(error.message);
-  return (data ?? []) as RouteTripStopSchedule[];
+async function readRouteTripPatternRows(ids?: string[]): Promise<RouteTripPattern[]> {
+  return collectVisibleRows<RouteTripPattern>((from, to) => {
+    let request = requireSupabase().from('route_trip_patterns').select('id, tenant_id, route_id, direction, display_name, status, schedule_review_required, created_at, updated_at');
+    if (ids) request = request.in('route_id', ids);
+    return request.order('direction').order('id').range(from, to);
+  });
+}
+
+export async function getVisibleRouteTripStopSchedules(ids?: string[]): Promise<RouteTripStopSchedule[]> {
+  if (ids) return collectVisibleIds(ids, (chunk) => readRouteTripStopScheduleRows(chunk));
+  return readRouteTripStopScheduleRows();
+}
+
+async function readRouteTripStopScheduleRows(ids?: string[]): Promise<RouteTripStopSchedule[]> {
+  return collectVisibleRows<RouteTripStopSchedule>((from, to) => {
+    let request = requireSupabase().from('route_trip_stop_schedules').select('id, tenant_id, route_id, route_trip_pattern_id, route_stop_id, planned_arrival_time, created_at, updated_at');
+    if (ids) request = request.in('route_id', ids);
+    return request.order('id').range(from, to);
+  });
 }
 
 export async function saveRouteDefinition(

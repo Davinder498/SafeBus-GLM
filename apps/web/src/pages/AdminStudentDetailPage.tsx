@@ -149,10 +149,8 @@ export function AdminStudentDetailPage() {
     setWriteError(null);
     setMessage(null);
     try {
-      const [services, stops] = await Promise.all([
-        fetchAdminBusServices(),
-        getVisibleRouteStops(),
-      ]);
+      const services = await fetchAdminBusServices();
+      const stops = await getVisibleRouteStops([...new Set(services.map((service) => service.route_id))]);
       setBusServices(services);
       setRouteStops(stops);
       setEditing(false);

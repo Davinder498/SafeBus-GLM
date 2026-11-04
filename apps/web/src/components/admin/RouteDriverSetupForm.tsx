@@ -1,3 +1,4 @@
+import { AdminReferencePicker } from './AdminReferencePicker';
 import { albertaToday } from '@/utils/adminTripDates';
 import { useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
@@ -116,24 +117,9 @@ export function RouteDriverSetupForm({
             ))}
           </select>
         </label>
-        <label className="text-sm font-semibold">
-          Driver
-          <select
-            className={field}
-            value={driverId}
-            onChange={(e) => setDriverId(e.target.value)}
-            required
-          >
-            <option value="">Choose driver</option>
-            {drivers
-              .filter((d) => d.status === 'active')
-              .map((d) => (
-                <option key={d.id} value={d.id}>
-                  {names.get(d.profile_id) ?? d.employee_number ?? 'Driver'}
-                </option>
-              ))}
-          </select>
-        </label>
+        <AdminReferencePicker entity="drivers" value={driverId}
+          selectedLabel={names.get(drivers.find((driver) => driver.id === driverId)?.profile_id ?? '')}
+          onChange={setDriverId} />
         <label className="text-sm font-semibold">
           Service starts
           <input

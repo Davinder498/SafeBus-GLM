@@ -14,22 +14,9 @@ import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { useMapTileConfig } from '@/hooks/useMapTileConfig';
-import { getVisibleProfiles, getVisibleSchools } from '@/services/adminOrganizationService';
-import { fetchAdminAssignments } from '@/services/driverAssignmentService';
-import {
-  fetchAdminBusServices,
-  type BusServiceOption,
-} from '@/services/studentBusAssignmentService';
-import {
-  getVisibleBuses,
-  getVisibleDrivers,
-  getVisibleRouteStops,
-  getVisibleRouteTripPatterns,
-  getVisibleRouteTripStopSchedules,
-  getVisibleRoutes,
-  deleteRoute,
-  updateRoute,
-} from '@/services/transportationStructureService';
+import { fetchAdminRouteDetail } from '@/services/adminRouteDetailService';
+import { deleteRoute, updateRoute } from '@/services/transportationStructureService';
+import type { BusServiceOption } from '@/services/studentBusAssignmentService';
 import type { OrganizationProfile, School } from '@/types/organization';
 import type { DriverRouteAssignment } from '@/types/driverAssignments';
 import type {
@@ -42,7 +29,6 @@ import type {
   RouteTripStopSchedule,
 } from '@/types/transportation';
 import { activeDriverForBusService } from '@/utils/transportAssignments';
-import { getVisibleRouteServiceDays } from '@/services/phase6OperationsService';
 import type { RouteServiceDay } from '@/types/transportation';
 
 type RouteWorkspaceTab = 'overview' | 'route' | 'assignments' | 'students';
@@ -93,7 +79,8 @@ export function AdminRouteDetailPage() {
   const { profile } = useAuth();
   const { routeId } = useParams<{ routeId: string }>();
   const mapTileConfig = useMapTileConfig();
-  const [data, setData] = useState<RouteDetailData | null>(null);
+  const [loadedData, setData] = useState<RouteDetailData | null>(null);
+  const data = loadedData?.route.id === routeId ? loadedData : null;
   const [error, setError] = useState<string | null>(null);
   const [direction, setDirection] = useState<RouteDirection>('forward');
   const [revision, setRevision] = useState(0);
@@ -101,67 +88,24 @@ export function AdminRouteDetailPage() {
   useEffect(() => {
     let mounted = true;
     setError(null);
-    void Promise.all([
-      getVisibleRoutes(),
-      getVisibleRouteStops(),
-      getVisibleSchools(),
-      getVisibleBuses(),
-      getVisibleDrivers(),
-      fetchAdminAssignments(),
-      getVisibleProfiles(),
-      getVisibleRouteTripPatterns(),
-      getVisibleRouteTripStopSchedules(),
-      fetchAdminBusServices(),
-      getVisibleRouteServiceDays(),
-    ])
-      .then(
-        ([
-          routes,
-          stops,
-          schools,
-          buses,
-          drivers,
-          assignments,
-          profiles,
-          patterns,
-          schedules,
-          busServices,
-          serviceDays,
-        ]) => {
-          if (!mounted) return;
-          const route = routes.find((item) => item.id === routeId);
-          if (!route) {
-            setError('This route is not available.');
-            return;
-          }
-          setData({
-            route,
-            stops: stops
-              .filter((stop) => stop.route_id === route.id && stop.status !== 'archived')
-              .sort((a, b) => a.stop_order - b.stop_order),
-            schools,
-            buses,
-            drivers,
-            assignments: assignments.filter(
-              (assignment) => assignment.route_id === route.id && assignment.status === 'active',
-            ),
-            busServices: busServices.filter(
-              (service) => service.route_id === route.id && service.status === 'active',
-            ),
-            profiles,
-            tripPatterns: patterns.filter((pattern) => pattern.route_id === route.id),
-            schedules: schedules.filter((schedule) => schedule.route_id === route.id),
-            serviceDays: serviceDays.filter((day) => day.route_id === route.id),
-          });
-        },
-      )
+    // Keep the current workspace mounted during post-save refreshes so its
+    // confirmation and form state survive. Never display another route's data.
+    setData((current) => current?.route.id === routeId ? current : null);
+    if (!routeId) { setError('This route is not available.'); return; }
+    void fetchAdminRouteDetail(routeId, {
+      busId: searchParams.get('newBusId'), driverId: searchParams.get('newDriverId'),
+    }).then((detail) => {
+      if (!mounted) return;
+      if (!detail) setError('This route is not available.');
+      else setData(detail);
+    })
       .catch(() => {
         if (mounted) setError('We could not load this route. Please try again.');
       });
     return () => {
       mounted = false;
     };
-  }, [routeId, revision]);
+  }, [routeId, revision, searchParams]);
 
   const busNames = useMemo(
     () => new Map(data?.buses.map((bus) => [bus.id, bus.bus_number]) ?? []),

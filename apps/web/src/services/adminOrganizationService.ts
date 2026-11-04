@@ -1,3 +1,4 @@
+import { collectVisibleRows, collectVisibleIds } from './visibleRows';
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 import { safeBusDisplayText } from '@/utils/brand';
 import type {
@@ -29,15 +30,13 @@ export async function getVisibleTenants(): Promise<Tenant[]> {
 export async function getVisibleSchools(options?: {
   includeArchived?: boolean;
 }): Promise<School[]> {
-  const client = requireSupabase();
-  let request = client
-    .from('schools')
-    .select('id, tenant_id, name, city, province, status, created_at, updated_at');
-  if (!options?.includeArchived) request = request.eq('status', 'active');
-  const { data, error } = await request.order('name', { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => ({ ...row, name: safeBusDisplayText(row.name) })) as School[];
+  const rows = await collectVisibleRows<School>((from, to) => {
+    let request = requireSupabase().from('schools')
+      .select('id, tenant_id, name, city, province, status, created_at, updated_at');
+    if (!options?.includeArchived) request = request.eq('status', 'active');
+    return request.order('name').order('id').range(from, to);
+  });
+  return rows.map((row) => ({ ...row, name: safeBusDisplayText(row.name) }));
 }
 
 export interface SchoolDetailsInput {
@@ -91,20 +90,15 @@ export async function restoreTenantSchool(schoolId: string): Promise<School> {
   return data as School;
 }
 
-export async function getVisibleProfiles(): Promise<OrganizationProfile[]> {
-  const client = requireSupabase();
-  const { data, error } = await client
-    .from('profiles')
-    .select(
-      'id, tenant_id, school_id, first_name, last_name, full_name, email, role, status, created_at, updated_at',
-    )
-    .order('full_name', { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => ({
-    ...row,
-    full_name: row.full_name ? safeBusDisplayText(row.full_name) : row.full_name,
-  })) as OrganizationProfile[];
+export async function getVisibleProfiles(ids?: string[]): Promise<OrganizationProfile[]> {
+  const load = (chunk?: string[]) => collectVisibleRows<OrganizationProfile>((from, to) => {
+    let request = requireSupabase().from('profiles').select(
+      'id, tenant_id, school_id, first_name, last_name, full_name, email, role, status, created_at, updated_at');
+    if (chunk) request = request.in('id', chunk);
+    return request.order('full_name').order('id').range(from, to);
+  });
+  const rows = ids ? await collectVisibleIds(ids, load) : await load();
+  return rows.map((row) => ({ ...row, full_name: row.full_name ? safeBusDisplayText(row.full_name) : row.full_name }));
 }
 
 export async function getVisibleDriverProfiles(): Promise<OrganizationProfile[]> {
