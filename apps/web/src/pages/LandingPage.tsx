@@ -357,7 +357,7 @@ export function LandingPage() {
               <div id="driver-qr" className="mt-7 flex items-start gap-3 rounded-xl border border-slate-200 bg-[#F5F7FA] p-4">
                 <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" aria-hidden />
                 <p className="text-sm font-medium leading-6 text-slate-700">
-                  Existing driver trip-start, QR and pickup/drop-off workflows stay unchanged.
+                  Drivers scan their bus QR to start a trip and record pickup and drop-off events.
                 </p>
               </div>
             </div>

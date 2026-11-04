@@ -1,3 +1,4 @@
+import { MobileAppLinks } from '@/components/ui/MobileAppLinks';
 import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { AlertCircle, ShieldCheck } from 'lucide-react';
@@ -164,6 +165,7 @@ export function LoginPage() {
               Back to site
             </button>
           </div>
+          {appSurface === 'web' && <div className="mt-6"><MobileAppLinks /></div>}
           <Link
             to="/privacy"
             className="mt-6 inline-flex text-sm font-semibold text-navy-700 underline underline-offset-4"

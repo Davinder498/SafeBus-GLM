@@ -1,3 +1,4 @@
+import { directionLabel } from '@/services/adminTripOverviewService';
 import type { AdminTripDetail, AdminTripOperation } from '@/types/adminTripDetail';
 
 export function tripLocationLabel(status: AdminTripOperation['locationStatus']): string {
@@ -90,4 +91,10 @@ export function tripStopPosition(
       return i - 1 + (bus - values[i - 1]) / (values[i] - values[i - 1]);
   }
   return values.length - 1;
+}
+
+export function tripServiceLabel(direction: AdminTripDetail['trip']['direction'], name: string): string {
+  const label = directionLabel(direction);
+  const pattern = name.trim();
+  return !pattern || pattern.toLowerCase() === label.toLowerCase() ? label : `${label} · ${pattern}`;
 }
