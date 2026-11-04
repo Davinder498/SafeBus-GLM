@@ -1,7 +1,0 @@
-{
-  "status": "prepared-unapplied",
-  "migration": "supabase/migrations/pending/20261104021243_queued_trip_stop_action.sql",
-  "authenticated": ["apply_driver_trip_stop_action(uuid,text,timestamp with time zone,text)"],
-  "serviceRole": [],
-  "serviceRoleDenied": ["apply_driver_trip_stop_action(uuid,text,timestamp with time zone,text)"]
-}

@@ -32,7 +32,9 @@ before relying on automatic retry in a released app. Missing/unavailable RPCs
 retain the intent and show pending confirmation; there is no unsafe legacy retry
 fallback. Physical-device/restart/airplane-mode acceptance remains required.
 
-After installation, retain the protected run evidence and promote only the
-catalog-verified new endpoint into the active authorization inventory before the
-final launch audit. The prepared authorization file permits source references;
-it does not assert that this endpoint is already deployed.
+Installation and independent catalog verification completed on November 4 through
+the protected release. See [the installation record](offline-trip-action-installation-2026-11-04.md)
+and `config/observed/offline-trip-action-authorization.json` for its bounded recovery
+and scope evidence. The catalog-verified endpoint is included in the active
+authorization inventory; the full protected authorization audit follows its
+review and merge.

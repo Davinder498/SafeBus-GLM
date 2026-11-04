@@ -2,6 +2,7 @@
   "serviceRoleDenied": [
     "admin_get_printable_qr(text,uuid,boolean,text)",
     "admin_set_student_bus_service_with_seat(uuid,uuid,uuid,integer,text,uuid,uuid,uuid,uuid,date,date,uuid[])",
+    "apply_driver_trip_stop_action(uuid,text,timestamp with time zone,text)",
     "authorize_driver_tracking_queue(text,text)",
     "get_admin_bus_services_with_capacity()",
     "get_admin_trip_detail(uuid)",
@@ -43,6 +44,7 @@
     "admin_update_bus(uuid,uuid,text,text,integer,text)",
     "admin_update_bus_route_assignment(uuid,uuid,uuid,text,date,date)",
     "admin_update_bus_with_fleet_number(uuid,uuid,text,text,integer,text)",
+    "apply_driver_trip_stop_action(uuid,text,timestamp with time zone,text)",
     "archive_user_notifications(uuid[])",
     "authorize_driver_tracking_queue(text,text)",
     "bind_driver_tracking_device(text,uuid,text)",
