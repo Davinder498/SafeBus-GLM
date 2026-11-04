@@ -42,6 +42,9 @@ try {
   console.error(
     JSON.stringify({
       result: 'failed',
+      ...(error?.message === 'UPGRADE_PREFLIGHT_RESPONSE' && error.diagnostics
+        ? { responseContract: error.diagnostics }
+        : {}),
       ...(error?.message === 'UPGRADE_PREFLIGHT_HTTP_401' ||
       error?.message === 'UPGRADE_PREFLIGHT_READ_TOKEN_MISSING'
         ? {
