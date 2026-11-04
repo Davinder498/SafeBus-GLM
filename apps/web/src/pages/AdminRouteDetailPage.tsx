@@ -79,7 +79,8 @@ export function AdminRouteDetailPage() {
   const { profile } = useAuth();
   const { routeId } = useParams<{ routeId: string }>();
   const mapTileConfig = useMapTileConfig();
-  const [data, setData] = useState<RouteDetailData | null>(null);
+  const [loadedData, setData] = useState<RouteDetailData | null>(null);
+  const data = loadedData?.route.id === routeId ? loadedData : null;
   const [error, setError] = useState<string | null>(null);
   const [direction, setDirection] = useState<RouteDirection>('forward');
   const [revision, setRevision] = useState(0);
@@ -87,7 +88,9 @@ export function AdminRouteDetailPage() {
   useEffect(() => {
     let mounted = true;
     setError(null);
-    setData(null);
+    // Keep the current workspace mounted during post-save refreshes so its
+    // confirmation and form state survive. Never display another route's data.
+    setData((current) => current?.route.id === routeId ? current : null);
     if (!routeId) { setError('This route is not available.'); return; }
     void fetchAdminRouteDetail(routeId, {
       busId: searchParams.get('newBusId'), driverId: searchParams.get('newDriverId'),

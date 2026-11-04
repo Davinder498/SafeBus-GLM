@@ -14,3 +14,12 @@ adds no retired school-admin access, and changes no notification channel or
 recipient choice. Platform and unsupported roles retain their existing access.
 Selected/returned references must still be authorized and writes remain checked
 by the server. Missing and inaccessible routes produce the same unavailable state.
+
+PR review acceptance, November 4: school authority admins retain save confirmations
+and form state when the current route refreshes after a successful write. Changing
+routes must hide the previous route while the new request is pending. School-scoped
+and transportation admins retain their existing read/write scope; guardians,
+drivers and platform admins gain no directory access. A failed refresh must still
+block the workspace and offer retry. No notification events or channels change.
+Browser fixtures must honor table ranges, preserve RPC/single response shapes,
+and exercise the searchable bus and driver controls without relaxing assertions.

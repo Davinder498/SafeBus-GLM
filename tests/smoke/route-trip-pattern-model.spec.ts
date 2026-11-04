@@ -1,3 +1,4 @@
+import { mockTablePage } from './fixtures/postgrest';
 import { expect, test, type Page, type Route } from '@playwright/test';
 
 const profile = {
@@ -84,7 +85,7 @@ async function mockRoutes(page: Page, role = 'tenant_admin', existingRoute?: Exi
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(single ? currentProfile : [currentProfile]),
+        body: JSON.stringify(single ? currentProfile : mockTablePage(route.request(), [currentProfile])),
       });
     }
     if (path.includes('/rpc/get_admin_paginated_list')) {
@@ -138,7 +139,7 @@ async function mockRoutes(page: Page, role = 'tenant_admin', existingRoute?: Exi
         return route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(rows),
+          body: JSON.stringify(mockTablePage(route.request(), rows)),
         });
       }
     }

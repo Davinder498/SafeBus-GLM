@@ -1,3 +1,4 @@
+import { mockTablePage } from './fixtures/postgrest';
 import { expect, test, type Page, type Route } from '@playwright/test';
 
 const tenantId = '22222222-2222-2222-2222-222222222222';
@@ -250,6 +251,7 @@ async function mockBusWorkspace(
 
   await page.route('**/*', async (route: Route) => {
     const url = new URL(route.request().url());
+    const mockJson = (data: unknown) => JSON.stringify(Array.isArray(data) ? mockTablePage(route.request(), data) : data);
     if (!url.hostname.endsWith('.supabase.co')) return route.fallback();
     const path = url.pathname;
     const method = route.request().method();
@@ -257,14 +259,14 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ eligible: true, limit: 10, active: 1 }),
+        body: mockJson({ eligible: true, limit: 10, active: 1 }),
       });
     }
     if (path.startsWith('/auth/v1/')) {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(
+        body: mockJson(
           path.endsWith('/user')
             ? { id: profile.id, email: profile.email, role: 'authenticated', aud: 'authenticated' }
             : {},
@@ -300,7 +302,7 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
+        body: mockJson({
           bus: {
             ...bus,
             fleet_number: 'fleetNumber' in options ? options.fleetNumber : bus.fleet_number,
@@ -465,7 +467,7 @@ async function mockBusWorkspace(
         return route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify([
+          body: mockJson([
             {
               ...routeAssignments.find((item) => item.id === 'service-expired'),
               id: 'service-renewed',
@@ -480,7 +482,7 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(
+        body: mockJson(
           routeAssignments.slice(0, 2).map((assignment) => ({
             ...assignment,
             effective_from: body.p_effective_from,
@@ -493,7 +495,7 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([
+        body: mockJson([
           ...routeAssignments.slice(0, 3).map((assignment) => ({
             ...assignment,
             bus_number: bus.bus_number,
@@ -511,7 +513,7 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([
+        body: mockJson([
           {
             id: plannedDriverReplaced ? 'assignment-2' : 'assignment-1',
             tenant_id: tenantId,
@@ -573,7 +575,7 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ id: 'assignment-2', status: 'active' }),
+        body: mockJson({ id: 'assignment-2', status: 'active' }),
       });
     }
     if (path.includes('/rpc/admin_end_bus_route_service')) {
@@ -598,7 +600,7 @@ async function mockBusWorkspace(
         return route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify([
+          body: mockJson([
             { id: 'student-assignment-2', status: 'active' },
             { id: 'student-assignment-2-return', status: 'active' },
           ]),
@@ -608,7 +610,7 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([
+        body: mockJson([
           {
             id: 'student-assignment-1',
             effective_to: studentEffectiveTo,
@@ -639,7 +641,7 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(
+        body: mockJson(
           (body.p_assignment_ids ?? []).map((id) => ({
             id,
             status: body.p_status,
@@ -651,7 +653,7 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([{ id: 'student-2', label: 'Morgan Lee', school_name: null }]),
+        body: mockJson([{ id: 'student-2', label: 'Morgan Lee', school_name: null }]),
       });
     }
     if (path.includes('/rpc/admin_update_bus_route_assignment')) {
@@ -660,7 +662,7 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ ...routeAssignments[0], effective_to: routeEffectiveTo }),
+        body: mockJson({ ...routeAssignments[0], effective_to: routeEffectiveTo }),
       });
     }
     if (path.includes('/rpc/admin_renew_bus_route_assignment')) {
@@ -675,7 +677,7 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
+        body: mockJson({
           ...routeAssignments.find((item) => item.id === 'service-expired'),
           id: 'service-renewed',
           effective_from: renewedRouteEffectiveFrom,
@@ -688,7 +690,7 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([
+        body: mockJson([
           {
             bus_id: busId,
             has_active_credential: hasActiveQr,
@@ -704,7 +706,7 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([
+        body: mockJson([
           {
             bus_id: busId,
             credential_id: hasActiveQr ? 'credential-1' : null,
@@ -717,19 +719,18 @@ async function mockBusWorkspace(
     }
     if (path.includes('/profiles')) {
       const single =
-        (route.request().headers().accept ?? '').includes('object+json') ||
-        url.searchParams.has('id');
+        (route.request().headers().accept ?? '').includes('object+json');
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(single ? profile : [profile, ...driverProfiles]),
+        body: mockJson(single ? profile : [profile, ...driverProfiles]),
       });
     }
     if (path.includes('/rpc/admin_create_bus')) {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(bus),
+        body: mockJson(bus),
       });
     }
     if (path.includes('/rpc/admin_update_bus_with_fleet_number')) {
@@ -739,7 +740,7 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ ...bus, fleet_number: body.p_fleet_number ?? bus.fleet_number }),
+        body: mockJson({ ...bus, fleet_number: body.p_fleet_number ?? bus.fleet_number }),
       });
     }
     if (path.includes('/rest/v1/bus_route_assignments') && method === 'PATCH') {
@@ -748,7 +749,7 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ ...routeAssignments[0], ...body }),
+        body: mockJson({ ...routeAssignments[0], ...body }),
       });
     }
     if (path.includes('/rest/v1/student_bus_assignments') && method === 'PATCH') {
@@ -767,7 +768,7 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
+        body: mockJson({
           id: isExpiredAssignment ? 'student-assignment-expired' : 'student-assignment-1',
           ...body,
           status: isExpiredAssignment ? expiredStudentStatus : studentStatus,
@@ -777,19 +778,18 @@ async function mockBusWorkspace(
     }
     if (path.includes('/rest/v1/drivers')) {
       const single =
-        (route.request().headers().accept ?? '').includes('object+json') ||
-        url.searchParams.has('id');
+        (route.request().headers().accept ?? '').includes('object+json');
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(single ? drivers[0] : drivers),
+        body: mockJson(single ? drivers[0] : drivers),
       });
     }
     if (path.includes('/rest/v1/routes')) {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([
+        body: mockJson([
           {
             id: 'route-current',
             tenant_id: tenantId,
@@ -829,7 +829,7 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([
+        body: mockJson([
           {
             id: 'pattern-current',
             tenant_id: tenantId,
@@ -874,7 +874,7 @@ async function mockBusWorkspace(
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([
+        body: mockJson([
           {
             id: 'stop-1',
             tenant_id: tenantId,
