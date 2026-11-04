@@ -2,13 +2,35 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
+import pg from 'pg';
 import {
   digest,
   snapshotDefaults,
   verifyDefaults,
   rehearseDefaults,
   SESSION_POLICY_TABLES,
+  SESSION_POLICIES_SQL,
 } from '../../scripts/lib/default-privilege-rollout.mjs';
+
+test('policy role lists use the same array representation in the release database driver', async (t) => {
+  const db = new PGlite();
+  t.after(() => db.close());
+  await db.exec(`create role authenticated;
+    create schema safebus_private;
+    create table safebus_private.authority_announcements(id integer);
+    create policy safebus_active_session on safebus_private.authority_announcements
+      as restrictive for all to authenticated using(true);`);
+  const result = await db.query(SESSION_POLICIES_SQL);
+  const field = result.fields.find((entry) => entry.name === 'roles');
+  const wire = (
+    await db.query(`select roles::text as value from pg_policies
+    where schemaname='safebus_private' and tablename='authority_announcements'`)
+  ).rows[0].value;
+  // Reproduce the actual pg decoding that PGlite's native results do not exercise.
+  assert.equal(pg.types.getTypeParser(1003)(wire), '{authenticated}');
+  assert.deepEqual(pg.types.getTypeParser(field.dataTypeID)(wire), ['authenticated']);
+  assert.deepEqual(result.rows.find((row) => row.policyname).roles, ['authenticated']);
+});
 
 test('application default repair rehearses exact recovery and leaves managed findings visible', async (t) => {
   const db = new PGlite();
@@ -87,13 +109,31 @@ test('application default repair rehearses exact recovery and leaves managed fin
   assert.deepEqual(await snapshotDefaults(client), before);
   await assert.rejects(rehearseDefaults(client, forward + '\nselect 1/0;', restore, config));
   assert.deepEqual(await snapshotDefaults(client), before);
+  assert.throws(() => verifyDefaults({ ...after, guardHash: 'changed' }, config, 'after'), {
+    message: 'DEFAULT_PRIVILEGE_SNAPSHOT_CHANGED',
+    snapshotPhase: 'after',
+    snapshotSection: 'guardHash',
+  });
+  assert.throws(() => verifyDefaults({ ...after, findings: [] }, config, 'after'), {
+    message: 'DEFAULT_PRIVILEGE_SNAPSHOT_CHANGED',
+    snapshotPhase: 'after',
+    snapshotSection: 'findings',
+  });
   assert.throws(
-    () => verifyDefaults({ ...after, guardHash: 'changed' }, config, 'after'),
-    /SNAPSHOT_CHANGED/,
-  );
-  assert.throws(
-    () => verifyDefaults({ ...after, findings: [] }, config, 'after'),
-    /SNAPSHOT_CHANGED/,
+    () =>
+      verifyDefaults(
+        {
+          ...after,
+          sessionPolicies: after.sessionPolicies.map((p) => ({ ...p, roles: '{authenticated}' })),
+        },
+        config,
+        'after',
+      ),
+    {
+      message: 'DEFAULT_PRIVILEGE_SNAPSHOT_CHANGED',
+      snapshotPhase: 'after',
+      snapshotSection: 'sessionPolicies',
+    },
   );
   await db.exec(forward);
   await db.exec(`create table public.future_data(id serial primary key);

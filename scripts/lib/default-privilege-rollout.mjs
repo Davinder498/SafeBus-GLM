@@ -16,7 +16,8 @@ export const SESSION_POLICY_TABLES = [
   'tenant_subscription_exemptions',
 ];
 const targetNames = SESSION_POLICY_TABLES.map((name) => "'" + name + "'").join(',');
-export const SESSION_POLICIES_SQL = `select wanted.table_name,p.policyname,p.permissive,p.roles,p.cmd,p.qual,p.with_check
+// pg returns name[] as text by default; text[] has a supported array parser.
+export const SESSION_POLICIES_SQL = `select wanted.table_name,p.policyname,p.permissive,p.roles::text[] as roles,p.cmd,p.qual,p.with_check
   from (values ${SESSION_POLICY_TABLES.map((name) => "('" + name + "')").join(',')}) wanted(table_name)
   left join pg_policies p on p.schemaname='safebus_private' and p.tablename=wanted.table_name
     and p.policyname='safebus_active_session' order by wanted.table_name collate "C"`;
@@ -61,14 +62,16 @@ export async function snapshotDefaults(client) {
 }
 
 export function verifyDefaults(snapshot, config, phase) {
-  if (
-    !['before', 'after'].includes(phase) ||
-    !isDeepStrictEqual(snapshot.defaults, config[phase].defaults) ||
-    !isDeepStrictEqual(snapshot.findings, config[phase].findings) ||
-    !isDeepStrictEqual(snapshot.sessionPolicies, config[phase].sessionPolicies) ||
-    snapshot.guardHash !== config.guardHash
-  )
-    throw new Error('DEFAULT_PRIVILEGE_SNAPSHOT_CHANGED');
+  const mismatch = (section) =>
+    Object.assign(new Error('DEFAULT_PRIVILEGE_SNAPSHOT_CHANGED'), {
+      snapshotPhase: ['before', 'after'].includes(phase) ? phase : 'invalid',
+      snapshotSection: section,
+    });
+  if (!['before', 'after'].includes(phase)) throw mismatch('phase');
+  for (const section of ['defaults', 'findings', 'sessionPolicies']) {
+    if (!isDeepStrictEqual(snapshot[section], config[phase][section])) throw mismatch(section);
+  }
+  if (snapshot.guardHash !== config.guardHash) throw mismatch('guardHash');
   return {
     applicationDefaultsHardened: phase === 'after',
     privateSessionGuardsVerified: phase === 'after' ? snapshot.sessionPolicies.length : 0,
