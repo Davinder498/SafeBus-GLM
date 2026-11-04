@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
@@ -129,6 +130,11 @@ test('pending retention correction fixes observed failures without enabling dele
       )
     ).rows[0];
   const originalMetadata = await metadata();
+  const release = JSON.parse(await fs.readFile('config/pending/retention-qualification.json', 'utf8'));
+  assert.equal(release.migration, pending);
+  assert.equal(release.migrationSha256, createHash('sha256').update(migration).digest('hex'));
+  assert.equal(release.functions[0].before.md5, createHash('md5').update(await definition()).digest('hex'));
+  assert.equal(release.rehearseRestore, true);
 
   await t.test('reproduces all eight observed 42702 dry-run failures', async () => {
     for (const [key] of policies) {
@@ -146,6 +152,7 @@ test('pending retention correction fixes observed failures without enabling dele
     'corrected dry runs count only expired terminal records and retain data',
     async () => {
       await db.exec(migration);
+      assert.equal(release.functions[0].after.md5, createHash('md5').update(await definition()).digest('hex'));
       assert.deepEqual(await metadata(), originalMetadata);
       for (const [key, table] of policies) {
         const result = await run(key);
