@@ -104,17 +104,32 @@ export async function fetchPlatformBillingSummaries(): Promise<PlatformBillingSu
   }));
 }
 
+function unconfirmedBillingResult() {
+  return Object.assign(
+    new Error(
+      'The billing request was not confirmed. Retry the same request before making another change.',
+    ),
+    { retryable: true },
+  );
+}
+
 async function callBillingFunction<T>(path: string, body: Record<string, unknown>): Promise<T> {
   const c = client();
   const { data: sessionData } = await c.auth.getSession();
   const token = sessionData.session?.access_token;
   if (!token) throw new Error('Sign in required.');
-  const response = await fetch(`/.netlify/functions/${path}`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-    body: JSON.stringify(body),
-  });
-  const payload = record(await response.json().catch(() => ({})));
+  let response: Response;
+  try {
+    response = await fetch(`/.netlify/functions/${path}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw unconfirmedBillingResult();
+  }
+  const isJson = response.headers.get('content-type')?.includes('application/json');
+  const payload = record(isJson ? await response.json().catch(() => null) : null);
   if (!response.ok || typeof payload.error === 'string') {
     throw Object.assign(
       new Error(
@@ -125,6 +140,8 @@ async function callBillingFunction<T>(path: string, body: Record<string, unknown
       { retryable: payload.retryable },
     );
   }
+  if (!isJson || Array.isArray(payload) || Object.keys(payload).length === 0)
+    throw unconfirmedBillingResult();
   return payload as T;
 }
 
@@ -275,10 +292,16 @@ export async function retryTenantBilling(
   let result;
   try {
     result = await callBillingFunction<{
+      ok?: boolean;
       url?: string;
       pendingPayment?: boolean;
       paymentUrl?: string;
     }>('tenant-subscriptions', { ...saved.body, requestId: saved.requestId });
+    const confirmed =
+      saved.body.action === 'checkout'
+        ? typeof result.url === 'string' && result.url.startsWith('https://')
+        : result.ok === true;
+    if (!confirmed) throw unconfirmedBillingResult();
   } catch (error) {
     if ((error as { retryable?: boolean }).retryable === false) {
       pendingBillingRequests.delete(tenantId);

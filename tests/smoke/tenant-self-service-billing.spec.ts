@@ -201,6 +201,42 @@ test('subscription cancellation stays in SafeBus and requires confirmation', asy
   await expect(page).toHaveURL(/\/admin\/settings\/billing$/);
 });
 
+test('an unreadable cancellation response stays pending until the same request is confirmed', async ({
+  page,
+}) => {
+  await installLocalOnlyBoundary(page);
+  await installBilling(page, true);
+  const cancellations: Record<string, unknown>[] = [];
+  await page.route('**/.netlify/functions/tenant-subscriptions', async (route) => {
+    const body = route.request().postDataJSON();
+    if (body.action !== 'cancel') return route.fallback();
+    cancellations.push(body);
+    if (cancellations.length === 1)
+      return route.fulfill({ contentType: 'text/html', body: '<html>SafeBus</html>' });
+    return route.fulfill({ json: { ok: true } });
+  });
+  await page.goto('/admin/settings/billing');
+  await page
+    .getByTestId('subscription-cancellation')
+    .getByRole('button', { name: 'Cancel plan', exact: true })
+    .click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('button', { name: 'Cancel renewal' }).click();
+  await expect(page.getByRole('alert')).toContainText('The billing request was not confirmed');
+  await expect(page.getByRole('status').filter({ hasText: 'Renewal canceled.' })).toHaveCount(0);
+  expect(cancellations).toHaveLength(1);
+  expect(
+    await page.evaluate((id) => sessionStorage.getItem(`safebus-billing-request:${id}`), tenantId),
+  ).toBe(cancellations[0].requestId);
+  await dialog.getByRole('button', { name: 'Cancel renewal' }).click();
+  await expect(page.getByRole('status')).toContainText('Renewal canceled.');
+  expect(cancellations).toHaveLength(2);
+  expect(cancellations[1]).toEqual(cancellations[0]);
+  expect(
+    await page.evaluate((id) => sessionStorage.getItem(`safebus-billing-request:${id}`), tenantId),
+  ).toBeNull();
+});
+
 test('payment details opens the authenticated Stripe portal only on request', async ({ page }) => {
   await installLocalOnlyBoundary(page);
   await installBilling(page, true);

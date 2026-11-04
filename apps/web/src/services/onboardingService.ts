@@ -8,20 +8,59 @@ function client() {
   return supabase;
 }
 
+const unconfirmedResult =
+  'SafeBus could not confirm the result. Refresh the current status before trying again.';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function hasConfirmation(body: Record<string, unknown>, payload: Record<string, unknown>) {
+  if (body.kind === 'createTenant') {
+    return (
+      isRecord(payload.tenant) &&
+      typeof payload.tenant.id === 'string' &&
+      payload.tenant.id.length > 0 &&
+      typeof payload.tenant.name === 'string' &&
+      typeof payload.recipientEmail === 'string' &&
+      payload.recipientEmail.length > 0 &&
+      ['sent', 'resent', 'recovery_sent'].includes(String(payload.invitationStatus))
+    );
+  }
+  if (body.kind === 'bulkInvitationDispatch') {
+    return (
+      payload.batchId === body.batchId &&
+      ['claimed', 'sent', 'failed'].every(
+        (key) => Number.isSafeInteger(payload[key]) && Number(payload[key]) >= 0,
+      ) &&
+      isRecord(payload.summary)
+    );
+  }
+  return typeof payload.status === 'string' && payload.status.trim().length > 0;
+}
+
 async function callOnboarding<T>(body: Record<string, unknown>): Promise<T> {
   const c = client();
   const { data: session } = await c.auth.getSession();
   const token = session.session?.access_token;
   if (!token) throw new Error('Sign in required.');
-  const response = await fetch('/.netlify/functions/safebus-onboarding', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-    body: JSON.stringify(body),
-  });
+  let response: Response;
+  try {
+    response = await fetch('/.netlify/functions/safebus-onboarding', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    // The server may have completed the mutation before the connection failed.
+    // Never retry an invitation or account change automatically.
+    throw new Error(unconfirmedResult);
+  }
   const contentType = response.headers.get('content-type') || '';
   const isJson = contentType.includes('application/json');
-  const payload = isJson ? await response.json().catch(() => ({})) : {};
-  if (!response.ok) {
+  const decoded: unknown = isJson ? await response.json().catch(() => null) : null;
+  const payload = isRecord(decoded) ? decoded : {};
+  if (!response.ok || typeof payload.error === 'string') {
     if (typeof payload.error === 'string') {
       const message = payload.error;
       if (
@@ -44,19 +83,17 @@ async function callOnboarding<T>(body: Record<string, unknown>): Promise<T> {
       }
       throw new Error(message);
     }
-    // Detect non-JSON responses (HTML SPA fallback when Netlify Functions are
-    // not served — e.g. running `vite` instead of `netlify dev` locally).
+    // Non-JSON responses can be an HTML fallback instead of the function.
     if (!isJson || response.status === 404) {
-      throw new Error(
-        'We could not reach the onboarding service. Nothing was confirmed; please try again once.',
-      );
+      throw new Error(unconfirmedResult);
     }
     throw new Error(
       response.status >= 500
-        ? 'The onboarding service did not confirm completion. Nothing was confirmed; please try again once.'
+        ? unconfirmedResult
         : 'The onboarding request was rejected. Review the form and try again.',
     );
   }
+  if (!isJson || !hasConfirmation(body, payload)) throw new Error(unconfirmedResult);
   return payload as T;
 }
 
