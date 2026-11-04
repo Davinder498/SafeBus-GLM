@@ -3969,6 +3969,13 @@ export interface Database {
         }
         Returns: unknown
       }
+      authorize_driver_tracking_queue: {
+        Args: {
+          p_device_credential: string
+          p_tracking_token: string
+        }
+        Returns: unknown
+      }
       bind_driver_tracking_device: {
         Args: {
           p_device_credential: string

@@ -2,6 +2,14 @@
 // migration contracts supplement functions omitted by that role's metadata and
 // nullable arguments omitted even when the function itself is advertised.
 const AUTHENTICATED_ONLY_FUNCTIONS = {
+  // Observed after reviewed tracking-queue deployment; service metadata omits it.
+  authorize_driver_tracking_queue: {
+    properties: {
+      p_device_credential: { type: 'string', format: 'text' },
+      p_tracking_token: { type: 'string', format: 'text' },
+    },
+    required: new Set(['p_device_credential', 'p_tracking_token']),
+  },
   // Prepared from 0121; retain the typed contract while adoption is pending.
   search_admin_trips: {
     properties: {

@@ -93,3 +93,50 @@ coordinates are never rewritten when a current credential is used on the wire.
 
 The native queue is restricted to the existing approved BusSafe HTTPS endpoint.
 Changing a JS-supplied server URL cannot authorize export to another project.
+
+## Observed deployment and source adoption
+
+After the owner reported deployment, read-only catalog checks on 2026-11-03
+confirmed all ten reviewed function definitions, owners and ACLs. Normalizing
+CRLF to LF produces the exact reviewed fingerprints; no semantic drift was
+observed. The new function's two text arguments, JSONB return, empty search path,
+and authenticated-only execution were confirmed. Evidence is retained in
+`docs/operations/tracking-queue-live-verification-2026-11-03.json` and referenced
+by `config/observed/tracking-queue-authorization.json`.
+
+This observation performed no DDL, fixture writes or notifications. No tracking
+install run was found in the protected operational workflow history. Installation
+provenance and pre-change recovery evidence remain unestablished by this check;
+the observation must not be substituted for either. Do not replay the migration
+to manufacture that history. The original pending SQL remains the reviewed
+release input, not a migration-chain promotion.
+
+Source adoption adds only this observed RPC to the active authenticated inventory
+and explicitly retains its service-role denial. The audit now models that denial
+instead of requiring an inappropriate grant. The type generator supplements the
+verified contract because service-role OpenAPI metadata omits it. Its generated
+return remains `unknown`, requiring callers to validate the response. Management
+type generation independently confirmed both required string arguments and the
+JSONB return. Refresh workflow run `41742660210` was cancelled while waiting for
+production review because main's generator lacked this supplemental contract.
+After this source follow-up is reviewed and merged, rerun **Refresh database
+types** through its protected production environment.
+
+Acceptance remains unchanged: drivers alone can request a proof, with an active
+session, optional enrolled MFA, current device credential and original scope.
+School authority admins, school-scoped admins, transportation admins, guardians
+and platform admins gain no tracking permission. This source adoption changes no
+events, channels, recipient choices or notification behavior. The existing six
+role PostgreSQL scenarios remain the behavioral tests; the live check verified
+definitions and grants rather than signing in as each role.
+
+An anonymous Data API probe returned HTTP 401 / `42501` at the existing session
+hook. That proves denial, not schema-cache visibility or authenticated recovery.
+Live signed-in driver recovery and physical-device acceptance remain pending.
+
+A broader read-only comparison also found 23 pre-existing hosted authenticated
+RPCs absent from the active inventory, with no missing expected authenticated
+RPCs, and 16 other authenticated RPCs lacking service-role execution. This
+tracking-only adoption does not approve those unrelated surfaces. Reconcile
+their reviewed deployment evidence separately before claiming a passing full
+platform authorization audit or release readiness.

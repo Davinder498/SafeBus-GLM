@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import { createHash } from 'node:crypto';
+import { authorizationAudiences } from '../../scripts/lib/authorization-audiences.mjs';
 
 const migrationPath = 'supabase/migrations/0089_authorization_surface_hardening.sql';
 const notificationMigrationPath = 'supabase/migrations/0092_end_to_end_notification_system.sql';
@@ -10,6 +11,23 @@ const notificationMigrationPath = 'supabase/migrations/0092_end_to_end_notificat
 async function readJson(file) {
   return JSON.parse(await fs.readFile(file, 'utf8'));
 }
+
+test('audits retain authenticated driver access while denying service-role execution', async () => {
+  const surface = await readJson('config/authorization-surface.json');
+  const roles = authorizationAudiences(surface);
+  const signature = 'authorize_driver_tracking_queue(text,text)';
+  assert.ok(roles.authenticated.has(signature));
+  assert.ok(roles.publicFunctions.has(signature));
+  assert.equal(roles.serviceExecutable.has(signature), false);
+  assert.equal(roles.serviceOnly.has(signature), false);
+  assert.deepEqual([...roles.serviceExecutable].sort(),
+    [...roles.publicFunctions].filter((name) => name !== signature).sort());
+  assert.throws(() => authorizationAudiences({ ...surface, serviceRoleDenied: ['unknown()'] }),
+    /authenticated-only/);
+  assert.throws(() => authorizationAudiences({
+    ...surface, serviceRole: [...surface.serviceRole, signature],
+  }), /authenticated-only/);
+});
 
 async function walk(directory) {
   const entries = await fs.readdir(directory, { withFileTypes: true });
@@ -145,6 +163,35 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
     assert.equal(actual.get(name), 'authenticated');
     actual.delete(name);
   }
+  const tracking = await readJson('config/observed/tracking-queue-authorization.json');
+  const trackingEvidence = await readJson(tracking.verificationEvidence);
+  const trackingReview = await readJson('config/pending/tracking-queue-recovery.json');
+  assert.equal(tracking.projectId, trackingReview.projectId);
+  assert.equal(tracking.migration, trackingReview.migration);
+  assert.equal(tracking.migrationSha256, trackingReview.migrationSha256);
+  assert.equal(trackingEvidence.migrationSha256, tracking.migrationSha256);
+  assert.equal(trackingEvidence.observationOnly, true);
+  assert.equal(trackingEvidence.sqlApplied, false);
+  assert.equal(trackingEvidence.preChangeRecoveryEvidenceEstablished, false);
+  assert.equal(trackingEvidence.liveDriverRecoveryVerified, false);
+  assert.equal(trackingEvidence.physicalDeviceVerified, false);
+  assert.deepEqual(tracking.addedAuthenticated, ['authorize_driver_tracking_queue(text,text)']);
+  assert.deepEqual(surface.serviceRoleDenied, tracking.deniedServiceRole);
+  assert.equal(createHash('sha256')
+    .update((await fs.readFile(tracking.migration, 'utf8')).replaceAll('\r\n', '\n'))
+    .digest('hex'), tracking.migrationSha256);
+  assert.equal(trackingEvidence.functions.length, trackingReview.functions.length);
+  for (const reviewed of trackingReview.functions) {
+    const live = trackingEvidence.functions.find((entry) => entry.signature === reviewed.signature);
+    assert.equal(live.normalizedMd5, reviewed.after.md5);
+    assert.equal(live.owner, reviewed.owner);
+    assert.deepEqual(live.acl, reviewed.acl);
+  }
+  for (const signature of tracking.addedAuthenticated) {
+    const name = signature.slice(0, signature.indexOf('('));
+    assert.equal(actual.has(name), false);
+    actual.set(name, 'authenticated');
+  }
   const expected = new Map();
   for (const signature of surface.authenticated) {
     expected.set(signature.slice(0, signature.indexOf('(')), 'authenticated');
@@ -168,7 +215,6 @@ test('production application RPC references are all reviewed', async () => {
     readJson('config/pending/authority-directory-authorization.json'),
     readJson('config/pending/admin-trip-detail-authorization.json'),
     readJson('config/pending/unified-notification-authorization.json'),
-    readJson('config/pending/tracking-queue-authorization.json'),
   ]);
   const approved = new Set(
     [

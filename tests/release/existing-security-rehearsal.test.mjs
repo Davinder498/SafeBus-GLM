@@ -235,7 +235,12 @@ test('snapshot-specific reconciliation retains the exact existing API signatures
   const retired = JSON.parse(
     await fs.readFile('config/observed/recipient-push-retirements.json', 'utf8'),
   ).removedAuthenticated;
-  const historicalAuthenticated = [...surface.authenticated, ...retired];
+  const added = JSON.parse(
+    await fs.readFile('config/observed/tracking-queue-authorization.json', 'utf8'),
+  ).addedAuthenticated;
+  const historicalAuthenticated = [
+    ...surface.authenticated.filter((signature) => !added.includes(signature)), ...retired,
+  ];
   const migration = await fs.readFile(RECONCILIATION_FILE, 'utf8');
   const entries = [
     ...migration.matchAll(/\('([a-z0-9_]+\([^']*\))', '(authenticated|service_role)'\)/g),

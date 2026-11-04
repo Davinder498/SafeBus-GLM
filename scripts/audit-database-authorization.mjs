@@ -3,6 +3,7 @@
 import fs from 'node:fs/promises';
 import process from 'node:process';
 import pg from 'pg';
+import { authorizationAudiences } from './lib/authorization-audiences.mjs';
 import { UNSAFE_PUBLIC_DEFAULT_PRIVILEGES_SQL } from './lib/default-privilege-audit.mjs';
 import { assertPrivateApiSchemaHidden } from './lib/existing-security-rehearsal.mjs';
 import {
@@ -27,9 +28,8 @@ if (environment === 'production' && process.env.GITHUB_ACTIONS !== 'true') {
 }
 
 const surface = JSON.parse(await fs.readFile('config/authorization-surface.json', 'utf8'));
-const authenticated = new Set(surface.authenticated);
-const serviceRole = new Set(surface.serviceRole);
-const allPublic = new Set([...authenticated, ...serviceRole]);
+const { authenticated, serviceOnly: serviceRole, publicFunctions: allPublic, serviceExecutable } =
+  authorizationAudiences(surface);
 const binding = createEnvironmentBinding({ environment, databaseUrl, supabaseUrl });
 
 function sorted(values) {
@@ -121,7 +121,7 @@ try {
   assertExactSurface(
     'Service-role RPC surface',
     serviceFunctions.rows.map((row) => row.signature),
-    allPublic,
+    serviceExecutable,
   );
 
   const anonymousFunctions = await client.query(`
@@ -356,7 +356,7 @@ try {
       .map((entry) => entry.slice('/rpc/'.length)),
   );
   const expectedNames = new Set(
-    [...allPublic].map((signature) => signature.slice(0, signature.indexOf('('))),
+    [...serviceExecutable].map((signature) => signature.slice(0, signature.indexOf('('))),
   );
   assertExactSurface('Advertised Data API RPC names', advertised, expectedNames);
 
