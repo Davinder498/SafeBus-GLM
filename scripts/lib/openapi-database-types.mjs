@@ -169,6 +169,11 @@ const NULLABLE_FUNCTION_ARGUMENTS = new Set([
   'admin_update_bus_route_assignment.p_effective_to',
 ]);
 
+// PostgREST omits this array default from its OpenAPI metadata. The hosted
+// routes column is NOT NULL DEFAULT '{}'::date[], confirmed read-only after
+// the reviewed service-calendar deployment. Do not infer defaults for arrays.
+const OBSERVED_COLUMN_DEFAULTS = { 'routes.service_dates': [] };
+
 function quoteProperty(name) {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name) ? name : JSON.stringify(name);
 }
@@ -238,7 +243,12 @@ export function generateFromOpenApi(schema) {
   const tableBlocks = [];
   for (const tableName of Object.keys(schema.definitions).sort()) {
     const definition = schema.definitions[tableName];
-    const properties = definition.properties ?? {};
+    const properties = { ...(definition.properties ?? {}) };
+    for (const [column, property] of Object.entries(properties)) {
+      const name = `${tableName}.${column}`;
+      if (Object.hasOwn(OBSERVED_COLUMN_DEFAULTS, name) && !Object.hasOwn(property, 'default'))
+        properties[column] = { ...property, default: OBSERVED_COLUMN_DEFAULTS[name] };
+    }
     const required = new Set(definition.required ?? []);
     const relationships = [];
     for (const [column, property] of Object.entries(properties)) {

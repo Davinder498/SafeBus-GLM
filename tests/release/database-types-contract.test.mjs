@@ -8,6 +8,34 @@ const root = process.cwd();
 const generatedPath = path.join(root, 'packages/types/src/database.generated.ts');
 const generated = fs.readFileSync(generatedPath, 'utf8');
 
+test('the observed route date default permits omission without making unrelated arrays optional', () => {
+  const metadata = {
+    definitions: {
+      routes: {
+        properties: {
+          service_dates: { type: 'array', items: { type: 'string', format: 'date' } },
+          required_array: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['service_dates', 'required_array'],
+      },
+    },
+    paths: {},
+  };
+  const source = generateFromOpenApi(metadata);
+  const table = source.match(/      routes: \{[\s\S]*?\n      \}/)?.[0];
+  const row = table.slice(table.indexOf('Row:'), table.indexOf('Insert:'));
+  const insert = table.slice(table.indexOf('Insert:'), table.indexOf('Update:'));
+  assert.match(row, /service_dates: Array<string>/);
+  assert.doesNotMatch(row, /service_dates\?:|service_dates: Array<string> \| null/);
+  assert.match(insert, /service_dates\?: Array<string>/);
+  assert.match(insert, /required_array: Array<string>/);
+  assert.doesNotMatch(insert, /required_array\?:/);
+  assert.equal('default' in metadata.definitions.routes.properties.service_dates, false);
+  const committedRoutes = generated.match(/      routes: \{[\s\S]*?\n      \}/)?.[0];
+  assert.match(committedRoutes.slice(committedRoutes.indexOf('Insert:'), committedRoutes.indexOf('Update:')),
+    /service_dates\?: Array<string>/);
+});
+
 test('driver queue contract survives service-role metadata omission with both credentials required', () => {
   const metadataWithoutDriverRpc = generateFromOpenApi({ definitions: {}, paths: {} });
   const block = metadataWithoutDriverRpc.match(/      authorize_driver_tracking_queue: \{[\s\S]*?\n      \}/)?.[0];
