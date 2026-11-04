@@ -198,7 +198,10 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
   assert.equal(launch.sqlApplied, false);
   assert.equal(launch.installationProvenanceEstablished, false);
   assert.equal(launch.addedAuthenticated.length, 23);
-  assert.deepEqual(surface.serviceRoleDenied, launch.serviceRoleDenied);
+  const offline = await readJson('config/observed/offline-trip-action-authorization.json');
+  const offlineEvidence = await readJson(offline.verificationEvidence);
+  assert.deepEqual([...surface.serviceRoleDenied].sort(),
+    [...launch.serviceRoleDenied, ...offline.deniedServiceRole].sort());
   for (const signature of launch.addedAuthenticated) {
     const observed = launch.functions.find((entry) => entry.signature === signature);
     assert.match(observed.normalizedMd5, /^[a-f0-9]{32}$/);
@@ -217,8 +220,18 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
     actual.set(name, 'service_role');
   }
   const audiences = authorizationAudiences(surface);
-  assert.deepEqual(launch.functions.map((f) => f.signature).sort(), [...audiences.publicFunctions].sort());
-  for (const entry of launch.functions) {
+  const offlineFunctions = offlineEvidence.functions.filter((entry) =>
+    offline.addedAuthenticated.includes(entry.signature.replace(/^public\./, '')),
+  ).map((entry) => ({ ...entry, signature: entry.signature.replace(/^public\./, '') }));
+  assert.equal(offlineFunctions.length, offline.addedAuthenticated.length);
+  for (const signature of offline.addedAuthenticated) {
+    const name = signature.slice(0, signature.indexOf('('));
+    assert.equal(actual.has(name), false);
+    actual.set(name, 'authenticated');
+  }
+  const observedFunctions = [...launch.functions, ...offlineFunctions];
+  assert.deepEqual(observedFunctions.map((f) => f.signature).sort(), [...audiences.publicFunctions].sort());
+  for (const entry of observedFunctions) {
     assert.equal(entry.owner, 'postgres');
     assert.equal(entry.acl.some((acl) => acl.startsWith('=') || acl.startsWith('anon=')), false);
     assert.equal(entry.acl.includes('authenticated=X/postgres'), audiences.authenticated.has(entry.signature));
@@ -234,12 +247,68 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
   assert.deepEqual([...actual].sort(), [...expected].sort());
 });
 
+test('offline stop inventory is bound to protected installation, prior recovery and the observed driver-only grant', async () => {
+  const observed = await readJson('config/observed/offline-trip-action-authorization.json');
+  const evidence = await readJson(observed.verificationEvidence);
+  const reviewed = await readJson('config/pending/offline-trip-actions.json');
+  const active = await readJson('config/authorization-surface.json');
+  const signature = 'apply_driver_trip_stop_action(uuid,text,timestamp with time zone,text)';
+  assert.deepEqual(observed.addedAuthenticated, [signature]);
+  assert.deepEqual(observed.deniedServiceRole, [signature]);
+  assert.ok(active.authenticated.includes(signature));
+  assert.ok(active.serviceRoleDenied.includes(signature));
+  assert.equal(active.serviceRole.includes(signature), false);
+  assert.equal(observed.projectId, reviewed.projectId);
+  assert.equal(observed.migration, reviewed.migration);
+  assert.equal(observed.migrationSha256, reviewed.migrationSha256);
+  assert.equal(createHash('sha256').update((await fs.readFile(observed.migration, 'utf8')).replaceAll('\r\n', '\n')).digest('hex'), observed.migrationSha256);
+  assert.equal(observed.installationOrigin, 'protected-workflow');
+  assert.equal(observed.preChangeRecoveryEvidenceEstablished, true);
+  assert.equal(evidence.observationOnly, true);
+  assert.equal(evidence.sqlApplied, false);
+  assert.equal(evidence.installationProvenanceEstablished, true);
+  assert.equal(evidence.preChangeRecoveryEvidenceEstablished, true);
+  const installation = evidence.installation;
+  assert.equal(installation.workflow, 'release-operational-fix.yml');
+  assert.equal(installation.workflowRunId, '41866277317');
+  assert.equal(installation.workflowRunUrl, `https://github.com/Davinder498/SafeBus-GLM/actions/runs/${installation.workflowRunId}`);
+  assert.equal(installation.releaseSha, '630ae69b60382c71b43a640a3d6cb6d3f81ef63e');
+  assert.equal(installation.migrationSha256, reviewed.migrationSha256);
+  assert.equal(installation.sqlApplied, true);
+  assert.equal(installation.notificationSent, false);
+  assert.ok(Date.parse(installation.recovery.createdAt) <= Date.parse(installation.recovery.uploadedAt));
+  assert.ok(Date.parse(installation.recovery.uploadedAt) <= Date.parse(installation.installedAt));
+  assert.ok(Date.parse(installation.installedAt) <= Date.parse(installation.verifiedAt));
+  assert.match(installation.recovery.ciphertextSha256, /^[a-f0-9]{64}$/);
+  assert.equal(installation.recovery.boundedRecoveryOnly, true);
+  assert.equal(installation.recovery.fullDatabaseRestoreVerified, false);
+  assert.equal(evidence.functions.length, reviewed.functions.length);
+  for (const expected of reviewed.functions) {
+    const actual = evidence.functions.find((entry) => entry.signature === expected.signature);
+    assert.equal(actual.normalizedMd5, expected.after.md5);
+    assert.equal(actual.owner, expected.owner);
+    assert.deepEqual(actual.acl, expected.acl);
+  }
+  const endpoint = evidence.functions.find((entry) => entry.signature === `public.${signature}`);
+  assert.deepEqual(endpoint.acl, ['authenticated=X/postgres', 'postgres=X/postgres']);
+  assert.equal(evidence.catalogComparison.applicationFunctions, 220);
+  assert.equal(evidence.catalogComparison.previouslyKnownFunctions, 219);
+  const prior = await readJson('config/observed/launch-api-inventory.json');
+  assert.equal(evidence.catalogComparison.existingDefinitionFingerprintsCompared, prior.functions.filter((entry) => entry.normalizedMd5).length);
+  assert.equal(evidence.catalogComparison.unchangedGuardFunctionsVerified, 8);
+  for (const key of ['unexpectedFunctions', 'missingFunctions', 'changedExistingDefinitionsOrAcls'])
+    assert.deepEqual(evidence.catalogComparison[key], []);
+  assert.equal(evidence.catalogComparison.anonymousExecutionGrants, 0);
+  assert.equal(evidence.physicalDeviceVerified, false);
+  assert.equal(evidence.liveStopReplayInvoked, false);
+  assert.equal(evidence.externalNotificationSent, false);
+});
+
 test('production application RPC references are all reviewed', async () => {
   const surface = await readJson('config/authorization-surface.json');
   // Prepared source can reference an explicitly reviewed forward surface. This
   // does not add it to the active installation/audit manifest or authorize DDL.
   const pending = await Promise.all([
-    readJson('config/pending/offline-trip-action-authorization.json'),
     readJson('config/pending/tenant-subscription-authorization.json'),
     readJson('config/pending/pricing-catalog-authorization.json'),
     readJson('config/pending/student-seat-authorization.json'),

@@ -1,0 +1,144 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "observedAt": "2026-11-04T16:42:04.693396+00:00",
+  "observationOnly": true,
+  "sqlApplied": false,
+  "installationProvenanceEstablished": true,
+  "preChangeRecoveryEvidenceEstablished": true,
+  "installation": {
+    "workflow": "release-operational-fix.yml",
+    "workflowRunId": "41866277317",
+    "workflowRunUrl": "https://github.com/Davinder498/SafeBus-GLM/actions/runs/41866277317",
+    "releaseSha": "630ae69b60382c71b43a640a3d6cb6d3f81ef63e",
+    "milestone": "offline_actions",
+    "migration": "supabase/migrations/pending/20261104021243_queued_trip_stop_action.sql",
+    "migrationSha256": "9a92d101b9e3677633e945ca86d3d976fcc40fd7d13eebc533d77dda9417df25",
+    "sqlApplied": true,
+    "notificationSent": false,
+    "recovery": {
+      "artifactId": 13344240720,
+      "artifactUrl": "https://github.com/Davinder498/SafeBus-GLM/actions/runs/41866277317/artifacts/13344240720",
+      "artifactDigest": "sha256:0b30af6ed333654b17daa92d3c51294dea28909e9693d6cc3005cd83e506f412",
+      "createdAt": "2026-11-04T16:35:52.871Z",
+      "uploadedAt": "2026-11-04T16:35:54Z",
+      "ciphertextSha256": "496806c680ed4f0e7e38b6fd74df51780aa44981fa6b78f68faf3a2a74f66cc1",
+      "boundedRecoveryOnly": true,
+      "fullDatabaseRestoreVerified": false
+    },
+    "installedAt": "2026-11-04T16:36:00.607Z",
+    "verifiedAt": "2026-11-04T16:36:01.924Z",
+    "outcomeArtifactId": 13344136139,
+    "outcomeArtifactDigest": "sha256:7ed67f35888e22edf434dfe0af828fa69e1a6f4e9b375d57913a47aaaa8858ba"
+  },
+  "functions": [
+    {
+      "signature": "public.apply_driver_trip_stop_action(uuid,text,timestamp with time zone,text)",
+      "normalizedMd5": "ec197e57945656ca6ea8b9e87595d27a",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ]
+    },
+    {
+      "signature": "public.cancel_driver_trip(uuid,text)",
+      "normalizedMd5": "1de46b0c659d8d77bd798511aa4991f6",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "public.end_driver_trip(uuid)",
+      "normalizedMd5": "f5dd81be59a2cbc661c1c1c7a1971341",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "public.is_current_user_session_active()",
+      "normalizedMd5": "25e1e83b5d4dd9fa4b56a0ce37a53386",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "public.pause_driver_trip(uuid)",
+      "normalizedMd5": "d050fd4fd9112115a36a6eff50fc3ca1",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "safebus_private.current_driver_id()",
+      "normalizedMd5": "ec75f59b3611827bc2ab289fa2c86368",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "safebus_private.current_tenant_id()",
+      "normalizedMd5": "e68a443f91a45ebdc6886321ba93920d",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "safebus_private.current_user_role()",
+      "normalizedMd5": "fd48c7951fd33dcedb3d1d1ef90fd556",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "safebus_private.has_completed_optional_mfa()",
+      "normalizedMd5": "f2169c0652e9c6b9284c1b366f38611d",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    }
+  ],
+  "catalogComparison": {
+    "applicationFunctions": 220,
+    "previouslyKnownFunctions": 219,
+    "existingDefinitionFingerprintsCompared": 40,
+    "unchangedGuardFunctionsVerified": 8,
+    "addedAuthenticated": [
+      "apply_driver_trip_stop_action(uuid,text,timestamp with time zone,text)"
+    ],
+    "addedServiceRole": [],
+    "deniedServiceRole": [
+      "apply_driver_trip_stop_action(uuid,text,timestamp with time zone,text)"
+    ],
+    "unexpectedFunctions": [],
+    "missingFunctions": [],
+    "changedExistingDefinitionsOrAcls": [],
+    "anonymousExecutionGrants": 0
+  },
+  "physicalDeviceVerified": false,
+  "liveStopReplayInvoked": false,
+  "externalNotificationSent": false
+}

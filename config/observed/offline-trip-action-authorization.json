@@ -1,0 +1,16 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "observedOn": "2026-11-04",
+  "reviewedPullRequest": "https://github.com/Davinder498/SafeBus-GLM/pull/366",
+  "migration": "supabase/migrations/pending/20261104021243_queued_trip_stop_action.sql",
+  "migrationSha256": "9a92d101b9e3677633e945ca86d3d976fcc40fd7d13eebc533d77dda9417df25",
+  "verificationEvidence": "docs/operations/offline-trip-actions-live-verification-2026-11-04.json",
+  "addedAuthenticated": [
+    "apply_driver_trip_stop_action(uuid,text,timestamp with time zone,text)"
+  ],
+  "deniedServiceRole": [
+    "apply_driver_trip_stop_action(uuid,text,timestamp with time zone,text)"
+  ],
+  "installationOrigin": "protected-workflow",
+  "preChangeRecoveryEvidenceEstablished": true
+}
