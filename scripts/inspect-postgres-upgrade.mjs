@@ -12,9 +12,11 @@ try {
     !/^[1-9][0-9]*$/.test(process.env.GITHUB_RUN_ID ?? '')
   )
     throw new Error('UPGRADE_PREFLIGHT_PROTECTED_CONTEXT');
+  if (!process.env.SUPABASE_UPGRADE_READ_TOKEN?.trim())
+    throw new Error('UPGRADE_PREFLIGHT_READ_TOKEN_MISSING');
   const evidence = await inspectPostgresUpgrade({
     projectId: process.env.SUPABASE_PROJECT_ID,
-    token: process.env.SUPABASE_ACCESS_TOKEN,
+    token: process.env.SUPABASE_UPGRADE_READ_TOKEN,
   });
   const directory = '.safebus-release/postgres-upgrade';
   await fs.mkdir(directory, { recursive: true });
@@ -40,6 +42,18 @@ try {
   console.error(
     JSON.stringify({
       result: 'failed',
+      ...(error?.message === 'UPGRADE_PREFLIGHT_HTTP_401' ||
+      error?.message === 'UPGRADE_PREFLIGHT_READ_TOKEN_MISSING'
+        ? {
+            remediation:
+              'Set the production environment secret SUPABASE_UPGRADE_READ_TOKEN to a valid BusSafe-scoped personal access token. Keep the token out of logs and chat.',
+          }
+        : error?.message === 'UPGRADE_PREFLIGHT_HTTP_403'
+          ? {
+              remediation:
+                'Check BusSafe project scope and Project Settings Read plus Database Read permissions for SUPABASE_UPGRADE_READ_TOKEN.',
+            }
+          : {}),
       code: /^UPGRADE_PREFLIGHT_[A-Z_0-9]+$/.test(error?.message ?? '')
         ? error.message
         : 'UPGRADE_PREFLIGHT_ERROR',

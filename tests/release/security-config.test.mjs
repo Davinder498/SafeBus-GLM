@@ -716,3 +716,24 @@ test('upgrade inspection retains protected reviewed execution without an upgrade
   assert.doesNotMatch(api, /method: '(?:POST|PATCH|DELETE)'/);
   assert.match(api, /redirect: 'error'/);
 });
+
+test('upgrade authentication failure stops after one request without reading provider content', async () => {
+  const { inspectPostgresUpgrade } = await import('../../scripts/lib/postgres-upgrade-preflight.mjs');
+  for (const status of [401, 403]) {
+    let requests = 0;
+    await assert.rejects(inspectPostgresUpgrade({
+      projectId: 'ckrkfylsyihwouvesypm', token: 'synthetic-secret',
+      fetchImpl: async () => {
+        requests++;
+        return { ok: false, status, json() { throw new Error('must not read provider content'); } };
+      },
+    }), { message: `UPGRADE_PREFLIGHT_HTTP_${status}` });
+    assert.equal(requests, 1);
+  }
+  const workflow = await read('.github/workflows/inspect-postgres-upgrade.yml');
+  assert.match(workflow, /SUPABASE_UPGRADE_READ_TOKEN: \$\{\{ secrets\.SUPABASE_UPGRADE_READ_TOKEN \}\}/);
+  assert.doesNotMatch(workflow, /secrets\.SUPABASE_ACCESS_TOKEN/);
+  const script = await read('scripts/inspect-postgres-upgrade.mjs');
+  assert.match(script, /UPGRADE_PREFLIGHT_READ_TOKEN_MISSING/);
+  assert.doesNotMatch(script, /process\.env\.SUPABASE_ACCESS_TOKEN/);
+});

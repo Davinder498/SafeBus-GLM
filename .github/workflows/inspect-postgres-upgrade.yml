@@ -30,7 +30,7 @@ jobs:
       SAFEBUS_DEPLOY_ENV: production
       SAFEBUS_UPGRADE_CONFIRM: ${{ inputs.confirmation }}
       SUPABASE_PROJECT_ID: ${{ vars.SUPABASE_PROJECT_ID }}
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_UPGRADE_READ_TOKEN: ${{ secrets.SUPABASE_UPGRADE_READ_TOKEN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:

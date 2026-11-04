@@ -10,7 +10,7 @@ submitted from the dashboard.
 
 The next reviewed step is `Inspect Postgres upgrade readiness`, dispatched from
 current main with its full SHA and `INSPECT_POSTGRES_UPGRADE`. It reuses the
-protected production environment and existing access token. It calls only the
+protected production environment and a dedicated read-only token. It calls only the
 provider eligibility GET, retains sanitized prerequisite counts and version
 identifiers, and cannot initiate an upgrade. A successful inspection means
 observation completed; inspect `providerChecksClear` separately. Missing provider
@@ -93,8 +93,7 @@ A successful capture is not proof of decryptability or restoration, and is not a
 launch or upgrade approval.
 
 Upgrade prerequisite inspection was dispatched on merged PR #374 main
-`df37ecc860483918e45644050d2548bc8beb8e42` as run 41922260568. Its outcome is
-not asserted here. A fresh read-only database check still reports PostgreSQL17.6
+`df37ecc860483918e45644050d2548bc8beb8e42` as run 41922260568. It subsequently failed authentication with HTTP 401; eligibility remains unknown. A fresh read-only database check still reports PostgreSQL 17.6
 and Edmonton winter conversion at 07:00 for 2027-01-15T14:00Z, so the timezone
 repair remains pending.
 
@@ -104,3 +103,26 @@ repair remains pending.
 - https://supabase.com/docs/reference/api/v1-upgrade-postgres-version
 - https://supabase.com/docs/guides/platform/upgrading
 - https://supabase.com/changelog/tzdata-local-time-vancouver-edmonton-casablanca
+
+
+## Eligibility credential repair
+
+The first protected inspection (41922260568) failed at the eligibility GET with
+HTTP 401 after code validation passed. The workflow supplied a token, which the
+provider rejected; its exact expiry, revocation or content problem is unverified.
+No eligibility artifact was produced and no upgrade was attempted.
+
+Use the dedicated production environment secret `SUPABASE_UPGRADE_READ_TOKEN`
+for this inspection. The owner must create and enter the credential directly;
+never send it in chat, logs, source or screenshots. Scope the PAT to BusSafe
+`ckrkfylsyihwouvesypm` with **Project Settings: Read** and **Database: Read**.
+Choose a deliberate expiry and record its renewal outside the secret value.
+Do not replace the shared `SUPABASE_ACCESS_TOKEN` with this narrower token: other
+workflows use that credential for Auth configuration and Edge Function deployment.
+This repair does not establish that the shared credential is valid for those uses.
+
+After the credential is set and the workflow change merged, dispatch a new
+inspection using the new current-main SHA. Rerunning the old job uses the old
+workflow and shared credential. Preserve production review. Missing credentials,
+401 and 403 responses fail closed with non-secret remediation, without retries,
+raw provider response logging or fallback to a more privileged token.
