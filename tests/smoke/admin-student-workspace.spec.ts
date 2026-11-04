@@ -1,3 +1,4 @@
+import { mockTablePage } from './fixtures/postgrest';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
@@ -193,7 +194,8 @@ async function installWorkspaceMock(
       return;
     }
 
-    const fulfillRows = async (rows: Record<string, unknown>[]) => {
+    const fulfillRows = async (input: Record<string, unknown>[]) => {
+      const rows = mockTablePage(requestRoute.request(), input);
       const accept = requestRoute.request().headers().accept ?? '';
       const wantsSingle = accept.includes('application/vnd.pgrst.object+json');
       await requestRoute.fulfill({

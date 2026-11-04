@@ -99,14 +99,16 @@ export function RouteSetupPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [, setPathPublished] = useState<boolean | null>(null);
   const names = useMemo(() => new Map(profiles.map((p) => [p.id, p.full_name])), [profiles]);
-  const busIds = useMemo(() => [...new Set(services.map((s) => s.bus_id))].sort(), [services]);
+  // A detail refresh returns new objects even when service data is unchanged.
+  // Keep the roster mounted in that case; service edits still require a reload.
+  const rosterServices = JSON.stringify([...services].sort((a, b) => a.id.localeCompare(b.id)));
   useEffect(() => {
     if (window.location.hash === '#setup') document.getElementById('setup')?.scrollIntoView();
   }, []);
   useEffect(() => {
     let active = true;
     setSetupError(null);
-    void Promise.all([getVisibleRoutes(), getVisibleRouteServiceDays()])
+    void Promise.all([getVisibleRoutes([route.id]), getVisibleRouteServiceDays(route.id)])
       .then(([routes, days]) => {
         if (active) setSetup({ routes, days: days.filter((d) => d.route_id === route.id) });
       })
@@ -121,7 +123,9 @@ export function RouteSetupPanel({
     let active = true;
     setRosterLoading(true);
     setRosterError(null);
-    const serviceIds = new Set(services.map((s) => s.id));
+    const scope = JSON.parse(rosterServices) as BusServiceOption[];
+    const serviceIds = new Set(scope.map((service) => service.id));
+    const busIds = [...new Set(scope.map((service) => service.bus_id))];
     void Promise.all(busIds.map(fetchAdminBusWorkspace))
       .then((workspaces) => {
         if (active)
@@ -143,7 +147,7 @@ export function RouteSetupPanel({
     return () => {
       active = false;
     };
-  }, [busIds, services, studentRevision]);
+  }, [rosterServices, studentRevision]);
   const groups = groupDirectionalAssignments(
     roster,
     (a) => `${a.student_id}|${services.find((s) => s.id === a.bus_route_assignment_id)?.bus_id}`,
@@ -319,6 +323,7 @@ export function RouteSetupPanel({
                 {editingBus ? 'Edit ' + editingBus.trip_name + ' bus service' : 'Add bus service'}
               </h3>
               <RouteBusAssignmentForm
+                searchDirectory
                 key={editingBus?.id ?? 'new'}
                 route={route}
                 buses={buses}

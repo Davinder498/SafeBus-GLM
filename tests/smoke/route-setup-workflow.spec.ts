@@ -1,3 +1,4 @@
+import { mockTablePage } from './fixtures/postgrest';
 import { expect, test, type Page } from '@playwright/test';
 import { ADMIN_IDS, installAdminWorkflowMock } from './fixtures/admin-workflow';
 import { installMapProviderAvailable } from './fixtures/map-provider';
@@ -71,7 +72,7 @@ async function fixture(
     const method = request.request().method();
     const args = ['POST', 'PATCH'].includes(method) ? request.request().postDataJSON() : {};
     const reply = (data: unknown, status = 200) =>
-      request.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data) });
+      request.fulfill({ status, contentType: 'application/json', body: JSON.stringify(Array.isArray(data) ? mockTablePage(request.request(), data) : data) });
     switch (name) {
       case 'routes':
         if (method === 'DELETE') {
@@ -90,6 +91,7 @@ async function fixture(
         }
         return reply([record]);
       case 'get_admin_paginated_list':
+        if (args.p_entity === 'drivers') return reply({ rows: [{ id: ADMIN_IDS.driver, full_name: 'Test Admin', status: 'active' }], totalCount: 1 });
         return reply({ rows: [record], totalCount: 1, page: 1, pageSize: 50 });
       case 'route_stops':
         return reply(stops);
@@ -100,6 +102,7 @@ async function fixture(
       case 'route_service_days':
         return reply(
           [1, 2, 3, 4, 5].map((day_of_week) => ({
+            id: `day-${day_of_week}`,
             route_id: ADMIN_IDS.route,
             day_of_week,
             status: 'active',
@@ -112,6 +115,14 @@ async function fixture(
           return reply(assignments[0]);
         }
         return reply(assignments);
+      case 'bus_route_assignments':
+        if (options.rejectServices) return reply({ message: 'Service read denied' }, 403);
+        return reply(services.map((service) => ({
+          ...service,
+          buses: { bus_number: service.bus_number, capacity: 40 },
+          routes: { route_name: service.route_name, route_code: service.route_code },
+          route_trip_patterns: { display_name: service.trip_name, direction: service.direction },
+        })));
       case 'get_admin_bus_services_with_capacity':
         if (options.rejectServices) return reply({ message: 'Service read denied' }, 403);
         return reply(services);
@@ -244,7 +255,8 @@ async function assignBus(page: Page) {
   await page.getByRole('button', { name: 'Assignments', exact: true }).click();
   const section = page.locator('#route-service');
   await section.getByRole('button', { name: 'Assign bus to route', exact: true }).click();
-  await section.getByRole('combobox', { name: 'Bus', exact: true }).selectOption(ADMIN_IDS.bus);
+  await section.getByRole('button', { name: 'Bus Choose bus', exact: true }).click();
+  await section.getByRole('button', { name: 'Bus One', exact: true }).click();
   await section.getByLabel('Effective from', { exact: true }).fill('2026-10-01');
   await section.getByRole('button', { name: 'Assign bus', exact: true }).click();
   await expect(page.getByRole('form', { name: 'Driver for Outbound bus One' })).toBeVisible();
@@ -328,8 +340,8 @@ test('sets up route details, bus, driver and student stops without leaving the r
   await assignBus(page);
   const driver = page.getByRole('form', { name: 'Driver for Outbound bus One' });
   await driver
-    .getByRole('combobox', { name: 'Driver', exact: true })
-    .selectOption(ADMIN_IDS.driver);
+    .getByRole('button', { name: 'Driver Choose driver', exact: true }).click();
+  await page.getByRole('button', { name: 'Test Admin', exact: true }).click();
   await driver.getByRole('button', { name: 'Save driver and dates' }).click();
   await expect(driver.getByRole('status')).toContainText('saved');
   await driver.getByLabel('Service ends (optional)').fill('2027-06-30');
@@ -492,8 +504,8 @@ test('a rejected driver save preserves the saved bus and does not claim setup is
   await assignBus(page);
   const driver = page.getByRole('form', { name: 'Driver for Outbound bus One' });
   await driver
-    .getByRole('combobox', { name: 'Driver', exact: true })
-    .selectOption(ADMIN_IDS.driver);
+    .getByRole('button', { name: 'Driver Choose driver', exact: true }).click();
+  await page.getByRole('button', { name: 'Test Admin', exact: true }).click();
   await driver.getByRole('button', { name: 'Save driver and dates' }).click();
   await expect(driver.getByRole('alert')).toContainText('already has a planned driver');
   await expect(page.locator('#route-review')).toContainText('0 of 2');

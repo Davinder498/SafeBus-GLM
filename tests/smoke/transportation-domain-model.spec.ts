@@ -1,3 +1,4 @@
+import { mockTablePage } from './fixtures/postgrest';
 import { test, expect, type Page, type Route } from '@playwright/test';
 import { blockUnexpectedSupabaseRestAccess } from './fixtures/supabase-mock';
 
@@ -146,7 +147,8 @@ async function installTransportMock(page: Page, profile: typeof adminProfile = a
       const accept = route.request().headers()['accept'] ?? '';
       const wantsSingle = accept.includes('application/vnd.pgrst.object+json');
 
-      const fulfillRows = async (rows: Record<string, unknown>[]) => {
+      const fulfillRows = async (input: Record<string, unknown>[]) => {
+      const rows = mockTablePage(route.request(), input);
         if (wantsSingle) {
           if (rows.length === 0) {
             await route.fulfill({
