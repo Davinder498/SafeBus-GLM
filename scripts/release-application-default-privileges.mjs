@@ -207,6 +207,8 @@ try {
       result: 'failed',
       stage,
       code,
+      snapshotPhase: error?.snapshotPhase,
+      snapshotSection: error?.snapshotSection,
       commitOutcomeRequiresInspection: commitAttempted,
     }),
   );
