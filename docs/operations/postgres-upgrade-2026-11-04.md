@@ -154,3 +154,48 @@ live response; the old failure did not retain that response.
 
 Provider source checked:
 https://github.com/supabase/supabase/blob/master/apps/studio/components/interfaces/Settings/General/Infrastructure/ProjectUpgradeAlert.tsx
+
+## Live timezone repair verified — November 4 UTC
+
+After human merge of PR #376, BusSafe was observed upgrading outside this
+verification session. No second upgrade request was submitted. The provider
+subsequently reported `ACTIVE_HEALTHY` on platform `17.11.0.011`; the database
+reports PostgreSQL `17.11`.
+
+All six bounded read-only conversion checks passed: historical winter/summer
+in 2025, the November 2026 transition, an Alberta service-date midnight, and
+winter/summer in 2027. The previously failing `2027-01-15T14:00Z` conversion
+now returns `08:00` Edmonton, rather than `07:00`. Historical winter still
+returns its original `07:00` offset. The check changed no stored timestamp,
+database timezone setting, customer record or schema object.
+
+Eight critical tracking, offline replay, notification and retention function
+definitions match their reviewed fingerprints. Public tables retain RLS,
+anonymous execution of public definer routines remains denied, the API session
+hook remains configured, tracking/replay service-role denials remain, and
+destructive retention remains disabled. Private-schema isolation passes with
+HTTP 406 / PGRST106. Public site, login shell and map configuration checks pass.
+These are limited catalog and service checks, not full signed-in role or
+physical-device acceptance, a full-data integrity comparison, or launch approval.
+
+Sanitized results are retained in
+`database-timezone-verification-2026-11-04.json`. Existing permissions, mandatory
+administrator MFA, optional participant MFA enrollment, recipient choices and
+event/channel scope are unchanged for school authority admins, transportation
+admins, guardians, drivers and platform admins; retired school-admin access
+remains denied. No real notification or financial action was used as QA.
+
+Recovery run 41926253723 failed before export at API isolation. During the
+upgrade, a separate safe boundary probe reproduced HTTP 503; after recovery to
+healthy status, that same isolation check passed. No isolation requirement was
+relaxed. A new protected export was dispatched on reviewed main
+`00885e07ad3d212c84e1f15f6934995fb4b7d770` as run 41931138633. Its result and
+review must be verified separately. Validation passed and its export job is
+waiting for the required production reviewer. This later export cannot establish
+pre-upgrade recovery evidence; this session established none. The successful
+timezone checks must not be presented as a successful backup or restoration.
+
+Local verification passed: `pnpm typecheck`, `pnpm lint`, `pnpm build`,
+`pnpm test` (1,027 web, 24 mobile and 406 release checks), the mobile build,
+and then Android sync. Valid workspace caches were reused. This evidence-only
+change includes no new application code, migration or production write.
