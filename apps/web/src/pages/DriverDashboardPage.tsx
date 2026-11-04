@@ -1,3 +1,4 @@
+import { DriverPendingTripAction } from '@/components/driver/DriverPendingTripAction';
 import { albertaToday } from '@/utils/adminTripDates';
 import { useCallback, useEffect, useState } from 'react';
 import { ClipboardCheck, Settings2, AlertTriangle, ShieldCheck } from 'lucide-react';
@@ -136,6 +137,9 @@ export function DriverDashboardPage() {
 
   useEffect(() => {
     void load();
+    const refresh = () => { void load(); };
+    window.addEventListener('safebus:trip-action-synced', refresh);
+    return () => window.removeEventListener('safebus:trip-action-synced', refresh);
   }, [load]);
 
   async function handleStarted(result: BusTrackingStartResult) {
@@ -213,6 +217,7 @@ export function DriverDashboardPage() {
           </div>
         )}
 
+        <DriverPendingTripAction />
         {actionError && (
           <Card role="alert" className="border-danger-200 bg-danger-50 p-4">
             <p className="text-sm font-semibold text-danger-700">{actionError}</p>
@@ -234,7 +239,7 @@ export function DriverDashboardPage() {
                 />
               </Card>
             )}
-            <BusQrStartScanner hasActiveTrip={false} onStarted={handleStarted} />
+            {!tracking.pendingTripAction && !tracking.pendingTripActionError && <BusQrStartScanner hasActiveTrip={false} onStarted={handleStarted} />}
             <PlannedAssignmentsCard assignments={plannedAssignments} today={today} />
           </div>
         )}
@@ -337,7 +342,7 @@ export function DriverDashboardPage() {
 
             <PlannedAssignmentsCard assignments={plannedAssignments} today={today} />
 
-            {(!tracking.trackingToken ||
+            {!tracking.pendingTripAction && !tracking.pendingTripActionError && (!tracking.trackingToken ||
               tracking.location.state.kind === 'denied' ||
               tracking.location.state.kind === 'error') && (
               <BusQrStartScanner hasActiveTrip onStarted={handleStarted} />

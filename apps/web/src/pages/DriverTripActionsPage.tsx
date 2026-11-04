@@ -1,3 +1,4 @@
+import { DriverPendingTripAction } from '@/components/driver/DriverPendingTripAction';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { AlertTriangle, ArrowLeft, Bus, Pause, Play, ShieldCheck, Square } from 'lucide-react';
@@ -121,6 +122,11 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
       current = false;
     };
   }, [exceptions, loadVersion]);
+  useEffect(() => {
+    const refresh = () => { setLoadVersion((version) => version + 1); setSelection(null); setError(null); };
+    window.addEventListener('safebus:trip-action-synced', refresh);
+    return () => window.removeEventListener('safebus:trip-action-synced', refresh);
+  }, []);
 
   const trip = state.kind === 'ready' ? state.trip : null;
   const busLabel = trip?.bus_number_snapshot ? `Bus ${trip.bus_number_snapshot}` : 'Active bus';
@@ -128,6 +134,10 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
   const title = exceptions ? 'Record exception' : 'Trip actions';
 
   function choose(next: Selection) {
+    if (tracking.pendingTripAction || tracking.pendingTripActionError) {
+      setLocalStopError('Resolve the saved trip action before recording another action.');
+      return;
+    }
     setSelection(next);
     setDetail('');
     setError(null);
@@ -184,6 +194,7 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
     setBusy(true);
     setError(null);
     let stoppedForAction = false;
+    let savedForRetry = false;
     try {
       // A network preflight must never gate the privacy action. Pause locally
       // for every stop action, preserving queued delivery and the ability to
@@ -191,6 +202,8 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
       if (selection.kind === 'action' && ['pause', 'end', 'cancel'].includes(selection.value)) {
         await stopLocalCollection();
         stoppedForAction = true;
+        tracking.saveTripAction(trip, selection.value as 'pause' | 'end' | 'cancel', text || null);
+        savedForRetry = true;
       }
       if (!mounted.current) return;
       const currentTrip = await fetchActiveDriverTrip();
@@ -201,6 +214,8 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
         currentTrip.status !== trip.status ||
         !['active', 'paused'].includes(currentTrip.status)
       ) {
+        if (savedForRetry) tracking.confirmTripAction(trip.id);
+        savedForRetry = false;
         setStale(true);
         throw new Error(
           'This trip has changed or ended. Go back to the active bus to refresh before recording an action.',
@@ -238,13 +253,15 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
         }
         message = TRIP_ACTIONS[selection.value].success;
       }
+      if (savedForRetry) tracking.confirmTripAction(trip.id);
       if (mounted.current)
         navigate('/driver', { replace: true, state: { driverTripMessage: message } });
     } catch (cause) {
       if (mounted.current)
         setError(
           (stoppedForAction
-            ? 'Location sharing stopped on this phone. The trip action has not been confirmed. '
+            ? 'Location sharing stopped on this phone. The trip action has not been confirmed. ' +
+              (savedForRetry && !stale ? 'It is saved for automatic retry while you are signed in. ' : '')
             : '') +
             (cause instanceof Error
               ? cause.message
@@ -275,6 +292,7 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
           <ArrowLeft className="h-5 w-5" aria-hidden /> Back to active bus
         </Link>
         <PageHeader title={title} />
+        <DriverPendingTripAction busy={busy} />
         {locationStopped && !selection && (
           <p
             role="status"
