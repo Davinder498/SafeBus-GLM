@@ -1,7 +1,6 @@
 import { Link, useLocation } from 'react-router';
 import { useEffect, useState } from 'react';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { directionLabel } from '@/services/adminTripOverviewService';
 import type { AdminTripOverviewItem } from '@/types/adminTripOverview';
 import {
   formatAdminTripDate,
@@ -9,7 +8,7 @@ import {
   formatAdminTripTimestamp,
 } from '@/utils/adminTripDates';
 import type { AdminTripOperation } from '@/types/adminTripDetail';
-import { tripLocationLabel } from '@/utils/adminTripPresentation';
+import { tripLocationLabel, tripServiceLabel } from '@/utils/adminTripPresentation';
 
 export function AdminTripTable({
   trips,
@@ -88,7 +87,7 @@ export function AdminTripTable({
                   <td className="px-3 py-3">
                     <span className="font-semibold text-navy-900">{trip.routeName}</span>
                     <span className="block text-gray-600">
-                      {trip.routeCode} · {directionLabel(trip.direction)} · {trip.tripPatternName}
+                      {trip.routeCode} · {tripServiceLabel(trip.direction, trip.tripPatternName)}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-gray-700">{trip.busLabel}</td>

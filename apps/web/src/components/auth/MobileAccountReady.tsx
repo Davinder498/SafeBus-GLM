@@ -1,3 +1,4 @@
+import { MobileAppLinks } from '@/components/ui/MobileAppLinks';
 import { CheckCircle2, Smartphone } from 'lucide-react';
 
 interface MobileAccountReadyProps {
@@ -31,9 +32,10 @@ export function MobileAccountReady({ passwordReset = false }: MobileAccountReady
         </div>
       </div>
       <p className="text-sm text-slate-600">
-        Do not have the app installed? Contact your school district for the approved SafeBus
+        Do not have the app installed? Contact your school authority for the approved SafeBus
         app installation instructions.
       </p>
+      <MobileAppLinks />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { changeOwnPassword } from './accountSecurityService';
+import { changeOwnPassword, AccountSecurityError, accountSecurityErrorMessage } from './accountSecurityService';
 
 const mocks = vi.hoisted(() => ({
   getUser: vi.fn(),
@@ -64,7 +64,7 @@ describe('authenticated current-password change', () => {
 
   it('does not update credentials when current password is wrong', async () => {
     mocks.signInWithPassword.mockResolvedValue({
-      data: { user: null, session: null }, error: { message: 'Invalid login credentials' },
+      data: { user: null, session: null }, error: { code: 'invalid_credentials', message: 'Invalid login credentials' },
     });
     await expect(changeOwnPassword('wrong-secret', 'new-secret-long-enough'))
       .rejects.toThrow('Current password is incorrect');
@@ -81,7 +81,7 @@ describe('authenticated current-password change', () => {
   });
 
   it('rejects weak passwords before attempting current-password verification', async () => {
-    mocks.policy.mockResolvedValue({ error: { message: 'Policy rejected' } });
+    mocks.policy.mockResolvedValue({ error: { code: '22023', message: 'Policy rejected' } });
     await expect(changeOwnPassword('old-secret', 'weak'))
       .rejects.toThrow('password requirements');
     expect(mocks.createClient).not.toHaveBeenCalled();
@@ -102,4 +102,19 @@ describe('authenticated current-password change', () => {
       .rejects.toThrow('Unable to update your password');
     expect(mocks.recordEvent).not.toHaveBeenCalled();
   });
+});
+
+it('shows approved errors but hides raw backend details', () => {
+  expect(accountSecurityErrorMessage(new AccountSecurityError('Current password is incorrect. Please try again.')))
+    .toContain('Current password is incorrect');
+  expect(accountSecurityErrorMessage(new Error('private database constraint detail')))
+    .toBe('Unable to change your password right now. Please try again.');
+});
+
+it('does not label a network or rate-limit error as an incorrect password', async () => {
+  mocks.signInWithPassword.mockResolvedValue({ data: {}, error: { status: 429, code: 'over_request_rate_limit' } });
+  await expect(changeOwnPassword('old-secret', 'new-secret-long-enough')).rejects.toThrow('Too many attempts');
+  expect(mocks.updateUser).not.toHaveBeenCalled();
+  mocks.signInWithPassword.mockResolvedValue({ data: {}, error: { status: 0 } });
+  await expect(changeOwnPassword('old-secret', 'new-secret-long-enough')).rejects.toThrow('Check your connection');
 });
