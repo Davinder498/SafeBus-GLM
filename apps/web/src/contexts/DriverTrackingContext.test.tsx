@@ -1,3 +1,5 @@
+import { savePendingTripAction, loadPendingTripAction } from '@/services/pendingDriverTripAction';
+import type { DriverTrip } from '@/types/trips';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -11,7 +13,22 @@ const auth = vi.hoisted(() => ({
     id: string;
     role: ProfileRole;
     status: string;
+    tenant_id?: string;
   } | null,
+}));
+const actions = vi.hoisted(() => ({
+  fetch: vi.fn(),
+  pause: vi.fn(),
+  end: vi.fn(),
+  cancel: vi.fn(),
+  apply: vi.fn(),
+}));
+vi.mock('@/services/queuedTripStopService', () => ({ applyQueuedTripStop: actions.apply }));
+vi.mock('@/services/driverTripService', () => ({
+  fetchActiveDriverTrip: actions.fetch,
+  pauseDriverTrip: actions.pause,
+  endDriverTrip: actions.end,
+  cancelDriverTrip: actions.cancel,
 }));
 vi.mock('./useAuth', () => ({ useAuth: () => auth }));
 vi.mock('@/services/driverLocationService', () => ({
@@ -44,6 +61,8 @@ async function render() {
 }
 beforeEach(() => {
   vi.resetAllMocks();
+  localStorage.clear();
+  sessionStorage.clear();
   auth.loading = false;
   auth.profile = { id: 'driver-a', role: 'driver', status: 'active' };
   status = {
@@ -59,7 +78,7 @@ beforeEach(() => {
     getStatus,
     resume,
     stop,
-    pause: vi.fn(),
+    pause: vi.fn().mockImplementation(async () => ({ ...status, collecting: false })),
     activate: vi.fn().mockResolvedValue(undefined),
     prepare: vi.fn(),
     openAppSettings: vi.fn(),
@@ -160,4 +179,92 @@ it('ignores a stale restoration response after a new trip has activated', async 
   );
   expect(stop).not.toHaveBeenCalled();
   expect(tracking.trackingToken).toBe('native-service-active');
+});
+
+const pendingTrip = {
+  id: 'trip-original',
+  tenant_id: 'authority-a',
+  driver_id: 'driver-record-a',
+  status: 'active',
+  updated_at: '2026-11-03T14:00:00Z',
+} as DriverTrip;
+function restoreSavedIntent(action: 'pause' | 'end' = 'pause') {
+  auth.profile = { id: 'driver-a', role: 'driver', status: 'active', tenant_id: 'authority-a' };
+  const item = savePendingTripAction('driver-a', 'authority-a', pendingTrip, action, null);
+  localStorage.setItem(
+    'safebus.pendingTripAction.v1:driver-a',
+    JSON.stringify({ ...item, createdAt: Date.now() - 60_000 }),
+  );
+  sessionStorage.setItem('safebus.driverCollectionPaused', '1');
+}
+it('replays a restored pause once without resuming location collection', async () => {
+  restoreSavedIntent();
+  actions.fetch.mockResolvedValue(pendingTrip);
+  actions.apply.mockResolvedValue('applied');
+  await render();
+  expect(actions.apply).toHaveBeenCalledOnce();
+  expect(actions.apply).toHaveBeenCalledWith(
+    expect.objectContaining({ tripId: 'trip-original', action: 'pause' }),
+  );
+  expect(loadPendingTripAction('driver-a')).toBeNull();
+  expect(resume).not.toHaveBeenCalled();
+});
+it('discards an old intent without stopping or ending a different active trip', async () => {
+  restoreSavedIntent('end');
+  actions.fetch.mockResolvedValue({ ...pendingTrip, id: 'trip-new' });
+  await render();
+  expect(actions.apply).not.toHaveBeenCalled();
+  expect(actions.end).not.toHaveBeenCalled();
+  expect(window.SafeBusNativeTracking?.pause).not.toHaveBeenCalled();
+  expect(loadPendingTripAction('driver-a')).toBeNull();
+  expect(resume).not.toHaveBeenCalled();
+});
+it('does not replay another account or a non-driver role intent', async () => {
+  restoreSavedIntent();
+  auth.profile = { id: 'driver-a', role: 'guardian', status: 'active', tenant_id: 'authority-a' };
+  await render();
+  expect(actions.fetch).not.toHaveBeenCalled();
+  expect(actions.apply).not.toHaveBeenCalled();
+  expect(actions.pause).not.toHaveBeenCalled();
+  expect(tracking.pendingTripAction).toBeNull();
+  expect(loadPendingTripAction('driver-a')).not.toBeNull();
+});
+it('keeps a network failure durable and blocks an accidental new activation', async () => {
+  restoreSavedIntent();
+  actions.fetch.mockRejectedValue(new Error('offline'));
+  await render();
+  expect(loadPendingTripAction('driver-a')).not.toBeNull();
+  expect(actions.apply).not.toHaveBeenCalled();
+  expect(actions.pause).not.toHaveBeenCalled();
+  await expect(tracking.activateTracking('new-token')).rejects.toThrow('pending trip action');
+  expect(resume).not.toHaveBeenCalled();
+});
+
+it('does not send or remove the old intent after the signed-in owner changes during a request', async () => {
+  restoreSavedIntent();
+  let resolve!: (trip: DriverTrip) => void;
+  actions.fetch.mockReturnValue(
+    new Promise<DriverTrip>((done) => {
+      resolve = done;
+    }),
+  );
+  await render();
+  auth.profile = { id: 'driver-b', role: 'driver', status: 'active', tenant_id: 'authority-a' };
+  await render();
+  await act(async () => resolve(pendingTrip));
+  expect(actions.apply).not.toHaveBeenCalled();
+  expect(actions.pause).not.toHaveBeenCalled();
+  expect(actions.apply).not.toHaveBeenCalled();
+  expect(actions.end).not.toHaveBeenCalled();
+  expect(loadPendingTripAction('driver-a')).not.toBeNull();
+  expect(tracking.pendingTripAction).toBeNull();
+});
+it('retains an intent if the atomic endpoint detects a change after the client read', async () => {
+  restoreSavedIntent();
+  actions.fetch.mockResolvedValue(pendingTrip);
+  actions.apply.mockResolvedValue('review');
+  await render();
+  expect(loadPendingTripAction('driver-a')).not.toBeNull();
+  expect(tracking.pendingTripActionError).toContain('trip changed');
+  expect(resume).not.toHaveBeenCalled();
 });
