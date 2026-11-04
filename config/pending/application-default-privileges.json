@@ -3,14 +3,106 @@
   "migration": "supabase/migrations/pending/20261104172600_harden_application_default_privileges.sql",
   "migrationSha256": "4cdd3503221a72f18d196ca2a99c26d41464f865833c8aa7c42644f7ba5ad657",
   "restoreFile": "config/recovery/application-default-privileges.sql",
-  "restoreSha256": "938f9a594ee367787460c6cd125b9147fea5e098adc85819f5109a870da46730",
+  "restoreSha256": "ac30105ea92c42d7448b43e853fbb1152bcea07a20065e33a6d42a0266d5c69a",
+  "guardMigration": "supabase/migrations/pending/20261104174913_add_private_active_session_guards.sql",
+  "guardMigrationSha256": "5fdb30a90eddf5dcb05048f44baaf7a23c10f5a1ccd9e2fb3f5093868afff4ea",
+  "forwardSha256": "77cb773ef21926d0161c5d78c17fcc2b8cf2dac6de7919969d798a3ce9600478",
   "guardHash": "72a0616a5448ca385e789cda10649800",
-  "owners": [
-    "postgres",
-    "pg_database_owner"
-  ],
+  "owners": ["postgres", "pg_database_owner"],
   "managedRole": "supabase_admin",
   "before": {
+    "sessionPolicies": [
+      {
+        "cmd": null,
+        "qual": null,
+        "roles": null,
+        "permissive": null,
+        "policyname": null,
+        "table_name": "authority_announcements",
+        "with_check": null
+      },
+      {
+        "cmd": null,
+        "qual": null,
+        "roles": null,
+        "permissive": null,
+        "policyname": null,
+        "table_name": "authority_directory_import_state",
+        "with_check": null
+      },
+      {
+        "cmd": null,
+        "qual": null,
+        "roles": null,
+        "permissive": null,
+        "policyname": null,
+        "table_name": "authority_reference_directory",
+        "with_check": null
+      },
+      {
+        "cmd": null,
+        "qual": null,
+        "roles": null,
+        "permissive": null,
+        "policyname": null,
+        "table_name": "billing_catalog_operations",
+        "with_check": null
+      },
+      {
+        "cmd": null,
+        "qual": null,
+        "roles": null,
+        "permissive": null,
+        "policyname": null,
+        "table_name": "bus_qr_prints",
+        "with_check": null
+      },
+      {
+        "cmd": null,
+        "qual": null,
+        "roles": null,
+        "permissive": null,
+        "policyname": null,
+        "table_name": "notification_audience_queue",
+        "with_check": null
+      },
+      {
+        "cmd": null,
+        "qual": null,
+        "roles": null,
+        "permissive": null,
+        "policyname": null,
+        "table_name": "notification_dispatch_counters",
+        "with_check": null
+      },
+      {
+        "cmd": null,
+        "qual": null,
+        "roles": null,
+        "permissive": null,
+        "policyname": null,
+        "table_name": "student_qr_prints",
+        "with_check": null
+      },
+      {
+        "cmd": null,
+        "qual": null,
+        "roles": null,
+        "permissive": null,
+        "policyname": null,
+        "table_name": "tenant_billing_control",
+        "with_check": null
+      },
+      {
+        "cmd": null,
+        "qual": null,
+        "roles": null,
+        "permissive": null,
+        "policyname": null,
+        "table_name": "tenant_subscription_exemptions",
+        "with_check": null
+      }
+    ],
     "defaults": [
       {
         "acl": [
@@ -79,49 +171,37 @@
         "schema": "storage"
       },
       {
-        "acl": [
-          "postgres=r*w*U*/supabase_admin"
-        ],
+        "acl": ["postgres=r*w*U*/supabase_admin"],
         "kind": "S",
         "owner": "supabase_admin",
         "schema": "cron"
       },
       {
-        "acl": [
-          "postgres=X*/supabase_admin"
-        ],
+        "acl": ["postgres=X*/supabase_admin"],
         "kind": "f",
         "owner": "supabase_admin",
         "schema": "cron"
       },
       {
-        "acl": [
-          "postgres=a*r*w*d*D*x*t*m*/supabase_admin"
-        ],
+        "acl": ["postgres=a*r*w*d*D*x*t*m*/supabase_admin"],
         "kind": "r",
         "owner": "supabase_admin",
         "schema": "cron"
       },
       {
-        "acl": [
-          "postgres=r*w*U*/supabase_admin"
-        ],
+        "acl": ["postgres=r*w*U*/supabase_admin"],
         "kind": "S",
         "owner": "supabase_admin",
         "schema": "extensions"
       },
       {
-        "acl": [
-          "postgres=X*/supabase_admin"
-        ],
+        "acl": ["postgres=X*/supabase_admin"],
         "kind": "f",
         "owner": "supabase_admin",
         "schema": "extensions"
       },
       {
-        "acl": [
-          "postgres=a*r*w*d*D*x*t*m*/supabase_admin"
-        ],
+        "acl": ["postgres=a*r*w*d*D*x*t*m*/supabase_admin"],
         "kind": "r",
         "owner": "supabase_admin",
         "schema": "extensions"
@@ -226,46 +306,31 @@
         "schema": "public"
       },
       {
-        "acl": [
-          "dashboard_user=rwU/supabase_admin",
-          "postgres=rwU/supabase_admin"
-        ],
+        "acl": ["dashboard_user=rwU/supabase_admin", "postgres=rwU/supabase_admin"],
         "kind": "S",
         "owner": "supabase_admin",
         "schema": "realtime"
       },
       {
-        "acl": [
-          "dashboard_user=X/supabase_admin",
-          "postgres=X/supabase_admin"
-        ],
+        "acl": ["dashboard_user=X/supabase_admin", "postgres=X/supabase_admin"],
         "kind": "f",
         "owner": "supabase_admin",
         "schema": "realtime"
       },
       {
-        "acl": [
-          "dashboard_user=arwdDxtm/supabase_admin",
-          "postgres=a*r*wdDxtm/supabase_admin"
-        ],
+        "acl": ["dashboard_user=arwdDxtm/supabase_admin", "postgres=a*r*wdDxtm/supabase_admin"],
         "kind": "r",
         "owner": "supabase_admin",
         "schema": "realtime"
       },
       {
-        "acl": [
-          "dashboard_user=rwU/supabase_auth_admin",
-          "postgres=rwU/supabase_auth_admin"
-        ],
+        "acl": ["dashboard_user=rwU/supabase_auth_admin", "postgres=rwU/supabase_auth_admin"],
         "kind": "S",
         "owner": "supabase_auth_admin",
         "schema": "auth"
       },
       {
-        "acl": [
-          "dashboard_user=X/supabase_auth_admin",
-          "postgres=X/supabase_auth_admin"
-        ],
+        "acl": ["dashboard_user=X/supabase_auth_admin", "postgres=X/supabase_auth_admin"],
         "kind": "f",
         "owner": "supabase_auth_admin",
         "schema": "auth"
@@ -335,46 +400,125 @@
     ]
   },
   "after": {
+    "sessionPolicies": [
+      {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": ["authenticated"],
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "table_name": "authority_announcements",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": ["authenticated"],
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "table_name": "authority_directory_import_state",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": ["authenticated"],
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "table_name": "authority_reference_directory",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": ["authenticated"],
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "table_name": "billing_catalog_operations",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": ["authenticated"],
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "table_name": "bus_qr_prints",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": ["authenticated"],
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "table_name": "notification_audience_queue",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": ["authenticated"],
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "table_name": "notification_dispatch_counters",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": ["authenticated"],
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "table_name": "student_qr_prints",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": ["authenticated"],
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "table_name": "tenant_billing_control",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      },
+      {
+        "cmd": "ALL",
+        "qual": "( SELECT is_current_user_session_active() AS is_current_user_session_active)",
+        "roles": ["authenticated"],
+        "permissive": "RESTRICTIVE",
+        "policyname": "safebus_active_session",
+        "table_name": "tenant_subscription_exemptions",
+        "with_check": "( SELECT is_current_user_session_active() AS is_current_user_session_active)"
+      }
+    ],
     "defaults": [
       {
-        "acl": [
-          "pg_database_owner=X/pg_database_owner"
-        ],
+        "acl": ["pg_database_owner=X/pg_database_owner"],
         "kind": "f",
         "owner": "pg_database_owner",
         "schema": null
       },
       {
-        "acl": [
-          "postgres=X/postgres"
-        ],
+        "acl": ["postgres=X/postgres"],
         "kind": "f",
         "owner": "postgres",
         "schema": null
       },
       {
-        "acl": [
-          "postgres=rwU/postgres",
-          "service_role=rwU/postgres"
-        ],
+        "acl": ["postgres=rwU/postgres", "service_role=rwU/postgres"],
         "kind": "S",
         "owner": "postgres",
         "schema": "public"
       },
       {
-        "acl": [
-          "postgres=X/postgres",
-          "service_role=X/postgres"
-        ],
+        "acl": ["postgres=X/postgres", "service_role=X/postgres"],
         "kind": "f",
         "owner": "postgres",
         "schema": "public"
       },
       {
-        "acl": [
-          "postgres=arwdDxtm/postgres",
-          "service_role=arwdDxtm/postgres"
-        ],
+        "acl": ["postgres=arwdDxtm/postgres", "service_role=arwdDxtm/postgres"],
         "kind": "r",
         "owner": "postgres",
         "schema": "public"
@@ -413,49 +557,37 @@
         "schema": "storage"
       },
       {
-        "acl": [
-          "postgres=r*w*U*/supabase_admin"
-        ],
+        "acl": ["postgres=r*w*U*/supabase_admin"],
         "kind": "S",
         "owner": "supabase_admin",
         "schema": "cron"
       },
       {
-        "acl": [
-          "postgres=X*/supabase_admin"
-        ],
+        "acl": ["postgres=X*/supabase_admin"],
         "kind": "f",
         "owner": "supabase_admin",
         "schema": "cron"
       },
       {
-        "acl": [
-          "postgres=a*r*w*d*D*x*t*m*/supabase_admin"
-        ],
+        "acl": ["postgres=a*r*w*d*D*x*t*m*/supabase_admin"],
         "kind": "r",
         "owner": "supabase_admin",
         "schema": "cron"
       },
       {
-        "acl": [
-          "postgres=r*w*U*/supabase_admin"
-        ],
+        "acl": ["postgres=r*w*U*/supabase_admin"],
         "kind": "S",
         "owner": "supabase_admin",
         "schema": "extensions"
       },
       {
-        "acl": [
-          "postgres=X*/supabase_admin"
-        ],
+        "acl": ["postgres=X*/supabase_admin"],
         "kind": "f",
         "owner": "supabase_admin",
         "schema": "extensions"
       },
       {
-        "acl": [
-          "postgres=a*r*w*d*D*x*t*m*/supabase_admin"
-        ],
+        "acl": ["postgres=a*r*w*d*D*x*t*m*/supabase_admin"],
         "kind": "r",
         "owner": "supabase_admin",
         "schema": "extensions"
@@ -560,46 +692,31 @@
         "schema": "public"
       },
       {
-        "acl": [
-          "dashboard_user=rwU/supabase_admin",
-          "postgres=rwU/supabase_admin"
-        ],
+        "acl": ["dashboard_user=rwU/supabase_admin", "postgres=rwU/supabase_admin"],
         "kind": "S",
         "owner": "supabase_admin",
         "schema": "realtime"
       },
       {
-        "acl": [
-          "dashboard_user=X/supabase_admin",
-          "postgres=X/supabase_admin"
-        ],
+        "acl": ["dashboard_user=X/supabase_admin", "postgres=X/supabase_admin"],
         "kind": "f",
         "owner": "supabase_admin",
         "schema": "realtime"
       },
       {
-        "acl": [
-          "dashboard_user=arwdDxtm/supabase_admin",
-          "postgres=a*r*wdDxtm/supabase_admin"
-        ],
+        "acl": ["dashboard_user=arwdDxtm/supabase_admin", "postgres=a*r*wdDxtm/supabase_admin"],
         "kind": "r",
         "owner": "supabase_admin",
         "schema": "realtime"
       },
       {
-        "acl": [
-          "dashboard_user=rwU/supabase_auth_admin",
-          "postgres=rwU/supabase_auth_admin"
-        ],
+        "acl": ["dashboard_user=rwU/supabase_auth_admin", "postgres=rwU/supabase_auth_admin"],
         "kind": "S",
         "owner": "supabase_auth_admin",
         "schema": "auth"
       },
       {
-        "acl": [
-          "dashboard_user=X/supabase_auth_admin",
-          "postgres=X/supabase_auth_admin"
-        ],
+        "acl": ["dashboard_user=X/supabase_auth_admin", "postgres=X/supabase_auth_admin"],
         "kind": "f",
         "owner": "supabase_auth_admin",
         "schema": "auth"

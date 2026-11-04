@@ -1,4 +1,4 @@
-name: Release application default privilege repair
+name: Release application authorization repair
 on:
   workflow_dispatch:
     inputs:
@@ -24,7 +24,7 @@ jobs:
     with:
       git_ref: ${{ inputs.git_ref }}
   release:
-    name: Repair application defaults; managed defaults remain separate
+    name: Repair application defaults and private session guards
     needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -60,7 +60,7 @@ jobs:
           path: .safebus-release/application-default-privileges/
           retention-days: 90
           if-no-files-found: error
-      - name: Install application-owned future defaults only
+      - name: Install application-owned future defaults and private session guards
         if: inputs.mode == 'install' && steps.prepare.outputs.state == 'pending'
         run: node scripts/release-application-default-privileges.mjs install
       - name: Verify application repair and report remaining managed findings

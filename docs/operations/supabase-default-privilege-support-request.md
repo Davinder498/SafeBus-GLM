@@ -72,6 +72,11 @@ persistent change has yet been applied by that rehearsal. Existing object ACLs,
 RLS, role memberships, DDL hooks and all provider schema-specific defaults stayed
 unchanged. See `default-privilege-rehearsal-2026-11-04.json`.
 
+The same bounded rehearsal now also covers ten new restrictive active-session
+policies on owner-only private tables. Existing policies, including MFA guards,
+are preserved. This application-owned addition does not change the managed-role
+request below, and the full authorization audit is not being waived.
+
 Please review this exact remaining managed-role proposal and coordinate its
 rehearsal, recovery, approved application and verification with us:
 

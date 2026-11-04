@@ -49,9 +49,16 @@ try {
     binding.projectRefHash !== digest(config.projectId)
   )
     throw new Error('DEFAULT_PRIVILEGE_TARGET');
-  const forward = (await fs.readFile(config.migration, 'utf8')).replaceAll('\r', '');
+  const defaultsSql = (await fs.readFile(config.migration, 'utf8')).replaceAll('\r', '');
+  const guardSql = (await fs.readFile(config.guardMigration, 'utf8')).replaceAll('\r', '');
+  const forward = defaultsSql + '\n' + guardSql;
   const restore = (await fs.readFile(config.restoreFile, 'utf8')).replaceAll('\r', '');
-  if (digest(forward) !== config.migrationSha256 || digest(restore) !== config.restoreSha256)
+  if (
+    digest(defaultsSql) !== config.migrationSha256 ||
+    digest(guardSql) !== config.guardMigrationSha256 ||
+    digest(forward) !== config.forwardSha256 ||
+    digest(restore) !== config.restoreSha256
+  )
     throw new Error('DEFAULT_PRIVILEGE_SQL_DIGEST');
   client = verifiedDatabaseClient(
     process.env.SAFEBUS_DATABASE_URL,
@@ -84,6 +91,8 @@ try {
     runId,
     binding,
     migrationSha256: config.migrationSha256,
+    guardMigrationSha256: config.guardMigrationSha256,
+    forwardSha256: config.forwardSha256,
     restoreSha256: config.restoreSha256,
   };
   if (mode === 'prepare') {
@@ -183,7 +192,7 @@ try {
     JSON.stringify({
       result: 'verified',
       mode,
-      scope: 'application-defaults-only',
+      scope: 'application-defaults-and-private-session-guards',
       fullAuthorizationAuditPassed: false,
     }),
   );
