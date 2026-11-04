@@ -48,9 +48,47 @@ Please confirm:
 
 Existing application objects have separately reviewed explicit grants and RLS;
 this finding concerns future-object defaults. We will retain before/after
-catalog evidence, verified full recovery and an immutable security-change record.
+catalog evidence, rehearsed bounded recovery and the protected change record.
+This does not establish a full database restore.
 Please do not make an uncoordinated production change, because that would fail
 our drift gate and bypass our protected approval process.
 
 We can provide a redacted default-ACL listing. No database password, API secret,
 Auth rows, customer rows, recovery key or backup archive is needed in this ticket.
+
+## Fresh reconciliation and proposed provider scope, 2026-11-04
+
+The protected read-only authorization audit failed on main
+`0fe784fab749c57f89437db61e8e1f372e8f72ee`, run
+https://github.com/Davinder498/SafeBus-GLM/actions/runs/41876390993.
+Fresh catalog inspection still shows PostgreSQL 17.6, no global default ACL rows,
+and the ownership/membership limits described above.
+
+We rehearsed the application-controlled changes for `postgres` and the implicit
+`pg_database_owner` role in one rollback-only transaction. They reduce findings
+from 51 to 25, all owned by `supabase_admin`. Forward and inverse SQL restored
+the exact snapshot; a separate read-only check confirmed final rollback. No
+persistent change has yet been applied by that rehearsal. Existing object ACLs,
+RLS, role memberships, DDL hooks and all provider schema-specific defaults stayed
+unchanged. See `default-privilege-rehearsal-2026-11-04.json`.
+
+Please review this exact remaining managed-role proposal and coordinate its
+rehearsal, recovery, approved application and verification with us:
+
+```sql
+alter default privileges for role supabase_admin
+  revoke execute on functions from public;
+alter default privileges for role supabase_admin in schema public
+  revoke all on tables from public, anon, authenticated;
+alter default privileges for role supabase_admin in schema public
+  revoke all on sequences from public, anon, authenticated;
+alter default privileges for role supabase_admin in schema public
+  revoke execute on functions from public, anon, authenticated;
+```
+
+This preserves service-role defaults and existing object grants. The global
+function change also affects future provider functions outside `public` unless
+an explicit schema default grants access. Please confirm required provider
+grants and maintenance behavior before applying it; do not change managed role
+membership or run an unreviewed broad revoke on existing objects. We will rerun
+the unchanged full authorization audit after both portions are verified.

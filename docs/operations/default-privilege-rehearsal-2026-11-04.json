@@ -1,0 +1,21 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "observedOn": "2026-11-04",
+  "observationOnly": true,
+  "sqlApplied": false,
+  "rollbackOnlyRehearsal": true,
+  "migration": "supabase/migrations/pending/20261104172600_harden_application_default_privileges.sql",
+  "migrationSha256": "4cdd3503221a72f18d196ca2a99c26d41464f865833c8aa7c42644f7ba5ad657",
+  "restoreSha256": "938f9a594ee367787460c6cd125b9147fea5e098adc85819f5109a870da46730",
+  "existingGuardsBefore": "72a0616a5448ca385e789cda10649800",
+  "existingGuardsAfter": "72a0616a5448ca385e789cda10649800",
+  "beforeFindings": 51,
+  "afterFindings": 25,
+  "remainingManagedRole": "supabase_admin",
+  "inverseRestoredExactSnapshot": true,
+  "postRollbackReadOnlySnapshotMatched": true,
+  "objectsCreated": 0,
+  "externalNotificationsSent": 0,
+  "persistentChangeApplied": false,
+  "fullAuthorizationAuditPassed": false
+}

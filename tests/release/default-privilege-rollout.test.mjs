@@ -1,0 +1,138 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import test from 'node:test';
+import { PGlite } from '@electric-sql/pglite';
+import {
+  digest,
+  snapshotDefaults,
+  verifyDefaults,
+  rehearseDefaults,
+} from '../../scripts/lib/default-privilege-rollout.mjs';
+
+test('application default repair rehearses exact recovery and leaves managed findings visible', async (t) => {
+  const db = new PGlite();
+  t.after(() => db.close());
+  const client = { query: async (sql) => (await db.exec(sql)).at(-1) ?? { rows: [] } };
+  // This owned in-memory database never connects to a hosted project.
+  await db.exec(`create role anon;create role authenticated;create role service_role;
+    create role supabase_admin superuser; revoke create on schema public from public;
+    grant create on schema public to postgres,supabase_admin;
+    create schema provider_runtime;
+    alter default privileges for role postgres in schema provider_runtime grant execute on functions to authenticated;
+    alter default privileges for role postgres in schema public grant all on tables to postgres,anon,authenticated,service_role;
+    alter default privileges for role postgres in schema public grant all on sequences to postgres,anon,authenticated,service_role;
+    alter default privileges for role postgres in schema public grant all on functions to postgres,anon,authenticated,service_role;
+    alter default privileges for role supabase_admin in schema public grant all on tables to postgres,anon,authenticated,service_role;
+    alter default privileges for role supabase_admin in schema public grant all on sequences to postgres,anon,authenticated,service_role;
+    alter default privileges for role supabase_admin in schema public grant all on functions to postgres,anon,authenticated,service_role;
+    create table public.existing_data(id integer primary key);
+    insert into public.existing_data values(1);
+    alter table public.existing_data enable row level security;
+    create policy existing_reader on public.existing_data for select to authenticated using(true);
+    create function public.existing_api() returns integer language sql as 'select 1';
+    revoke all on function public.existing_api() from public,anon,service_role;
+    grant execute on function public.existing_api() to authenticated;`);
+  const production = JSON.parse(
+    await fs.readFile('config/pending/application-default-privileges.json', 'utf8'),
+  );
+  const forward = (await fs.readFile(production.migration, 'utf8')).replaceAll('\r', '');
+  const restore = (await fs.readFile(production.restoreFile, 'utf8')).replaceAll('\r', '');
+  assert.equal(digest(forward), production.migrationSha256);
+  assert.equal(digest(restore), production.restoreSha256);
+  const before = await snapshotDefaults(client);
+  assert.equal(before.findings.length, 51);
+  await db.exec(forward);
+  const after = await snapshotDefaults(client);
+  assert.equal(after.guardHash, before.guardHash);
+  assert.equal(after.findings.length, 25);
+  assert.ok(after.findings.every((f) => f.startsWith('supabase_admin:')));
+  assert.deepEqual(
+    after.defaults.filter((r) => r.owner === 'supabase_admin'),
+    before.defaults.filter((r) => r.owner === 'supabase_admin'),
+  );
+  assert.deepEqual(
+    after.defaults.filter((r) => r.schema === 'provider_runtime'),
+    before.defaults.filter((r) => r.schema === 'provider_runtime'),
+  );
+  await db.exec(restore);
+  assert.deepEqual(await snapshotDefaults(client), before);
+  const config = { guardHash: before.guardHash, before, after };
+  await rehearseDefaults(client, forward, restore, config);
+  assert.deepEqual(await snapshotDefaults(client), before);
+  await assert.rejects(rehearseDefaults(client, forward + '\nselect 1/0;', restore, config));
+  assert.deepEqual(await snapshotDefaults(client), before);
+  assert.throws(
+    () => verifyDefaults({ ...after, guardHash: 'changed' }, config, 'after'),
+    /SNAPSHOT_CHANGED/,
+  );
+  assert.throws(
+    () => verifyDefaults({ ...after, findings: [] }, config, 'after'),
+    /SNAPSHOT_CHANGED/,
+  );
+  await db.exec(forward);
+  await db.exec(`create table public.future_data(id serial primary key);
+    create function public.future_api() returns integer language sql as 'select 2';
+    set role pg_database_owner;
+    create function public.future_owner_api() returns integer language sql as 'select 3';
+    reset role;`);
+  for (const role of ['anon', 'authenticated']) {
+    const row = (
+      await db.query(
+        `select has_table_privilege($1,'public.future_data','SELECT') as table_access,
+      has_sequence_privilege($1,'public.future_data_id_seq','USAGE') as sequence_access,
+      has_function_privilege($1,'public.future_api()','EXECUTE') as function_access,
+      has_function_privilege($1,'public.future_owner_api()','EXECUTE') as owner_function_access`,
+        [role],
+      )
+    ).rows[0];
+    assert.deepEqual(row, {
+      table_access: false,
+      sequence_access: false,
+      function_access: false,
+      owner_function_access: false,
+    });
+  }
+  const retained = (
+    await db.query(`select
+    has_function_privilege('authenticated','public.existing_api()','EXECUTE') as existing_access,
+    has_function_privilege('service_role','public.future_api()','EXECUTE') as service_access,
+    (select count(*)::integer from public.existing_data) as records`)
+  ).rows[0];
+  assert.deepEqual(retained, { existing_access: true, service_access: true, records: 1 });
+});
+
+test('protected default repair binds recovery before installation and does not waive the full audit', async () => {
+  const workflow = await fs.readFile(
+    '.github/workflows/release-application-default-privileges.yml',
+    'utf8',
+  );
+  const script = await fs.readFile('scripts/release-application-default-privileges.mjs', 'utf8');
+  assert.match(workflow, /environment: production/);
+  assert.match(workflow, /uses: \.\/\.github\/workflows\/validate-security-install\.yml/);
+  assert.match(workflow, /group: production-release/);
+  assert.ok(
+    workflow.indexOf('Retain recovery before persistent installation') <
+      workflow.indexOf('Install application-owned future defaults only'),
+  );
+  for (const invariant of [
+    'assertReviewedCheckout(releaseSha)',
+    'assertEnvironmentIdentity(client, binding)',
+    'envelope.ciphertextSha256',
+    'envelope.plaintextSha256',
+    'rehearseDefaults(client, forward, restore, config)',
+    'fullAuthorizationAuditPassed: false',
+  ])
+    assert.ok(script.includes(invariant), invariant);
+  assert.doesNotMatch(
+    script,
+    /set role supabase_admin|alter role .*superuser|process\.env\.GITHUB_ACTIONS\s*=/i,
+  );
+  const config = JSON.parse(
+    await fs.readFile('config/pending/application-default-privileges.json', 'utf8'),
+  );
+  assert.equal(config.before.findings.length, 51);
+  assert.equal(config.after.findings.length, 25);
+  assert.ok(config.after.findings.every((f) => f.startsWith('supabase_admin:')));
+  const audit = await fs.readFile('scripts/audit-database-authorization.mjs', 'utf8');
+  assert.match(audit, /assertNoRows\('Unsafe default privileges are present', unsafeDefaults\)/);
+});
