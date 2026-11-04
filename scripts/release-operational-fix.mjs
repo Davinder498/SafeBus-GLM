@@ -7,6 +7,7 @@ import {
 } from './lib/security-workflow-evidence.mjs';
 import { createEnvironmentBinding } from './lib/environment-identity.mjs';
 import { encryptBackupStream, fileDigest } from './lib/security-backup.mjs';
+import { verifyRetentionDryRuns } from './lib/retention-verification.mjs';
 import {
   operationalDigest,
   operationalSnapshot,
@@ -190,11 +191,15 @@ try {
   } else {
     stage = 'verify';
     const acceptance = verifyOperationalSnapshot(await capture(), config, 'after');
+    const retention = milestone === 'retention'
+      ? await verifyRetentionDryRuns(client, config.functions[0].after.md5)
+      : undefined;
     await write('verification', {
       ...identity,
       acceptance,
       verifiedAt: new Date().toISOString(),
       observationOnly: true,
+      ...(retention ? { retention } : {}),
     });
   }
   console.log(JSON.stringify({ result: 'verified', mode, milestone }));
