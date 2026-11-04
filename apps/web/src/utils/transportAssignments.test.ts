@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DriverRouteAssignment } from '@/types/driverAssignments';
 import type { BusServiceOption } from '@/services/studentBusAssignmentService';
-import { activeDriverForBusService } from '@/utils/transportAssignments';
+import { activeDriverForBusService, scheduledDriverForBusService } from '@/utils/transportAssignments';
 
 const service = {
   id: 'service-1',
@@ -76,5 +76,36 @@ describe('transport assignment joins', () => {
         }),
       ]),
     ).toBeNull();
+  });
+});
+
+describe('date-effective driver coverage', () => {
+  const today = '2026-11-03';
+  it('ignores a future replacement even when returned first', () => {
+    const future = assignment({ id: 'future', effective_from: '2026-12-01' });
+    const current = assignment({ id: 'current', effective_to: '2026-11-30' });
+    expect(activeDriverForBusService(service, [future, current], today)?.id).toBe('current');
+    expect(scheduledDriverForBusService(service, [future, current], today)?.id).toBe('future');
+  });
+  it('uses inclusive dates and leaves a gap unassigned', () => {
+    const plan = assignment({ effective_from: today, effective_to: today });
+    expect(activeDriverForBusService(service, [plan], today)?.id).toBe(plan.id);
+    expect(activeDriverForBusService(service, [plan], '2026-11-04')).toBeNull();
+    expect(activeDriverForBusService(service, [plan], '2026-11-02')).toBeNull();
+  });
+  it('does not borrow a plan explicitly assigned to another service or authority', () => {
+    expect(activeDriverForBusService(service, [assignment({ bus_route_assignment_id: 'other' }),
+      assignment({ tenant_id: 'other' })], today)).toBeNull();
+  });
+  it('does not count future or ended bus services as current coverage', () => {
+    expect(activeDriverForBusService({ ...service, effective_from: '2026-12-01' }, [assignment()], today)).toBeNull();
+    expect(activeDriverForBusService({ ...service, effective_to: '2026-11-02' }, [assignment()], today)).toBeNull();
+  });
+  it('excludes inactive, expired and non-overlapping future plans', () => {
+    expect(scheduledDriverForBusService({ ...service, effective_to: '2026-11-30' }, [
+      assignment({ effective_from: '2026-12-01' }),
+      assignment({ status: 'inactive', effective_from: '2026-11-04' }),
+    ], today)).toBeNull();
+    expect(activeDriverForBusService(service, [assignment({ effective_to: '2026-11-02' })], today)).toBeNull();
   });
 });
