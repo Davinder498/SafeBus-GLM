@@ -239,6 +239,7 @@ test('production application RPC references are all reviewed', async () => {
   // Prepared source can reference an explicitly reviewed forward surface. This
   // does not add it to the active installation/audit manifest or authorize DDL.
   const pending = await Promise.all([
+    readJson('config/pending/offline-trip-action-authorization.json'),
     readJson('config/pending/tenant-subscription-authorization.json'),
     readJson('config/pending/pricing-catalog-authorization.json'),
     readJson('config/pending/student-seat-authorization.json'),
