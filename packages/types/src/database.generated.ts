@@ -2366,7 +2366,7 @@ export interface Database {
           map_color?: string | null
           definition_status?: string
           service_schedule_mode?: string
-          service_dates: Array<string>
+          service_dates?: Array<string>
         }
         Update: {
           id?: string
