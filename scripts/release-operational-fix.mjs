@@ -20,6 +20,7 @@ import {
 const mode = process.argv[2];
 const milestone = process.env.SAFEBUS_OPERATIONAL_MILESTONE;
 const manifests = {
+  retention: 'config/pending/retention-qualification.json',
   tracking: 'config/pending/tracking-queue-recovery.json',
   calendar: 'config/pending/route-service-calendar.json',
   reporting: 'config/pending/privileged-admin-mfa.json',
