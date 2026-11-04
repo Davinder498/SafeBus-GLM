@@ -83,7 +83,12 @@
     "concurrentProviderStatus": "UPGRADING",
     "independentProbeHttpStatus": 503,
     "retryRunId": "41931138633",
-    "retryStatus": "waiting_for_production_review",
+    "retryStatus": "success",
+    "exportCompletedAt": "2026-11-04T23:14:09.646Z",
+    "ciphertextChecksumsVerified": true,
+    "catalogDigestMatched": true,
+    "downloadedEncryptedArtifacts": true,
+    "fullRestoreVerified": false,
     "preUpgradeRecoveryEstablishedByThisSession": false
   }
 }

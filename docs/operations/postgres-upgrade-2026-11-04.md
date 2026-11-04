@@ -189,11 +189,14 @@ Recovery run 41926253723 failed before export at API isolation. During the
 upgrade, a separate safe boundary probe reproduced HTTP 503; after recovery to
 healthy status, that same isolation check passed. No isolation requirement was
 relaxed. A new protected export was dispatched on reviewed main
-`00885e07ad3d212c84e1f15f6934995fb4b7d770` as run 41931138633. Its result and
-review must be verified separately. Validation passed and its export job is
-waiting for the required production reviewer. This later export cannot establish
-pre-upgrade recovery evidence; this session established none. The successful
-timezone checks must not be presented as a successful backup or restoration.
+`00885e07ad3d212c84e1f15f6934995fb4b7d770` as run 41931138633. After the
+required production review, it succeeded at 23:14 UTC. Its encrypted database
+and password-free-role artifacts were downloaded locally. Their ciphertext
+checksums, catalog digest and run/source/project bindings all verified. The
+seven-day Actions artifact is temporary; the local encrypted copy is retained
+with this task's recovery evidence. This post-upgrade export cannot establish
+pre-upgrade recovery evidence; this session established none. Decryption and
+restoration were not tested, and full-restore verification remains false.
 
 Local verification passed: `pnpm typecheck`, `pnpm lint`, `pnpm build`,
 `pnpm test` (1,027 web, 24 mobile and 406 release checks), the mobile build,
