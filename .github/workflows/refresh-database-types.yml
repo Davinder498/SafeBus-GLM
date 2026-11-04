@@ -31,9 +31,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm types:generate
-      - name: Create reviewable generated-types pull request
+      - name: Publish generated types for review
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE_BRANCH: ${{ inputs.base_branch }}
         run: |
           if git diff --quiet -- packages/types/src/database.generated.ts; then
             echo "Database types are already current."
@@ -46,6 +47,25 @@ jobs:
           git add packages/types/src/database.generated.ts
           git commit -m "chore: refresh authoritative database types"
           git push origin "$branch"
-          gh pr create --draft --base "${{ inputs.base_branch }}" --head "$branch" \
+          pr_log="$RUNNER_TEMP/database-types-pr.log"
+          if gh pr create --draft --base "$BASE_BRANCH" --head "$branch" \
             --title "chore: refresh authoritative database types" \
-            --body "Generated read-only from the protected hosted Supabase schema. Review the complete type diff before merge."
+            --body "Generated read-only from the protected hosted Supabase schema. Review the complete type diff before merge." > "$pr_log" 2>&1; then
+            cat "$pr_log"
+            {
+              echo "### Generated types ready for review"
+              cat "$pr_log"
+            } >> "$GITHUB_STEP_SUMMARY"
+          elif [[ "$(cat "$pr_log")" == *"GitHub Actions is not permitted to create or approve pull requests"* ]]; then
+            echo "::warning::Types were generated and pushed. Repository policy requires opening the pull request with a permitted account."
+            {
+              echo "### Generated types saved; pull request still required"
+              echo "Branch: \`$branch\`"
+              echo "[Open a pull request](https://github.com/$GITHUB_REPOSITORY/compare/$BASE_BRANCH...$branch?expand=1)"
+              echo "The GitHub Actions token cannot create pull requests under the repository's current policy."
+              echo "No pull request was created by this run. Human review and merge are still required."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            cat "$pr_log"
+            exit 1
+          fi
