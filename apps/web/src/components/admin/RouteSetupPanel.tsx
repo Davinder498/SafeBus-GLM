@@ -1,3 +1,4 @@
+import { activeDriverForBusService, scheduledDriverForBusService } from '@/utils/transportAssignments';
 import { seatLabel } from '@/utils/studentSeat';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
@@ -161,15 +162,15 @@ export function RouteSetupPanel({
     onSaved();
   }
   const eligible = route.status === 'active' && route.definition_status === 'ready';
-  const hasDriverPlan = (serviceId: string) => assignments.some(
-    (assignment) => assignment.bus_route_assignment_id === serviceId && assignment.status === 'active',
-  );
-  const driversPlanned = services.filter((service) => hasDriverPlan(service.id)).length;
+  const currentPlans = useMemo(() => new Map(services.map((service) =>
+    [service.id, activeDriverForBusService(service, assignments)])), [services, assignments]);
+  const driversPlanned = services.filter((service) => currentPlans.get(service.id)).length;
   useEffect(() => {
     if (activeTab !== 'assignments' || editingDriverServiceId !== null) return;
-    const firstUnplanned = services.find((service) => !hasDriverPlan(service.id));
+    const firstUnplanned = services.find((service) => !currentPlans.get(service.id) &&
+      !scheduledDriverForBusService(service, assignments));
     if (firstUnplanned) setEditingDriverServiceId(firstUnplanned.id);
-  }, [activeTab, assignments, editingDriverServiceId, services]);
+  }, [activeTab, assignments, currentPlans, editingDriverServiceId, services]);
 
   const routeReturn = `${window.location.origin}/admin/routes/${route.id}#route-service`;
   const addBusHref = `/admin/buses/new?returnTo=${encodeURIComponent(routeReturn)}`;
@@ -212,7 +213,7 @@ export function RouteSetupPanel({
           {[
             { name: 'Route and stops', complete: eligible, hint: eligible ? 'Ready for service' : 'Complete route details', icon: MapPinned },
             { name: 'Bus services', complete: services.length > 0, hint: `${services.length} saved`, icon: BusFront },
-            { name: 'Driver plans', complete: services.length > 0 && driversPlanned === services.length, hint: `${driversPlanned} of ${services.length} services`, icon: UserRound },
+            { name: 'Current drivers', complete: services.length > 0 && driversPlanned === services.length, hint: `${driversPlanned} of ${services.length} services`, icon: UserRound },
             { name: 'Student assignments', complete: !rosterLoading && !rosterError && roster.some((r) => r.status === 'active'), hint: rosterLoading || rosterError ? 'Not verified' : `${new Set(roster.filter((r) => r.status === 'active').map((r) => r.student_id)).size} students`, icon: UsersRound },
           ].map(({ name, complete, hint, icon: Icon }) => (
             <button
@@ -343,12 +344,12 @@ export function RouteSetupPanel({
           ) : (
             <div className="space-y-3" aria-label="Saved bus services">
               {services.map((service) => {
-                const plan = assignments.find(
-                  (assignment) => assignment.bus_route_assignment_id === service.id && assignment.status === 'active',
-                );
+                const currentPlan = currentPlans.get(service.id);
+                const scheduledPlan = scheduledDriverForBusService(service, assignments);
+                const plan = currentPlan ?? scheduledPlan;
                 const driver = drivers.find((item) => item.id === plan?.driver_id);
                 const driverName = names.get(driver?.profile_id ?? '') ?? 'Not assigned';
-                const firstUnplanned = services.find((item) => !hasDriverPlan(item.id))?.id;
+                const firstUnplanned = services.find((item) => !currentPlans.get(item.id) && !scheduledDriverForBusService(item, assignments))?.id;
                 const driverOpen = editingDriverServiceId === service.id ||
                   (editingDriverServiceId === null && firstUnplanned === service.id);
                 return (
@@ -363,9 +364,18 @@ export function RouteSetupPanel({
                         </div>
                         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
                           <div>
-                            <dt className="text-xs font-semibold text-[var(--color-text-muted)]">Planned driver</dt>
-                            <dd className="mt-1 font-semibold text-[var(--color-text)]">{driverName}</dd>
+                            <dt className="text-xs font-semibold text-[var(--color-text-muted)]">{!currentPlan && scheduledPlan ? 'Scheduled driver' : 'Current driver'}</dt>
+                            <dd className="mt-1 font-semibold text-[var(--color-text)]">{driverName}{!currentPlan && scheduledPlan && <span className="block text-xs font-normal text-[var(--color-text-muted)]">Starts {scheduledPlan.effective_from}</span>}</dd>
                           </div>
+                          {currentPlan && scheduledPlan && (
+                            <div>
+                              <dt className="text-xs font-semibold text-[var(--color-text-muted)]">Next scheduled driver</dt>
+                              <dd className="mt-1 font-semibold text-[var(--color-text)]">
+                                {names.get(drivers.find((item) => item.id === scheduledPlan.driver_id)?.profile_id ?? '') ?? 'Name unavailable'}
+                                <span className="block text-xs font-normal text-[var(--color-text-muted)]">Starts {scheduledPlan.effective_from}</span>
+                              </dd>
+                            </div>
+                          )}
                           <div>
                             <dt className="text-xs font-semibold text-[var(--color-text-muted)]">Bus service dates</dt>
                             <dd className="mt-1 font-semibold text-[var(--color-text)]">
@@ -464,7 +474,7 @@ export function RouteSetupPanel({
           </div>
           <div id="route-review" className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-4 text-sm">
             <p className="font-semibold text-[var(--color-text)]">
-              Drivers: {driversPlanned} of {services.length} bus services have a saved driver plan.
+              Drivers: {driversPlanned} of {services.length} bus services have a driver effective today.
             </p>
             <p className="mt-1 text-[var(--color-text-muted)]">
               Student assignments: {rosterLoading || rosterError

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { AdminTripDetail } from '@/types/adminTripDetail';
-import { tripStopPosition, verifiedTripLocation } from './adminTripPresentation';
+import { tripStopPosition, verifiedTripLocation, tripServiceLabel } from './adminTripPresentation';
 import { readTripListQuery } from './adminTripListQuery';
 
 const now = Date.parse('2026-10-28T14:00:00Z');
@@ -120,4 +120,10 @@ it('restores list filters/pages and rejects malformed URL state', () => {
   expect(
     readTripListQuery(new URLSearchParams('tripPage=-1&tripSize=999&tripStatus=other')).query,
   ).toMatchObject({ page: 1, pageSize: 25, status: null });
+});
+
+it('deduplicates direction names and preserves custom trip names', () => {
+  expect(tripServiceLabel('outbound', ' Outbound ')).toBe('Outbound');
+  expect(tripServiceLabel('return', 'return')).toBe('Return');
+  expect(tripServiceLabel('outbound', 'Express')).toBe('Outbound · Express');
 });

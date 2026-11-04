@@ -315,7 +315,7 @@ export function AdminRouteDetailPage() {
                   {[
                     { label: 'Saved stops', value: String(data.stops.length), icon: MapPin },
                     { label: 'Bus services', value: String(data.busServices.length), icon: BusFront },
-                    { label: 'Driver plans', value: String(data.busServices.filter((service) => activeDriverForBusService(service, data.assignments)).length), icon: UserRound },
+                    { label: 'Current drivers', value: String(data.busServices.filter((service) => activeDriverForBusService(service, data.assignments)).length), icon: UserRound },
                   ].map(({ label, value, icon: Icon }) => (
                     <Card key={label} className="flex items-center gap-4 p-4 shadow-sm">
                       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-selection)] text-[var(--color-action)]">

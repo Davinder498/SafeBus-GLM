@@ -389,7 +389,7 @@ test.describe('Milestone 5A.1 — Admin student roster', () => {
     await page.goto('/admin/students');
 
     const summary = page.getByTestId('roster-review-summary');
-    await expect(summary).toContainText('1 of 1 student records on this server page have review flags.');
+    await expect(summary).toContainText('1 of 1 student records on this page have review flags.');
     await expect(summary).toContainText('Other district records are on separate pages');
     await expect(page.getByTestId('student-review-status')).toContainText('Bus not assigned');
 

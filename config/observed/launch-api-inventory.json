@@ -1,0 +1,2014 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "observedAt": "2026-11-04",
+  "observationOnly": true,
+  "sqlApplied": false,
+  "installationProvenanceEstablished": false,
+  "functions": [
+    {
+      "signature": "admin_create_bus(uuid,text,text,text,integer,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_create_route_shape_version(uuid,jsonb,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_create_student_onboarding(jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_deactivate_student_guardian(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_end_bus_route_assignment(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_end_bus_route_service(uuid[])",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_finalize_member_invitation(uuid,text,text,text,text,text,jsonb,jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_get_printable_qr(text,uuid,boolean,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "normalizedMd5": "584215843bd6c88cf2dc171ab769cae5"
+    },
+    {
+      "signature": "admin_link_student_guardian(uuid,uuid,text,boolean)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_process_student_csv_import(jsonb,boolean,boolean)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_publish_route_shape_version(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_renew_bus_route_assignment(uuid,date,date)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_replace_bus_trip_driver(uuid,uuid,date,date)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_save_route_definition(jsonb,jsonb,jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_set_bus_route_service(uuid,uuid,text,date,date,uuid[])",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_set_driver_bus_assignment(uuid,uuid,date,date,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_set_guardian_access_expiry(uuid,timestamp with time zone)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_set_student_bus_service_status(uuid[],text,boolean)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_set_student_bus_service_with_seat(uuid,uuid,uuid,integer,text,uuid,uuid,uuid,uuid,date,date,uuid[])",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "normalizedMd5": "bf6d0e76440fa8952f005ec7af769326"
+    },
+    {
+      "signature": "admin_set_student_bus_service(uuid,uuid,uuid,text,uuid,uuid,uuid,uuid,date,date,uuid[])",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_set_student_guardian_status(uuid,text,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_update_bus_route_assignment(uuid,uuid,uuid,text,date,date)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_update_bus_with_fleet_number(uuid,uuid,text,text,integer,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "admin_update_bus(uuid,uuid,text,text,integer,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "apply_notification_retention(boolean)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "archive_user_notifications(uuid[])",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "authorize_driver_tracking_queue(text,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ]
+    },
+    {
+      "signature": "billing_begin_mutation(uuid,uuid,uuid,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "billing_begin_webhook_event(text,text,text,timestamp with time zone)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "billing_claim_catalog_operation(uuid,uuid,text,text,jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "e8dcc98609c0d6f826fced1819ce6789"
+    },
+    {
+      "signature": "billing_claim_operation(uuid,uuid,uuid,text,text,jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "7326a8fe290098aa9d9cd58e132352e5"
+    },
+    {
+      "signature": "billing_complete_mutation(uuid,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "billing_complete_webhook_event(text,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "billing_find_customer(text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "d26a3ed31b1bea21256b8891fcd044b1"
+    },
+    {
+      "signature": "billing_finish_catalog_operation(uuid,uuid,jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "ac1d56460d478dfea3e374657e9ecc00"
+    },
+    {
+      "signature": "billing_finish_operation(uuid,uuid,jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "351e9f00b871532e796cfa6bf079666a"
+    },
+    {
+      "signature": "billing_get_internal_state(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "billing_get_pending_catalog_operation(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "b970275b1439c4153e1df6e086c14830"
+    },
+    {
+      "signature": "billing_get_pending_request(uuid,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "9293bc1cfa3f97e7ae3722c2411f7427"
+    },
+    {
+      "signature": "billing_reserve_capacity(uuid,uuid,integer)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "7e28b2686e553865815efbc3dddf00f3"
+    },
+    {
+      "signature": "billing_sync_subscription(jsonb,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "b993528d5dcd01fd72fea603ebf898df"
+    },
+    {
+      "signature": "billing_upsert_customer_mapping(uuid,text,text,text,integer)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "billing_upsert_projection(uuid,text,text,text,text,text,text,integer,text,bigint,timestamp with time zone,timestamp with time zone,timestamp with time zone,boolean,timestamp with time zone,timestamp with time zone,text,text,integer,text,timestamp with time zone,timestamp with time zone)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "bind_driver_tracking_device(text,uuid,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "bulk_import_commit(uuid,boolean)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "bulk_import_generate_invitations(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "bulk_import_get_errors(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "bulk_import_rollback(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "bulk_import_stage_rows(text,jsonb,text,boolean)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "cancel_driver_trip(uuid,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "cancel_guardian_notification_email(uuid,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "cancel_notification_email(uuid,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "cancel_push_notification_delivery(uuid,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "check_rate_limit(text,text,integer,integer)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "claim_bulk_invitation_rows(uuid,integer)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "claim_guardian_notification_email_batch_v2(integer,integer,integer,integer)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "d35d6625a9368a540fd8f3ebd0751472"
+    },
+    {
+      "signature": "claim_guardian_notification_email_batch(integer,integer,integer,integer)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "claim_notification_deliveries(text,text,integer,integer)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "6b0838382d6c8f16ae66084d0b4447c0"
+    },
+    {
+      "signature": "claim_notification_email_batch(integer,integer,integer,integer)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "claim_push_notification_deliveries(text,integer,integer)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "cleanup_stale_android_push_devices()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "complete_guardian_notification_email(uuid,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "complete_invited_account()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "complete_notification_email(uuid,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "complete_push_notification_delivery(uuid,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "confirm_pre_trip(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "end_driver_trip(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "enforce_new_password_policy(text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "expand_notification_audiences(integer)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "55056d4d17fdafbce59ba8b61e979302"
+    },
+    {
+      "signature": "expire_stale_invitations()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "fail_guardian_notification_email(uuid,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "fail_notification_email(uuid,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "fail_push_notification_delivery(uuid,text,text,text,boolean)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_active_trip_operational_statuses()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_bus_qr_credential_status(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_bus_services_with_capacity()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "normalizedMd5": "1ce0161667e28a04551a645f88c7563c"
+    },
+    {
+      "signature": "get_admin_bus_services()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_bus_workspace(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_buses_page(integer,integer,text,text,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_dashboard_overview()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_guardian_links(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_inbox_preferences()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "d68736a122d61c0dbd8d37811ad0bf9d"
+    },
+    {
+      "signature": "get_admin_live_fleet_monitoring_in_viewport(double precision,double precision,double precision,double precision)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_live_fleet_monitoring()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_live_route_overlays()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_live_trip_stop_distance_metres(uuid,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_paginated_list(text,integer,integer,text,text,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_route_shape_versions(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_route_stop_options(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_student_bus_assignments_page(integer,integer,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_student_guardian_links(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_student_qr_credential_status(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_students_page(integer,integer,text,text,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_admin_trip_detail(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "normalizedMd5": "990d8f3cec7e3f4c4a9ad60a80a73572"
+    },
+    {
+      "signature": "get_admin_trip_operations(date,date,text,integer,integer)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "normalizedMd5": "b9855517ee728e07f7b1793f150fff55"
+    },
+    {
+      "signature": "get_admin_trip_overview(integer)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_announcement_audience(text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "5dc9cf40ab415edbbb462d13cc1b471a"
+    },
+    {
+      "signature": "get_authority_announcements(timestamp with time zone,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "c957bf88cf7d69a7d2b71fe83301cf71"
+    },
+    {
+      "signature": "get_bulk_invitation_delivery_summary(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_bus_qr_start_options(text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_bus_subscription_access()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "dcb35a63da074cd1faf96ccc825a2b9a"
+    },
+    {
+      "signature": "get_current_route_shape(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_driver_active_trip_route_shape()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_driver_active_trip_student_manifest_v2()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "normalizedMd5": "84785db66d4830d8151fe23e72e4a8ff"
+    },
+    {
+      "signature": "get_driver_active_trip_student_manifest()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_driver_completed_trip_history(integer)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_driver_delivery_preferences_v2()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "6c959ea34450823e003b630e286080d0"
+    },
+    {
+      "signature": "get_driver_delivery_preferences()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_guardian_bus_service_lines(text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_guardian_bus_visibility_v2()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_guardian_delivery_preferences_v2()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_guardian_delivery_preferences_v3()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_guardian_delivery_preferences()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_guardian_notification_preferences_v2()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_guardian_notification_preferences()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_guardian_student_stops_v2()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "normalizedMd5": "88ebc49c95cea0c45fcd3170825aef7b"
+    },
+    {
+      "signature": "get_guardian_student_stops()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_notification_delivery_health_v2()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_notification_preferences()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_platform_first_admin_invitation_status()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_platform_subscription_summaries()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "d41c890963d7d3c2bd671061e7b01e8c"
+    },
+    {
+      "signature": "get_platform_tenant_billing_detail(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_platform_tenant_billing_summaries()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_platform_tenant_onboarding_summary_secure()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_support_directory_v2()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "normalizedMd5": "a4816b9c5a158b7d643703578ecd655e"
+    },
+    {
+      "signature": "get_support_directory()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_tenant_notification_delivery_summary(integer)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_tenant_subscription()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_user_notification_detail(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_user_notification_unread_count()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_user_notifications(integer,timestamp with time zone,uuid,boolean,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "ingest_driver_location_event(text,text,uuid,bigint,timestamp with time zone,double precision,double precision,double precision,double precision,double precision,integer,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "is_allowed_redirect_origin(text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "is_current_user_session_active()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "list_own_push_devices()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "manage_bus_qr_credential(uuid,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ]
+    },
+    {
+      "signature": "manage_student_qr_credential(uuid,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ]
+    },
+    {
+      "signature": "mark_all_user_notifications_read()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "mark_student_dropped_off_for_active_trip(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "mark_student_picked_up_for_active_trip(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "mark_user_notifications_read(uuid[],boolean)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "pause_driver_trip(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "platform_cancel_first_admin_invitation(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "platform_check_authority_onboarding(text,jsonb,boolean)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "normalizedMd5": "c919070837bd8f64b226a775268d4930"
+    },
+    {
+      "signature": "platform_emergency_admin_recovery(uuid,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "platform_finalize_first_admin_reissue(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "05541ee046f4b7ce1c6b7fd4c1b1c96d"
+    },
+    {
+      "signature": "platform_finalize_tenant_invitation_v2(uuid,text,text,text,text,text,jsonb,boolean)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "normalizedMd5": "bbfc9dbf81287538c86567456c10af86"
+    },
+    {
+      "signature": "platform_finalize_tenant_invitation(uuid,text,text,text,text,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "platform_find_unprofiled_auth_user(text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "platform_is_first_admin_invitation(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "platform_prepare_first_admin_reissue(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "b4f99c8ff54002fca04d15d5af7fa969"
+    },
+    {
+      "signature": "platform_set_tenant_lifecycle(uuid,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "reconcile_bulk_invitation_delivery(uuid,uuid,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "record_notification_delivery_incident(uuid,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "record_own_auth_event(text,text,jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "record_student_qr_event_for_active_trip(text,text,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "record_student_record_access(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "record_trip_exception(uuid,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "register_android_byod_tracking_device(uuid,text,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "register_android_push_device(text,text,text,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "register_current_user_session(text,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "replace_bus(uuid,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "requeue_notification_email_dead_letter(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "resolve_guardian_notification_email_payload(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "resolve_guardian_pickup_dropoff_email_payload(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "b5e19f4bcffcd0e90d362fbcd5a531ce"
+    },
+    {
+      "signature": "resolve_notification_deliveries(text,text,uuid[])",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "7341fe5e3af73def59e98841e4698c65"
+    },
+    {
+      "signature": "resolve_notification_email_payload(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "f78396c9e2ef7c7251636bcb24556dce"
+    },
+    {
+      "signature": "resolve_notification_email_recipient(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "resolve_push_notification_delivery(uuid,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "resolve_student_qr_for_active_trip(text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "resume_driver_trip(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "retry_guardian_notification_email(uuid,text,text,integer,integer)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "retry_notification_email(uuid,text,text,integer,integer)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "retry_push_notification_delivery(uuid,text,text,text,timestamp with time zone,integer)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "revoke_driver_tracking_devices(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "revoke_guardian_access(uuid,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "revoke_invitation(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "revoke_own_push_device(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "run_all_retention_deletions(boolean)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "search_admin_buses(text,integer)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "search_admin_guardians(text,integer)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "search_admin_routes(text,integer)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "search_admin_students(text,integer)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "search_admin_trips(date,date,text,integer,integer)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "search_authority_reference_directory_v2(text,integer)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "normalizedMd5": "7d05ccc60b47ccc3a815717245514d5c"
+    },
+    {
+      "signature": "search_authority_reference_directory(text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "normalizedMd5": "2d2d9a292e621014fdbd1f643f5e5d3f"
+    },
+    {
+      "signature": "send_authority_announcement(uuid,text,text,text,integer)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "5d9758e240416a5b002c14fb03fc56c4"
+    },
+    {
+      "signature": "server_get_member_invitation_state(text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "set_admin_inbox_preferences(jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "f5c18776a02a11267f74c766e6ff5138"
+    },
+    {
+      "signature": "set_driver_delivery_preferences_v2(jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "23ecb3021abe448f228cebb58a44f3fc"
+    },
+    {
+      "signature": "set_driver_delivery_preferences(jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "set_guardian_delivery_preferences_v2(jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "set_guardian_delivery_preferences_v3(jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "set_guardian_delivery_preferences(boolean,boolean)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "set_guardian_notification_preferences_v2(uuid,boolean,boolean,boolean,boolean,boolean,boolean)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "set_guardian_notification_preferences(uuid,boolean,boolean,boolean)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "set_notification_preferences(boolean,boolean,time without time zone,time without time zone,text,boolean,text,jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "set_trip_operational_status(uuid,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "settle_notification_deliveries(text,text,jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "normalizedMd5": "5fa984fd434c1fe8336f9daa91d6ed32"
+    },
+    {
+      "signature": "start_bus_tracking_from_qr(text,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "substitute_driver(uuid,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "tenant_add_sub_administrator(uuid,text,text,text,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "tenant_archive_school(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "tenant_change_admin_role(uuid,text,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "tenant_create_school(text,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "tenant_depart_administrator(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "tenant_invite_administrator(uuid,uuid,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "tenant_restore_administrator(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "tenant_restore_school(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "tenant_search_audit_events(text,text,uuid,timestamp with time zone,timestamp with time zone,integer,integer)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "tenant_suspend_administrator(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "tenant_transfer_administrator(uuid,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "tenant_update_school(uuid,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "update_bus_tracking_location(text,double precision,double precision,double precision,double precision,double precision)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "update_driver_trip_location(uuid,double precision,double precision,double precision,double precision,double precision,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "update_platform_support_contact(text,text,text,text,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "update_tenant_support_contact_v2(text,text,text,text,text,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "normalizedMd5": "bf52f3eeadcc14e6575a9344344e4deb"
+    },
+    {
+      "signature": "update_tenant_support_contact(text,text,text,text,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ]
+    },
+    {
+      "signature": "write_server_audit_event(uuid,text,text,uuid,text,jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    }
+  ],
+  "addedAuthenticated": [
+    "admin_get_printable_qr(text,uuid,boolean,text)",
+    "admin_set_student_bus_service_with_seat(uuid,uuid,uuid,integer,text,uuid,uuid,uuid,uuid,date,date,uuid[])",
+    "get_admin_bus_services_with_capacity()",
+    "get_admin_inbox_preferences()",
+    "get_admin_trip_detail(uuid)",
+    "get_admin_trip_operations(date,date,text,integer,integer)",
+    "get_announcement_audience(text)",
+    "get_authority_announcements(timestamp with time zone,uuid)",
+    "get_bus_subscription_access()",
+    "get_driver_active_trip_student_manifest_v2()",
+    "get_driver_delivery_preferences_v2()",
+    "get_guardian_student_stops_v2()",
+    "get_platform_subscription_summaries()",
+    "get_support_directory_v2()",
+    "platform_check_authority_onboarding(text,jsonb,boolean)",
+    "platform_finalize_tenant_invitation_v2(uuid,text,text,text,text,text,jsonb,boolean)",
+    "platform_prepare_first_admin_reissue(uuid)",
+    "search_authority_reference_directory_v2(text,integer)",
+    "search_authority_reference_directory(text)",
+    "send_authority_announcement(uuid,text,text,text,integer)",
+    "set_admin_inbox_preferences(jsonb)",
+    "set_driver_delivery_preferences_v2(jsonb)",
+    "update_tenant_support_contact_v2(text,text,text,text,text,text,text)"
+  ],
+  "serviceRoleDenied": [
+    "admin_get_printable_qr(text,uuid,boolean,text)",
+    "admin_set_student_bus_service_with_seat(uuid,uuid,uuid,integer,text,uuid,uuid,uuid,uuid,date,date,uuid[])",
+    "authorize_driver_tracking_queue(text,text)",
+    "get_admin_bus_services_with_capacity()",
+    "get_admin_trip_detail(uuid)",
+    "get_admin_trip_operations(date,date,text,integer,integer)",
+    "get_driver_active_trip_student_manifest_v2()",
+    "get_guardian_student_stops_v2()",
+    "get_support_directory_v2()",
+    "manage_bus_qr_credential(uuid,text)",
+    "manage_student_qr_credential(uuid,text)",
+    "platform_check_authority_onboarding(text,jsonb,boolean)",
+    "platform_finalize_tenant_invitation_v2(uuid,text,text,text,text,text,jsonb,boolean)",
+    "search_authority_reference_directory(text)",
+    "search_authority_reference_directory_v2(text,integer)",
+    "update_tenant_support_contact(text,text,text,text,text,text)",
+    "update_tenant_support_contact_v2(text,text,text,text,text,text,text)"
+  ],
+  "addedServiceRole": [
+    "billing_claim_catalog_operation(uuid,uuid,text,text,jsonb)",
+    "billing_claim_operation(uuid,uuid,uuid,text,text,jsonb)",
+    "billing_find_customer(text)",
+    "billing_finish_catalog_operation(uuid,uuid,jsonb)",
+    "billing_finish_operation(uuid,uuid,jsonb)",
+    "billing_get_pending_catalog_operation(uuid)",
+    "billing_get_pending_request(uuid,uuid)",
+    "billing_reserve_capacity(uuid,uuid,integer)",
+    "billing_sync_subscription(jsonb,uuid)",
+    "claim_guardian_notification_email_batch_v2(integer,integer,integer,integer)",
+    "claim_notification_deliveries(text,text,integer,integer)",
+    "expand_notification_audiences(integer)",
+    "platform_finalize_first_admin_reissue(uuid)",
+    "resolve_guardian_pickup_dropoff_email_payload(uuid)",
+    "resolve_notification_deliveries(text,text,uuid[])",
+    "resolve_notification_email_payload(uuid)",
+    "settle_notification_deliveries(text,text,jsonb)"
+  ]
+}
