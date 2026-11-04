@@ -126,3 +126,31 @@ inspection using the new current-main SHA. Rerunning the old job uses the old
 workflow and shared credential. Preserve production review. Missing credentials,
 401 and 403 responses fail closed with non-secret remediation, without retries,
 raw provider response logging or fallback to a more privileged token.
+
+
+## Provider version-label contract repair
+
+The fresh inspection run 41926123693 passed HTTP authentication but failed local
+response validation. No upgrade was attempted. The original parser incorrectly
+required a plain four-component current version and only recognized plain numeric
+targets. Supabase's own Studio client strips `supabase-postgres-` from both
+`current_app_version` and target `app_version` before displaying them. This
+confirmed parser defect rejects provider platform labels such as
+`supabase-postgres-17.6.1.155`; it would also hide a prefixed GA target.
+
+Normalize the known provider label when checking the numeric version. Retain the
+exact offered platform label alongside its numeric target version for maintenance
+review. Require a verified current PostgreSQL 17 major version, a GA 17 target at
+17.11 or later, and every existing blocker/warning array empty before reporting
+provider checks clear. Unknown labels, other major versions, beta targets, missing
+blocker arrays and provider warnings do not become safe defaults.
+
+On a response mismatch, log only fixed field names and their types, plus which
+fields failed validation. Do not log values, object names, arbitrary response keys,
+access tokens or full provider content. JSON decoding errors have a distinct code.
+This diagnoses any additional live contract difference without broadening access.
+A new protected inspection from merged code is still required to verify the actual
+live response; the old failure did not retain that response.
+
+Provider source checked:
+https://github.com/supabase/supabase/blob/master/apps/studio/components/interfaces/Settings/General/Infrastructure/ProjectUpgradeAlert.tsx

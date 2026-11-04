@@ -737,3 +737,60 @@ test('upgrade authentication failure stops after one request without reading pro
   assert.match(script, /UPGRADE_PREFLIGHT_READ_TOKEN_MISSING/);
   assert.doesNotMatch(script, /process\.env\.SUPABASE_ACCESS_TOKEN/);
 });
+
+test('upgrade version metadata follows the provider string contract with value-free diagnostics', async () => {
+  const { summarizeUpgradeEligibility, eligibilityResponseDiagnostics } = await import('../../scripts/lib/postgres-upgrade-preflight.mjs');
+  const value = {
+    eligible: true, current_app_version: '17.6', duration_estimate_hours: 1,
+    target_upgrade_versions: [{ postgres_version: '17', release_channel: 'ga', app_version: '17.11.0.011' }],
+    legacy_auth_custom_roles: [], objects_to_be_dropped: [], unsupported_extensions: [],
+    user_defined_objects_in_internal_schemas: [], validation_errors: [], warnings: [],
+  };
+  for (const version of ['17.6', '17.6.1.155', 'supabase-postgres-17.6.1.155', 'supabase/postgres:17.6.1.155']) {
+    assert.equal(summarizeUpgradeEligibility({ ...value, current_app_version: version }).currentVersion, version);
+  }
+  assert.equal(summarizeUpgradeEligibility({ ...value, current_app_version: '15.8.1.010' }).providerChecksClear, false);
+  assert.equal(summarizeUpgradeEligibility({ ...value, current_app_version: 'unknown' }).currentMajorVerified, false);
+  for (const field of ['eligible', 'current_app_version', 'target_upgrade_versions', 'duration_estimate_hours', 'warnings']) {
+    const changed = { ...value, [field]: null, private_field: 'sensitive-value' };
+    const diagnostic = eligibilityResponseDiagnostics(changed);
+    assert.ok(diagnostic.failedFields.includes(field));
+    assert.equal(diagnostic.fieldTypes[field], 'null');
+    assert.equal(JSON.stringify(diagnostic).includes('sensitive-value'), false);
+    assert.equal(JSON.stringify(diagnostic).includes('private_field'), false);
+    assert.throws(() => summarizeUpgradeEligibility(changed), (error) =>
+      error.message === 'UPGRADE_PREFLIGHT_RESPONSE' && error.diagnostics.failedFields.includes(field));
+  }
+  assert.ok(eligibilityResponseDiagnostics({ ...value, warnings: undefined }).failedFields.includes('warnings'));
+  assert.equal(summarizeUpgradeEligibility({ ...value, warnings: [{ type: 'unknown', secret: 'sensitive-value' }] }).providerChecksClear, false);
+});
+
+test('upgrade JSON decoding failures are distinct and never expose the provider body', async () => {
+  const { inspectPostgresUpgrade } = await import('../../scripts/lib/postgres-upgrade-preflight.mjs');
+  await assert.rejects(inspectPostgresUpgrade({
+    projectId: 'ckrkfylsyihwouvesypm', token: 'synthetic',
+    fetchImpl: async () => ({ ok: true, json: async () => { throw new Error('sensitive-provider-body'); } }),
+  }), { message: 'UPGRADE_PREFLIGHT_JSON' });
+});
+
+
+test('Supabase Studio platform version labels retain reviewed GA PostgreSQL 17 selection', async () => {
+  const { summarizeUpgradeEligibility } = await import('../../scripts/lib/postgres-upgrade-preflight.mjs');
+  const value = {
+    eligible: true, current_app_version: 'supabase-postgres-17.6.1.155', duration_estimate_hours: 1,
+    target_upgrade_versions: [
+      { postgres_version: '17', release_channel: 'ga', app_version: 'supabase-postgres-17.11.0.011' },
+      { postgres_version: '17', release_channel: 'beta', app_version: 'supabase-postgres-17.12.0.001' },
+      { postgres_version: '17', release_channel: 'ga', app_version: 'unrecognized-17.11.0.011' },
+      { postgres_version: '15', release_channel: 'ga', app_version: 'supabase-postgres-15.19.0.001' },
+    ],
+    legacy_auth_custom_roles: [], objects_to_be_dropped: [], unsupported_extensions: [],
+    user_defined_objects_in_internal_schemas: [], validation_errors: [], warnings: [],
+  };
+  const result = summarizeUpgradeEligibility(value);
+  assert.equal(result.currentMajorVerified, true);
+  assert.equal(result.providerChecksClear, true);
+  assert.deepEqual(result.targetVersions, ['17.11.0.011']);
+  assert.deepEqual(result.targetPlatformVersions, ['supabase-postgres-17.11.0.011']);
+  assert.equal(summarizeUpgradeEligibility({ ...value, current_app_version: 'supabase-postgres-15.8.1.010' }).providerChecksClear, false);
+});
