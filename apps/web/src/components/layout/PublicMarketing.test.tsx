@@ -29,7 +29,7 @@ async function render(node: ReactNode) {
 }
 
 describe('public marketing navigation', () => {
-  it('keeps only contact and privacy in the footer and sign-in in the header', async () => {
+  it('shows verified Android testing guidance, iOS availability, legal links and sign-in', async () => {
     const container = await render(<PublicLayout>Content</PublicLayout>);
     const header = container.querySelector('header');
     const headerText = header?.textContent ?? '';
@@ -38,7 +38,10 @@ describe('public marketing navigation', () => {
     expect(headerText).toContain('Sign in');
     expect(container.querySelector('footer a[href="/contact"]')?.textContent).toBe('Contact');
     expect(container.querySelector('footer a[href="/privacy"]')?.textContent).toBe('Privacy');
-    expect(container.querySelectorAll('footer a')).toHaveLength(2);
+    expect(container.querySelector('footer a[href="https://play.google.com/store/apps/details?id=com.safebusalberta.app"]')?.textContent).toContain('Android testing');
+    expect(container.querySelector('footer')?.textContent).toContain('iOS app coming soon');
+    expect(container.querySelector('footer a[href*="apps.apple.com"]')).toBeNull();
+    expect(container.querySelectorAll('footer a')).toHaveLength(3);
     expect(container.querySelector('footer')?.textContent).toContain('SafeBus');
     expect(container.querySelector('footer')?.textContent).not.toContain('Track the bus');
     expect(headerText).not.toContain('Parents');

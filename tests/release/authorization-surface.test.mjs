@@ -21,7 +21,7 @@ test('audits retain authenticated driver access while denying service-role execu
   assert.equal(roles.serviceExecutable.has(signature), false);
   assert.equal(roles.serviceOnly.has(signature), false);
   assert.deepEqual([...roles.serviceExecutable].sort(),
-    [...roles.publicFunctions].filter((name) => name !== signature).sort());
+    [...roles.publicFunctions].filter((name) => !surface.serviceRoleDenied.includes(name)).sort());
   assert.throws(() => authorizationAudiences({ ...surface, serviceRoleDenied: ['unknown()'] }),
     /authenticated-only/);
   assert.throws(() => authorizationAudiences({
@@ -176,7 +176,7 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
   assert.equal(trackingEvidence.liveDriverRecoveryVerified, false);
   assert.equal(trackingEvidence.physicalDeviceVerified, false);
   assert.deepEqual(tracking.addedAuthenticated, ['authorize_driver_tracking_queue(text,text)']);
-  assert.deepEqual(surface.serviceRoleDenied, tracking.deniedServiceRole);
+  for (const signature of tracking.deniedServiceRole) assert.ok(surface.serviceRoleDenied.includes(signature));
   assert.equal(createHash('sha256')
     .update((await fs.readFile(tracking.migration, 'utf8')).replaceAll('\r\n', '\n'))
     .digest('hex'), tracking.migrationSha256);
@@ -191,6 +191,38 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
     const name = signature.slice(0, signature.indexOf('('));
     assert.equal(actual.has(name), false);
     actual.set(name, 'authenticated');
+  }
+  const launch = await readJson('config/observed/launch-api-inventory.json');
+  assert.equal(launch.projectId, tracking.projectId);
+  assert.equal(launch.observationOnly, true);
+  assert.equal(launch.sqlApplied, false);
+  assert.equal(launch.installationProvenanceEstablished, false);
+  assert.equal(launch.addedAuthenticated.length, 23);
+  assert.deepEqual(surface.serviceRoleDenied, launch.serviceRoleDenied);
+  for (const signature of launch.addedAuthenticated) {
+    const observed = launch.functions.find((entry) => entry.signature === signature);
+    assert.match(observed.normalizedMd5, /^[a-f0-9]{32}$/);
+    assert.ok(observed.acl.includes('authenticated=X/postgres'));
+    const name = signature.slice(0, signature.indexOf('('));
+    assert.equal(actual.has(name), false);
+    actual.set(name, 'authenticated');
+  }
+  assert.equal(launch.addedServiceRole.length, 17);
+  for (const signature of launch.addedServiceRole) {
+    const observed = launch.functions.find((entry) => entry.signature === signature);
+    assert.match(observed.normalizedMd5, /^[a-f0-9]{32}$/);
+    assert.deepEqual(observed.acl, ['postgres=X/postgres', 'service_role=X/postgres']);
+    const name = signature.slice(0, signature.indexOf('('));
+    assert.equal(actual.has(name), false);
+    actual.set(name, 'service_role');
+  }
+  const audiences = authorizationAudiences(surface);
+  assert.deepEqual(launch.functions.map((f) => f.signature).sort(), [...audiences.publicFunctions].sort());
+  for (const entry of launch.functions) {
+    assert.equal(entry.owner, 'postgres');
+    assert.equal(entry.acl.some((acl) => acl.startsWith('=') || acl.startsWith('anon=')), false);
+    assert.equal(entry.acl.includes('authenticated=X/postgres'), audiences.authenticated.has(entry.signature));
+    assert.equal(entry.acl.includes('service_role=X/postgres'), audiences.serviceExecutable.has(entry.signature));
   }
   const expected = new Map();
   for (const signature of surface.authenticated) {
@@ -263,8 +295,9 @@ test('production application RPC references are all reviewed', async () => {
   );
 });
 
-test('the prepared billing authorization surfaces cannot change active installation scope', async () => {
+test('prepared billing surfaces enter active scope only with catalog observation', async () => {
   const active = await readJson('config/authorization-surface.json');
+  const observed = await readJson('config/observed/launch-api-inventory.json');
   for (const file of [
     'config/pending/tenant-subscription-authorization.json',
     'config/pending/pricing-catalog-authorization.json',
@@ -275,8 +308,15 @@ test('the prepared billing authorization surfaces cannot change active installat
     await fs.access(pending.migration);
     for (const audience of ['authenticated', 'serviceRole']) {
       assert.deepEqual(pending[audience], [...new Set(pending[audience])].sort());
-      for (const signature of pending[audience])
-        assert.ok(![...active.authenticated, ...active.serviceRole].includes(signature));
+      for (const signature of pending[audience]) {
+        if (observed.addedAuthenticated.includes(signature)) {
+          assert.equal(audience, 'authenticated');
+          assert.ok(active.authenticated.includes(signature));
+        } else if (observed.addedServiceRole.includes(signature)) {
+          assert.equal(audience, 'serviceRole');
+          assert.ok(active.serviceRole.includes(signature));
+        } else assert.ok(![...active.authenticated, ...active.serviceRole].includes(signature));
+      }
     }
   }
 });

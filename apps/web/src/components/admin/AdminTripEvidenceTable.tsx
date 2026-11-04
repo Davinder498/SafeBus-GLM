@@ -1,8 +1,8 @@
+import { tripServiceLabel } from '@/utils/adminTripPresentation';
 import { Link, useLocation } from 'react-router';
 import type { AdminTripEvidence } from '@/types/adminTripReport';
 import { TRIP_EXCEPTION_TYPES } from '@/types/tripExceptions';
 import { formatAdminTripDate, formatAdminTripTimestamp } from '@/utils/adminTripDates';
-import { directionLabel } from '@/services/adminTripOverviewService';
 
 export function AdminTripEvidenceTable({
   rows,
@@ -52,8 +52,7 @@ export function AdminTripEvidenceTable({
               <td className="px-3 py-3">
                 <span className="font-semibold text-navy-900">{row.trip.routeName}</span>
                 <span className="block text-gray-600">
-                  {row.trip.routeCode} · {directionLabel(row.trip.direction)} ·{' '}
-                  {row.trip.tripPatternName}
+                  {row.trip.routeCode} · {tripServiceLabel(row.trip.direction, row.trip.tripPatternName)}
                 </span>
               </td>
               <td className="px-3 py-3">{row.trip.busLabel}</td>

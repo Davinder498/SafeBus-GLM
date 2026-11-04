@@ -1,3 +1,4 @@
+import { MobileAppLinks } from '@/components/ui/MobileAppLinks';
 import type { ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Link, NavLink } from 'react-router';
@@ -90,6 +91,7 @@ export function PublicLayout({
         className="border-t border-[var(--color-border)] bg-[var(--color-surface)]"
         data-ui="public-footer"
       >
+        <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8"><MobileAppLinks /></div>
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 text-xs text-slate-500 sm:px-6 lg:px-8">
           <p>© {new Date().getUTCFullYear()} SafeBus</p>
           <nav aria-label="Footer" className="flex shrink-0 items-center gap-4">

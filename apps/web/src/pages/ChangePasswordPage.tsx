@@ -8,7 +8,7 @@ import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/contexts/useAuth';
-import { changeOwnPassword } from '@/services/accountSecurityService';
+import { changeOwnPassword, accountSecurityErrorMessage } from '@/services/accountSecurityService';
 
 const minimumPasswordLength = 12;
 type PasswordFieldName = 'current' | 'next' | 'confirm';
@@ -62,8 +62,8 @@ export function ChangePasswordPage() {
       setConfirm('');
       setVisible([]);
       setSaved(true);
-    } catch {
-      setError('Unable to change your password right now. Please try again.');
+    } catch (cause) {
+      setError(accountSecurityErrorMessage(cause));
     } finally {
       setSaving(false);
     }
