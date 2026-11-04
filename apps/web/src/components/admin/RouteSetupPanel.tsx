@@ -105,7 +105,7 @@ export function RouteSetupPanel({
   useEffect(() => {
     let active = true;
     setSetupError(null);
-    void Promise.all([getVisibleRoutes(), getVisibleRouteServiceDays()])
+    void Promise.all([getVisibleRoutes([route.id]), getVisibleRouteServiceDays(route.id)])
       .then(([routes, days]) => {
         if (active) setSetup({ routes, days: days.filter((d) => d.route_id === route.id) });
       })
@@ -318,6 +318,7 @@ export function RouteSetupPanel({
                 {editingBus ? 'Edit ' + editingBus.trip_name + ' bus service' : 'Add bus service'}
               </h3>
               <RouteBusAssignmentForm
+                searchDirectory
                 key={editingBus?.id ?? 'new'}
                 route={route}
                 buses={buses}

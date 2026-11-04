@@ -1,3 +1,4 @@
+import { collectVisibleRows } from './visibleRows';
 import { albertaToday } from '@/utils/adminTripDates';
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 import type {
@@ -64,18 +65,12 @@ function logDevError(context: string, error: unknown) {
  * to their tenant). Returns the raw assignment rows; the admin page joins
  * driver/bus/route display names client-side.
  */
-export async function fetchAdminAssignments(): Promise<DriverRouteAssignment[]> {
-  const client = requireSupabase();
-  const { data, error } = await client
-    .from('driver_route_assignments')
-    .select(assignmentColumns)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    logDevError('Failed to load admin driver assignments', error);
-    throw new Error('Unable to load driver assignments.');
-  }
-  return (data ?? []) as DriverRouteAssignment[];
+export async function fetchAdminAssignments(routeId?: string): Promise<DriverRouteAssignment[]> {
+  return collectVisibleRows<DriverRouteAssignment>((from, to) => {
+    let request = requireSupabase().from('driver_route_assignments').select(assignmentColumns);
+    if (routeId) request = request.eq('route_id', routeId);
+    return request.order('id').range(from, to);
+  });
 }
 
 export async function fetchAdminPlannedDriverAssignments(

@@ -1,3 +1,4 @@
+import { AdminReferencePicker } from './AdminReferencePicker';
 import { albertaToday } from '@/utils/adminTripDates';
 import { useMemo, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
@@ -25,6 +26,7 @@ export function RouteBusAssignmentForm({
   tripPatterns,
   existingAssignments = [],
   initialBusId,
+  searchDirectory = false,
   onSubmit,
   onCancel,
 }: {
@@ -34,6 +36,7 @@ export function RouteBusAssignmentForm({
   existingAssignments?: BusRouteAssignment[];
   /** The newly created bus is suggested only; the admin must still save. */
   initialBusId?: string;
+  searchDirectory?: boolean;
   onSubmit: (input: SetBusRouteServiceInput) => Promise<void>;
   onCancel: () => void;
 }) {
@@ -121,7 +124,10 @@ export function RouteBusAssignmentForm({
             <option value="reverse">Return only</option>
           </select>
         </label>
-        <label className={labelClassName}>
+        {searchDirectory ? <AdminReferencePicker entity="buses" value={busId}
+          selectedLabel={buses.find((bus) => bus.id === busId)?.bus_number
+            ? `Bus ${buses.find((bus) => bus.id === busId)!.bus_number}` : undefined}
+          onChange={setBusId} /> : (        <label className={labelClassName}>
           Bus
           <select
             className={fieldClassName}
@@ -137,7 +143,7 @@ export function RouteBusAssignmentForm({
                 </option>
               ))}
           </select>
-        </label>
+        </label>)}
         <label className={labelClassName}>
           Effective from
           <input
