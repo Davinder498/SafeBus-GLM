@@ -1,0 +1,26 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261015212746_fix_retention_column_qualification.sql",
+  "migrationSha256": "7b2cce3d8f37e00b712b89e7614a8fed81b85ccfbfed6877846ea8d6a6709264",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "safebus_private.run_retention_deletion(text,boolean)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "2e47fad329f75031f5c7227b65d38b4b"
+      },
+      "after": {
+        "md5": "0bd79a388362468846db861d3bf86e92"
+      }
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": []
+}
