@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
+import { RETENTION_POLICY_KEYS, verifyRetentionDryRuns } from '../../scripts/lib/retention-verification.mjs';
 
 const pending = 'supabase/migrations/pending/20261015212746_fix_retention_column_qualification.sql';
 const fixture = 'tests/release/fixtures/retention-installed-function.sql';
@@ -16,6 +17,128 @@ const policies = [
   ['trip_records', 'driver_trips', 'completed', 'active'],
   ['notifications', 'guardian_notification_outbox', 'delivered', 'pending'],
 ];
+
+test('protected retention acceptance exercises all policies and never persists its audit rows', async (t) => {
+  const db = new PGlite();
+  t.after(() => db.close());
+  await db.exec(`
+    create schema safebus_private; create role service_role;
+    create table public.retention_execution_control(id int primary key, destructive_enabled boolean);
+    insert into public.retention_execution_control values(1,false);
+    create table public.retention_policies(policy_key text primary key,active boolean);
+    create table public.retention_deletion_runs(id uuid primary key,policy_key text);
+    create table public.audit_events(id uuid primary key,action text);
+    create function safebus_private.run_retention_deletion(p_key text,p_dry_run boolean)
+      returns table(run_id uuid,policy_key text,status text,dry_run boolean,error_code text,affected_rows bigint)
+      language plpgsql security definer set search_path=pg_catalog,public as $$
+      declare v_id uuid:=gen_random_uuid(); begin
+        if not p_dry_run or current_setting('request.jwt.claim.role',true) is distinct from 'service_role' then
+          raise exception 'Invalid verification invocation';
+        end if;
+        insert into public.retention_deletion_runs values(v_id,p_key);
+        insert into public.audit_events values(gen_random_uuid(),'retention.deletion_run');
+        return query select v_id,p_key,
+          case when current_setting('test.fail_policy',true)=p_key then 'failed' else 'completed' end,
+          true,case when current_setting('test.fail_policy',true)=p_key then '42702' else null::text end,3::bigint;
+      end $$;
+    revoke all on function safebus_private.run_retention_deletion(text,boolean) from public;
+    grant usage on schema safebus_private to service_role;
+    grant execute on function safebus_private.run_retention_deletion(text,boolean) to service_role;
+  `);
+  for (const key of RETENTION_POLICY_KEYS)
+    await db.query('insert into public.retention_policies values($1,true)', [
+      key,
+    ]);
+  const expected = (
+    await db.query(`select md5(replace(pg_get_functiondef(
+    'safebus_private.run_retention_deletion(text,boolean)'::regprocedure),chr(13),'')) as value`)
+  ).rows[0].value;
+  const assertEmpty = async () => {
+    assert.deepEqual(
+      (
+        await db.query(`select
+      (select count(*)::int from public.retention_deletion_runs) as runs,
+      (select count(*)::int from public.audit_events) as audits`)
+      ).rows[0],
+      { runs: 0, audits: 0 },
+    );
+  };
+  await t.test(
+    'all twelve execute as service role in dry-run mode with complete rollback',
+    async () => {
+      const result = await verifyRetentionDryRuns(db, expected);
+      assert.equal(result.policies.length, 12);
+      assert.ok(
+        result.policies.every(
+          (p) => p.status === 'completed' && p.dryRun && p.eligibleRows === '3',
+        ),
+      );
+      assert.equal(result.deletedRows, 0);
+      assert.equal(result.rollbackVerified, true);
+      await assertEmpty();
+    },
+  );
+  await t.test(
+    'a failed policy rolls back earlier successful policy/audit writes and resets the role',
+    async () => {
+      await db.exec("set test.fail_policy='notifications'");
+      const before = (await db.query('select current_user as name')).rows[0]
+        .name;
+      await assert.rejects(
+        verifyRetentionDryRuns(db, expected),
+        /OPERATIONAL_RETENTION_POLICY_FAILED/,
+      );
+      assert.equal(
+        (await db.query('select current_user as name')).rows[0].name,
+        before,
+      );
+      await assertEmpty();
+      await db.exec('reset test.fail_policy');
+    },
+  );
+  await t.test(
+    'destructive enablement and definition drift fail before execution',
+    async () => {
+      await db.exec(
+        'update public.retention_execution_control set destructive_enabled=true',
+      );
+      await assert.rejects(
+        verifyRetentionDryRuns(db, expected),
+        /OPERATIONAL_RETENTION_UNSAFE_BASELINE/,
+      );
+      await db.exec(
+        'update public.retention_execution_control set destructive_enabled=false',
+      );
+      await assert.rejects(
+        verifyRetentionDryRuns(db, '0'.repeat(32)),
+        /OPERATIONAL_RETENTION_UNSAFE_BASELINE/,
+      );
+      await assertEmpty();
+    },
+  );
+  await t.test(
+    'an extra policy or newly added log trigger requires a new safety review',
+    async () => {
+      await db.exec(
+        "insert into public.retention_policies values('unreviewed',true)",
+      );
+      await assert.rejects(
+        verifyRetentionDryRuns(db, expected),
+        /OPERATIONAL_RETENTION_POLICY_DRIFT/,
+      );
+      await db.exec(
+        "delete from public.retention_policies where policy_key='unreviewed'",
+      );
+      await db.exec(`create function public.fixture_log_trigger() returns trigger language plpgsql as $$begin return new; end$$;
+      create trigger fixture_log_trigger before insert on public.audit_events for each row execute function public.fixture_log_trigger()`);
+      await assert.rejects(
+        verifyRetentionDryRuns(db, expected),
+        /OPERATIONAL_RETENTION_UNSAFE_BASELINE/,
+      );
+      await assertEmpty();
+    },
+  );
+});
 
 test('pending retention correction fixes observed failures without enabling deletion', async (t) => {
   // Owned in-memory PostgreSQL only. Minimal synthetic schema, no hosted calls,

@@ -83,7 +83,7 @@ jobs:
       - name: Validate Firebase without sending notifications
         if: inputs.mode == 'install' && inputs.milestone == 'delivery'
         run: node scripts/verify-push-provider.mjs
-      - name: Verify exact installed definitions and repaired dates
+      - name: Verify installed definitions and bounded acceptance
         if: inputs.mode == 'install'
         run: node scripts/release-operational-fix.mjs verify
       - name: Retain sanitized outcome
