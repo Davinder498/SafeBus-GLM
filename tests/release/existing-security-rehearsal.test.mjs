@@ -230,8 +230,8 @@ test('acceptance transaction conversion preserves reviewed DO and role checks', 
 
 test('snapshot-specific reconciliation retains the exact existing API signatures', async () => {
   const surface = JSON.parse(await fs.readFile('config/authorization-surface.json', 'utf8'));
-  // This pinned reconciliation predates the catalog-verified retirement. Keep
-  // its historical API snapshot exact without restoring retired live APIs.
+  // Keep the pinned historical snapshot exact across catalog-verified
+  // retirements and subsequent additions; neither belongs in this older DDL.
   const retired = JSON.parse(
     await fs.readFile('config/observed/recipient-push-retirements.json', 'utf8'),
   ).removedAuthenticated;
@@ -239,9 +239,11 @@ test('snapshot-specific reconciliation retains the exact existing API signatures
     await fs.readFile('config/observed/tracking-queue-authorization.json', 'utf8'),
   ).addedAuthenticated;
   const launch = JSON.parse(await fs.readFile('config/observed/launch-api-inventory.json', 'utf8'));
+  const offline = JSON.parse(await fs.readFile('config/observed/offline-trip-action-authorization.json', 'utf8'));
   const historicalAuthenticated = [
     ...surface.authenticated.filter((signature) =>
-      !added.includes(signature) && !launch.addedAuthenticated.includes(signature)), ...retired,
+      !added.includes(signature) && !launch.addedAuthenticated.includes(signature)
+        && !offline.addedAuthenticated.includes(signature)), ...retired,
   ];
   const historicalServiceRole = surface.serviceRole.filter((signature) =>
     !launch.addedServiceRole.includes(signature));
