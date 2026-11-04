@@ -636,3 +636,83 @@ test('privileged bus and announcement RPC corrections derive district-only autho
   assert.doesNotMatch(sql, /drop function/i);
   // SQL is pending-only. This CI check is not a multi-role runtime RLS proof.
 });
+
+test('Postgres upgrade preflight validates provider blockers and never infers approval', async () => {
+  const { summarizeUpgradeEligibility } =
+    await import('../../scripts/lib/postgres-upgrade-preflight.mjs');
+  const baseline = {
+    eligible: true,
+    current_app_version: '17.6.1.155',
+    duration_estimate_hours: 1,
+    target_upgrade_versions: [
+      { postgres_version: '17', release_channel: 'ga', app_version: '17.11.0.011' },
+      { postgres_version: '18', release_channel: 'ga', app_version: '18.1.0.001' },
+      { postgres_version: '17', release_channel: 'internal', app_version: '17.12.0.001' },
+    ],
+    legacy_auth_custom_roles: [],
+    objects_to_be_dropped: [],
+    unsupported_extensions: [],
+    user_defined_objects_in_internal_schemas: [],
+    validation_errors: [],
+    warnings: [],
+    ignored_secret: 'must-not-be-retained',
+  };
+  const result = summarizeUpgradeEligibility(baseline);
+  assert.deepEqual(result.targetVersions, ['17.11.0.011']);
+  assert.equal(result.providerChecksClear, true);
+  assert.equal(result.upgradeAuthorized, false);
+  assert.equal(JSON.stringify(result).includes(baseline.ignored_secret), false);
+  for (const key of Object.keys(result.blockerCounts)) {
+    assert.equal(
+      summarizeUpgradeEligibility({ ...baseline, [key]: ['private-object'] }).providerChecksClear,
+      false,
+    );
+    assert.throws(() => summarizeUpgradeEligibility({ ...baseline, [key]: undefined }), /RESPONSE/);
+  }
+  assert.equal(
+    summarizeUpgradeEligibility({ ...baseline, eligible: false }).providerChecksClear,
+    false,
+  );
+  assert.equal(
+    summarizeUpgradeEligibility({ ...baseline, target_upgrade_versions: [] }).providerChecksClear,
+    false,
+  );
+});
+
+test('Postgres preflight uses only the pinned provider GET and sanitizes failures', async () => {
+  const { inspectPostgresUpgrade } =
+    await import('../../scripts/lib/postgres-upgrade-preflight.mjs');
+  let calls = 0;
+  const fetchImpl = async (url, options) => {
+    calls++;
+    assert.equal(
+      url,
+      'https://api.supabase.com/v1/projects/ckrkfylsyihwouvesypm/upgrade/eligibility',
+    );
+    assert.equal(options.method, 'GET');
+    assert.equal(options.redirect, 'error');
+    assert.equal(options.body, undefined);
+    throw new Error('provider-secret');
+  };
+  await assert.rejects(
+    inspectPostgresUpgrade({ projectId: 'other', token: 'secret', fetchImpl }),
+    /TARGET_OR_ACCESS/,
+  );
+  assert.equal(calls, 0);
+  await assert.rejects(
+    inspectPostgresUpgrade({ projectId: 'ckrkfylsyihwouvesypm', token: 'secret', fetchImpl }),
+    { message: 'UPGRADE_PREFLIGHT_NETWORK' },
+  );
+  assert.equal(calls, 1);
+});
+
+test('upgrade inspection retains protected reviewed execution without an upgrade mutation', async () => {
+  const workflow = await read('.github/workflows/inspect-postgres-upgrade.yml');
+  assert.match(workflow, /environment: production/);
+  assert.match(workflow, /uses: \.\/\.github\/workflows\/validate-security-install.yml/);
+  assert.match(workflow, /cancel-in-progress: false/);
+  const api = await read('scripts/lib/postgres-upgrade-preflight.mjs');
+  assert.match(api, /method: 'GET'/);
+  assert.doesNotMatch(api, /method: '(?:POST|PATCH|DELETE)'/);
+  assert.match(api, /redirect: 'error'/);
+});
