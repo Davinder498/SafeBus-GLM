@@ -238,20 +238,24 @@ test('snapshot-specific reconciliation retains the exact existing API signatures
   const added = JSON.parse(
     await fs.readFile('config/observed/tracking-queue-authorization.json', 'utf8'),
   ).addedAuthenticated;
+  const launch = JSON.parse(await fs.readFile('config/observed/launch-api-inventory.json', 'utf8'));
   const historicalAuthenticated = [
-    ...surface.authenticated.filter((signature) => !added.includes(signature)), ...retired,
+    ...surface.authenticated.filter((signature) =>
+      !added.includes(signature) && !launch.addedAuthenticated.includes(signature)), ...retired,
   ];
+  const historicalServiceRole = surface.serviceRole.filter((signature) =>
+    !launch.addedServiceRole.includes(signature));
   const migration = await fs.readFile(RECONCILIATION_FILE, 'utf8');
   const entries = [
     ...migration.matchAll(/\('([a-z0-9_]+\([^']*\))', '(authenticated|service_role)'\)/g),
   ];
-  const expected = [...historicalAuthenticated, ...surface.serviceRole]
+  const expected = [...historicalAuthenticated, ...historicalServiceRole]
     .filter((signature) => signature !== 'get_admin_student_guardian_links(uuid)')
     .sort();
   assert.deepEqual(entries.map((entry) => entry[1]).sort(), expected);
   for (const [, signature, audience] of entries) {
     assert.ok(
-      (audience === 'authenticated' ? historicalAuthenticated : surface.serviceRole).includes(
+      (audience === 'authenticated' ? historicalAuthenticated : historicalServiceRole).includes(
         signature,
       ),
     );
