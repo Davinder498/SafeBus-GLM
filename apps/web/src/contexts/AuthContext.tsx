@@ -1,4 +1,12 @@
-import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 import { safeBusDisplayText } from '@/utils/brand';
@@ -9,11 +17,7 @@ import {
   normalizeAuthEmail,
 } from '@/lib/authNavigation';
 
-export const adminRoles = [
-  'platform_super_admin',
-  'tenant_admin',
-  'transportation_admin',
-] as const;
+export const adminRoles = ['platform_super_admin', 'tenant_admin', 'transportation_admin'] as const;
 
 export const allowedRoles = [...adminRoles, 'driver', 'guardian'] as const;
 
@@ -113,17 +117,52 @@ export function AuthProvider({ children }: AuthProviderProps) {
   });
   const [mfaLoading, setMfaLoading] = useState(false);
 
+  // Async work belongs to the observed session revision, not merely an account.
+  // Invalidate synchronously in auth events, before React renders the new state.
+  const sessionRef = useRef<Session | null>(null);
+  const sessionRevision = useRef(0);
+  const mounted = useRef(true);
+  const isCurrentSession = useCallback(
+    (revision: number) => mounted.current && revision === sessionRevision.current,
+    [],
+  );
+  const requireCurrentSession = useCallback(
+    (revision: number) => {
+      if (!isCurrentSession(revision)) throw new Error('Your session changed. Please try again.');
+    },
+    [isCurrentSession],
+  );
+  const observeSession = useCallback((nextSession: Session | null, signedOut = false) => {
+    const previous = sessionRef.current;
+    if (
+      signedOut ||
+      previous?.access_token !== nextSession?.access_token ||
+      previous?.user.id !== nextSession?.user.id
+    ) {
+      sessionRevision.current += 1;
+      setProfile(null);
+      setAuthError(null);
+      setMfaStatus({ currentLevel: null, nextLevel: null, verifiedFactors: [] });
+      setMfaLoading(false);
+    }
+    sessionRef.current = nextSession;
+    setSession(nextSession);
+    return sessionRevision.current;
+  }, []);
+
   const refreshMfa = useCallback(async (): Promise<MfaStatus> => {
     if (!supabase) {
       throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
     }
 
+    const revision = sessionRevision.current;
     setMfaLoading(true);
     try {
       const [assurance, factors] = await Promise.all([
         supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
         supabase.auth.mfa.listFactors(),
       ]);
+      requireCurrentSession(revision);
       if (assurance.error) throw new Error(assurance.error.message);
       if (factors.error) throw new Error(factors.error.message);
 
@@ -141,9 +180,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setMfaStatus(nextStatus);
       return nextStatus;
     } finally {
-      setMfaLoading(false);
+      if (isCurrentSession(revision)) setMfaLoading(false);
     }
-  }, []);
+  }, [isCurrentSession, requireCurrentSession]);
 
   const registerSession = useCallback(async () => {
     if (!supabase) return;
@@ -183,15 +222,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const refreshProfile = useCallback(async () => {
-    if (!session?.user.id) {
+    const userId = sessionRef.current?.user.id;
+    if (!userId) {
       throw new Error('You must be signed in to load a profile.');
     }
 
-    const nextProfile = await loadProfile(session.user.id);
+    const revision = sessionRevision.current;
+    const nextProfile = await loadProfile(userId);
+    requireCurrentSession(revision);
     setProfile(nextProfile);
     setAuthError(null);
     return nextProfile;
-  }, [loadProfile, session?.user.id]);
+  }, [loadProfile, requireCurrentSession]);
 
   useEffect(() => {
     if (!supabase) {
@@ -202,12 +244,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const client = supabase;
     let active = true;
+    mounted.current = true;
 
     async function initializeSession() {
       setLoading(true);
+      const initialRevision = sessionRevision.current;
       const { data, error } = await client.auth.getSession();
 
-      if (!active) return;
+      if (!active || !isCurrentSession(initialRevision)) return;
 
       if (error) {
         setSession(null);
@@ -217,7 +261,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return;
       }
 
-      setSession(data.session);
+      const revision = observeSession(data.session);
 
       if (!data.session) {
         setProfile(null);
@@ -228,19 +272,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       try {
         const nextProfile = await loadProfile(data.session.user.id);
-        if (!active) return;
+        if (!active || !isCurrentSession(revision)) return;
+        await Promise.all([refreshMfa(), registerSession()]);
+        if (!active || !isCurrentSession(revision)) return;
         setProfile(nextProfile);
         setAuthError(null);
-        await Promise.all([refreshMfa(), registerSession()]);
       } catch (profileError) {
-        if (!active) return;
+        if (!active || !isCurrentSession(revision)) return;
         setProfile(null);
         setMfaStatus({ currentLevel: null, nextLevel: null, verifiedFactors: [] });
         setAuthError(
           profileError instanceof Error ? profileError.message : getProfileErrorMessage(),
         );
       } finally {
-        if (active) setLoading(false);
+        if (active && isCurrentSession(revision)) setLoading(false);
       }
     }
 
@@ -249,7 +294,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const {
       data: { subscription },
     } = client.auth.onAuthStateChange((event, nextSession) => {
-      setSession(nextSession);
+      if (!active) return;
+      const previousRevision = sessionRevision.current;
+      const revision = observeSession(nextSession, !nextSession);
 
       if (event === 'PASSWORD_RECOVERY') {
         navigateToPasswordUpdate();
@@ -262,34 +309,39 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return;
       }
 
-      if (
-        event === 'SIGNED_IN' ||
-        event === 'PASSWORD_RECOVERY' ||
-        event === 'TOKEN_REFRESHED' ||
-        event === 'INITIAL_SESSION'
-      ) {
-        setLoading(true);
-        void loadProfile(nextSession.user.id)
-          .then(async (nextProfile) => {
-            setProfile(nextProfile);
-            setAuthError(null);
-            await Promise.all([refreshMfa(), registerSession()]);
-          })
-          .catch((profileError: unknown) => {
-            setProfile(null);
-            setAuthError(
-              profileError instanceof Error ? profileError.message : getProfileErrorMessage(),
-            );
-          })
-          .finally(() => setLoading(false));
-      }
+      // A user update with the same token does not change session assurance.
+      if (event === 'USER_UPDATED' && revision === previousRevision) return;
+
+      // USER_UPDATED and MFA_CHALLENGE_VERIFIED can also replace the token.
+      // Hydrate every non-null event after clearing any previous session state.
+      setLoading(true);
+      void loadProfile(nextSession.user.id)
+        .then(async (nextProfile) => {
+          if (!active || !isCurrentSession(revision)) return;
+          await Promise.all([refreshMfa(), registerSession()]);
+          if (!active || !isCurrentSession(revision)) return;
+          setProfile(nextProfile);
+          setAuthError(null);
+        })
+        .catch((profileError: unknown) => {
+          if (!active || !isCurrentSession(revision)) return;
+          setProfile(null);
+          setAuthError(
+            profileError instanceof Error ? profileError.message : getProfileErrorMessage(),
+          );
+        })
+        .finally(() => {
+          if (active && isCurrentSession(revision)) setLoading(false);
+        });
     });
 
     return () => {
       active = false;
+      mounted.current = false;
+      sessionRevision.current += 1;
       subscription.unsubscribe();
     };
-  }, [loadProfile, refreshMfa, registerSession]);
+  }, [isCurrentSession, loadProfile, observeSession, refreshMfa, registerSession]);
 
   useEffect(() => {
     if (!supabase || !session) return undefined;
@@ -297,14 +349,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     let active = true;
 
     async function verifyCurrentSession() {
+      const revision = sessionRevision.current;
       const { data, error } = await client.rpc('is_current_user_session_active');
-      if (!active || error || data !== false) return;
+      if (!active || !isCurrentSession(revision) || error || data !== false) return;
 
+      // Clear local authorization even if Auth's sign-out request fails.
+      observeSession(null, true);
+      setLoading(false);
       await client.auth.signOut({ scope: 'local' }).catch(() => undefined);
-      if (!active) return;
-      setSession(null);
-      setProfile(null);
-      setMfaStatus({ currentLevel: null, nextLevel: null, verifiedFactors: [] });
+      if (!active || !mounted.current || sessionRef.current) return;
       setAuthError('This SafeBus session was revoked by an administrator. Sign in again.');
     }
 
@@ -314,7 +367,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       active = false;
       window.clearInterval(intervalId);
     };
-  }, [session]);
+  }, [isCurrentSession, observeSession, session]);
 
   const signIn = useCallback(
     async (email: string, password: string) => {
@@ -322,6 +375,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
       }
 
+      const initialRevision = sessionRevision.current;
       setAuthError(null);
       const { data, error } = await supabase.auth.signInWithPassword({
         email: normalizeAuthEmail(email),
@@ -329,8 +383,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
 
       if (error) {
-        setSession(null);
-        setProfile(null);
+        requireCurrentSession(initialRevision);
+        observeSession(null, true);
         throw new Error(error.message);
       }
 
@@ -338,10 +392,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('Sign in did not return a session.');
       }
 
-      setSession(data.session);
+      if (
+        sessionRevision.current !== initialRevision &&
+        sessionRef.current?.access_token !== data.session.access_token
+      ) {
+        throw new Error('Your session changed. Please try again.');
+      }
+      if (!mounted.current) throw new Error('Your session changed. Please try again.');
+      const revision = observeSession(data.session);
       const nextProfile = await loadProfile(data.session.user.id);
-      setProfile(nextProfile);
+      requireCurrentSession(revision);
       await Promise.all([refreshMfa(), registerSession()]);
+      requireCurrentSession(revision);
+      setProfile(nextProfile);
       void supabase.rpc('record_own_auth_event', {
         p_action: 'auth.login',
         p_outcome: 'success',
@@ -349,19 +412,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
       return nextProfile;
     },
-    [loadProfile, refreshMfa, registerSession],
+    [loadProfile, observeSession, refreshMfa, registerSession, requireCurrentSession],
   );
 
   const signOut = useCallback(async () => {
+    const revision = sessionRevision.current;
     if (!supabase) {
-      setSession(null);
-      setProfile(null);
+      observeSession(null, true);
       return;
     }
 
     if (window.SafeBusNativePush?.available) {
       await window.SafeBusNativePush.deactivate().catch(() => undefined);
     }
+    requireCurrentSession(revision);
     void supabase.rpc('record_own_auth_event', {
       p_action: 'auth.logout',
       p_outcome: 'success',
@@ -370,11 +434,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const { error } = await supabase.auth.signOut({ scope: 'local' });
     if (error) throw new Error(error.message);
 
-    setSession(null);
-    setProfile(null);
-    setMfaStatus({ currentLevel: null, nextLevel: null, verifiedFactors: [] });
+    if (!mounted.current || (sessionRevision.current !== revision && sessionRef.current)) return;
+    observeSession(null, true);
+    setLoading(false);
     setAuthError(null);
-  }, []);
+  }, [observeSession, requireCurrentSession]);
 
   const requestPasswordReset = useCallback(
     async (email: string) => {
@@ -438,6 +502,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       const nextProfile = await loadProfile(currentSession.user.id);
+      if (!mounted.current || sessionRef.current?.user.id !== currentSession.user.id) {
+        throw new Error('Your session changed. Please try again.');
+      }
       setProfile(nextProfile);
       setAuthError(null);
       void supabase.rpc('record_own_auth_event', {
