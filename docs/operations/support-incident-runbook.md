@@ -147,10 +147,10 @@ a passed exercise. Retain only dated non-secret evidence references in Git.
 Approvals in privacy/operations readiness remain pending until evidence passes.
 No full-restore/DR drill or blanket counsel signature is added by this procedure.
 
-## Managed setup requests
+## Subscription setup assistance
 
-The SafeBus team handles initial school-authority configuration. Follow the
-[managed-onboarding checklist](managed-onboarding.md), with documented authority
-instructions, restricted data transfer, named scoped accounts and authority
-review. Treat requests for ongoing maintenance according to the accepted order;
-do not silently expand initial setup into an unlimited service obligation.
+Setup support is included with the subscription. Help school authorities with
+configuration questions, walkthroughs and authorized setup work using the
+[setup-assistance checklist](managed-onboarding.md). Agree the help needed;
+request record access or source transfer only when necessary and authorized.
+Ongoing maintenance or additional service scope must be agreed separately.

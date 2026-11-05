@@ -46,35 +46,37 @@ notification setup; customer scope, recipient choices, Android permission and
 server authorization still apply. See the [current scope reconciliation](../../../operations/privacy-commercial-operations-2026-11-05.md).
 A roadmap, source-code component or preview does not add a contractual commitment.
 
-## 3. Managed onboarding and customer responsibilities
+## 3. Included setup assistance and customer responsibilities
 
-### SafeBus-managed initial setup
+### Setup support included with the subscription
 
-The owner-selected delivery model is managed onboarding. SafeBus's team configures
-the agreed routes, stops and route maps, buses, minimum student records, guardians
-and authorized links, drivers and transportation assignments. The Customer
-provides authorized source information, identifies its approving representative
-and reviews data, routes, stops and assignments before operational use. SafeBus
-records and corrects setup discrepancies with that representative. The Customer
-retains transport-safety decisions and the authority for guardian relationships.
+SafeBus provides assistance to help the Customer configure and get started with
+routes, stops and route maps, buses, minimum student records, guardians and
+authorized links, drivers and assignments. This assistance is included with the
+subscription. The Customer and SafeBus coordinate the help needed, including
+guidance, walkthroughs and authorized configuration help. The Customer is not
+purchasing a guaranteed fully managed data-entry or setup-completion service.
 
-Personnel use named Customer-authorized accounts scoped to the relevant school
-authority, existing role permissions and administrator MFA. Platform-wide
-administration is not an onboarding data-access entitlement. No shared account,
-service-role frontend or RLS bypass is authorized. The DPA and Security Schedule
-apply to setup work and temporary source copies as well as normal operation.
+The Customer provides lawful instructions, accurate minimum transport data,
+authorized participants and collection notices. It determines guardian authority
+and reviews transportation arrangements and assignments before operational use.
+SafeBus helps the Customer resolve configuration questions and setup issues.
+The Customer maintains employee/BYOD arrangements and provides prompt
+account-lifecycle and assignment-change instructions.
 
-The Order Form identifies source-data delivery, setup scope/quantities, Customer
-approval, handover, training, ongoing change responsibilities and any agreed
-fees. Managed setup does not imply a new bulk-import/export capability, route
-safety certification, continuous data-entry service or an unagreed price.
+Where assistance requires access to Customer records, personnel use named
+Customer-authorized accounts scoped to that authority, existing role permissions
+and administrator MFA. Guidance does not automatically require a data upload or
+personnel access. Platform administration does not grant onboarding data access;
+shared credentials, service-role frontend logic and RLS bypass remain prohibited.
+The DPA and Security Schedule cover any source copies or records handled.
 
-The Customer supplies lawful instructions, accurate minimum transport data,
-authorized participants and appropriate collection notices. It determines guardian
-authority and approves school/driver assignments; SafeBus implements the agreed
-initial setup. The Customer maintains employee/BYOD arrangements and provides
-prompt account-lifecycle and assignment-change instructions. Its authorized administrators comply with security
-requirements and do not request access beyond the contracted scope.
+The Order Form records included setup assistance, agreed coordination and any
+separately agreed services beyond it. No separate mandatory setup-assistance fee
+is created here. Ongoing maintenance responsibilities and any additional work
+must be agreed. Assistance does not certify route safety or add unsupported
+bulk-import/export capabilities. Authorized administrators comply with security
+requirements and the contracted access scope.
 
 The Customer retains its public-body duties and transport safety responsibilities.
 SafeBus cooperates as specified in the DPA. The Customer is not granted ownership

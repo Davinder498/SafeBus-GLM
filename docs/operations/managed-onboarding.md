@@ -1,67 +1,56 @@
-# SafeBus-managed school-authority setup
+# Subscription setup assistance
 
-**Owner direction:** 2026-11-05
+**Owner clarification:** 2026-11-05
 **Status:** Procedure prepared; no completed customer onboarding claimed
 
-The SafeBus team handles initial setup of routes, stops and route maps, buses,
-minimum student records, guardians and authorized links, drivers and assignments.
-The school authority provides lawful source information and reviews the result.
-Schools remain optional organizational metadata; the school authority is the
-customer and authorization boundary. Existing administrator features remain.
+Setup support is included with the subscription. SafeBus helps school authorities
+configure routes, stops/maps, buses, students, guardians/links, drivers and
+assignments, and get started. This corrects the earlier fully managed setup
+interpretation. The service is assistance; do not promise that SafeBus performs
+every setup task or guarantees completion on the authority's behalf.
 
-## Before receiving source data
+## Agree the help needed
 
-1. Record the authority's authorized representative, documented instructions,
-   permitted data, setup quantities/scope and acceptance contact in the restricted
-   onboarding record. Complete applicable customer terms and privacy requirements.
-2. Agree a restricted transfer channel and authorized senders/recipients. This
-   procedure does not provision one. Do not ask for rosters or guardian-link
-   evidence through the public inquiry form, ordinary support email or GitHub.
-3. Identify each team member's customer-authorized account, existing permitted
-   role, school-authority scope and administrator MFA. Do not use shared customer
-   passwords, broad platform-admin browsing, service-role frontend logic or an
-   RLS bypass. Verify access with the reviewed role-boundary workflow before work.
-4. Agree handling of temporary working copies, necessary retention/holds and
-   disposal evidence. No business home address or confidential customer evidence
-   belongs in the public repository or website.
+1. Identify the authority's authorized representative, questions and configuration
+   goals. Agree guidance, walkthroughs or authorized configuration help as needed.
+   Schools remain optional metadata; the authority is the customer/access boundary.
+2. Start with guidance using appropriate non-sensitive examples. Record access or
+   source-data transfer is not a prerequisite to ordinary setup assistance.
+3. If configuration help needs records, document the authority's instructions,
+   permitted scope and personnel. Use individual authority-scoped accounts,
+   existing permissions and administrator MFA. Never share customer credentials,
+   browse through a broad platform role or bypass RLS.
+4. If source files are necessary, agree a restricted transfer channel and retention/
+   disposal handling first. Do not ask for rosters through ordinary support email,
+   the public inquiry form or GitHub. Exclude prohibited student identifiers,
+   student home addresses, health and custody narratives. No transfer channel or
+   account provisioning is established by this checklist.
 
-## Configure and validate
+## Provide configuration assistance
 
-- Receive only the minimum supported transport fields. Exclude prohibited
-  student identifiers, student home addresses, health and custody narratives.
-  The authority decides guardian entitlement; the team records its authorized
-  links rather than independently inferring family relationships.
-- Use existing authorized screens and the supported student CSV workflow where
-  appropriate. Do not promise bulk route/bus/guardian/driver imports that have
-  not been implemented and accepted. Never run direct production fixture or
-  service-role writes as an onboarding shortcut.
-- Create/reconcile buses, drivers, routes, stops/geometry, students, guardians
-  and date-effective assignments in a workable dependency order. Check existing
-  records before retrying creation to prevent duplicates. Record source-version
-  and correction decisions securely; avoid extra local copies.
-- Verify route-map geometry, stop locations/order, assignments and the minimum
-  driver manifest with the authority. The authority retains transport-safety
-  decisions. A plausible map or successful save is not route-safety approval.
-- Review student counts, duplicates, missing/invalid fields, guardian links,
-  driver/bus service assignments and dates. Verify each role's intended access
-  and failure behavior through the accepted workflow; a setup account seeing
-  everything in its scope is not proof that a guardian/driver is correctly scoped.
+- Help with existing supported screens and the student CSV workflow where useful.
+  Do not promise unsupported bulk imports or perform direct production fixture or
+  service-role writes as a shortcut.
+- Help resolve duplicate records, invalid/missing fields, route-map/stop ordering,
+  date-effective bus/driver/student assignments and guardian-link questions.
+  The authority determines guardian entitlement and transport-safety arrangements.
+- Review questions and corrections with the authority. When personnel perform
+  authorized configuration work, record what changed and obtain the authority's
+  review of the affected data before operational use.
+- Preserve ordinary invitations, administrator MFA and role boundaries. Personal
+  notification choices and device permission remain each recipient's decision;
+  setup assistance adds no per-authority platform privacy activation gate. Never
+  send external messages or write production fixtures as QA.
 
-## Review, handover and changes
+## Follow-up and records
 
-Provide the authority a restricted review of its own configured data, corrections
-and unresolved items. Record its approval before operational use, the handover
-date, responsible administrators and agreed next steps. Apply normal invitation,
-MFA and notification flows; do not send external messages as QA, auto-opt-in a
-recipient or add a new per-authority platform privacy approval gate.
+Record the help provided, resolved questions, remaining actions and who will take
+those actions. Review/remove any temporary personnel access and dispose of source
+copies under approved retention/hold handling, with scoped evidence. Store actual
+customer information and records privately, outside Git.
 
-Review/remove team setup access at handover. Continued maintenance needs current
-authorization and the agreed order scope; no unlimited ongoing data-entry service
-or price is inferred from initial setup. Track changes and authority instructions.
-Dispose of temporary files through the accepted schedule, with scoped evidence
-and any lawful hold exceptions. Do not certify deletion from unverified systems.
-
-Acceptance records contain instruction/access references, source scope, checks,
-authority review/corrections, handover, access review and temporary-copy disposal.
-Store actual customer records and evidence privately. This checklist and the
-draft agreements do not constitute an exercised onboarding or launch approval.
+Included setup assistance carries no separate mandatory setup-assistance fee.
+Ongoing maintenance or additional services require an agreed scope. Assistance
+is not a route-safety certification, an unlimited data-entry service or evidence
+of completed onboarding/launch acceptance. Keep the established protected release
+and authorization workflow.

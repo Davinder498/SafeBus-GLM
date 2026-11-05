@@ -26,7 +26,7 @@ resolution. Compelled disclosures are limited and notified where law permits.
 
 | Topic                    | Proposed permitted processing                                                                                                                                      |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Purpose                  | Managed setup and school transport operations, assignments, trip operation, authorized active-bus visibility and recipient-enabled notifications                   |
+| Purpose                  | Setup assistance and school transport operations, assignments, trip operation, authorized active-bus visibility and recipient-enabled notifications                |
 | Individuals              | Selected students, guardians, drivers and Customer administrators                                                                                                  |
 | Data                     | Minimum identity/contact/role and authorized links; school/route/stop assignments; trip/location/event records; device/session and limited audit/delivery metadata |
 | Activities               | Receive, validate, store, authorize, retrieve, update, transmit to permitted recipients, retain and securely dispose according to accepted schedules               |
@@ -46,19 +46,18 @@ training using transportation personal information is permitted.
 
 ## 3. Authorized access and confidentiality
 
-Managed initial setup is part of Customer-directed processing: authorized SafeBus
-onboarding personnel receive minimum approved source data and configure routes,
-stops/geometry, buses, student records, guardian links, drivers and assignments
-under documented instructions. The Customer verifies guardian authority and
-approves operational routes/assignments. Personnel use individually assigned,
-Customer-authorized school-authority accounts with only required existing
-permissions and administrator MFA; no general cross-customer support role is
-created by this agreement. Record the account scope, instruction, work performed,
-Customer review and access removal/review at handover.
+Included setup assistance can involve Customer-directed processing when the
+Customer authorizes help with its routes, stops/geometry, buses, student records,
+guardian links, drivers or assignments. Guidance and walkthroughs do not by
+themselves require source-data transfer or record access. Where access is needed,
+use only minimum authorized records, named school-authority-scoped accounts,
+existing permissions and administrator MFA. Record the instruction, work and
+access review/removal. No cross-customer support entitlement is created.
 
-Use an agreed restricted transfer channel for source files; ordinary support
-email is not a roster-upload channel. Temporary copies must have a documented
-purpose, approved retention/hold treatment and verified disposal. Do not request
+The Customer verifies guardian authority and its operational arrangements.
+If source files are necessary, agree a restricted transfer channel; ordinary
+support email is not a roster-upload channel. Temporary copies require documented
+purpose, approved retention/hold handling and verified disposal. Do not request
 prohibited student identifiers, home addresses, health or custody narratives.
 
 SafeBus limits personnel access by operational need, binds authorized personnel

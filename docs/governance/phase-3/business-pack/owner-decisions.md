@@ -61,13 +61,14 @@ signing authority, liability amount or publication approval is inferred.
 Owner approval of a draft business position does not record a customer signature,
 make a technical safeguard pass, or activate the Point 6 launch record.
 
-## Managed initial setup — owner direction, 2026-11-05
+## Subscription setup assistance — confirmed owner clarification, 2026-11-05
 
-The SafeBus team will configure the school authority's routes and route maps,
-stops, buses, minimum student records, guardians and authorized links, drivers
-and assignments. The authority supplies lawful source information and reviews
-the completed setup before operational use. The service agreement, DPA, security
-schedule and order form now reflect this operating model. Existing authorization
-and administrator MFA apply; this decision grants no platform-wide transport-data
-access. Scope/quantity, secure transfer, handover and ongoing maintenance belong
-in each completed order; pricing and extra fees are not inferred.
+Setup assistance is included with the subscription. The SafeBus team helps
+subscribing school authorities configure routes, maps, stops, buses, student
+records, guardians/links, drivers and assignments, and get started. This is
+assistance, not a promise that SafeBus performs every setup task or guarantees
+completion of a fully managed setup. This clarification supersedes the earlier
+managed-setup interpretation. Guidance, walkthroughs and authorized configuration
+help retain existing authorization and administrator MFA. No general access,
+mandatory data handover or separate setup-assistance fee is created. Agree any
+ongoing maintenance or additional service scope separately.

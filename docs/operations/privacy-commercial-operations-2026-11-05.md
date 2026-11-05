@@ -118,20 +118,23 @@ and [Alberta request guidance](https://www.alberta.ca/accessing-your-personal-in
 were checked on 2026-11-05. The customer/order-specific postal contact remains
 unresolved where required.
 
-## Owner-managed support and managed onboarding — 2026-11-05
+## Owner-managed support and subscription setup assistance — 2026-11-05
 
 The owner will handle support and backup escalation personally during the selected
 hours. Record one owner-managed arrangement, not an independent backup team;
 owner absence remains a coverage limitation. Holiday and urgent escalation
 mechanics and exercised response evidence remain open.
 
-The SafeBus team handles initial routes/maps/stops, buses, student records,
-guardians/links, drivers and assignments. Public contact/privacy copy and the
-MSA, DPA, security schedule and order form reflect that service. Use the
-[managed-onboarding checklist](managed-onboarding.md). Authority instructions,
-scoped named access, administrator MFA, minimum secure source-data transfer,
-validation and authority review remain necessary. No role or database permission
-changes, actual account provisioning, data transfer or completed onboarding are
-claimed by this source change. Existing platform-admin restrictions remain.
-Ongoing maintenance scope/fees are agreed in the order. The supplied business
-postal address is kept out of website copy and public repository content.
+The confirmed service is setup assistance included with the subscription: the
+SafeBus team helps school authorities configure routes/maps/stops, buses,
+students, guardians/links, drivers and assignments, and get started. The earlier
+fully managed setup interpretation is superseded. Public contact/privacy copy,
+MSA, DPA, security schedule and order form reflect assistance rather than a
+promise to perform every setup task or guarantee setup completion. Follow the
+[setup-assistance checklist](managed-onboarding.md). Guidance need not require
+records or access; configuration help involving data requires documented
+authority instructions, minimum scoped access and administrator MFA. No new role,
+permission, actual provisioning, data transfer or completed onboarding is claimed.
+Included setup help carries no separate mandatory setup-assistance fee. Ongoing
+maintenance and additional services require agreement. The supplied business
+postal address remains excluded from website and public repository content.

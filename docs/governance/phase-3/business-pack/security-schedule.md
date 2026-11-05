@@ -29,18 +29,17 @@ their credentials, report lost devices and do not circumvent controls. SafeBus
 assists within agreed boundaries; a business owner role does not grant permission
 to browse the transport data of all tenants.
 
-## Managed-onboarding personnel
+## Personnel assisting with setup
 
-The SafeBus team performs initial setup under documented school-authority
-instructions. Use individual customer-authorized accounts with an existing role
-limited to the required authority/work, administrator MFA and reviewed access
-records. Keep platform administration separate from customer record work. Do not
-share customer credentials or bypass RLS with a service-role tool for routine
-setup. The [managed-onboarding checklist](../../../operations/managed-onboarding.md)
-records transfer minimization, source validation, authority review and handover.
-Its preparation does not prove that personnel access or a transfer channel has
-been provisioned/tested. Review/remove setup access at handover; continued
-maintenance requires the agreed scope and current authorization.
+Setup assistance is included with the subscription. Guidance and walkthroughs
+need not involve access to Customer records. When the authority authorizes
+configuration help requiring access, use individual scoped accounts, existing
+permissions, administrator MFA and reviewed access records. Keep platform
+administration separate from customer record work; do not share credentials or
+bypass RLS. Follow the [setup-assistance checklist](../../../operations/managed-onboarding.md)
+for necessary source transfer, validation and access review/removal. Preparing the
+checklist does not prove access or a transfer channel has been provisioned/tested.
+Continued assistance requires current authorization and an agreed purpose.
 
 ## Current evidence, not certification
 
