@@ -40,17 +40,43 @@ a Student Information System or emergency services. Displayed location may be
 delayed or unavailable; a recorded event is not continuous child location.
 
 Excluded unless separately agreed and approved: child GPS, student QR boarding,
-SMS, Android FCM activation, iOS delivery, SIS integration, traffic-aware ETA,
-guardian trip replay and any feature outside the locked CR1 scope. A roadmap,
-source-code component or preview does not add a contractual commitment.
+SMS, iOS delivery, SIS integration, traffic-aware ETA,
+guardian trip replay and any feature outside the locked CR1 scope. Eligible guardians and drivers can opt into Android push under the current
+notification setup; customer scope, recipient choices, Android permission and
+server authorization still apply. See the [current scope reconciliation](../../../operations/privacy-commercial-operations-2026-11-05.md).
+A roadmap, source-code component or preview does not add a contractual commitment.
 
-## 3. Customer responsibilities
+## 3. Included setup assistance and customer responsibilities
 
-The Customer supplies lawful instructions, accurate minimum transport data,
-authorized participants and appropriate collection notices. It manages guardian
-authority, school/driver assignments, employee/BYOD arrangements and account
-lifecycle changes promptly. Its authorized administrators comply with security
-requirements and do not request access beyond the contracted scope.
+### Setup support included with the subscription
+
+SafeBus provides assistance to help the Customer configure and get started with
+routes, stops and route maps, buses, minimum student records, guardians and
+authorized links, drivers and assignments. This assistance is included with the
+subscription. The Customer and SafeBus coordinate the help needed, including
+guidance, walkthroughs and authorized configuration help. The Customer is not
+purchasing a guaranteed fully managed data-entry or setup-completion service.
+
+The Customer provides lawful instructions, accurate minimum transport data,
+authorized participants and collection notices. It determines guardian authority
+and reviews transportation arrangements and assignments before operational use.
+SafeBus helps the Customer resolve configuration questions and setup issues.
+The Customer maintains employee/BYOD arrangements and provides prompt
+account-lifecycle and assignment-change instructions.
+
+Where assistance requires access to Customer records, personnel use named
+Customer-authorized accounts scoped to that authority, existing role permissions
+and administrator MFA. Guidance does not automatically require a data upload or
+personnel access. Platform administration does not grant onboarding data access;
+shared credentials, service-role frontend logic and RLS bypass remain prohibited.
+The DPA and Security Schedule cover any source copies or records handled.
+
+The Order Form records included setup assistance, agreed coordination and any
+separately agreed services beyond it. No separate mandatory setup-assistance fee
+is created here. Ongoing maintenance responsibilities and any additional work
+must be agreed. Assistance does not certify route safety or add unsupported
+bulk-import/export capabilities. Authorized administrators comply with security
+requirements and the contracted access scope.
 
 The Customer retains its public-body duties and transport safety responsibilities.
 SafeBus cooperates as specified in the DPA. The Customer is not granted ownership

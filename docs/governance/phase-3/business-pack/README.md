@@ -2,7 +2,7 @@
 
 **Status:** Owner review draft; not effective, executed or approved for publication
 **Prepared:** 2026-10-13 (America/Edmonton)
-**Business context:** Sachman Gold Inc., doing business as SafeBus; owner-confirmed Alberta business. Contact/address, registration evidence and signing authority remain pending
+**Business context:** Sachman Gold Inc., doing business as SafeBus; owner-confirmed Alberta business. Direct contact: info@safebus.kids; address, registration evidence and signing authority remain pending
 
 ## How to use this pack
 
@@ -10,6 +10,10 @@ These are substantive starting drafts for the SafeBus business. Drafting can
 proceed before appointing counsel or selecting a customer. The owner approves
 business choices; a later customer supplies its own authority, scope and
 contract signatures. Neither activity gives a customer ownership of SafeBus.
+
+The [2026-11-05 reconciliation](../../../operations/privacy-commercial-operations-2026-11-05.md)
+records current notification scope, verified monitoring evidence and unresolved
+commercial/operational inputs. It does not execute these drafts or approve launch.
 
 Read the [owner decision register](owner-decisions.md) first, then the privacy
 policy and agreements below. Text inside square brackets is an unresolved input.

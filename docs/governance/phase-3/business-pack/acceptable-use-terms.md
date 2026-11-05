@@ -29,7 +29,7 @@ Do not:
   an emergency dispatch service or a substitute for school safety procedures.
 
 Report suspected unauthorized access or a lost device promptly through the
-school's incident contact or `[SUPPORT_EMAIL]`/`[PRIVACY_EMAIL]`. Do not include
+school authority's incident contact or [info@safebus.kids](mailto:info@safebus.kids). Do not include
 credentials or unnecessary sensitive records in a report. SafeBus may restrict
 an affected account/path proportionately to address credible misuse and will
 coordinate with the Customer where appropriate. Provide an investigation/appeal

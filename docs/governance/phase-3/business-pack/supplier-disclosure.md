@@ -2,7 +2,7 @@
 
 **Status:** Inventory for review; vendor contracts, countries and notices pending
 **Operator:** Sachman Gold Inc.
-**Privacy contact:** `[PRIVACY_EMAIL]`
+**Privacy contact:** [info@safebus.kids](mailto:info@safebus.kids)
 
 This disclosure covers both transport-service suppliers and suppliers for
 SafeBus's own business activities. Not every supplier is a transport subprocessor.
@@ -17,8 +17,8 @@ The final DPA appendix must identify the actual legal entities and roles.
 | Geoapify                                   | Map tiles; viewport tile coordinates, device IP, origin/referrer and request metadata                                               | Actual countries, log retention, restricted key and privacy/contract evidence; viewport requests are not information-free                                                                     |
 | GitHub Actions/artifacts                   | Build/release source and metadata; protected recovery export transfer may hold encrypted database/role archives and schema evidence | Artifact processing/storage countries, restricted access and short transfer retention; encryption does not automatically remove privacy/residency obligations                                 |
 | Owner-controlled recovery storage          | Restricted off-site encrypted recovery copies                                                                                       | Exact Canadian custody/location, key separation, access and retention evidence; a copy/checksum is not a full restore                                                                         |
-| Google Firebase Cloud Messaging            | Optional device token and limited delivery metadata/payload                                                                         | Outside CR1 activation; separately gated, off until approved; supplier-country/security/notice decisions still needed                                                                         |
-| Monitoring/error service and support tools | Potential event, diagnostic or ticket metadata                                                                                      | Not selected/approved here; minimize/scrub sensitive data, then assess actual country, access and retention                                                                                   |
+| Google Firebase Cloud Messaging            | Optional device token and limited delivery metadata/payload                                                                         | Current eligible guardian/driver opt-in Android delivery; supplier-country/contract/retention decisions and physical acceptance remain pending                                                |
+| Monitoring/error service and support tools | Potential event, diagnostic or ticket metadata                                                                                      | Existing Netlify/GitHub health checks, Resend fixed alerts and business inbox; app error telemetry and staffed support coverage remain incomplete                                             |
 
 For each active supplier, the final disclosure must state the actual country or
 countries and purpose, how a person can obtain the relevant policies, and a
@@ -40,9 +40,9 @@ Application credentials and end-to-end acceptance are separate evidence, recorde
 in [official-domain setup](../../../operations/official-domain-setup.md).
 
 This establishes a US email-content flow when enabled, not merely a metadata
-transfer. Do not claim wholly Canadian processing. Existing notification privacy
-approval remains pending; domain setup does not approve sending transport events
-or settle customer-specific supplier instructions.
+transfer. Do not claim wholly Canadian processing. The owner approved the standard notification privacy setup on 2026-10-24.
+Domain setup alone did not establish this approval. Preserve recipient opt-outs
+and device permissions; supplier terms and customer instructions still need evidence.
 
 These are provider statements checked on this date, not an account-specific
 approval or proof of every location used by SafeBus. An EU SCC or GDPR statement
@@ -56,13 +56,27 @@ does not itself settle Alberta duties. No agreement was signed by this review.
 | Geoapify                     | [API privacy policy](https://www.geoapify.com/privacy-policy/) says API request bodies/headers/IP/timestamps may be retained, generally no more than 24 hours for successful requests, with EU hosting and global delivery/security services. [Imprint](https://www.geoapify.com/imprint/) identifies the business.                                                                                                                          | Identify actual hosting/CDN countries and error/log limits for the chosen endpoint/account, necessary map payload and applicable contractual terms. “EU” is not an exact country list and the successful-request limit is not a universal log-deletion guarantee. |
 | Stripe                       | [Canadian privacy policy](https://stripe.com/en-ca/privacy) covers payment/business relationships, service-provider and independent purposes and international processing.                                                                                                                                                                                                                                                                   | Record actual contracting entity/account terms, relevant processing countries, invoice/payment retention and minimal SafeBus billing fields. No roster/location data is authorized for payment processing by listing Stripe here.                                 |
 
-Supplement this with selected GitHub, storage, optional FCM and monitoring/support
-arrangements. Disabled or out-of-scope services need evidence of that boundary.
+Supplement this with actual GitHub, storage, recipient-opt-in FCM and
+monitoring/support arrangements. Disabled or out-of-scope services need evidence of that boundary.
 The final public country/purpose disclosure must match actual enabled flows and
-provide the owner's working privacy contact; the current unresolved contact and
-country fields remain publication blockers.
+provide info@safebus.kids as the direct privacy route. Country, supplier-window
+and staffed-response evidence remains incomplete.
 
 Final publication requires the owner/vendor decisions and relevant customer
 instructions. A listed supplier is not approved merely because its code is in
 the repository or a paid plan is available. Customer identity, credentials,
 contract copies and confidential reports remain outside this public draft.
+
+## Current account and source reconciliation — 2026-11-05
+
+See the [dated reconciliation](../../../operations/privacy-commercial-operations-2026-11-05.md).
+BusSafe primary database region is ca-central-1. This supports a Canadian primary
+database statement, not Canadian-only processing or a verified backup window.
+Resend also sends fixed operational alerts to info@safebus.kids. These contain
+check identifiers and log links, without customer rows or bus locations.
+GitHub/Netlify scheduling and Resend delivery remain supplier dependencies.
+Public vendor documents reviewed today: [Supabase residency](https://supabase.com/legal/privacy-resources/data-residency-and-transfers-faq),
+[Netlify Trust Center](https://www.netlify.com/trust-center/),
+[Firebase privacy/security](https://firebase.google.com/support/privacy), and
+[Resend DPA](https://resend.com/legal/dpa). Public terms are review inputs; they
+do not establish acceptance by the actual SafeBus account or resolve every country.

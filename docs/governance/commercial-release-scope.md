@@ -2,6 +2,14 @@
 
 **Status:** Approved and locked; revised by `DL-017`
 
+**Current implementation reconciliation (2026-11-05):** The historical
+notification entries below predate the owner's 2026-10-24 standard notification
+approval and 2026-10-26 recipient-control direction in `AGENTS.md`. Do not use
+their old FCM/per-authority gates to disable current authorized delivery or omit
+FCM from supplier review. The [dated reconciliation](../operations/privacy-commercial-operations-2026-11-05.md)
+records this distinction. It does not approve launch, expand pilot limits or
+complete recipient consent, supplier evidence or acceptance.
+
 **Launch-review amendment (2026-10-15):** [DL-023](decision-log.md#dl-023--commercial-readiness-evidence-review)
 and the [requirement classification](commercial-readiness-requirements.md)
 exclude backup/full-restore/disaster-recovery exercises and mandatory supplier

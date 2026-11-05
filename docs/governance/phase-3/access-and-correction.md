@@ -1,12 +1,12 @@
-﻿# SafeBus Access, Correction and Account-Deletion Procedure — Draft
+# SafeBus Access, Correction and Account-Deletion Procedure — Draft
 
-**Status:** Prepared procedure; contacts and operational validation pending
+**Status:** Direct email selected; staffed coverage, backup and operational validation pending
 **Owner:** Business Privacy Lead / relevant customer privacy office
-**Last updated:** 2026-10-13
+**Last updated:** 2026-11-05 (America/Regina)
 
 ## Intake and routing
 
-Accept requests at `[PRIVACY_EMAIL]` and the published postal/contact channel.
+Accept requests at [info@safebus.kids](mailto:info@safebus.kids). The business postal address remains unresolved; do not advertise an unverified postal route.
 An active app account is not required. Ask for enough detail to identify the
 person, relationship and requested records, without unnecessary sensitive ID or
 student information. Offer an alternative verification route for a lost account;
@@ -79,3 +79,11 @@ response securely outside Git. Preserve responsive records under a scoped hold
 when necessary. Do not log access tokens or copies of the disclosed personal data
 in public audit details. Operational acceptance requires a completed synthetic
 request exercise on an approved target and working contact/backup channels.
+
+## Operating handoff — 2026-11-05
+
+Use the [support and incident runbook](../../operations/support-incident-runbook.md)
+for intake fields, safe evidence handling and escalation. Inbox receipt of an
+operational monitor alert was owner-confirmed; that does not prove request
+handling, staffed hours, a backup or a completed exercise. Keep actual requests
+and incident records in restricted business storage, outside Git.

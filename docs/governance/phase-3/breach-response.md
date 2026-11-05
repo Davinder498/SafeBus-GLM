@@ -1,12 +1,12 @@
-﻿# SafeBus Privacy Incident and Breach Response — Draft
+# SafeBus Privacy Incident and Breach Response — Draft
 
-**Status:** Prepared procedure; staffed routing and tabletop evidence pending
+**Status:** Direct email selected; staffed urgent routing, backup and tabletop evidence pending
 **Owner:** Business Privacy Lead / Security Lead and affected customer
-**Last updated:** 2026-10-13
+**Last updated:** 2026-11-05 (America/Regina)
 
 ## Intake and immediate action
 
-Accept suspected incidents through `[PRIVACY_EMAIL]`, `[SUPPORT_EMAIL]` and the
+Accept suspected incidents through [info@safebus.kids](mailto:info@safebus.kids) and the
 agreed urgent channel. Report suspected cross-tenant/school access, revoked-session
 access, misdirected email, device loss, secret exposure or supplier incidents
 immediately. Investigation and containment must not wait for counsel appointment
@@ -79,3 +79,11 @@ customer coordination, PIPA/POPA recipient distinctions, time tracking, evidence
 holds and follow-up. No actual student data or external notifications are used.
 Retain date, participants, scenario, decisions, gaps and assigned actions outside
 Git. This drafted procedure is not a passed exercise or Point 6 approval.
+
+## Operating handoff — 2026-11-05
+
+Use the [support and incident runbook](../../operations/support-incident-runbook.md)
+for intake fields, safe evidence handling and escalation. Inbox receipt of an
+operational monitor alert was owner-confirmed; that does not prove request
+handling, staffed hours, a backup or a completed exercise. Keep actual requests
+and incident records in restricted business storage, outside Git.

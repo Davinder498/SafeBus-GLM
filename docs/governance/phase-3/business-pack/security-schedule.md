@@ -29,16 +29,28 @@ their credentials, report lost devices and do not circumvent controls. SafeBus
 assists within agreed boundaries; a business owner role does not grant permission
 to browse the transport data of all tenants.
 
+## Personnel assisting with setup
+
+Setup assistance is included with the subscription. Guidance and walkthroughs
+need not involve access to Customer records. When the authority authorizes
+configuration help requiring access, use individual scoped accounts, existing
+permissions, administrator MFA and reviewed access records. Keep platform
+administration separate from customer record work; do not share credentials or
+bypass RLS. Follow the [setup-assistance checklist](../../../operations/managed-onboarding.md)
+for necessary source transfer, validation and access review/removal. Preparing the
+checklist does not prove access or a transfer channel has been provisioned/tested.
+Continued assistance requires current authorization and an agreed purpose.
+
 ## Current evidence, not certification
 
-| Control                                     | Repository evidence                                               | Acceptance still needed                                                                                 |
-| ------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Scoped access and revoked-session hardening | Reviewed migrations 0122–0124 and application boundary work       | Installation verified; real signed-session, REST/RPC, cross-school/tenant and realtime acceptance |
-| Android protected queue and paced recovery  | Native encryption/pacing implementation and local tests           | Signed physical-device, offline, pause/end, lost-device and battery/recovery evidence                   |
-| Guardian fail-closed refresh                | Client coordination and local browser checks                      | Hosted authorization/revocation and provider/device behavior                                            |
-| Retention and audit minimization            | Migration 0069 and scheduler draft controls                       | Approved periods, safe enforcement and hold handling evidence                                   |
-| Recovery (outside launch scope)              | Historical encrypted export/full-restore and rollback evidence retained separately | No new recovery exercise is required for launch; no RPO/RTO promise is made |
-| Alerts, providers and capacity              | Engineering gates and planning model                              | Staffed routing, paid plans/quotas, observation and measured supported load                             |
+| Control                                     | Repository evidence                                                                | Acceptance still needed                                                                           |
+| ------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Scoped access and revoked-session hardening | Reviewed migrations 0122–0124 and application boundary work                        | Installation verified; real signed-session, REST/RPC, cross-school/tenant and realtime acceptance |
+| Android protected queue and paced recovery  | Native encryption/pacing implementation and local tests                            | Signed physical-device, offline, pause/end, lost-device and battery/recovery evidence             |
+| Guardian fail-closed refresh                | Client coordination and local browser checks                                       | Hosted authorization/revocation and provider/device behavior                                      |
+| Retention and audit minimization            | Migration 0069 and scheduler draft controls                                        | Approved periods, safe enforcement and hold handling evidence                                     |
+| Recovery (outside launch scope)             | Historical encrypted export/full-restore and rollback evidence retained separately | No new recovery exercise is required for launch; no RPO/RTO promise is made                       |
+| Alerts, providers and capacity              | Engineering gates and planning model                                               | Staffed routing, paid plans/quotas, observation and measured supported load                       |
 
 This schedule does not represent these pending items as passed. Source tests,
 security advisors or a supplier's paid plan do not independently prove the full

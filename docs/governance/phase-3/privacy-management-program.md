@@ -1,6 +1,6 @@
-﻿# SafeBus Business Privacy-Management Program — Draft
+# SafeBus Business Privacy-Management Program — Draft
 
-**Status:** Owner appointed Privacy Lead; contact, backup, training and operational evidence pending
+**Status:** Owner appointed Privacy Lead; inbox selected; backup, coverage, training and operational evidence pending
 **Owner:** Business owner / appointed Privacy Lead
 **Last updated:** 2026-10-15
 
@@ -102,3 +102,13 @@ required by the accepted launch policy. Point 6 remains open until real evidence
 and approval pass. A PIPA private-business PIA may be voluntary, while public-body
 POPA PIA duties depend on the deployment; that distinction is addressed in the
 [PIA draft](privacy-impact-assessment.md).
+
+## Current contact and response procedure — 2026-11-05
+
+The selected privacy/support inbox is [info@safebus.kids](mailto:info@safebus.kids).
+The owner confirmed receipt of an operational alert; this does not establish
+coverage or a completed privacy-request exercise. See the
+[support/incident runbook](../../operations/support-incident-runbook.md) and
+[commercial/operations reconciliation](../../operations/privacy-commercial-operations-2026-11-05.md).
+The business postal address, staffed hours, backup and urgent escalation remain
+open. No signature or completed supplier/retention evidence is inferred.

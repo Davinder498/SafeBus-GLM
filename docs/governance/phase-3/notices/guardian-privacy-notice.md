@@ -1,9 +1,9 @@
-﻿# SafeBus Guardian Privacy Notice — Draft
+# SafeBus Guardian Privacy Notice — Draft
 
 **Status:** Participant notice draft; customer adaptation and publication pending
 **Operator:** Sachman Gold Inc., doing business as SafeBus
 **Authority/contact:** `[CUSTOMER_LEGAL_NAME]` / `[CUSTOMER_PRIVACY_CONTACT]`
-**SafeBus privacy contact:** `[PRIVACY_EMAIL]`
+**SafeBus privacy contact:** [info@safebus.kids](mailto:info@safebus.kids)
 
 **In-app reading:** `/privacy#guardians`, accessible from the account menu,
 Privacy and account settings, and sign-in page. The public role explanation is
@@ -30,7 +30,10 @@ Your guardian app link does not settle a statutory right to every student record
 
 Enabled pickup/drop-off email can contain the student's first name, recorded
 event and time. It is not continuous child location or proof of current whereabouts.
-Optional FCM push and student QR are not activated by the CR1 notice. Maps disclose
+Android FCM push requires your own opt-in and device permission. It uses a
+device token and limited delivery data; private previews exclude names, routes,
+stops, coordinates and internal identifiers. Student QR remains outside this
+commercial notice pending its own acceptance. Maps disclose
 viewport tile coordinates, IP and request metadata to the map provider. Hosting,
 Auth and email providers process necessary information; actual countries and
 retention must be supplied in the approved supplier disclosure before publication.
@@ -41,15 +44,16 @@ prohibited government student identifiers and child-device tracking. Do not send
 such information in support requests. Transport records are not used for resale,
 advertising, unrelated profiling or AI training.
 
-Manage optional email choices through available settings or the authority.
+Manage your own optional email and push choices through notification settings.
+The authority cannot opt you in or override your device permission.
 Request access/correction/deletion of transport information through the authority's
 privacy office; contact SafeBus directly for its own business records, concerns
 or routing help, even if you cannot sign in. Verification protects other people.
 The accepted schedule must describe retention, lawful holds and backup expiry;
 account closure does not necessarily delete all transport/financial/security
-records. Insert approved periods and working `[DELETION_URL]` before publication.
+records. Insert approved periods and working https://safebus.kids/account-deletion before publication.
 
 The final notice must identify applicable rights, contacts, safeguards, supplier
 countries and complaint channels. SafeBus's complete business privacy policy will
-be at `[PUBLIC_POLICY_URL]`. Material changes require appropriate notice and
+be at https://safebus.kids/privacy. Material changes require appropriate notice and
 review; this draft is not a published notice or approval of hosted security.

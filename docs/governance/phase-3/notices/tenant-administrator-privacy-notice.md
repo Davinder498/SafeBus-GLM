@@ -8,7 +8,7 @@ to each activation. This template is not an executed agreement or launch approva
 
 **Business Privacy Lead:** Business owner (selected 2026-10-15)
 
-**Direct privacy contact:** `[PRIVACY_EMAIL]`
+**Direct privacy contact:** [info@safebus.kids](mailto:info@safebus.kids)
 
 **Customer:** `[CUSTOMER_LEGAL_NAME]` / `[CUSTOMER_PRIVACY_CONTACT]`
 

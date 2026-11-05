@@ -50,9 +50,17 @@ export function AccountDeletionPage() {
           </ol>
 
           <div className="mt-8 rounded-xl bg-amber-50 p-5 text-sm leading-6 text-amber-950">
-            If you cannot identify or reach the issuing authority, use the verified developer
-            contact on the SafeBus Google Play listing. Include only your account email and school
-            authority name so the request can be routed safely.
+            If you cannot identify or reach the issuing authority, email{' '}
+            <a
+              href="mailto:info@safebus.kids"
+              className="font-semibold underline underline-offset-4"
+            >
+              info@safebus.kids
+            </a>{' '}
+            to request help from SafeBus. Include only your account email and school authority name
+            if known. Do not send passwords, sign-in links, verification codes or identity documents
+            by email. SafeBus will coordinate verification and authorized action; an email alone
+            does not authorize deletion of school authority records.
           </div>
 
           <p className="mt-5 leading-7 text-slate-700">
