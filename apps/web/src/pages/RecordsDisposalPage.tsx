@@ -252,9 +252,12 @@ function DisposalWorkspace() {
           <>
             <Card className="space-y-4 p-5">
               <h2 className="text-xl font-bold">Preserve or download a record</h2>
-              <label className="block">
-                Record type
+              <div>
+                <label htmlFor="disposal-record-type" className="block">
+                  Record type
+                </label>
                 <select
+                  id="disposal-record-type"
                   className={field}
                   value={policy}
                   onChange={(e) => {
@@ -271,10 +274,13 @@ function DisposalWorkspace() {
                       </option>
                     ))}
                 </select>
-              </label>
-              <label className="block">
-                Record
+              </div>
+              <div>
+                <label htmlFor="disposal-record" className="block">
+                  Record
+                </label>
                 <select
+                  id="disposal-record"
                   className={field}
                   value={recordId}
                   onChange={(e) => setRecordId(e.target.value)}
@@ -290,7 +296,7 @@ function DisposalWorkspace() {
                     </option>
                   ))}
                 </select>
-              </label>
+              </div>
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="secondary"
@@ -329,7 +335,7 @@ function DisposalWorkspace() {
                     name="reference"
                     required
                     maxLength={64}
-                    pattern="[A-Za-z0-9][A-Za-z0-9._/\-]{0,63}"
+                    pattern="[A-Za-z0-9][A-Za-z0-9._\/\-]{0,63}"
                     className={field}
                     defaultValue={editing?.reference}
                     disabled={!!editing}
@@ -400,7 +406,7 @@ function DisposalWorkspace() {
                     name="reference"
                     required
                     maxLength={64}
-                    pattern="[A-Za-z0-9][A-Za-z0-9._/\-]{0,63}"
+                    pattern="[A-Za-z0-9][A-Za-z0-9._\/\-]{0,63}"
                   />
                 </label>
                 <p className="text-sm">
