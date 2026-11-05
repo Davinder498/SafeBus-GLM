@@ -442,6 +442,7 @@ test('production application RPC references are all reviewed', async () => {
     readJson('config/pending/admin-trip-detail-authorization.json'),
     readJson('config/pending/unified-notification-authorization.json'),
     readJson('config/pending/retention-lifecycle-authorization.json'),
+    readJson('config/pending/complete-disposal-authorization.json'),
   ]);
   const approved = new Set(
     [

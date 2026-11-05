@@ -1,10 +1,6 @@
 # SafeBus Retention and Disposal Schedule
 
-codex/retention-lifecycle-20261105
-**Status:** Owner-approved GPS/event/notification schedule; implementation prepared, protected rollout and operating evidence pending
-
-**Status:** Baseline periods conditionally supported by owner; legal/customer overrides and safe enforcement remain required
- main
+**Status:** Owner selected lawful disposal defaults; full application worker prepared. Hosted installation, activation and provider acceptance remain pending.
 **Owner:** Business Privacy Lead with Customer / Engineering / Operations
 **Last updated:** 2026-11-05
 
@@ -18,8 +14,10 @@ must not be used to report the correction as uninstalled. See the
 The owner approved the scoped 30/395/90-day plan on 5 November 2026.
 The forward implementation and role acceptance are described in
 [retention lifecycle acceptance](../../operations/retention-lifecycle-acceptance.md).
-This approval does not approve the other historical inventory proposals below,
-certify legal classification for every authority, or enable production deletion.
+The owner subsequently requested completion across the disposal schedule. The
+[complete disposal rollout](../../operations/complete-automatic-disposal.md) implements
+the remaining application paths. The defaults remain subject to applicable
+minimums and customer instructions; code and merge do not activate deletion.
 
 | Approved class | Trigger and period |
 | --- | --- |
@@ -40,14 +38,13 @@ physical encrypted chunks can include adjoining samples from the original scoped
 archive until all trip preservation requests release. Archives are not a new
 whole-fleet annual GPS history.
 
-Production observation above remains the latest live evidence. The new migration
-is pending; all other account/student/driver/audit cleanup remains observation
-only under the prepared implementation. Supplier/backups, device queues and
+The observed production database is still in dry-run mode. The two-stage
+protected release is prepared; no new policy has been activated. Supplier/backups, device queues and
 customer-specific classifications still require their own operating evidence.
 
 ## Purpose and acceptance boundary
 
-The scoped table above records the owner decision. The historical inventory below supplies other proposed periods for review. It does
+The scoped table above records the owner decision. The historical inventory below supplies baseline periods and review context. See the implementation mapping for exact running triggers. It does
 not close R-011, establish legal retention periods or enable destructive deletion.
 Approve each purpose, trigger, applicable minimum/maximum legal requirement,
 hold exception, supplier/backup window and disposal method before execution.

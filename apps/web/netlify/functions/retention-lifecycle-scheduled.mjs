@@ -1,3 +1,4 @@
+import { disposeOneAccount } from './disposal-accounts.mjs';
 import { sendMonitorAlerts } from '../../../../scripts/lib/monitor-alert-email.mjs';
 import { createClient } from '@supabase/supabase-js';
 import { archiveKeys, archiveOne } from './retention-archive.mjs';
@@ -13,6 +14,17 @@ export const RETENTION_CLASSES = [
   'inbox',
   'archive_manifests',
   'cases',
+  'invitations',
+  'guardian_relationships',
+  'student_records',
+  'bus_tracking_sessions',
+  'bus_run_dispatches',
+  'trip_records',
+  'driver_records',
+  'guardian_records',
+  'audit_records',
+  'rate_limit_buckets',
+  'user_sessions',
 ];
 export function validateLifecycleResult(value, dryRun) {
   if (
@@ -49,6 +61,11 @@ export async function handler() {
     });
     // Dry-runs perform no storage writes or archive mutations. Execute requires
     // valid dedicated keys even when there are currently no preservation cases.
+    if (!dryRun) {
+      const state = await client.rpc('disposal_account_work', { p_action: 'state', p_id: null });
+      if (state.error || state.data?.enabled !== true)
+        throw new Error('RETENTION_LIFECYCLE_DISABLED');
+    }
     const archive = dryRun ? 'dry_run' : await archiveOne(client, archiveKeys());
     const counts = Object.fromEntries(RETENTION_CLASSES.map((name) => [name, 0]));
     const started = Date.now();
@@ -64,16 +81,21 @@ export async function handler() {
       saturated = RETENTION_CLASSES.some((name) => current[name] === 500);
       if (!saturated || Date.now() - started > 12_000) break;
     }
+    const account = dryRun ? 'dry_run' : await disposeOneAccount(client);
     console.log(
       JSON.stringify({
         event: 'retention_lifecycle_completed',
         dryRun,
         counts,
         archive,
+        account,
         saturated,
       }),
     );
-    return { statusCode: 200, body: JSON.stringify({ dryRun, counts, archive, saturated }) };
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ dryRun, counts, archive, account, saturated }),
+    };
   } catch (error) {
     const code = /^RETENTION_(?:LIFECYCLE|ARCHIVE)_[A-Z_]+$/.test(error?.message || '')
       ? error.message

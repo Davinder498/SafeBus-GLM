@@ -82,6 +82,9 @@ export function AdminSettingsPage() {
         <AppearanceSettingsCard />
         <AccountSecurityLinkCard />
         <RetentionPanel />
+        <a href="/admin/records-disposal" className="font-semibold text-navy-700 underline">
+          Records disposal and preservation
+        </a>
 
         {loading && (
           <DataState

@@ -61,6 +61,6 @@
     },
     "backupRestore": null
   },
-  "candidateEvidenceDigest": "b8c3277e60268e45d12654bdafa878f6385911f47e02bda8244e83ea5b1d836a",
-  "candidateEvidenceBasis": "codex/retention-legal-overrides-20261105 source snapshot; conditional owner support only, regenerate for exact release before approval"
+  "candidateEvidenceDigest": "dc94f60df6f824c13d004fec69fc9494a01ff2b95f4cfde8b83a8265e762a112",
+  "candidateEvidenceBasis": "Complete disposal source snapshot; candidate only, regenerate for exact release before approval"
 }
