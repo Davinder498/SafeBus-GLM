@@ -21,6 +21,7 @@ import {
 const mode = process.argv[2];
 const milestone = process.env.SAFEBUS_OPERATIONAL_MILESTONE;
 const manifests = {
+  recent_auth: 'config/pending/recent-auth-session.json',
   offline_actions: 'config/pending/offline-trip-actions.json',
   retention: 'config/pending/retention-qualification.json',
   tracking: 'config/pending/tracking-queue-recovery.json',

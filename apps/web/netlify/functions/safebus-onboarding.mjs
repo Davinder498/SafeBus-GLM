@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { verifyActiveCallerSession } from './session-security.mjs';
+import { verifyActiveCallerSession, verifyRecentCallerAuthentication } from './session-security.mjs';
 
 const json = (statusCode, body) => ({
   statusCode,
@@ -145,16 +145,8 @@ async function requireCaller(event, allowedRoles) {
     };
   }
 
-  const signedInAt = userData.user.last_sign_in_at
-    ? Date.parse(userData.user.last_sign_in_at)
-    : Number.NaN;
-  if (!Number.isFinite(signedInAt) || Date.now() - signedInAt > 15 * 60 * 1000) {
-    return {
-      error: json(403, {
-        error: 'Sign in again before performing this sensitive administrative action.',
-      }),
-    };
-  }
+  const recentFailure = await verifyRecentCallerAuthentication(c.user, token, profile.id);
+  if (recentFailure) return { error: json(recentFailure.statusCode, { error: recentFailure.message }) };
 
   const rateLimit = await c.user.rpc('check_rate_limit', {
     p_action: 'onboarding',

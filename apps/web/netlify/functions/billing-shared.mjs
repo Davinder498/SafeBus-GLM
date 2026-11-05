@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
-import { verifyActiveCallerSession } from './session-security.mjs';
+import { verifyActiveCallerSession, verifyRecentCallerAuthentication } from './session-security.mjs';
 
 export const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -122,16 +122,8 @@ export async function requireBillingCaller(
   }
 
   if (recentAuth) {
-    const signedInAt = userData.user.last_sign_in_at
-      ? Date.parse(userData.user.last_sign_in_at)
-      : Number.NaN;
-    if (!Number.isFinite(signedInAt) || Date.now() - signedInAt > 15 * 60 * 1000) {
-      return {
-        error: json(403, {
-          error: 'Sign in again before changing a subscription.',
-        }),
-      };
-    }
+    const failure = await verifyRecentCallerAuthentication(clients.user, token, profile.id);
+    if (failure) return { error: json(failure.statusCode, { error: failure.message }) };
   }
 
   const rateLimit = await clients.user.rpc('check_rate_limit', {
