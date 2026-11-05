@@ -3,7 +3,10 @@
 import fs from 'node:fs/promises';
 import process from 'node:process';
 import pg from 'pg';
-import { authorizationAudiences } from './lib/authorization-audiences.mjs';
+import {
+  authorizationAudiences,
+  assertAdvertisedRpcSurface,
+} from './lib/authorization-audiences.mjs';
 import { UNSAFE_PUBLIC_DEFAULT_PRIVILEGES_SQL } from './lib/default-privilege-audit.mjs';
 import { auditReservedProviderDefaults } from './lib/reserved-provider-defaults.mjs';
 import { assertPrivateApiSchemaHidden } from './lib/existing-security-rehearsal.mjs';
@@ -368,15 +371,8 @@ try {
   });
   if (!response.ok) throw new Error(`Supabase OpenAPI audit failed with HTTP ${response.status}.`);
   const openApi = await response.json();
-  const advertised = new Set(
-    Object.keys(openApi.paths ?? {})
-      .filter((entry) => entry.startsWith('/rpc/'))
-      .map((entry) => entry.slice('/rpc/'.length)),
-  );
-  const expectedNames = new Set(
-    [...serviceExecutable].map((signature) => signature.slice(0, signature.indexOf('('))),
-  );
-  assertExactSurface('Advertised Data API RPC names', advertised, expectedNames);
+  const discovery = assertAdvertisedRpcSurface(openApi, allPublic);
+  console.log(JSON.stringify({ check: 'openapi-inventory', ...discovery }));
 
   // Only a real PGRST106 schema rejection is isolation evidence. A bad key,
   // timeout or provider outage must not make this release gate pass.
