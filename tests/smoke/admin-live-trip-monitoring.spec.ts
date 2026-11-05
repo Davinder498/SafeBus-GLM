@@ -42,15 +42,22 @@ test('offline or failed refresh removes unverified bus progress; revoked access 
   page,
 }) => {
   const controls = await installTripOperationsMock(page);
+  controls.preservationError = true;
   await page.goto(`/admin/trips/${tripId(1)}`);
   await expect(page.getByText('Bus toward School', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'Records preservation is unavailable.' }),
+  ).toBeVisible();
   controls.tripError = true;
   await page.clock.runFor(15_100);
-  await expect(page.getByRole('alert')).toContainText('Unable to load');
+  await expect(page.getByRole('alert').filter({ hasText: 'Unable to load trips.' })).toBeVisible();
   await expect(page.getByText('Bus toward School', { exact: true })).toHaveCount(0);
   controls.tripError = false;
   controls.accessError = true;
-  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await page
+    .locator('[data-ui="page-header"]')
+    .getByRole('button', { name: 'Refresh', exact: true })
+    .click();
   await expect(page.getByRole('region', { name: 'Trip students' })).toHaveCount(0);
 });
 
