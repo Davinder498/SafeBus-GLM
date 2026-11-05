@@ -100,7 +100,7 @@ test('cadence watchdog detects stale, failed, missing and malformed schedules wi
   const now = Date.parse('2026-11-05T08:00:00Z');
   const success = { id: 123, event: 'schedule', head_branch: 'main', created_at: new Date(now - 15*60_000).toISOString(), status: 'completed', conclusion: 'success' };
   const check = (runs) => checkMonitorCadence({ now, fetchImpl: async (url, options) => {
-    assert.match(url, /^https:\/\/api.github.com\/repos\/Davinder498\/SafeBus-GLM\/actions\/workflows\/production-health.yml\/runs\?/);
+    assert.equal(url, 'https://api.github.com/repos/Davinder498/SafeBus-GLM/actions/workflows/production-health.yml/runs?event=schedule&per_page=10');
     assert.equal(options.redirect, 'error'); assert.ok(options.signal);
     assert.equal(options.headers.authorization, undefined);
     return Response.json({ workflow_runs: runs, ignored_secret: 'private-value' });
