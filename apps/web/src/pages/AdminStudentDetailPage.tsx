@@ -308,27 +308,24 @@ export function AdminStudentDetailPage() {
             />
 
             <Card className="p-4 sm:p-5" data-testid="student-workspace-review">
-              <h2 className="font-bold text-navy-900">Transportation record review</h2>
-              <p className="mt-1 text-sm text-slate-600">
-                A read-only overview of saved records. Check guardian invitation status, each bus service direction and effective dates in the sections below.
-              </p>
+              <h2 className="font-bold text-navy-900">Overview</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 <a href="#student-details" className="rounded-xl border border-slate-200 bg-slate-50 p-3 hover:border-navy-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500">
                   <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Roster status</span>
                   <span className="mt-1 block font-semibold text-navy-900">{detail.student.status}</span>
-                  <span className="mt-1 block text-xs text-slate-600">School and grade are optional</span>
                 </a>
                 <a href="#student-guardians" className="rounded-xl border border-slate-200 bg-slate-50 p-3 hover:border-navy-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500">
                   <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Guardian links</span>
                   <span className="mt-1 block font-semibold text-navy-900">{activeGuardianLinks} active</span>
-                  <span className="mt-1 block text-xs text-slate-600">Check linking and invitation state</span>
                 </a>
                 <a href="#student-transportation" className="rounded-xl border border-slate-200 bg-slate-50 p-3 hover:border-navy-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500">
-                  <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Saved transportation</span>
-                  <span className="mt-1 block font-semibold text-navy-900">{transportationGroups.length} bus-route group{transportationGroups.length === 1 ? '' : 's'}</span>
-                  <span className="mt-1 block text-xs text-slate-600">
-                    {incompleteSavedStops > 0 ? `${incompleteSavedStops} saved direction(s) need stop review` : 'Review both directions and stop details'}
-                  </span>
+                  <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Transportation</span>
+                  <span className="mt-1 block font-semibold text-navy-900">{transportationGroups.length} bus and route group{transportationGroups.length === 1 ? '' : 's'}</span>
+                  {incompleteSavedStops > 0 && (
+                    <span className="mt-1 block text-xs text-slate-600">
+                      {incompleteSavedStops} direction{incompleteSavedStops === 1 ? ' needs' : 's need'} stop details
+                    </span>
+                  )}
                 </a>
               </div>
             </Card>

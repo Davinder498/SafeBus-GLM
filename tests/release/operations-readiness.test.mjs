@@ -8,7 +8,14 @@ test('production health monitoring is scheduled, least-privileged, and productio
   const workflow = await read('.github/workflows/production-health.yml');
 
   assert.match(workflow, /name: Production health monitor/);
-  assert.match(workflow, /cron: '\*\/15 \* \* \* \*'/);
+  const cron = workflow.match(/cron: '([^']+)'/)?.[1];
+  assert.ok(cron);
+  const [minuteField, ...calendar] = cron.split(' ');
+  assert.deepEqual(calendar, ['*', '*', '*', '*']);
+  const minutes = minuteField.split(',').map(Number);
+  assert.equal(minutes.length, 4);
+  assert.ok(minutes.every((minute, i) => Number.isInteger(minute) && minute > 0 && minute < 60 &&
+    (minutes[(i + 1) % minutes.length] - minute + 60) % 60 === 15));
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /permissions:\s+contents: read/);
   assert.match(workflow, /SAFEBUS_MONITOR_ORIGIN: https:\/\/safebus\.kids/);

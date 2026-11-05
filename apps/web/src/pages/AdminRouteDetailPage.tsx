@@ -318,7 +318,7 @@ export function AdminRouteDetailPage() {
                   {[
                     { label: 'Saved stops', value: String(data.stops.length), icon: MapPin },
                     { label: 'Bus services', value: String(data.busServices.length), icon: BusFront },
-                    { label: 'Current drivers', value: String(data.busServices.filter((service) => activeDriverForBusService(service, data.assignments)).length), icon: UserRound },
+                    { label: 'Services with a current driver', value: String(data.busServices.filter((service) => activeDriverForBusService(service, data.assignments)).length), icon: UserRound },
                   ].map(({ label, value, icon: Icon }) => (
                     <Card key={label} className="flex items-center gap-4 p-4 shadow-sm">
                       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-selection)] text-[var(--color-action)]">
@@ -380,11 +380,11 @@ export function AdminRouteDetailPage() {
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-xs font-semibold text-[var(--color-text-muted)]">School metadata</dt>
+                        <dt className="text-xs font-semibold text-[var(--color-text-muted)]">School (optional)</dt>
                         <dd className="mt-1 text-sm font-semibold text-[var(--color-text)]">
                           {data.route.school_id
                             ? (data.schools.find((school) => school.id === data.route.school_id)?.name ?? 'Unavailable')
-                            : 'Not assigned (optional)'}
+                            : 'Not assigned'}
                         </dd>
                       </div>
                       <div>
