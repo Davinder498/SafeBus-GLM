@@ -51,3 +51,7 @@
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# Approved scoped schedule; defaults to dry-run until protected activation.
+[functions."retention-lifecycle-scheduled"]
+  schedule = "* * * * *"

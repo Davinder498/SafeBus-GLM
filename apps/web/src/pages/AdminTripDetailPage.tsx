@@ -1,3 +1,4 @@
+import { RetentionPanel } from '@/components/admin/RetentionPanel';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
@@ -356,6 +357,7 @@ export function AdminTripDetailPage() {
                 </p>
               )}
             </Card>
+            <RetentionPanel tripId={tripId} />
             <TripOperationalEvidencePanel
               key={tripId}
               tripId={tripId}

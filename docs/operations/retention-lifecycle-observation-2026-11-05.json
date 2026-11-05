@@ -1,0 +1,14 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "observedAt": "2026-11-05T17:44:26.350437+00:00",
+  "newRelations": null,
+  "retentionCron": [],
+  "estimatedGpsRows": 21206,
+  "destructiveEnabled": false,
+  "archiveBucketExists": false,
+  "readOnly": true,
+  "persistentDatabaseChanges": false,
+  "deletedRows": 0,
+  "notificationSent": false,
+  "meaning": "Forward lifecycle objects and archive storage are not installed. Destructive retention remains disabled; local acceptance does not establish hosted release acceptance."
+}

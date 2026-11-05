@@ -1,3 +1,4 @@
+import { RetentionPanel } from '@/components/admin/RetentionPanel';
 import { AppearanceSettingsCard } from '@/components/settings/AppearanceToggle';
 import { AccountSecurityLinkCard } from '@/components/settings/AccountSecurityLinkCard';
 import { useEffect, useState } from 'react';
@@ -80,6 +81,7 @@ export function AdminSettingsPage() {
         <AdminSettingsNav role={profile?.role} />
         <AppearanceSettingsCard />
         <AccountSecurityLinkCard />
+        <RetentionPanel />
 
         {loading && (
           <DataState
