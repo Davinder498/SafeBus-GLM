@@ -164,3 +164,10 @@ The owner selected this role on 2026-10-15; coverage and backup remain unresolve
 It is not necessary
 for that business role to be a lawyer. Legal-review
 and customer-specific approval obligations are handled separately.
+
+## Business mailbox supplier clarification — 2026-11-05
+
+Zoho Mail handles business, support and privacy correspondence at info@safebus.kids.
+Delivered mailbox copies are separate from Resend transactional sending records.
+The [supplier review](../supplier-review-2026-11-05.md) records the Canadian MX
+observation and account-specific residency/DPA/expiry evidence still to confirm.

@@ -11,6 +11,18 @@ import {
 const read = (file) => fs.readFile(file, 'utf8');
 
 const requiredFiles = {
+  'apps/web/src/__tests__/safebus-retention-scheduled.test.mjs': 'synthetic runner contract\n',
+  'docs/operations/operating-observation-2026-11-05.json': 'synthetic operating observation\n',
+  'docs/operations/support-incident-runbook.md': 'synthetic acceptance evidence\n',
+  'docs/operations/managed-onboarding.md': 'synthetic acceptance evidence\n',
+  'docs/operations/privacy-operations-evidence-2026-11-05.md': 'synthetic acceptance evidence\n',
+  'docs/governance/phase-3/supplier-review-2026-11-05.md': 'synthetic acceptance evidence\n',
+  'docs/governance/phase-3/retention-schedule.md': 'synthetic acceptance evidence\n',
+  'docs/governance/phase-3/retention-observation-2026-11-05.json':
+    'synthetic acceptance evidence\n',
+  'scripts/lib/retention-verification.mjs': 'synthetic acceptance evidence\n',
+  'apps/web/src/__tests__/retention-scheduled.test.mjs': 'synthetic acceptance evidence\n',
+
   'docs/governance/commercial-readiness-requirements.md': 'synthetic review evidence',
   'docs/qa/commercial-readiness-review-2026-10-15.md': 'synthetic review evidence',
   'docs/qa/commercial-readiness-hosted-observation-2026-10-15.json': 'synthetic review evidence',
@@ -282,4 +294,29 @@ test('Point 9 governance keeps operating and human evidence open', async () => {
   assert.match(governance, /operations-readiness\.json/);
   assert.match(acceptance, /Partially executed/);
   assert.match(milestone, /Commercial Readiness Remediation 13/);
+});
+
+test('current supplier, retention and response evidence changes invalidate approval', async (t) => {
+  const root = await fixtureRoot();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const readiness = await approvedFixture(root);
+  const now = Date.parse('2026-08-23T12:00:00.000Z');
+  for (const file of [
+    'docs/operations/support-incident-runbook.md',
+    'docs/operations/managed-onboarding.md',
+    'docs/operations/privacy-operations-evidence-2026-11-05.md',
+    'docs/governance/phase-3/supplier-review-2026-11-05.md',
+    'docs/governance/phase-3/retention-schedule.md',
+    'docs/governance/phase-3/retention-observation-2026-11-05.json',
+    'scripts/lib/retention-verification.mjs',
+    'apps/web/src/__tests__/retention-scheduled.test.mjs',
+  ]) {
+    await fs.appendFile(path.join(root, file), 'changed evidence\n');
+    await assert.rejects(
+      verifyOperationsReadiness({ readiness, root, now }),
+      /does not match the current release-controlled source/,
+    );
+    await fs.writeFile(path.join(root, file), requiredFiles[file]);
+  }
+  await verifyOperationsReadiness({ readiness, root, now });
 });

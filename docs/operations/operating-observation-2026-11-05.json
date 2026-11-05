@@ -1,0 +1,40 @@
+{
+  "observedAt": "2026-11-05T15:53:53.802Z",
+  "mode": "bounded public read-only observations; no notifications sent",
+  "checks": [
+    {
+      "check": "public_health",
+      "result": "passed",
+      "evidence": {
+        "result": "healthy",
+        "origin": "https://safebus.kids",
+        "checkedAt": "2026-11-05T15:54:03.141Z",
+        "checks": [
+          {
+            "name": "landing_page",
+            "result": "pass",
+            "attempts": 1,
+            "durationMs": 4929
+          },
+          {
+            "name": "spa_login_route",
+            "result": "pass",
+            "attempts": 1,
+            "durationMs": 3829
+          },
+          {
+            "name": "map_configuration",
+            "result": "pass",
+            "attempts": 1,
+            "durationMs": 580
+          }
+        ]
+      }
+    },
+    {
+      "check": "github_schedule",
+      "result": "failed",
+      "code": "MONITOR_CADENCE_STALE"
+    }
+  ]
+}

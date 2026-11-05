@@ -99,13 +99,14 @@ export function PrivacyPolicyPage() {
                 scope. Service providers support hosting and authentication (Supabase), application
                 delivery (Netlify), map tiles (Geoapify), transactional email (Resend), and opt-in
                 Android push delivery (Google Firebase Cloud Messaging). Stripe processes
-                subscription invoices, billing details, and payment methods. SafeBus stores only a
-                limited subscription summary and does not store card or bank details. Inquiries from
-                prospective school authorities are delivered to SafeBus through the transactional
-                email provider and are not stored in the application database. Access is limited to
-                what is needed to provide each service. Push previews exclude names, routes, stops,
-                coordinates, driver identity, school authority identifiers, and internal
-                identifiers.
+                subscription invoices, billing details, and payment methods. Zoho Mail handles
+                business, support and privacy correspondence sent to our business inbox. SafeBus
+                stores only a limited subscription summary and does not store card or bank details.
+                Inquiries from prospective school authorities are delivered to SafeBus through the
+                transactional email provider and are not stored in the application database. Access
+                is limited to what is needed to provide each service. Push previews exclude names,
+                routes, stops, coordinates, driver identity, school authority identifiers, and
+                internal identifiers.
               </p>
             </section>
 

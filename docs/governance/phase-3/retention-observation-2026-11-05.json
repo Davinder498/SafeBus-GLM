@@ -1,0 +1,256 @@
+{
+  "control": [
+    {
+      "id": 1,
+      "approved_at": null,
+      "destructive_enabled": false,
+      "has_approval_reference": false
+    }
+  ],
+  "policies": [
+    {
+      "active": true,
+      "created_at": "2026-08-07T07:26:43.309445+00:00",
+      "data_class": "Security audit trail",
+      "policy_key": "audit_records",
+      "updated_at": "2026-08-07T07:26:43.309445+00:00",
+      "description": "Actor, target, network, and detail fields; action/outcome/time are retained.",
+      "expiry_action": "anonymize",
+      "retention_days": 730
+    },
+    {
+      "active": true,
+      "created_at": "2026-08-07T07:26:43.309445+00:00",
+      "data_class": "Completed bus dispatch records",
+      "policy_key": "bus_run_dispatches",
+      "updated_at": "2026-08-07T07:26:43.309445+00:00",
+      "description": "Completed or cancelled dispatch records; deleted before parent trips.",
+      "expiry_action": "delete",
+      "retention_days": 395
+    },
+    {
+      "active": true,
+      "created_at": "2026-08-07T07:26:43.309445+00:00",
+      "data_class": "Expired bus tracking session tokens",
+      "policy_key": "bus_tracking_sessions",
+      "updated_at": "2026-08-07T07:26:43.309445+00:00",
+      "description": "Ended or revoked hashed bus-tracking sessions.",
+      "expiry_action": "delete",
+      "retention_days": 30
+    },
+    {
+      "active": true,
+      "created_at": "2026-08-07T07:26:43.309445+00:00",
+      "data_class": "Inactive driver directory records",
+      "policy_key": "driver_records",
+      "updated_at": "2026-08-07T07:26:43.309445+00:00",
+      "description": "Driver and public profile identity fields; Auth-account deletion remains an Auth Admin workflow.",
+      "expiry_action": "anonymize",
+      "retention_days": 395
+    },
+    {
+      "active": true,
+      "created_at": "2026-08-07T07:26:43.309445+00:00",
+      "data_class": "Inactive guardian-student relationships",
+      "policy_key": "guardian_relationships",
+      "updated_at": "2026-08-07T07:26:43.309445+00:00",
+      "description": "Inactive or archived guardian relationship links.",
+      "expiry_action": "delete",
+      "retention_days": 395
+    },
+    {
+      "active": true,
+      "created_at": "2026-08-07T07:26:43.309445+00:00",
+      "data_class": "Tenant-member invitations",
+      "policy_key": "invitations",
+      "updated_at": "2026-08-07T07:26:43.309445+00:00",
+      "description": "Terminal invitation records.",
+      "expiry_action": "delete",
+      "retention_days": 90
+    },
+    {
+      "active": true,
+      "created_at": "2026-08-07T07:26:43.309445+00:00",
+      "data_class": "Terminal guardian notification outbox",
+      "policy_key": "notifications",
+      "updated_at": "2026-08-07T07:26:43.309445+00:00",
+      "description": "Delivered, failed, or cancelled notification metadata.",
+      "expiry_action": "delete",
+      "retention_days": 90
+    },
+    {
+      "active": true,
+      "created_at": "2026-08-07T07:26:43.309445+00:00",
+      "data_class": "Abuse-prevention counters",
+      "policy_key": "rate_limit_buckets",
+      "updated_at": "2026-08-07T07:26:43.309445+00:00",
+      "description": "Expired rate-limit windows.",
+      "expiry_action": "delete",
+      "retention_days": 2
+    },
+    {
+      "active": true,
+      "created_at": "2026-08-07T07:26:43.309445+00:00",
+      "data_class": "Raw bus location history",
+      "policy_key": "raw_location_history",
+      "updated_at": "2026-08-07T07:26:43.309445+00:00",
+      "description": "Raw driver_trip_location_updates rows.",
+      "expiry_action": "delete",
+      "retention_days": 30
+    },
+    {
+      "active": true,
+      "created_at": "2026-08-07T07:26:43.309445+00:00",
+      "data_class": "Inactive student transportation records",
+      "policy_key": "student_records",
+      "updated_at": "2026-08-07T07:26:43.309445+00:00",
+      "description": "Inactive, transferred, or archived student rows and dependent links/events.",
+      "expiry_action": "delete",
+      "retention_days": 395
+    },
+    {
+      "active": true,
+      "created_at": "2026-08-07T07:26:43.309445+00:00",
+      "data_class": "Completed trip records",
+      "policy_key": "trip_records",
+      "updated_at": "2026-08-07T07:26:43.309445+00:00",
+      "description": "Completed or cancelled trip lifecycle and cascading event/location history.",
+      "expiry_action": "delete",
+      "retention_days": 395
+    },
+    {
+      "active": true,
+      "created_at": "2026-08-07T07:26:43.309445+00:00",
+      "data_class": "SafeBus session mirror",
+      "policy_key": "user_sessions",
+      "updated_at": "2026-08-07T07:26:43.309445+00:00",
+      "description": "Revoked or stale session-mirror metadata.",
+      "expiry_action": "delete",
+      "retention_days": 90
+    }
+  ],
+  "latest_runs": [
+    {
+      "status": "completed",
+      "dry_run": true,
+      "error_code": null,
+      "policy_key": "raw_location_history",
+      "started_at": "2026-11-05T00:01:11.830928+00:00",
+      "completed_at": "2026-11-05T00:01:11.830928+00:00"
+    },
+    {
+      "status": "completed",
+      "dry_run": true,
+      "error_code": null,
+      "policy_key": "rate_limit_buckets",
+      "started_at": "2026-11-05T00:01:11.830928+00:00",
+      "completed_at": "2026-11-05T00:01:11.830928+00:00"
+    },
+    {
+      "status": "completed",
+      "dry_run": true,
+      "error_code": null,
+      "policy_key": "guardian_relationships",
+      "started_at": "2026-11-05T00:01:11.830928+00:00",
+      "completed_at": "2026-11-05T00:01:11.830928+00:00"
+    },
+    {
+      "status": "completed",
+      "dry_run": true,
+      "error_code": null,
+      "policy_key": "bus_run_dispatches",
+      "started_at": "2026-11-05T00:01:11.830928+00:00",
+      "completed_at": "2026-11-05T00:01:11.830928+00:00"
+    },
+    {
+      "status": "completed",
+      "dry_run": true,
+      "error_code": null,
+      "policy_key": "driver_records",
+      "started_at": "2026-11-05T00:01:11.830928+00:00",
+      "completed_at": "2026-11-05T00:01:11.830928+00:00"
+    },
+    {
+      "status": "completed",
+      "dry_run": true,
+      "error_code": null,
+      "policy_key": "audit_records",
+      "started_at": "2026-11-05T00:01:11.830928+00:00",
+      "completed_at": "2026-11-05T00:01:11.830928+00:00"
+    },
+    {
+      "status": "completed",
+      "dry_run": true,
+      "error_code": null,
+      "policy_key": "invitations",
+      "started_at": "2026-11-05T00:01:11.830928+00:00",
+      "completed_at": "2026-11-05T00:01:11.830928+00:00"
+    },
+    {
+      "status": "completed",
+      "dry_run": true,
+      "error_code": null,
+      "policy_key": "notifications",
+      "started_at": "2026-11-05T00:01:11.830928+00:00",
+      "completed_at": "2026-11-05T00:01:11.830928+00:00"
+    },
+    {
+      "status": "completed",
+      "dry_run": true,
+      "error_code": null,
+      "policy_key": "student_records",
+      "started_at": "2026-11-05T00:01:11.830928+00:00",
+      "completed_at": "2026-11-05T00:01:11.830928+00:00"
+    },
+    {
+      "status": "completed",
+      "dry_run": true,
+      "error_code": null,
+      "policy_key": "bus_tracking_sessions",
+      "started_at": "2026-11-05T00:01:11.830928+00:00",
+      "completed_at": "2026-11-05T00:01:11.830928+00:00"
+    },
+    {
+      "status": "completed",
+      "dry_run": true,
+      "error_code": null,
+      "policy_key": "trip_records",
+      "started_at": "2026-11-05T00:01:11.830928+00:00",
+      "completed_at": "2026-11-05T00:01:11.830928+00:00"
+    },
+    {
+      "status": "completed",
+      "dry_run": true,
+      "error_code": null,
+      "policy_key": "user_sessions",
+      "started_at": "2026-11-05T00:01:11.830928+00:00",
+      "completed_at": "2026-11-05T00:01:11.830928+00:00"
+    }
+  ],
+  "observed_at": "2026-11-05T15:47:41.520698+00:00",
+  "hold_columns": null,
+  "project_ref": "ckrkfylsyihwouvesypm",
+  "primary_region": "ca-central-1",
+  "verification_mode": "read-only catalog and aggregate run history; transaction rolled back",
+  "function_observations": [
+    {
+      "schema": "public",
+      "name": "apply_notification_retention",
+      "normalized_md5": "42e79ab63ad88f51d1f995cc1300fe55",
+      "references_legal_hold": false
+    },
+    {
+      "schema": "public",
+      "name": "run_all_retention_deletions",
+      "normalized_md5": "e26a4ace8e91669ea0fc0fd86c6f7c9e",
+      "references_legal_hold": false
+    },
+    {
+      "schema": "safebus_private",
+      "name": "run_retention_deletion",
+      "normalized_md5": "0bd79a388362468846db861d3bf86e92",
+      "references_legal_hold": false
+    }
+  ],
+  "scope_limit": "No customer rows read, no function executed, no database changes. Missing hold references are an execution gap, not proof of all possible preservation mechanisms."
+}
