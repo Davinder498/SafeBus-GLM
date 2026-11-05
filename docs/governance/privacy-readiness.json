@@ -40,6 +40,7 @@
     "netlifyHostingAndFunctions": null,
     "geoapifyMaps": null,
     "emailDelivery": null,
+    "businessMailbox": null,
     "errorMonitoring": null,
     "firebaseCloudMessaging": null,
     "stripeBilling": null
@@ -64,6 +65,6 @@
     "securityLead": null,
     "privacyLead": null
   },
-  "candidateEvidenceDigest": "5558ab9415d9067e621175305bb53b58e4951646031c556f31cefffcb324ee53",
-  "candidateEvidenceBasis": "local-legal-privacy-worktree; regenerate in the exact release checkout before approval"
+  "candidateEvidenceDigest": "9f9dd62da8ec1656060424468534636eb9491341fb127eea1e77974f281d3e2c",
+  "candidateEvidenceBasis": "codex/privacy-operations-evidence-20261105 source snapshot; candidate only, regenerate for the exact release before approval"
 }

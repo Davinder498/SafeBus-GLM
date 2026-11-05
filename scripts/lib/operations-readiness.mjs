@@ -9,6 +9,17 @@ export const DEFAULT_OPERATIONS_READINESS_PATH = 'docs/governance/operations-rea
 const EVIDENCE_DIRECTORIES = ['apps/web/netlify/functions', 'apps/web/src/services'];
 
 const EVIDENCE_FILES = [
+  'apps/web/src/__tests__/safebus-retention-scheduled.test.mjs',
+  'docs/operations/operating-observation-2026-11-05.json',
+  'docs/operations/support-incident-runbook.md',
+  'docs/operations/managed-onboarding.md',
+  'docs/operations/privacy-operations-evidence-2026-11-05.md',
+  'docs/governance/phase-3/supplier-review-2026-11-05.md',
+  'docs/governance/phase-3/retention-schedule.md',
+  'docs/governance/phase-3/retention-observation-2026-11-05.json',
+  'scripts/lib/retention-verification.mjs',
+  'apps/web/src/__tests__/retention-scheduled.test.mjs',
+
   'docs/governance/commercial-readiness-requirements.md',
   'docs/qa/commercial-readiness-review-2026-10-15.md',
   'docs/qa/commercial-readiness-hosted-observation-2026-10-15.json',

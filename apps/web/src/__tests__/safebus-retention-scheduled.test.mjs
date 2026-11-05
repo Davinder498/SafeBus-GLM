@@ -1,4 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { RETENTION_POLICY_KEYS } from '../../../../scripts/lib/retention-verification.mjs';
+const policies = (dryRun = true) =>
+  RETENTION_POLICY_KEYS.map((policy_key) => ({
+    policy_key,
+    affected_rows: 0,
+    dry_run: dryRun,
+    status: 'completed',
+    error_code: null,
+  }));
 
 vi.mock('@supabase/supabase-js', () => ({ createClient: vi.fn() }));
 
@@ -19,9 +28,13 @@ describe('scheduled retention runner', () => {
   });
 
   it('defaults to a non-destructive dry run', async () => {
-    const rpc = vi.fn()
-      .mockResolvedValueOnce({ data: [{ policy_key: 'raw_location_history', affected_rows: 4, dry_run: true }], error: null })
-      .mockResolvedValueOnce({ data: [{ email_deleted: 1, inbox_deleted: 2, push_deleted: 3, devices_staled: 4 }], error: null });
+    const rpc = vi
+      .fn()
+      .mockResolvedValueOnce({ data: policies(), error: null })
+      .mockResolvedValueOnce({
+        data: [{ email_deleted: 1, inbox_deleted: 2, push_deleted: 3, devices_staled: 4 }],
+        error: null,
+      });
     createClient.mockReturnValue({ rpc });
     const { handler } = await import('../../netlify/functions/safebus-retention-scheduled.mjs');
 
@@ -33,11 +46,15 @@ describe('scheduled retention runner', () => {
     expect(JSON.parse(response.body)).toMatchObject({ dryRun: true });
   });
 
-  it('executes deletion only when explicitly enabled', async () => {
+  it('passes an explicitly configured execution request unchanged', async () => {
     process.env.SAFEBUS_RETENTION_EXECUTE = 'true';
-    const rpc = vi.fn()
-      .mockResolvedValueOnce({ data: [], error: null })
-      .mockResolvedValueOnce({ data: [{ email_deleted: 0, inbox_deleted: 0, push_deleted: 0, devices_staled: 0 }], error: null });
+    const rpc = vi
+      .fn()
+      .mockResolvedValueOnce({ data: policies(false), error: null })
+      .mockResolvedValueOnce({
+        data: [{ email_deleted: 0, inbox_deleted: 0, push_deleted: 0, devices_staled: 0 }],
+        error: null,
+      });
     createClient.mockReturnValue({ rpc });
     const { handler } = await import('../../netlify/functions/safebus-retention-scheduled.mjs');
 
@@ -57,13 +74,9 @@ describe('scheduled retention runner', () => {
 
   it('reports a failed policy as an unsuccessful scheduled run', async () => {
     const rpc = vi.fn().mockResolvedValue({
-      data: [{
-        policy_key: 'trip_records',
-        affected_rows: 0,
-        dry_run: true,
-        status: 'failed',
-        error_code: '23503',
-      }],
+      data: policies().map((row) =>
+        row.policy_key === 'trip_records' ? { ...row, status: 'failed', error_code: '23503' } : row,
+      ),
       error: null,
     });
     createClient.mockReturnValue({ rpc });

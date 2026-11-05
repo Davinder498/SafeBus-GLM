@@ -80,3 +80,12 @@ Public vendor documents reviewed today: [Supabase residency](https://supabase.co
 [Firebase privacy/security](https://firebase.google.com/support/privacy), and
 [Resend DPA](https://resend.com/legal/dpa). Public terms are review inputs; they
 do not establish acceptance by the actual SafeBus account or resolve every country.
+
+## Mailbox and agreement completion
+
+Zoho Mail handles info@safebus.kids business, support and privacy correspondence.
+Its public MX records route to Canadian Zoho mail hosts; that is not proof of
+all account storage/support locations or deletion windows. See the
+[2026-11-05 terms/data-flow review](../supplier-review-2026-11-05.md) for active
+provider mechanisms and specific account evidence still needed. Keep received
+mailbox copies separate from Resend sending/delivery records in disposal plans.

@@ -71,3 +71,12 @@ Publish a resolved supplier disclosure only after the owner and relevant custome
 privacy decisions pass. The standard notification setup has owner approval (2026-10-24); recipient
 consent, server scope, device permission and actual supplier acceptance remain
 separate. New tools still require review; this register does not provision them.
+
+## Account and terms review — 2026-11-05
+
+See the [supplier review](supplier-review-2026-11-05.md) for incorporation mechanisms,
+actual observations, provider expiry distinctions and the precise remaining
+account evidence. Zoho Mail is an enabled business/support/privacy mailbox supplier;
+Canadian MX routing was observed, while full account residency and DPA evidence
+remain to confirm. A separately countersigned agreement is not presumed necessary
+for every vendor whose DPA already forms part of its service terms.

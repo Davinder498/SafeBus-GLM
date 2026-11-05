@@ -61,6 +61,6 @@
     },
     "backupRestore": null
   },
-  "candidateEvidenceDigest": "4f77163a9487fc782b4fa82e3f52cf67974169c6eea40dc9f6cb8f30e2f6a6bc",
-  "candidateEvidenceBasis": "local-legal-privacy-worktree; regenerate in the exact release checkout before approval"
+  "candidateEvidenceDigest": "6b50a3641b534cdf20f6fa97db56d9b2816be1dc1ddbbd72cc98d26615080b2a",
+  "candidateEvidenceBasis": "codex/privacy-operations-evidence-20261105 source snapshot; candidate only, regenerate for the exact release before approval"
 }

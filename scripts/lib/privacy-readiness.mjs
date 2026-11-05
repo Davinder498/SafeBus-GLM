@@ -9,6 +9,14 @@ export const DEFAULT_PRIVACY_READINESS_PATH = 'docs/governance/privacy-readiness
 const EVIDENCE_DIRECTORIES = ['docs/governance/phase-3'];
 
 const EVIDENCE_FILES = [
+  'apps/web/src/__tests__/safebus-retention-scheduled.test.mjs',
+  'docs/operations/operating-observation-2026-11-05.json',
+  'docs/operations/support-incident-runbook.md',
+  'docs/operations/managed-onboarding.md',
+  'docs/operations/privacy-operations-evidence-2026-11-05.md',
+  'scripts/lib/retention-verification.mjs',
+  'apps/web/src/__tests__/retention-scheduled.test.mjs',
+
   'docs/governance/commercial-readiness-requirements.md',
   'docs/qa/commercial-readiness-review-2026-10-15.md',
   'docs/qa/commercial-readiness-hosted-observation-2026-10-15.json',
@@ -94,6 +102,7 @@ const REQUIRED_SUBPROCESSORS = [
   'netlifyHostingAndFunctions',
   'geoapifyMaps',
   'emailDelivery',
+  'businessMailbox',
   'errorMonitoring',
   'firebaseCloudMessaging',
   'stripeBilling',
