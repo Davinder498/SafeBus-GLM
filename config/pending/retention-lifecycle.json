@@ -1,7 +1,7 @@
 {
   "projectId": "ckrkfylsyihwouvesypm",
   "migration": "supabase/migrations/pending/20261105172229_retention_lifecycle.sql",
-  "migrationSha256": "8a6f1ad64ad65fd3be776c04dc6d6909702512ddfe3f655d953cf448c9073e38",
+  "migrationSha256": "feab9b90513fab8c8ba5c8f80ea85c2e88e83c4a81743025c439f1cf7f92ad4d",
   "rehearseRestore": true,
   "functions": [
     {
@@ -97,7 +97,7 @@
         "service_role=X/postgres"
       ],
       "after": {
-        "md5": "db71bf25771bf56e6161715d73619e51"
+        "md5": "5740d1de8321cb7fb23e249d5c202d8b"
       }
     },
     {
@@ -111,7 +111,7 @@
         "service_role=X/postgres"
       ],
       "after": {
-        "md5": "1d3009200f8fb1100e95ebafc84c8dee"
+        "md5": "6fc64a7e4098fb1cf63ac67f5960a99b"
       }
     }
   ],
@@ -380,17 +380,63 @@
         ],
         "policies": 0
       }
+    },
+    {
+      "name": "safebus_private.retention_lifecycle_totals",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": [
+          "postgres=arwdDxtm/postgres"
+        ],
+        "columns": [
+          {
+            "name": "window_start",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "completed_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "run_count",
+            "type": "bigint",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "counts",
+            "type": "jsonb",
+            "default": null,
+            "required": true
+          }
+        ],
+        "constraints": [
+          "CHECK ((jsonb_typeof(counts) = 'object'::text))",
+          "PRIMARY KEY (window_start)",
+          "CHECK ((run_count > 0))"
+        ],
+        "policies": 0
+      }
     }
   ],
   "newTables": [
     "safebus_private.retention_cases",
     "safebus_private.retention_archive_chunks",
-    "safebus_private.retention_archive_coverage"
+    "safebus_private.retention_archive_coverage",
+    "safebus_private.retention_lifecycle_totals"
   ],
   "mustBeEmptyBeforeRestore": [
     "safebus_private.retention_cases",
     "safebus_private.retention_archive_chunks",
-    "safebus_private.retention_archive_coverage"
+    "safebus_private.retention_archive_coverage",
+    "safebus_private.retention_lifecycle_totals"
   ],
   "columns": [
     {

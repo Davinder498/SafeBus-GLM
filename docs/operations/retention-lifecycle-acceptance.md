@@ -112,3 +112,11 @@ archives available, including evidence archived under an earlier case.
 Trip, dispatch, credential/session, student/account, supplier and backup disposal
 outside the scoped source events is not silently activated by this migration.
 The full launch/legal/operating acceptance remains a separate decision.
+
+Each committed execution updates an hourly database aggregate in the same
+transaction as its deletes. `retention_archive_work('status')` is service-only
+and exposes the latest aggregate for operations, without source IDs or payloads.
+Lost HTTP responses cannot erase completion evidence; retries add zero for rows
+already removed. Dry-runs do not write these totals. Aggregate windows expire
+after 395 days. These totals also prevent a schema-only rollback from pretending
+to undo an execution that already removed data.

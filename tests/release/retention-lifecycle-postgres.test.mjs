@@ -376,3 +376,35 @@ test('overlapping preservation inherits available archives; release cannot delet
     chunk.id,
   );
 });
+
+test('committed hourly totals survive lost responses and do not grow on dry-runs', async (t) => {
+  const db = await fixture();
+  t.after(() => db.close());
+  await batch(db);
+  assert.equal(
+    (await db.query('select count(*)::int n from safebus_private.retention_lifecycle_totals'))
+      .rows[0].n,
+    0,
+  );
+  await db.exec(
+    "update public.retention_execution_control set destructive_enabled=true,approved_at=now(),approval_reference='fixture'",
+  );
+  await db.exec(
+    "insert into public.push_notification_outbox(status,created_at,cancelled_at) values('cancelled',now()-interval '120 days',now()-interval '91 days')",
+  );
+  await batch(db, false);
+  await batch(db, false);
+  const status = (await db.query("select public.retention_archive_work('status') as v")).rows[0].v;
+  assert.equal(status.runCount, 2);
+  assert.equal(status.counts.push, 1);
+  assert.equal(
+    (await db.query('select count(*)::int n from safebus_private.retention_lifecycle_totals'))
+      .rows[0].n,
+    1,
+  );
+  await batch(db);
+  assert.equal(
+    (await db.query("select public.retention_archive_work('status') as v")).rows[0].v.runCount,
+    2,
+  );
+});

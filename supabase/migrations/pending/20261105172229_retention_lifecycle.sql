@@ -58,6 +58,16 @@ CREATE TABLE safebus_private.retention_archive_coverage (
 ALTER TABLE safebus_private.retention_archive_coverage ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON safebus_private.retention_archive_coverage FROM PUBLIC,anon,authenticated,service_role;
 
+-- Hourly aggregate evidence survives lost HTTP responses; no row IDs or payloads.
+CREATE TABLE safebus_private.retention_lifecycle_totals (
+  window_start timestamptz PRIMARY KEY,
+  completed_at timestamptz NOT NULL,
+  run_count bigint NOT NULL CHECK(run_count>0),
+  counts jsonb NOT NULL CHECK(jsonb_typeof(counts)='object')
+);
+ALTER TABLE safebus_private.retention_lifecycle_totals ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON safebus_private.retention_lifecycle_totals FROM PUBLIC,anon,authenticated,service_role;
+
 -- Announcement copies are not evidence of resolution. Existing records remain unresolved.
 ALTER TABLE safebus_private.authority_announcements ADD COLUMN resolved_at timestamptz;
 
@@ -305,6 +315,14 @@ BEGIN
     IF NOT p_dry_run THEN EXECUTE format('DELETE FROM %s WHERE id=ANY($1)',v_table) USING v_ids; GET DIAGNOSTICS v_count=ROW_COUNT; END IF;
     v_result:=v_result||jsonb_build_object(v_class,v_count);
   END LOOP;
+  IF NOT p_dry_run THEN
+    INSERT INTO safebus_private.retention_lifecycle_totals AS totals(window_start,completed_at,run_count,counts)
+      VALUES(date_trunc('hour',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC',now(),1,v_result)
+    ON CONFLICT(window_start) DO UPDATE SET completed_at=excluded.completed_at,run_count=totals.run_count+1,
+      counts=(SELECT jsonb_object_agg(key,(value::bigint+coalesce((totals.counts->>key)::bigint,0)))
+        FROM jsonb_each_text(excluded.counts));
+    DELETE FROM safebus_private.retention_lifecycle_totals WHERE window_start<now()-interval '395 days';
+  END IF;
   RETURN jsonb_build_object('version',1,'dryRun',p_dry_run,'limit',p_limit,'counts',v_result);
 END $$;
 REVOKE ALL ON FUNCTION public.run_retention_lifecycle(boolean,integer) FROM PUBLIC,anon,authenticated;
@@ -317,6 +335,11 @@ DECLARE v_case safebus_private.retention_cases%ROWTYPE; v_chunk safebus_private.
 BEGIN
   IF auth.role() IS DISTINCT FROM 'service_role' THEN RAISE EXCEPTION 'Service only' USING ERRCODE='42501'; END IF;
   PERFORM pg_advisory_xact_lock(864203711);
+  IF p_action='status' THEN
+    SELECT jsonb_build_object('windowStart',window_start,'completedAt',completed_at,'runCount',run_count,'counts',counts)
+      INTO v_payload FROM safebus_private.retention_lifecycle_totals ORDER BY window_start DESC LIMIT 1;
+    RETURN v_payload;
+  END IF;
   IF p_action='next' THEN
     -- Retry a pending chunk first. A released case is cleaned instead of archived.
     SELECT a.* INTO v_chunk FROM safebus_private.retention_archive_chunks a JOIN safebus_private.retention_cases h ON h.id=a.case_id
