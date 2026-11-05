@@ -19,11 +19,12 @@ catalog comparisons, all explicit service-role denials, reserved-default boundar
 checks and extension API isolation checks. No SQL repair or permission expansion
 is included in this change.
 
-During this task the connected browser was unavailable; the alternate browser
-reached GitHub signed out. Its public page confirms the most recent audit remains
-41962958840 (failed before PR #379). The GitHub connector cannot dispatch a new
-workflow. A current passing live audit is not claimed; sign-in/dispatch is the
-remaining access dependency, not an authorization test result.
+The connected browser was initially unavailable and the alternate browser was
+signed out. Secure sign-in subsequently succeeded and a fresh run was dispatched
+on current main f8f6bc9: https://github.com/Davinder498/SafeBus-GLM/actions/runs/42000056207.
+It is waiting for the existing protected production environment review. The
+workflow is read-only despite GitHub's generic deployment wording. Preserve the
+review gate; a current passing live audit is not claimed until this run completes.
 
 ## Monitoring before and after
 
