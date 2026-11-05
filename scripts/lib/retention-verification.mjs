@@ -126,6 +126,8 @@ export async function verifyCompleteDisposalDryRun(client) {
       'push',
       'inbox',
       'archive_manifests',
+      'audience_failures',
+      'push_devices',
       'cases',
       'invitations',
       'guardian_relationships',

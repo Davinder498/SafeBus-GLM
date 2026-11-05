@@ -29,7 +29,9 @@ export async function fixture(install = true) {
  CREATE TABLE public.user_sessions(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),tenant_id uuid,user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,revoked_at timestamptz,last_active_at timestamptz);
  ALTER TABLE public.user_notification_settings ADD CONSTRAINT pref_profile_fk FOREIGN KEY(profile_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
  ALTER TABLE public.user_notification_category_preferences ADD CONSTRAINT category_profile_fk FOREIGN KEY(profile_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
- CREATE TABLE public.android_push_devices(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),profile_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE);
+ CREATE TABLE public.android_push_devices(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),tenant_id uuid,profile_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,status text,updated_at timestamptz DEFAULT now(),last_seen_at timestamptz DEFAULT now());
+ ALTER TABLE public.push_notification_outbox ADD COLUMN device_id uuid REFERENCES public.android_push_devices(id) ON DELETE CASCADE;
+ CREATE TABLE safebus_private.notification_audience_queue(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),tenant_id uuid,driver_trip_id uuid REFERENCES public.driver_trips(id) ON DELETE CASCADE,failed_at timestamptz,occurred_at timestamptz DEFAULT now());
  CREATE TABLE public.driver_trip_current_locations(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),driver_trip_id uuid REFERENCES public.driver_trips(id) ON DELETE CASCADE);
  CREATE TABLE public.pre_trip_confirmations(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),driver_trip_id uuid REFERENCES public.driver_trips(id) ON DELETE CASCADE);
  `);

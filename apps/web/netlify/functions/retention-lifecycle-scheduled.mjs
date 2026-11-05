@@ -13,6 +13,8 @@ export const RETENTION_CLASSES = [
   'push',
   'inbox',
   'archive_manifests',
+  'audience_failures',
+  'push_devices',
   'cases',
   'invitations',
   'guardian_relationships',

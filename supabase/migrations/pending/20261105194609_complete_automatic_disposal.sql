@@ -54,7 +54,9 @@ LANGUAGE sql STABLE SET search_path=pg_catalog AS $$
  WHEN 'announcements' THEN 'safebus_private.authority_announcements'
  WHEN 'email' THEN 'public.guardian_notification_outbox'
  WHEN 'push' THEN 'public.push_notification_outbox'
- WHEN 'inbox' THEN 'public.user_notifications' END::regclass
+ WHEN 'inbox' THEN 'public.user_notifications'
+ WHEN 'audience_failures' THEN 'safebus_private.notification_audience_queue'
+ WHEN 'push_devices' THEN 'public.android_push_devices' END::regclass
 $$;
 REVOKE ALL ON FUNCTION safebus_private.disposal_relation(text) FROM PUBLIC,anon,authenticated,service_role;
 
@@ -97,7 +99,7 @@ BEGIN
  IF p_key='guardian_relationships' AND safebus_private.disposal_held('guardian_records',(p_row->>'guardian_id')::uuid) THEN RETURN false; END IF;
  IF v_tenant IS NULL AND v_trip IS NOT NULL THEN SELECT tenant_id INTO v_tenant FROM public.driver_trips WHERE id=v_trip; END IF;
  v_floor:=greatest((p_row->>'created_at')::timestamptz,(p_row->>'updated_at')::timestamptz);
- v_days:=CASE WHEN p_key IN ('invitations','user_sessions','email','push','inbox') THEN 90
+ v_days:=CASE WHEN p_key IN ('invitations','user_sessions','email','push','inbox','audience_failures','push_devices') THEN 90
  WHEN p_key IN ('bus_tracking_sessions','gps') THEN 30 WHEN p_key='rate_limit_buckets' THEN 2
  WHEN p_key='audit_records' THEN 730 ELSE 395 END;
  CASE p_key
@@ -122,7 +124,7 @@ BEGIN
  WHEN 'trip_records' THEN
   IF v_status NOT IN ('completed','cancelled') OR p_row->>'ended_at' IS NULL OR NOT safebus_private.disposal_children_clear(v_table,v_id,ARRAY['public.driver_trip_current_locations','public.pre_trip_confirmations']) THEN RETURN false; END IF;
   v_floor:=greatest(v_floor,(p_row->>'ended_at')::timestamptz);
- WHEN 'accounts' THEN RETURN v_status='disabled' AND p_row->>'role' IN ('driver','guardian') AND safebus_private.disposal_children_clear('public.profiles',v_id,ARRAY['public.android_push_devices','public.user_notification_settings','public.user_notification_category_preferences']) AND EXISTS(SELECT 1 FROM safebus_private.disposal_accounts WHERE profile_id=v_id AND state='deleting');
+ WHEN 'accounts' THEN RETURN v_status='disabled' AND p_row->>'role' IN ('driver','guardian') AND safebus_private.disposal_children_clear('public.profiles',v_id,ARRAY['public.user_notification_settings','public.user_notification_category_preferences']) AND EXISTS(SELECT 1 FROM safebus_private.disposal_accounts WHERE profile_id=v_id AND state='deleting');
  WHEN 'audit_records' THEN
   IF safebus_private.disposal_held('accounts',(p_row->>'actor_profile_id')::uuid) THEN RETURN false; END IF;
   v_floor:=(p_row->>'created_at')::timestamptz;
@@ -140,6 +142,14 @@ BEGIN
   IF v_status NOT IN ('delivered','sent','failed','cancelled','dead_lettered') THEN RETURN false; END IF;
   v_floor:=greatest(v_floor,(p_row->>'delivered_at')::timestamptz,(p_row->>'failed_at')::timestamptz,(p_row->>'cancelled_at')::timestamptz,(p_row->>'dead_lettered_at')::timestamptz);
  WHEN 'inbox' THEN NULL;
+ WHEN 'audience_failures' THEN
+  IF p_row->>'failed_at' IS NULL THEN RETURN false; END IF;
+  v_floor:=greatest((p_row->>'failed_at')::timestamptz,(p_row->>'occurred_at')::timestamptz);
+ WHEN 'push_devices' THEN
+  IF v_status NOT IN ('active','revoked','invalid','stale') OR safebus_private.disposal_held('accounts',(p_row->>'profile_id')::uuid)
+   OR NOT safebus_private.disposal_children_clear(v_table,v_id) THEN RETURN false; END IF;
+  v_floor:=greatest(v_floor,(p_row->>'last_seen_at')::timestamptz,(p_row->>'last_registered_at')::timestamptz,
+   (p_row->>'revoked_at')::timestamptz,(p_row->>'invalidated_at')::timestamptz);
  ELSE RETURN false;
  END CASE;
  SELECT greatest(v_days,minimum_days) INTO v_days FROM (SELECT coalesce((SELECT minimum_days FROM safebus_private.disposal_extensions WHERE tenant_id=v_tenant AND policy_key=p_key),v_days) minimum_days) x;
@@ -159,7 +169,7 @@ END $$;
 REVOKE ALL ON FUNCTION safebus_private.disposal_guard() FROM PUBLIC,anon,authenticated,service_role;
 
 DO $$ DECLARE k text; BEGIN
- FOREACH k IN ARRAY ARRAY['invitations','student_records','guardian_relationships','driver_records','guardian_records','bus_tracking_sessions','bus_run_dispatches','trip_records','audit_records','rate_limit_buckets','user_sessions','gps','student_events','exceptions','statuses','announcements','email','push','inbox'] LOOP
+ FOREACH k IN ARRAY ARRAY['invitations','student_records','guardian_relationships','driver_records','guardian_records','bus_tracking_sessions','bus_run_dispatches','trip_records','audit_records','rate_limit_buckets','user_sessions','gps','student_events','exceptions','statuses','announcements','email','push','inbox','push_devices'] LOOP
   EXECUTE format('CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR UPDATE OR DELETE ON %s FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard(%L)',safebus_private.disposal_relation(k),k);
  END LOOP;
 END $$;
@@ -208,7 +218,7 @@ BEGIN
   END IF;
   v_id:=v_hold.id;
  ELSE
-  IF safebus_private.disposal_relation(v_key) IS NULL OR v_key IN ('audit_records','rate_limit_buckets','user_sessions') THEN RAISE EXCEPTION 'Policy not available to authority' USING ERRCODE='42501'; END IF;
+  IF safebus_private.disposal_relation(v_key) IS NULL OR v_key IN ('audit_records','rate_limit_buckets','user_sessions','push_devices','audience_failures') THEN RAISE EXCEPTION 'Policy not available to authority' USING ERRCODE='42501'; END IF;
   IF p_action='candidates' THEN
    EXECUTE format('SELECT coalesce(jsonb_agg(r),''[]'') FROM (SELECT s.id, coalesce(to_jsonb(s)->>''full_name'',nullif(concat_ws('' '',to_jsonb(s)->>''first_name'',to_jsonb(s)->>''last_name''),''''),to_jsonb(s)->>''title'',to_jsonb(s)->>''trip_name_snapshot'',to_jsonb(s)->>''status'',''Record'') AS label, to_jsonb(s)->>''status'' AS status FROM %s s WHERE s.tenant_id=$1 AND ($2::uuid IS NULL OR s.id>$2) ORDER BY s.id LIMIT 50) r',safebus_private.disposal_relation(v_key)) INTO v_result USING v_tenant,(p_data->>'afterId')::uuid;
    RETURN v_result;
@@ -294,7 +304,7 @@ BEGIN
    AND p.tenant_id=q.tenant_id AND p.status='disabled' AND p.role IN ('driver','guardian')
    AND NOT safebus_private.disposal_held('accounts',p.id)
    AND NOT EXISTS(SELECT 1 FROM storage.objects o WHERE o.owner_id=p.id::text OR o.owner=p.id)
-   AND safebus_private.disposal_children_clear('public.profiles',p.id,ARRAY['public.android_push_devices','public.user_notification_settings','public.user_notification_category_preferences'])
+   AND safebus_private.disposal_children_clear('public.profiles',p.id,ARRAY['public.user_notification_settings','public.user_notification_category_preferences'])
   ORDER BY q.created_at,q.profile_id LIMIT 1 FOR UPDATE OF p,q;
   IF v_id IS NULL THEN RETURN NULL; END IF;
   UPDATE safebus_private.disposal_accounts SET state='deleting',lease_until=now()+interval '2 minutes' WHERE profile_id=v_id;
@@ -324,7 +334,8 @@ BEGIN
   IF NOT p_dry_run AND NOT EXISTS(SELECT 1 FROM public.retention_execution_control WHERE id=1 AND destructive_enabled
     AND approval_reference IS NOT NULL AND approved_at IS NOT NULL) THEN
     RAISE EXCEPTION 'Destructive retention disabled' USING ERRCODE='55006'; END IF;
-  FOREACH v_class IN ARRAY ARRAY['gps','student_events','exceptions','statuses','announcements','email','push','inbox','archive_manifests','cases','invitations','guardian_relationships','student_records','bus_tracking_sessions','bus_run_dispatches','trip_records','driver_records','guardian_records','audit_records','rate_limit_buckets','user_sessions'] LOOP
+  IF NOT p_dry_run THEN PERFORM set_config('safebus.retention_run','on',true); END IF;
+  FOREACH v_class IN ARRAY ARRAY['gps','student_events','exceptions','statuses','announcements','email','push','inbox','archive_manifests','cases','audience_failures','push_devices','invitations','guardian_relationships','student_records','bus_tracking_sessions','bus_run_dispatches','trip_records','driver_records','guardian_records','audit_records','rate_limit_buckets','user_sessions'] LOOP
     v_order:='s.id';
     CASE v_class
     WHEN 'gps' THEN
@@ -370,6 +381,12 @@ BEGIN
        WHEN 'trip_records' THEN $q$s.ended_at<now()-interval '395 days'$q$
        ELSE $q$s.updated_at<now()-interval '90 days'$q$ END;
       IF v_class='audit_records' THEN v_where:=v_where||$q$ AND (s.actor_profile_id IS NOT NULL OR s.actor_email IS NOT NULL OR s.target_id IS NOT NULL OR s.target_label IS NOT NULL OR s.detail<>'{}'::jsonb OR s.ip_address IS NOT NULL OR s.tenant_id IS NOT NULL OR s.actor_role IS NOT NULL OR s.target_type IS NOT NULL)$q$; END IF;
+    WHEN 'audience_failures' THEN
+      v_table:='safebus_private.notification_audience_queue';
+      v_where:=$q$s.failed_at<now()-interval '90 days'$q$;
+    WHEN 'push_devices' THEN
+      v_table:='public.android_push_devices';
+      v_where:=$q$s.updated_at<now()-interval '90 days' AND s.last_seen_at<now()-interval '90 days'$q$;
     WHEN 'inbox' THEN
       v_table:='public.user_notifications';
       v_where:=$q$s.created_at<now()-interval '90 days'
@@ -433,7 +450,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION safebus_private.disposal_setup_lock() FROM PUBLIC,anon,authenticated,service_role;
 DO $$ DECLARE t text; BEGIN
- FOREACH t IN ARRAY ARRAY['public.student_route_assignments','public.student_bus_assignments','public.student_qr_credentials','public.driver_route_assignments','public.driver_tracking_devices'] LOOP
+ FOREACH t IN ARRAY ARRAY['public.student_route_assignments','public.student_bus_assignments','public.student_qr_credentials','public.driver_route_assignments','public.driver_tracking_devices','safebus_private.notification_audience_queue'] LOOP
   EXECUTE format('CREATE TRIGGER disposal_setup_lock BEFORE INSERT OR UPDATE ON %s FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_setup_lock()',t);
  END LOOP;
 END $$;

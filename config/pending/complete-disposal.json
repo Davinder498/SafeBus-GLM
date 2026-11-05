@@ -1,7 +1,7 @@
 {
   "projectId": "ckrkfylsyihwouvesypm",
   "migration": "supabase/migrations/pending/20261105194609_complete_automatic_disposal.sql",
-  "migrationSha256": "8f241ed98a6a4f7342d9997b4c61b5733a615307106ba96ef9cec868ec33ff5d",
+  "migrationSha256": "2e2deb9a5d17dfb2f7d4050a0491c035bf5abd2d99976a89468dc6ef1c58df13",
   "rehearseRestore": true,
   "functions": [
     {
@@ -10,7 +10,7 @@
         "md5": null
       },
       "after": {
-        "md5": "7423795d87fcbc0dfcfbee464b3c422f"
+        "md5": "b7308d487b0117774a0cc8306873df79"
       },
       "owner": "postgres",
       "acl": [
@@ -24,7 +24,7 @@
         "md5": null
       },
       "after": {
-        "md5": "07c317bb314928c47c2b911f360841ec"
+        "md5": "40783fc402d6eba281211effdbe66bab"
       },
       "owner": "postgres",
       "acl": [
@@ -52,7 +52,7 @@
         "md5": "5740d1de8321cb7fb23e249d5c202d8b"
       },
       "after": {
-        "md5": "006e5941968923aae3dce5c686f8c84f"
+        "md5": "58f9951d70f648cb808d12b8e80fabb5"
       },
       "owner": "postgres",
       "acl": [
@@ -79,7 +79,7 @@
         "md5": null
       },
       "after": {
-        "md5": "4329e79e7c1c352fef64cbfbee4cbee3"
+        "md5": "3c754bcaaffe7699265e3ef39e6f14cd"
       },
       "owner": "postgres",
       "acl": [
@@ -131,7 +131,7 @@
         "md5": null
       },
       "after": {
-        "md5": "90be02963da0b722a4e3fccffa6ad99a"
+        "md5": "6405433dfb53a2d48acc1f68632d331d"
       },
       "owner": "postgres",
       "acl": [
@@ -409,6 +409,12 @@
   "defaults": [],
   "repairs": [],
   "triggers": [
+    {
+      "table": "public.android_push_devices",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.android_push_devices FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('push_devices')"
+    },
     {
       "table": "public.android_push_devices",
       "name": "disposal_account_guard",
@@ -732,6 +738,12 @@
       "name": "disposal_account_guard",
       "before": null,
       "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON safebus_private.billing_mutation_requests FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('actor_profile_id')"
+    },
+    {
+      "table": "safebus_private.notification_audience_queue",
+      "name": "disposal_setup_lock",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_setup_lock BEFORE INSERT OR UPDATE ON safebus_private.notification_audience_queue FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_setup_lock()"
     },
     {
       "table": "safebus_private.tenant_subscription_exemptions",

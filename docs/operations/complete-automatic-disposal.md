@@ -19,6 +19,7 @@ or activate either migration by itself.
 | Dispatch and trip parents                                                              | Remove terminal records after 395 days; remove dispatches before their trip parent. Trips wait for live/late/held children to clear. Trip-only current position and pre-trip setup follow the expired trip.                                                                                                                                               |
 | Audit events                                                                           | After 730 days, remove actor/tenant/network, target and detail fields; retain action, outcome and time. This is minimization, not proof that remaining data is anonymous. A breach case is a different record.                                                                                                                                            |
 | Rate counters and session mirrors                                                      | Remove counters after two days; remove mirrors after 90 days from last activity/revocation only once the matching Auth session is absent.                                                                                                                                                                                                                 |
+| Failed notification fan-out and stale push registrations                               | Remove terminal fan-out failures after 90 days. Remove registrations unused for 90 days only after dependent push rows clear. Preserve pending work and account holds; no claim of provider-side FCM erasure.                                                                                                                                             |
 | Disposal evidence and released holds                                                   | Bounded cleanup after 395 days. Aggregate execution counts commit with their mutations; Auth removal has separately confirmed completion.                                                                                                                                                                                                                 |
 | Android encrypted GPS queue                                                            | Remove expired FIFO samples after 30 days from both recording and device receipt on queue access, up to 64 at a time. Version 1 rows retain their data during upgrade and get one shared conservative receipt timestamp at upgrade. A powered-off or unused device cannot be remotely erased. Signed upgrade/physical-device acceptance remains required. |
 
@@ -64,7 +65,7 @@ stages before attempting hosted UI acceptance.
 3. Repeat for `complete_disposal` on the same reviewed SHA. The manifest verifies
    installed function fingerprints, grants, private tables, triggers and indexes;
    it captures encrypted bounded recovery and rehearses restoration. The verify
-   step evaluates all 21 database classes with a literal dry-run inside a
+   step evaluates all 23 database classes with a literal dry-run inside a
    read-only transaction. After real disposal, schema rollback cannot restore
    removed data and refuses to discard retained evidence.
 4. Configure the private archive key and secure recovery custody described in

@@ -293,3 +293,35 @@ test('former authority directory expiry never disables an identity now assigned 
     0,
   );
 });
+
+test('terminal notification cleanup unblocks old trips while pending fan-out and delivery survive', async (t) => {
+  const db = await fixture();
+  t.after(() => db.close());
+  const pending = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+  await db.query(
+    "insert into public.driver_trips(id,tenant_id,started_at,ended_at,status,created_at,updated_at) select x,$1,now()-interval '501 days',now()-interval '500 days','completed',now()-interval '501 days',now()-interval '500 days' from unnest($2::uuid[]) x",
+    [tenant, [id, pending]],
+  );
+  await db.query(
+    "insert into safebus_private.notification_audience_queue(tenant_id,driver_trip_id,occurred_at,failed_at) values($1,$2,now()-interval '500 days',now()-interval '100 days'),($1,$3,now()-interval '500 days',null)",
+    [tenant, id, pending],
+  );
+  await db.query(
+    "insert into public.android_push_devices(id,tenant_id,status,updated_at,last_seen_at) values($1,$2,'stale',now()-interval '100 days',now()-interval '100 days'),($3,$2,'revoked',now()-interval '100 days',now()-interval '100 days')",
+    [id, tenant, pending],
+  );
+  await db.query(
+    "insert into public.push_notification_outbox(device_id,status,created_at) values($1,'pending',now()-interval '500 days')",
+    [pending],
+  );
+  await enable(db);
+  const r = await batch(db, false);
+  assert.equal(r.counts.audience_failures, 1);
+  assert.equal(r.counts.push_devices, 1);
+  assert.equal(r.counts.trip_records, 1);
+  assert.deepEqual((await db.query('select id from public.driver_trips')).rows, [{ id: pending }]);
+  assert.equal(
+    (await db.query('select count(*) n from public.push_notification_outbox')).rows[0].n,
+    1,
+  );
+});
