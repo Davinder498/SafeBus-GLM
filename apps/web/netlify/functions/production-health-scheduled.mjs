@@ -1,10 +1,12 @@
 import { runProductionHealth } from '../../../../scripts/lib/production-health.mjs';
 import { checkMonitorCadence } from '../../../../scripts/lib/monitor-cadence.mjs';
+import { sendMonitorAlerts } from '../../../../scripts/lib/monitor-alert-email.mjs';
 
 export async function runScheduledHealth({
   deploy,
   health = runProductionHealth,
   cadence = checkMonitorCadence,
+  notify = sendMonitorAlerts,
   log = console.log,
 } = {}) {
   // Netlify schedules published production deploys only. Keep manual preview runs inert.
@@ -12,10 +14,10 @@ export async function runScheduledHealth({
     throw new Error('MONITOR_DEPLOY_CONTEXT_MISSING');
   if (deploy.context !== 'production' || deploy.published !== true)
     return { result: 'skipped', reason: 'not_published_production' };
-  // Three public health requests plus one public GitHub request: at most 24s
-  // of network deadlines with the metadata check in parallel, below Netlify's 30s scheduled-function limit. No retries.
+  // 18s health budget; GitHub's 5s check runs in parallel. Failed checks send
+  // fixed operational emails in parallel with a further 5s deadline: 23s total.
   const observations = await Promise.allSettled([
-    health({ origin: 'https://safebus.kids', retries: 0, timeoutMs: 8_000 }),
+    health({ origin: 'https://safebus.kids', retries: 0, timeoutMs: 6_000 }),
     cadence(),
   ]);
   const codes = observations.map((observation, i) => {
@@ -47,7 +49,16 @@ export async function runScheduledHealth({
       checks: codes,
     }),
   );
-  if (failed) throw new Error('PRODUCTION_HEALTH_OBSERVATION_FAILED');
+  if (failed) {
+    try {
+      await notify({ checks: codes });
+      log(JSON.stringify({ event: 'production_health_alert', result: 'provider_accepted' }));
+    } catch {
+      log(JSON.stringify({ event: 'production_health_alert', result: 'failed', code: 'MONITOR_ALERT_DELIVERY_FAILED' }));
+    }
+    // Provider acceptance must never turn a failed health observation green.
+    throw new Error('PRODUCTION_HEALTH_OBSERVATION_FAILED');
+  }
   return { result: 'healthy' };
 }
 

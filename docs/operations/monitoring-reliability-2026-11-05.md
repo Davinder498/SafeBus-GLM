@@ -7,12 +7,15 @@ existing overview access, writes, RLS, session and MFA requirements. Guardians a
 drivers receive no new admin access; retired school-admin access stays denied.
 Notification events/channels, recipient choices and business mutations are unchanged.
 The monitoring code reads public health endpoints and public GitHub run metadata
-only. It never queries customer rows, sends messages or receives a privileged key.
+only. The owner subsequently selected info@safebus.kids for operational alerts.
+The follow-up implementation uses the existing server-side email provider key
+only to send fixed operational messages; it never queries customer rows or
+receives a database/service-role key.
 
 ## Authorization acceptance
 
 Reviewed main f8f6bc9 contains the OpenAPI-discovery correction from PR #379.
-A fresh full Authorization audit is required, using the existing protected
+The fresh full Authorization audit used the existing protected
 `authorization-audit.yml` workflow on main. Do not replay the earlier failed run:
 it uses the older contract. Preserve its production environment review, per-role
 catalog comparisons, all explicit service-role denials, reserved-default boundary
@@ -22,9 +25,9 @@ is included in this change.
 The connected browser was initially unavailable and the alternate browser was
 signed out. Secure sign-in subsequently succeeded and a fresh run was dispatched
 on current main f8f6bc9: https://github.com/Davinder498/SafeBus-GLM/actions/runs/42000056207.
-It is waiting for the existing protected production environment review. The
-workflow is read-only despite GitHub's generic deployment wording. Preserve the
-review gate; a current passing live audit is not claimed until this run completes.
+The protected review was approved and the full catalog and Data API authorization
+job completed successfully. PR #380 merged as 18e2f6d and was published by Netlify.
+Its CI/browser/Android/security checks passed. Preserve the production review gate.
 
 ## Monitoring before and after
 
@@ -42,7 +45,7 @@ After source implementation:
   production deploy, using the runtime `context.deploy` metadata rather than
   build-only environment variables. Manually invoked previews and old deploys skip; missing runtime metadata fails.
 - It checks the public landing/security headers, login shell and map configuration
-  with no retries and eight-second network deadlines, plus the most recent GitHub
+  with no retries and six-second network deadlines, plus the most recent GitHub
   scheduled main-branch health run. Calls use fixed destinations; redirects fail.
 - GitHub run metadata needs no token. Missing/malformed responses, rate limits,
   outages, future timestamps, failed/incomplete runs and a trigger older than
@@ -54,9 +57,10 @@ After source implementation:
   response body, map URL/key, credential, student or location is logged.
 - The function throws on failure so Netlify records an invocation failure; it
   does not silently return a successful HTTP response for a failed observation.
-  The health check has a 24-second network deadline budget; the five-second GitHub
-  request runs in parallel, below Netlify's
-  30-second scheduled limit. There is no provider retry fan-out in this function.
+  The health check has an 18-second network deadline budget; the five-second GitHub
+  request runs in parallel. Operational email requests add at most five seconds
+  in parallel, for a 23-second network deadline budget below the scheduled limit.
+  There are no application-level retries; the platform may retry failed invocations.
 
 This adds another scheduler and detects missing GitHub runs. It is not a guaranteed
 external dead-man service: a complete Netlify outage still relies on the GitHub
@@ -71,13 +75,52 @@ GitHub history may correctly make initial watchdog invocations fail until fresh
 scheduled runs succeed. Inspect the per-check result rather than interpreting
 cadence failure as proof that the application is down.
 
-Check GitHub Actions failure-notification delivery and choose/verify the Netlify
-failure-notification route with the actual responsible owner. This change sends
-no test alert or real recipient message and does not invent a support recipient.
-Alert delivery and response ownership remain unverified until recorded. Do not
-mark the operations-readiness record approved from local tests or a merged PR.
-If both-provider observation still has gaps, an independently operated heartbeat
-monitor may be needed; no new service or spending is provisioned here.
+Netlify inspection confirmed the published Scheduled badge, expected schedule and
+an automatic 09:26 UTC invocation on November 5. A bounded manual run at 09:33 UTC
+also passed public health and correctly failed with MONITOR_CADENCE_STALE. This is
+evidence that the runtime guard and stale-monitor detection work; it is not proof
+of consecutive timely scheduler runs. Netlify's inspected notification options
+covered deployment events, not established runtime-failure delivery.
+
+## Operational email follow-up
+
+The owner selected **info@safebus.kids**. The follow-up code sends fixed operational
+emails through the existing Resend configuration only after a published-production
+observation fails. Public-health and GitHub-cadence failures have separate subjects
+and keys, so a scheduler failure cannot suppress the public-health alert. The
+messages distinguish an unverifiable monitor from an application outage and link
+to the current logs. No customer rows, locations, provider bodies, keys or arbitrary
+exception strings enter the message or logs. No guardian/driver preferences or
+recipient lists are changed. Previews skip the entire check and send no email.
+
+Netlify masked metadata confirms SAFEBUS_EMAIL_PROVIDER_API_KEY includes Functions
+scope and a visible Production context; SAFEBUS_EMAIL_FROM has all scopes and a
+visible Production context. Values were not revealed. Reuse these settings. Do not reveal, copy or place these values in source/frontend code.
+The recipient and destination URLs are fixed in source; no request can choose an
+address. Missing configuration, timeout, provider rejection (including 409/429),
+malformed success or a response without a message ID records a fixed delivery
+failure. Neither successful nor failed email sending turns the observation green.
+
+Each check shares one stable payload and Resend idempotency key within a six-hour
+UTC window (00/06/12/18 UTC). Resend retains keys for 24 hours, so repeated checks,
+platform retries and cold starts in that window do not send a fresh email. A new
+window permits a reminder. This is per check/window rather than per incident:
+a second failure after recovery within the same window is also suppressed, and
+failures straddling a boundary can produce two close emails. No automatic recovery
+email or persistent incident-state store is introduced. A concurrent idempotency
+request may fail this invocation; the next scheduled invocation retries the same
+stable request. A provider outage can prevent alert delivery; a full Netlify outage
+still depends on the independent GitHub monitor and its notification settings.
+
+After this follow-up merges and deploys, inspect a real failing observation's
+production_health_alert record and provider delivery result for the fixed inbox.
+Provider acceptance is not proof of inbox receipt. Confirm delivery and responsible
+response ownership, then record consecutive automatic runs from both schedulers.
+Do not approve operational readiness from local tests, a merge, or a manual run.
+No new service or spending is provisioned. Rollback this follow-up by reverting its
+commit through a reviewed PR; the original non-email monitor remains available.
+
+Primary email reference: https://resend.com/docs/dashboard/emails/idempotency-keys
 
 ## UI corrections
 
@@ -111,3 +154,14 @@ browser run could not start because the official Chromium download was truncated
 CI browser results and deployed visual verification remain required. Local checks
 do not establish production cadence, notification delivery or a passing hosted
 authorization audit.
+
+The follow-up adds four alert regression tests to the normal pnpm test/CI command
+and includes both shared monitor helpers and alert tests in the operational
+evidence digest. No readiness approval record is changed.
+
+Follow-up validation: 1,488 tests passed (1,027 web, 24 mobile, 437 release),
+including 18 focused monitoring/readiness tests. Type checking, lint, root/web
+build, mobile build and Android sync passed. The local Netlify functions build
+succeeded, and the packaged function ZIP contains the alert helper and fixed
+recipient. No operational email was sent by these mocked local tests. Merge,
+production invocation and real provider/inbox evidence remain pending.

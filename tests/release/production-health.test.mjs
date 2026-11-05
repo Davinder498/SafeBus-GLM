@@ -130,7 +130,7 @@ test('scheduled production monitoring skips previews and checks health and caden
   const { runScheduledHealth } = await import('../../apps/web/netlify/functions/production-health-scheduled.mjs');
   let healthCalls = 0; let cadenceCalls = 0; const logs = [];
   const options = {
-    health: async (input) => { healthCalls++; assert.deepEqual(input, {origin:'https://safebus.kids',retries:0,timeoutMs:8000}); return {result:'healthy'}; },
+    health: async (input) => { healthCalls++; assert.deepEqual(input, {origin:'https://safebus.kids',retries:0,timeoutMs:6000}); return {result:'healthy'}; },
     cadence: async () => { cadenceCalls++; return {result:'healthy'}; },
     log: (value) => logs.push(JSON.parse(value)),
   };
@@ -145,14 +145,17 @@ test('scheduled production monitoring skips previews and checks health and caden
 
 test('scheduled failures expose only fixed codes while preserving both independent observations', async () => {
   const { runScheduledHealth } = await import('../../apps/web/netlify/functions/production-health-scheduled.mjs');
-  const logs=[]; let healthChecked=false;
+  const logs=[]; let healthChecked=false; let alertChecks;
   await assert.rejects(runScheduledHealth({
     deploy:{context:'production',published:true},
     health:async()=>{healthChecked=true;throw new Error('secret-map-key');},
     cadence:async()=>{throw new Error('MONITOR_CADENCE_PRIVATE_VALUE');},
+    notify:async({checks})=>{alertChecks=checks;},
     log:(line)=>logs.push(line),
   }), {message:'PRODUCTION_HEALTH_OBSERVATION_FAILED'});
   assert.equal(healthChecked,true);
+  assert.deepEqual(alertChecks.map(check=>check.check),['public_health','github_cadence']);
+  assert.equal(JSON.parse(logs[1]).result,'provider_accepted');
   assert.equal(logs[0].includes('secret-map-key'),false);assert.equal(logs[0].includes('PRIVATE_VALUE'),false);
   assert.equal(JSON.parse(logs[0]).checks.length,2);
 });

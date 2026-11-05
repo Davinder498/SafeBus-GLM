@@ -25,10 +25,13 @@ const EVIDENCE_FILES = [
   'scripts/check-production-health.mjs',
   'scripts/lib/operations-readiness.mjs',
   'scripts/lib/production-health.mjs',
+  'scripts/lib/monitor-cadence.mjs',
+  'scripts/lib/monitor-alert-email.mjs',
   'scripts/print-operations-release-digest.mjs',
   'tests/release/operations-authorization.test.mjs',
   'tests/release/operations-readiness.test.mjs',
   'tests/release/production-health.test.mjs',
+  'tests/release/monitor-alert-email.test.mjs',
 ];
 
 const REQUIRED_ON_CALL_EVIDENCE = [
