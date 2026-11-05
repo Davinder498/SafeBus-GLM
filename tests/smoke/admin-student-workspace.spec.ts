@@ -460,9 +460,9 @@ test.describe('Admin student workspace', () => {
     }
 
     const review = page.getByTestId('student-workspace-review');
-    await expect(review).toContainText('Transportation record review');
+    await expect(review).toContainText('Overview');
     await expect(review).toContainText('0 active');
-    await expect(review).toContainText('1 bus-route group');
+    await expect(review).toContainText('1 bus and route group');
     await expect(review.locator('a[href="#student-guardians"]')).toBeVisible();
     await expect(review.locator('a[href="#student-transportation"]')).toBeVisible();
 

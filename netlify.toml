@@ -27,6 +27,11 @@
 [functions."safebus-invitation-expiry-scheduled"]
   schedule = "@hourly"
 
+# A separate scheduler checks public health and detects missing GitHub runs.
+# Only published production deploys execute this schedule.
+[functions."production-health-scheduled"]
+  schedule = "11,26,41,56 * * * *"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

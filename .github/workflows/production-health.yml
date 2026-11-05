@@ -2,7 +2,7 @@ name: Production health monitor
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -25,4 +25,10 @@ jobs:
         with:
           node-version: 24
       - name: Check public production health
+        id: public_health
         run: node scripts/check-production-health.mjs
+      - name: Record monitoring failure without response content
+        if: failure() && steps.public_health.outcome == 'failure'
+        run: |
+          echo "::error::SafeBus public health failed. Inspect the bounded check results; do not publish provider responses or credentials."
+          echo "Public health failed. Follow docs/operations/monitoring-reliability-2026-11-05.md." >> "$GITHUB_STEP_SUMMARY"
