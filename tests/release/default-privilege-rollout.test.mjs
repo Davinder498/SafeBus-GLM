@@ -224,5 +224,7 @@ test('protected default repair binds recovery before installation and does not w
   );
   assert.ok(config.after.findings.every((f) => f.startsWith('supabase_admin:')));
   const audit = await fs.readFile('scripts/audit-database-authorization.mjs', 'utf8');
-  assert.match(audit, /assertNoRows\('Unsafe default privileges are present', unsafeDefaults\)/);
+  assert.match(audit, /client\.query\(UNSAFE_PUBLIC_DEFAULT_PRIVILEGES_SQL\)/);
+  assert.match(audit, /await auditReservedProviderDefaults\(/);
+  assert.match(audit, /retainedFindings: unsafeDefaults\.rows/);
 });

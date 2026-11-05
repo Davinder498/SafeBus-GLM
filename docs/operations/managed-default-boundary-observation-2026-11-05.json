@@ -1,0 +1,86 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "observedAt": "2026-11-05 03:01:01 UTC",
+  "boundarySqlSha256": "18be7b642f00cd0a1401b97dcdeec0430e0a3efbd759a8e77fd6c74f72c7f213",
+  "sourceMain": "74fc27d929f8591e9b7f9de5182728bf6c0942f0",
+  "observationOnly": true,
+  "providerDefaultPrivilegesChanged": false,
+  "acceptanceRuleMerged": false,
+  "fullAuthorizationAuditPassed": false,
+  "boundary": {
+    "public_acls": [
+      {
+        "acl": [
+          "anon=rwU/supabase_admin",
+          "authenticated=rwU/supabase_admin",
+          "postgres=rwU/supabase_admin",
+          "service_role=rwU/supabase_admin"
+        ],
+        "kind": "S"
+      },
+      {
+        "acl": [
+          "anon=X/supabase_admin",
+          "authenticated=X/supabase_admin",
+          "postgres=X/supabase_admin",
+          "service_role=X/supabase_admin"
+        ],
+        "kind": "f"
+      },
+      {
+        "acl": [
+          "anon=arwdDxtm/supabase_admin",
+          "authenticated=arwdDxtm/supabase_admin",
+          "postgres=arwdDxtm/supabase_admin",
+          "service_role=arwdDxtm/supabase_admin"
+        ],
+        "kind": "r"
+      }
+    ],
+    "global_acl_rows": 0,
+    "public_creators": 0,
+    "extension_schemas": ["cron", "extensions", "net", "pg_catalog", "vault"],
+    "public_extensions": 0,
+    "client_roles_found": 3,
+    "operator_is_superuser": false,
+    "provider_is_superuser": true,
+    "client_privileged_roles": 0,
+    "provider_public_objects": 0,
+    "public_extension_members": 0,
+    "operator_can_use_provider": false,
+    "client_privileged_memberships": 0
+  },
+  "findings": [
+    "supabase_admin:<global>:f:PUBLIC:EXECUTE",
+    "supabase_admin:public:S:anon:SELECT",
+    "supabase_admin:public:S:anon:UPDATE",
+    "supabase_admin:public:S:anon:USAGE",
+    "supabase_admin:public:S:authenticated:SELECT",
+    "supabase_admin:public:S:authenticated:UPDATE",
+    "supabase_admin:public:S:authenticated:USAGE",
+    "supabase_admin:public:f:anon:EXECUTE",
+    "supabase_admin:public:f:authenticated:EXECUTE",
+    "supabase_admin:public:r:anon:DELETE",
+    "supabase_admin:public:r:anon:INSERT",
+    "supabase_admin:public:r:anon:MAINTAIN",
+    "supabase_admin:public:r:anon:REFERENCES",
+    "supabase_admin:public:r:anon:SELECT",
+    "supabase_admin:public:r:anon:TRIGGER",
+    "supabase_admin:public:r:anon:TRUNCATE",
+    "supabase_admin:public:r:anon:UPDATE",
+    "supabase_admin:public:r:authenticated:DELETE",
+    "supabase_admin:public:r:authenticated:INSERT",
+    "supabase_admin:public:r:authenticated:MAINTAIN",
+    "supabase_admin:public:r:authenticated:REFERENCES",
+    "supabase_admin:public:r:authenticated:SELECT",
+    "supabase_admin:public:r:authenticated:TRIGGER",
+    "supabase_admin:public:r:authenticated:TRUNCATE",
+    "supabase_admin:public:r:authenticated:UPDATE"
+  ],
+  "apiProbe": {
+    "observedAt": "2026-11-05T03:01:32.290Z",
+    "retainedProviderDefaults": 25,
+    "verifiedHiddenSchemas": ["cron", "extensions", "net", "pg_catalog", "vault"],
+    "verification": "Live 406/PGRST106 rejection for each observed extension/member schema"
+  }
+}
