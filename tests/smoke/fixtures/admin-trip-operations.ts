@@ -29,20 +29,6 @@ export async function installTripOperationsMock(
 ) {
   await page.clock.install({ time: new Date(time) });
   await installAdminWorkflowMock(page, role);
-  await page.route('**/.netlify/functions/retention-cases', (route) => {
-    const { action } = route.request().postDataJSON();
-    return route.fulfill({
-      status: controls.preservationError ? 503 : action === 'list' ? 200 : 400,
-      contentType: 'application/json',
-      body: JSON.stringify(
-        controls.preservationError
-          ? { error: 'Records preservation is unavailable. Try again.' }
-          : action === 'list'
-            ? { result: [] }
-            : { error: 'Unexpected preservation action.' },
-      ),
-    });
-  });
   const controls = {
     rows: [
       operation(1, 'active', '2026-10-27'),
@@ -63,6 +49,20 @@ export async function installTripOperationsMock(
     dispatchWrites: 0,
     detailStatus: 'active',
   };
+  await page.route('**/.netlify/functions/retention-cases', (route) => {
+    const { action } = route.request().postDataJSON();
+    return route.fulfill({
+      status: controls.preservationError ? 503 : action === 'list' ? 200 : 400,
+      contentType: 'application/json',
+      body: JSON.stringify(
+        controls.preservationError
+          ? { error: 'Records preservation is unavailable. Try again.' }
+          : action === 'list'
+            ? { result: [] }
+            : { error: 'Unexpected preservation action.' },
+      ),
+    });
+  });
   await page.route('**/.netlify/functions/map-tile-config', (route) =>
     route.fulfill({
       status: controls.mapConfigured ? 200 : 503,
