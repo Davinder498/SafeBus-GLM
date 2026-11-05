@@ -1,7 +1,7 @@
 {
   "projectId": "ckrkfylsyihwouvesypm",
   "migration": "supabase/migrations/pending/20261105172229_retention_lifecycle.sql",
-  "migrationSha256": "feab9b90513fab8c8ba5c8f80ea85c2e88e83c4a81743025c439f1cf7f92ad4d",
+  "migrationSha256": "1d6db36a35fa2b99d259ff656b41d4326d39b4f8ff667e59cf44abfc811baec1",
   "rehearseRestore": true,
   "functions": [
     {
@@ -57,7 +57,7 @@
         "postgres=X/postgres"
       ],
       "after": {
-        "md5": "1a41f27533435c483577f632f1f9ff66"
+        "md5": "8d603aaac794a87c863816c8437b8dea"
       }
     },
     {
@@ -83,7 +83,7 @@
         "postgres=X/postgres"
       ],
       "after": {
-        "md5": "399d85d692e8b282a68e100bc4b8b730"
+        "md5": "c561273c0e22e6465d0d099f4d5d0e2d"
       }
     },
     {
@@ -97,7 +97,7 @@
         "service_role=X/postgres"
       ],
       "after": {
-        "md5": "5740d1de8321cb7fb23e249d5c202d8b"
+        "md5": "44f826f332694ea48ebaa2592f616d49"
       }
     },
     {
@@ -112,6 +112,153 @@
       ],
       "after": {
         "md5": "6fc64a7e4098fb1cf63ac67f5960a99b"
+      }
+    },
+    {
+      "signature": "safebus_private.retention_operator(boolean)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "0a41e7647045b9d73014493f341cad1e"
+      }
+    },
+    {
+      "signature": "safebus_private.retention_time(jsonb,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "9d2d31a5086d281c4434b213fee56f02"
+      }
+    },
+    {
+      "signature": "safebus_private.retention_dataset(text,uuid,uuid,uuid,timestamp with time zone,timestamp with time zone,timestamp with time zone,integer,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "9efd305cf8f3990429c2da67b2342b42"
+      }
+    },
+    {
+      "signature": "safebus_private.retention_record_held(uuid,text,uuid,timestamp with time zone)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "e6407760db7b95b02a17caa9318dfbd0"
+      }
+    },
+    {
+      "signature": "safebus_private.retention_business_due(safebus_private.retention_business_records)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "35ca79518f043f068f5f9e4fdb60f7ad"
+      }
+    },
+    {
+      "signature": "public.manage_records_retention(text,jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "fbabc2db7e4db05cdb650c7e071b624c"
+      }
+    },
+    {
+      "signature": "safebus_private.retention_source_held(text,jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "33a441fc4b2d9a12e196b571a8c5aea3"
+      }
+    },
+    {
+      "signature": "safebus_private.retention_extended_guard()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "0732a907b167c94f2a9ca7b7997abe67"
+      }
+    },
+    {
+      "signature": "public.retention_export_work(text,jsonb)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "adf9be95cc155d48735f76c7a980efd6"
+      }
+    },
+    {
+      "signature": "public.retention_worker_lease(text,uuid)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "8a6ce2c22f84823fcee7d34550ebb16f"
+      }
+    },
+    {
+      "signature": "public.retention_orphan_upload()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "fd058048273e7945f037b36aabf886f1"
       }
     }
   ],
@@ -424,25 +571,673 @@
         ],
         "policies": 0
       }
+    },
+    {
+      "name": "safebus_private.retention_class_rules",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": [
+          "postgres=arwdDxtm/postgres"
+        ],
+        "columns": [
+          {
+            "name": "data_class",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "label",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "scope",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "days",
+            "type": "integer",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "method",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "trigger_description",
+            "type": "text",
+            "default": null,
+            "required": true
+          }
+        ],
+        "constraints": [
+          "CHECK ((days > 0))",
+          "CHECK ((method = ANY (ARRAY['delete'::text, 'redact'::text, 'calendar'::text, 'case_specific'::text, 'provider'::text])))",
+          "PRIMARY KEY (data_class)",
+          "CHECK ((scope = ANY (ARRAY['authority'::text, 'security'::text, 'business'::text, 'shared'::text])))"
+        ],
+        "policies": 0
+      }
+    },
+    {
+      "name": "safebus_private.retention_record_holds",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": [
+          "postgres=arwdDxtm/postgres"
+        ],
+        "columns": [
+          {
+            "name": "id",
+            "type": "uuid",
+            "default": "gen_random_uuid()",
+            "required": true
+          },
+          {
+            "name": "tenant_id",
+            "type": "uuid",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "data_class",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "record_id",
+            "type": "uuid",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "window_start",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "window_end",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "reference",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "reason",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "minimum_until",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "review_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "decision_used_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "state",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "requested_by",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "required": true
+          },
+          {
+            "name": "reviewed_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "released_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "released_by",
+            "type": "uuid",
+            "default": null,
+            "required": false
+          }
+        ],
+        "constraints": [
+          "CHECK (((window_start IS NULL) OR (window_end >= window_start)))",
+          "FOREIGN KEY (data_class) REFERENCES safebus_private.retention_class_rules(data_class)",
+          "PRIMARY KEY (id)",
+          "CHECK ((reason = ANY (ARRAY['incident'::text, 'dispute'::text, 'access_request'::text, 'decision'::text, 'other'::text])))",
+          "CHECK ((reference ~ '^[A-Za-z0-9][A-Za-z0-9._/-]{0,63}$'::text))",
+          "CHECK ((state = ANY (ARRAY['requested'::text, 'active'::text, 'released'::text])))"
+        ],
+        "policies": 0
+      }
+    },
+    {
+      "name": "safebus_private.retention_export_jobs",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": [
+          "postgres=arwdDxtm/postgres"
+        ],
+        "columns": [
+          {
+            "name": "id",
+            "type": "uuid",
+            "default": "gen_random_uuid()",
+            "required": true
+          },
+          {
+            "name": "tenant_id",
+            "type": "uuid",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "data_class",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "record_id",
+            "type": "uuid",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "window_start",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "window_end",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "requested_by",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "requester_role",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "approved_by",
+            "type": "uuid",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "reference",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "state",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "required": true
+          },
+          {
+            "name": "expires_at",
+            "type": "timestamp with time zone",
+            "default": "(now() + '30 days'::interval)",
+            "required": true
+          },
+          {
+            "name": "cursor_id",
+            "type": "uuid",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "finished_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "row_count",
+            "type": "bigint",
+            "default": "0",
+            "required": true
+          },
+          {
+            "name": "error_code",
+            "type": "text",
+            "default": null,
+            "required": false
+          }
+        ],
+        "constraints": [
+          "CHECK (((window_start IS NULL) OR (window_end >= window_start)))",
+          "FOREIGN KEY (data_class) REFERENCES safebus_private.retention_class_rules(data_class)",
+          "PRIMARY KEY (id)",
+          "CHECK ((reference ~ '^[A-Za-z0-9][A-Za-z0-9._/-]{0,63}$'::text))",
+          "CHECK ((state = ANY (ARRAY['requested'::text, 'approved'::text, 'running'::text, 'ready'::text, 'cancelled'::text, 'expired'::text])))"
+        ],
+        "policies": 0
+      }
+    },
+    {
+      "name": "safebus_private.retention_export_chunks",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": [
+          "postgres=arwdDxtm/postgres"
+        ],
+        "columns": [
+          {
+            "name": "id",
+            "type": "uuid",
+            "default": "gen_random_uuid()",
+            "required": true
+          },
+          {
+            "name": "export_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "object_key",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "payload",
+            "type": "jsonb",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "row_count",
+            "type": "integer",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "last_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "required": true
+          },
+          {
+            "name": "lease_until",
+            "type": "timestamp with time zone",
+            "default": "(now() + '00:02:00'::interval)",
+            "required": true
+          },
+          {
+            "name": "verified_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "key_id",
+            "type": "text",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "ciphertext_sha256",
+            "type": "text",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "removing_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "removed_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "last_removed_check",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          }
+        ],
+        "constraints": [
+          "CHECK (((ciphertext_sha256 IS NULL) OR (ciphertext_sha256 ~ '^[a-f0-9]{64}$'::text)))",
+          "FOREIGN KEY (export_id) REFERENCES safebus_private.retention_export_jobs(id) ON DELETE RESTRICT",
+          "UNIQUE (object_key)",
+          "PRIMARY KEY (id)",
+          "CHECK (((row_count >= 1) AND (row_count <= 200)))"
+        ],
+        "policies": 0
+      }
+    },
+    {
+      "name": "safebus_private.retention_business_records",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": [
+          "postgres=arwdDxtm/postgres"
+        ],
+        "columns": [
+          {
+            "name": "id",
+            "type": "uuid",
+            "default": "gen_random_uuid()",
+            "required": true
+          },
+          {
+            "name": "data_class",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "reference",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "source_type",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "provider",
+            "type": "text",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "source_reference",
+            "type": "jsonb",
+            "default": "'{}'::jsonb",
+            "required": true
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "required": true
+          },
+          {
+            "name": "resolved_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "fiscal_year_end",
+            "type": "date",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "late_filed_at",
+            "type": "date",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "minimum_until",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "review_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "classification",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "continuing_relationship",
+            "type": "boolean",
+            "default": "false",
+            "required": true
+          },
+          {
+            "name": "object_key",
+            "type": "text",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "key_id",
+            "type": "text",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "ciphertext_sha256",
+            "type": "text",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "disposal_state",
+            "type": "text",
+            "default": "'retained'::text",
+            "required": true
+          },
+          {
+            "name": "disposal_started_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "disposed_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "provider_confirmed_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "provider_evidence_reference",
+            "type": "text",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "created_by",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "required": true
+          }
+        ],
+        "constraints": [
+          "CHECK ((classification = ANY (ARRAY['ordinary'::text, 'historical_corporate'::text, 'long_term_property'::text, 'objection'::text, 'personnel'::text, 'privacy_case'::text, 'supplier_window'::text, 'key_custody'::text])))",
+          "FOREIGN KEY (data_class) REFERENCES safebus_private.retention_class_rules(data_class)",
+          "CHECK ((disposal_state = ANY (ARRAY['retained'::text, 'due'::text, 'removing'::text, 'provider_pending'::text, 'disposed'::text])))",
+          "PRIMARY KEY (id)",
+          "CHECK ((reference ~ '^[A-Za-z0-9][A-Za-z0-9._/-]{0,63}$'::text))",
+          "CHECK ((source_type = ANY (ARRAY['managed_file'::text, 'external_mail'::text, 'provider_record'::text, 'metadata_only'::text])))"
+        ],
+        "policies": 0
+      }
+    },
+    {
+      "name": "safebus_private.retention_worker_control",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": [
+          "postgres=arwdDxtm/postgres"
+        ],
+        "columns": [
+          {
+            "name": "id",
+            "type": "integer",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "owner",
+            "type": "uuid",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "lease_until",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          }
+        ],
+        "constraints": [
+          "CHECK ((id = 1))",
+          "PRIMARY KEY (id)"
+        ],
+        "policies": 0
+      }
     }
   ],
   "newTables": [
     "safebus_private.retention_cases",
     "safebus_private.retention_archive_chunks",
     "safebus_private.retention_archive_coverage",
-    "safebus_private.retention_lifecycle_totals"
+    "safebus_private.retention_lifecycle_totals",
+    "safebus_private.retention_class_rules",
+    "safebus_private.retention_record_holds",
+    "safebus_private.retention_export_jobs",
+    "safebus_private.retention_export_chunks",
+    "safebus_private.retention_business_records",
+    "safebus_private.retention_worker_control"
   ],
   "mustBeEmptyBeforeRestore": [
     "safebus_private.retention_cases",
     "safebus_private.retention_archive_chunks",
     "safebus_private.retention_archive_coverage",
-    "safebus_private.retention_lifecycle_totals"
+    "safebus_private.retention_lifecycle_totals",
+    "safebus_private.retention_record_holds",
+    "safebus_private.retention_export_jobs",
+    "safebus_private.retention_export_chunks",
+    "safebus_private.retention_business_records"
   ],
   "columns": [
     {
       "schema": "safebus_private",
       "table": "authority_announcements",
       "name": "resolved_at",
+      "before": null,
+      "after": {
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      }
+    },
+    {
+      "schema": "public",
+      "table": "drivers",
+      "name": "retention_redacted_at",
+      "before": null,
+      "after": {
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      }
+    },
+    {
+      "schema": "public",
+      "table": "audit_events",
+      "name": "retention_redacted_at",
       "before": null,
       "after": {
         "data_type": "timestamp with time zone",
@@ -456,6 +1251,16 @@
       "schema": "safebus_private",
       "table": "authority_announcements",
       "name": "resolved_at"
+    },
+    {
+      "schema": "public",
+      "table": "drivers",
+      "name": "retention_redacted_at"
+    },
+    {
+      "schema": "public",
+      "table": "audit_events",
+      "name": "retention_redacted_at"
     }
   ],
   "triggers": [
@@ -512,6 +1317,66 @@
       "name": "retention_source_guard",
       "before": null,
       "after": "CREATE TRIGGER retention_source_guard BEFORE INSERT OR DELETE OR UPDATE ON safebus_private.authority_announcements FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_source_guard()"
+    },
+    {
+      "table": "public.students",
+      "name": "retention_extended_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_extended_guard BEFORE INSERT OR DELETE OR UPDATE ON public.students FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_extended_guard()"
+    },
+    {
+      "table": "public.student_guardians",
+      "name": "retention_extended_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_extended_guard BEFORE INSERT OR DELETE OR UPDATE ON public.student_guardians FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_extended_guard()"
+    },
+    {
+      "table": "public.drivers",
+      "name": "retention_extended_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_extended_guard BEFORE INSERT OR DELETE OR UPDATE ON public.drivers FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_extended_guard()"
+    },
+    {
+      "table": "public.bus_tracking_sessions",
+      "name": "retention_extended_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_extended_guard BEFORE INSERT OR DELETE OR UPDATE ON public.bus_tracking_sessions FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_extended_guard()"
+    },
+    {
+      "table": "public.bus_run_dispatches",
+      "name": "retention_extended_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_extended_guard BEFORE INSERT OR DELETE OR UPDATE ON public.bus_run_dispatches FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_extended_guard()"
+    },
+    {
+      "table": "public.tenant_onboarding_invitations",
+      "name": "retention_extended_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_extended_guard BEFORE INSERT OR DELETE OR UPDATE ON public.tenant_onboarding_invitations FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_extended_guard()"
+    },
+    {
+      "table": "public.audit_events",
+      "name": "retention_extended_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_extended_guard BEFORE INSERT OR DELETE OR UPDATE ON public.audit_events FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_extended_guard()"
+    },
+    {
+      "table": "public.rate_limit_buckets",
+      "name": "retention_extended_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_extended_guard BEFORE INSERT OR DELETE OR UPDATE ON public.rate_limit_buckets FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_extended_guard()"
+    },
+    {
+      "table": "public.user_sessions",
+      "name": "retention_extended_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_extended_guard BEFORE INSERT OR DELETE OR UPDATE ON public.user_sessions FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_extended_guard()"
+    },
+    {
+      "table": "public.driver_trip_current_locations",
+      "name": "retention_source_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_source_guard BEFORE INSERT OR DELETE OR UPDATE ON public.driver_trip_current_locations FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_source_guard()"
     }
   ],
   "indexes": [

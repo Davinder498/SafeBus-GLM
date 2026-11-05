@@ -98,3 +98,40 @@ export async function verifyRetentionDryRuns(client, expectedMd5) {
     notificationSent: false,
   };
 }
+
+/** Capture aggregate eligibility from the installed worker without customer writes. */
+export async function verifyLifecycleDryRun(client) {
+  await client.query('begin isolation level repeatable read read only');
+  try {
+    await client.query("set local statement_timeout='5s'");
+    await client.query("set local lock_timeout='1s'");
+    const {
+      rows: [control],
+    } = await client.query(
+      'select destructive_enabled from public.retention_execution_control where id=1',
+    );
+    if (control?.destructive_enabled !== false)
+      throw new Error('OPERATIONAL_RETENTION_UNSAFE_BASELINE');
+    await client.query('set local role service_role');
+    await client.query("set local request.jwt.claim.role='service_role'");
+    const {
+      rows: [row],
+    } = await client.query('select public.run_retention_lifecycle(true,500) result');
+    const result = row?.result;
+    if (
+      result?.version !== 1 ||
+      result.dryRun !== true ||
+      result.limit !== 500 ||
+      !result.counts ||
+      Object.keys(result.counts).length !== 25 ||
+      Object.values(result.counts).some(
+        (count) => !Number.isSafeInteger(count) || count < 0 || count > 500,
+      )
+    ) {
+      throw new Error('OPERATIONAL_RETENTION_POLICY_FAILED');
+    }
+    return { ...result, destructiveEnabled: false, deletedRows: 0 };
+  } finally {
+    await client.query('rollback');
+  }
+}

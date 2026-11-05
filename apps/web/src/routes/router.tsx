@@ -6,6 +6,10 @@ import { PublicOnlyRoute } from './PublicOnlyRoute';
 import { InvitationEntryRoute } from './InvitationEntryRoute';
 import { adminRoles } from '@/contexts/AuthContext';
 
+const RecordsRetentionPage = lazy(() =>
+  import('@/pages/RecordsRetentionPage').then((page) => ({ default: page.RecordsRetentionPage })),
+);
+
 const AcceptInvitationPage = lazy(() =>
   import('@/pages/AcceptInvitationPage').then((page) => ({ default: page.AcceptInvitationPage })),
 );
@@ -247,6 +251,22 @@ export const appRoutes: RouteObject[] = [
   { path: '/admin/people', element: <Navigate to="/admin" replace /> },
   { path: '/admin/more', element: <Navigate to="/admin" replace /> },
   { path: '/admin/stops', element: <Navigate to="/admin/routes" replace /> },
+  {
+    path: '/admin/records',
+    element: (
+      <ProtectedRoute allowedRoles={['platform_super_admin']}>
+        <RecordsRetentionPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/settings/records',
+    element: (
+      <ProtectedRoute allowedRoles={['tenant_admin', 'transportation_admin']}>
+        <RecordsRetentionPage />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: '/admin/platform-support',
     element: (

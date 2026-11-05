@@ -72,7 +72,7 @@ jobs:
         with:
           name: operational-recovery-${{ inputs.milestone }}-${{ inputs.git_ref }}-${{ github.run_id }}
           path: .safebus-release/operational-${{ inputs.milestone }}/
-          retention-days: 90
+          retention-days: 30
           if-no-files-found: error
       - name: Install bounded forward migration
         if: inputs.mode == 'install' && steps.prepare.outputs.state == 'pending'

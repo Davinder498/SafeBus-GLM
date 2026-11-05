@@ -2,10 +2,14 @@
   "status": "prepared-unapplied",
   "migration": "supabase/migrations/pending/20261105172229_retention_lifecycle.sql",
   "authenticated": [
+    "manage_records_retention(text,jsonb)",
     "manage_retention_case(text,jsonb)"
   ],
   "serviceRole": [
     "retention_archive_work(text,jsonb)",
+    "retention_export_work(text,jsonb)",
+    "retention_orphan_upload()",
+    "retention_worker_lease(text,uuid)",
     "run_retention_lifecycle(boolean,integer)"
   ]
 }

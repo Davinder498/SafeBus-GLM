@@ -32,6 +32,13 @@ import org.json.JSONObject;
     }
 )
 public class DriverTrackingPlugin extends Plugin {
+    @Override
+    protected void handleOnResume() {
+        super.handleOnResume();
+        android.content.Context context = getContext().getApplicationContext();
+        new Thread(() -> EncryptedLocationQueue.pruneOnWake(context), "tracking-retention").start();
+    }
+
     @PluginMethod
     public void requestTrackingPermissions(PluginCall call) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

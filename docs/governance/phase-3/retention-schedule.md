@@ -1,10 +1,6 @@
 # SafeBus Retention and Disposal Schedule
 
-codex/retention-lifecycle-20261105
-**Status:** Owner-approved GPS/event/notification schedule; implementation prepared, protected rollout and operating evidence pending
-
-**Status:** Baseline periods conditionally supported by owner; legal/customer overrides and safe enforcement remain required
- main
+**Status:** Owner-approved retention and disposal schedule. Protected rollout and operating evidence pending
 **Owner:** Business Privacy Lead with Customer / Engineering / Operations
 **Last updated:** 2026-11-05
 
@@ -15,11 +11,10 @@ no approval reference. The earlier October observation below is historical and
 must not be used to report the correction as uninstalled. See the
 [read-only observation](retention-observation-2026-11-05.json).
 
-The owner approved the scoped 30/395/90-day plan on 5 November 2026.
+The owner approved the scoped 30/395/90-day plan on 5 November 2026 and subsequently approved the other classes in this schedule.
 The forward implementation and role acceptance are described in
 [retention lifecycle acceptance](../../operations/retention-lifecycle-acceptance.md).
-This approval does not approve the other historical inventory proposals below,
-certify legal classification for every authority, or enable production deletion.
+The expanded implementation is recorded in the [all-class implementation](../../operations/retention-all-classes-implementation.md). Individual mandatory periods and supplier configuration still require actual record evidence.
 
 | Approved class | Trigger and period |
 | --- | --- |
@@ -42,7 +37,7 @@ whole-fleet annual GPS history.
 
 Production observation above remains the latest live evidence. The new migration
 is pending; all other account/student/driver/audit cleanup remains observation
-only under the prepared implementation. Supplier/backups, device queues and
+only in production until the expanded implementation is released. Supplier backups, device queues and
 customer-specific classifications still require their own operating evidence.
 
 ## Purpose and acceptance boundary
@@ -59,12 +54,7 @@ Destructive execution remains disabled until the approved, protected workflow,
 reviewed execution-control change and server-only flag are completed. Applied
 migrations are immutable. No database/flag change occurs in this drafting work.
 
-## Proposed transport and security periods
-
-These periods are **default review/expiry triggers**, not unconditional deletion
-deadlines. Apply the mandatory exceptions below before disposing of any record.
-The configured SQL routines do not yet implement that decision/hold layer;
-destructive execution must remain disabled until they do and acceptance passes.
+## Transport and security periods
 
 | Data class / existing retention key                     | Draft period and trigger                                             | Prepared method / validation still needed                                                                                                                 |
 | ------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -100,8 +90,7 @@ any fixture or destructive execution.
 | Supplier/CDN/function/API logs                 | Minimum necessary approved window per supplier                           | Actual provider settings, IP/metadata content, countries, agreements and deletion limits                                |
 | Recovery exports and backups                   | `[BACKUP_RETENTION_WINDOW]` per approved system                          | Off-site copies, provider backups, GitHub transfer artifacts, key custody and verified expiry                           |
 
-These own-business periods are proposals only. They are not existing SQL policy
-keys and must not be sent to a deletion RPC that does not implement them.
+The business record register applies these rules to classified records. External copies require actual provider access or disposal evidence.
 
 ## Holds, expiry and recovery
 
@@ -207,14 +196,9 @@ review/release evidence. A review date is not an automatic hold-release date.
 Preserve only the necessary scope, with controlled access; do not keep all
 customers' data forever as a substitute for implementing these rules.
 
-The deletion engine must check the applicable minimum/exception and holds before
-direct deletion, anonymization **and parent cascades**. It must also account for
-supplier copies, supported transfer and recovery behavior. Until that exists,
-the current disabled destructive control is the appropriate execution boundary.
-No customer-specific schedule, scoped-hold implementation or legal compliance
-certificate is created by this review or the owner's conditional support.
+The pending lifecycle checks recorded minimums and scoped holds before scheduled disposal and parent cascades. Keep destructive execution disabled until affected authorities have supplied their written instructions and the installed controls, supplier handling and recovery have passed acceptance.
 
-## Concrete business proposal awaiting decision
+## Approved business periods and exceptions
 
 Retain the twelve configured SQL periods above as the proposed transport/security
 baseline, with exact day counts rather than treating 395 days as 13 calendar

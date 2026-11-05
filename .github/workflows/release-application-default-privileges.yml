@@ -58,7 +58,7 @@ jobs:
         with:
           name: application-default-recovery-${{ inputs.git_ref }}-${{ github.run_id }}
           path: .safebus-release/application-default-privileges/
-          retention-days: 90
+          retention-days: 30
           if-no-files-found: error
       - name: Install application-owned future defaults and private session guards
         if: inputs.mode == 'install' && steps.prepare.outputs.state == 'pending'

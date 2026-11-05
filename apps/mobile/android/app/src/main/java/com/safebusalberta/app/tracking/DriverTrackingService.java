@@ -66,6 +66,7 @@ public final class DriverTrackingService extends Service implements LocationList
         queue = new EncryptedLocationQueue(this, store);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         networkExecutor.setRemoveOnCancelPolicy(true);
+        networkExecutor.execute(() -> EncryptedLocationQueue.pruneOnWake(getApplicationContext()));
         uploadPump = new LocationUploadPump(new LocationUploadPump.Backend() {
             @Override public long authorizationDeadlineMs() {
                 TrackingConfig config = TrackingConfig.load(store);
@@ -242,8 +243,13 @@ public final class DriverTrackingService extends Service implements LocationList
     }
 
     private LocationUploadPump.Result uploadQueuedHead() throws Exception {
+        queue.pruneExpired(System.currentTimeMillis());
         EncryptedLocationQueue.Entry entry = queue.peek();
         if (entry == null) return LocationUploadPump.Result.progress();
+        if (EncryptedLocationQueue.expired(entry.payload, System.currentTimeMillis())) {
+            queue.remove(entry.sequence);
+            return LocationUploadPump.Result.progress();
+        }
         TrackingConfig config = TrackingConfig.load(store);
         if (!maySend(config)) return LocationUploadPump.Result.halted();
         if (!isCurrentAuthorization(config)) return LocationUploadPump.Result.retry(0);

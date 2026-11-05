@@ -92,7 +92,7 @@ function RetentionControls({ tripId }: { tripId?: string }) {
   return (
     <Card className="space-y-4 p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-bold text-navy-900">Preserved records</h2>
+        <h2 className="text-xl font-bold text-navy-900">Preserved trip records</h2>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" disabled={busy || loading} onClick={() => void load()}>
             Refresh
