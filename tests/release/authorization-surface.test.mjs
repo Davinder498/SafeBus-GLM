@@ -3,10 +3,92 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import { createHash } from 'node:crypto';
-import { authorizationAudiences } from '../../scripts/lib/authorization-audiences.mjs';
+import {
+  authorizationAudiences,
+  assertAdvertisedRpcSurface,
+} from '../../scripts/lib/authorization-audiences.mjs';
+import { PGlite } from '@electric-sql/pglite';
 
 const migrationPath = 'supabase/migrations/0089_authorization_surface_hardening.sql';
 const notificationMigrationPath = 'supabase/migrations/0092_end_to_end_notification_system.sql';
+
+test('complete OpenAPI discovery preserves actual service execution denials and overloads', async (t) => {
+  const db = new PGlite();
+  t.after(() => db.close());
+  await db.exec(`create role authenticated; create role service_role;
+    create function public.driver_only() returns int language sql as 'select 1';
+    create function public.worker_only() returns int language sql as 'select 1';
+    create function public.shared_name(uuid) returns int language sql as 'select 1';
+    create function public.shared_name(text) returns int language sql as 'select 1';
+    revoke execute on all functions in schema public from public,authenticated,service_role;
+    grant execute on function public.driver_only(),public.shared_name(uuid),public.shared_name(text) to authenticated;
+    grant execute on function public.worker_only(),public.shared_name(text) to service_role;`);
+  const roles = authorizationAudiences({
+    authenticated: ['driver_only()', 'shared_name(uuid)', 'shared_name(text)'],
+    serviceRole: ['worker_only()'],
+    serviceRoleDenied: ['driver_only()', 'shared_name(uuid)'],
+  });
+  const openApi = {
+    paths: {
+      '/rpc/driver_only': { post: {} },
+      '/rpc/worker_only': { post: {} },
+      '/rpc/shared_name': { post: {} },
+      '/table': { get: {} },
+    },
+  };
+  assert.deepEqual(assertAdvertisedRpcSurface(openApi, roles.publicFunctions), {
+    advertisedRpcNames: 3,
+  });
+  assert.throws(
+    () => assertAdvertisedRpcSurface(openApi, roles.serviceExecutable),
+    /Unexpected: driver_only/,
+  );
+  assert.deepEqual(
+    (
+      await db.query(`select
+    has_function_privilege('service_role','public.driver_only()','EXECUTE') as driver,
+    has_function_privilege('service_role','public.shared_name(uuid)','EXECUTE') as uuid_overload,
+    has_function_privilege('service_role','public.shared_name(text)','EXECUTE') as text_overload`)
+    ).rows,
+    [{ driver: false, uuid_overload: false, text_overload: true }],
+  );
+  for (const name of ['driver_only', 'worker_only', 'shared_name']) {
+    const paths = { ...openApi.paths };
+    delete paths['/rpc/' + name];
+    assert.throws(() => assertAdvertisedRpcSurface({ paths }, roles.publicFunctions), /Missing:/);
+  }
+  assert.throws(
+    () =>
+      assertAdvertisedRpcSurface(
+        { paths: { ...openApi.paths, '/rpc/unreviewed': { post: {} } } },
+        roles.publicFunctions,
+      ),
+    /Unexpected: unreviewed/,
+  );
+  for (const malformed of [null, {}, { paths: null }, { paths: [] }, { paths: 'unexpected' }])
+    assert.throws(
+      () => assertAdvertisedRpcSurface(malformed, roles.publicFunctions),
+      /invalid OpenAPI/,
+    );
+});
+
+test('the observed 18 advertised names are already reviewed and remain service-denied', async () => {
+  const surface = JSON.parse(await fs.readFile('config/authorization-surface.json', 'utf8'));
+  const roles = authorizationAudiences(surface);
+  const paths = Object.fromEntries(
+    [...roles.publicFunctions].map((signature) => [
+      '/rpc/' + signature.slice(0, signature.indexOf('(')),
+      { post: {} },
+    ]),
+  );
+  assert.equal(surface.serviceRoleDenied.length, 18);
+  assert.equal(
+    assertAdvertisedRpcSurface({ paths }, roles.publicFunctions).advertisedRpcNames,
+    Object.keys(paths).length,
+  );
+  for (const signature of surface.serviceRoleDenied)
+    assert.equal(roles.serviceExecutable.has(signature), false);
+});
 
 async function readJson(file) {
   return JSON.parse(await fs.readFile(file, 'utf8'));
@@ -20,13 +102,22 @@ test('audits retain authenticated driver access while denying service-role execu
   assert.ok(roles.publicFunctions.has(signature));
   assert.equal(roles.serviceExecutable.has(signature), false);
   assert.equal(roles.serviceOnly.has(signature), false);
-  assert.deepEqual([...roles.serviceExecutable].sort(),
-    [...roles.publicFunctions].filter((name) => !surface.serviceRoleDenied.includes(name)).sort());
-  assert.throws(() => authorizationAudiences({ ...surface, serviceRoleDenied: ['unknown()'] }),
-    /authenticated-only/);
-  assert.throws(() => authorizationAudiences({
-    ...surface, serviceRole: [...surface.serviceRole, signature],
-  }), /authenticated-only/);
+  assert.deepEqual(
+    [...roles.serviceExecutable].sort(),
+    [...roles.publicFunctions].filter((name) => !surface.serviceRoleDenied.includes(name)).sort(),
+  );
+  assert.throws(
+    () => authorizationAudiences({ ...surface, serviceRoleDenied: ['unknown()'] }),
+    /authenticated-only/,
+  );
+  assert.throws(
+    () =>
+      authorizationAudiences({
+        ...surface,
+        serviceRole: [...surface.serviceRole, signature],
+      }),
+    /authenticated-only/,
+  );
 });
 
 async function walk(directory) {
@@ -176,10 +267,14 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
   assert.equal(trackingEvidence.liveDriverRecoveryVerified, false);
   assert.equal(trackingEvidence.physicalDeviceVerified, false);
   assert.deepEqual(tracking.addedAuthenticated, ['authorize_driver_tracking_queue(text,text)']);
-  for (const signature of tracking.deniedServiceRole) assert.ok(surface.serviceRoleDenied.includes(signature));
-  assert.equal(createHash('sha256')
-    .update((await fs.readFile(tracking.migration, 'utf8')).replaceAll('\r\n', '\n'))
-    .digest('hex'), tracking.migrationSha256);
+  for (const signature of tracking.deniedServiceRole)
+    assert.ok(surface.serviceRoleDenied.includes(signature));
+  assert.equal(
+    createHash('sha256')
+      .update((await fs.readFile(tracking.migration, 'utf8')).replaceAll('\r\n', '\n'))
+      .digest('hex'),
+    tracking.migrationSha256,
+  );
   assert.equal(trackingEvidence.functions.length, trackingReview.functions.length);
   for (const reviewed of trackingReview.functions) {
     const live = trackingEvidence.functions.find((entry) => entry.signature === reviewed.signature);
@@ -200,8 +295,10 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
   assert.equal(launch.addedAuthenticated.length, 23);
   const offline = await readJson('config/observed/offline-trip-action-authorization.json');
   const offlineEvidence = await readJson(offline.verificationEvidence);
-  assert.deepEqual([...surface.serviceRoleDenied].sort(),
-    [...launch.serviceRoleDenied, ...offline.deniedServiceRole].sort());
+  assert.deepEqual(
+    [...surface.serviceRoleDenied].sort(),
+    [...launch.serviceRoleDenied, ...offline.deniedServiceRole].sort(),
+  );
   for (const signature of launch.addedAuthenticated) {
     const observed = launch.functions.find((entry) => entry.signature === signature);
     assert.match(observed.normalizedMd5, /^[a-f0-9]{32}$/);
@@ -220,9 +317,11 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
     actual.set(name, 'service_role');
   }
   const audiences = authorizationAudiences(surface);
-  const offlineFunctions = offlineEvidence.functions.filter((entry) =>
-    offline.addedAuthenticated.includes(entry.signature.replace(/^public\./, '')),
-  ).map((entry) => ({ ...entry, signature: entry.signature.replace(/^public\./, '') }));
+  const offlineFunctions = offlineEvidence.functions
+    .filter((entry) =>
+      offline.addedAuthenticated.includes(entry.signature.replace(/^public\./, '')),
+    )
+    .map((entry) => ({ ...entry, signature: entry.signature.replace(/^public\./, '') }));
   assert.equal(offlineFunctions.length, offline.addedAuthenticated.length);
   for (const signature of offline.addedAuthenticated) {
     const name = signature.slice(0, signature.indexOf('('));
@@ -230,12 +329,24 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
     actual.set(name, 'authenticated');
   }
   const observedFunctions = [...launch.functions, ...offlineFunctions];
-  assert.deepEqual(observedFunctions.map((f) => f.signature).sort(), [...audiences.publicFunctions].sort());
+  assert.deepEqual(
+    observedFunctions.map((f) => f.signature).sort(),
+    [...audiences.publicFunctions].sort(),
+  );
   for (const entry of observedFunctions) {
     assert.equal(entry.owner, 'postgres');
-    assert.equal(entry.acl.some((acl) => acl.startsWith('=') || acl.startsWith('anon=')), false);
-    assert.equal(entry.acl.includes('authenticated=X/postgres'), audiences.authenticated.has(entry.signature));
-    assert.equal(entry.acl.includes('service_role=X/postgres'), audiences.serviceExecutable.has(entry.signature));
+    assert.equal(
+      entry.acl.some((acl) => acl.startsWith('=') || acl.startsWith('anon=')),
+      false,
+    );
+    assert.equal(
+      entry.acl.includes('authenticated=X/postgres'),
+      audiences.authenticated.has(entry.signature),
+    );
+    assert.equal(
+      entry.acl.includes('service_role=X/postgres'),
+      audiences.serviceExecutable.has(entry.signature),
+    );
   }
   const expected = new Map();
   for (const signature of surface.authenticated) {
@@ -261,7 +372,12 @@ test('offline stop inventory is bound to protected installation, prior recovery 
   assert.equal(observed.projectId, reviewed.projectId);
   assert.equal(observed.migration, reviewed.migration);
   assert.equal(observed.migrationSha256, reviewed.migrationSha256);
-  assert.equal(createHash('sha256').update((await fs.readFile(observed.migration, 'utf8')).replaceAll('\r\n', '\n')).digest('hex'), observed.migrationSha256);
+  assert.equal(
+    createHash('sha256')
+      .update((await fs.readFile(observed.migration, 'utf8')).replaceAll('\r\n', '\n'))
+      .digest('hex'),
+    observed.migrationSha256,
+  );
   assert.equal(observed.installationOrigin, 'protected-workflow');
   assert.equal(observed.preChangeRecoveryEvidenceEstablished, true);
   assert.equal(evidence.observationOnly, true);
@@ -271,12 +387,17 @@ test('offline stop inventory is bound to protected installation, prior recovery 
   const installation = evidence.installation;
   assert.equal(installation.workflow, 'release-operational-fix.yml');
   assert.equal(installation.workflowRunId, '41866277317');
-  assert.equal(installation.workflowRunUrl, `https://github.com/Davinder498/SafeBus-GLM/actions/runs/${installation.workflowRunId}`);
+  assert.equal(
+    installation.workflowRunUrl,
+    `https://github.com/Davinder498/SafeBus-GLM/actions/runs/${installation.workflowRunId}`,
+  );
   assert.equal(installation.releaseSha, '630ae69b60382c71b43a640a3d6cb6d3f81ef63e');
   assert.equal(installation.migrationSha256, reviewed.migrationSha256);
   assert.equal(installation.sqlApplied, true);
   assert.equal(installation.notificationSent, false);
-  assert.ok(Date.parse(installation.recovery.createdAt) <= Date.parse(installation.recovery.uploadedAt));
+  assert.ok(
+    Date.parse(installation.recovery.createdAt) <= Date.parse(installation.recovery.uploadedAt),
+  );
   assert.ok(Date.parse(installation.recovery.uploadedAt) <= Date.parse(installation.installedAt));
   assert.ok(Date.parse(installation.installedAt) <= Date.parse(installation.verifiedAt));
   assert.match(installation.recovery.ciphertextSha256, /^[a-f0-9]{64}$/);
@@ -294,7 +415,10 @@ test('offline stop inventory is bound to protected installation, prior recovery 
   assert.equal(evidence.catalogComparison.applicationFunctions, 220);
   assert.equal(evidence.catalogComparison.previouslyKnownFunctions, 219);
   const prior = await readJson('config/observed/launch-api-inventory.json');
-  assert.equal(evidence.catalogComparison.existingDefinitionFingerprintsCompared, prior.functions.filter((entry) => entry.normalizedMd5).length);
+  assert.equal(
+    evidence.catalogComparison.existingDefinitionFingerprintsCompared,
+    prior.functions.filter((entry) => entry.normalizedMd5).length,
+  );
   assert.equal(evidence.catalogComparison.unchangedGuardFunctionsVerified, 8);
   for (const key of ['unexpectedFunctions', 'missingFunctions', 'changedExistingDefinitionsOrAcls'])
     assert.deepEqual(evidence.catalogComparison[key], []);
