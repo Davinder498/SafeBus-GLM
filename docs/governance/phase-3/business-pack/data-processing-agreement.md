@@ -26,23 +26,40 @@ resolution. Compelled disclosures are limited and notified where law permits.
 
 | Topic                    | Proposed permitted processing                                                                                                                                      |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Purpose                  | School transport operations, assignments, trip operation, authorized active-bus visibility and enabled pickup/drop-off email                                       |
+| Purpose                  | Managed setup and school transport operations, assignments, trip operation, authorized active-bus visibility and recipient-enabled notifications                   |
 | Individuals              | Selected students, guardians, drivers and Customer administrators                                                                                                  |
 | Data                     | Minimum identity/contact/role and authorized links; school/route/stop assignments; trip/location/event records; device/session and limited audit/delivery metadata |
 | Activities               | Receive, validate, store, authorize, retrieve, update, transmit to permitted recipients, retain and securely dispose according to accepted schedules               |
 | Collection sources       | Customer-approved roster and relationship decisions; invited users; assigned active-trip Android device; authorized operational actions                            |
-| Recipients               | Scoped Customer administrators, assigned drivers, authorized linked guardians and accepted suppliers, only to the extent necessary                                 |
+| Recipients               | Scoped Customer administrators and authorized SafeBus onboarding personnel, assigned drivers, linked guardians and accepted suppliers, only as necessary           |
 | Duration                 | Contract term and approved return/retention/backup/hold periods                                                                                                    |
 | Geographical constraints | Approved Canadian production/backup requirements, with each supplier flow and any cross-border exception explicitly assessed                                       |
 | Authority and notice     | `[CUSTOMER_COLLECTION_USE_DISCLOSURE_AUTHORITY]`; applicable notice text/channel; required consent or other ground per activity                                    |
 
 No prohibited student identifiers, home addresses, health information, custody
 narratives, unrelated educational records or child-carried GPS are permitted.
-Student QR, FCM and other CR1 exclusions need separate accepted scope and privacy
-decisions before activation. No sale, advertising, unrelated profiling or AI
+Student QR and other remaining CR1 exclusions need separate accepted scope and
+privacy decisions before activation. Recipient-opt-in Android FCM is covered by
+the current notification scope and must appear in supplier review; the standard
+setup does not supply recipient consent. No sale, advertising, unrelated profiling or AI
 training using transportation personal information is permitted.
 
 ## 3. Authorized access and confidentiality
+
+Managed initial setup is part of Customer-directed processing: authorized SafeBus
+onboarding personnel receive minimum approved source data and configure routes,
+stops/geometry, buses, student records, guardian links, drivers and assignments
+under documented instructions. The Customer verifies guardian authority and
+approves operational routes/assignments. Personnel use individually assigned,
+Customer-authorized school-authority accounts with only required existing
+permissions and administrator MFA; no general cross-customer support role is
+created by this agreement. Record the account scope, instruction, work performed,
+Customer review and access removal/review at handover.
+
+Use an agreed restricted transfer channel for source files; ordinary support
+email is not a roster-upload channel. Temporary copies must have a documented
+purpose, approved retention/hold treatment and verified disposal. Do not request
+prohibited student identifiers, home addresses, health or custody narratives.
 
 SafeBus limits personnel access by operational need, binds authorized personnel
 to confidentiality duties, trains them and maintains reviewed access records.

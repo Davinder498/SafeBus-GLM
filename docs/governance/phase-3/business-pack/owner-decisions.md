@@ -10,8 +10,9 @@ Keep customer-specific values and signed copies outside Git.
 
 The owner is the Privacy Lead. The selected business inbox is info@safebus.kids;
 the owner confirmed receipt of an operational alert on 2026-11-05. The owner selected Monday–Friday, 8:00 a.m.–5:00 p.m. Alberta local time
-(`America/Edmonton`) on 2026-11-05. Holiday coverage, backup and
-request-handling exercises remain unresolved. The owner
+(`America/Edmonton`) on 2026-11-05. The owner will handle support and backup escalation personally; there is no
+independent responder. Holiday coverage, escalation mechanics and request-handling
+exercises remain unresolved. The owner
 confirmed on 2026-10-16 that the official domain is safebus.kids and Sachman Gold
 Inc. is an Alberta corporation doing business as SafeBus. The website and public
 privacy/deletion routes are available over HTTPS. The 2026-10-16 owner record
@@ -36,7 +37,7 @@ signing authority, liability amount or publication approval is inferred.
 | Non-payment                                                      | Written escalation; no automated operational suspension                                       | Approved suspension notice/process; billing state never automatically disables a tenant                                                   |
 | `[GENERAL_LIABILITY_CAP]`, `[PRIVACY_LIABILITY_CAP]`             | No selected amounts                                                                           | Owner risk/insurance review, customer negotiation and legal review of exclusions                                                          |
 | Insurance                                                        | No certification or policy assertion                                                          | Required types/limits, policy evidence and contractual representations                                                                    |
-| Support hours, timezone and holidays                             | Monday–Friday, 8 a.m.–5 p.m. Alberta local time (America/Edmonton); owner-selected 2026-11-05 | Holiday treatment, responsible primary, urgent channel and backup coverage; no 24/7 promise                                               |
+| Support hours, timezone and holidays                             | Monday–Friday, 8 a.m.–5 p.m. Alberta local time (America/Edmonton); owner-selected 2026-11-05 | Owner handles support and backup escalation; holiday/urgent mechanics and owner-absence coverage remain open; no 24/7 promise             |
 | Availability, latency, GPS freshness and notification targets    | All unapproved; recovery commitments excluded from this launch review                         | Evidence for any selected promise; architecture review does not establish measured capacity                                               |
 | Credit rates/cap                                                 | Unfilled                                                                                      | Commercial remedy and claim process after service targets are approved                                                                    |
 | Incident notification                                            | Proposed initial customer notice within 24 hours of awareness, sooner when required           | Operational capability and applicable legal/contract deadlines; never wait for final forensics or counsel appointment to contain/escalate |
@@ -59,3 +60,14 @@ signing authority, liability amount or publication approval is inferred.
 
 Owner approval of a draft business position does not record a customer signature,
 make a technical safeguard pass, or activate the Point 6 launch record.
+
+## Managed initial setup — owner direction, 2026-11-05
+
+The SafeBus team will configure the school authority's routes and route maps,
+stops, buses, minimum student records, guardians and authorized links, drivers
+and assignments. The authority supplies lawful source information and reviews
+the completed setup before operational use. The service agreement, DPA, security
+schedule and order form now reflect this operating model. Existing authorization
+and administrator MFA apply; this decision grants no platform-wide transport-data
+access. Scope/quantity, secure transfer, handover and ongoing maintenance belong
+in each completed order; pricing and extra fees are not inferred.

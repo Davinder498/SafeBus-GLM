@@ -103,6 +103,11 @@ export function ContactPage() {
               questions, or interest in a pilot. We&apos;ll review your inquiry and follow up using
               your work email.
             </p>
+            <p className="mt-4 max-w-xl leading-7 text-slate-600">
+              Our team handles your initial setup: routes and route maps, buses, student records,
+              guardians, drivers and assignments. Your school authority provides the authorized
+              information and reviews the setup before operational use.
+            </p>
             <div className="mt-6 rounded-2xl border border-navy-100 bg-white/80 p-5">
               <p className="text-sm font-semibold text-navy-900">
                 Email, support or privacy requests

@@ -46,12 +46,34 @@ notification setup; customer scope, recipient choices, Android permission and
 server authorization still apply. See the [current scope reconciliation](../../../operations/privacy-commercial-operations-2026-11-05.md).
 A roadmap, source-code component or preview does not add a contractual commitment.
 
-## 3. Customer responsibilities
+## 3. Managed onboarding and customer responsibilities
+
+### SafeBus-managed initial setup
+
+The owner-selected delivery model is managed onboarding. SafeBus's team configures
+the agreed routes, stops and route maps, buses, minimum student records, guardians
+and authorized links, drivers and transportation assignments. The Customer
+provides authorized source information, identifies its approving representative
+and reviews data, routes, stops and assignments before operational use. SafeBus
+records and corrects setup discrepancies with that representative. The Customer
+retains transport-safety decisions and the authority for guardian relationships.
+
+Personnel use named Customer-authorized accounts scoped to the relevant school
+authority, existing role permissions and administrator MFA. Platform-wide
+administration is not an onboarding data-access entitlement. No shared account,
+service-role frontend or RLS bypass is authorized. The DPA and Security Schedule
+apply to setup work and temporary source copies as well as normal operation.
+
+The Order Form identifies source-data delivery, setup scope/quantities, Customer
+approval, handover, training, ongoing change responsibilities and any agreed
+fees. Managed setup does not imply a new bulk-import/export capability, route
+safety certification, continuous data-entry service or an unagreed price.
 
 The Customer supplies lawful instructions, accurate minimum transport data,
-authorized participants and appropriate collection notices. It manages guardian
-authority, school/driver assignments, employee/BYOD arrangements and account
-lifecycle changes promptly. Its authorized administrators comply with security
+authorized participants and appropriate collection notices. It determines guardian
+authority and approves school/driver assignments; SafeBus implements the agreed
+initial setup. The Customer maintains employee/BYOD arrangements and provides
+prompt account-lifecycle and assignment-change instructions. Its authorized administrators comply with security
 requirements and do not request access beyond the contracted scope.
 
 The Customer retains its public-body duties and transport safety responsibilities.

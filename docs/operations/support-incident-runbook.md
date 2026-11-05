@@ -8,16 +8,14 @@
 
 ## Coverage boundary
 
-The owner confirmed receipt of an operational alert at this inbox. This proves
-one inbox delivery, not continuous supervision or response coverage. Primary
-operations responder, capable backup, holiday coverage and urgent escalation
-route remain unresolved. The owner selected Monday–Friday, 8:00 a.m.–5:00 p.m.
-Alberta local time (`America/Edmonton`) on 2026-11-05. Those hours express the
-intended support window; staffed coverage still needs assignment and verification.
-A backup responder is an authorized person or contracted support contact who can
-triage urgent reports and escalate when the primary responder is unavailable.
-Use individual accounts and only the access needed; no shared passwords or
-automatic access to transportation records. No backup is appointed by this draft.
+The owner confirmed receipt of an operational alert at the selected inbox and
+will handle support and backup escalation personally. Support hours are
+Monday–Friday, 8:00 a.m.–5:00 p.m. Alberta local time (`America/Edmonton`).
+Holiday coverage and urgent escalation mechanics remain unresolved. This is one
+owner-managed response arrangement; it provides no independent cover when the
+owner is unavailable. No separate employee or contractor is represented as
+appointed. Individual accounts and only necessary access remain required.
+A received email and selected hours do not prove a completed response exercise.
 
 Do not advertise 24/7 support, a response SLA or a telephone number from this
 document. The signed order/SLA must reflect the actual staffed service.
@@ -148,3 +146,11 @@ a passed exercise. Retain only dated non-secret evidence references in Git.
 
 Approvals in privacy/operations readiness remain pending until evidence passes.
 No full-restore/DR drill or blanket counsel signature is added by this procedure.
+
+## Managed setup requests
+
+The SafeBus team handles initial school-authority configuration. Follow the
+[managed-onboarding checklist](managed-onboarding.md), with documented authority
+instructions, restricted data transfer, named scoped accounts and authority
+review. Treat requests for ongoing maintenance according to the accepted order;
+do not silently expand initial setup into an unlimited service obligation.

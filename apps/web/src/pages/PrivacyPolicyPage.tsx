@@ -93,6 +93,9 @@ export function PrivacyPolicyPage() {
               <h2 className="text-xl font-bold text-slate-950">Who processes it</h2>
               <p className="mt-2">
                 The issuing school authority and its authorized transportation staff use SafeBus.
+                Authorized SafeBus onboarding personnel can configure routes, route maps, buses,
+                student records, guardian links, drivers and assignments on the authority&apos;s
+                documented instructions, using access limited to that authority and the work needed.
                 Service providers support hosting and authentication (Supabase), application
                 delivery (Netlify), map tiles (Geoapify), transactional email (Resend), and opt-in
                 Android push delivery (Google Firebase Cloud Messaging). Stripe processes
