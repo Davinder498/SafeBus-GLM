@@ -1,6 +1,6 @@
 # SafeBus Legal and Records Hold Procedure — Draft
 
-**Status:** Proposed operating procedure; hold controls and exercises unverified
+**Status:** Scoped controls prepared following owner approval; protected installation and hosted acceptance pending
 **Owner:** Business Privacy Lead with Security/Operations and the affected customer
 
 ## Purpose and initiation
@@ -46,3 +46,24 @@ verification, review history, release decision and disposal results outside Git.
 Before declaring this procedure operational, exercise preservation/release and
 retention interaction on an approved target. No hold implementation or completed
 exercise is claimed by preparing this draft.
+
+## Prepared application controls (5 November 2026)
+
+School authority and transportation administrators use **Preserve trip records**
+on a trip, and **Settings → Preserved records** to review, extend or explicitly
+release it. MFA is mandatory; mutations and archive retrieval require recent
+sign-in. Platform administrators, guardians, drivers and the retired school-admin
+role cannot use these controls. Record only an opaque reference and reason code.
+
+A review cannot reduce the minimum retention date. The selected GPS window ends
+at the recorded trip end or the moment of preservation for an ongoing trip;
+preserve an additional window if further events require it. Operational source
+events for a held trip remain protected. Deleted history cannot be recreated.
+An archive disposal already reserved by the worker temporarily rejects a new
+preservation request for that trip; no preservation is claimed to have been
+created. Refresh and retry, and assess any history already disposed of.
+
+The release record and GPS disposal tombstone remain for 395 days. The worker
+rechecks removed objects daily during that window and removes the sample-ID
+coverage immediately after successful archive removal. Existing provider backup
+windows remain separate. Do not claim immediate erasure from immutable backups.

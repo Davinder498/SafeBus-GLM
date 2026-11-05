@@ -170,11 +170,24 @@ export async function operationalSnapshot(client, config) {
       snapshot.columnGrants.push(rows);
     }
   }
+  if (config.storageBuckets) {
+    snapshot.storageBuckets = [];
+    for (const bucket of config.storageBuckets) {
+      const {
+        rows: [row],
+      } = await client.query(
+        'select id,name,public,file_size_limit::text,allowed_mime_types from storage.buckets where id=$1',
+        [bucket.id],
+      );
+      snapshot.storageBuckets.push(row ?? null);
+    }
+  }
   return snapshot;
 }
 
 export function verifyOperationalSnapshot(snapshot, config, state) {
   for (const key of [
+    'storageBuckets',
     'relations',
     'jobs',
     'quotaRepairs',
@@ -244,8 +257,19 @@ export function verifyOperationalSnapshot(snapshot, config, state) {
 export function operationalRestoreSql(snapshot, config) {
   const pendingGuards = (config.mustBeEmptyBeforeRestore ?? []).map((table) => {
     const [schema, name] = table.split('.');
-    return `DO $restore$ BEGIN IF EXISTS(SELECT 1 FROM ${identifier(schema)}.${identifier(name)} LIMIT 1) THEN RAISE EXCEPTION 'Pending notification audience work must drain before rollback.'; END IF; END $restore$;`;
+    return `DO $restore$ BEGIN IF EXISTS(SELECT 1 FROM ${identifier(schema)}.${identifier(name)} LIMIT 1) THEN RAISE EXCEPTION 'Retained feature data must drain before rollback.'; END IF; END $restore$;`;
   });
+  for (const column of config.mustBeNullBeforeRestore ?? []) {
+    pendingGuards.push(
+      `DO $restore$ BEGIN IF EXISTS(SELECT 1 FROM ${identifier(column.schema)}.${identifier(column.table)} WHERE ${identifier(column.name)} IS NOT NULL LIMIT 1) THEN RAISE EXCEPTION 'Retained feature data prevents rollback.'; END IF; END $restore$;`,
+    );
+  }
+  for (const bucket of config.storageBuckets ?? []) {
+    if (bucket.before !== null) throw new Error('OPERATIONAL_RECOVERY_SCOPE');
+    pendingGuards.push(
+      `DO $restore$ BEGIN IF EXISTS(SELECT 1 FROM storage.objects WHERE bucket_id=${literal(bucket.id)} LIMIT 1) THEN RAISE EXCEPTION 'Archive objects prevent rollback.'; END IF; END $restore$;`,
+    );
+  }
   const moves = (config.tableMoves ?? []).map(
     (move) =>
       `ALTER TABLE ${identifier(move.after.schema)}.${identifier(move.after.table)} SET SCHEMA ${identifier(move.before.schema)};`,
@@ -305,6 +329,8 @@ export function operationalRestoreSql(snapshot, config) {
     statements.push(
       `ALTER TABLE ${identifier(column.schema)}.${identifier(column.table)} DROP COLUMN ${identifier(column.name)};`,
     );
+  for (const bucket of config.storageBuckets ?? [])
+    statements.push(`DELETE FROM storage.buckets WHERE id=${literal(bucket.id)};`);
   for (const [index, p] of snapshot.policies.entries()) {
     if (p === null) {
       const target = config.policies[index].after;

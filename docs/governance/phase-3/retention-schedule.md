@@ -1,6 +1,10 @@
-# SafeBus Retention and Disposal Schedule — Draft
+# SafeBus Retention and Disposal Schedule
+
+codex/retention-lifecycle-20261105
+**Status:** Owner-approved GPS/event/notification schedule; implementation prepared, protected rollout and operating evidence pending
 
 **Status:** Baseline periods conditionally supported by owner; legal/customer overrides and safe enforcement remain required
+ main
 **Owner:** Business Privacy Lead with Customer / Engineering / Operations
 **Last updated:** 2026-11-05
 
@@ -11,15 +15,39 @@ no approval reference. The earlier October observation below is historical and
 must not be used to report the correction as uninstalled. See the
 [read-only observation](retention-observation-2026-11-05.json).
 
-The inspected retention entry points contain no scoped legal-hold exclusion.
-Destructive execution remains blocked pending an accepted schedule, safe hold/
-dependency handling, supplier windows and protected rollout. This work does not
-enable deletion or alter periods. The server runner now rejects incomplete or
-inconsistent results instead of reporting an empty response as successful.
+The owner approved the scoped 30/395/90-day plan on 5 November 2026.
+The forward implementation and role acceptance are described in
+[retention lifecycle acceptance](../../operations/retention-lifecycle-acceptance.md).
+This approval does not approve the other historical inventory proposals below,
+certify legal classification for every authority, or enable production deletion.
+
+| Approved class | Trigger and period |
+| --- | --- |
+| Routine GPS | 30 days after both recording and receipt |
+| Pickup/drop-off, weather/traffic exceptions and operational statuses | 395 days after trip end, extended for late receipt/update |
+| Standalone service announcements | 395 days after explicit resolution; unresolved records remain |
+| Inbox copies | 90 days after creation, while delivery dependencies are respected |
+| Terminal email/push records | 90 days after terminal outcome; pending/processing records remain |
+| Released preservation metadata and minimal archive disposal records | 395 days after release/removal, after archive disposal |
+
+Specific holds override routine expiry. A decision-use minimum is at least one
+calendar year in Alberta local time, with longer mandatory/customer requirements
+entered by the authority. Reviews never auto-release. Only selected GPS is
+archived, encrypted with a dedicated versioned key and verified by read-back;
+unverified or uncovered samples remain protected. Overlapping trip requests keep
+existing archives available. Downloads filter samples to the selected window;
+physical encrypted chunks can include adjoining samples from the original scoped
+archive until all trip preservation requests release. Archives are not a new
+whole-fleet annual GPS history.
+
+Production observation above remains the latest live evidence. The new migration
+is pending; all other account/student/driver/audit cleanup remains observation
+only under the prepared implementation. Supplier/backups, device queues and
+customer-specific classifications still require their own operating evidence.
 
 ## Purpose and acceptance boundary
 
-This schedule supplies proposed business/transport periods for review. It does
+The scoped table above records the owner decision. The historical inventory below supplies other proposed periods for review. It does
 not close R-011, establish legal retention periods or enable destructive deletion.
 Approve each purpose, trigger, applicable minimum/maximum legal requirement,
 hold exception, supplier/backup window and disposal method before execution.

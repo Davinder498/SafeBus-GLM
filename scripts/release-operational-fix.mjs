@@ -24,6 +24,7 @@ const manifests = {
   recent_auth: 'config/pending/recent-auth-session.json',
   offline_actions: 'config/pending/offline-trip-actions.json',
   retention: 'config/pending/retention-qualification.json',
+  retention_lifecycle: 'config/pending/retention-lifecycle.json',
   tracking: 'config/pending/tracking-queue-recovery.json',
   calendar: 'config/pending/route-service-calendar.json',
   reporting: 'config/pending/privileged-admin-mfa.json',
@@ -192,9 +193,10 @@ try {
   } else {
     stage = 'verify';
     const acceptance = verifyOperationalSnapshot(await capture(), config, 'after');
-    const retention = milestone === 'retention'
-      ? await verifyRetentionDryRuns(client, config.functions[0].after.md5)
-      : undefined;
+    const retention =
+      milestone === 'retention'
+        ? await verifyRetentionDryRuns(client, config.functions[0].after.md5)
+        : undefined;
     await write('verification', {
       ...identity,
       acceptance,

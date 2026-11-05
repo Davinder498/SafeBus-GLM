@@ -46,11 +46,11 @@ describe('scheduled retention runner', () => {
     expect(JSON.parse(response.body)).toMatchObject({ dryRun: true });
   });
 
-  it('passes an explicitly configured execution request unchanged', async () => {
+  it('keeps legacy inventory observation-only even with its former execution flag', async () => {
     process.env.SAFEBUS_RETENTION_EXECUTE = 'true';
     const rpc = vi
       .fn()
-      .mockResolvedValueOnce({ data: policies(false), error: null })
+      .mockResolvedValueOnce({ data: policies(true), error: null })
       .mockResolvedValueOnce({
         data: [{ email_deleted: 0, inbox_deleted: 0, push_deleted: 0, devices_staled: 0 }],
         error: null,
@@ -60,8 +60,8 @@ describe('scheduled retention runner', () => {
 
     await handler();
 
-    expect(rpc).toHaveBeenCalledWith('run_all_retention_deletions', { p_dry_run: false });
-    expect(rpc).toHaveBeenCalledWith('apply_notification_retention', { p_dry_run: false });
+    expect(rpc).toHaveBeenCalledWith('run_all_retention_deletions', { p_dry_run: true });
+    expect(rpc).toHaveBeenCalledWith('apply_notification_retention', { p_dry_run: true });
   });
 
   it('fails closed when server configuration is missing', async () => {

@@ -69,7 +69,7 @@ export async function runRetention() {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const service = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !service) return json(503, { error: 'Retention runner is not configured.' });
-  const dryRun = process.env.SAFEBUS_RETENTION_EXECUTE !== 'true';
+  const dryRun = true; // Legacy inventory is observation-only; scoped lifecycle owns execution.
   try {
     /** @type {import('@supabase/supabase-js').SupabaseClient<import('@safebus/types/database').Database>} */
     const client = createClient(url, service, {

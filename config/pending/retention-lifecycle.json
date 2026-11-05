@@ -1,0 +1,540 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261105172229_retention_lifecycle.sql",
+  "migrationSha256": "feab9b90513fab8c8ba5c8f80ea85c2e88e83c4a81743025c439f1cf7f92ad4d",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "safebus_private.run_retention_deletion(text,boolean)",
+      "before": {
+        "md5": "0bd79a388362468846db861d3bf86e92"
+      },
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "after": {
+        "md5": "e58413d6721792746d4133c8067d1729"
+      }
+    },
+    {
+      "signature": "public.apply_notification_retention(boolean)",
+      "before": {
+        "md5": "42e79ab63ad88f51d1f995cc1300fe55"
+      },
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "after": {
+        "md5": "d3d20442ccd8cc0aeedc287773fb5d8f"
+      }
+    },
+    {
+      "signature": "safebus_private.retention_authority(boolean)",
+      "before": {
+        "md5": null
+      },
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "after": {
+        "md5": "a62f16539f001f732918b01666d3d26b"
+      }
+    },
+    {
+      "signature": "public.manage_retention_case(text,jsonb)",
+      "before": {
+        "md5": null
+      },
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "after": {
+        "md5": "1a41f27533435c483577f632f1f9ff66"
+      }
+    },
+    {
+      "signature": "safebus_private.retention_trip_held(uuid)",
+      "before": {
+        "md5": null
+      },
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "after": {
+        "md5": "0454d3a460c88fd7c532d72d321cae0b"
+      }
+    },
+    {
+      "signature": "safebus_private.retention_source_guard()",
+      "before": {
+        "md5": null
+      },
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "after": {
+        "md5": "399d85d692e8b282a68e100bc4b8b730"
+      }
+    },
+    {
+      "signature": "public.run_retention_lifecycle(boolean,integer)",
+      "before": {
+        "md5": null
+      },
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "after": {
+        "md5": "5740d1de8321cb7fb23e249d5c202d8b"
+      }
+    },
+    {
+      "signature": "public.retention_archive_work(text,jsonb)",
+      "before": {
+        "md5": null
+      },
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "after": {
+        "md5": "6fc64a7e4098fb1cf63ac67f5960a99b"
+      }
+    }
+  ],
+  "policies": [
+    {
+      "before": null,
+      "after": {
+        "schemaname": "storage",
+        "tablename": "objects",
+        "policyname": "retention_evidence_client_denial",
+        "permissive": "RESTRICTIVE",
+        "roles": [
+          "anon",
+          "authenticated"
+        ],
+        "cmd": "ALL",
+        "qual": "(bucket_id <> 'retention-evidence'::text)",
+        "with_check": "(bucket_id <> 'retention-evidence'::text)"
+      }
+    }
+  ],
+  "defaults": [],
+  "repairs": [],
+  "relations": [
+    {
+      "name": "safebus_private.retention_cases",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": [
+          "postgres=arwdDxtm/postgres"
+        ],
+        "columns": [
+          {
+            "name": "id",
+            "type": "uuid",
+            "default": "gen_random_uuid()",
+            "required": true
+          },
+          {
+            "name": "tenant_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "driver_trip_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "window_start",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "window_end",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "reason",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "reference",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "decision_used_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "minimum_until",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "review_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "required": true
+          },
+          {
+            "name": "created_by",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "reviewed_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "released_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "released_by",
+            "type": "uuid",
+            "default": null,
+            "required": false
+          }
+        ],
+        "constraints": [
+          "CHECK ((window_end >= window_start))",
+          "PRIMARY KEY (id)",
+          "CHECK ((reason = ANY (ARRAY['incident'::text, 'dispute'::text, 'access_request'::text, 'decision'::text, 'other'::text])))",
+          "CHECK ((reference ~ '^[A-Za-z0-9][A-Za-z0-9._/-]{0,63}$'::text))"
+        ],
+        "policies": 0
+      }
+    },
+    {
+      "name": "safebus_private.retention_archive_chunks",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": [
+          "postgres=arwdDxtm/postgres"
+        ],
+        "columns": [
+          {
+            "name": "id",
+            "type": "uuid",
+            "default": "gen_random_uuid()",
+            "required": true
+          },
+          {
+            "name": "case_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "object_key",
+            "type": "text",
+            "default": "((gen_random_uuid())::text || '.bin'::text)",
+            "required": true
+          },
+          {
+            "name": "gps_ids",
+            "type": "uuid[]",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "required": true
+          },
+          {
+            "name": "verified_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "deleting_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "removed_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "last_removed_check",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "lease_until",
+            "type": "timestamp with time zone",
+            "default": "(now() + '00:02:00'::interval)",
+            "required": true
+          },
+          {
+            "name": "ciphertext_sha256",
+            "type": "text",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "key_id",
+            "type": "text",
+            "default": null,
+            "required": false
+          }
+        ],
+        "constraints": [
+          "FOREIGN KEY (case_id) REFERENCES safebus_private.retention_cases(id) ON DELETE RESTRICT",
+          "CHECK ((((cardinality(gps_ids) >= 1) AND (cardinality(gps_ids) <= 500)) OR ((removed_at IS NOT NULL) AND (cardinality(gps_ids) = 0))))",
+          "CHECK ((((verified_at IS NULL) AND (ciphertext_sha256 IS NULL) AND (key_id IS NULL)) OR ((verified_at IS NOT NULL) AND (ciphertext_sha256 IS NOT NULL) AND (key_id IS NOT NULL))))",
+          "CHECK ((ciphertext_sha256 ~ '^[a-f0-9]{64}$'::text))",
+          "CHECK ((key_id ~ '^[A-Za-z0-9_-]{1,40}$'::text))",
+          "UNIQUE (object_key)",
+          "PRIMARY KEY (id)"
+        ],
+        "policies": 0
+      }
+    },
+    {
+      "name": "safebus_private.retention_archive_coverage",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": [
+          "postgres=arwdDxtm/postgres"
+        ],
+        "columns": [
+          {
+            "name": "case_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "gps_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "chunk_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          }
+        ],
+        "constraints": [
+          "FOREIGN KEY (case_id) REFERENCES safebus_private.retention_cases(id) ON DELETE RESTRICT",
+          "FOREIGN KEY (chunk_id) REFERENCES safebus_private.retention_archive_chunks(id) ON DELETE CASCADE",
+          "PRIMARY KEY (case_id, gps_id)"
+        ],
+        "policies": 0
+      }
+    },
+    {
+      "name": "safebus_private.retention_lifecycle_totals",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": [
+          "postgres=arwdDxtm/postgres"
+        ],
+        "columns": [
+          {
+            "name": "window_start",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "completed_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "run_count",
+            "type": "bigint",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "counts",
+            "type": "jsonb",
+            "default": null,
+            "required": true
+          }
+        ],
+        "constraints": [
+          "CHECK ((jsonb_typeof(counts) = 'object'::text))",
+          "PRIMARY KEY (window_start)",
+          "CHECK ((run_count > 0))"
+        ],
+        "policies": 0
+      }
+    }
+  ],
+  "newTables": [
+    "safebus_private.retention_cases",
+    "safebus_private.retention_archive_chunks",
+    "safebus_private.retention_archive_coverage",
+    "safebus_private.retention_lifecycle_totals"
+  ],
+  "mustBeEmptyBeforeRestore": [
+    "safebus_private.retention_cases",
+    "safebus_private.retention_archive_chunks",
+    "safebus_private.retention_archive_coverage",
+    "safebus_private.retention_lifecycle_totals"
+  ],
+  "columns": [
+    {
+      "schema": "safebus_private",
+      "table": "authority_announcements",
+      "name": "resolved_at",
+      "before": null,
+      "after": {
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      }
+    }
+  ],
+  "mustBeNullBeforeRestore": [
+    {
+      "schema": "safebus_private",
+      "table": "authority_announcements",
+      "name": "resolved_at"
+    }
+  ],
+  "triggers": [
+    {
+      "table": "public.driver_trip_location_updates",
+      "name": "retention_source_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_source_guard BEFORE INSERT OR DELETE OR UPDATE ON public.driver_trip_location_updates FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_source_guard()"
+    },
+    {
+      "table": "public.driver_trips",
+      "name": "retention_source_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_source_guard BEFORE INSERT OR DELETE OR UPDATE ON public.driver_trips FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_source_guard()"
+    },
+    {
+      "table": "public.student_trip_events",
+      "name": "retention_source_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_source_guard BEFORE INSERT OR DELETE OR UPDATE ON public.student_trip_events FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_source_guard()"
+    },
+    {
+      "table": "public.trip_exceptions",
+      "name": "retention_source_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_source_guard BEFORE INSERT OR DELETE OR UPDATE ON public.trip_exceptions FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_source_guard()"
+    },
+    {
+      "table": "public.trip_operational_statuses",
+      "name": "retention_source_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_source_guard BEFORE INSERT OR DELETE OR UPDATE ON public.trip_operational_statuses FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_source_guard()"
+    },
+    {
+      "table": "public.user_notifications",
+      "name": "retention_source_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_source_guard BEFORE INSERT OR DELETE OR UPDATE ON public.user_notifications FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_source_guard()"
+    },
+    {
+      "table": "public.guardian_notification_outbox",
+      "name": "retention_source_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_source_guard BEFORE INSERT OR DELETE OR UPDATE ON public.guardian_notification_outbox FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_source_guard()"
+    },
+    {
+      "table": "public.push_notification_outbox",
+      "name": "retention_source_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_source_guard BEFORE INSERT OR DELETE OR UPDATE ON public.push_notification_outbox FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_source_guard()"
+    },
+    {
+      "table": "safebus_private.authority_announcements",
+      "name": "retention_source_guard",
+      "before": null,
+      "after": "CREATE TRIGGER retention_source_guard BEFORE INSERT OR DELETE OR UPDATE ON safebus_private.authority_announcements FOR EACH ROW EXECUTE FUNCTION safebus_private.retention_source_guard()"
+    }
+  ],
+  "indexes": [
+    {
+      "schema": "public",
+      "name": "retention_gps_expiry",
+      "before": null,
+      "after": "CREATE INDEX retention_gps_expiry ON public.driver_trip_location_updates USING btree (GREATEST(recorded_at, created_at), id)"
+    }
+  ],
+  "storageBuckets": [
+    {
+      "id": "retention-evidence",
+      "before": null,
+      "after": {
+        "id": "retention-evidence",
+        "name": "retention-evidence",
+        "public": false,
+        "file_size_limit": "2000000",
+        "allowed_mime_types": [
+          "application/octet-stream"
+        ]
+      }
+    }
+  ]
+}

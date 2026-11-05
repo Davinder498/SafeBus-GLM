@@ -80,25 +80,23 @@ describe('scheduled retention acceptance', () => {
     expect(response.statusCode).toBe(500);
     expect(JSON.stringify(console.error.mock.calls)).not.toContain('private-token');
   });
-  it('passes an explicitly configured execution request without changing database approval', async () => {
+  it('keeps legacy execution observation-only under the approved scoped lifecycle', async () => {
     vi.stubEnv('SAFEBUS_RETENTION_EXECUTE', 'true');
     rpc
       .mockReset()
-      .mockResolvedValueOnce({ data: policies(false), error: null })
+      .mockResolvedValueOnce({ data: policies(), error: null })
       .mockResolvedValueOnce({ data: notifications(), error: null });
     const response = await runRetention();
     expect(response.statusCode).toBe(200);
-    expect(rpc.mock.calls.map((c) => c[1])).toEqual([{ p_dry_run: false }, { p_dry_run: false }]);
+    expect(rpc.mock.calls.map((c) => c[1])).toEqual([{ p_dry_run: true }, { p_dry_run: true }]);
   });
 });
 
 it('keeps RPC errors sanitized and does not continue a failed policy batch', async () => {
-  rpc
-    .mockReset()
-    .mockResolvedValue({
-      data: null,
-      error: { code: 'private-code', message: 'private-provider-message' },
-    });
+  rpc.mockReset().mockResolvedValue({
+    data: null,
+    error: { code: 'private-code', message: 'private-provider-message' },
+  });
   const response = await runRetention();
   expect(response.statusCode).toBe(500);
   expect(rpc).toHaveBeenCalledTimes(1);

@@ -39,6 +39,7 @@ export async function installTripOperationsMock(
     requests: [] as Array<Record<string, unknown>>,
     detailRequests: [] as string[],
     tripError: false,
+    preservationError: false,
     accessError: false,
     missingRpc: false,
     summaryError: false,
@@ -48,6 +49,20 @@ export async function installTripOperationsMock(
     dispatchWrites: 0,
     detailStatus: 'active',
   };
+  await page.route('**/.netlify/functions/retention-cases', (route) => {
+    const { action } = route.request().postDataJSON();
+    return route.fulfill({
+      status: controls.preservationError ? 503 : action === 'list' ? 200 : 400,
+      contentType: 'application/json',
+      body: JSON.stringify(
+        controls.preservationError
+          ? { error: 'Records preservation is unavailable. Try again.' }
+          : action === 'list'
+            ? { result: [] }
+            : { error: 'Unexpected preservation action.' },
+      ),
+    });
+  });
   await page.route('**/.netlify/functions/map-tile-config', (route) =>
     route.fulfill({
       status: controls.mapConfigured ? 200 : 503,
