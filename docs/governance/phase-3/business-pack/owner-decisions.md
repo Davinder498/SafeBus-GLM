@@ -72,3 +72,17 @@ managed-setup interpretation. Guidance, walkthroughs and authorized configuratio
 help retain existing authorization and administrator MFA. No general access,
 mandatory data handover or separate setup-assistance fee is created. Agree any
 ongoing maintenance or additional service scope separately.
+
+## Retention — conditional owner support, 2026-11-05
+
+The owner is willing to adopt the proposed retention schedule provided it does
+not violate applicable provincial or federal law. The
+[schedule's legal review](../retention-schedule.md#legal-review-and-mandatory-overrides--2026-11-05)
+records the necessary statutory/customer exceptions, including the POPA
+decision-use trigger, applicable federal breach records and tax-record duties.
+The listed periods are purpose-based proposals to assess per record/customer,
+not unconditional deletion timers. This statement does not establish that every
+condition is met, approve a particular customer's schedule, or authorize turning
+on deletion. Scoped holds, cascades, supplier handling and protected technical
+acceptance remain required. Do not mark readiness approved from this conditional
+statement or from a source merge.
