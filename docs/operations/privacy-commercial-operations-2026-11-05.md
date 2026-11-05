@@ -99,3 +99,21 @@ Revert through a reviewed PR if the public copy needs correction.
 
 Local checks and limitations are recorded in the PR. A passing build does not
 establish request handling, supplier approval, inbox coverage or launch readiness.
+
+## Owner clarification — support and address, 2026-11-05
+
+The owner selected Monday–Friday, 8:00 a.m.–5:00 p.m. Alberta local time
+(`America/Edmonton`, current Alberta rules). This resolves the intended hours,
+not holiday coverage, primary/backup assignment, urgent escalation or a numerical
+response guarantee. Earlier open-hours entries above are superseded by this choice.
+
+A missing postal address is not by itself established here as a universal
+requirement to block the website privacy notice. The direct email request route
+remains available. A legal business address is required for Google Play
+organization verification and may be required by the actual customer contract
+or other applicable duties. Keep account verification, customer notice details
+and public website disclosure separate. Do not invent an address or publish a
+home address by default. [Google Play organization requirements](https://support.google.com/googleplay/android-developer/answer/13628312)
+and [Alberta request guidance](https://www.alberta.ca/accessing-your-personal-information)
+were checked on 2026-11-05. The customer/order-specific postal contact remains
+unresolved where required.

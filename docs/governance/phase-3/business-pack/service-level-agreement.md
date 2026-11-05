@@ -29,8 +29,9 @@ and disclosed rather than excluding every tracking failure.
 
 ## Support and incident response
 
-Support operates during `[SUPPORT_HOURS]` in `[SUPPORT_TIMEZONE]`, with holidays
-and emergency escalation defined in the Order Form. The support inbox is [info@safebus.kids](mailto:info@safebus.kids); the urgent
+Owner-selected support hours (2026-11-05): Monday–Friday, 8:00 a.m.–5:00 p.m.
+Alberta local time (`America/Edmonton`, using current Alberta time rules).
+Holiday coverage and urgent escalation remain to be defined in the Order Form. The support inbox is [info@safebus.kids](mailto:info@safebus.kids); the urgent
 contact is unresolved. Complete the coverage decision before accepting the SLA and define staffed
 primary and backup coverage before promising around-the-clock support.
 

@@ -10,8 +10,15 @@
 
 The owner confirmed receipt of an operational alert at this inbox. This proves
 one inbox delivery, not continuous supervision or response coverage. Primary
-operations responder, capable backup, staffed days/hours/holidays and urgent
-escalation route must be selected and exercised before customer operation.
+operations responder, capable backup, holiday coverage and urgent escalation
+route remain unresolved. The owner selected Monday–Friday, 8:00 a.m.–5:00 p.m.
+Alberta local time (`America/Edmonton`) on 2026-11-05. Those hours express the
+intended support window; staffed coverage still needs assignment and verification.
+A backup responder is an authorized person or contracted support contact who can
+triage urgent reports and escalate when the primary responder is unavailable.
+Use individual accounts and only the access needed; no shared passwords or
+automatic access to transportation records. No backup is appointed by this draft.
+
 Do not advertise 24/7 support, a response SLA or a telephone number from this
 document. The signed order/SLA must reflect the actual staffed service.
 
