@@ -1,5 +1,12 @@
 # Supabase support request draft: managed default privileges
 
+**November 5 follow-up:** the application-owned repair is installed, and the
+remaining reserved-role defaults cannot be edited by the connected account.
+The documented extension isolation is already present. See
+[the proposed verified provider boundary](managed-default-boundary-2026-11-05.md)
+and its live observation before using this historical request. This task has
+sent no vendor message and makes no claim that these defaults were revoked.
+
 **Optional technical-assistance route, not a launch/legal prerequisite (DL-023).**
 Review effective access and app-controlled corrections first. This draft neither
 establishes that provider assistance is the only safe solution nor waives a finding.

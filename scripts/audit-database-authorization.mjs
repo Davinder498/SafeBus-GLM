@@ -5,6 +5,7 @@ import process from 'node:process';
 import pg from 'pg';
 import { authorizationAudiences } from './lib/authorization-audiences.mjs';
 import { UNSAFE_PUBLIC_DEFAULT_PRIVILEGES_SQL } from './lib/default-privilege-audit.mjs';
+import { auditReservedProviderDefaults } from './lib/reserved-provider-defaults.mjs';
 import { assertPrivateApiSchemaHidden } from './lib/existing-security-rehearsal.mjs';
 import {
   assertEnvironmentIdentity,
@@ -28,8 +29,12 @@ if (environment === 'production' && process.env.GITHUB_ACTIONS !== 'true') {
 }
 
 const surface = JSON.parse(await fs.readFile('config/authorization-surface.json', 'utf8'));
-const { authenticated, serviceOnly: serviceRole, publicFunctions: allPublic, serviceExecutable } =
-  authorizationAudiences(surface);
+const {
+  authenticated,
+  serviceOnly: serviceRole,
+  publicFunctions: allPublic,
+  serviceExecutable,
+} = authorizationAudiences(surface);
 const binding = createEnvironmentBinding({ environment, databaseUrl, supabaseUrl });
 
 function sorted(values) {
@@ -286,7 +291,20 @@ try {
   assertNoRows('Authorization references editable user metadata', editableMetadataReferences);
 
   const unsafeDefaults = await client.query(UNSAFE_PUBLIC_DEFAULT_PRIVILEGES_SQL);
-  assertNoRows('Unsafe default privileges are present', unsafeDefaults);
+  const defaultBoundary = await auditReservedProviderDefaults({
+    client,
+    findings: unsafeDefaults.rows.map((row) => row.object_name),
+    binding,
+    supabaseUrl,
+    apiKey: secretKey,
+  });
+  console.log(
+    JSON.stringify({
+      check: 'default-privileges',
+      ...defaultBoundary,
+      retainedFindings: unsafeDefaults.rows.map((row) => row.object_name),
+    }),
+  );
 
   const schemaCreate = await client.query(`
     select role_name as object_name
