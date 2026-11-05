@@ -18,6 +18,10 @@ test('privacy notice is reachable before sign-in and explains all three roles', 
   await page.goto('/login');
   await page.getByRole('link', { name: 'Privacy Notice', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'SafeBus privacy policy' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'info@safebus.kids', exact: true })).toHaveAttribute(
+    'href',
+    'mailto:info@safebus.kids',
+  );
   const sections = page.getByRole('navigation', { name: 'Privacy notice sections' });
   for (const [name, heading, fragment] of [
     [
@@ -38,6 +42,12 @@ test('privacy notice is reachable before sign-in and explains all three roles', 
   await expect(
     page.getByRole('heading', { name: 'Request SafeBus account deletion' }),
   ).toBeVisible();
+  await expect(page.getByRole('link', { name: 'info@safebus.kids', exact: true })).toHaveAttribute(
+    'href',
+    'mailto:info@safebus.kids',
+  );
+  await expect(page.getByText(/an email alone does not authorize deletion/)).toBeVisible();
+  expect(operationalRequests).toEqual([]);
 });
 
 test('tenant admin uses the account menu for privacy without a duplicate sidebar link', async ({

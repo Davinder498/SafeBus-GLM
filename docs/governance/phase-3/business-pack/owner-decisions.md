@@ -1,26 +1,29 @@
 # Owner Decisions Before Signing or Publication
 
 **Status:** Decision worksheet; only expressly recorded owner choices are resolved
-**Prepared:** 2026-10-13; owner inputs updated 2026-10-16
+**Prepared:** 2026-10-13; owner inputs reconciled 2026-11-05
 
 The owner initially requested placeholders for business identity and contact
 details. On 2026-10-15 the owner identified Sachman Gold Inc., doing business as
 SafeBus, as the operator and seller, and selected SafeBus as the sole public name.
 Keep customer-specific values and signed copies outside Git.
 
-The owner is the Privacy Lead. Contact details remain unresolved. The owner
+The owner is the Privacy Lead. The selected business inbox is info@safebus.kids;
+the owner confirmed receipt of an operational alert on 2026-11-05. Staffed hours,
+backup coverage and request-handling exercises remain unresolved. The owner
 confirmed on 2026-10-16 that the official domain is safebus.kids and Sachman Gold
 Inc. is an Alberta corporation doing business as SafeBus. The website and public
-privacy/deletion routes are available over HTTPS. GST/HST registration is not held,
-and pricing is undecided. No monitored email, address, registration-document verification,
+privacy/deletion routes are available over HTTPS. The 2026-10-16 owner record
+reported no GST/HST registration and undecided pricing; re-confirm current tax
+status and pricing before execution. No staffed coverage, postal address, registration-document verification,
 signing authority, liability amount or publication approval is inferred.
 
 | Input                                                            | Draft treatment                                                                     | Required decision/evidence                                                                                                                |
 | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Provider legal name / public name                                | Sachman Gold Inc., doing business as SafeBus; owner-confirmed 2026-10-15            | Registration documents and signing authority still require verification before execution                                                  |
 | `[PROVIDER_BUSINESS_ADDRESS]`                                    | Unfilled                                                                            | Business mailing address                                                                                                                  |
-| `[PRIVACY_EMAIL]`, `[SUPPORT_EMAIL]`, `[NOTICE_EMAIL]`           | Unfilled                                                                            | Working, monitored business channels and backup routing                                                                                   |
-| `[PRIVACY_LEAD]`                                                 | Business owner; expressly selected on 2026-10-15                                    | Appointment decision recorded; training, resourcing and working contact still required                                                    |
+| Privacy and support email; `[NOTICE_EMAIL]`                      | info@safebus.kids for privacy/support; formal legal-notice election pending         | Support coverage and backup routing; decide the formal contract-notice address separately                                                 |
+| `[PRIVACY_LEAD]`                                                 | Business owner; expressly selected on 2026-10-15                                    | Appointment decision recorded; training, resourcing, coverage and backup still required                                                   |
 | `[PRIVACY_BACKUP]`                                               | Unresolved                                                                          | Capable backup and routing evidence; personal details outside Git                                                                         |
 | `[EFFECTIVE_DATE]`, `[PUBLIC_POLICY_URL]`, `[DELETION_URL]`      | No effective or publication date                                                    | Approved wording, working public HTTPS pages and contact paths                                                                            |
 | `[CUSTOMER_LEGAL_NAME]`, customer privacy contacts and signatory | Unfilled                                                                            | Customer onboarding inputs; not needed to write the business drafts                                                                       |

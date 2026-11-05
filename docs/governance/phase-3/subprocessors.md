@@ -1,8 +1,8 @@
-﻿# SafeBus Supplier Register and Residency Review — Draft
+# SafeBus Supplier Register and Residency Review — Draft
 
 **Status:** Inventory updated; actual vendor agreements, countries and approval pending
 **Owner:** Business Privacy Lead / Product / Security
-**Last updated:** 2026-10-13
+**Last updated:** 2026-11-05 (America/Regina)
 
 ## Register and role
 
@@ -13,17 +13,17 @@ not an approved public statement. Differentiate transport subprocessors from
 SafeBus own-business financial, inquiry and support suppliers. Record the actual
 legal vendor and role in the executed appendix, not just a product brand.
 
-| Service                       | Information/risks to inspect                                                                   | Current decision                                                                                                       |
-| ----------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Supabase database/Auth        | Customer records/sessions; primary region, backups, support/managed logs and downstream access | Canadian primary region intended; full evidence/agreement pending                                                      |
-| Netlify website/CDN/functions | Personal request content and IP/log metadata; execution/CDN/log countries and stored copies    | Country, contract and log/retention review pending; no blanket no-at-rest claim                                        |
-| Email vendor                  | Invites, event emails, business inquiries, recipient/content and provider delivery history     | Actual enabled service and country/DPA/retention decisions pending                                                     |
-| Geoapify                      | Viewport tile coordinates, IP/referrer/metadata, quota/key controls                            | Selected provider; contract, restricted key, paid SLA and privacy/country evidence pending                             |
-| Stripe                        | Contract/billing contact, PO/subscription/invoice/payment details and provider metadata        | Own-business/financial role review pending; SafeBus projection excludes card/bank details                              |
-| GitHub artifact transfer      | Encrypted database/role exports and schema evidence; repository/build/release metadata         | Restricted artifact/country/retention review pending; transfer is not durable Canadian recovery storage                |
-| Owner recovery storage        | Off-site encrypted copies and separate private key custody                                     | Owner-reported Canadian copy; privacy custody/access/window decisions remain; historical recovery evidence is separate |
-| Google FCM                    | Optional token and privacy-limited push/metadata                                               | Outside CR1 activation; default off until separate approved gates                                                      |
-| Monitoring/support tools      | Potential diagnostic/ticket personal data and access                                           | Selection and review pending; no new tooling approved here                                                             |
+| Service                       | Information/risks to inspect                                                                   | Current decision                                                                                                                                                      |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Supabase database/Auth        | Customer records/sessions; primary region, backups, support/managed logs and downstream access | BusSafe primary region ca-central-1 observed 2026-11-05; full supplier/backup/log/support evidence and agreement pending                                              |
+| Netlify website/CDN/functions | Personal request content and IP/log metadata; execution/CDN/log countries and stored copies    | Country, contract and log/retention review pending; no blanket no-at-rest claim                                                                                       |
+| Email vendor                  | Invites, event emails, business inquiries, recipient/content and provider delivery history     | Resend active for application email and fixed operational alerts; US sending region observed; DPA/downstream/retention evidence pending                               |
+| Geoapify                      | Viewport tile coordinates, IP/referrer/metadata, quota/key controls                            | Selected provider; contract, restricted key, paid SLA and privacy/country evidence pending                                                                            |
+| Stripe                        | Contract/billing contact, PO/subscription/invoice/payment details and provider metadata        | Own-business/financial role review pending; SafeBus projection excludes card/bank details                                                                             |
+| GitHub artifact transfer      | Encrypted database/role exports and schema evidence; repository/build/release metadata         | Restricted artifact/country/retention review pending; transfer is not durable Canadian recovery storage                                                               |
+| Owner recovery storage        | Off-site encrypted copies and separate private key custody                                     | Owner-reported Canadian copy; privacy custody/access/window decisions remain; historical recovery evidence is separate                                                |
+| Google FCM                    | Optional token and privacy-limited push/metadata                                               | Eligible guardian/driver opt-in Android push is in the current setup; supplier countries/terms/retention evidence and physical delivery acceptance remain pending     |
+| Monitoring/support tools      | Potential diagnostic/ticket personal data and access                                           | Existing Netlify/GitHub health checks and Resend alerts; info@safebus.kids support inbox; full app error telemetry, redaction acceptance and additional tools pending |
 
 ## Per-supplier evidence checklist
 
@@ -68,5 +68,6 @@ For a new supplier, country, purpose or expanded feature, review the inventory,
 PIA, safeguards, retention and contractual/notice effects before activation.
 Follow the accepted DPA notification/objection process and obtain actual approvals.
 Publish a resolved supplier disclosure only after the owner and relevant customer
-privacy decisions pass. Optional push/monitoring/tools need their own approval;
-this register does not authorize them.
+privacy decisions pass. The standard notification setup has owner approval (2026-10-24); recipient
+consent, server scope, device permission and actual supplier acceptance remain
+separate. New tools still require review; this register does not provision them.

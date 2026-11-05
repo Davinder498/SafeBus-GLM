@@ -3,7 +3,7 @@
 **Review status:** Business draft; not effective or approved for publication
 **Operator:** Sachman Gold Inc., doing business as SafeBus
 **Proposed effective date:** `[EFFECTIVE_DATE]`
-**Privacy contact:** `[PRIVACY_EMAIL]`; business address `[PROVIDER_BUSINESS_ADDRESS]`
+**Privacy contact:** [info@safebus.kids](mailto:info@safebus.kids); business address `[PROVIDER_BUSINESS_ADDRESS]`
 
 Before publication, fill the contacts, approve the supplier-country disclosures,
 confirm enabled features and retention, and reconcile this notice with the app,
@@ -61,9 +61,13 @@ permission supports the authorized bus QR start workflow; it does not authorize
 child tracking. Before publication, verify camera-image handling and the exact
 supported Android permissions against the released binary.
 
-Optional Android FCM push and student QR are outside the locked CR1 activation
-scope. They are not made available by this policy. If separately authorized,
-provide revised disclosure and any required consent before processing.
+Android push is available to eligible guardians and drivers only after their
+opt-in and device permission. Google Firebase Cloud Messaging processes device
+tokens and limited delivery metadata; push previews exclude names, routes, stops,
+coordinates and internal identifiers. The owner approved the standard notification
+setup on 2026-10-24; no separate approval is required for each school authority.
+This does not supply recipient consent or complete supplier-contract review.
+Student QR remains outside the commercial commitment pending its own acceptance.
 
 ## Choices and legal grounds
 
@@ -103,7 +107,9 @@ backup/log handling and relevant support access. Canadian database storage alone
 does not mean all service processing is Canadian. Suppliers may be subject to
 laws in the countries where they operate. We review lawful disclosure demands,
 minimize disclosures, and notify the affected customer when legally permitted.
-Optional monitoring, support tooling or push providers require their own review.
+Additional monitoring or support tools require review before activation. The
+existing Netlify/GitHub health checks and Resend operational alert emails are
+part of the supplier inventory; their existence is not supplier approval.
 
 ## Retention and deletion
 
@@ -124,13 +130,13 @@ deletions before normal processing resumes.
 
 For school transportation records, contact the issuing authority's privacy
 office. SafeBus can route your request and assist the authority. For information
-held for SafeBus's own business purposes, contact `[PRIVACY_EMAIL]` directly.
+held for SafeBus's own business purposes, contact [info@safebus.kids](mailto:info@safebus.kids) directly.
 You do not need an active app account or school response to ask us about our own
 business records or report a privacy concern.
 
 We verify identity proportionately, protect other people's information, record
 the request and apply the relevant statutory response rules. Account-deletion
-instructions will be at `[DELETION_URL]`. Permission to view a linked bus is not
+instructions will be at https://safebus.kids/account-deletion. Permission to view a linked bus is not
 automatic authority to receive every student record through an access request.
 If your concern is unresolved, you may contact the
 [Office of the Information and Privacy Commissioner of Alberta](https://oipc.ab.ca/)
@@ -152,7 +158,9 @@ or unrelated collection merely because it is updated.
 ## Contact and accountability
 
 Address privacy questions to the business owner, the appointed Privacy Lead,
-at `[PRIVACY_EMAIL]` or `[PROVIDER_BUSINESS_ADDRESS]`. The owner selected this
-role on 2026-10-15; the contact details remain unresolved. It is not necessary
+at [info@safebus.kids](mailto:info@safebus.kids). The business postal address remains
+`[PROVIDER_BUSINESS_ADDRESS]`; do not publish an unverified postal channel.
+The owner selected this role on 2026-10-15; coverage and backup remain unresolved.
+It is not necessary
 for that business role to be a lawyer. Legal-review
 and customer-specific approval obligations are handled separately.

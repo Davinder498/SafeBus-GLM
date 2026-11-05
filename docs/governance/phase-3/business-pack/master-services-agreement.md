@@ -40,9 +40,11 @@ a Student Information System or emergency services. Displayed location may be
 delayed or unavailable; a recorded event is not continuous child location.
 
 Excluded unless separately agreed and approved: child GPS, student QR boarding,
-SMS, Android FCM activation, iOS delivery, SIS integration, traffic-aware ETA,
-guardian trip replay and any feature outside the locked CR1 scope. A roadmap,
-source-code component or preview does not add a contractual commitment.
+SMS, iOS delivery, SIS integration, traffic-aware ETA,
+guardian trip replay and any feature outside the locked CR1 scope. Eligible guardians and drivers can opt into Android push under the current
+notification setup; customer scope, recipient choices, Android permission and
+server authorization still apply. See the [current scope reconciliation](../../../operations/privacy-commercial-operations-2026-11-05.md).
+A roadmap, source-code component or preview does not add a contractual commitment.
 
 ## 3. Customer responsibilities
 

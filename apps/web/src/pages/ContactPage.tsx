@@ -104,13 +104,25 @@ export function ContactPage() {
               your work email.
             </p>
             <div className="mt-6 rounded-2xl border border-navy-100 bg-white/80 p-5">
-              <p className="text-sm font-semibold text-navy-900">Prefer email?</p>
+              <p className="text-sm font-semibold text-navy-900">
+                Email, support or privacy requests
+              </p>
               <a
                 href="mailto:info@safebus.kids"
                 className="mt-2 inline-block rounded text-lg font-semibold text-navy-700 underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-600 focus-visible:ring-offset-2"
               >
                 info@safebus.kids
               </a>
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                For an account or privacy request, email us directly; you do not need to complete
+                this school authority inquiry form. Do not send passwords, sign-in links,
+                verification codes or sensitive student information.
+              </p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                For an urgent transportation concern, contact your school authority&apos;s
+                transportation office. For an emergency, call 911. SafeBus email is not an emergency
+                dispatch service.
+              </p>
             </div>
             <div className="mt-8 space-y-4 text-sm text-slate-600">
               <p className="flex items-start gap-3">

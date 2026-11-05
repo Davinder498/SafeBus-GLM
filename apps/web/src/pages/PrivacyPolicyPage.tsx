@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router';
 import { LegalPageLayout } from '@/components/layout/LegalPageLayout';
 import { RolePrivacyNotices } from '@/components/privacy/RolePrivacyNotices';
 
-const updatedDate = 'October 17, 2026';
+const updatedDate = 'November 5, 2026';
 
 export function PrivacyPolicyPage() {
   const { hash } = useLocation();
@@ -156,11 +156,21 @@ export function PrivacyPolicyPage() {
             <section id="contact" className="scroll-mt-24 rounded-xl bg-slate-50 p-5">
               <h2 className="text-xl font-bold text-slate-950">Contact</h2>
               <p className="mt-2">
-                Contact the privacy office or transportation office of the school authority that
-                issued your SafeBus account. If that channel is unavailable, use the verified
-                developer contact displayed on the SafeBus Google Play listing and include the name
-                of your school authority. Do not send student health, address, custody, or other
-                unnecessary sensitive information.
+                For school transportation records, contact the privacy office or transportation
+                office of the school authority that issued your SafeBus account. If you cannot reach
+                it, SafeBus can help route your request.
+              </p>
+              <p className="mt-3">
+                Contact SafeBus&apos;s Privacy Lead at{' '}
+                <a
+                  href="mailto:info@safebus.kids"
+                  className="font-semibold underline underline-offset-4"
+                >
+                  info@safebus.kids
+                </a>
+                . Include only your contact email, school authority name if applicable, and a brief
+                description of your request. Do not email passwords, sign-in links, verification
+                codes, student health, address, custody, or other unnecessary sensitive information.
               </p>
               <p className="mt-3">
                 The business owner is SafeBus&apos;s privacy lead. Questions about SafeBus&apos;s

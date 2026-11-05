@@ -1,9 +1,9 @@
-﻿# SafeBus Driver and Personal-Android Privacy Notice — Draft
+# SafeBus Driver and Personal-Android Privacy Notice — Draft
 
 **Status:** Participant/BYOD notice draft; customer adaptation, device evidence and publication pending
 **Operator:** Sachman Gold Inc., doing business as SafeBus
 **Customer/employer privacy contact:** `[CUSTOMER_PRIVACY_CONTACT]`
-**SafeBus privacy contact:** `[PRIVACY_EMAIL]`
+**SafeBus privacy contact:** [info@safebus.kids](mailto:info@safebus.kids)
 
 **In-app reading:** `/privacy#drivers`, accessible from the account menu,
 Privacy and account settings, sign-in and the pre-trip/location disclosure.
@@ -36,7 +36,10 @@ explained against the signed release before operation.
 The camera supports authorized bus QR start. Verify handling of transient frames
 and the released permissions before publication; this does not enable student
 QR boarding or child tracking. Guardian visibility does not require guardians'
-own GPS. Optional FCM push is separately gated and is not activated by this notice.
+own GPS. Optional Android FCM push requires your opt-in and device permission;
+its device token and limited delivery data are handled by Google Firebase.
+Private push previews exclude names, routes, stops, coordinates and internal
+identifiers. Supplier evidence and physical-device acceptance remain pending.
 
 Authorized customer staff see operational records; linked guardians receive
 limited active-bus visibility, rather than your full identity or other manifests.
@@ -52,7 +55,7 @@ promised. Do not share credentials or use the phone unsafely while driving.
 
 Request transport-record access/correction/deletion through your employer/customer
 privacy office. SafeBus assists and accepts concerns or requests about its own
-business records at `[PRIVACY_EMAIL]`, including if you cannot sign in. Before
+business records at [info@safebus.kids](mailto:info@safebus.kids), including if you cannot sign in. Before
 publication insert approved record/device/backup periods, hold exceptions,
-`[DELETION_URL]` and `[PUBLIC_POLICY_URL]`. This draft does not state that deletion,
+https://safebus.kids/account-deletion and https://safebus.kids/privacy. This draft does not state that deletion,
 session revocation, signed-device testing or legal/customer approval has passed.

@@ -8,13 +8,13 @@ deployment, localhost test or supplier SLA is not a commercial SafeBus SLA.
 
 ## Service measures
 
-| Measure               | Definition                                                                                                                  | Target to approve                                       |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Availability          | Percentage of included service minutes in a calendar month in which an authorized user can perform the agreed core workflow | `[MONTHLY_AVAILABILITY_PERCENT]`                        |
-| Core response latency | p95 of the agreed authenticated workflow/request set, under the supported workload                                          | `[P95_RESPONSE_TARGET]`                                 |
-| Fresh-position lag    | Collection timestamp to authorized visible fresh position; report stale/unknown honestly                                    | `[GPS_FRESHNESS_TARGET]` and network/device boundary    |
-| Notifications         | Source event to approved email-provider acceptance/delivery as separately defined; failures/retries measured                | `[NOTIFICATION_TARGET]` and receipt definition          |
-| Recovery point/time   | Optional separately negotiated service; excluded from the commercial launch assessment                                      | No commitment selected; any later promise needs supporting evidence |
+| Measure               | Definition                                                                                                                       | Target to approve                                                   |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Availability          | Percentage of included service minutes in a calendar month in which an authorized user can perform the agreed core workflow      | `[MONTHLY_AVAILABILITY_PERCENT]`                                    |
+| Core response latency | p95 of the agreed authenticated workflow/request set, under the supported workload                                               | `[P95_RESPONSE_TARGET]`                                             |
+| Fresh-position lag    | Collection timestamp to authorized visible fresh position; report stale/unknown honestly                                         | `[GPS_FRESHNESS_TARGET]` and network/device boundary                |
+| Notifications         | Source event to email/push provider acceptance, with inbox receipt/device display measured separately; failures/retries measured | `[NOTIFICATION_TARGET]` and receipt definition                      |
+| Recovery point/time   | Optional separately negotiated service; excluded from the commercial launch assessment                                           | No commitment selected; any later promise needs supporting evidence |
 
 Monthly availability is 100 × (included minutes − unavailable included minutes)
 / included minutes. The parties agree how monitoring measures multi-tenant
@@ -30,9 +30,9 @@ and disclosed rather than excluding every tracking failure.
 ## Support and incident response
 
 Support operates during `[SUPPORT_HOURS]` in `[SUPPORT_TIMEZONE]`, with holidays
-and emergency escalation defined in the Order Form. Channels are `[SUPPORT_EMAIL]`
-and the accepted emergency contact. Define staffed primary and backup coverage
-before promising around-the-clock support.
+and emergency escalation defined in the Order Form. The support inbox is [info@safebus.kids](mailto:info@safebus.kids); the urgent
+contact is unresolved. Complete the coverage decision before accepting the SLA and define staffed
+primary and backup coverage before promising around-the-clock support.
 
 | Priority | Example                                                               | Acknowledgement/update targets                                     |
 | -------- | --------------------------------------------------------------------- | ------------------------------------------------------------------ |
