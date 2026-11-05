@@ -150,6 +150,9 @@ const SupportPage = lazy(() =>
 const AdminSupportPage = lazy(() =>
   import('@/pages/AdminSupportPage').then((page) => ({ default: page.AdminSupportPage })),
 );
+const RecordsDisposalPage = lazy(() =>
+  import('@/pages/RecordsDisposalPage').then((page) => ({ default: page.RecordsDisposalPage })),
+);
 const PlatformSupportPage = lazy(() =>
   import('@/pages/PlatformSupportPage').then((page) => ({ default: page.PlatformSupportPage })),
 );
@@ -247,6 +250,16 @@ export const appRoutes: RouteObject[] = [
   { path: '/admin/people', element: <Navigate to="/admin" replace /> },
   { path: '/admin/more', element: <Navigate to="/admin" replace /> },
   { path: '/admin/stops', element: <Navigate to="/admin/routes" replace /> },
+  {
+    path: '/admin/records-disposal',
+    element: (
+      <ProtectedRoute
+        allowedRoles={['tenant_admin', 'transportation_admin', 'platform_super_admin']}
+      >
+        <RecordsDisposalPage />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: '/admin/platform-support',
     element: (

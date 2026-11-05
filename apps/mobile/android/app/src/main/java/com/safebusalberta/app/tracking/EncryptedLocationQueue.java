@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import org.json.JSONObject;
+import java.time.Instant;
 
 /** Durable FIFO whose sensitive payload column is AES-GCM encrypted at rest. */
 final class EncryptedLocationQueue extends SQLiteOpenHelper {
@@ -25,18 +26,29 @@ final class EncryptedLocationQueue extends SQLiteOpenHelper {
     private final TrackingCryptoStore crypto;
 
     EncryptedLocationQueue(Context context, TrackingCryptoStore crypto) {
-        super(context, "safebus_tracking_queue.db", null, 1);
+        super(context, "safebus_tracking_queue.db", null, 2);
         this.crypto = crypto;
+    }
+
+    @Override
+    public void onConfigure(SQLiteDatabase db) {
+        try (Cursor cursor = db.rawQuery("PRAGMA secure_delete=ON", null)) { cursor.moveToFirst(); }
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE queued_locations (" +
-            "sequence INTEGER PRIMARY KEY, event_id TEXT NOT NULL UNIQUE, payload_ciphertext TEXT NOT NULL)");
+            "sequence INTEGER PRIMARY KEY, event_id TEXT NOT NULL UNIQUE, payload_ciphertext TEXT NOT NULL, received_at INTEGER NOT NULL)");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        if (oldVersion == 1 && newVersion == 2) {
+            // SQLite uses the constant default for all legacy rows without rewriting the FIFO.
+            db.execSQL("ALTER TABLE queued_locations ADD COLUMN received_at INTEGER NOT NULL DEFAULT "
+                + System.currentTimeMillis());
+            return;
+        }
         throw new IllegalStateException("Tracking queue migration is required");
     }
 
@@ -57,6 +69,7 @@ final class EncryptedLocationQueue extends SQLiteOpenHelper {
 
     synchronized void enqueue(long sequence, String eventId, JSONObject payload) throws Exception {
         ContentValues values = new ContentValues();
+        values.put("received_at", System.currentTimeMillis());
         values.put("sequence", sequence);
         values.put("event_id", eventId);
         values.put("payload_ciphertext", crypto.encrypt(payload.toString()));
@@ -64,6 +77,7 @@ final class EncryptedLocationQueue extends SQLiteOpenHelper {
     }
 
     synchronized Entry peek() throws Exception {
+        if (!pruneExpiredHead()) return null;
         try (Cursor cursor = getReadableDatabase().query(
             "queued_locations",
             new String[]{"sequence", "event_id", "payload_ciphertext"},
@@ -75,6 +89,31 @@ final class EncryptedLocationQueue extends SQLiteOpenHelper {
                 new JSONObject(crypto.decrypt(cursor.getString(2)))
             );
         }
+    }
+
+    /** Bounded disposal on queue access. A powered-off phone cannot be remotely erased.
+     * Legacy receipt times are unknown: grant one shared transition from upgrade.
+     */
+    private boolean pruneExpiredHead() throws Exception {
+        SQLiteDatabase db = getWritableDatabase();
+        long now = System.currentTimeMillis();
+        for (int i = 0; i < TrackingQueueRetention.BATCH_LIMIT; i++) {
+            long sequence; long received; JSONObject payload;
+            try (Cursor cursor = db.query("queued_locations",
+                    new String[]{"sequence", "payload_ciphertext", "received_at"},
+                    null, null, null, null, "sequence ASC", "1")) {
+                if (!cursor.moveToFirst()) return true;
+                sequence = cursor.getLong(0);
+                payload = new JSONObject(crypto.decrypt(cursor.getString(1)));
+                received = cursor.getLong(2);
+            }
+            long recorded;
+            try { recorded = Instant.parse(payload.optString("p_recorded_at")).toEpochMilli(); }
+            catch (Exception invalid) { return true; }
+            if (!TrackingQueueRetention.expired(recorded, received, now)) return true;
+            remove(sequence);
+        }
+        return false;
     }
 
     synchronized void remove(long sequence) {

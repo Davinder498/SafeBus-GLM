@@ -98,3 +98,72 @@ export async function verifyRetentionDryRuns(client, expectedMd5) {
     notificationSent: false,
   };
 }
+
+/** Production rehearsal: bounded read-only evaluation, never an archive or Auth operation. */
+export async function verifyCompleteDisposalDryRun(client) {
+  await client.query('begin isolation level repeatable read read only');
+  try {
+    await client.query("set local statement_timeout='12s';set local lock_timeout='1s'");
+    const {
+      rows: [control],
+    } = await client.query(
+      'select destructive_enabled from public.retention_execution_control where id=1',
+    );
+    if (control?.destructive_enabled !== false)
+      throw new Error('OPERATIONAL_RETENTION_UNSAFE_BASELINE');
+    await client.query('set local role service_role');
+    await client.query("set local request.jwt.claim.role='service_role'");
+    const {
+      rows: [row],
+    } = await client.query('select public.run_retention_lifecycle(true,500) as result');
+    const keys = [
+      'gps',
+      'student_events',
+      'exceptions',
+      'statuses',
+      'announcements',
+      'email',
+      'push',
+      'inbox',
+      'archive_manifests',
+      'audience_failures',
+      'push_devices',
+      'cases',
+      'invitations',
+      'guardian_relationships',
+      'student_records',
+      'bus_tracking_sessions',
+      'bus_run_dispatches',
+      'trip_records',
+      'driver_records',
+      'guardian_records',
+      'audit_records',
+      'rate_limit_buckets',
+      'user_sessions',
+    ];
+    const result = row?.result;
+    if (
+      result?.version !== 1 ||
+      result?.dryRun !== true ||
+      result?.limit !== 500 ||
+      !result.counts ||
+      Object.keys(result.counts).length !== keys.length ||
+      !keys.every(
+        (k) =>
+          Number.isSafeInteger(result.counts[k]) &&
+          result.counts[k] >= 0 &&
+          result.counts[k] <= 500,
+      )
+    )
+      throw new Error('OPERATIONAL_RETENTION_POLICY_FAILED');
+    return {
+      dryRun: true,
+      deletedRows: 0,
+      notificationSent: false,
+      destructiveEnabled: false,
+      eligibleCounts: result.counts,
+    };
+  } finally {
+    await client.query('rollback');
+  }
+}

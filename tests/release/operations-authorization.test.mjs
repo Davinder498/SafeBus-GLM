@@ -11,6 +11,22 @@ import {
 const read = (file) => fs.readFile(file, 'utf8');
 
 const requiredFiles = {
+  'docs/operations/complete-automatic-disposal.md': 'synthetic complete disposal evidence\n',
+  'config/pending/complete-disposal.json': 'synthetic complete disposal evidence\n',
+  'config/pending/complete-disposal-authorization.json': 'synthetic complete disposal evidence\n',
+  'supabase/migrations/pending/20261105172229_retention_lifecycle.sql':
+    'synthetic complete disposal evidence\n',
+  'supabase/migrations/pending/20261105194609_complete_automatic_disposal.sql':
+    'synthetic complete disposal evidence\n',
+  'apps/web/netlify/functions/disposal-accounts.mjs': 'synthetic complete disposal evidence\n',
+  'apps/web/netlify/functions/disposal-records.mjs': 'synthetic complete disposal evidence\n',
+  'apps/web/netlify/functions/retention-lifecycle-scheduled.mjs':
+    'synthetic complete disposal evidence\n',
+  'apps/web/src/pages/RecordsDisposalPage.tsx': 'synthetic complete disposal evidence\n',
+  'apps/web/src/services/disposalService.ts': 'synthetic complete disposal evidence\n',
+  'tests/release/complete-disposal-postgres.test.mjs': 'synthetic complete disposal evidence\n',
+  'tests/smoke/records-disposal.spec.ts': 'synthetic complete disposal evidence\n',
+
   'apps/web/src/__tests__/safebus-retention-scheduled.test.mjs': 'synthetic runner contract\n',
   'docs/operations/operating-observation-2026-11-05.json': 'synthetic operating observation\n',
   'docs/operations/support-incident-runbook.md': 'synthetic acceptance evidence\n',

@@ -1,0 +1,806 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261105194609_complete_automatic_disposal.sql",
+  "migrationSha256": "2e2deb9a5d17dfb2f7d4050a0491c035bf5abd2d99976a89468dc6ef1c58df13",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "public.disposal_account_work(text,uuid)",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "b7308d487b0117774a0cc8306873df79"
+      },
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "public.manage_disposal(text,jsonb)",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "40783fc402d6eba281211effdbe66bab"
+      },
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ]
+    },
+    {
+      "signature": "public.manage_retention_case(text,jsonb)",
+      "before": {
+        "md5": "1a41f27533435c483577f632f1f9ff66"
+      },
+      "after": {
+        "md5": "1dcb26152c4d9c260c29fc82cd5daacd"
+      },
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ]
+    },
+    {
+      "signature": "public.run_retention_lifecycle(boolean,integer)",
+      "before": {
+        "md5": "5740d1de8321cb7fb23e249d5c202d8b"
+      },
+      "after": {
+        "md5": "58f9951d70f648cb808d12b8e80fabb5"
+      },
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "safebus_private.disposal_account_guard()",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "ada97f8f42baaa585497bac85f43df90"
+      },
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ]
+    },
+    {
+      "signature": "safebus_private.disposal_allowed(text,jsonb)",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "3c754bcaaffe7699265e3ef39e6f14cd"
+      },
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ]
+    },
+    {
+      "signature": "safebus_private.disposal_children_clear(regclass,uuid,text[])",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "64a15905185a0a797e53626796356c0d"
+      },
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ]
+    },
+    {
+      "signature": "safebus_private.disposal_guard()",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "6bc05444b166b727eaf0bd59acedc97e"
+      },
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ]
+    },
+    {
+      "signature": "safebus_private.disposal_held(text,uuid)",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "66841b0823b3541dff270e6d5445572c"
+      },
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ]
+    },
+    {
+      "signature": "safebus_private.disposal_relation(text)",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "6405433dfb53a2d48acc1f68632d331d"
+      },
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ]
+    },
+    {
+      "signature": "safebus_private.disposal_setup_lock()",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "8a10b42b68033608459b861a5903c350"
+      },
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ]
+    }
+  ],
+  "relations": [
+    {
+      "name": "safebus_private.disposal_accounts",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": [
+          "postgres=arwdDxtm/postgres"
+        ],
+        "columns": [
+          {
+            "name": "profile_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "tenant_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "state",
+            "type": "text",
+            "default": "'pending'::text",
+            "required": true
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "required": true
+          },
+          {
+            "name": "retention_started_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "required": true
+          },
+          {
+            "name": "lease_until",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "completed_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          }
+        ],
+        "constraints": [
+          "PRIMARY KEY (profile_id)",
+          "CHECK ((state = ANY (ARRAY['pending'::text, 'deleting'::text, 'completed'::text])))"
+        ],
+        "policies": 0
+      }
+    },
+    {
+      "name": "safebus_private.disposal_extensions",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": [
+          "postgres=arwdDxtm/postgres"
+        ],
+        "columns": [
+          {
+            "name": "tenant_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "policy_key",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "minimum_days",
+            "type": "integer",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "reference",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "required": true
+          },
+          {
+            "name": "updated_by",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          }
+        ],
+        "constraints": [
+          "CHECK (((minimum_days >= 1) AND (minimum_days <= 3650)))",
+          "PRIMARY KEY (tenant_id, policy_key)",
+          "CHECK ((reference ~ '^[A-Za-z0-9][A-Za-z0-9._/-]{0,63}$'::text))"
+        ],
+        "policies": 0
+      }
+    },
+    {
+      "name": "safebus_private.disposal_holds",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": [
+          "postgres=arwdDxtm/postgres"
+        ],
+        "columns": [
+          {
+            "name": "id",
+            "type": "uuid",
+            "default": "gen_random_uuid()",
+            "required": true
+          },
+          {
+            "name": "tenant_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "policy_key",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "record_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "reference",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "minimum_until",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "review_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "required": true
+          },
+          {
+            "name": "created_by",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "released_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "released_by",
+            "type": "uuid",
+            "default": null,
+            "required": false
+          }
+        ],
+        "constraints": [
+          "PRIMARY KEY (id)",
+          "CHECK ((reference ~ '^[A-Za-z0-9][A-Za-z0-9._/-]{0,63}$'::text))"
+        ],
+        "policies": 0
+      }
+    },
+    {
+      "name": "safebus_private.disposal_runs",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": [
+          "postgres=arwdDxtm/postgres"
+        ],
+        "columns": [
+          {
+            "name": "window_start",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "tenant_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "policy_key",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "completed_at",
+            "type": "timestamp with time zone",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "affected_rows",
+            "type": "bigint",
+            "default": null,
+            "required": true
+          }
+        ],
+        "constraints": [
+          "CHECK ((affected_rows >= 0))",
+          "PRIMARY KEY (window_start, tenant_id, policy_key)"
+        ],
+        "policies": 0
+      }
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": [],
+  "triggers": [
+    {
+      "table": "public.android_push_devices",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.android_push_devices FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('push_devices')"
+    },
+    {
+      "table": "public.android_push_devices",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.android_push_devices FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('profile_id')"
+    },
+    {
+      "table": "public.audit_events",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.audit_events FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('audit_records')"
+    },
+    {
+      "table": "public.audit_events",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.audit_events FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('actor_profile_id')"
+    },
+    {
+      "table": "public.bulk_import_batches",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.bulk_import_batches FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('created_by_profile_id')"
+    },
+    {
+      "table": "public.bus_qr_credentials",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.bus_qr_credentials FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('created_by', 'revoked_by')"
+    },
+    {
+      "table": "public.bus_run_dispatches",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.bus_run_dispatches FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('bus_run_dispatches')"
+    },
+    {
+      "table": "public.bus_run_dispatches",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.bus_run_dispatches FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('prepared_by')"
+    },
+    {
+      "table": "public.bus_tracking_sessions",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.bus_tracking_sessions FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('bus_tracking_sessions')"
+    },
+    {
+      "table": "public.driver_route_assignments",
+      "name": "disposal_setup_lock",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_setup_lock BEFORE INSERT OR UPDATE ON public.driver_route_assignments FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_setup_lock()"
+    },
+    {
+      "table": "public.driver_tracking_devices",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.driver_tracking_devices FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('profile_id')"
+    },
+    {
+      "table": "public.driver_tracking_devices",
+      "name": "disposal_setup_lock",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_setup_lock BEFORE INSERT OR UPDATE ON public.driver_tracking_devices FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_setup_lock()"
+    },
+    {
+      "table": "public.driver_trip_location_updates",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.driver_trip_location_updates FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('gps')"
+    },
+    {
+      "table": "public.driver_trips",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.driver_trips FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('trip_records')"
+    },
+    {
+      "table": "public.drivers",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.drivers FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('driver_records')"
+    },
+    {
+      "table": "public.drivers",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.drivers FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('profile_id')"
+    },
+    {
+      "table": "public.guardian_notification_delivery_policies",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.guardian_notification_delivery_policies FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('privacy_approved_by')"
+    },
+    {
+      "table": "public.guardian_notification_outbox",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.guardian_notification_outbox FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('email')"
+    },
+    {
+      "table": "public.guardian_notification_outbox",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.guardian_notification_outbox FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('recipient_profile_id')"
+    },
+    {
+      "table": "public.guardians",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.guardians FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('guardian_records')"
+    },
+    {
+      "table": "public.guardians",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.guardians FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('profile_id')"
+    },
+    {
+      "table": "public.operational_notes",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.operational_notes FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('created_by')"
+    },
+    {
+      "table": "public.platform_support_contacts",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.platform_support_contacts FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('updated_by')"
+    },
+    {
+      "table": "public.profiles",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE DELETE ON public.profiles FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('accounts')"
+    },
+    {
+      "table": "public.profiles",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('id')"
+    },
+    {
+      "table": "public.push_notification_outbox",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.push_notification_outbox FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('push')"
+    },
+    {
+      "table": "public.rate_limit_buckets",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.rate_limit_buckets FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('rate_limit_buckets')"
+    },
+    {
+      "table": "public.retention_deletion_runs",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.retention_deletion_runs FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('actor_profile_id')"
+    },
+    {
+      "table": "public.route_shapes",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.route_shapes FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('created_by')"
+    },
+    {
+      "table": "public.sis_integration_configs",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.sis_integration_configs FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('created_by_profile_id')"
+    },
+    {
+      "table": "public.student_bus_assignments",
+      "name": "disposal_setup_lock",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_setup_lock BEFORE INSERT OR UPDATE ON public.student_bus_assignments FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_setup_lock()"
+    },
+    {
+      "table": "public.student_guardians",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.student_guardians FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('guardian_relationships')"
+    },
+    {
+      "table": "public.student_qr_credentials",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.student_qr_credentials FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('created_by', 'revoked_by')"
+    },
+    {
+      "table": "public.student_qr_credentials",
+      "name": "disposal_setup_lock",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_setup_lock BEFORE INSERT OR UPDATE ON public.student_qr_credentials FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_setup_lock()"
+    },
+    {
+      "table": "public.student_route_assignments",
+      "name": "disposal_setup_lock",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_setup_lock BEFORE INSERT OR UPDATE ON public.student_route_assignments FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_setup_lock()"
+    },
+    {
+      "table": "public.student_trip_events",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.student_trip_events FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('student_events')"
+    },
+    {
+      "table": "public.student_trip_events",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.student_trip_events FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('created_by')"
+    },
+    {
+      "table": "public.students",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.students FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('student_records')"
+    },
+    {
+      "table": "public.tenant_lifecycle_snapshots",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.tenant_lifecycle_snapshots FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('created_by_profile_id')"
+    },
+    {
+      "table": "public.tenant_onboarding_invitations",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.tenant_onboarding_invitations FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('invitations')"
+    },
+    {
+      "table": "public.tenant_onboarding_invitations",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.tenant_onboarding_invitations FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('invited_profile_id', 'invited_by_profile_id')"
+    },
+    {
+      "table": "public.tenant_support_contacts",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.tenant_support_contacts FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('updated_by')"
+    },
+    {
+      "table": "public.trip_exceptions",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.trip_exceptions FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('exceptions')"
+    },
+    {
+      "table": "public.trip_operational_statuses",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.trip_operational_statuses FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('statuses')"
+    },
+    {
+      "table": "public.trip_operational_statuses",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.trip_operational_statuses FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('set_by')"
+    },
+    {
+      "table": "public.user_notification_category_preferences",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.user_notification_category_preferences FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('profile_id')"
+    },
+    {
+      "table": "public.user_notification_settings",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.user_notification_settings FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('profile_id')"
+    },
+    {
+      "table": "public.user_notifications",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.user_notifications FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('inbox')"
+    },
+    {
+      "table": "public.user_notifications",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.user_notifications FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('recipient_profile_id')"
+    },
+    {
+      "table": "public.user_sessions",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON public.user_sessions FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('user_sessions')"
+    },
+    {
+      "table": "public.user_sessions",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.user_sessions FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('user_id', 'revoked_by')"
+    },
+    {
+      "table": "safebus_private.authority_announcements",
+      "name": "complete_disposal_guard",
+      "before": null,
+      "after": "CREATE TRIGGER complete_disposal_guard BEFORE INSERT OR DELETE OR UPDATE ON safebus_private.authority_announcements FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_guard('announcements')"
+    },
+    {
+      "table": "safebus_private.authority_announcements",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON safebus_private.authority_announcements FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('sender_profile_id')"
+    },
+    {
+      "table": "safebus_private.billing_catalog_operations",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON safebus_private.billing_catalog_operations FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('actor_profile_id')"
+    },
+    {
+      "table": "safebus_private.billing_mutation_requests",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON safebus_private.billing_mutation_requests FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('actor_profile_id')"
+    },
+    {
+      "table": "safebus_private.notification_audience_queue",
+      "name": "disposal_setup_lock",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_setup_lock BEFORE INSERT OR UPDATE ON safebus_private.notification_audience_queue FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_setup_lock()"
+    },
+    {
+      "table": "safebus_private.tenant_subscription_exemptions",
+      "name": "disposal_account_guard",
+      "before": null,
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON safebus_private.tenant_subscription_exemptions FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('approved_profile_id')"
+    }
+  ],
+  "indexes": [
+    {
+      "schema": "public",
+      "name": "disposal_students_expiry",
+      "before": null,
+      "after": "CREATE INDEX disposal_students_expiry ON public.students USING btree (updated_at, id) WHERE (status = ANY (ARRAY['inactive'::text, 'transferred'::text, 'archived'::text]))"
+    },
+    {
+      "schema": "public",
+      "name": "disposal_links_expiry",
+      "before": null,
+      "after": "CREATE INDEX disposal_links_expiry ON public.student_guardians USING btree (updated_at, id)"
+    },
+    {
+      "schema": "public",
+      "name": "disposal_driver_expiry",
+      "before": null,
+      "after": "CREATE INDEX disposal_driver_expiry ON public.drivers USING btree (updated_at, id) WHERE (status = ANY (ARRAY['inactive'::text, 'suspended'::text, 'archived'::text]))"
+    },
+    {
+      "schema": "public",
+      "name": "disposal_guardian_expiry",
+      "before": null,
+      "after": "CREATE INDEX disposal_guardian_expiry ON public.guardians USING btree (updated_at, id) WHERE (status <> 'active'::text)"
+    },
+    {
+      "schema": "public",
+      "name": "disposal_audit_expiry",
+      "before": null,
+      "after": "CREATE INDEX disposal_audit_expiry ON public.audit_events USING btree (created_at, id)"
+    },
+    {
+      "schema": "public",
+      "name": "disposal_sessions_expiry",
+      "before": null,
+      "after": "CREATE INDEX disposal_sessions_expiry ON public.user_sessions USING btree (GREATEST(revoked_at, last_active_at), id)"
+    }
+  ],
+  "newTables": [
+    "safebus_private.disposal_accounts",
+    "safebus_private.disposal_extensions",
+    "safebus_private.disposal_holds",
+    "safebus_private.disposal_runs"
+  ],
+  "mustBeEmptyBeforeRestore": [
+    "safebus_private.disposal_accounts",
+    "safebus_private.disposal_extensions",
+    "safebus_private.disposal_holds",
+    "safebus_private.disposal_runs",
+    "safebus_private.retention_lifecycle_totals"
+  ]
+}

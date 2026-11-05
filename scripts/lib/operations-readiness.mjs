@@ -9,6 +9,19 @@ export const DEFAULT_OPERATIONS_READINESS_PATH = 'docs/governance/operations-rea
 const EVIDENCE_DIRECTORIES = ['apps/web/netlify/functions', 'apps/web/src/services'];
 
 const EVIDENCE_FILES = [
+  'docs/operations/complete-automatic-disposal.md',
+  'config/pending/complete-disposal.json',
+  'config/pending/complete-disposal-authorization.json',
+  'supabase/migrations/pending/20261105172229_retention_lifecycle.sql',
+  'supabase/migrations/pending/20261105194609_complete_automatic_disposal.sql',
+  'apps/web/netlify/functions/disposal-accounts.mjs',
+  'apps/web/netlify/functions/disposal-records.mjs',
+  'apps/web/netlify/functions/retention-lifecycle-scheduled.mjs',
+  'apps/web/src/pages/RecordsDisposalPage.tsx',
+  'apps/web/src/services/disposalService.ts',
+  'tests/release/complete-disposal-postgres.test.mjs',
+  'tests/smoke/records-disposal.spec.ts',
+
   'apps/web/src/__tests__/safebus-retention-scheduled.test.mjs',
   'docs/operations/operating-observation-2026-11-05.json',
   'docs/operations/support-incident-runbook.md',

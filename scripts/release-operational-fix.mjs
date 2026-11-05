@@ -7,7 +7,10 @@ import {
 } from './lib/security-workflow-evidence.mjs';
 import { createEnvironmentBinding } from './lib/environment-identity.mjs';
 import { encryptBackupStream, fileDigest } from './lib/security-backup.mjs';
-import { verifyRetentionDryRuns } from './lib/retention-verification.mjs';
+import {
+  verifyRetentionDryRuns,
+  verifyCompleteDisposalDryRun,
+} from './lib/retention-verification.mjs';
 import {
   operationalDigest,
   operationalSnapshot,
@@ -25,6 +28,7 @@ const manifests = {
   offline_actions: 'config/pending/offline-trip-actions.json',
   retention: 'config/pending/retention-qualification.json',
   retention_lifecycle: 'config/pending/retention-lifecycle.json',
+  complete_disposal: 'config/pending/complete-disposal.json',
   tracking: 'config/pending/tracking-queue-recovery.json',
   calendar: 'config/pending/route-service-calendar.json',
   reporting: 'config/pending/privileged-admin-mfa.json',
@@ -196,7 +200,9 @@ try {
     const retention =
       milestone === 'retention'
         ? await verifyRetentionDryRuns(client, config.functions[0].after.md5)
-        : undefined;
+        : milestone === 'complete_disposal'
+          ? await verifyCompleteDisposalDryRun(client)
+          : undefined;
     await write('verification', {
       ...identity,
       acceptance,

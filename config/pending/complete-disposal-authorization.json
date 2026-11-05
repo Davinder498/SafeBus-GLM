@@ -1,0 +1,6 @@
+{
+  "status": "prepared-unapplied",
+  "migration": "supabase/migrations/pending/20261105194609_complete_automatic_disposal.sql",
+  "authenticated": ["manage_disposal(text,jsonb)"],
+  "serviceRole": ["disposal_account_work(text,uuid)"]
+}

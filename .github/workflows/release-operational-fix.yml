@@ -8,7 +8,7 @@ on:
         required: true
       milestone:
         type: choice
-        options: [overview, notifications, trips, delivery, reporting, calendar, tracking, retention, offline_actions, recent_auth, retention_lifecycle]
+        options: [overview, notifications, trips, delivery, reporting, calendar, tracking, retention, offline_actions, recent_auth, retention_lifecycle, complete_disposal]
         required: true
       mode:
         type: choice
