@@ -1,6 +1,6 @@
 # SafeBus Retention and Disposal Schedule — Draft
 
-**Status:** Proposed periods; legal/purpose approval and safe enforcement pending
+**Status:** Baseline periods conditionally supported by owner; legal/customer overrides and safe enforcement remain required
 **Owner:** Business Privacy Lead with Customer / Engineering / Operations
 **Last updated:** 2026-11-05
 
@@ -32,6 +32,11 @@ reviewed execution-control change and server-only flag are completed. Applied
 migrations are immutable. No database/flag change occurs in this drafting work.
 
 ## Proposed transport and security periods
+
+These periods are **default review/expiry triggers**, not unconditional deletion
+deadlines. Apply the mandatory exceptions below before disposing of any record.
+The configured SQL routines do not yet implement that decision/hold layer;
+destructive execution must remain disabled until they do and acceptance passes.
 
 | Data class / existing retention key                     | Draft period and trigger                                             | Prepared method / validation still needed                                                                                                                 |
 | ------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -97,6 +102,89 @@ is promised.
 
 An approved PIA or signed contract does not itself execute retention. Record
 actual results and non-secret evidence references only after they pass.
+
+## Legal review and mandatory overrides — 2026-11-05
+
+The owner is willing to adopt the proposed schedule if it does not violate
+provincial or federal law. Record this as conditional support for lawful defaults,
+not an unconditional compliance finding, customer approval or deletion approval.
+The reviewed sources identify material exceptions that a fixed global timer
+cannot implement by itself. The service's actual role, use of each record and
+customer obligations determine which rules apply.
+
+### Alberta public-school-authority information: POPA
+
+POPA section 6(b) generally requires personal information used for a decision
+that directly affects someone to be kept for at least one year **after that use**.
+The Act provides a specific shorter-period exception; ordinary app permissions,
+subscription acceptance and notification choices must not be assumed to satisfy
+it. [Alberta POPA guide](https://www.alberta.ca/system/files/popa-protection-of-privacy-act-guide.pdf).
+
+This overrides the routine 30/90-day timers when relevant information supports
+such a decision. Even 395 days after a trip may be insufficient if the information
+is used for a decision late in that period. Preserve the necessary information;
+a label or unverified summary does not establish adequate preservation.
+
+Example: if an authority uses a location record on day 20 for a transportation
+entitlement decision, review its decision-record obligation before day-30
+cleanup. This does not classify every GPS point as a decision record. Other
+applicable duties or a hold may require longer retention.
+
+Obtain the authority's approved records schedule and written processing/disposal
+instructions. Identify whether SafeBus holds the authoritative record or a
+working copy, and verify any lawful transfer/preservation elsewhere before
+disposal. Do not assume that every transport row is an official student record,
+or that a school-authority, carrier, driver-employment or incident requirement
+is satisfied by the same generic 395-day timer. Customer-specific duties can
+require different periods. A supplier cannot waive the public body's duties.
+[OIPC service-provider guidance](https://oipc.ab.ca/resource/popa-guidance-service-providers/).
+
+### SafeBus's own business information: Alberta PIPA
+
+Use a documented reasonable business/legal purpose and dispose of information
+when it is no longer needed for that purpose. The proposed 90-day inquiry and
+365-day ordinary support periods are business defaults, not statutory safe
+harbours. Decision evidence, unresolved requests/disputes, incidents, contracts
+and other necessary records must be classified separately. Do not import a
+different province's fixed retention rule or treat POPA as the law for all
+SafeBus own-business records.
+[Alberta PIPA retention guidance](https://www.alberta.ca/organization-responsibilities-for-protecting-personal-information).
+
+### Federal requirements where applicable
+
+- Where PIPEDA applies to the actual activity, retain information used for an
+  individual decision long enough to permit access and challenge, and retain
+  other personal information only as necessary for its identified purpose.
+  [OPC retention guidance](https://www.priv.gc.ca/en/privacy-topics/privacy-for-businesses/appropriate-handling-of-personal-information/gd_rd_201406/).
+- Where PIPEDA breach-record obligations apply, keep a record of **every** breach
+  of security safeguards for at least **24 months from the determination that
+  the breach occurred**, including breaches not reportable on significant-harm
+  grounds. Longer applicable duties still prevail. The ordinary support timer
+  and 730-day audit minimization are not substitutes: audit events and breach
+  case records are different records, triggers and retention units.
+  [Breach of Security Safeguards Regulations, section 6](https://laws-lois.justice.gc.ca/eng/regulations/SOR-2018-64/FullText.html).
+- Required tax records generally follow the CRA six-year baseline measured from
+  the end of the last relevant tax year, with the exceptions described below.
+  Do not treat every corporate, contract or financial record as automatically
+  disposable at that date. Billing/support correspondence needed to substantiate
+  tax records must follow that classification rather than the ordinary 365-day
+  support cleanup rule.
+
+### Execution decision and evidence
+
+For each data class and affected customer, record the purpose, relevant law and
+customer schedule, actual trigger/last decision-use date, calculated minimum
+expiry, any continuing necessary purpose/hold, responsible decision-maker and
+review/release evidence. A review date is not an automatic hold-release date.
+Preserve only the necessary scope, with controlled access; do not keep all
+customers' data forever as a substitute for implementing these rules.
+
+The deletion engine must check the applicable minimum/exception and holds before
+direct deletion, anonymization **and parent cascades**. It must also account for
+supplier copies, supported transfer and recovery behavior. Until that exists,
+the current disabled destructive control is the appropriate execution boundary.
+No customer-specific schedule, scoped-hold implementation or legal compliance
+certificate is created by this review or the owner's conditional support.
 
 ## Concrete business proposal awaiting decision
 
