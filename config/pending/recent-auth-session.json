@@ -1,0 +1,41 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261105121134_recent_auth_current_session.sql",
+  "migrationSha256": "9e4704953e3e5948a1be6dcc9107465018ffdebca797837ba998724159f0c679",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "public.is_current_user_session_active()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "25e1e83b5d4dd9fa4b56a0ce37a53386"
+      },
+      "after": {
+        "md5": "25e1e83b5d4dd9fa4b56a0ce37a53386"
+      }
+    },
+    {
+      "signature": "safebus_private.has_recent_authentication()",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "3083d6eb7023c35c01607ad0c0a94a28"
+      },
+      "after": {
+        "md5": "e6973715a9b6f6924ef21a3f467b5fd1"
+      }
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": []
+}

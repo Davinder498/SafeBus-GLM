@@ -68,6 +68,17 @@ function setupClients({
 } = {}) {
   const userClient = {
     auth: {
+      getClaims: vi.fn(async () => ({
+        data: {
+          claims: {
+            sub: callerProfile.id,
+            role: 'authenticated',
+            session_id: '11111111-1111-4111-8111-111111111111',
+            amr: [{ method: 'password', timestamp: Math.floor(Date.now() / 1000) }],
+          },
+        },
+        error: null,
+      })),
       getUser: vi.fn(async () => ({
         data: { user: { id: callerProfile.id, last_sign_in_at: new Date().toISOString() } },
         error: null,
@@ -166,6 +177,26 @@ function createTenantEvent(body = {}) {
 }
 
 describe('SafeBus member onboarding', () => {
+  it('rejects an older requesting session even when another device just signed in', async () => {
+    const { userClient, adminClient } = setupClients();
+    userClient.auth.getClaims.mockResolvedValue({
+      data: {
+        claims: {
+          sub: caller.id,
+          role: 'authenticated',
+          session_id: '11111111-1111-4111-8111-111111111111',
+          amr: [{ method: 'password', timestamp: Math.floor(Date.now() / 1000) - 3600 }],
+        },
+      },
+      error: null,
+    });
+    const result = await handler(
+      event({ email: 'guardian@example.test', fullName: 'Synthetic Guardian' }),
+    );
+    expect(result.statusCode).toBe(403);
+    expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
+    expect(adminClient.rpc).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
   });

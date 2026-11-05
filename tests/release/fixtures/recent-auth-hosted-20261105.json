@@ -1,0 +1,24 @@
+[
+  {
+    "signature": "is_current_user_session_active()",
+    "definition": "CREATE OR REPLACE FUNCTION public.is_current_user_session_active()\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'auth', 'pg_temp'\nAS $function$\ndeclare\n  v_user_id uuid;\n  v_session_text text;\n  v_session_id uuid;\nbegin\n  -- Read claims once. Invalid JSON or a malformed subject also denies access;\n  -- do not suppress permission, connection, or other database failures.\n  begin\n    v_user_id := auth.uid();\n    v_session_text := auth.jwt() ->> 'session_id';\n  exception when invalid_text_representation then\n    return false;\n  end;\n\n  if v_user_id is null or v_session_text is null\n     or v_session_text !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then\n    return false;\n  end if;\n  -- This is a separate procedural statement after validation, not a SQL CASE\n  -- around a subquery. Queries receive a typed UUID, never unvalidated JWT text.\n  v_session_id := v_session_text::uuid;\n\n  return exists (\n    select 1 from auth.sessions s\n    where s.id = v_session_id and s.user_id = v_user_id\n      and (s.not_after is null or s.not_after > statement_timestamp())\n  ) and not exists (\n    select 1 from public.user_sessions us\n    where us.id = v_session_id and us.user_id = v_user_id\n      and us.revoked_at is not null\n  );\nend;\n$function$\n",
+    "md5": "25e1e83b5d4dd9fa4b56a0ce37a53386",
+    "owner": "postgres",
+    "acl": [
+      "postgres=X/postgres",
+      "authenticated=X/postgres",
+      "service_role=X/postgres"
+    ]
+  },
+  {
+    "signature": "safebus_private.has_recent_authentication()",
+    "definition": "CREATE OR REPLACE FUNCTION safebus_private.has_recent_authentication()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\n  select exists (\n    select 1\n    from auth.users u\n    where u.id = auth.uid()\n      and u.last_sign_in_at is not null\n      and u.last_sign_in_at >= now() - make_interval(secs => safebus_private.recent_auth_window_seconds())\n  );\n$function$\n",
+    "md5": "3083d6eb7023c35c01607ad0c0a94a28",
+    "owner": "postgres",
+    "acl": [
+      "postgres=X/postgres",
+      "authenticated=X/postgres",
+      "service_role=X/postgres"
+    ]
+  }
+]
