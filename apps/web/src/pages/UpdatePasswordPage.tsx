@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { KeyRound } from 'lucide-react';
 import { MobileAccountReady } from '@/components/auth/MobileAccountReady';
@@ -17,21 +17,43 @@ import { useAppSurface } from '@/contexts/AppSurfaceContext';
 
 const minimumPasswordLength = 12;
 
+function readRecoveryError(): string | null {
+  // Keep a failed verification across remounts; only a confirmed native
+  // exchange clears it. Reading state must not consume it (StrictMode).
+  return sessionStorage.getItem('safebus.passwordRecoveryError');
+}
+
 export function UpdatePasswordPage() {
   const navigate = useNavigate();
   const appSurface = useAppSurface();
-  const { session, profile, loading, authError, configError, updatePassword, completeInvitation, signOut } = useAuth();
+  const {
+    session,
+    profile,
+    loading,
+    authError,
+    configError,
+    updatePassword,
+    completeInvitation,
+    signOut,
+  } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [surfaceCompletion, setSurfaceCompletion] = useState<string | null>(null);
   const [mobileReady, setMobileReady] = useState(false);
-  const [recoveryError] = useState(() => {
-    const message = sessionStorage.getItem('safebus.passwordRecoveryError');
-    sessionStorage.removeItem('safebus.passwordRecoveryError');
-    return message;
-  });
+  const [recoveryError, setRecoveryError] = useState(readRecoveryError);
+
+  useEffect(() => {
+    // Reopening an Android reset link can return to this already-mounted page.
+    // Read the new result instead of retaining the previous attempt's banner.
+    function refreshRecoveryResult() {
+      setRecoveryError(readRecoveryError());
+      setError(null);
+    }
+    window.addEventListener('popstate', refreshRecoveryResult);
+    return () => window.removeEventListener('popstate', refreshRecoveryResult);
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -101,6 +123,14 @@ export function UpdatePasswordPage() {
               role="alert"
             >
               {configError ?? recoveryError ?? error}
+              {recoveryError && (
+                <Link
+                  to="/reset-password"
+                  className="mt-3 block font-semibold underline underline-offset-4"
+                >
+                  Request another reset link
+                </Link>
+              )}
             </div>
           )}
 
@@ -115,7 +145,7 @@ export function UpdatePasswordPage() {
             </div>
           )}
 
-          {!surfaceCompletion && !mobileReady && !loading && !session && (
+          {!surfaceCompletion && !mobileReady && !loading && !session && !recoveryError && (
             <div className="mt-6">
               <div className="rounded-lg border border-warning-200 bg-warning-50 p-4 text-sm text-warning-800">
                 {authError ?? 'This password reset link is invalid or expired. Request a new link.'}
@@ -133,7 +163,7 @@ export function UpdatePasswordPage() {
             <p className="mt-6 text-sm text-slate-600">Checking the secure reset link...</p>
           )}
 
-          {!surfaceCompletion && !mobileReady && !loading && session && (
+          {!surfaceCompletion && !mobileReady && !loading && session && !recoveryError && (
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
               <Field label="New password" htmlFor="new-password" required>
                 <Input
