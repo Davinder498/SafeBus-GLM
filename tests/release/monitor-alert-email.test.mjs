@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sendMonitorAlerts } from '../../scripts/lib/monitor-alert-email.mjs';
 import { runScheduledHealth } from '../../apps/web/netlify/functions/production-health-scheduled.mjs';
+import { evaluateGeoapifyQuota, quotaAlertChecks } from '../../scripts/lib/geoapify-quota.mjs';
 
 const now = Date.parse('2026-11-05T09:45:00Z');
 const env = { SAFEBUS_EMAIL_PROVIDER_API_KEY: 'test-secret', SAFEBUS_EMAIL_FROM: 'alerts@example.com' };
@@ -92,4 +93,78 @@ test('live retention saturation sends fixed minimal content to the existing oper
   assert.equal(JSON.stringify(requests).includes('secret GPS payload'), false);
   assert.equal(JSON.stringify(requests).includes('test-secret'), true); // Authorization header only, never message body.
   assert.equal(requests[0].body.text.includes('test-secret'), false);
+});
+
+
+test('Geoapify quota evaluation uses full project credits and exact 70/90 boundaries', () => {
+  const now = Date.parse('2026-11-06T18:00:00Z');
+  const observation = (usedCredits, limitCredits = 3000) => ({
+    source: 'geoapify-project-statistics',
+    scope: 'project-total',
+    usageDate: '2026-11-06',
+    usedCredits,
+    limitCredits,
+  });
+  assert.deepEqual(quotaAlertChecks(evaluateGeoapifyQuota(observation(0), { now })), []);
+  assert.deepEqual(quotaAlertChecks(evaluateGeoapifyQuota(observation(2099.99), { now })), []);
+  assert.deepEqual(quotaAlertChecks(evaluateGeoapifyQuota(observation(2100), { now })), [
+    { check: 'geoapify_quota_70', result: 'fail' },
+  ]);
+  assert.deepEqual(quotaAlertChecks(evaluateGeoapifyQuota(observation(2699.99), { now })), [
+    { check: 'geoapify_quota_70', result: 'fail' },
+  ]);
+  assert.deepEqual(quotaAlertChecks(evaluateGeoapifyQuota(observation(2700), { now })), [
+    { check: 'geoapify_quota_90', result: 'fail' },
+  ]);
+  assert.deepEqual(quotaAlertChecks(evaluateGeoapifyQuota(observation(10000, 10000), { now })), [
+    { check: 'geoapify_quota_90', result: 'fail' },
+  ]);
+  const result = evaluateGeoapifyQuota(observation(3001), { now });
+  assert.equal(result.level, 'critical');
+  assert.equal(result.percentUsed > 100, true);
+});
+
+test('quota assessor fails closed on stale or unverifiable provider statistics', () => {
+  const now = Date.parse('2026-11-06T18:00:00Z');
+  const valid = {
+    source: 'geoapify-project-statistics', scope: 'project-total',
+    usageDate: '2026-11-06', usedCredits: 0, limitCredits: 3000,
+  };
+  for (const modified of [
+    { scope: 'api-key' },
+    { source: 'estimated-tile-count' },
+    { limitCredits: 0 },
+    { usedCredits: -1 },
+    { usedCredits: '2000' },
+    { usedCredits: Infinity },
+    { usageDate: '2026-11-01' },
+    { usageDate: '2026-11-09' },
+    { usageDate: '2026-02-30' },
+    { apiKey: 'must-never-enter-secrets' },
+  ]) {
+    assert.throws(() => evaluateGeoapifyQuota({ ...valid, ...modified }, { now }), /MAP_QUOTA_(INVALID|STALE)/);
+  }
+  assert.throws(() => evaluateGeoapifyQuota(valid, { now: Number.NaN }), /MAP_QUOTA_INVALID/);
+});
+
+test('prepared Geoapify operations alerts contain only fixed subjects and instructions', async () => {
+  const sent = [];
+  const fetchImpl = async (_url, opts) => {
+    sent.push({ headers: opts.headers, payload: JSON.parse(opts.body) });
+    return Response.json({ id: 'accepted' });
+  };
+  for (const check of ['geoapify_quota_70', 'geoapify_quota_90']) {
+    assert.equal((await sendMonitorAlerts({
+      checks: [{ check, result: 'fail', detail: 'private-key-must-not-appear' }],
+      env, now, fetchImpl,
+    })).result, 'accepted');
+  }
+  assert.equal(sent.length, 2);
+  for (const entry of sent) {
+    assert.deepEqual(entry.payload.to, ['info@safebus.kids']);
+    assert.equal(entry.payload.text.includes('private-key-must-not-appear'), false);
+    assert.equal(entry.payload.text.includes('test-secret'), false);
+    assert.match(entry.headers['Idempotency-Key'], /geoapify_quota_(70|90)/);
+    assert.match(entry.payload.text, /project/i);
+  }
 });

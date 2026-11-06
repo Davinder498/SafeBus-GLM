@@ -55,8 +55,17 @@ network. Do not change the production API key.
 
 ## Capacity and provider evidence
 
-- [ ] Geoapify dashboard shows expected tile usage for the test sessions.
-- [ ] 70% and 90% usage/quota notifications are configured and routed to the
-  approved operations contact.
+- [ ] Geoapify project **Statistics** shows project-wide total credit usage
+  (all keys/API families), current plan's daily credit limit and expected
+  map tile usage; record a restricted, redacted evidence reference.
+- [ ] Run `node scripts/review-geoapify-quota.mjs <redacted-json-path>`
+  with a separately approved redacted provider snapshot to evaluate exact
+  70% and 90% credit thresholds. This is a **manual** assessment, not a
+  notification or provider integration.
+- [ ] Establish an authoritative automatic statistics source or provider-native
+  alerts; verify independently delivered 70% and 90% notifications to
+  `info@safebus.kids` without exposing keys or customer information.
+- [ ] Verify failure/missing-telemetry handling and provider-quota exhaustion
+  fallback; confirm no unapproved plan change or public map key rotation.
 - [ ] Paid-plan/SLA and restricted-key evidence references are recorded in
   `docs/governance/point-8-map-readiness.md`.
