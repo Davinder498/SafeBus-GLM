@@ -71,8 +71,10 @@ evidence; do not share account details or raw logs with customers.
 - Implementation and limitations: [monitoring reliability](monitoring-reliability-2026-11-05.md)
 
 1. Check the subject and current per-check result. A GitHub cadence alert means
-   its scheduled main-branch run is missing, stale, incomplete, unsuccessful or
-   unverifiable. It does not alone establish an application outage. Public-health
+   its scheduled main-branch run is missing, stale, incomplete, unsuccessful,
+   unverifiable, or that recent successful runs contain a gap greater than
+   45 minutes. A later successful run does not erase missed intervals.
+   It does not alone establish an application outage. Public-health
    alerts and cadence alerts have separate deduplication keys.
 2. Inspect the latest **automatic production** Netlify invocation and latest
    **scheduled** GitHub main run. A successful manual run does not resolve a

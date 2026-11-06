@@ -105,7 +105,12 @@ test('cadence watchdog detects stale, failed, missing and malformed schedules wi
     assert.equal(options.headers.authorization, undefined);
     return Response.json({ workflow_runs: runs, ignored_secret: 'private-value' });
   } });
-  assert.equal((await check([success])).runId, 123);
+  const previous = { ...success, id: 122, created_at: new Date(now - 30*60_000).toISOString() };
+  const healthy = await check([previous, success]);
+  assert.equal(healthy.runId, 123);
+  assert.equal(healthy.observedScheduledRuns, 2);
+  assert.equal(healthy.maximumObservedGapMinutes, 15);
+  await assert.rejects(check([success]), /INSUFFICIENT_HISTORY/);
   await assert.rejects(check([{ ...success, created_at: new Date(now-MAX_MONITOR_GAP_MS-1).toISOString() }]), /STALE/);
   await assert.rejects(check([{ ...success, id: 124, created_at: new Date(now).toISOString(), conclusion: 'failure' }, success]), /NOT_SUCCESSFUL/);
   await assert.rejects(check([{ ...success, status: 'in_progress', conclusion: null }]), /NOT_SUCCESSFUL/);
@@ -113,6 +118,14 @@ test('cadence watchdog detects stale, failed, missing and malformed schedules wi
   await assert.rejects(check([{ ...success, head_branch: 'preview' }]), /NO_SCHEDULED_RUN/);
   await assert.rejects(check([{ ...success, created_at: 'not-a-date' }]), /INVALID_RESPONSE/);
   await assert.rejects(check([{ ...success, created_at: new Date(now+120_000).toISOString() }]), /INVALID_RESPONSE/);
+  // A fresh green run after several missed slots cannot conceal the gap.
+  const fresh = { ...success, id: 125, created_at: new Date(now - 2*60_000).toISOString() };
+  const old = { ...success, id: 124, created_at: new Date(now - 4*60*60_000).toISOString() };
+  await assert.rejects(check([fresh, old]), /MONITOR_CADENCE_GAP/);
+  // Manual dispatches cannot fill missing scheduled-run history.
+  await assert.rejects(check([fresh, { ...success, id: 999, event: 'workflow_dispatch' }, old]), /MONITOR_CADENCE_GAP/);
+  // The latest success also must not conceal an earlier scheduled failure.
+  await assert.rejects(check([fresh, { ...previous, conclusion: 'failure' }]), /MONITOR_CADENCE_HISTORY_NOT_SUCCESSFUL/);
 });
 
 test('cadence errors with bad HTTP or JSON remain sanitized', async () => {
@@ -150,7 +163,7 @@ test('scheduled failures expose only fixed codes while preserving both independe
     deploy:{context:'production',published:true},
     health:async()=>{healthChecked=true;throw new Error('secret-map-key');},
     cadence:async()=>{throw new Error('MONITOR_CADENCE_PRIVATE_VALUE');},
-    notify:async({checks})=>{alertChecks=checks;},
+    notify:async({checks})=>{alertChecks=checks;return {result:'accepted'};},
     log:(line)=>logs.push(line),
   }), {message:'PRODUCTION_HEALTH_OBSERVATION_FAILED'});
   assert.equal(healthChecked,true);
@@ -158,4 +171,49 @@ test('scheduled failures expose only fixed codes while preserving both independe
   assert.equal(JSON.parse(logs[1]).result,'provider_accepted');
   assert.equal(logs[0].includes('secret-map-key'),false);assert.equal(logs[0].includes('PRIVATE_VALUE'),false);
   assert.equal(JSON.parse(logs[0]).checks.length,2);
+});
+
+test('fulfilled but malformed health results fail closed without logging provider content', async () => {
+  const { runScheduledHealth } = await import('../../apps/web/netlify/functions/production-health-scheduled.mjs');
+  const deploy = { context: 'production', published: true };
+  for (const which of ['health', 'cadence']) {
+    const logs = []; let notified;
+    const opts = {
+      deploy,
+      health: async () => ({ result: 'healthy' }),
+      cadence: async () => ({ result: 'healthy' }),
+      notify: async ({ checks }) => { notified = checks; return { result: 'accepted' }; },
+      log: line => logs.push(line),
+    };
+    opts[which] = async () => ({ result: 'unhealthy', detail: 'private-provider-token' });
+    await assert.rejects(runScheduledHealth(opts), { message: 'PRODUCTION_HEALTH_OBSERVATION_FAILED' });
+    const event = JSON.parse(logs[0]);
+    const failed = event.checks.filter(item => item.result === 'fail');
+    assert.equal(failed.length, 1);
+    assert.equal(failed[0].check, which === 'health' ? 'public_health' : 'github_cadence');
+    assert.equal(failed[0].code, which === 'health' ? 'PUBLIC_HEALTH_FAILED' : 'MONITOR_CADENCE_INVALID_RESPONSE');
+    assert.ok(notified);
+    assert.doesNotMatch(logs.join(' '), /private-provider-token/);
+  }
+});
+
+test('operational monitor requires explicit provider acceptance before logging accepted delivery', async () => {
+  const { runScheduledHealth } = await import('../../apps/web/netlify/functions/production-health-scheduled.mjs');
+  const logs = [];
+  await assert.rejects(runScheduledHealth({
+    deploy: { context: 'production', published: true },
+    health: async () => ({ result: 'healthy' }),
+    cadence: async () => { throw new Error('MONITOR_CADENCE_GAP'); },
+    notify: async () => ({ result: 'not_needed', detail: 'private-provider-message' }),
+    log: line => logs.push(line),
+  }), { message: 'PRODUCTION_HEALTH_OBSERVATION_FAILED' });
+  const event = JSON.parse(logs[0]);
+  assert.deepEqual(event.checks, [
+    { check: 'public_health', result: 'pass' },
+    { check: 'github_cadence', result: 'fail', code: 'MONITOR_CADENCE_GAP' },
+  ]);
+  assert.deepEqual(JSON.parse(logs[1]), {
+    event: 'production_health_alert', result: 'failed', code: 'MONITOR_ALERT_DELIVERY_FAILED',
+  });
+  assert.doesNotMatch(logs.join(' '), /private-provider-message/);
 });

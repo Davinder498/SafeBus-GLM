@@ -21,21 +21,28 @@ export async function runScheduledHealth({
     cadence(),
   ]);
   const codes = observations.map((observation, i) => {
-    if (observation.status === 'fulfilled')
+    if (observation.status === 'fulfilled' && observation.value?.result === 'healthy')
       return { check: i === 0 ? 'public_health' : 'github_cadence', result: 'pass' };
-    const message = observation.reason?.message;
+    // A fulfilled but malformed/unhealthy return must not be counted as healthy.
+    // Never trust or log provider-returned text to choose a public code.
+    const message = observation.status === 'rejected' ? observation.reason?.message : null;
     const knownCadenceErrors = new Set([
       'MONITOR_CADENCE_UNAVAILABLE',
       'MONITOR_CADENCE_INVALID_RESPONSE',
       'MONITOR_CADENCE_NO_SCHEDULED_RUN',
       'MONITOR_CADENCE_STALE',
       'MONITOR_CADENCE_NOT_SUCCESSFUL',
+      'MONITOR_CADENCE_INSUFFICIENT_HISTORY',
+      'MONITOR_CADENCE_GAP',
+      'MONITOR_CADENCE_HISTORY_NOT_SUCCESSFUL',
     ]);
     const code =
       i === 1
-        ? knownCadenceErrors.has(message)
-          ? message
-          : 'MONITOR_CADENCE_UNAVAILABLE'
+        ? observation.status === 'fulfilled'
+          ? 'MONITOR_CADENCE_INVALID_RESPONSE'
+          : knownCadenceErrors.has(message)
+            ? message
+            : 'MONITOR_CADENCE_UNAVAILABLE'
         : 'PUBLIC_HEALTH_FAILED';
     return { check: i === 0 ? 'public_health' : 'github_cadence', result: 'fail', code };
   });
@@ -51,7 +58,8 @@ export async function runScheduledHealth({
   );
   if (failed) {
     try {
-      await notify({ checks: codes });
+      const delivery = await notify({ checks: codes });
+      if (delivery?.result !== 'accepted') throw new Error('MONITOR_ALERT_DELIVERY_FAILED');
       log(JSON.stringify({ event: 'production_health_alert', result: 'provider_accepted' }));
     } catch {
       log(JSON.stringify({ event: 'production_health_alert', result: 'failed', code: 'MONITOR_ALERT_DELIVERY_FAILED' }));
