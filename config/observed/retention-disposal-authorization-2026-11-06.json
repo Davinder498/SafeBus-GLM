@@ -1,0 +1,92 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "observedAt": "2026-11-06T10:43:02.638857Z",
+  "sourceCommit": "6555beda2aedc9c56d77f86fd9c5b46d9c7980f2",
+  "observationOnly": true,
+  "databaseChanges": false,
+  "protectedInstallRuns": [
+    42172367295,
+    42174609023
+  ],
+  "scope": "Production public RPC signature, ownership, search_path and executable-role catalog only. No role-session execution, protected full audit or cross-tenant data-access claim.",
+  "addedAuthenticated": [
+    "manage_disposal(text,jsonb)",
+    "manage_retention_case(text,jsonb)"
+  ],
+  "addedServiceRole": [
+    "disposal_account_work(text,uuid)",
+    "retention_archive_work(text,jsonb)",
+    "run_retention_lifecycle(boolean,integer)"
+  ],
+  "deniedServiceRole": [
+    "manage_disposal(text,jsonb)",
+    "manage_retention_case(text,jsonb)"
+  ],
+  "functions": [
+    {
+      "signature": "disposal_account_work(text,uuid)",
+      "audience": "service_role",
+      "owner": "postgres",
+      "securityDefiner": true,
+      "settings": [
+        "search_path=pg_catalog"
+      ],
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "manage_disposal(text,jsonb)",
+      "audience": "authenticated",
+      "owner": "postgres",
+      "securityDefiner": true,
+      "settings": [
+        "search_path=pg_catalog"
+      ],
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ]
+    },
+    {
+      "signature": "manage_retention_case(text,jsonb)",
+      "audience": "authenticated",
+      "owner": "postgres",
+      "securityDefiner": true,
+      "settings": [
+        "search_path=pg_catalog"
+      ],
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ]
+    },
+    {
+      "signature": "retention_archive_work(text,jsonb)",
+      "audience": "service_role",
+      "owner": "postgres",
+      "securityDefiner": true,
+      "settings": [
+        "search_path=pg_catalog"
+      ],
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "run_retention_lifecycle(boolean,integer)",
+      "audience": "service_role",
+      "owner": "postgres",
+      "securityDefiner": true,
+      "settings": [
+        "search_path=pg_catalog"
+      ],
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    }
+  ]
+}

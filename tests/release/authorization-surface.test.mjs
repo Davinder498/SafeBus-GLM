@@ -81,7 +81,9 @@ test('the observed 18 advertised names are already reviewed and remain service-d
       { post: {} },
     ]),
   );
-  assert.equal(surface.serviceRoleDenied.length, 18);
+  assert.equal(surface.serviceRoleDenied.length, 20);
+  for (const signature of ['manage_disposal(text,jsonb)', 'manage_retention_case(text,jsonb)'])
+    assert.ok(surface.serviceRoleDenied.includes(signature));
   assert.equal(
     assertAdvertisedRpcSurface({ paths }, roles.publicFunctions).advertisedRpcNames,
     Object.keys(paths).length,
@@ -295,9 +297,45 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
   assert.equal(launch.addedAuthenticated.length, 23);
   const offline = await readJson('config/observed/offline-trip-action-authorization.json');
   const offlineEvidence = await readJson(offline.verificationEvidence);
+  const installedRetention = await readJson(
+    'config/observed/retention-disposal-authorization-2026-11-06.json',
+  );
+  assert.equal(installedRetention.projectId, tracking.projectId);
+  assert.equal(installedRetention.observationOnly, true);
+  assert.equal(installedRetention.databaseChanges, false);
+  assert.equal(installedRetention.functions.length, 5);
+  assert.deepEqual(installedRetention.addedAuthenticated, [
+    'manage_disposal(text,jsonb)',
+    'manage_retention_case(text,jsonb)',
+  ]);
+  assert.deepEqual(installedRetention.addedServiceRole, [
+    'disposal_account_work(text,uuid)',
+    'retention_archive_work(text,jsonb)',
+    'run_retention_lifecycle(boolean,integer)',
+  ]);
+  assert.deepEqual(installedRetention.deniedServiceRole, installedRetention.addedAuthenticated);
+  assert.deepEqual(
+    installedRetention.functions.map((f) => f.signature).sort(),
+    [...installedRetention.addedAuthenticated, ...installedRetention.addedServiceRole].sort(),
+  );
+  for (const entry of installedRetention.functions) {
+    assert.equal(entry.owner, 'postgres');
+    assert.equal(entry.securityDefiner, true);
+    assert.deepEqual(entry.settings, ['search_path=pg_catalog']);
+    assert.deepEqual(
+      entry.acl,
+      entry.audience === 'authenticated'
+        ? ['postgres=X/postgres', 'authenticated=X/postgres']
+        : ['postgres=X/postgres', 'service_role=X/postgres'],
+    );
+    assert.equal(
+      installedRetention.addedAuthenticated.includes(entry.signature),
+      entry.audience === 'authenticated',
+    );
+  }
   assert.deepEqual(
     [...surface.serviceRoleDenied].sort(),
-    [...launch.serviceRoleDenied, ...offline.deniedServiceRole].sort(),
+    [...launch.serviceRoleDenied, ...offline.deniedServiceRole, ...installedRetention.deniedServiceRole].sort(),
   );
   for (const signature of launch.addedAuthenticated) {
     const observed = launch.functions.find((entry) => entry.signature === signature);
@@ -328,7 +366,12 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
     assert.equal(actual.has(name), false);
     actual.set(name, 'authenticated');
   }
-  const observedFunctions = [...launch.functions, ...offlineFunctions];
+  for (const entry of installedRetention.functions) {
+    const name = entry.signature.slice(0, entry.signature.indexOf('('));
+    assert.equal(actual.has(name), false);
+    actual.set(name, entry.audience);
+  }
+  const observedFunctions = [...launch.functions, ...offlineFunctions, ...installedRetention.functions];
   assert.deepEqual(
     observedFunctions.map((f) => f.signature).sort(),
     [...audiences.publicFunctions].sort(),
