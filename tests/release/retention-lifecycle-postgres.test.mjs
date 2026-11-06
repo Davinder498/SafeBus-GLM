@@ -293,6 +293,17 @@ test('protected lifecycle manifest reconciles exact observed functions and rehea
   verifyOperationalSnapshot(await operationalSnapshot(client, config), config, 'before');
 });
 
+test('release requires a private evidence bucket provisioned through Storage', async (t) => {
+  const db = await fixture(false);
+  t.after(() => db.close());
+  const config = JSON.parse(await fs.readFile('config/pending/retention-lifecycle.json', 'utf8'));
+  await db.exec("update storage.buckets set public=true where id='retention-evidence'");
+  const unsafe = await operationalSnapshot(db, config);
+  assert.throws(() => verifyOperationalSnapshot(unsafe, config, 'before'), {
+    message: 'OPERATIONAL_STORAGE_BUCKET_DRIFT',
+  });
+});
+
 test('overlapping preservation inherits available archives; release cannot delete another case evidence', async (t) => {
   const db = await fixture();
   t.after(() => db.close());

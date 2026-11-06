@@ -389,14 +389,7 @@ END $$;
 REVOKE ALL ON FUNCTION public.retention_archive_work(text,jsonb) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.retention_archive_work(text,jsonb) TO service_role;
 
--- Application encryption is additional to private Storage authorization.
-DO $$ BEGIN
-  IF EXISTS(SELECT 1 FROM storage.buckets WHERE id='retention-evidence') THEN
-    RAISE EXCEPTION 'Archive bucket baseline differs from reviewed absence' USING ERRCODE='55006';
-  END IF;
-END $$;
-INSERT INTO storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
-  VALUES('retention-evidence','retention-evidence',false,2000000,ARRAY['application/octet-stream']);
+-- The private bucket is provisioned through the Storage API and verified by the release.
 CREATE POLICY retention_evidence_client_denial ON storage.objects AS RESTRICTIVE FOR ALL TO anon,authenticated
   USING(bucket_id<>'retention-evidence') WITH CHECK(bucket_id<>'retention-evidence');
 
