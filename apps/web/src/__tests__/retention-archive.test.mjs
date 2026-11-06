@@ -7,6 +7,7 @@ import {
   archiveOne,
 } from '../../netlify/functions/retention-archive.mjs';
 import {
+  archiveRecoverySample,
   validateLifecycleResult,
   RETENTION_CLASSES,
 } from '../../netlify/functions/retention-lifecycle-scheduled.mjs';
@@ -14,6 +15,25 @@ import {
 describe('restricted GPS archive integrity', () => {
   const key = randomBytes(32);
   const config = { id: 'key1', keys: new Map([['key1', key]]) };
+  it('emits only synthetic ciphertext during the bounded dry-run recovery window', () => {
+    const now = Date.parse('2026-11-06T12:00:00Z');
+    const env = {
+      SAFEBUS_ARCHIVE_RECOVERY_CHECK_UNTIL: '2026-11-06T12:05:00Z',
+      SAFEBUS_RETENTION_ARCHIVE_KEY_ID: config.id,
+      SAFEBUS_RETENTION_ARCHIVE_KEYS: JSON.stringify({ key1: key.toString('base64') }),
+    };
+    expect(archiveRecoverySample(false, env, now)).toBeNull();
+    expect(archiveRecoverySample(true, {}, now)).toBeNull();
+    expect(archiveRecoverySample(true, env, now - 10 * 60_000)).toBeNull();
+    expect(archiveRecoverySample(true, env, now + 5 * 60_000)).toBeNull();
+    const { keyId, sample } = archiveRecoverySample(true, env, now);
+    expect(keyId).toBe(config.id);
+    const ciphertext = Buffer.from(sample, 'base64');
+    expect(decryptArchive(ciphertext, config.keys).payload.toString()).toBe(
+      'SafeBus archive recovery test',
+    );
+    expect(() => decryptArchive(ciphertext, new Map([[keyId, randomBytes(32)]]))).toThrow();
+  });
   it('encrypts with authenticated metadata, fresh nonces and versioned keys', () => {
     const value = Buffer.from('selected evidence');
     const first = encryptArchive(value, 'key1', key);

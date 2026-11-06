@@ -124,3 +124,64 @@ Lost HTTP responses cannot erase completion evidence; retries add zero for rows
 already removed. Dry-runs do not write these totals. Aggregate windows expire
 after 395 days. These totals also prevent a schema-only rollback from pretending
 to undo an execution that already removed data.
+
+## Verify archive key recovery
+
+Keep both execution controls off. Before the approved production deployment,
+set `SAFEBUS_ARCHIVE_RECOVERY_CHECK_UNTIL` in the production Functions environment
+to a UTC ISO 8601 time (`YYYY-MM-DDTHH:mm:ssZ`) after the expected deployment.
+In the final ten minutes before that time, the scheduled dry run logs
+`retention_archive_recovery_sample` with the active key ID and a Base64 encrypted
+sample. The sample contains only a fixed test message. It uses the archive
+encryption format and requires no Storage or Auth writes. A
+`retention_archive_recovery_config_invalid` event means the key configuration
+could not be loaded. The check expires automatically.
+
+In PowerShell 7.4 or later, paste and run the block first. At the prompts, copy
+only the log's `sample` field, then independently copy the key JSON from secure
+custody. Check that the logged key ID is the intended active key. Record only the
+test date, key ID, and outcome. Remove the expired variable from Netlify.
+
+```powershell
+$ErrorActionPreference = 'Stop'
+$key = $aes = $null
+try {
+    Read-Host 'Copy the Netlify sample value and press Enter' | Out-Null
+    $bytes = [Convert]::FromBase64String((Get-Clipboard -Raw).Trim())
+    $length = [Net.IPAddress]::NetworkToHostOrder([BitConverter]::ToInt32($bytes, 0))
+    if ($length -lt 1 -or $length -gt 512 -or $bytes.Length -le (20 + $length)) {
+        throw 'Invalid archive header'
+    }
+    $header = [byte[]]($bytes[4..(3 + $length)])
+    $metadata = [Text.Encoding]::UTF8.GetString($header) | ConvertFrom-Json
+    if ($metadata.version -ne 1 -or $metadata.keyId -cnotmatch '^[A-Za-z0-9_-]{1,40}$') {
+        throw 'Invalid archive metadata'
+    }
+
+    Read-Host 'Copy the archive-key JSON from your password manager and press Enter' | Out-Null
+    $key = [Convert]::FromBase64String(
+        ((Get-Clipboard -Raw) | ConvertFrom-Json -AsHashtable)[$metadata.keyId]
+    )
+    if ($key.Length -ne 32) { throw 'Invalid archive key length' }
+    $nonce = [Convert]::FromBase64String($metadata.nonce)
+    $tag = [byte[]]($bytes[(4 + $length)..(19 + $length)])
+    $ciphertext = [byte[]]($bytes[(20 + $length)..($bytes.Length - 1)])
+    $plain = [byte[]]::new($ciphertext.Length)
+    $aes = [Security.Cryptography.AesGcm]::new($key, 16)
+    $aes.Decrypt($nonce, $ciphertext, $tag, $plain, $header)
+    if ([Text.Encoding]::UTF8.GetString($plain) -cne 'SafeBus archive recovery test') {
+        throw 'Recovered text differs'
+    }
+    "PASS: recovered the deployed sample for $($metadata.keyId)."
+} catch {
+    'FAIL: archive recovery could not be verified.'
+} finally {
+    if ($aes) { $aes.Dispose() }
+    if ($key) { [Array]::Clear($key, 0, $key.Length) }
+    Set-Clipboard -Value ''
+    Remove-Variable key -ErrorAction SilentlyContinue
+}
+```
+
+Verify school-authority archive access separately with an authorized synthetic
+case. The recovery sample verifies key custody and decryption.
