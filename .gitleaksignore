@@ -8,3 +8,8 @@ cfbc50ac90e5ec77c5637b9787383b987645cfa4:docs/governance/phase-3/privacy-managem
 # push verification artifact. Recomputed with supabaseTargetIdentity; this exact
 # original commit/file/line only. No credential, path, or rule-wide exemption.
 ec6b390399b41a5c08f992a0afa386b16755aa3b:docs/operations/recipient-push-live-verification-2026-10-26.json:generic-api-key:8
+
+# Reviewed false positive in PR #396: literal quota alert check identifier in
+# an automated test, not a real Geoapify API key or token. This exception is
+# limited to the exact original commit, file, detector and line only.
+d2cd72eccf78da7a23c06c7a5302415f199059c9:tests/release/monitor-alert-email.test.mjs:generic-api-key:156
