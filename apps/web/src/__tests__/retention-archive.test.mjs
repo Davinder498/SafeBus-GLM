@@ -8,6 +8,7 @@ import {
 } from '../../netlify/functions/retention-archive.mjs';
 import {
   archiveRecoverySample,
+  reportRetentionBacklog,
   validateLifecycleResult,
   RETENTION_CLASSES,
 } from '../../netlify/functions/retention-lifecycle-scheduled.mjs';
@@ -115,6 +116,26 @@ describe('restricted GPS archive integrity', () => {
   it('accepts an ambiguous upload only when stored ciphertext decrypts to the exact snapshot', async () => {
     const c = client({ uploadError: { statusCode: '500' } });
     expect(await archiveOne(c, config)).toBe('verified');
+  });
+  it('sends no backlog alerts during dry-runs or unsaturated execution', async () => {
+    const notify = vi.fn();
+    const log = vi.fn();
+    expect(await reportRetentionBacklog({ dryRun: true, saturated: true, notify, log })).toEqual({ result: 'skipped' });
+    expect(await reportRetentionBacklog({ dryRun: false, saturated: false, notify, log })).toEqual({ result: 'skipped' });
+    expect(notify).not.toHaveBeenCalled();
+    expect(log).not.toHaveBeenCalled();
+  });
+  it('reports only bounded live backlog and contains provider failures', async () => {
+    const lines = [];
+    const log = (line) => lines.push(line);
+    const notify = vi.fn().mockResolvedValue({ result: 'accepted' });
+    expect(await reportRetentionBacklog({ dryRun: false, saturated: true, notify, log })).toEqual({ result: 'accepted' });
+    expect(notify).toHaveBeenCalledWith({ checks: [{ check: 'retention_backlog', result: 'fail' }] });
+    expect(JSON.parse(lines[0])).toEqual({ event: 'retention_lifecycle_backlog_alert', result: 'provider_accepted' });
+    const failed = vi.fn(async () => { throw new Error('secret-provider-payload'); });
+    expect(await reportRetentionBacklog({ dryRun: false, saturated: true, notify: failed, log })).toEqual({ result: 'failed' });
+    expect(JSON.parse(lines[1])).toEqual({ event: 'retention_lifecycle_backlog_alert', result: 'failed', code: 'MONITOR_ALERT_DELIVERY_FAILED' });
+    expect(lines.join(' ')).not.toContain('secret-provider-payload');
   });
   it('rejects incomplete, unknown and unbounded deletion reports', () => {
     const valid = {

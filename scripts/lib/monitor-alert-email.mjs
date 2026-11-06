@@ -1,6 +1,10 @@
 const RECIPIENT = 'info@safebus.kids';
 const WINDOW_MS = 6 * 60 * 60 * 1_000;
 const DETAILS = {
+  retention_backlog: {
+    subject: 'SafeBus alert: retention disposal backlog needs attention',
+    text: 'The approved retention worker completed its bounded deletion attempt but the final batch reached its per-class limit. More eligible records may remain. Inspect retention_lifecycle_completed counts, saturated state, privacy holds, backlog age and subsequent runs. Do not bypass preservation, enable additional deletions or increase limits without a reviewed change.',
+  },
   retention_lifecycle: {
     subject: 'SafeBus alert: records retention needs attention',
     text: 'The scoped retention or evidence archive worker failed. Review the retention-lifecycle-scheduled function logs and the protected database release. Unverified preserved GPS must remain in the source database. This alert does not mean customer records were deleted. Retention logs: https://app.netlify.com/projects/bussafe/functions/retention-lifecycle-scheduled',
