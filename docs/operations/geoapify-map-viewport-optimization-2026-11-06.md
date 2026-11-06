@@ -32,13 +32,21 @@ measurements for a comparable workload. No quotas or subscription claims
 are made. A change to the Android web UI will only reach signed devices after
 a later reviewed mobile build/release.
 
-The existing production Netlify `GEOAPIFY_API_KEY` was present in masked
-settings during the review, while the operator reported having no Geoapify
-account. Ownership, restrictions and quota for that key are **unverified**.
-Before onboarding a customer, create a SafeBus-owned account and project,
-configure the replacement key with appropriate HTTP-referrer/origin
-restrictions, test both web and native map requests, and only then retire
-the prior key. Avoid copying keys into Git, customer tickets or chat.
+The operator subsequently confirmed an existing Geoapify account and an
+API key already configured as `GEOAPIFY_API_KEY` in Netlify. Read-only
+browser access confirmed the operator is signed into a Geoapify project's
+API-key settings. **No new account or key is needed if the production key
+belongs to this project and has suitable restrictions.** The account's key
+and Netlify's masked production value have not been compared, so ownership,
+restriction coverage, current plan and quota remain to be verified.
+
+The operator should compare the values privately in Geoapify and Netlify,
+without copying the API key into Git, chat or tickets. Inspect the actual
+project Statistics and Plan & Billing pages, and confirm any referrer/origin
+restrictions work for both the production website and the Android WebView.
+Do not rotate or replace the working key unless a mismatch or unsafe
+restriction is established; test web/native rendering before any approved
+rotation.
 
 Geoapify references:
 - https://myprojects.geoapify.com/help/
