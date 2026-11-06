@@ -1,7 +1,7 @@
 import { disposeOneAccount } from './disposal-accounts.mjs';
 import { sendMonitorAlerts } from '../../../../scripts/lib/monitor-alert-email.mjs';
 import { createClient } from '@supabase/supabase-js';
-import { archiveKeys, archiveOne } from './retention-archive.mjs';
+import { archiveKeys, archiveOne, encryptArchive } from './retention-archive.mjs';
 
 export const RETENTION_CLASSES = [
   'gps',
@@ -47,6 +47,20 @@ export function validateLifecycleResult(value, dryRun) {
   return value.counts;
 }
 
+export function archiveRecoverySample(dryRun, env = process.env, now = Date.now()) {
+  const remaining = Date.parse(env.SAFEBUS_ARCHIVE_RECOVERY_CHECK_UNTIL ?? '') - now;
+  if (!dryRun || !(remaining > 0 && remaining <= 10 * 60_000)) return null;
+
+  const { id, keys } = archiveKeys(env);
+  return {
+    event: 'retention_archive_recovery_sample',
+    keyId: id,
+    sample: encryptArchive(Buffer.from('SafeBus archive recovery test'), id, keys.get(id)).toString(
+      'base64',
+    ),
+  };
+}
+
 export async function handler() {
   const dryRun = process.env.SAFEBUS_RETENTION_LIFECYCLE_EXECUTE !== 'true';
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -84,6 +98,12 @@ export async function handler() {
       if (!saturated || Date.now() - started > 12_000) break;
     }
     const account = dryRun ? 'dry_run' : await disposeOneAccount(client);
+    try {
+      const sample = archiveRecoverySample(dryRun);
+      if (sample) console.log(JSON.stringify(sample));
+    } catch {
+      console.error(JSON.stringify({ event: 'retention_archive_recovery_config_invalid' }));
+    }
     console.log(
       JSON.stringify({
         event: 'retention_lifecycle_completed',
