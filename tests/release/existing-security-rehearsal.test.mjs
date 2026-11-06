@@ -240,13 +240,22 @@ test('snapshot-specific reconciliation retains the exact existing API signatures
   ).addedAuthenticated;
   const launch = JSON.parse(await fs.readFile('config/observed/launch-api-inventory.json', 'utf8'));
   const offline = JSON.parse(await fs.readFile('config/observed/offline-trip-action-authorization.json', 'utf8'));
+  // The newer retention/disposal RPCs were installed by a separate protected
+  // release. Keep them out of this immutable older snapshot's expected DDL.
+  const disposal = JSON.parse(
+    await fs.readFile('config/observed/retention-disposal-authorization-2026-11-06.json', 'utf8'),
+  );
+  assert.equal(disposal.observationOnly, true);
+  assert.equal(disposal.databaseChanges, false);
   const historicalAuthenticated = [
     ...surface.authenticated.filter((signature) =>
       !added.includes(signature) && !launch.addedAuthenticated.includes(signature)
-        && !offline.addedAuthenticated.includes(signature)), ...retired,
+        && !offline.addedAuthenticated.includes(signature)
+        && !disposal.addedAuthenticated.includes(signature)), ...retired,
   ];
   const historicalServiceRole = surface.serviceRole.filter((signature) =>
-    !launch.addedServiceRole.includes(signature));
+    !launch.addedServiceRole.includes(signature)
+      && !disposal.addedServiceRole.includes(signature));
   const migration = await fs.readFile(RECONCILIATION_FILE, 'utf8');
   const entries = [
     ...migration.matchAll(/\('([a-z0-9_]+\([^']*\))', '(authenticated|service_role)'\)/g),
