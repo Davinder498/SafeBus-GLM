@@ -1,6 +1,16 @@
 const RECIPIENT = 'info@safebus.kids';
 const WINDOW_MS = 6 * 60 * 60 * 1_000;
 const DETAILS = {
+  // These templates are intentionally inert until reviewed Geoapify
+  // project-wide statistics are available to a trusted operator.
+  geoapify_quota_70: {
+    subject: 'SafeBus alert: Geoapify project quota reached 70%',
+    text: 'Verified Geoapify project-wide credit usage reached at least 70% of the current daily credit allowance. Review the Geoapify project Statistics and plan, all keys sharing the project quota, expected pilot demand and provider terms. This notice is not proof of an outage.',
+  },
+  geoapify_quota_90: {
+    subject: 'SafeBus alert: Geoapify project quota reached 90%',
+    text: 'Verified Geoapify project-wide credit usage reached at least 90% of the current daily credit allowance. Investigate project-level credit usage, competing keys, current plan and SafeBus map degradation. Do not rotate keys, buy a plan or route traffic to an unapproved provider without review.',
+  },
   retention_backlog: {
     subject: 'SafeBus alert: retention disposal backlog needs attention',
     text: 'The approved retention worker completed its bounded deletion attempt but the final batch reached its per-class limit. More eligible records may remain. Inspect retention_lifecycle_completed counts, saturated state, privacy holds, backlog age and subsequent runs. Do not bypass preservation, enable additional deletions or increase limits without a reviewed change.',
