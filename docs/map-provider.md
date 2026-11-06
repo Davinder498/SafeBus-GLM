@@ -63,10 +63,22 @@ HTTP origin/referrer, and normal network metadata.
   request.
 - Existing map surfaces retain their controlled list/status fallback when the
   provider or configuration is unavailable.
-- Record Geoapify usage during the pilot. The free allowance equates to 12,000
-  tile requests per day at the current 0.25-credit tile rate.
-- Set an operational alert before 70% and 90% of the daily quota. Do not wait
-  for visible map failures.
+- Record **project-wide credit usage** during the pilot, not only tile counts
+  for one API key. All keys in a Geoapify project share the same credit quota
+  and other Geoapify API calls can consume credits.
+- The currently published Free plan is 3,000 credits/day. Its reference 70% and
+  90% thresholds are 2,100 and 2,700 credits/day respectively. At the existing
+  0.25-credit map-tile cost they equal 8,400 and 10,800 map tiles **only if
+  all project consumption is tiles**. Re-read the actual plan/quota before
+  assessing thresholds.
+- Geoapify project Statistics provides usage information. We have not verified
+  a supported project-usage API or provider-native threshold notification
+  feature, so do not describe a working automatic monitor. Use the
+  [operator quota review](operations/geoapify-quota-review.md) until an
+  authoritative live integration and two delivered alert drills are approved.
+- Set and verify an actual operational alert at 70% and 90% before pilot
+  authorization. Do not wait for visible map failures or count the local
+  evaluator as active alerts.
 - Complete a provider-outage acceptance test and retain evidence before pilot
   authorization.
 - SafeBus deliberately does not fail over to a community or unreviewed tile
