@@ -75,3 +75,21 @@ test('preview and healthy runs never send mail; alert failure cannot mask observ
   assert.equal(logs.some(line=>line.includes('provider-secret')),false);
   assert.deepEqual(JSON.parse(logs.at(-1)),{event:'production_health_alert',result:'failed',code:'MONITOR_ALERT_DELIVERY_FAILED'});
 });
+
+
+test('live retention saturation sends fixed minimal content to the existing operations inbox', async () => {
+  const requests = [];
+  const fetchImpl = async (_url, options) => {
+    requests.push({ headers: options.headers, body: JSON.parse(options.body) });
+    return Response.json({ id: 'accepted' });
+  };
+  const input = [{ check: 'retention_backlog', result: 'fail', detail: 'secret GPS payload' }];
+  assert.equal((await sendMonitorAlerts({ checks: input, env, now, fetchImpl })).result, 'accepted');
+  assert.equal(requests.length, 1);
+  assert.deepEqual(requests[0].body.to, ['info@safebus.kids']);
+  assert.equal(requests[0].body.subject, 'SafeBus alert: retention disposal backlog needs attention');
+  assert.match(requests[0].headers['Idempotency-Key'], /^safebus-monitor-v1\/retention_backlog\/[0-9]+$/);
+  assert.equal(JSON.stringify(requests).includes('secret GPS payload'), false);
+  assert.equal(JSON.stringify(requests).includes('test-secret'), true); // Authorization header only, never message body.
+  assert.equal(requests[0].body.text.includes('test-secret'), false);
+});
