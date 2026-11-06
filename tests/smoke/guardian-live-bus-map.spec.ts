@@ -661,6 +661,52 @@ test.describe('Milestone 11B - Guardian live bus map UI', () => {
     }
   });
 
+  test('guardian map keeps viewport stationary by default and follow mode is optional', async ({ page }) => {
+    await installGuardianLiveMapMock(page, {
+      rows: [freshRow()],
+      routeRows: [studentRouteRow()],
+    });
+    await installMapProviderAvailable(page);
+    await page.goto('/guardian/live-map?bus=42');
+
+    const follow = page.getByTestId('guardian-live-map-follow-bus');
+    await expect(follow).toBeVisible({ timeout: 10000 });
+    await expect(follow).toBeEnabled();
+    await expect(follow).toHaveText('Follow bus');
+    await expect(follow).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.getByTestId('guardian-live-bus-map-marker')).toBeVisible();
+
+    await follow.click();
+    await expect(follow).toHaveText('Stop following');
+    await expect(follow).toHaveAttribute('aria-pressed', 'true');
+
+    // A guardian choosing to inspect a different map area should not have
+    // their manual drag overridden by subsequent location updates.
+    const bounds = await page.locator('.leaflet-container').boundingBox();
+    expect(bounds).not.toBeNull();
+    const x = bounds!.x + bounds!.width * 0.4;
+    const y = bounds!.y + bounds!.height * 0.65;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + 75, y + 45, { steps: 5 });
+    await page.mouse.up();
+    await expect(follow).toHaveAttribute('aria-pressed', 'false');
+    await expect(follow).toHaveText('Follow bus');
+  });
+
+  test('follow control is disabled when there is no current bus location', async ({ page }) => {
+    await installGuardianLiveMapMock(page, {
+      rows: [missingRow()],
+      routeRows: [studentRouteRow()],
+    });
+    await installMapProviderAvailable(page);
+    await page.goto('/guardian/live-map?bus=42');
+    const follow = page.getByTestId('guardian-live-map-follow-bus');
+    await expect(follow).toBeVisible({ timeout: 10000 });
+    await expect(follow).toBeDisabled();
+    await expect(follow).toHaveAttribute('aria-pressed', 'false');
+  });
+
   test('same-coordinate pickup and drop-off assignments use one combined marker', async ({
     page,
   }) => {
