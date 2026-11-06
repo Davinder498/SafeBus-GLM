@@ -8,9 +8,52 @@ import {
   assertAdvertisedRpcSurface,
 } from '../../scripts/lib/authorization-audiences.mjs';
 import { PGlite } from '@electric-sql/pglite';
+import { REVIEWED_PRIVATE_RETENTION_TABLES, assertMissingSessionPolicies } from '../../scripts/lib/private-retention-policy-audit.mjs';
 
 const migrationPath = 'supabase/migrations/0089_authorization_surface_hardening.sql';
 const notificationMigrationPath = 'supabase/migrations/0092_end_to_end_notification_system.sql';
+
+
+test('private retention no-policy exceptions are exact and reject any access-control drift', () => {
+  assert.equal(REVIEWED_PRIVATE_RETENTION_TABLES.length, 8);
+  assert.equal(new Set(REVIEWED_PRIVATE_RETENTION_TABLES).size, 8);
+  const safeRow = (name) => ({
+    object_name: name,
+    schema_name: 'safebus_private',
+    owner_name: 'postgres',
+    rls_enabled: true,
+    policy_count: '0',
+    anon_has_privileges: false,
+    authenticated_has_privileges: false,
+    service_has_privileges: false,
+  });
+  assert.deepEqual(
+    assertMissingSessionPolicies(REVIEWED_PRIVATE_RETENTION_TABLES.map(safeRow)),
+    { reviewedPrivateNoPolicyTables: 8 },
+  );
+  assert.throws(
+    () => assertMissingSessionPolicies([safeRow('public.students')]),
+    /Restrictive session policies are missing/,
+  );
+  assert.throws(
+    () => assertMissingSessionPolicies([safeRow('safebus_private.unreviewed_table')]),
+    /Restrictive session policies are missing/,
+  );
+  for (const changed of [
+    { schema_name: 'public' },
+    { owner_name: 'authenticated' },
+    { rls_enabled: false },
+    { policy_count: '1' },
+    { anon_has_privileges: true },
+    { authenticated_has_privileges: true },
+    { service_has_privileges: true },
+  ]) {
+    assert.throws(
+      () => assertMissingSessionPolicies([{ ...safeRow(REVIEWED_PRIVATE_RETENTION_TABLES[0]), ...changed }]),
+      /Restrictive session policies are missing/,
+    );
+  }
+});
 
 test('complete OpenAPI discovery preserves actual service execution denials and overloads', async (t) => {
   const db = new PGlite();
