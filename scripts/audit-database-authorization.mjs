@@ -10,6 +10,7 @@ import {
 import { UNSAFE_PUBLIC_DEFAULT_PRIVILEGES_SQL } from './lib/default-privilege-audit.mjs';
 import { auditReservedProviderDefaults } from './lib/reserved-provider-defaults.mjs';
 import { assertPrivateApiSchemaHidden } from './lib/existing-security-rehearsal.mjs';
+import { assertMissingSessionPolicies } from './lib/private-retention-policy-audit.mjs';
 import {
   assertEnvironmentIdentity,
   createEnvironmentBinding,
@@ -328,7 +329,17 @@ try {
   );
 
   const missingSessionPolicies = await client.query(`
-    select format('%I.%I', n.nspname, c.relname) as object_name
+    select format('%I.%I', n.nspname, c.relname) as object_name,
+           n.nspname as schema_name,
+           pg_get_userbyid(c.relowner) as owner_name,
+           c.relrowsecurity as rls_enabled,
+           (select count(*) from pg_policy policy where policy.polrelid = c.oid) as policy_count,
+           has_table_privilege('anon', c.oid,
+             'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') as anon_has_privileges,
+           has_table_privilege('authenticated', c.oid,
+             'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') as authenticated_has_privileges,
+           has_table_privilege('service_role', c.oid,
+             'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') as service_has_privileges
       from pg_class c join pg_namespace n on n.oid = c.relnamespace
      where (n.nspname in ('public', 'safebus_private')
             or (n.nspname = 'realtime' and c.relname = 'messages'))
@@ -339,7 +350,12 @@ try {
             and not p.polpermissive and p.polcmd = '*'
        )
   `);
-  assertNoRows('Restrictive session policies are missing', missingSessionPolicies);
+  // RLS with no policies and no client grants on these exact protected tables
+  // is deny-by-default. No public/other missing session policy is exempt.
+  console.log(JSON.stringify({
+    check: 'private-retention-session-policy',
+    ...assertMissingSessionPolicies(missingSessionPolicies.rows),
+  }));
 
   const missingSchoolLocationPolicies = await client.query(`
     select table_name as object_name
