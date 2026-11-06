@@ -73,11 +73,15 @@ its reconciliation/restoration evidence, then dispatch protected `install` for
 that same reviewed SHA. The workflow binds BusSafe, verifies the SQL digest,
 creates encrypted recovery and restores its bounded rehearsal before installing.
 It deliberately leaves the destructive database master control disabled.
-Restoration refuses to drop preservation data, resolved-announcement dates or
-nonempty evidence storage. Once cases exist, use a reviewed forward repair.
+Restoration stops if preservation data, resolved-announcement dates, or archive
+objects exist. It leaves the evidence bucket intact. Once cases exist, use a
+reviewed forward repair.
 
-The migration creates a private `retention-evidence` bucket with a restrictive
-client denial policy. Only server Storage operations may read ciphertext. The
+Before dispatching the rehearsal, provision `retention-evidence` in the BusSafe
+Storage dashboard or Storage API. Set visibility to private, the file size limit
+to 2,000,000 bytes, and the allowed MIME type to `application/octet-stream`.
+The release verifies those settings and installs the restrictive client denial
+policy. Only server Storage operations may read ciphertext. The
 server downloads and decrypts evidence only after the caller's own JWT authorizes
 that authority's case, MFA and recent authentication. No bearer download URL is
 issued. Downloads filter the samples to the requesting case window.

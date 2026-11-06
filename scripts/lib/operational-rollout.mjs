@@ -186,8 +186,15 @@ export async function operationalSnapshot(client, config) {
 }
 
 export function verifyOperationalSnapshot(snapshot, config, state) {
+  if (
+    config.storageBuckets &&
+    !isDeepStrictEqual(
+      snapshot.storageBuckets,
+      config.storageBuckets.map((bucket) => bucket[state]),
+    )
+  )
+    throw new Error('OPERATIONAL_STORAGE_BUCKET_DRIFT');
   for (const key of [
-    'storageBuckets',
     'relations',
     'jobs',
     'quotaRepairs',
@@ -265,7 +272,8 @@ export function operationalRestoreSql(snapshot, config) {
     );
   }
   for (const bucket of config.storageBuckets ?? []) {
-    if (bucket.before !== null) throw new Error('OPERATIONAL_RECOVERY_SCOPE');
+    if (bucket.before === null || !isDeepStrictEqual(bucket.before, bucket.after))
+      throw new Error('OPERATIONAL_RECOVERY_SCOPE');
     pendingGuards.push(
       `DO $restore$ BEGIN IF EXISTS(SELECT 1 FROM storage.objects WHERE bucket_id=${literal(bucket.id)} LIMIT 1) THEN RAISE EXCEPTION 'Archive objects prevent rollback.'; END IF; END $restore$;`,
     );
@@ -329,8 +337,6 @@ export function operationalRestoreSql(snapshot, config) {
     statements.push(
       `ALTER TABLE ${identifier(column.schema)}.${identifier(column.table)} DROP COLUMN ${identifier(column.name)};`,
     );
-  for (const bucket of config.storageBuckets ?? [])
-    statements.push(`DELETE FROM storage.buckets WHERE id=${literal(bucket.id)};`);
   for (const [index, p] of snapshot.policies.entries()) {
     if (p === null) {
       const target = config.policies[index].after;

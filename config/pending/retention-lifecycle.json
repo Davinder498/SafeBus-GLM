@@ -1,7 +1,7 @@
 {
   "projectId": "ckrkfylsyihwouvesypm",
   "migration": "supabase/migrations/pending/20261105172229_retention_lifecycle.sql",
-  "migrationSha256": "feab9b90513fab8c8ba5c8f80ea85c2e88e83c4a81743025c439f1cf7f92ad4d",
+  "migrationSha256": "d03ec3c1e1d1b0d07e925774993a106f50a2a89156dacf20b6ce8d2c5ab573a2",
   "rehearseRestore": true,
   "functions": [
     {
@@ -525,7 +525,15 @@
   "storageBuckets": [
     {
       "id": "retention-evidence",
-      "before": null,
+      "before": {
+        "id": "retention-evidence",
+        "name": "retention-evidence",
+        "public": false,
+        "file_size_limit": "2000000",
+        "allowed_mime_types": [
+          "application/octet-stream"
+        ]
+      },
       "after": {
         "id": "retention-evidence",
         "name": "retention-evidence",

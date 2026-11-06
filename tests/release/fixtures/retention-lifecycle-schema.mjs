@@ -9,6 +9,9 @@ export async function fixture(install = true) {
  create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
  create table storage.objects(id uuid,bucket_id text);
  alter table storage.objects enable row level security;
+ create function storage.reject_bucket_delete() returns trigger language plpgsql as $$begin raise exception 'Direct bucket deletion is blocked' using errcode='42501'; end$$;
+ create trigger protect_buckets_delete before delete on storage.buckets for each statement execute function storage.reject_bucket_delete();
+ insert into storage.buckets values ('retention-evidence','retention-evidence',false,2000000,array['application/octet-stream']);
  create role anon; create role authenticated; create role service_role;
  create function auth.role() returns text language sql as $$select coalesce(nullif(current_setting('test.role',true),''),'service_role')$$;
  create function auth.uid() returns uuid language sql as $$select coalesce(nullif(current_setting('test.uid',true),''),'11111111-1111-4111-8111-111111111111')::uuid$$;
