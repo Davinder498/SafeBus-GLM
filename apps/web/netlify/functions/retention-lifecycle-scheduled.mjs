@@ -61,6 +61,32 @@ export function archiveRecoverySample(dryRun, env = process.env, now = Date.now(
   };
 }
 
+// A single saturated dry-run is an observation, not an alert or a deletion.
+// When approved deletion is eventually enabled, a saturated final batch
+// indicates work may remain. Notify operations with fixed, deduplicated text;
+// an alert-provider failure must not turn a completed database run into a retry.
+export async function reportRetentionBacklog({
+  dryRun,
+  saturated,
+  notify = sendMonitorAlerts,
+  log = console.log,
+} = {}) {
+  if (dryRun !== false || saturated !== true) return { result: 'skipped' };
+  try {
+    const outcome = await notify({ checks: [{ check: 'retention_backlog', result: 'fail' }] });
+    if (outcome?.result !== 'accepted') throw new Error('RETENTION_BACKLOG_ALERT_UNCONFIRMED');
+    log(JSON.stringify({ event: 'retention_lifecycle_backlog_alert', result: 'provider_accepted' }));
+    return { result: 'accepted' };
+  } catch {
+    log(JSON.stringify({
+      event: 'retention_lifecycle_backlog_alert',
+      result: 'failed',
+      code: 'MONITOR_ALERT_DELIVERY_FAILED',
+    }));
+    return { result: 'failed' };
+  }
+}
+
 export async function handler() {
   const dryRun = process.env.SAFEBUS_RETENTION_LIFECYCLE_EXECUTE !== 'true';
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -98,6 +124,7 @@ export async function handler() {
       if (!saturated || Date.now() - started > 12_000) break;
     }
     const account = dryRun ? 'dry_run' : await disposeOneAccount(client);
+    await reportRetentionBacklog({ dryRun, saturated });
     try {
       const sample = archiveRecoverySample(dryRun);
       if (sample) console.log(JSON.stringify(sample));
