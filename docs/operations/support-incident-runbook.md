@@ -31,8 +31,9 @@ missing location or notification as proof of a student's whereabouts.
    the sales inquiry form's work email, organization or job-title fields.
 2. Open a restricted request/incident record. Record ID, received/awareness time
    in UTC, contact route, authority if known, brief symptom, severity, assigned
-   responder, next action/update time and linked evidence. Use America/Regina
-   when communicating local time. Actual cases stay outside Git and public issues.
+   responder, next action/update time and linked evidence. Use `America/Edmonton`
+   when communicating Alberta local time (MST in winter, MDT in summer); retain UTC
+   in the incident record. Do not use Saskatchewan/Regina time for Alberta deadlines. Actual cases stay outside Git and public issues.
 3. Ask only for what is necessary: app version, approximate failure time,
    affected role and a redacted symptom. Never ask for a password, session token,
    recovery/invitation link, MFA code, payment credential, student roster, precise
@@ -95,6 +96,19 @@ evidence; do not share account details or raw logs with customers.
    recorded. The known GitHub cadence gap remains unresolved unless fresh
    scheduled evidence demonstrates otherwise. Do not mute failure by raising
    the threshold or treating manual runs as scheduled evidence.
+
+### Retention backlog alert after activation
+
+When **approved destructive disposal** is enabled in the future, a final batch
+that still reaches the 500-record per-class limit produces a fixed
+`retention_backlog` operations alert, deduplicated by the established six-hour
+UTC window. Treat `provider_accepted` as email-provider acceptance, not verified
+inbox receipt or completed disposal. Check subsequent successful runs, source
+record age, holds, archive read-back and capacity before declaring the backlog
+cleared. A dry-run can remain `saturated: true` repeatedly without altering
+rows; it does **not** trigger this alert. Do not activate deletion or bypass a
+preservation hold to make the alert stop. Log all response times in UTC and use
+`America/Edmonton` for Alberta communications.
 
 ## Privacy containment and notification
 
