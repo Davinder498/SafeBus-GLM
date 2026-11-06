@@ -5,9 +5,10 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
-import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
+import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import { divIcon, latLngBounds, type LatLngExpression } from 'leaflet';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
@@ -214,19 +215,43 @@ function MapResizer() {
   return null;
 }
 
-function MapBounds({ positions }: { positions: Array<[number, number]> }) {
+function MapBounds({
+  positions,
+  busPositions,
+  followBus,
+}: {
+  positions: Array<[number, number]>;
+  busPositions: Array<[number, number]>;
+  followBus: boolean;
+}) {
   const map = useMap();
-  const signature = positions.map(([latitude, longitude]) => `${latitude},${longitude}`).join('|');
+  const framedInitially = useRef(false);
+  const initialSignature = positions.map(([lat, lng]) => `${lat},${lng}`).join('|');
+  const busSignature = busPositions.map(([lat, lng]) => `${lat},${lng}`).join('|');
   useEffect(() => {
-    if (positions.length === 0) return;
-    if (positions.length === 1) {
-      map.setView(positions[0], 14);
+    // Frame the first available authoritative positions once. Later GPS fixes
+    // move markers without requesting fresh basemap tiles by default.
+    if (!framedInitially.current) {
+      if (positions.length === 0) return;
+      framedInitially.current = true;
+      if (positions.length === 1) map.setView(positions[0], 14);
+      else map.fitBounds(latLngBounds(positions), { padding: [32, 32], maxZoom: 15 });
       return;
     }
-    map.fitBounds(latLngBounds(positions), { padding: [32, 32], maxZoom: 15 });
-    // The coordinate signature deliberately drives viewport updates.
+    // Viewport following is an explicit guardian choice, never tied to polling.
+    if (!followBus || busPositions.length === 0) return;
+    if (busPositions.length === 1) map.setView(busPositions[0], map.getZoom());
+    else map.fitBounds(latLngBounds(busPositions), { padding: [32, 32], maxZoom: 15 });
+    // Position signatures are the stable React dependencies for these arrays.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, signature]);
+  }, [map, initialSignature, busSignature, followBus]);
+  return null;
+}
+
+function PauseFollowingOnDrag({ onPause }: { onPause(): void }) {
+  // Only an intentional pointer drag disables following. Map-initiated
+  // programmatic zoom/pan events must not toggle the user's preference.
+  useMapEvents({ dragstart: onPause });
   return null;
 }
 
@@ -238,6 +263,7 @@ export function GuardianLiveBusMap({
   fullScreen = false,
 }: GuardianLiveBusMapProps) {
   const [tileFailed, setTileFailed] = useState(false);
+  const [followBus, setFollowBus] = useState(false);
   const markerEntries = useMemo(() => buildMarkerEntries(locations), [locations]);
   const stopMarkerEntries = useMemo(() => buildStopMarkerEntries(serviceLines), [serviceLines]);
   const allPositions = useMemo(
@@ -252,6 +278,8 @@ export function GuardianLiveBusMap({
     [allPositions],
   );
   const handleTileError = useCallback(() => setTileFailed(true), []);
+  const pauseFollowing = useCallback(() => setFollowBus(false), []);
+  const busPositions = useMemo(() => markerEntries.map((entry) => entry.position), [markerEntries]);
 
   if (!tileConfig.isConfigured || !tileConfig.tileUrl || !tileConfig.attribution) {
     return (
@@ -307,10 +335,20 @@ export function GuardianLiveBusMap({
           </div>
         )}
         <section
-          className={fullScreen ? 'min-h-0 flex-1' : 'h-80'}
+          className={fullScreen ? 'relative min-h-0 flex-1' : 'relative h-80'}
           aria-label={regionLabel}
           data-testid="guardian-live-bus-map-region"
         >
+          <button
+            type="button"
+            className="absolute right-3 top-3 z-[1000] rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-navy-900 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-900 disabled:cursor-not-allowed disabled:opacity-60"
+            data-testid="guardian-live-map-follow-bus"
+            aria-pressed={followBus}
+            disabled={markerEntries.length === 0}
+            onClick={() => setFollowBus((current) => !current)}
+          >
+            {followBus ? 'Stop following' : 'Follow bus'}
+          </button>
           <MapContainer
             center={center}
             zoom={markerEntries.length === 1 ? 14 : 11}
@@ -319,7 +357,8 @@ export function GuardianLiveBusMap({
             data-testid="guardian-live-bus-leaflet-map"
           >
             <MapResizer />
-            <MapBounds positions={allPositions} />
+            <MapBounds positions={allPositions} busPositions={busPositions} followBus={followBus} />
+            <PauseFollowingOnDrag onPause={pauseFollowing} />
             <TileLayer
               url={tileConfig.tileUrl}
               attribution={tileConfig.attribution}
