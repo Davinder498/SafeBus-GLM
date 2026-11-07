@@ -6,6 +6,12 @@ import { PublicOnlyRoute } from './PublicOnlyRoute';
 import { InvitationEntryRoute } from './InvitationEntryRoute';
 import { adminRoles } from '@/contexts/AuthContext';
 
+const DistrictAgreementsPage = lazy(() =>
+  import('@/pages/DistrictAgreementsPage').then(m => ({ default: m.DistrictAgreementsPage })),
+);
+const DistrictAgreementSignerPage = lazy(() =>
+  import('@/pages/DistrictAgreementSignerPage').then(m => ({ default: m.DistrictAgreementSignerPage })),
+);
 const AcceptInvitationPage = lazy(() =>
   import('@/pages/AcceptInvitationPage').then((page) => ({ default: page.AcceptInvitationPage })),
 );
@@ -176,6 +182,7 @@ export const appRoutes: RouteObject[] = [
   },
   { path: '/contact', element: <ContactPage /> },
   { path: '/accept-invitation', element: <AcceptInvitationPage /> },
+  { path: '/agreements/sign', element: <DistrictAgreementSignerPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/update-password', element: <UpdatePasswordPage /> },
   { path: '/privacy', element: <PrivacyPolicyPage /> },
@@ -241,6 +248,22 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={adminRoles.filter((role) => role !== 'platform_super_admin')}>
         <AdminDashboardPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/onboarding/agreements',
+    element: (
+      <ProtectedRoute allowedRoles={['tenant_admin']}>
+        <DistrictAgreementsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/tenants/:tenantId/agreements',
+    element: (
+      <ProtectedRoute allowedRoles={['platform_super_admin']}>
+        <DistrictAgreementsPage />
       </ProtectedRoute>
     ),
   },
