@@ -76,3 +76,16 @@ test('SafeBus design tokens and no new school-role exposure',async()=>{
  assert.match(router,/allowedRoles=\{\['platform_super_admin'\]\}/);
  assert.doesNotMatch(router,/allowedRoles=\{\['school_admin'\]\}/);
 });
+
+test('unsigned agreement migration cannot change live billing or invitations when feature flags are absent',async()=>{
+ const invite=await read('apps/web/src/pages/AcceptInvitationPage.tsx');
+ const route=await read('apps/web/src/routes/ProtectedRoute.tsx');
+ const bill=await read('apps/web/netlify/functions/billing-shared.mjs');
+ const server=await read('apps/web/netlify/functions/district-agreements.mjs');
+ assert.ok(invite.includes("VITE_SAFEBUS_DISTRICT_AGREEMENTS_ENABLED === 'true'"));
+ assert.ok(invite.includes("'/admin/settings/billing'"));
+ assert.ok(route.includes("VITE_SAFEBUS_DISTRICT_AGREEMENTS_ENABLED === 'true'"));
+ assert.ok(bill.includes("SAFEBUS_DISTRICT_AGREEMENTS_ENABLED === 'true'"));
+ assert.ok(server.includes("SAFEBUS_DISTRICT_AGREEMENTS_ENABLED !== 'true'"));
+ assert.ok(server.includes("Digital school authority agreements have not been activated."));
+});
