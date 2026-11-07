@@ -127,6 +127,7 @@ export function PlatformTenantDetailPage() {
           action={<StatusPill>{summary.tenant_status}</StatusPill>}
         />
 
+        {import.meta.env.VITE_SAFEBUS_DISTRICT_AGREEMENTS_ENABLED === 'true' && (
         <Card className="p-5">
           <h2 className="text-lg font-semibold text-[var(--color-text)]">Digital school authority agreements</h2>
           <p className="mt-2 text-sm text-[var(--color-text-muted)]">
@@ -137,6 +138,7 @@ export function PlatformTenantDetailPage() {
             Manage district agreements
           </Link>
         </Card>
+        )}
 
         {message && (
           <Card className="border-success-200 bg-success-50 p-4">
