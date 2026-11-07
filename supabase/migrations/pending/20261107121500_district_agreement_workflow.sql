@@ -330,6 +330,12 @@ begin
     raise exception 'This package has already been accepted.';
   end if;
   if v_package.status<>'issued' then raise exception 'Agreement is unavailable.'; end if;
+  if not exists (
+    select 1 from safebus_private.agreement_catalog c
+      where c.id=true and c.revision=v_package.revision
+  ) then
+    raise exception 'The agreement was updated. Refresh and accept the current version.';
+  end if;
   select coalesce(jsonb_agg(jsonb_build_object(
     'id',d.id,'kind',d.kind,'title',d.title,'version',d.version,
     'sha256',d.sha256,'body',d.body_markdown
