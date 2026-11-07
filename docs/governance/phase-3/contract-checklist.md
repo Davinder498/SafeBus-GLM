@@ -22,8 +22,8 @@ Git. A drafted document is not an approved, signed or effective agreement.
 | Supplier disclosure         | [Supplier draft](business-pack/supplier-disclosure.md)    | Yes; actual countries/contracts pending   | Pending                      |
 
 Start with the [owner decisions](business-pack/owner-decisions.md) and
-[pack index](business-pack/README.md). The proposed annual per-bus CAD model
-matches the Stripe runbook; price, tax, payment/renewal, liability, insurance,
+[pack index](business-pack/README.md). The actual monthly and annual per-active-bus CAD catalog
+is described in the [commercial billing alignment review](../commercial-billing-contract-alignment-2026-11-07.md). Published Stripe prices are not owner-approved contract prices; price, tax, trial, payment/renewal, liability, insurance,
 service targets and disposal windows still need owner/customer decisions.
 Do not configure billing or operational promises from unapproved placeholders.
 
