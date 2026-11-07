@@ -16,6 +16,10 @@ test('protected agreement release runner parses and uses live read-only rehearsa
   assert.match(source, /DISTRICT_AGREEMENT_LIVE_BASELINE_MISMATCH/);
   assert.match(source, /DISTRICT_AGREEMENT_POST_INSTALL_MISMATCH/);
   assert.match(source, /DISTRICT_AGREEMENT_ACCESS_CONTROL_FAILURE/);
+  assert.match(source, /inspectSchemaDeployment\(c,manifest,binding\)/);
+  assert.match(source, /calculateSchemaFingerprint\(client\)/);
+  assert.match(source, /insert into safebus_release\.releases/);
+  assert.match(source, /DISTRICT_AGREEMENT_REGISTERED_SCHEMA_DRIFT/);
   assert.match(source, /RELEASE_EVIDENCE_NOT_CURRENT_OR_INVALID/);
   assert.match(source, /ENCRYPTED_BACKUP_ARTIFACT_MISSING/);
   assert.match(source, /READ_ONLY_REHEARSAL_EVIDENCE_MISSING/);
