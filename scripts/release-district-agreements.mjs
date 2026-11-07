@@ -6,7 +6,12 @@ import fs from 'node:fs/promises';
 import { assertReviewedCheckout, verifiedDatabaseClient } from './lib/security-workflow-evidence.mjs';
 import { createEnvironmentBinding, assertEnvironmentIdentity } from './lib/environment-identity.mjs';
 import { readCommittedManifest } from './lib/migrations.mjs';
-import { inspectSchemaDeployment } from './lib/schema-deployment-preflight.mjs';
+import {
+  readObservedContract,
+  validateObservedContract,
+  inspectSecurityInstallation,
+  contractDigest,
+} from './lib/observed-production-baseline.mjs';
 import { calculateSchemaFingerprint } from './lib/schema-fingerprint.mjs';
 
 const REPO = 'Davinder498/SafeBus-GLM';
@@ -121,14 +126,60 @@ async function verifyAfter(c, before) {
   return {tenantCount:state.tenants, gateCount:state.gated_tables.length,
     publishedDocuments:s.published_documents, preexistingGrandfathered:s.required_tenants===0};
 }
+// SafeBus uses an observed production adoption baseline from October 15.
+// Later independently approved operational changes are not in the canonical
+// migration ledger. The general release preflight intentionally rejects them.
+// This protected ONE-migration workflow must instead verify the immutable
+// observed-security provenance and release metadata, then seal a fresh *actual*
+// fingerprint as part of its separate approved read-only rehearsal. Never change
+// the historical baseline, rewrite its ledger, or assert historical execution.
 async function verifyRegisteredBaseline(c,manifest,binding) {
   await c.query('begin transaction isolation level repeatable read read only');
   try {
-    await c.query("set local statement_timeout='30s'; set local lock_timeout='1s'");
-    const inspected=await inspectSchemaDeployment(c,manifest,binding);
-    if (inspected.pending.length>0)
-      throw new Error('DISTRICT_AGREEMENT_UNREGISTERED_MIGRATIONS');
+    await c.query("set local statement_timeout='60s'; set local lock_timeout='1s'");
+    const contract=await readObservedContract();
+    const verified=validateObservedContract(contract,manifest,binding);
+    await assertEnvironmentIdentity(c,binding);
+    const registration=await c.query(
+      "select contract_sha256,manifest_sha256,source_catalog_sha256,schema_fingerprint,registration_release_sha " +
+      "from safebus_release.observed_baselines"
+    );
+    if (registration.rows.length!==1 ||
+        registration.rows[0].contract_sha256!==contractDigest(contract) ||
+        registration.rows[0].manifest_sha256!==contract.migrationManifestSha256 ||
+        registration.rows[0].source_catalog_sha256!==contract.sourceCatalogSha256 ||
+        registration.rows[0].schema_fingerprint!==contract.schemaFingerprint)
+      throw new Error('DISTRICT_AGREEMENT_OBSERVED_BASELINE_REGISTRATION_MISMATCH');
+    const [objects, checksums, deployed, retained] = await Promise.all([
+      c.query("select c.relname from pg_class c join pg_namespace n on n.oid=c.relnamespace " +
+        "where n.nspname='safebus_release' and c.relkind in ('r','p','v','m','S','f') order by c.relname"),
+      c.query("select filename,version,checksum,bytes,release_sha " +
+        "from safebus_release.migration_checksums order by filename"),
+      c.query("select count(*)::int as count from safebus_release.releases"),
+      c.query("select c.relrowsecurity, " +
+        "has_table_privilege('anon',c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') as anon_access, " +
+        "has_table_privilege('authenticated',c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') as authenticated_access " +
+        "from pg_class c where c.oid=to_regclass('safebus_release.pickup_dropoff_event_copies')")
+    ]);
+    const expectedObjects=['environment_identity','migration_checksums','migration_dispositions',
+      'observed_baselines','pickup_dropoff_event_copies','releases','security_installations'];
+    if (JSON.stringify(objects.rows.map(x=>x.relname))!==JSON.stringify(expectedObjects) ||
+        deployed.rows[0].count!==0 || retained.rows.length!==1 ||
+        !retained.rows[0].relrowsecurity || retained.rows[0].anon_access ||
+        retained.rows[0].authenticated_access)
+      throw new Error('DISTRICT_AGREEMENT_RELEASE_METADATA_MISMATCH');
+    const expected=verified.executed;
+    if (checksums.rows.length!==expected.length ||
+        checksums.rows.some(row=>{
+          const item=expected.find(x=>x.filename===row.filename);
+          return !item || row.version!==item.version || row.checksum!==item.sha256 ||
+            Number(row.bytes)!==item.bytes || row.release_sha!==contract.sourceSecurityInstallation.releaseSha;
+        }))
+      throw new Error('DISTRICT_AGREEMENT_SECURITY_LEDGER_MISMATCH');
+    await inspectSecurityInstallation(c,contract);
+    const currentFingerprint=await calculateSchemaFingerprint(c);
     await c.query('rollback');
+    return currentFingerprint;
   } catch(e) {
     await c.query('rollback').catch(()=>{});
     throw e;
@@ -182,14 +233,15 @@ try {
   if (!lock.rows[0].acquired)throw new Error('DISTRICT_AGREEMENT_SCHEMA_LOCK_BUSY');
   stage='baseline';
   const manifest=await readCommittedManifest();
-  await verifyRegisteredBaseline(client,manifest,binding);
+  const beforeFingerprint=await verifyRegisteredBaseline(client,manifest,binding);
   const before=await readOnlySnapshot(client);
   verifyBefore(before);
   if(mode==='rehearse'){
     stage='rehearse';
     await writeOutcome('rehearsal.json',{...identity,checkedAt:new Date().toISOString(),
       readOnly:true,isolatedMigrationReplayRequired:true,targetTables:before.target_tables.length,
-      grandfatheredTenants:before.tenants,installAuthorized:false});
+      grandfatheredTenants:before.tenants,baselineFingerprint:beforeFingerprint,
+      installAuthorized:false});
     console.log('District agreements read-only production rehearsal passed; no SQL applied.');
   } else {
     stage='recovery-evidence';
@@ -204,15 +256,34 @@ try {
     const rehearsals=JSON.parse(execFileSync('gh', [
       'api','repos/' + REPO + '/actions/runs/' + rehearsalRunId + '/artifacts',
     ], {encoding:'utf8',stdio:['ignore','pipe','pipe']}));
+    const evidenceName='district-agreements-rehearse-'+sha+'-'+rehearsalRunId;
     if(!rehearsals.artifacts?.some(a=>
-      a.name==='district-agreements-rehearse-'+sha+'-'+rehearsalRunId &&
-      !a.expired && a.size_in_bytes>0))
+      a.name===evidenceName && !a.expired && a.size_in_bytes>0))
       throw new Error('DISTRICT_AGREEMENT_READ_ONLY_REHEARSAL_EVIDENCE_MISSING');
+    // Verify the attested schema fingerprint inside the immutable Actions
+    // artifact, not just the artifact name or previous successful run status.
+    const evidenceDir='.safebus-release/district-agreements/previous-rehearsal';
+    await fs.mkdir(evidenceDir,{recursive:true});
+    execFileSync('gh',['run','download',rehearsalRunId,'--repo',REPO,
+      '--name',evidenceName,'--dir',evidenceDir],{stdio:['ignore','pipe','pipe']});
+    const evidence=JSON.parse(await fs.readFile(evidenceDir+'/rehearsal.json','utf8'));
+    if (evidence.releaseSha!==sha || evidence.runId!==rehearsalRunId ||
+        evidence.mode!=='rehearse' || evidence.sqlSha256!==identity.sqlSha256 ||
+        evidence.projectRefHash!==identity.projectRefHash ||
+        evidence.readOnly!==true || evidence.installAuthorized!==false ||
+        !/^[0-9a-f]{64}$/.test(evidence.baselineFingerprint??'') ||
+        evidence.baselineFingerprint!==beforeFingerprint ||
+        evidence.targetTables!==TABLES.length ||
+        evidence.grandfatheredTenants!==before.tenants)
+      throw new Error('DISTRICT_AGREEMENT_REHEARSAL_BASELINE_DRIFT');
     stage='install';
     await client.query('begin');
     try {
       await client.query("set local lock_timeout='1s'; set local statement_timeout='30s'");
       verifyBefore(await snapshot(client));
+      // Prevent drift between read-only rehearsal and the installation.
+      if ((await calculateSchemaFingerprint(client))!==beforeFingerprint)
+        throw new Error('DISTRICT_AGREEMENT_REHEARSAL_BASELINE_DRIFT');
       await client.query(sql);
       const verified=await verifyAfter(client,before);
       // The normal SafeBus release preflight checks the latest deployed

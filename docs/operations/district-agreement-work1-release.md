@@ -17,6 +17,36 @@
 - Observed production baseline and environment identity exist.
 - The last documented owner-verified full recovery is from October 15. That historical receipt cannot establish a current pre-change recovery checkpoint.
 
+## November 7 read-only rehearsal repair
+The first protected rehearsal stopped at the baseline check. This was expected from a
+stale general-purpose baseline: the source contract records the observed October 15
+schema, but the previously reviewed unified notification migration moved
+`pickup_dropoff_event_copies` to the private `safebus_release` schema afterward.
+The general release preflight's inventory is therefore not suitable for this
+narrow, independently reviewed agreement release.
+
+The dedicated runner now validates the original immutable observed registration,
+the exact three executed security migration checksum records, the actual
+security installation and provider DDL-hook provenance, and the **exact** known
+seven-object release schema with private RLS and no client grants on the
+retained copy table. It does not edit or reclassify the October baseline.
+
+The read-only rehearsal records a SHA256 fingerprint of the **current** observed
+application schema. Installation retrieves the immutable successful rehearsal
+artifact and compares that fingerprint with a fresh pre-install read-only
+observation and again inside the migration transaction. Any unexplained drift
+between rehearsal and installation fails closed. The new post-install fingerprint
+is registered transactionally, so the general release ledger remains consistent.
+
+The October baseline fingerprint is historical provenance, not evidence that
+later operational changes did not occur. This workflow does not claim to have
+independently audited every intervening operational migration. It only authorizes
+the specifically reviewed agreement migration against a fingerprinted live source.
+
+**The first failed rehearsal is not reusable.** The amended workflow requires
+a new main SHA, so the earlier encrypted backup also must be recaptured against
+that exact SHA before installation.
+
 ## Protected actions after merge to main
 1. In GitHub Actions, run **Capture encrypted platform recovery export**, using the *exact current main SHA* and confirmation `BACKUP_PLATFORM_RECOVERY_ENCRYPTED`. Inspect its encrypted artifact, verify its availability and secure offsite copy, and check restoration/recovery capability before attesting. A successful export alone does not prove recoverability. This action and its human approval are separate from installation.
 2. Run **Release district agreement database**, mode `rehearse`, same current main SHA, confirmation `REHEARSE_DISTRICT_AGREEMENTS`. The runner verifies the registered production project and baseline in a read-only transaction; it does not execute migration SQL against production. CI also runs the isolated synthetic district replay. Preserve the successful rehearsal run ID.
