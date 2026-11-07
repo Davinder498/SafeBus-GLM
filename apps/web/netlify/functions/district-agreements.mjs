@@ -22,7 +22,9 @@ function clients(token) {
   const service = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !anon || !service) throw new Error('not_configured');
   const opts = {auth:{autoRefreshToken:false,persistSession:false}};
+  /** @type {import('@supabase/supabase-js').SupabaseClient<import('@safebus/types/database').Database>} */
   const admin = createClient(url,service,opts);
+  /** @type {import('@supabase/supabase-js').SupabaseClient<import('@safebus/types/database').Database> | null} */
   const user = token ? createClient(url,anon,{...opts,global:{headers:{Authorization:`Bearer ${token}`}}}) : null;
   return {admin,user};
 }
