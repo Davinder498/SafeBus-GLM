@@ -84,15 +84,25 @@ or control of SafeBus's software or business by this allocation.
 
 ## 4. Fees, tax and billing
 
-The proposed model is an annual per-bus subscription in Canadian dollars, with
-the approved unit price and contracted bus quantity in the Order Form. Additional
-services require a written price and scope. No guardian or driver is personally
-responsible for the school authority's subscription fees.
+The current self-service billing system supports **monthly or annual** licensed
+per-active-bus subscriptions in Canadian dollars. The accepted Order Form must
+elect the billing interval, agreed unit price, contractual bus allowance, exact
+payment/collection method and applicable discount or pilot treatment. The
+billing interval is separate from the service term and renewal election in
+section 5. A price published in the Stripe catalog does not substitute for
+the Customer's signed price acceptance or authorize an unreviewed price
+change. Pre-existing signed invoice contracts retain their accepted terms.
+Additional services require a written price and scope. No guardian or driver
+is personally responsible for the school authority's subscription fees.
 
-Proposed payment term: invoices are payable within 30 calendar days of receipt.
-The parties must approve this term and any different collection arrangements in
-the Order Form. Applicable taxes are charged as legally required; no tax rate,
-registration status or exemption is presumed by this draft.
+For expressly agreed `send_invoice` contracts, the proposed payment term is
+30 calendar days after receipt, subject to the signed Order Form. For
+`charge_automatically` self-service Checkout, the trial, payment method,
+automatic charge/renewal and cancellation terms must instead be disclosed and
+accepted before the Customer confirms checkout. Do not represent a card-funded
+subscription as a net-30 invoicing contract. Applicable taxes are charged only
+when legally required and correctly configured; no GST/HST registration, tax
+rate, tax exemption or tax-collection approval is presumed by this draft.
 
 Stripe administers invoices and payment methods; SafeBus keeps a limited billing
 projection. Bus-count, price and proration changes require Customer authorization
@@ -107,11 +117,24 @@ collection or tax behavior differently from the executed terms.
 
 ## 5. Term, renewal and change
 
-Proposed initial term: 12 months from the agreed service start, subject to the
-pilot's authorized dates and exit decision. Automatic renewal applies only if
-selected expressly in the Order Form, with the approved notice periods and
-renewal pricing mechanism. Otherwise renewal requires a written agreement.
-An annual billing interval does not extend an expired pilot authorization.
+The initial **service term** and any distinct pilot period must be selected
+expressly in the Order Form; a 12-month term is a **proposal**, not an
+unconditional consequence of selecting monthly or annual billing. A monthly
+billing interval alone does not establish month-to-month termination rights;
+an annual billing interval does not extend an expired pilot authorization.
+
+The existing new-tenant self-service Checkout offers a **14-day trial** with
+payment-method collection, then recurring billing if the subscription remains
+eligible and is not canceled under its accepted terms. This software default
+must not be treated as a free pilot offered to every Customer or a contractual
+promise of trial duration: the final Order Form or applicable approved Checkout
+disclosures must state the actual trial eligibility, duration, end date,
+first-charge timing, price and cancellation/renewal consequences before
+acceptance. Existing invoice agreements are not silently converted to trials.
+Automatic renewal applies only if selected and disclosed expressly, with
+accepted notice periods and price-change terms; otherwise renewal requires
+a written agreement. The implemented billing configuration and signed terms
+must agree before commercial activation.
 
 Material changes to features, processing purposes, suppliers, retention or
 service levels follow written change control and any required notices/approvals.
