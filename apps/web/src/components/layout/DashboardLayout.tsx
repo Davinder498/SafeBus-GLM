@@ -33,6 +33,7 @@ import { useAuth } from '@/contexts/useAuth';
 import { NotificationContext } from '@/contexts/NotificationContext';
 import { Avatar } from '@/components/ui/Avatar';
 import { BrandMark } from '@/components/ui/BrandMark';
+import { ParticipantPrivacyNotice } from '@/components/privacy/ParticipantPrivacyNotice';
 import { DropdownMenu, DropdownItem, DropdownSeparator } from '@/components/ui/DropdownMenu';
 import { getRoleLabel } from '@/components/ui/RoleBadge';
 import { activateDashboardAppearance } from '@/theme/appearance';
@@ -637,6 +638,17 @@ export function DashboardLayout({
               : undefined
           }
         >
+          {appSurface === 'native-mobile' &&
+            profile &&
+            (profile.role === 'driver' || profile.role === 'guardian') &&
+            ((profile.role === 'driver' && portal === 'driver') ||
+              (profile.role === 'guardian' && portal === 'parent')) && (
+              <ParticipantPrivacyNotice
+                key={`${profile.id}:${profile.role}`}
+                profileId={profile.id}
+                role={profile.role}
+              />
+            )}
           <div>{children}</div>
         </main>
       </div>
