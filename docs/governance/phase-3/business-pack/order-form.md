@@ -29,7 +29,14 @@
 | Customer PIA/notice decision                                      | Authority, sign-off/submission assessment, participant notices and BYOD arrangements                                                                                                                                         |
 | Acceptance/activation conditions                                  | Applicable security, privacy, Android, maps, operations and customer-activation gates; recovery drills excluded                                                                                                              |
 
-Provider and Customer sign the final completed form through authorized
-representatives. Record signature dates and any delegations with the executed
-copy. Do not fill this public template with signatures, customer personal data
-or a fictitious completed order. Payment does not replace launch acceptance.
+For the finalized online standard offering, the complete published Order Form
+is incorporated in the single MSA/DPA acceptance by the authenticated
+school-authority tenant administrator, who explicitly affirms authority to
+bind the Customer. Record the exact version, tenant account, signer's identity,
+consent, acceptance time and receipt privately. The published offering is
+the Provider's offer and needs no separate countersignature in this standard
+workflow. A district's separate procurement requirements must still be met.
+Do not publish until actual price, tax, trial, contract term, renewal,
+liability and supplier positions have been approved and completed. This
+public template contains no real customer personal data or signatures.
+Payment does not replace explicit acceptance or launch requirements.
