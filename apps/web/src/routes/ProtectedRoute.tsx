@@ -151,7 +151,7 @@ export function ProtectedRoute({ allowedRoles, children, requireMfa = true }: Pr
     );
   }
 
-  if (profile.role === 'tenant_admin' && requireMfa) {
+  if (import.meta.env.VITE_SAFEBUS_DISTRICT_AGREEMENTS_ENABLED === 'true' && profile.role === 'tenant_admin' && requireMfa) {
     return <TenantAgreementGate>{children}</TenantAgreementGate>;
   }
 
