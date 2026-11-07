@@ -55,6 +55,35 @@ export type Database = Omit<HostedDatabase, 'public'> & {
       routes: CalendarRoutes;
     };
     Functions: HostedDatabase['public']['Functions'] & {
+      get_my_district_agreement: { Args: Record<string, never>; Returns: Json };
+      get_platform_district_agreement: { Args: { p_tenant_id: string }; Returns: Json };
+      acknowledge_district_agreement_review: {
+        Args: { p_package_id: string; p_bundle_sha256: string }; Returns: Json;
+      };
+      request_district_agreement_signer: {
+        Args: { p_package_id: string; p_bundle_sha256: string;
+          p_officer_name?: string | null; p_officer_email?: string | null;
+          p_external_process?: boolean };
+        Returns: Json;
+      };
+      customer_sign_district_agreement: {
+        Args: { p_package_id: string; p_bundle_sha256: string;
+          p_signer_name: string; p_signer_title: string;
+          p_electronic_consent: boolean; p_signature_intent: boolean };
+        Returns: Json;
+      };
+      platform_issue_district_agreement: {
+        Args: { p_tenant_id: string; p_version: string; p_document_ids: string[];
+          p_valid_days?: number }; Returns: Json;
+      };
+      platform_verify_district_signer: {
+        Args: { p_package_id: string; p_signer_profile_id: string;
+          p_evidence_reference: string }; Returns: Json;
+      };
+      platform_countersign_district_agreement: {
+        Args: { p_package_id: string; p_signer_name: string;
+          p_signer_title: string; p_signature_intent: boolean }; Returns: Json;
+      };
       get_admin_trip_operations: {
         Args: {
           p_from_date?: string | null;
