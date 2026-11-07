@@ -5,6 +5,9 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import { assertReviewedCheckout, verifiedDatabaseClient } from './lib/security-workflow-evidence.mjs';
 import { createEnvironmentBinding, assertEnvironmentIdentity } from './lib/environment-identity.mjs';
+import { readCommittedManifest } from './lib/migrations.mjs';
+import { inspectSchemaDeployment } from './lib/schema-deployment-preflight.mjs';
+import { calculateSchemaFingerprint } from './lib/schema-fingerprint.mjs';
 
 const REPO = 'Davinder498/SafeBus-GLM';
 const PROJECT = 'ckrkfylsyihwouvesypm';
@@ -118,6 +121,19 @@ async function verifyAfter(c, before) {
   return {tenantCount:state.tenants, gateCount:state.gated_tables.length,
     publishedDocuments:s.published_documents, preexistingGrandfathered:s.required_tenants===0};
 }
+async function verifyRegisteredBaseline(c,manifest,binding) {
+  await c.query('begin transaction isolation level repeatable read read only');
+  try {
+    await c.query("set local statement_timeout='30s'; set local lock_timeout='1s'");
+    const inspected=await inspectSchemaDeployment(c,manifest,binding);
+    if (inspected.pending.length>0)
+      throw new Error('DISTRICT_AGREEMENT_UNREGISTERED_MIGRATIONS');
+    await c.query('rollback');
+  } catch(e) {
+    await c.query('rollback').catch(()=>{});
+    throw e;
+  }
+}
 async function readOnlySnapshot(c) {
   await c.query('begin transaction isolation level repeatable read read only');
   try {
@@ -165,6 +181,8 @@ try {
   const lock=await client.query("select pg_try_advisory_lock(hashtextextended('safebus-schema-deploy',0)) as acquired");
   if (!lock.rows[0].acquired)throw new Error('DISTRICT_AGREEMENT_SCHEMA_LOCK_BUSY');
   stage='baseline';
+  const manifest=await readCommittedManifest();
+  await verifyRegisteredBaseline(client,manifest,binding);
   const before=await readOnlySnapshot(client);
   verifyBefore(before);
   if(mode==='rehearse'){
@@ -197,6 +215,16 @@ try {
       verifyBefore(await snapshot(client));
       await client.query(sql);
       const verified=await verifyAfter(client,before);
+      // The normal SafeBus release preflight checks the latest deployed
+      // schema fingerprint. Register the exact post-migration fingerprint in
+      // the same transaction, never as an out-of-band untracked schema change.
+      const schemaFingerprint=await calculateSchemaFingerprint(client);
+      await client.query(
+        "insert into safebus_release.releases (release_sha,environment,status,schema_fingerprint) " +
+        "values ($1,'production','deployed',$2)",
+        [sha,schemaFingerprint],
+      );
+      verified.schemaFingerprint=schemaFingerprint;
       commitAttempted=true;
       await client.query('commit');
       stage='post-commit-verify';
@@ -204,6 +232,13 @@ try {
       if (post.tenants!==before.tenants || post.gated_tables.length!==TABLES.length ||
           post.packages===null || post.billing_rpc===null)
         throw new Error('DISTRICT_AGREEMENT_POST_COMMIT_REVIEW_REQUIRED');
+      const ledger=await client.query(
+        "select schema_fingerprint from safebus_release.releases where release_sha=$1 and status='deployed'",
+        [sha],
+      );
+      if (ledger.rows[0]?.schema_fingerprint!==verified.schemaFingerprint ||
+          await calculateSchemaFingerprint(client)!==verified.schemaFingerprint)
+        throw new Error('DISTRICT_AGREEMENT_REGISTERED_SCHEMA_DRIFT');
       await writeOutcome('installation.json',{...identity,verified,
         installedAt:new Date().toISOString(),backupRunId,rehearsalRunId,
         installCommitted:true,postCommitVerified:true});
