@@ -171,48 +171,23 @@ $$;
 revoke all on function safebus_private.district_contract_access_allowed() from public,anon;
 grant execute on function safebus_private.district_contract_access_allowed() to authenticated,service_role;
 
--- Secure privileged role helpers, including Realtime policy callers, for
--- gated NEW districts. The existing sessions and tenant-status checks stay.
-create or replace function safebus_private.current_user_role()
-returns public.user_role language sql stable security definer
-set search_path=pg_catalog,public,auth,safebus_private,pg_temp
-as $$
-  select p.role from public.profiles p
-  left join public.tenants t on t.id=p.tenant_id
-  where p.id=auth.uid() and p.status='active'
-    and p.role::text <> 'school_admin'
-    and (p.role='platform_super_admin' or t.status='active')
-    and public.is_current_user_session_active()
-    and safebus_private.district_contract_access_allowed()
-  limit 1;
-$$;
-create or replace function safebus_private.current_tenant_id()
-returns uuid language sql stable security definer
-set search_path=pg_catalog,public,auth,safebus_private,pg_temp
-as $$
-  select p.tenant_id from public.profiles p
-  join public.tenants t on t.id=p.tenant_id and t.status='active'
-  where p.id=auth.uid() and p.status='active'
-    and public.is_current_user_session_active()
-    and safebus_private.district_contract_access_allowed()
-  limit 1;
-$$;
-
+-- Preserve existing hardened role, tenant and school helpers unchanged.
+-- SQL policies and the verified PostgREST hook below enforce contract status
+-- without overwriting MFA, session or legacy-role changes from later releases.
 -- Closed to every public table/Data API or PostgREST RPC for unapproved
 -- newly invited authorities except the exact account-authentication actions
 -- and the agreement endpoints below. Session gating always runs first.
-create or replace function safebus_private.enforce_active_api_session()
+-- The existing session pre-request must be installed and is never replaced.
+-- Add the agreement gate as a wrapper; first run all existing session checks.
+create function safebus_private.enforce_district_contract_api()
 returns void language plpgsql security invoker
 set search_path=pg_catalog,public,auth,safebus_private,pg_temp
 as $$
 declare v_path text := ltrim(current_setting('request.path',true),'/');
         v_method text := current_setting('request.method',true);
 begin
-  if auth.role() = 'service_role' then return; end if;
-  if v_path='rpc/is_current_user_session_active' and v_method in ('GET','HEAD','POST') then return; end if;
-  if not public.is_current_user_session_active() then
-    raise exception 'An active SafeBus session is required.' using errcode='42501';
-  end if;
+  perform safebus_private.enforce_active_api_session();
+  if auth.role()='service_role' then return; end if;
   if auth.uid() is not null
     and not safebus_private.district_contract_access_allowed()
     and exists(select 1 from public.profiles p join public.tenants t on t.id=p.tenant_id
@@ -228,8 +203,24 @@ begin
       using errcode='42501';
   end if;
 end $$;
-revoke all on function safebus_private.enforce_active_api_session() from public,anon;
-grant execute on function safebus_private.enforce_active_api_session() to authenticated,service_role;
+revoke all on function safebus_private.enforce_district_contract_api() from public,anon;
+grant execute on function safebus_private.enforce_district_contract_api() to authenticated,service_role;
+
+-- Stop if an unexpected pre-request hook was installed. Do not overwrite
+-- another team's security controls. The privileged release must review both
+-- role- and database-specific active settings before promotion.
+do $hook_guard$
+begin
+  if not exists (
+    select 1 from pg_db_role_setting s,
+     lateral unnest(s.setconfig) cfg(setting)
+    where s.setrole=(select oid from pg_roles where rolname='authenticator')
+      and s.setdatabase=0
+      and cfg.setting='pgrst.db_pre_request=safebus_private.enforce_active_api_session'
+  ) then raise exception 'Unexpected PostgREST pre-request baseline; reconcile before installing'
+    using errcode='55006'; end if;
+end $hook_guard$;
+alter role authenticator set pgrst.db_pre_request = 'safebus_private.enforce_district_contract_api';
 
 -- Defense in depth for Realtime and policies that don't use the role helpers.
 -- Auth/profile and session tables remain available for login/MFA setup.
