@@ -8,139 +8,192 @@ export interface AgreementDocument {
   sha256: string;
   body: string;
 }
-
 export interface DistrictAgreement {
   id?: string;
   status: string;
   version?: string;
+  revision?: number;
   tenant_name: string;
   bundle_sha256?: string;
   issued_at?: string;
-  expires_at?: string;
-  signer_profile_id?: string | null;
-  authority_verified?: boolean;
   customer_signed_at?: string | null;
-  provider_signed_at?: string | null;
+  receipt_id?: string | null;
   documents: AgreementDocument[];
 }
-
 export interface PlatformAgreementSummary {
   id?: string;
   status: string;
   version?: string;
   issued_at?: string;
-  expires_at?: string;
-  authority_verified?: boolean;
-  signer_profile_id?: string | null;
   customer_signed_at?: string | null;
-  provider_signed_at?: string | null;
-  pending_officer_requests?: number;
+  signer_profile_id?: string | null;
 }
+export interface AgreementReceipt {
+  id: string;
+  signed_at: string;
+  bundle_sha256: string;
+  receipt_sha256: string;
+  document_snapshot: {
+    customer: string;
+    provider: string;
+    package_id: string;
+    revision: number;
+    signer: { user_id: string; email: string; name: string; title: string };
+    documents: AgreementDocument[];
+    accepted_at: string;
+  };
+}
+export interface AgreementDocumentVersion {
+  id: string;
+  kind: string;
+  title: string;
+  version: string;
+  sha256: string;
+  approved_at: string;
+}
+export interface AgreementCatalog {
+  status?: string;
+  revision?: number;
+  document_ids?: string[];
+  published_at?: string;
+  content_sha256?: string;
+}
+const noAgreement: DistrictAgreement = {
+  tenant_name: 'School authority', status: 'not_issued', documents: [],
+};
 
 function client() {
   if (!supabase) throw new Error(supabaseConfigError ?? 'Supabase not configured.');
   return supabase;
 }
-
-function asObject(value: unknown): Record<string, unknown> {
+function requireObject(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error('Unexpected agreement status response.');
+    throw new Error('Unexpected agreement response.');
   }
   return value as Record<string, unknown>;
 }
-
-function isMissingRpc(error: { code?: string; message?: string }): boolean {
+function missingRpc(error: { code?: string }) {
   return error.code === 'PGRST202' || error.code === '42883';
 }
-
-// The staged contract migration may not be deployed yet; never simulate an
-// issued agreement or permit a local-only signature as a fallback.
+async function callRpc(name: string, args?: Record<string, unknown>) {
+  // Forward-declared RPCs are approved in config/pending/district-agreement-authorization.json.
+  const { data, error } = await client().rpc(name as 'get_my_district_agreement', args as never);
+  if (error) {
+    if (missingRpc(error)) throw new Error('Agreement setup is not deployed. Contact SafeBus.');
+    throw new Error(error.message ?? 'Agreement request failed. Refresh the current status.');
+  }
+  return requireObject(data);
+}
 export async function getDistrictAgreement(): Promise<DistrictAgreement> {
   const { data, error } = await client().rpc('get_my_district_agreement');
   if (error) {
-    if (isMissingRpc(error)) return { status: 'not_issued', tenant_name: 'School authority', documents: [] };
+    if (missingRpc(error)) return { ...noAgreement };
     throw new Error('Unable to securely load the agreement. Please retry.');
   }
-  const result = asObject(data);
+  const value = requireObject(data);
+  const docs = Array.isArray(value.documents) ? value.documents : [];
   return {
-    status: String(result.status ?? 'not_issued'),
-    tenant_name: typeof result.tenant_name === 'string' ? result.tenant_name : 'School authority',
-    id: typeof result.id === 'string' ? result.id : undefined,
-    version: typeof result.version === 'string' ? result.version : undefined,
-    bundle_sha256: typeof result.bundle_sha256 === 'string' ? result.bundle_sha256 : undefined,
-    issued_at: typeof result.issued_at === 'string' ? result.issued_at : undefined,
-    expires_at: typeof result.expires_at === 'string' ? result.expires_at : undefined,
-    signer_profile_id: typeof result.signer_profile_id === 'string' ? result.signer_profile_id : null,
-    authority_verified: result.authority_verified === true,
-    customer_signed_at: typeof result.customer_signed_at === 'string' ? result.customer_signed_at : null,
-    provider_signed_at: typeof result.provider_signed_at === 'string' ? result.provider_signed_at : null,
-    documents: Array.isArray(result.documents)
-      ? result.documents.filter((item): item is AgreementDocument =>
-          item !== null && typeof item === 'object'
-          && typeof (item as AgreementDocument).body === 'string'
-          && typeof (item as AgreementDocument).sha256 === 'string'
-          && typeof (item as AgreementDocument).title === 'string')
-      : [],
+    tenant_name: typeof value.tenant_name === 'string' ? value.tenant_name : 'School authority',
+    status: typeof value.status === 'string' ? value.status : 'not_issued',
+    id: typeof value.id === 'string' ? value.id : undefined,
+    version: typeof value.version === 'string' ? value.version : undefined,
+    revision: typeof value.revision === 'number' ? value.revision : undefined,
+    bundle_sha256: typeof value.bundle_sha256 === 'string' ? value.bundle_sha256 : undefined,
+    issued_at: typeof value.issued_at === 'string' ? value.issued_at : undefined,
+    customer_signed_at: typeof value.customer_signed_at === 'string' ? value.customer_signed_at : null,
+    receipt_id: typeof value.receipt_id === 'string' ? value.receipt_id : null,
+    documents: docs.filter((d): d is AgreementDocument =>
+      typeof d === 'object' && d !== null && typeof d.body === 'string' &&
+      typeof d.sha256 === 'string' && typeof d.title === 'string' &&
+      typeof d.kind === 'string' && typeof d.version === 'string' &&
+      typeof d.id === 'string'),
   };
 }
-
 export async function getPlatformAgreement(tenantId: string): Promise<PlatformAgreementSummary> {
   const { data, error } = await client().rpc('get_platform_district_agreement', {
     p_tenant_id: tenantId,
   });
   if (error) {
-    if (isMissingRpc(error)) return { status: 'not_issued' };
+    if (missingRpc(error)) return { status: 'not_issued' };
     throw new Error('Unable to securely load contract status.');
   }
-  const result = asObject(data);
+  const value = requireObject(data);
   return {
-    id: typeof result.id === 'string' ? result.id : undefined,
-    status: String(result.status ?? 'not_issued'),
-    version: typeof result.version === 'string' ? result.version : undefined,
-    issued_at: typeof result.issued_at === 'string' ? result.issued_at : undefined,
-    expires_at: typeof result.expires_at === 'string' ? result.expires_at : undefined,
-    authority_verified: result.authority_verified === true,
-    signer_profile_id: typeof result.signer_profile_id === 'string' ? result.signer_profile_id : null,
-    customer_signed_at: typeof result.customer_signed_at === 'string' ? result.customer_signed_at : null,
-    provider_signed_at: typeof result.provider_signed_at === 'string' ? result.provider_signed_at : null,
-    pending_officer_requests: typeof result.pending_officer_requests === 'number'
-      ? result.pending_officer_requests : 0,
+    id: typeof value.id === 'string' ? value.id : undefined,
+    status: typeof value.status === 'string' ? value.status : 'not_issued',
+    version: typeof value.version === 'string' ? value.version : undefined,
+    issued_at: typeof value.issued_at === 'string' ? value.issued_at : undefined,
+    customer_signed_at: typeof value.customer_signed_at === 'string' ? value.customer_signed_at : null,
+    signer_profile_id: typeof value.signer_profile_id === 'string' ? value.signer_profile_id : null,
   };
 }
-
-async function agreementAction(name: string, args: Record<string, unknown>) {
-  const { data, error } = await client().rpc(name as 'get_my_district_agreement', args as never);
-  if (error) throw new Error(error.message ?? 'The agreement request was not confirmed.');
-  return asObject(data);
-}
-
-export async function acknowledgeAgreement(id: string, digest: string) {
-  return agreementAction('acknowledge_district_agreement_review', {
-    p_package_id: id, p_bundle_sha256: digest,
-  });
-}
-
-export async function requestOfficer(id: string, digest: string, name: string, email: string) {
-  return agreementAction('request_district_agreement_signer', {
-    p_package_id: id, p_bundle_sha256: digest,
-    p_officer_name: name, p_officer_email: email, p_external_process: false,
-  });
-}
-
-export async function requestExternalProcess(id: string, digest: string) {
-  return agreementAction('request_district_agreement_signer', {
-    p_package_id: id, p_bundle_sha256: digest, p_external_process: true,
-  });
-}
-
-export async function signDistrictAgreement(input: {
+export async function acceptDistrictAgreement(input: {
   id: string; digest: string; name: string; title: string;
-  electronicConsent: boolean; signatureIntent: boolean;
+  electronicConsent: boolean; authorityAttested: boolean; signatureIntent: boolean;
 }) {
-  return agreementAction('customer_sign_district_agreement', {
+  return callRpc('accept_my_district_agreement', {
     p_package_id: input.id, p_bundle_sha256: input.digest,
     p_signer_name: input.name, p_signer_title: input.title,
     p_electronic_consent: input.electronicConsent,
+    p_authority_attested: input.authorityAttested,
     p_signature_intent: input.signatureIntent,
   });
+}
+export async function listMyAgreementReceipts(): Promise<Array<{
+  id: string; signed_at: string; receipt_sha256: string; bundle_sha256: string; actor_email: string;
+}>> {
+  const { data, error } = await client().rpc('list_my_district_agreement_receipts');
+  if (error && missingRpc(error)) return [];
+  if (error) throw new Error('Unable to load contract archive.');
+  if (!Array.isArray(data)) throw new Error('Unexpected contract archive response.');
+  return data as Array<{id: string; signed_at: string; receipt_sha256: string;
+    bundle_sha256: string; actor_email: string}>;
+}
+export async function getAgreementReceipt(receiptId: string): Promise<AgreementReceipt> {
+  return callRpc('get_my_district_agreement_receipt', { p_receipt_id: receiptId }) as unknown as AgreementReceipt;
+}
+export async function downloadExecutedAgreementPdf(receiptId: string): Promise<void> {
+  const { data: { session } } = await client().auth.getSession();
+  if (!session?.access_token) throw new Error('Sign in to download your executed agreement.');
+  const response = await fetch('/.netlify/functions/district-agreement-pdf', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${session.access_token}`,
+      'content-type': 'application/json' },
+    body: JSON.stringify({ receiptId }),
+  });
+  if (!response.ok) {
+    const result: unknown = await response.json().catch(() => null);
+    const message = result && typeof result === 'object' && 'error' in result
+      ? String((result as {error: unknown}).error) : 'Could not download the executed agreement.';
+    throw new Error(message);
+  }
+  const data = await response.blob();
+  if (!data.size || data.type !== 'application/pdf') throw new Error('Invalid document response.');
+  const url = URL.createObjectURL(data);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `SafeBus-Executed-Agreement-${receiptId}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+export async function listPlatformAgreementDocuments(): Promise<AgreementDocumentVersion[]> {
+  const { data, error } = await client().rpc('platform_list_agreement_documents');
+  if (error) throw new Error('Unable to load approved document versions.');
+  if (!Array.isArray(data)) throw new Error('Unexpected document list.');
+  return data as AgreementDocumentVersion[];
+}
+export async function getPlatformAgreementCatalog(): Promise<AgreementCatalog> {
+  return callRpc('platform_get_agreement_catalog') as AgreementCatalog;
+}
+export async function publishAgreementDocument(input: {
+  kind: string; title: string; version: string; body: string;
+}) {
+  return callRpc('platform_publish_agreement_document', {
+    p_kind: input.kind, p_title: input.title, p_version: input.version, p_body: input.body,
+  });
+}
+export async function publishAgreementCatalog(ids: string[]) {
+  return callRpc('platform_publish_agreement_catalog', { p_document_ids: ids });
 }
