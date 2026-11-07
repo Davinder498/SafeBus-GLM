@@ -22,6 +22,27 @@ update public.tenants set agreement_gate_required = false where agreement_gate_r
 alter table public.tenants alter column agreement_gate_required set default true;
 alter table public.tenants alter column agreement_gate_required set not null;
 
+-- Prevent table-level UPDATE/INSERT privileges or legacy SECURITY DEFINER RPCs
+-- from setting the new agreement gate to false for future districts.
+-- The existing pre-migration authorities remain grandfathered as-is.
+create function safebus_private.enforce_tenant_agreement_gate_immutable()
+returns trigger language plpgsql security invoker
+set search_path=pg_catalog,public,pg_temp
+as $
+begin
+  if tg_op='INSERT' then
+    new.agreement_gate_required:=true;
+  elsif new.agreement_gate_required is distinct from old.agreement_gate_required then
+    raise exception 'District agreement gate cannot be modified through tenant administration'
+      using errcode='42501';
+  end if;
+  return new;
+end $;
+revoke all on function safebus_private.enforce_tenant_agreement_gate_immutable() from public,anon,authenticated;
+create trigger enforce_tenant_agreement_gate_immutable
+before insert or update of agreement_gate_required on public.tenants
+for each row execute function safebus_private.enforce_tenant_agreement_gate_immutable();
+
 create table safebus_private.district_agreement_packages (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tenants(id) on delete restrict,
