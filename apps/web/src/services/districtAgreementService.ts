@@ -18,7 +18,7 @@ export interface SignerPreview {
  revision:number;bundleHash:string;documents:AgreementDocument[];expiresAt:string;
 }
 const failure='SafeBus could not confirm the agreement action. Refresh the status before retrying.';
-export async function districtAgreementRequest<T extends Record<string,unknown>>(body:Record<string,unknown>):Promise<T> {
+export async function districtAgreementRequest<T extends object>(body:Record<string,unknown>):Promise<T> {
  let token:string|undefined;
  const signerAction=body.action==='signer_preview'||body.action==='signer_sign';
  if (!signerAction) {
