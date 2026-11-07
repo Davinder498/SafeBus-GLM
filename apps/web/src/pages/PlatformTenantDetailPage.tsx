@@ -127,6 +127,17 @@ export function PlatformTenantDetailPage() {
           action={<StatusPill>{summary.tenant_status}</StatusPill>}
         />
 
+        <Card className="p-5">
+          <h2 className="text-lg font-semibold text-[var(--color-text)]">Digital school authority agreements</h2>
+          <p className="mt-2 text-sm text-[var(--color-text-muted)]">
+            Review approved MSA/DPA versions, verify the district signing officer, issue a restricted signing link and record final contract approvals. This is independent of bus, driver and student access.
+          </p>
+          <Link to={`/admin/tenants/${tenantId}/agreements`}
+            className="mt-3 inline-flex min-h-11 items-center rounded-lg bg-[var(--color-action)] px-4 font-semibold text-[var(--color-on-action)]">
+            Manage district agreements
+          </Link>
+        </Card>
+
         {message && (
           <Card className="border-success-200 bg-success-50 p-4">
             <p className="text-sm font-semibold text-success-700" role="status">
