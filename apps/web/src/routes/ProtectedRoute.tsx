@@ -12,6 +12,7 @@ import {
 } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 import { useAppSurface } from '@/contexts/AppSurfaceContext';
+import { TenantAgreementGate } from './TenantAgreementGate';
 
 interface ProtectedRouteProps {
   allowedRoles: ProfileRole[];
@@ -148,6 +149,10 @@ export function ProtectedRoute({ allowedRoles, children, requireMfa = true }: Pr
         replace
       />
     );
+  }
+
+  if (profile.role === 'tenant_admin' && requireMfa) {
+    return <TenantAgreementGate>{children}</TenantAgreementGate>;
   }
 
   return children;
