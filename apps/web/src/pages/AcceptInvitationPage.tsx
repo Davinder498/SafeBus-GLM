@@ -55,7 +55,8 @@ export function AcceptInvitationPage() {
       }
       navigate(
         nextProfile.role === 'tenant_admin'
-          ? '/admin/onboarding/agreements'
+          ? (import.meta.env.VITE_SAFEBUS_DISTRICT_AGREEMENTS_ENABLED === 'true'
+              ? '/admin/onboarding/agreements' : '/admin/settings/billing')
           : getDashboardPath(nextProfile.role),
         { replace: true },
       );
