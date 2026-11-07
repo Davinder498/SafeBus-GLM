@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   CircleHelp,
   CreditCard,
+  FileText,
   School,
   Megaphone,
 } from 'lucide-react';
