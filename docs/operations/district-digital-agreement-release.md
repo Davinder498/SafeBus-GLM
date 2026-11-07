@@ -56,3 +56,27 @@ Use `docs/governance/phase-3/business-pack/` as the **draft** source. Individual
 Legal sources for review: [Alberta OIPC service providers](https://oipc.ab.ca/resource/popa-guidance-service-providers/) and the Electronic Transactions Act. District procurement officers may require their own electronic signature service or approved agreement form.
 
 **Release verdict:** Engineering implementation prepared; production not installed; signature enforceability and commercial launch not approved.
+
+## Safe merge / staged activation switch
+
+The repository and Netlify site are deployed automatically after merging `main`.
+Therefore this feature is **OFF by default** even when its code is merged.
+It must not change existing customers or billing until BOTH flags are explicitly
+enabled **after** the reviewed schema is installed and all hosted validation passes:
+
+- Frontend build: `VITE_SAFEBUS_DISTRICT_AGREEMENTS_ENABLED=true`
+- Netlify Functions runtime: `SAFEBUS_DISTRICT_AGREEMENTS_ENABLED=true`
+
+With the flags absent or false: invitation activation still routes to the existing
+billing page; tenant dashboard contract gate is bypassed; the contract signing
+Netlify function responds with a fixed unavailable status; platform/district
+contract entry links are hidden; and the existing tenant billing handler **never**
+calls the unapplied agreement RPC. This preserves the pre-release application.
+
+If the schema is installed but flags remain off, the database gate applies to
+**future** tenants but customer web UI cannot yet complete signing. Thus enable
+the features immediately within the same reviewed protected rollout *after*
+schema validation, and do not onboard new district accounts between the schema
+installation and functional activation. Do not enable either flag prematurely.
+Neither flag makes the unsigned contracts legally operative or overrides the
+separate protected `district_activation_release_control` gate.
