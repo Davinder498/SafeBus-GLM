@@ -81,7 +81,7 @@ export function AdminSettingsPage() {
         <AdminSettingsNav role={profile?.role} />
         <AppearanceSettingsCard />
         <AccountSecurityLinkCard />
-        {profile?.role === 'tenant_admin' && (
+        {import.meta.env.VITE_SAFEBUS_DISTRICT_AGREEMENTS_ENABLED === 'true' && profile?.role === 'tenant_admin' && (
           <Card className="p-5">
             <h2 className="text-lg font-semibold text-[var(--color-text)]">District agreements</h2>
             <p className="mt-1 text-sm text-[var(--color-text-muted)]">View signed versions, pending signing requests and school authority activation status.</p>
