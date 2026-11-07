@@ -137,5 +137,11 @@ actions. Do not certify full erasure unless its actual scope is verified.
 
 Complete the customer authority/notice appendix, suppliers/countries, request
 assistance deadline, retention, backup and incident terms before execution.
-The owner can draft the business standard now; Customer adoption and signatures
-occur at onboarding. Changes require the MSA's accepted written process.
+The owner can draft the business standard now. In the finalized online
+offering, the Customer accepts this DPA as a schedule of the **same explicit
+MSA and Order Form click-to-accept action**. No separate DPA signature or
+separate officer-invitation process is required for the standard SafeBus
+workflow. The recorded receipt identifies the exact version and hash.
+Simply viewing the page or signing in does not create acceptance; the
+school authority's independent statutory and procurement duties remain.
+Changes require the MSA's accepted written process.
