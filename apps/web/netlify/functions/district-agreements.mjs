@@ -90,6 +90,9 @@ function sameOrigin(event) {
 export async function handler(event) {
   let action='unknown';
   try {
+    if (process.env.SAFEBUS_DISTRICT_AGREEMENTS_ENABLED !== 'true') {
+      return json(503,{error:'Digital school authority agreements have not been activated.'});
+    }
     if (!validMethod(event)) return json(405,{error:'Method not allowed.'});
     if (!validBody(event)) return json(400,{error:'Invalid agreement request.'});
     if (!sameOrigin(event)) return json(403,{error:'This agreement action must be started from SafeBus.'});
