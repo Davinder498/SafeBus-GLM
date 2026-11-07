@@ -22,6 +22,7 @@ import {
   mutatePlatformSubscription,
 } from '@/services/subscriptionService';
 import type { TenantSubscription } from '@/types/subscription';
+import { getPlatformAgreement, type PlatformAgreementSummary } from '@/services/districtAgreementService';
 import { schoolAuthorityTypeLabel } from '@/utils/schoolAuthority';
 
 function readiness(summary: PlatformTenantSummary) {
@@ -37,6 +38,7 @@ export function PlatformTenantDetailPage() {
   const { tenantId = '' } = useParams();
   const [summary, setSummary] = useState<PlatformTenantSummary | null>(null);
   const [subscription, setSubscription] = useState<TenantSubscription | null>(null);
+  const [agreement, setAgreement] = useState<PlatformAgreementSummary | null>(null);
   const [invitations, setInvitations] = useState<PlatformFirstAdminInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
@@ -47,7 +49,9 @@ export function PlatformTenantDetailPage() {
     setLoading(true);
     setError(null);
     try {
-      const [summaries, billing, invitationRows] = await Promise.all([
+      const [summaries, billing, invitationRows, contract] = await Promise.all([
+        // Agreement metadata is platform-only; never request district document bodies.
+        getPlatformAgreement(tenantId),
         fetchPlatformTenantSummaries(),
         fetchPlatformTenantBillingDetail(tenantId),
         fetchPlatformFirstAdminInvitations(),
@@ -55,6 +59,7 @@ export function PlatformTenantDetailPage() {
       const tenantSummary = summaries.find((item) => item.tenant_id === tenantId) ?? null;
       setSummary(tenantSummary);
       setSubscription(billing);
+      setAgreement(contract);
       setInvitations(invitationRows.filter((item) => item.tenant_id === tenantId));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to load school authority details.');
@@ -142,6 +147,26 @@ export function PlatformTenantDetailPage() {
           </Card>
         )}
 
+        <Card className="p-5" data-ui="district-contract-status">
+          <h2 className="text-lg font-bold text-[var(--color-heading)]">Digital MSA & DPA</h2>
+          <p className="mt-2 text-sm text-[var(--color-text-muted)]">
+            Contract status is separate from invitation activation, billing, and permission to process real student data.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <p><span className="text-sm text-[var(--color-text-muted)]">Agreement status</span><br />
+              <strong className="capitalize">{agreement?.status?.replaceAll('_', ' ') ?? 'Unavailable'}</strong></p>
+            <p><span className="text-sm text-[var(--color-text-muted)]">Version</span><br />
+              <strong>{agreement?.version ?? 'Not issued'}</strong></p>
+            <p><span className="text-sm text-[var(--color-text-muted)]">Signer authority</span><br />
+              <strong>{agreement?.authority_verified ? 'Evidence verified' : 'Not verified'}</strong></p>
+            <p><span className="text-sm text-[var(--color-text-muted)]">Officer requests awaiting review</span><br />
+              <strong>{agreement?.pending_officer_requests ?? 0}</strong></p>
+          </div>
+          <p className="mt-4 text-sm text-[var(--color-text-muted)]">
+            Document issuance, delegation verification, countersignature and executed-artifact
+            release require an explicitly approved operator process. No approval is inferred.
+          </p>
+        </Card>
         <Card className="p-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
