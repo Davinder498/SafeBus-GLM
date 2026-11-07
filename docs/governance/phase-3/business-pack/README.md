@@ -83,3 +83,7 @@ drafts and non-secret evidence references only. `privacy-readiness.json` remains
 ## 2026-11-06 launch approval review
 
 Use the consolidated [privacy, supplier and commercial gap analysis](../../privacy-supplier-launch-review-2026-11-06.md) and [pending supplier evidence ledger](../supplier-approval-ledger-2026-11-06.json) before completing owner decisions or circulating customer documents for signature. The pack remains draft, the supplier agreements have **not** been accepted as proven for the actual business accounts, and the customer-specific PIA/contracting authority has not been verified. Confirm each negotiated field and signed version in restricted storage; do not put customer names, signatories, contract scans, private URLs, or credentials in Git.
+
+## Pilot sign-off and supplier evidence (2026-11-07)
+
+Use the [pilot contract, supplier and insurance sign-off pack](pilot-contract-signoff-2026-11-07.md) to collect business-owner decisions and district-specific acceptance **before** any customer signature or launch approval. It lists insurance/liability questions and account-specific vendor evidence requests without assuming policy coverage, vendor signatures, tax status, approved SLA targets, or a customer PIA. Store private evidence outside Git; this checklist does not change any `not_approved` release state.
