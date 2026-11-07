@@ -102,7 +102,7 @@ set search_path=pg_catalog,public,auth,safebus_private,pg_temp as $$
 declare v_profile public.profiles;
 begin
   if auth.uid() is null or not public.is_current_user_session_active()
-     or auth.jwt()->>'aal' <> 'aal2' then
+     or coalesce(auth.jwt()->>'aal','') <> 'aal2' then
     raise exception 'Active administrator session with MFA required.' using errcode='42501';
   end if;
   select * into v_profile from public.profiles p
