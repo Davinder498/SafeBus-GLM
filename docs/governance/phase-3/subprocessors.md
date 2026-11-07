@@ -80,3 +80,7 @@ account evidence. Zoho Mail is an enabled business/support/privacy mailbox suppl
 Canadian MX routing was observed, while full account residency and DPA evidence
 remain to confirm. A separately countersigned agreement is not presumed necessary
 for every vendor whose DPA already forms part of its service terms.
+
+## 2026-11-06 evidence review (pending — not a supplier approval)
+
+The consolidated [privacy/supplier/commercial gap review](../privacy-supplier-launch-review-2026-11-06.md) and [account evidence ledger](supplier-approval-ledger-2026-11-06.json) now distinguish project-level observations, previously reviewed public terms, and actual supplier-account acceptance. Every enabled supplier remains `account-evidence-pending`; no signature, country guarantee, DPA acceptance, privacy approval, or customer authorization is inferred. Do not include private account/contract/customer copies in Git. Include non-secret evidence references only after verifying them with the responsible account holder.
