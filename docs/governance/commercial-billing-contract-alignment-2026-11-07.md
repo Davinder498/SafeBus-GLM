@@ -44,3 +44,14 @@ The account was inspected through read-only Stripe operations. No price, tax, cu
 **No launch authorization** follows from this file. `privacy-readiness.json`, `operations-readiness.json`, `map-readiness.json` and other release gates remain `not_approved`. The [privacy and supplier review in PR #401](../privacy-supplier-launch-review-2026-11-06.md) is a parallel, separate evidence workstream; this contract-reconciliation PR does not depend on its merge.
 
 Do not put customer names, Stripe customer identifiers, account secrets, payment methods, contracts, tax registration documents or signatures in Git.
+
+## Post-review billing checkpoint — November 7, 2026
+
+The [first paid invoice/tax reconciliation](../qa/first-paid-invoice-tax-review-2026-11-07.md)
+now verifies one paid nonzero CAD 1.99 invoice and a paid invoice-payment record.
+This supersedes the earlier “first nonzero payment unverified” statement **for
+that one payment only**. Stripe invoice `automatic_tax.enabled=false` and the
+active account-level Canadian Tax registration remain unresolved until the
+business owner verifies its actual CRA registration and approves the tax
+treatment. Paid invoice email receipt, bank settlement, contractual price
+acceptance and commercial authorization are still not verified.
