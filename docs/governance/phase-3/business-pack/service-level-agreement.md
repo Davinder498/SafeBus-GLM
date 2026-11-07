@@ -53,7 +53,11 @@ using the affected recurring service fee, the approved tier/rate table and cap:
 `[CREDIT_TIERS]`, `[MONTHLY_CREDIT_CAP]`, `[CLAIM_WINDOW]`. The Customer supplies
 reasonable supporting dates; SafeBus's monitoring supports verification. The
 parties must decide whether credits are automatic or claimed and how they apply
-to annual invoices. No rate or exclusive-remedy limitation is selected here.
+to **both monthly and annual** billing, including the basis for a monthly
+equivalent of an annual prepayment and any trial-period exclusions. No rate,
+cap or exclusive-remedy limitation is selected here. The customer service
+term, trial, subscription interval and renewal election are independently
+specified by the signed Order Form; the SLA does not override them.
 
 Define a repeated/material failure exit right and its prepaid-fee treatment in
 the Order Form. Credits do not excuse legal privacy duties or the agreed DPA.
