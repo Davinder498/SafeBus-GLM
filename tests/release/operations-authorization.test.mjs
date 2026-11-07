@@ -60,10 +60,12 @@ const requiredFiles = {
   'scripts/lib/production-health.mjs': 'export const productionHealth = true;\n',
   'scripts/lib/monitor-cadence.mjs': 'export const cadence = true;\n',
   'scripts/lib/monitor-alert-email.mjs': 'export const alerts = true;\n',
+  'scripts/lib/production-application-signals.mjs': 'export const applicationSignals = true;\n',
   'scripts/print-operations-release-digest.mjs': 'export const digest = true;\n',
   'tests/release/operations-authorization.test.mjs': 'export const authorization = true;\n',
   'tests/release/operations-readiness.test.mjs': 'export const contract = true;\n',
   'tests/release/production-health.test.mjs': 'export const healthTest = true;\n',
+  'tests/release/production-application-signals.test.mjs': 'export const applicationSignalsTest = true;\n',
   'tests/release/monitor-alert-email.test.mjs': 'export const alertTest = true;\n',
 };
 
