@@ -69,6 +69,7 @@ interface DashboardLayoutProps {
 export const platformNavItems: DashboardNavItem[] = [
   { label: 'Records disposal', to: '/admin/records-disposal', icon: <Settings className="h-4 w-4" /> },
   { label: 'School authorities', to: '/admin/tenants', icon: <Building2 className="h-4 w-4" /> },
+  { label: 'Agreements', to: '/admin/agreements', icon: <FileText className="h-4 w-4" /> },
   { label: 'Pricing & discounts', to: '/admin/pricing', icon: <CreditCard className="h-4 w-4" /> },
   { label: 'Support', to: '/admin/platform-support', icon: <CircleHelp className="h-4 w-4" /> },
   { label: 'Account', to: '/account/security', icon: <UserCircle className="h-4 w-4" /> },
