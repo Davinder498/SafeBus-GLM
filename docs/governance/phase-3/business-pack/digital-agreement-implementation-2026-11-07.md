@@ -1,46 +1,40 @@
-# District digital MSA/DPA onboarding — staged implementation
+# SafeBus online MSA + DPA — integrated clickwrap implementation
 
-**Status:** Engineering implementation staged on `feature/district-agreement-onboarding-20261107`; **not live, not approved for signing**. No PR is opened and no production migration has been applied as part of this work.
+**Engineering status:** PR #405, branch `feature/district-agreement-onboarding-20261107`.
+**Legal status:** The current business-pack contract files are DRAFTS. No final agreement has been published or accepted, and this PR does not itself create approved contractual terms.
+**Deployment:** Pending migration and protected release. Do not infer production migration execution from CI.
 
-## Implemented
+## Simple tenant journey
 
-- Tenant-admin invitation completion now leads to `/admin/onboarding/agreements` rather than the billing page. Existing MFA in `ProtectedRoute` still applies. Driver/guardian invitations are untouched.
-- `/admin/settings/agreements` offers a returning district administrator a single responsive document review page with the existing SafeBus semantic colors, typography and shared UI controls.
-- The page shows the complete bound document text returned by an authenticated tenant-scoped RPC, includes all eight exact version/digest references, and downloads the original Markdown content. A document view/acknowledgement is never treated as a signature.
-- If authorized by a platform evidence review, the verified tenant administrator can give explicit electronic-transactions consent and a distinct signature-intent confirmation, name and title, backed by server-side AAL2, role, tenant, session, authority and document hash checks.
-- District officers who do not have authority may request a verified officer referral; a district can request its own signing process. These are requests only: **no external/officer invitation is sent automatically**.
-- Platform tenant detail shows contract status metadata, authority-verification state and pending referral count without revealing the contract text or any student/driver/guardian data.
-- The new pending migration creates private, RLS-enabled versioned document, package, referral, activation-check and append-only event records with narrow `SECURITY DEFINER` RPCs. It cannot mark a package executed or activate service.
+1. Platform creates a school authority through the existing invitation wizard.
+2. Invited tenant administrator activates the account and completes existing MFA.
+3. Tenant administrator opens `/admin/onboarding/agreements`. The platform automatically assembles the current approved, versioned, eight-document contract set if one was published.
+4. Tenant administrator reviews/downloads the full MSA, DPA, Order Form, Security Schedule, SLA, Acceptable Use, Return/Destruction, and Supplier Disclosure, then enters full legal name and official title.
+5. Three explicit affirmative declarations: authority to bind the district, consent to electronic records, and intent to accept the *complete identified package*. Click `Accept MSA, DPA and all incorporated schedules`.
+6. The tenant- and session-scoped, MFA-protected Supabase RPC atomically validates the current hash/version, stores exact eight-document JSON snapshots, actor/session/email/name/title, server timestamp and receipt hash, and marks the package executed. Retries return the same receipt for the original signer; another actor cannot create a second signature.
+7. District administrator downloads a multipage, on-demand executed PDF generated only from the private immutable receipt record (not a public asset), and can retrieve historical executed receipts in Settings → Agreements.
+8. District administrator continues to existing Stripe billing and setup. Service-role billing functions verify contract execution for newly created tenants before initiating any Stripe action; database triggers reject transportation records written for new tenants without an executed agreement.
 
-## Deliberate fail-closed limits
+**No officer invitation, external signing, second signer, or SafeBus countersignature workflow.** The authenticated tenant administrator is the business-designated district representative, and their explicit authority attestation is recorded.
 
-1. **The existing contract drafts are not published into the agreement database.** No version is seeded or approved; the package will display `not_issued`. Contracts must be finalized and approved, including customer-specific price/tax/order/insurance/retention/supplier positions.
-2. No customer payment, active entitlement or existing school authority operation is gated or retroactively suspended. Live production currently contains real active tenant administrators; a new activation gate requires a separate transition plan.
-3. No legal-only officer invite-token generation, sender integration, token lifecycle, receipt generation, immutable executed-PDF storage, external executed-contract verification, or provider finalization RPC is exposed. A pending referral cannot masquerade as a delivered invitation or acceptance.
-4. An authorized tenant-admin signature can only reach `pending_provider_signature`; a provider countersignature can only reach `execution_pending`. Neither is an executed contract or permission to process real student data.
-5. The empty activation-check table is not evidence of PIA, supplier, insurance, capacity, contract, or finance approval.
-6. A customer signature is permitted only after a real operator has approved **all eight exact full document versions**, issued the specific tenant package and independently verified that tenant administrator's legal delegation. A platform super-admin cannot sign as the customer.
+## Platform publisher
 
-## Required remaining work before production activation
+`/admin/agreements` is restricted to the active platform super-admin with MFA. Upload each independently finalized, approved text version as Markdown; the database stores it immutably with a server-generated SHA-256. Choose one version for each of the eight mandatory document categories, confirm review/approval, and publish a revisioned catalog. Missing, draft-marked or placeholder-bearing text is rejected. Only a published catalog can be offered to district administrators. Changes create a new revision and invalidate attempts to accept an older *unsigned* package. Historical executed packages are never overwritten.
 
-- Approve complete MSA, DPA, Order Form, Security, SLA, Acceptable Use, Data Return/Destruction and Supplier Disclosure versions, with documented authority procurement review, effective date, rates, tax, liability, signed contract precedence and privacy-specific approvals.
-- Implement a restricted, audited platform document publication/approval surface with document hashing, customer-order review and exact document display verification. No draft placeholders may be put into issued contracts.
-- Implement an actual legal-only, one-time-token signer process including recipient/authority identity checks, limited scope, delivery, expiry, single-use protections and negative security tests. The current officer request is a human-review queue, **not an invitation**.
-- Implement trusted executed PDF+receipt generation, durable private storage, proof verification, signing artifacts retrieval, external-signature reconciliation, amendment/supersession, retention and privileged reviewer approval. A plain Markdown download is not an executed PDF.
-- Implement and verify complete tenant activation and billing enforcement across **every** relevant server RPC, RLS and Netlify function. Apply a migration/transition policy for existing districts and payment terms; avoid breaking existing operations.
-- Validate migration replay, static checks, TypeScript, Vitest, security tests, least-privilege RPC grants, multi-tenant isolation, MFA and session revocation. Use synthetic tenants only until controls and legal content are approved.
-- Follow the existing protected production release, apply migration only after database compatibility and rollback preparation are verified, then perform hosted smoke tests. Do not call the code production-ready before this.
+The order form must accurately specify the approved price, bus-count terms, billing interval/selection rules, tax treatment, contract term and renewal. If these are customer-specific, **the business must finalize them or the issuance workflow must be extended to create a complete customer-specific order** before publication; don't silently use current Stripe catalog values or draft placeholders as contractual prices. This release supports a finalized standard published package.
 
-## Relevant paths
+## Safeguards and rollout
 
-- `apps/web/src/pages/DistrictAgreementsPage.tsx`
-- `apps/web/src/services/districtAgreementService.ts`
-- `apps/web/src/services/districtAgreementService.test.ts`
-- `apps/web/src/routes/router.tsx`
-- `apps/web/src/pages/AcceptInvitationPage.tsx`
-- `apps/web/src/components/settings/AdminSettingsNav.tsx`
-- `apps/web/src/pages/PlatformTenantDetailPage.tsx`
-- `packages/types/src/database.ts`
-- `supabase/migrations/pending/20261107121500_district_agreement_workflow.sql`
+- Signer must have an active, tenant-bound `tenant_admin` profile, verified active Auth session and MFA AAL2. Driver, guardian, transportation admin and platform admin cannot sign a district's contract.
+- Service-role billing checkout/portal checks and SQL transport-write triggers apply only to school authorities created after the migration. Existing active customers are grandfathered to prevent accidental operational lockouts; they can review and accept voluntarily.
+- Platform publication is an affirmative owner approval; UI/software cannot certify the legal validity of a term, tax status, PIA, supplier DPA, insurance representation, procurement delegation or statutory applicability.
+- Store proof inside restricted Supabase tables with RLS and privileged functions, never in GitHub or a public storage bucket. PDF exports are generated from immutable stored source with hashes; the original UTF-8 contract text remains canonical.
+- Schema migration remains in `supabase/migrations/pending`. Run migration replay, RLS/RPC-negative tests, frontend tests and hosted smoke, then deploy through the existing controlled release pipeline. Do not apply a migration merely because the frontend builds.
+- The actual business pack MSA presently says contracting requires two signatures; its final approved clickwrap version must be revised to explicitly offer the terms for acceptance by a district administrator without provider countersignature. Do not publish the old draft as final.
+- Formal liability caps, insurance, tax, pricing, notice address, supplier/country matrix and district-specific procurement/PO rules need genuine review before using the signing flow with real school districts.
 
-**Never tell a school district this staged functionality is already executable or that officer emails were sent.**
+## Important boundary
+
+**Engineering completeness is not commercial authorization.** The platform can implement the complete acceptance-and-receipt flow while initial agreement publication remains disabled until factual, customer-ready text exists.
+
+New code and migrations are part of PR #405; no automatic merge, Stripe configuration change, supplier approval, or legal representation is implied.
