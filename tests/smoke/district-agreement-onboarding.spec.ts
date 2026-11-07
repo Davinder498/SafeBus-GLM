@@ -49,7 +49,7 @@ test('district admin accepts complete MSA DPA online and retrieves immutable rec
   });
   await page.goto('/admin/onboarding/agreements');
   await expect(page.getByRole('heading',{name:'Agreements'})).toBeVisible();
-  await expect(page.getByText('Example Transit')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Example Transit',exact:true})).toBeVisible();
   await expect(page.getByRole('tab',{name:'DPA'})).toBeVisible();
   await page.getByRole('tab',{name:'DPA'}).click();
   await expect(page.getByRole('heading',{name:'Data Processing Agreement'})).toBeVisible();
