@@ -86,9 +86,23 @@ create index district_agreement_events_package on safebus_private.district_agree
 -- separately by the reviewed protected-release process, against a digest of
 -- the actual accepted reference object. This migration creates a CLOSED gate.
 create table safebus_private.district_activation_release_control (
-  id integer primary key check (id=1),
+  tenant_id uuid primary key references public.tenants(id) on delete restrict,
+  bundle_sha256 text not null check(bundle_sha256 ~ '^[0-9a-f]{64}$'),
   approved boolean not null default false,
-  approved_refs_sha256 text check(approved_refs_sha256 ~ '^[0-9a-f]{64}
+  approved_refs_sha256 text check(approved_refs_sha256 ~ '^[0-9a-f]{64}$'),
+  approved_at timestamptz,
+  constraint release_only_with_digest check (
+    (approved=false and approved_refs_sha256 is null and approved_at is null)
+    or (approved=true and approved_refs_sha256 is not null and approved_at is not null)
+  )
+);
+-- The protected release process must issue a separately authorized
+-- per-tenant row for the exact executed package and approved evidence digest.
+-- No rows are inserted or approved by this preparation migration.
+alter table safebus_private.district_activation_release_control enable row level security;
+revoke all on table safebus_private.district_activation_release_control from public,anon,authenticated,service_role;
+
+-- No direct Data API access to contract, signer or event rows.
 alter table safebus_private.district_agreement_packages enable row level security;
 alter table safebus_private.district_agreement_signers enable row level security;
 alter table safebus_private.district_agreement_events enable row level security;
@@ -528,7 +542,7 @@ begin
  end loop;
  if not exists (
    select 1 from safebus_private.district_activation_release_control c
-   where c.id=1 and c.approved
+   where c.tenant_id=p_tenant_id and c.bundle_sha256=p_bundle_sha256 and c.approved
      and c.approved_refs_sha256=encode(digest(convert_to(p_approval_refs::text,'UTF8'),'sha256'),'hex')
  ) then raise exception 'Protected commercial release approval missing' using errcode='42501'; end if;
  select * into v_p from safebus_private.district_agreement_packages
