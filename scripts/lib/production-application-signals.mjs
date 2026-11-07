@@ -173,8 +173,8 @@ export async function runApplicationSignals({
     assess('app_delivery_failures', 'DELIVERY_CHECK_UNAVAILABLE', 'DELIVERY_FAILURE_SPIKE',
       async () => {
         const [email, push] = await Promise.all([
-          count('guardian_notification_outbox', { status: 'eq.failed', created_at: 'gte.' + recentFailureSince }),
-          count('push_notification_outbox', { status: 'eq.failed', created_at: 'gte.' + recentFailureSince }),
+          count('guardian_notification_outbox', { status: 'eq.failed', failed_at: 'gte.' + recentFailureSince }),
+          count('push_notification_outbox', { status: 'eq.failed', failed_at: 'gte.' + recentFailureSince }),
         ]);
         // Preliminary operating threshold, not an approved customer SLA.
         return email + push < 10;
