@@ -130,7 +130,7 @@ export async function requireBillingCaller(
   // school authority contract gate explicitly before even reading catalog,
   // invoice or subscription state. No customer, subscription or invoice is
   // created for an unapproved new district.
-  if (profile.role === 'tenant_admin') {
+  if (process.env.SAFEBUS_DISTRICT_AGREEMENTS_ENABLED === 'true' && profile.role === 'tenant_admin') {
     const { data: agreement, error: agreementError } =
       await clients.user.rpc('get_district_agreement_status_secure');
     if (agreementError || !agreement || typeof agreement !== 'object') {
