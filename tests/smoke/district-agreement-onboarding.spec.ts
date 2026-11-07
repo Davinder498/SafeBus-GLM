@@ -59,7 +59,7 @@ test('district admin accepts complete MSA DPA online and retrieves immutable rec
   await page.getByRole('checkbox').nth(1).check();
   await page.getByRole('checkbox').nth(2).check();
   await page.getByRole('button',{name:'Accept MSA, DPA and all incorporated schedules'}).click();
-  await expect(page.getByText('Accepted and archived')).toBeVisible();
+  await expect(page.getByText('Accepted and archived', { exact: true })).toBeVisible();
   expect(requests).toHaveLength(1);
   expect(requests[0]).toMatchObject({
     p_bundle_sha256:'a'.repeat(64),
