@@ -11,7 +11,7 @@ test('MSA distinguishes monthly/annual licensing from service term and preserves
   assert.match(s, /per-active-bus/i);
   assert.match(s, /billing interval is separate from the service term/i);
   assert.match(s, /14-day trial/);
-  assert.match(s, /not an authorized/i);
+  assert.match(s, /not be treated as a free pilot/i);
   assert.match(s, /send_invoice/);
   assert.match(s, /charge_automatically/);
   assert.match(s, /not executed/i);
