@@ -45,3 +45,7 @@ schedules and actual confidential evidence. Only non-secret approval/execution
 references enter `privacy-readiness.json` after they pass. The launch gate remains
 `not_approved`; no policy publication or commercial activation follows from this
 register.
+
+## Launch sign-off intake (2026-11-07)
+
+The [pilot contract and supplier/insurance sign-off worksheet](business-pack/pilot-contract-signoff-2026-11-07.md) links the existing agreement pack to **actual** owner, supplier-account and district decisions. It records unresolved insurance coverage, liability caps, tax, vendor agreement/country evidence, customer PIA and contract execution. It is a preparation document rather than a signed order or launch authorization.
