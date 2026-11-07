@@ -2,12 +2,12 @@
 
 **Status:** Proposed business terms for owner/customer review; not executed
 **Provider:** Sachman Gold Inc. of `[PROVIDER_BUSINESS_ADDRESS]` (SafeBus)
-**Customer:** `[CUSTOMER_LEGAL_NAME]` identified in the signed Order Form
+**Customer:** `[CUSTOMER_LEGAL_NAME]` identified in the accepted online Order Form
 **Effective date:** `[EFFECTIVE_DATE]`
 
 ## 1. Agreement and priority
 
-The parties' agreement consists of the signed Order Form, this MSA, the Data
+The parties' agreement consists of the electronically accepted Order Form, this MSA, the Data
 Processing Agreement (DPA), Security Schedule, Service-Level Agreement (SLA),
 Acceptable-Use Terms and Data Return and Destruction Schedule. For privacy or
 information security conflicts the DPA and Security Schedule control; the Order
@@ -15,9 +15,18 @@ Form controls price, term and licensed scope. A departure from a privacy/securit
 obligation must be identified expressly and approved by both parties; a generic
 purchase order does not override it. Applicable mandatory law takes precedence.
 
-This draft is not accepted through use of a prelaunch preview. The agreement
-becomes binding only when the appropriate parties sign a completed Order Form
-and identify the accepted schedule versions.
+This draft is not accepted through use of a prelaunch preview. In the finalized
+online offering, the authenticated school-authority tenant administrator must
+affirm their authority to bind the Customer, consent to electronic records,
+and explicitly accept the complete published MSA, DPA, Order Form and incorporated
+schedules. SafeBus must preserve the exact document versions, signing identity,
+timestamp and receipt. Login, invitation activation, use of the app or payment
+alone is not acceptance. The finalized published package is the Provider's
+offer; the standard online agreement requires no separate Provider
+countersignature. District-specific procurement terms that require an
+individually signed agreement must be separately resolved.
+Complete the customer identity and all binding commercial/privacy terms before
+enabling acceptance; never present draft wording or unresolved placeholders.
 
 ## 2. Service and activation
 
@@ -85,12 +94,12 @@ or control of SafeBus's software or business by this allocation.
 ## 4. Fees, tax and billing
 
 The current self-service billing system supports **monthly or annual** licensed
-per-active-bus subscriptions in Canadian dollars. The accepted Order Form must
+per-active-bus subscriptions in Canadian dollars. The accepted online Order Form must
 elect the billing interval, agreed unit price, contractual bus allowance, exact
 payment/collection method and applicable discount or pilot treatment. The
 billing interval is separate from the service term and renewal election in
 section 5. A price published in the Stripe catalog does not substitute for
-the Customer's signed price acceptance or authorize an unreviewed price
+the Customer's explicit online price acceptance or authorize an unreviewed price
 change. Pre-existing signed invoice contracts retain their accepted terms.
 Additional services require a written price and scope. No guardian or driver
 is personally responsible for the school authority's subscription fees.
@@ -220,5 +229,5 @@ party becomes the other's partner or agent by this agreement.
 
 Formal notices use `[NOTICE_EMAIL]` and the Customer notice details in the Order
 Form. Amendments require authorized written agreement. The agreement constitutes
-the accepted business terms, with severability and electronic counterparts where
-lawful. Signatures and customer identities belong in restricted contract storage.
+the accepted business terms, with severability and electronic records where
+lawful. Acceptance receipts and customer identities belong in restricted contract storage.
