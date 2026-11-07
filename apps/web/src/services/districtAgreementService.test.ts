@@ -1,71 +1,74 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {beforeEach,describe,expect,it,vi} from 'vitest';
 
-const { rpc } = vi.hoisted(() => ({ rpc: vi.fn() }));
-vi.mock('@/lib/supabase', () => ({
-  supabase: { rpc },
-  supabaseConfigError: null,
+const {rpc}=vi.hoisted(()=>({rpc:vi.fn()}));
+vi.mock('@/lib/supabase',()=>({
+  supabase:{rpc},supabaseConfigError:null
 }));
 
 import {
-  getDistrictAgreement, getPlatformAgreement,
-  signDistrictAgreement, requestOfficer, requestExternalProcess,
+  getDistrictAgreement,getPlatformAgreement,acceptDistrictAgreement,
+  getAgreementReceipt,listMyAgreementReceipts,
+  listPlatformAgreementDocuments,publishAgreementCatalog,publishAgreementDocument
 } from './districtAgreementService';
 
-describe('district legal agreement client', () => {
-  beforeEach(() => rpc.mockReset());
+describe('SafeBus direct district MSA DPA acceptance',()=>{
+  beforeEach(()=>rpc.mockReset());
 
-  it('reports not issued when the staged migration is not installed (never an executed contract)', async () => {
-    rpc.mockResolvedValue({ data: null, error: { code: 'PGRST202' } });
-    await expect(getDistrictAgreement()).resolves.toMatchObject({
-      status: 'not_issued', documents: [],
-    });
-    await expect(getPlatformAgreement('tenant-1')).resolves.toMatchObject({
-      status: 'not_issued',
-    });
+  it('does not invent a signed or published document when the migration is absent',async()=>{
+    rpc.mockResolvedValue({data:null,error:{code:'PGRST202'}});
+    await expect(getDistrictAgreement()).resolves.toMatchObject({status:'not_issued',documents:[]});
+    await expect(getPlatformAgreement('district-1')).resolves.toMatchObject({status:'not_issued'});
+    await expect(listMyAgreementReceipts()).resolves.toEqual([]);
   });
-
-  it('surfaces network/database failures without a false not-issued or success state', async () => {
-    rpc.mockResolvedValue({ data: null, error: { code: '42501', message: 'denied' } });
+  it('fails closed on denied agreement read',async()=>{
+    rpc.mockResolvedValue({data:null,error:{code:'42501',message:'denied'}});
     await expect(getDistrictAgreement()).rejects.toThrow('Unable to securely load');
+    await expect(listMyAgreementReceipts()).rejects.toThrow('Unable to load contract archive');
   });
-
-  it('retrieves exact document text and hashes, never creating a local signed status', async () => {
-    const doc = { id: '1', kind: 'msa', title: 'MSA', body: 'Full agreement',
-      sha256: 'a'.repeat(64), version: '1.0' };
-    rpc.mockResolvedValue({
-      data: { status: 'issued', tenant_name: 'Authority A',
-        bundle_sha256: 'b'.repeat(64), documents: [doc] },
-      error: null,
-    });
-    const agreement = await getDistrictAgreement();
-    expect(agreement.status).toBe('issued');
+  it('returns exact approved version and full body text',async()=>{
+    const doc={id:'a',kind:'dpa',title:'Data Processing Agreement',version:'2026-1',
+      body:'Full contract body',sha256:'a'.repeat(64)};
+    rpc.mockResolvedValue({data:{id:'package',status:'issued',tenant_name:'District A',
+      bundle_sha256:'b'.repeat(64),documents:[doc]},error:null});
+    const agreement=await getDistrictAgreement();
     expect(agreement.documents).toEqual([doc]);
+    expect(agreement.status).toBe('issued');
+    expect(agreement.bundle_sha256).toBe('b'.repeat(64));
   });
-
-  it('passes both affirmative signing intents and the immutable bundle hash to server', async () => {
-    rpc.mockResolvedValue({ data: { status: 'pending_provider_signature' }, error: null });
-    await signDistrictAgreement({
-      id: 'package-1', digest: 'c'.repeat(64), name: 'Officer A',
-      title: 'Director', electronicConsent: true, signatureIntent: true,
+  it('passes three separate affirmative statements and the exact bundle digest',async()=>{
+    rpc.mockResolvedValue({data:{status:'executed',receipt_id:'receipt-1'},error:null});
+    const result=await acceptDistrictAgreement({
+      id:'package-1',digest:'c'.repeat(64),name:'District Admin',
+      title:'Transportation Director',electronicConsent:true,
+      authorityAttested:true,signatureIntent:true
     });
-    expect(rpc).toHaveBeenCalledWith('customer_sign_district_agreement', expect.objectContaining({
-      p_package_id: 'package-1',
-      p_bundle_sha256: 'c'.repeat(64),
-      p_electronic_consent: true,
-      p_signature_intent: true,
+    expect(result.status).toBe('executed');
+    expect(rpc).toHaveBeenCalledWith('accept_my_district_agreement',expect.objectContaining({
+      p_package_id:'package-1',p_bundle_sha256:'c'.repeat(64),
+      p_electronic_consent:true,p_authority_attested:true,p_signature_intent:true,
     }));
   });
-
-  it('records an officer request without claiming the invitation was delivered', async () => {
-    rpc.mockResolvedValue({ data: { status: 'pending_authority', invitation_sent: false }, error: null });
-    const result = await requestOfficer('package-1', 'd'.repeat(64), 'Officer', 'officer@example.test');
-    expect(result.invitation_sent).toBe(false);
-    expect(rpc).toHaveBeenCalledWith('request_district_agreement_signer', expect.objectContaining({
-      p_external_process: false,
-    }));
-    await requestExternalProcess('package-1', 'd'.repeat(64));
-    expect(rpc).toHaveBeenLastCalledWith('request_district_agreement_signer', expect.objectContaining({
-      p_external_process: true,
-    }));
+  it('retrieves archived snapshot only through the authenticated receipt endpoint',async()=>{
+    const record={id:'receipt-1',signed_at:'2026-11-07T00:00:00Z',
+      receipt_sha256:'a'.repeat(64),bundle_sha256:'b'.repeat(64),
+      document_snapshot:{customer:'District A',provider:'SafeBus',documents:[]}};
+    rpc.mockResolvedValue({data:record,error:null});
+    await expect(getAgreementReceipt('receipt-1')).resolves.toMatchObject(record);
+    expect(rpc).toHaveBeenCalledWith('get_my_district_agreement_receipt',{
+      p_receipt_id:'receipt-1'
+    });
+  });
+  it('publishes only through platform-scoped RPC calls',async()=>{
+    rpc.mockResolvedValue({data:{published:true,revision:1},error:null});
+    await publishAgreementCatalog(['one','two']);
+    expect(rpc).toHaveBeenCalledWith('platform_publish_agreement_catalog',{
+      p_document_ids:['one','two']
+    });
+    await publishAgreementDocument({kind:'dpa',title:'DPA',version:'1',body:'final'});
+    expect(rpc).toHaveBeenCalledWith('platform_publish_agreement_document',{
+      p_kind:'dpa',p_title:'DPA',p_version:'1',p_body:'final'
+    });
+    rpc.mockResolvedValue({data:[],error:null});
+    await expect(listPlatformAgreementDocuments()).resolves.toEqual([]);
   });
 });
