@@ -42,9 +42,16 @@ provider-tile, email-delivery, or end-to-end availability.
 
 The existing Netlify `production-health-scheduled` function can run **six
 additional read-only signals** when its production Functions environment
-contains `SAFEBUS_APPLICATION_MONITOR_ENABLED=true`. The flag defaults to
-**off**. Merging and deploying the code does not activate the probes, create
-monitoring approval, purchase a vendor, or send new kinds of alerts.
+contains `SAFEBUS_APPLICATION_MONITOR_MODE`. The default is **off**.
+`observe` executes the aggregate probes and records only fixed, sanitized
+results in a dedicated `production_application_signals_observation` event;
+it does not create new application-alert emails or reclassify the public/
+GitHub health checks. `alert` additionally incorporates application failures
+into the production-health failure and existing fixed notification system.
+The legacy `SAFEBUS_APPLICATION_MONITOR_ENABLED=true` remains an alias for
+alert mode when no explicit mode is set. Merging and deploying the code does
+not activate the probes, create monitoring approval, purchase a vendor, or
+send new kinds of alerts.
 
 - **Database:** exact count-only REST/HEAD request for active driver trips.
   An HTTP 200 page alone is not considered database health.
@@ -79,8 +86,12 @@ GitHub/public health probes so a subsystem failure does not hide another.
 Netlify invocation with real count responses, confirm all exact-HEAD queries
 work with current Supabase credentials, evaluate alert volumes and response
 owners, complete a safe synthetic failure drill with inbox receipt, and
-explicitly authorize `SAFEBUS_APPLICATION_MONITOR_ENABLED=true` in Netlify.
-The proposed thresholds require Operations approval. Until then the
+first authorize `SAFEBUS_APPLICATION_MONITOR_MODE=observe` in Netlify to
+verify a sample of real completed probe invocations **without new alert emails**.
+After the results, threshold decisions, and owned inbox-delivery drill have
+been reviewed, explicitly authorize `SAFEBUS_APPLICATION_MONITOR_MODE=alert`
+(or the legacy enabled flag) as a separate change. `observe` is never proof
+of working alert delivery. The proposed thresholds require Operations approval. Until then the
 additional checks are staged, not continuously active. The full seven-day
 monitoring and final Point 9 readiness gates remain open.
 
