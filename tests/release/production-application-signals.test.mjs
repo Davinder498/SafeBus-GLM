@@ -125,6 +125,13 @@ test('separate email/push queues and recent failure spike are detected', async (
     { check: 'app_delivery_failures', result: 'fail', code: 'DELIVERY_FAILURE_SPIKE' },
   ]);
   assert.equal(f.seen.filter(x => x.url.pathname.includes('notification_outbox')).length, 4);
+  const failedRequests = f.seen.filter((x) =>
+    x.url.pathname.includes('notification_outbox') &&
+    x.url.searchParams.get('status') === 'eq.failed'
+  );
+  assert.equal(failedRequests.length, 2);
+  assert.ok(failedRequests.every((x) => x.url.searchParams.has('failed_at')));
+  assert.ok(failedRequests.every((x) => !x.url.searchParams.has('created_at')));
 });
 
 test('missing backend credentials or REST response fails closed without leaking credentials', async () => {
