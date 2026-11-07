@@ -87,3 +87,7 @@ Use the consolidated [privacy, supplier and commercial gap analysis](../../priva
 ## Pilot sign-off and supplier evidence (2026-11-07)
 
 Use the [pilot contract, supplier and insurance sign-off pack](pilot-contract-signoff-2026-11-07.md) to collect business-owner decisions and district-specific acceptance **before** any customer signature or launch approval. It lists insurance/liability questions and account-specific vendor evidence requests without assuming policy coverage, vendor signatures, tax status, approved SLA targets, or a customer PIA. Store private evidence outside Git; this checklist does not change any `not_approved` release state.
+
+## Digital signing implementation — prepared, not launched
+
+The [district agreement engineering runbook](../../../operations/district-digital-agreement-release.md) describes an integrated SafeBus-styled electronic MSA/DPA onboarding stage with verified procurement authority, versioned documents, one-use signing invitations and separate protected activation. The implementation does **not** make the drafts in this folder executable contracts. Customer-specific pricing, term, tax, liability, insurance, supplier disclosures and signing authority must be finalized before an immutable eight-document package can be issued. The contract schema is pending, not applied; no real customer has signed by means of this feature.
