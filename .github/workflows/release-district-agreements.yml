@@ -71,8 +71,10 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Verify reviewed SQL in isolated PostgreSQL without production credentials
-        run: node --test tests/release/district-agreement-postgres-replay.test.mjs
+      - name: Verify release runner and reviewed SQL in isolated PostgreSQL
+        run: |
+          node --check scripts/release-district-agreements.mjs
+          node --test tests/release/district-agreement-postgres-replay.test.mjs
       - name: Rehearse read-only or install after fresh evidence and explicit authorization
         run: node scripts/release-district-agreements.mjs ${{ inputs.mode }}
       - name: Retain sanitized installation or rehearsal result
