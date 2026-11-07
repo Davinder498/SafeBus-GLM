@@ -88,3 +88,7 @@ the installation/deployment plan together. Move the reviewed file to the top
 level, regenerate the checksum manifest, rehearse it in a bounded rollback-only
 transaction, and obtain the protected release approval. Do not invent historical
 migration execution. See [C1 implementation and acceptance](../../../docs/qa/async-tracking-invalidations.md).
+
+## Digital district MSA/DPA — prepared November 7, 2026
+
+`20261107154500_district_digital_agreements.sql` is a **prepared, unapplied** agreement workflow migration. It preserves all existing tenants while newly invited districts become contract-gated, creates a private immutable-version and signer evidence system, and fail-closes final activation until the protected release process binds exact tenant, document SHA-256 and approved evidence digest. It modifies the central session and role helpers and adds restrictive RLS for public, Realtime and Storage operations. **Do not install without exact-schema, function-signature and regression testing** in an isolated environment. Coordinate schema-first/web-second rollout. See [digital agreement rollout](../../../docs/operations/district-digital-agreement-release.md).
