@@ -7,6 +7,7 @@ vi.mock('../../netlify/functions/billing-shared.mjs', () => ({
   json: (statusCode, body) => ({ statusCode, body: JSON.stringify(body) }),
   requestHash: () => 'hash',
   requireBillingCaller: vi.fn(),
+  requireDistrictBillingAgreement: vi.fn(),
   retrieveCanonicalSubscription: vi.fn(),
   safeProviderErrorCode: (e) => e.message,
   syncSubscriptionProjection: vi.fn(),
@@ -89,6 +90,7 @@ beforeEach(() => {
     },
   };
   shared.requireBillingCaller.mockResolvedValue(ctx);
+  shared.requireDistrictBillingAgreement.mockResolvedValue(null);
   shared.getInternalBillingState.mockResolvedValue(state);
   shared.createStripeClient.mockReturnValue(stripe);
   shared.retrieveCanonicalSubscription.mockImplementation(async () => sub);
@@ -99,6 +101,15 @@ beforeEach(() => {
   });
 });
 describe('tenant subscription input and ownership', () => {
+  it('blocks checkout before Stripe when the new school authority has not accepted MSA/DPA', async () => {
+    shared.requireDistrictBillingAgreement.mockResolvedValue({
+      statusCode:409,body:JSON.stringify({agreementRequired:true}),
+    });
+    const response=await handler(event('checkout',{priceId:'price_month',quantity:1}));
+    expect(response.statusCode).toBe(409);
+    expect(shared.createStripeClient).not.toHaveBeenCalled();
+  });
+
   it('rejects the deployed account-ID-as-product configuration before contacting Stripe', async () => {
     ctx.config.stripeProductId = 'acct_example';
     stripe.prices = { list: vi.fn() };
