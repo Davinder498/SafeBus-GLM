@@ -139,6 +139,22 @@ export async function requireBillingCaller(
   return { ...clients, caller: profile };
 }
 
+// Service-role scoped contract gate. Missing migrations are a configuration error,
+// not permission to create a subscription without an agreement.
+export async function requireDistrictBillingAgreement(admin, tenantId) {
+  const { data, error } = await admin.rpc('district_agreement_billing_allowed', {
+    p_tenant_id: tenantId,
+  });
+  if (error || typeof data !== 'boolean') {
+    return json(503, { error: 'Agreement verification is unavailable. No billing change was made.' });
+  }
+  if (!data) return json(409, {
+    error: 'Review and accept the SafeBus MSA and DPA in Agreements before billing.',
+    agreementRequired: true,
+  });
+  return null;
+}
+
 export function requestHash(value) {
   return createHash('sha256').update(JSON.stringify(value)).digest('hex');
 }
