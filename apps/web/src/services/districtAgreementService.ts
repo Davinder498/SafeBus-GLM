@@ -182,7 +182,12 @@ export async function listPlatformAgreementDocuments(): Promise<AgreementDocumen
   const { data, error } = await client().rpc('platform_list_agreement_documents');
   if (error) throw new Error('Unable to load approved document versions.');
   if (!Array.isArray(data)) throw new Error('Unexpected document list.');
-  return data as AgreementDocumentVersion[];
+  return data.filter((item): item is AgreementDocumentVersion =>
+    typeof item === 'object' && item !== null && !Array.isArray(item) &&
+    typeof item.id === 'string' && typeof item.kind === 'string' &&
+    typeof item.title === 'string' && typeof item.version === 'string' &&
+    typeof item.sha256 === 'string' && typeof item.approved_at === 'string'
+  );
 }
 export async function getPlatformAgreementCatalog(): Promise<AgreementCatalog> {
   return callRpc('platform_get_agreement_catalog') as AgreementCatalog;
