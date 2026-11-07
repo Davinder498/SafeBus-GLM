@@ -310,7 +310,11 @@ begin
     'revision',v_package.revision,'bundleHash',v_package.bundle_sha256,
     'documents',v_package.documents,'signers',v_signers,
     'customerSignedAt',v_package.customer_signed_at,
+    'customerSignerName',v_package.customer_signer_name,
+    'customerSignerTitle',v_package.customer_signer_title,
     'providerSignedAt',v_package.provider_signed_at,
+    'providerSignerName',v_package.provider_signer_name,
+    'providerSignerTitle',v_package.provider_signer_title,
     'activatedAt',v_package.activated_at,
     'required',(select agreement_gate_required from public.tenants where id=v_tenant)
   );
