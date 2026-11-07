@@ -55,7 +55,7 @@ async function rpc(client,name,args) {
 }
 export function isSafeSignerToken(value) {return typeof value==='string' && TOKEN.test(value);}
 export function signerTokenHash(value) {return createHash('sha256').update(value).digest('hex');}
-export function buildSignerEmail(recipientName,link) {
+export function buildSignerEmail(link) {
   return {
     subject:'SafeBus — Review and sign your school authority agreement',
     text:`You have been invited to review and electronically sign a school authority agreement for SafeBus. This invitation is intended only for an officer whose signing authority has been separately verified.\n\nReview your agreements: ${link}\n\nThe link expires after 48 hours. Do not forward it. If this is unexpected, contact info@safebus.kids. The link does not provide access to student or transportation records.`,
@@ -68,7 +68,7 @@ async function deliverInvite(email,token) {
   const origin = new URL(ORIGIN);
   if (origin.protocol!=='https:' || origin.origin!=='https://safebus.kids') throw new Error('origin_unavailable');
   const link=`${origin.origin}/agreements/sign#token=${encodeURIComponent(token)}`;
-  const message=buildSignerEmail('',link);
+  const message=buildSignerEmail(link);
   const response=await fetch('https://api.resend.com/emails',{
     method:'POST',headers:{authorization:`Bearer ${key}`,'content-type':'application/json'},
     signal:AbortSignal.timeout(10000),
