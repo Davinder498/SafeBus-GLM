@@ -13,6 +13,10 @@ export async function runScheduledHealth({
   notify = sendMonitorAlerts,
   applicationSignals = runApplicationSignals,
   applicationEnabled = process.env.SAFEBUS_APPLICATION_MONITOR_ENABLED === 'true',
+  // Observe mode records a redacted aggregate result but cannot send new
+  // application alerts or change existing public/GitHub health outcomes.
+  // Legacy applicationEnabled=true preserves the original alert behaviour.
+  applicationMode = process.env.SAFEBUS_APPLICATION_MONITOR_MODE ?? (applicationEnabled ? 'alert' : 'off'),
   log = console.log,
 } = {}) {
   // Netlify schedules published production deploys only. Keep manual preview runs inert.
@@ -20,12 +24,15 @@ export async function runScheduledHealth({
     throw new Error('MONITOR_DEPLOY_CONTEXT_MISSING');
   if (deploy.context !== 'production' || deploy.published !== true)
     return { result: 'skipped', reason: 'not_published_production' };
+  if (!['off', 'observe', 'alert'].includes(applicationMode))
+    throw new Error('APP_MONITOR_MODE_INVALID');
+  const runApplication = applicationMode !== 'off';
   // 18s health budget; GitHub's 5s check runs in parallel. Failed checks send
   // fixed operational emails in parallel with a further 5s deadline: 23s total.
   const observations = await Promise.allSettled([
     health({ origin: 'https://safebus.kids', retries: 0, timeoutMs: 6_000 }),
     cadence(),
-    ...(applicationEnabled ? [applicationSignals()] : []),
+    ...(runApplication ? [applicationSignals()] : []),
   ]);
   const codes = observations.slice(0, 2).map((observation, i) => {
     if (observation.status === 'fulfilled' && observation.value?.result === 'healthy')
@@ -53,22 +60,34 @@ export async function runScheduledHealth({
         : 'PUBLIC_HEALTH_FAILED';
     return { check: i === 0 ? 'public_health' : 'github_cadence', result: 'fail', code };
   });
-  if (applicationEnabled) {
+  let applicationObservation;
+  if (runApplication) {
     const result = observations[2];
-    if (result?.status === 'fulfilled' && validApplicationChecks(result.value)) {
-      // The service result consists solely of reviewed fixed identifiers.
-      codes.push(...result.value);
+    const applicationChecks =
+      result?.status === 'fulfilled' && validApplicationChecks(result.value)
+        ? result.value
+        : [
+            { check: 'app_database', result: 'fail', code: 'DATABASE_CHECK_UNAVAILABLE' },
+            { check: 'app_gps_freshness', result: 'fail', code: 'GPS_CHECK_UNAVAILABLE' },
+            { check: 'app_email_backlog', result: 'fail', code: 'EMAIL_QUEUE_UNAVAILABLE' },
+            { check: 'app_push_backlog', result: 'fail', code: 'PUSH_QUEUE_UNAVAILABLE' },
+            { check: 'app_delivery_failures', result: 'fail', code: 'DELIVERY_CHECK_UNAVAILABLE' },
+            { check: 'app_map_tiles', result: 'fail', code: 'MAP_TILE_CHECK_UNAVAILABLE' },
+          ];
+    applicationObservation = applicationChecks.some((check) => check.result === 'fail')
+      ? 'degraded'
+      : 'healthy';
+    if (applicationMode === 'observe') {
+      // Preserve visibility into app failures without changing or emailing
+      // established public-health and GitHub cadence checks.
+      log(JSON.stringify({
+        event: 'production_application_signals_observation',
+        mode: 'observe',
+        result: applicationObservation,
+        checks: applicationChecks,
+      }));
     } else {
-      // Never mark a missing/malformed backend observation healthy.
-      // Do not log arbitrary SDK errors or provider response text.
-      codes.push(
-        { check: 'app_database', result: 'fail', code: 'DATABASE_CHECK_UNAVAILABLE' },
-        { check: 'app_gps_freshness', result: 'fail', code: 'GPS_CHECK_UNAVAILABLE' },
-        { check: 'app_email_backlog', result: 'fail', code: 'EMAIL_QUEUE_UNAVAILABLE' },
-        { check: 'app_push_backlog', result: 'fail', code: 'PUSH_QUEUE_UNAVAILABLE' },
-        { check: 'app_delivery_failures', result: 'fail', code: 'DELIVERY_CHECK_UNAVAILABLE' },
-        { check: 'app_map_tiles', result: 'fail', code: 'MAP_TILE_CHECK_UNAVAILABLE' },
-      );
+      codes.push(...applicationChecks);
     }
   }
   const failed = codes.some((check) => check.result === 'fail');
@@ -92,7 +111,7 @@ export async function runScheduledHealth({
     // Provider acceptance must never turn a failed health observation green.
     throw new Error('PRODUCTION_HEALTH_OBSERVATION_FAILED');
   }
-  return { result: 'healthy' };
+  return { result: 'healthy', ...(applicationMode === 'observe' ? { applicationObservation } : {}) };
 }
 
 export default async function handler(_request, context) {

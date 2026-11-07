@@ -31,8 +31,16 @@ response bodies in screenshots, workflow logs, tickets, or incident records.
 - [ ] Confirm that healthy idle operation generates no false GPS/queue alarms.
 - [ ] Perform a fixed-key tile probe (one public tile) with no credential
       disclosure and verify failure handling without routing to alternate providers.
-- [ ] Approve operational thresholds and a controlled production activation
-      of `SAFEBUS_APPLICATION_MONITOR_ENABLED=true` only after review.
+- [ ] Approve an observation-only activation first by setting
+      `SAFEBUS_APPLICATION_MONITOR_MODE=observe` in production Netlify
+      Functions. Verify fresh automatic invocations contain
+      `production_application_signals_observation` with six fixed check
+      categories; no new application alert emails should be sent.
+- [ ] Investigate every failed/unavailable probe under the restricted
+      runbook. Do not hide false failures by increasing thresholds.
+- [ ] Approve operational thresholds and a **separate** controlled
+      transition to `SAFEBUS_APPLICATION_MONITOR_MODE=alert` only after
+      verified production query contracts, coverage and responsible staff.
 - [ ] Confirm real scheduled logs contain only safe check names/statuses;
       verify email reaches the operations inbox for a synthetic failure.
 - [ ] Obtain separate error telemetry vendor/redaction evidence and seven
