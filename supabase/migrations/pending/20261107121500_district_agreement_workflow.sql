@@ -455,9 +455,17 @@ begin
   for t in select c.table_name from information_schema.columns c
     where c.table_schema='public' and c.column_name='tenant_id'
       and c.table_name = any(array['students','guardians','drivers','buses',
-        'routes','route_stops','trips','trip_stops','student_guardians',
-        'student_bus_assignments','driver_trips','driver_trip_location_updates',
-        'driver_trip_current_locations','student_trip_events','route_shapes'])
+        'schools','routes','route_stops','route_service_days','route_trip_patterns',
+        'route_trip_stop_schedules','route_shapes','student_guardians',
+        'student_bus_assignments','student_route_assignments',
+        'student_qr_credentials','bus_qr_credentials','bus_admin_details',
+        'bus_route_assignments','bus_run_dispatches','bus_tracking_sessions',
+        'driver_route_assignments','driver_tracking_devices','driver_trips',
+        'driver_trip_location_updates','driver_trip_current_locations',
+        'student_trip_events','trip_exceptions','trip_operational_statuses',
+        'pre_trip_confirmations','operational_notes','bulk_import_batches',
+        'bulk_import_staging','guardian_notification_outbox',
+        'push_notification_outbox','sis_integration_configs'])
   loop
     execute format('create trigger district_contract_write_gate
       before insert or update or delete on public.%I for each row
