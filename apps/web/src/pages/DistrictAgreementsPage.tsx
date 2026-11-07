@@ -9,7 +9,7 @@ import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/contexts/useAuth';
 import {
-  agreementKinds, districtAgreementRequest, getTenantAgreementStatus,
+  agreementKinds, downloadAgreementCopy, districtAgreementRequest, getTenantAgreementStatus,
   getPlatformAgreementStatus, agreementIsReady,
   type AgreementStatus, type AgreementKind, type AgreementDocument,
 } from '@/services/districtAgreementService';
@@ -148,7 +148,17 @@ export function DistrictAgreementsPage() {
          <pre className="mt-5 whitespace-pre-wrap break-words font-sans text-sm leading-7 text-[var(--color-text)]">{displayed?.body}</pre>
         </div>
        </Card>}
-      {platform&&canIssue&&
+      {status.documents?.length===8&&status.bundleHash&&status.revision&&
+       <div className="flex flex-wrap justify-end">
+        <Button variant="secondary" onClick={()=>downloadAgreementCopy({
+          revision:status.revision!,bundleHash:status.bundleHash!,documents:status.documents!,
+          status:status.state,customerSignerName:status.customerSignerName,
+          customerSignerTitle:status.customerSignerTitle,
+          providerSignerName:status.providerSignerName,providerSignerTitle:status.providerSignerTitle,
+          customerSignedAt:status.customerSignedAt,providerSignedAt:status.providerSignedAt,
+        })}>Download versioned agreement copy</Button>
+       </div>}
+            {platform&&canIssue&&
        <Card className="p-5 sm:p-6">
         <h2 className="text-lg font-semibold">Issue finalized agreement package</h2>
         <p className="mt-2 text-sm leading-6 text-[var(--color-text-muted)]">
