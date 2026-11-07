@@ -61,3 +61,7 @@ customer/privacy requirements before choosing that route.
 The [retention schedule](retention-schedule.md) contains specific proposed periods
 and the actual execution blockers. No new supplier, plan purchase, signature,
 account deletion or processing expansion is authorized by this review record.
+
+## Follow-up evidence register — 2026-11-06
+
+This November 5 public-terms review is historical and does **not** establish that any provider's actual account agreement or cross-border processing is approved. The [November 6 approval gap review](../privacy-supplier-launch-review-2026-11-06.md) and the [supplier-by-supplier evidence ledger](supplier-approval-ledger-2026-11-06.json) list the current private evidence requests, with all supplier decisions pending. The live Supabase primary region was rechecked as `ca-central-1`; backup, log and support processing remain distinct unanswered questions. The configured website Geoapify key and delivered operations email are technical acceptance evidence, **not** contractual supplier approval.

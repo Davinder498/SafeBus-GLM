@@ -1,0 +1,206 @@
+{
+  "format": 1,
+  "reviewedAt": "2026-11-06",
+  "scope": "SafeBus Alberta public school authority CR1 — account-specific supplier evidence",
+  "releaseBaseline": "f2f3d367131dd0a1671b16befeda0f3c45e02bf4",
+  "overallStatus": "not_approved",
+  "statement": "Inventory and public terms do not authorize customer processing. Real contracts and copies are stored outside Git; this record must contain no customer data, credentials, signatories, contract parties or links with private tokens.",
+  "evidenceLegend": {
+    "verified-project": "Technical observation only, not a vendor contract or processing-location guarantee",
+    "public-terms-reviewed": "Public material reviewed; account acceptance unverified",
+    "account-evidence-pending": "Actual account/entity/version and downstream data flows not approved",
+    "not-authorized": "No approval to activate the proposed vendor or feature"
+  },
+  "suppliers": [
+    {
+      "id": "supabase",
+      "purpose": "database_auth_storage_functions",
+      "serviceStatus": "enabled",
+      "observedFacts": [
+        "active_project_canada_central",
+        "postgres_17"
+      ],
+      "status": "account-evidence-pending",
+      "priority": "P0",
+      "required": [
+        "legal_party_terms_dpa",
+        "data_region_backup_logs_support_access",
+        "subprocessors_countries",
+        "retention_deletion_incident_terms",
+        "privacy_owner_decision"
+      ],
+      "evidenceReferences": [],
+      "decision": null
+    },
+    {
+      "id": "netlify",
+      "purpose": "website_functions_cdn_logs",
+      "serviceStatus": "enabled",
+      "observedFacts": [
+        "production_web_published"
+      ],
+      "status": "account-evidence-pending",
+      "priority": "P0",
+      "required": [
+        "legal_party_terms_dpa",
+        "functions_cdn_logs_countries",
+        "access_and_retention",
+        "security_incident_assistance",
+        "privacy_owner_decision"
+      ],
+      "evidenceReferences": [],
+      "decision": null
+    },
+    {
+      "id": "resend",
+      "purpose": "authentication_invitations_notifications_operations_alerts",
+      "serviceStatus": "enabled",
+      "observedFacts": [
+        "operations_email_received"
+      ],
+      "status": "account-evidence-pending",
+      "priority": "P0",
+      "required": [
+        "legal_party_terms_dpa",
+        "email_content_headers_metadata_countries",
+        "delivery_history_and_logs_retention",
+        "subprocessors_and_incident_terms",
+        "privacy_owner_decision"
+      ],
+      "evidenceReferences": [],
+      "decision": null
+    },
+    {
+      "id": "zoho",
+      "purpose": "support_privacy_business_mailbox",
+      "serviceStatus": "enabled",
+      "observedFacts": [
+        "business_mailbox_active",
+        "canadian_mx_routing_observed"
+      ],
+      "status": "account-evidence-pending",
+      "priority": "P0",
+      "required": [
+        "legal_party_dpa_process",
+        "account_data_centre_storage_support",
+        "trash_backup_log_retention",
+        "privacy_requests_access_controls",
+        "privacy_owner_decision"
+      ],
+      "evidenceReferences": [],
+      "decision": null
+    },
+    {
+      "id": "geoapify",
+      "purpose": "map_tiles_ip_referrer_viewport_metadata",
+      "serviceStatus": "enabled",
+      "observedFacts": [
+        "web_referer_filter_configured",
+        "web_basemap_rendered"
+      ],
+      "status": "account-evidence-pending",
+      "priority": "P0",
+      "required": [
+        "terms_dpa_applicability",
+        "all_request_regions_log_expiry",
+        "key_lifecycle_and_android_behavior",
+        "project_quota_plan_and_sla_decision",
+        "privacy_owner_decision"
+      ],
+      "evidenceReferences": [],
+      "decision": null
+    },
+    {
+      "id": "fcm",
+      "purpose": "opt_in_android_push",
+      "serviceStatus": "conditionally_enabled",
+      "observedFacts": [
+        "push_delivery_product_flow_present"
+      ],
+      "status": "account-evidence-pending",
+      "priority": "P0",
+      "required": [
+        "project_party_terms",
+        "recipient_and_installation_identifier_retention",
+        "data_countries_subprocessors",
+        "device_token_deletion_proof",
+        "physical_mobile_acceptance",
+        "privacy_owner_decision"
+      ],
+      "evidenceReferences": [],
+      "decision": null
+    },
+    {
+      "id": "stripe",
+      "purpose": "business_subscription_payments",
+      "serviceStatus": "live_account_connected",
+      "observedFacts": [
+        "safebus_account_live_mode"
+      ],
+      "status": "account-evidence-pending",
+      "priority": "P0",
+      "required": [
+        "legal_party_dpa_and_tax_region",
+        "billing_only_payload_audit",
+        "payment_records_retention_and_countries",
+        "price_tax_service_agreement",
+        "privacy_owner_decision"
+      ],
+      "evidenceReferences": [],
+      "decision": null
+    },
+    {
+      "id": "github",
+      "purpose": "source_ci_artifacts_recovery",
+      "serviceStatus": "enabled",
+      "observedFacts": [
+        "protected_pr_and_ci_history"
+      ],
+      "status": "account-evidence-pending",
+      "priority": "P1",
+      "required": [
+        "artifact_customer_data_scope",
+        "retention_regions_access",
+        "secret_recovery_custody",
+        "archive_expiry_and_disposal",
+        "owner_decision"
+      ],
+      "evidenceReferences": [],
+      "decision": null
+    },
+    {
+      "id": "future_error_monitoring",
+      "purpose": "application_exception_telemetry",
+      "serviceStatus": "not_authorized",
+      "observedFacts": [
+        "safe_internal_aggregate_monitor_observe"
+      ],
+      "status": "not-authorized",
+      "priority": "gated",
+      "required": [
+        "vendor_selection_if_needed",
+        "redaction_and_sample_verification",
+        "account_terms_and_countries",
+        "privacy_owner_decision"
+      ],
+      "evidenceReferences": [],
+      "decision": null
+    }
+  ],
+  "gateRequirements": [
+    "legal_role_applicability",
+    "customer_pia_decision",
+    "owner_privacy_role_and_backup",
+    "actual_supplier_accounts_and_agreements",
+    "processing_countries_and_retention",
+    "customer_specific_instruction_and_notices",
+    "executed_commercial_documents",
+    "device_and_operations_acceptance"
+  ],
+  "mustNotAutofill": [
+    "docs/governance/privacy-readiness.json",
+    "docs/governance/map-readiness.json",
+    "docs/governance/operations-readiness.json"
+  ],
+  "finalDecision": null
+}

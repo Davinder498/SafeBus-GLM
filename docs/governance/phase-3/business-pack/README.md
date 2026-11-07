@@ -79,3 +79,7 @@ Keep executed agreements, legal advice, customer identities, incident/request
 records and confidential provider evidence in restricted storage. Git contains
 drafts and non-secret evidence references only. `privacy-readiness.json` remains
 `not_approved`; it is activated only after the actual Point 6 evidence passes.
+
+## 2026-11-06 launch approval review
+
+Use the consolidated [privacy, supplier and commercial gap analysis](../../privacy-supplier-launch-review-2026-11-06.md) and [pending supplier evidence ledger](../supplier-approval-ledger-2026-11-06.json) before completing owner decisions or circulating customer documents for signature. The pack remains draft, the supplier agreements have **not** been accepted as proven for the actual business accounts, and the customer-specific PIA/contracting authority has not been verified. Confirm each negotiated field and signed version in restricted storage; do not put customer names, signatories, contract scans, private URLs, or credentials in Git.
