@@ -549,9 +549,26 @@ async function createTenant(event, body) {
   });
 }
 
+async function enforceDistrictContract(ctx) {
+  if (!ctx.caller.tenant_id) {
+    return json(403, { error: 'School authority assignment required.' });
+  }
+  // Stop invitation delivery before creating a person record or sending email.
+  const { data, error } = await ctx.admin.rpc('district_agreement_billing_allowed', {
+    p_tenant_id: ctx.caller.tenant_id,
+  });
+  if (error || typeof data !== 'boolean')
+    return json(503, { error: 'Agreement verification is unavailable. No invitation was sent.' });
+  if (!data)
+    return json(409, { error: 'Accept the SafeBus MSA and DPA in Agreements before inviting members.' });
+  return null;
+}
+
 async function inviteMember(event, body) {
   const ctx = await requireCaller(event, ['tenant_admin']);
   if (ctx.error) return ctx.error;
+  const contractDenial = await enforceDistrictContract(ctx);
+  if (contractDenial) return contractDenial;
   const role = clean(body.role);
   if (!MEMBER_ROLES.has(role))
     return json(400, { error: 'Only driver or guardian invitations are supported here.' });
@@ -724,6 +741,8 @@ async function tenantLifecycle(event, body) {
 async function inviteAdministrator(event, body) {
   const ctx = await requireCaller(event, ['tenant_admin']);
   if (ctx.error) return ctx.error;
+  const contractDenial = await enforceDistrictContract(ctx);
+  if (contractDenial) return contractDenial;
 
   const fullName = clean(body.fullName);
   const email = clean(body.email).toLowerCase();
@@ -897,6 +916,8 @@ function responseErrorMessage(response, fallback) {
 async function bulkInvitationDispatch(event, body) {
   const ctx = await requireCaller(event, ['tenant_admin']);
   if (ctx.error) return ctx.error;
+  const contractDenial = await enforceDistrictContract(ctx);
+  if (contractDenial) return contractDenial;
   const batchId = clean(body.batchId);
   const requestedLimit = Number(body.limit ?? 10);
   const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 25) : 10;
