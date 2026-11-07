@@ -50,11 +50,12 @@ export function PlatformTenantDetailPage() {
     setError(null);
     try {
       const [summaries, billing, invitationRows, contract] = await Promise.all([
-        // Agreement metadata is platform-only; never request district document bodies.
-        getPlatformAgreement(tenantId),
         fetchPlatformTenantSummaries(),
         fetchPlatformTenantBillingDetail(tenantId),
         fetchPlatformFirstAdminInvitations(),
+        // Contract status is optional until its staged migration is deployed.
+        // Failure must not block existing tenant lifecycle or invitation controls.
+        getPlatformAgreement(tenantId).catch(() => null),
       ]);
       const tenantSummary = summaries.find((item) => item.tenant_id === tenantId) ?? null;
       setSummary(tenantSummary);
