@@ -13,9 +13,11 @@ test('new district agreement gate is fail-closed, prior tenants exempt, activati
   assert.match(s,/c\.tenant_id=p_tenant_id and c\.bundle_sha256=p_bundle_sha256 and c\.approved/);
   assert.match(s,/approved_refs_sha256=encode\(digest/);
   assert.match(s,/create policy safebus_district_contract_gate on/);
-  assert.match(s,/create or replace function safebus_private\.enforce_active_api_session/);
-  assert.match(s,/create or replace function safebus_private\.current_user_role/);
-  assert.match(s,/p\.role::text <> 'school_admin'/);
+  assert.match(s,/create function safebus_private\.enforce_district_contract_api/);
+  assert.match(s,/perform safebus_private\.enforce_active_api_session\(\)/);
+  assert.doesNotMatch(s,/create or replace function safebus_private\.current_user_role/);
+  assert.doesNotMatch(s,/create or replace function safebus_private\.current_tenant_id/);
+  assert.match(s,/enforce_tenant_agreement_gate_immutable/);
   assert.match(s,/where a\.tenant_id=p\.tenant_id and a\.status='active'/);
   assert.doesNotMatch(s,/grant (insert|update|delete|all) on table safebus_private\.district_agreement_packages to authenticated/i);
   assert.equal(s.split('create function public.platform_issue_district_agreement(').length,2);
