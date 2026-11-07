@@ -1,0 +1,19 @@
+{
+  "status": "prepared-unapplied",
+  "migration": "supabase/migrations/pending/20261107154500_district_digital_agreements.sql",
+  "authenticated": [
+    "get_district_agreement_status_secure(uuid)",
+    "platform_activate_district_agreement(uuid,text,jsonb)",
+    "platform_countersign_district_agreement(uuid,text,text,text,text,boolean)",
+    "platform_issue_district_agreement(uuid,jsonb,text)",
+    "platform_verify_district_signer(uuid,text)",
+    "request_district_agreement_signer(text,text,text)"
+  ],
+  "serviceRole": [
+    "server_get_district_signer_package(text)",
+    "server_issue_district_signer_token(uuid,text)",
+    "server_revoke_district_signer_token(uuid)",
+    "server_sign_district_agreement(text,text,text,text,boolean,boolean)"
+  ],
+  "note": "Prepared surface only. Every RPC remains uninstalled until protected migration release and approved contract/customer processing. The signer token RPCs must never be granted to authenticated."
+}
