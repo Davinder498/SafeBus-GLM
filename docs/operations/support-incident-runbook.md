@@ -99,6 +99,23 @@ evidence; do not share account details or raw logs with customers.
    scheduled evidence demonstrates otherwise. Do not mute failure by raising
    the threshold or treating manual runs as scheduled evidence.
 
+### Additional application monitoring (staged)
+
+The production-monitor extension remains inactive unless the approved
+`SAFEBUS_APPLICATION_MONITOR_ENABLED=true` flag is configured. Once
+activated, each check produces a fixed diagnostic code for database
+availability, eligible active-trip GPS freshness, queued email/push age,
+recent failed deliveries, and a fixed public Geoapify tile probe. An
+`app_gps_freshness` check with `mode: idle` is expected when there are
+no established active driver trips; it is **not** evidence of broken tracking.
+A result based on a count of aggregate delivery failures is not evidence
+of a particular student's status. Check authorized transportation
+workflows to diagnose, and do not reproduce locations or names in logs.
+Unverified/malformed monitor results are failures, not green checks.
+The new check uses existing six-hour fixed-alert deduplication and does
+not prove staff actually received the email. Activation and drills are
+covered in the operations acceptance checklist.
+
 ### Retention backlog alert after activation
 
 When **approved destructive disposal** is enabled in the future, a final batch
