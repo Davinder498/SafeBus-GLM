@@ -158,14 +158,16 @@ export function PlatformTenantDetailPage() {
               <strong className="capitalize">{agreement?.status?.replaceAll('_', ' ') ?? 'Unavailable'}</strong></p>
             <p><span className="text-sm text-[var(--color-text-muted)]">Version</span><br />
               <strong>{agreement?.version ?? 'Not issued'}</strong></p>
-            <p><span className="text-sm text-[var(--color-text-muted)]">Signer authority</span><br />
-              <strong>{agreement?.authority_verified ? 'Evidence verified' : 'Not verified'}</strong></p>
-            <p><span className="text-sm text-[var(--color-text-muted)]">Officer requests awaiting review</span><br />
-              <strong>{agreement?.pending_officer_requests ?? 0}</strong></p>
+            <p><span className="text-sm text-[var(--color-text-muted)]">District acceptance</span><br />
+              <strong>{agreement?.customer_signed_at ? new Date(agreement.customer_signed_at).toLocaleDateString('en-CA') : 'Not accepted'}</strong></p>
+            <p><span className="text-sm text-[var(--color-text-muted)]">Accepted by</span><br />
+              <strong>{agreement?.signer_profile_id ? 'District administrator' : 'Pending'}</strong></p>
           </div>
           <p className="mt-4 text-sm text-[var(--color-text-muted)]">
-            Document issuance, delegation verification, countersignature and executed-artifact
-            release require an explicitly approved operator process. No approval is inferred.
+            The district tenant administrator reviews and directly accepts the complete
+            approved MSA/DPA package. Accepted copies are archived with an immutable receipt.
+            Final document publication is managed in <Link to="/admin/agreements"
+              className="font-semibold text-[var(--color-action)] underline">Agreements</Link>.
           </p>
         </Card>
         <Card className="p-5">
