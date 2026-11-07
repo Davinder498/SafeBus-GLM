@@ -68,6 +68,9 @@ const AdminSchoolsPage = lazy(() =>
 const PlatformPricingPage = lazy(() =>
   import('@/pages/PlatformPricingPage').then((page) => ({ default: page.PlatformPricingPage })),
 );
+const PlatformAgreementsPage = lazy(() =>
+  import('@/pages/PlatformAgreementsPage').then((page) => ({ default: page.PlatformAgreementsPage })),
+);
 const DistrictAgreementsPage = lazy(() =>
   import('@/pages/DistrictAgreementsPage').then((page) => ({ default: page.DistrictAgreementsPage })),
 );
@@ -268,6 +271,14 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={['platform_super_admin']}>
         <PlatformSupportPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/agreements',
+    element: (
+      <ProtectedRoute allowedRoles={['platform_super_admin']}>
+        <PlatformAgreementsPage />
       </ProtectedRoute>
     ),
   },
