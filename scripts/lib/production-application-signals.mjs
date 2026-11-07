@@ -25,6 +25,9 @@ export function validApplicationChecks(checks) {
   return APPLICATION_SIGNAL_NAMES.every((name, index) => {
     const check = checks[index];
     if (!check || check.check !== name || !['pass', 'fail'].includes(check.result)) return false;
+    const keys = Object.keys(check).sort().join(',');
+    if (check.result === 'pass' && !['check,result', 'check,mode,result'].includes(keys)) return false;
+    if (check.result === 'fail' && keys !== 'check,code,result') return false;
     if (check.result === 'pass') {
       return check.code === undefined && (check.mode === undefined || check.mode === 'idle');
     }
