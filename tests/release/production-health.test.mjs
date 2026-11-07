@@ -289,3 +289,78 @@ test('application monitor returns fixed failures for unexpected or rejected prov
     assert.doesNotMatch(log.join(' '), /private-identity|secret database response|token/);
   }
 });
+
+test('observation-only mode records real backend failures but sends no application alerts', async () => {
+  const { runScheduledHealth } = await import('../../apps/web/netlify/functions/production-health-scheduled.mjs');
+  let alerts = 0;
+  const logs = [];
+  const observed = await runScheduledHealth({
+    deploy: { context: 'production', published: true },
+    applicationMode: 'observe',
+    health: async () => ({ result: 'healthy' }),
+    cadence: async () => ({ result: 'healthy' }),
+    applicationSignals: async () => [
+      { check: 'app_database', result: 'fail', code: 'DATABASE_CHECK_UNAVAILABLE' },
+      { check: 'app_gps_freshness', result: 'pass', mode: 'idle' },
+      { check: 'app_email_backlog', result: 'pass' },
+      { check: 'app_push_backlog', result: 'pass' },
+      { check: 'app_delivery_failures', result: 'pass' },
+      { check: 'app_map_tiles', result: 'pass' },
+    ],
+    notify: async () => { alerts++; return { result: 'accepted' }; },
+    log: line => logs.push(JSON.parse(line)),
+  });
+  assert.deepEqual(observed, { result: 'healthy', applicationObservation: 'degraded' });
+  assert.equal(alerts, 0);
+  assert.deepEqual(logs.map(x => x.event), [
+    'production_application_signals_observation', 'production_health_observation',
+  ]);
+  assert.deepEqual(logs[0].checks[0], {
+    check: 'app_database', result: 'fail', code: 'DATABASE_CHECK_UNAVAILABLE',
+  });
+  assert.equal(logs[0].mode, 'observe');
+  assert.deepEqual(logs[1].checks, [
+    { check: 'public_health', result: 'pass' },
+    { check: 'github_cadence', result: 'pass' },
+  ]);
+});
+
+test('observation-only mode does not hide real public-health failures or their alerts', async () => {
+  const { runScheduledHealth } = await import('../../apps/web/netlify/functions/production-health-scheduled.mjs');
+  let notified;
+  const logs = [];
+  await assert.rejects(runScheduledHealth({
+    deploy: { context: 'production', published: true },
+    applicationMode: 'observe',
+    health: async () => { throw new Error('provider-secret-content'); },
+    cadence: async () => ({ result: 'healthy' }),
+    applicationSignals: async () => { throw new Error('private-student-GPS-and-token'); },
+    notify: async ({ checks }) => { notified = checks; return { result: 'accepted' }; },
+    log: line => logs.push(line),
+  }), { message: 'PRODUCTION_HEALTH_OBSERVATION_FAILED' });
+  assert.deepEqual(notified, [
+    { check: 'public_health', result: 'fail', code: 'PUBLIC_HEALTH_FAILED' },
+    { check: 'github_cadence', result: 'pass' },
+  ]);
+  const app = JSON.parse(logs[0]);
+  assert.equal(app.result, 'degraded');
+  assert.equal(app.checks.length, 6);
+  assert.doesNotMatch(logs.join(' '), /private-student-GPS-and-token|provider-secret-content/);
+});
+
+test('application mode must be explicit and only recognized values are accepted', async () => {
+  const { runScheduledHealth } = await import('../../apps/web/netlify/functions/production-health-scheduled.mjs');
+  let checksCalled = 0;
+  await assert.rejects(runScheduledHealth({
+    deploy: { context: 'production', published: true },
+    applicationMode: 'enable-new-alerts',
+    applicationSignals: async () => { checksCalled++; },
+  }), { message: 'APP_MONITOR_MODE_INVALID' });
+  assert.equal(checksCalled, 0);
+  assert.equal((await runScheduledHealth({
+    deploy: { context: 'deploy-preview', published: true },
+    applicationMode: 'observe',
+    applicationSignals: async () => { checksCalled++; },
+  })).result, 'skipped');
+  assert.equal(checksCalled, 0);
+});
