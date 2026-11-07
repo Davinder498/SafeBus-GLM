@@ -217,3 +217,75 @@ test('operational monitor requires explicit provider acceptance before logging a
   });
   assert.doesNotMatch(logs.join(' '), /private-provider-message/);
 });
+
+test('staged application signals do not run before explicit production activation', async () => {
+  const { runScheduledHealth } = await import('../../apps/web/netlify/functions/production-health-scheduled.mjs');
+  let calls = 0;
+  const log = [];
+  const result = await runScheduledHealth({
+    deploy: { context: 'production', published: true },
+    applicationEnabled: false,
+    applicationSignals: async () => { calls++; return []; },
+    health: async () => ({ result: 'healthy' }),
+    cadence: async () => ({ result: 'healthy' }),
+    log: (line) => log.push(JSON.parse(line)),
+  });
+  assert.equal(result.result, 'healthy');
+  assert.equal(calls, 0);
+  assert.equal(log[0].checks.length, 2);
+});
+
+test('activated application monitoring distinguishes idle trips from failure and alerts on fixed categories', async () => {
+  const { runScheduledHealth } = await import('../../apps/web/netlify/functions/production-health-scheduled.mjs');
+  let sent;
+  const events = [];
+  await assert.rejects(
+    runScheduledHealth({
+      deploy: { context: 'production', published: true },
+      applicationEnabled: true,
+      health: async () => ({ result: 'healthy' }),
+      cadence: async () => ({ result: 'healthy' }),
+      applicationSignals: async () => [
+        { check: 'app_database', result: 'pass' },
+        { check: 'app_gps_freshness', result: 'pass', mode: 'idle' },
+        { check: 'app_email_backlog', result: 'pass' },
+        { check: 'app_push_backlog', result: 'fail', code: 'PUSH_QUEUE_OLD' },
+        { check: 'app_delivery_failures', result: 'pass' },
+        { check: 'app_map_tiles', result: 'pass' },
+      ],
+      notify: async ({ checks }) => { sent = checks; return { result: 'accepted' }; },
+      log: (line) => events.push(JSON.parse(line)),
+    }),
+    { message: 'PRODUCTION_HEALTH_OBSERVATION_FAILED' },
+  );
+  assert.equal(sent.length, 8);
+  assert.deepEqual(sent.filter((x) => x.result === 'fail'), [
+    { check: 'app_push_backlog', result: 'fail', code: 'PUSH_QUEUE_OLD' },
+  ]);
+  assert.equal(events[0].checks.length, 8);
+  assert.equal(events[0].checks[3].mode, 'idle');
+  assert.equal(events[1].result, 'provider_accepted');
+});
+
+test('application monitor returns fixed failures for unexpected or rejected provider output', async () => {
+  const { runScheduledHealth } = await import('../../apps/web/netlify/functions/production-health-scheduled.mjs');
+  for (const applicationSignals of [
+    async () => ({ result: 'healthy', student: 'private-identity' }),
+    async () => { throw new Error('secret database response and token'); },
+  ]) {
+    const log = [];
+    let checks;
+    await assert.rejects(runScheduledHealth({
+      deploy: { context: 'production', published: true },
+      applicationEnabled: true,
+      health: async () => ({ result: 'healthy' }),
+      cadence: async () => ({ result: 'healthy' }),
+      applicationSignals,
+      notify: async ({ checks: observed }) => { checks = observed; return { result: 'accepted' }; },
+      log: line => log.push(line),
+    }), { message: 'PRODUCTION_HEALTH_OBSERVATION_FAILED' });
+    assert.equal(checks.length, 8);
+    assert.equal(checks.filter(x => x.result === 'fail').length, 6);
+    assert.doesNotMatch(log.join(' '), /private-identity|secret database response|token/);
+  }
+});
