@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import { assertReviewedCheckout, verifiedDatabaseClient } from './lib/security-workflow-evidence.mjs';
-import { createEnvironmentBinding } from './lib/environment-identity.mjs';
+import { createEnvironmentBinding, assertEnvironmentIdentity } from './lib/environment-identity.mjs';
 
 const REPO = 'Davinder498/SafeBus-GLM';
 const PROJECT = 'ckrkfylsyihwouvesypm';
@@ -161,6 +161,7 @@ try {
   client=verifiedDatabaseClient(process.env.SAFEBUS_DATABASE_URL,
     process.env.SAFEBUS_DATABASE_CA_CERT,'safebus-district-agreements');
   await client.connect();
+  await assertEnvironmentIdentity(client,binding);
   const lock=await client.query("select pg_try_advisory_lock(hashtextextended('safebus-schema-deploy',0)) as acquired");
   if (!lock.rows[0].acquired)throw new Error('DISTRICT_AGREEMENT_SCHEMA_LOCK_BUSY');
   stage='baseline';
@@ -182,6 +183,13 @@ try {
       throw new Error('DISTRICT_AGREEMENT_SEPARATE_EVIDENCE_REQUIRED');
     await checkBackup(backupRunId);
     await workflowRun(rehearsalRunId,'release-district-agreements.yml');
+    const rehearsals=JSON.parse(execFileSync('gh', [
+      'api','repos/' + REPO + '/actions/runs/' + rehearsalRunId + '/artifacts',
+    ], {encoding:'utf8',stdio:['ignore','pipe','pipe']}));
+    if(!rehearsals.artifacts?.some(a=>
+      a.name==='district-agreements-rehearse-'+sha+'-'+rehearsalRunId &&
+      !a.expired && a.size_in_bytes>0))
+      throw new Error('DISTRICT_AGREEMENT_READ_ONLY_REHEARSAL_EVIDENCE_MISSING');
     stage='install';
     await client.query('begin');
     try {
