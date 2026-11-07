@@ -251,6 +251,27 @@ begin
   end loop;
 end $rls$;
 
+-- PostgREST pre-request does not cover Realtime or Storage. Their hosted RLS
+-- policies must independently enforce the gate for authenticated clients.
+do $provider_policies$
+declare v_target text;
+begin
+  foreach v_target in array array['realtime.messages','storage.objects']
+  loop
+    if to_regclass(v_target) is not null
+      and (select c.relrowsecurity from pg_class c where c.oid=to_regclass(v_target))
+    then
+      execute format(
+        'create policy safebus_district_contract_gate on %s as restrictive
+          for all to authenticated
+          using ((select safebus_private.district_contract_access_allowed()))
+          with check ((select safebus_private.district_contract_access_allowed()))',
+        v_target
+      );
+    end if;
+  end loop;
+end $provider_policies$;
+
 create function public.get_district_agreement_status_secure(p_tenant_id uuid default null)
 returns jsonb language plpgsql stable security definer
 set search_path=pg_catalog,public,safebus_private,auth,pg_temp
@@ -507,7 +528,7 @@ begin
  insert into safebus_private.district_agreement_events(tenant_id,package_id,signer_id,
     event_type,bundle_sha256,detail)
   values(v_s.tenant_id,v_p.id,v_s.id,'customer_signed',v_p.bundle_sha256,
-    jsonb_build_object('authorityRef',v_s.authority_ref,'emailVerifiedBy','single_use_signed_link'));
+    jsonb_build_object('authorityRef',v_s.authority_ref,'identityEvidence','restricted_one_time_link','identityLimitations','link_possession_does_not_prove_personal_identity'));
  return jsonb_build_object('state','customer_signed','packageId',v_p.id,
    'bundleHash',v_p.bundle_sha256,'recordedAt',now());
 end $$;
