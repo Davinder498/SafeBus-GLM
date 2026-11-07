@@ -68,6 +68,12 @@ const AdminSchoolsPage = lazy(() =>
 const PlatformPricingPage = lazy(() =>
   import('@/pages/PlatformPricingPage').then((page) => ({ default: page.PlatformPricingPage })),
 );
+const PlatformAgreementsPage = lazy(() =>
+  import('@/pages/PlatformAgreementsPage').then((page) => ({ default: page.PlatformAgreementsPage })),
+);
+const DistrictAgreementsPage = lazy(() =>
+  import('@/pages/DistrictAgreementsPage').then((page) => ({ default: page.DistrictAgreementsPage })),
+);
 const AdminSettingsPage = lazy(() =>
   import('@/pages/AdminSettingsPage').then((page) => ({ default: page.AdminSettingsPage })),
 );
@@ -269,6 +275,14 @@ export const appRoutes: RouteObject[] = [
     ),
   },
   {
+    path: '/admin/agreements',
+    element: (
+      <ProtectedRoute allowedRoles={['platform_super_admin']}>
+        <PlatformAgreementsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/admin/pricing',
     element: (
       <ProtectedRoute allowedRoles={['platform_super_admin']}>
@@ -337,6 +351,22 @@ export const appRoutes: RouteObject[] = [
     element: (
       <ProtectedRoute allowedRoles={['tenant_admin', 'transportation_admin']}>
         <AdminNotificationSettingsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/onboarding/agreements',
+    element: (
+      <ProtectedRoute allowedRoles={['tenant_admin']}>
+        <DistrictAgreementsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/settings/agreements',
+    element: (
+      <ProtectedRoute allowedRoles={['tenant_admin']}>
+        <DistrictAgreementsPage />
       </ProtectedRoute>
     ),
   },

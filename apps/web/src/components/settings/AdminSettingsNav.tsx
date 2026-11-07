@@ -1,4 +1,4 @@
-import { Building2, CircleHelp, CreditCard } from 'lucide-react';
+import { Building2, CircleHelp, CreditCard, FileText } from 'lucide-react';
 import { NavLink, type NavLinkRenderProps } from 'react-router';
 import type { ProfileRole } from '@/contexts/AuthContext';
 import { cn } from '@/utils/cn';
@@ -21,6 +21,13 @@ const settingsItems = [
     end: true,
     icon: Building2,
     allowedRoles: ['tenant_admin', 'transportation_admin'],
+  },
+  {
+    label: 'Agreements',
+    to: '/admin/settings/agreements',
+    end: false,
+    icon: FileText,
+    allowedRoles: ['tenant_admin'],
   },
   {
     label: 'Subscription & billing',

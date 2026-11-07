@@ -55,6 +55,23 @@ export type Database = Omit<HostedDatabase, 'public'> & {
       routes: CalendarRoutes;
     };
     Functions: HostedDatabase['public']['Functions'] & {
+      get_my_district_agreement: { Args: Record<string, never>; Returns: Json };
+      get_platform_district_agreement: { Args: { p_tenant_id: string }; Returns: Json };
+      accept_my_district_agreement: { Args: {
+        p_package_id: string; p_bundle_sha256: string;
+        p_signer_name: string; p_signer_title: string;
+        p_electronic_consent: boolean; p_authority_attested: boolean;
+        p_signature_intent: boolean;
+      }; Returns: Json };
+      list_my_district_agreement_receipts: { Args: Record<string, never>; Returns: Json };
+      get_my_district_agreement_receipt: { Args: { p_receipt_id: string }; Returns: Json };
+      platform_publish_agreement_document: { Args: {
+        p_kind: string; p_title: string; p_version: string; p_body: string;
+      }; Returns: Json };
+      platform_list_agreement_documents: { Args: Record<string, never>; Returns: Json };
+      platform_publish_agreement_catalog: { Args: { p_document_ids: string[] }; Returns: Json };
+      platform_get_agreement_catalog: { Args: Record<string, never>; Returns: Json };
+      district_agreement_billing_allowed: { Args: {p_tenant_id: string}; Returns: boolean };
       get_admin_trip_operations: {
         Args: {
           p_from_date?: string | null;

@@ -3,6 +3,7 @@ import {
   getInternalBillingState,
   json,
   requireBillingCaller,
+  requireDistrictBillingAgreement,
   validatePortalOrigin,
   writeBillingAudit,
 } from './billing-shared.mjs';
@@ -19,6 +20,8 @@ export async function handler(event) {
     if (ctx.error) return ctx.error;
     if (!ctx.caller.tenant_id) return json(403, { error: 'School authority assignment required.' });
 
+    const agreementDenial = await requireDistrictBillingAgreement(ctx.admin, ctx.caller.tenant_id);
+    if (agreementDenial) return agreementDenial;
     const origin = validatePortalOrigin(ctx.config.appOrigin);
     if (!origin || !ctx.config.stripePortalConfigurationId) {
       return json(503, { error: 'The billing portal is not configured.' });

@@ -6,6 +6,7 @@ import {
   json,
   requestHash,
   requireBillingCaller,
+  requireDistrictBillingAgreement,
   retrieveCanonicalSubscription,
   safeProviderErrorCode,
   syncSubscriptionProjection,
@@ -282,6 +283,10 @@ export async function handler(event) {
       return json(200, {
         prices: await approvedPrices(createStripeClient(), ctx.config.stripeProductId),
       });
+    // Prices can be browsed first; actual subscription actions require the
+    // district administrator's executed online agreement (existing tenants exempt).
+    const agreementDenial = await requireDistrictBillingAgreement(ctx.admin, ctx.caller.tenant_id);
+    if (agreementDenial) return agreementDenial;
     let state = await getInternalBillingState(ctx.admin, ctx.caller.tenant_id);
     if (state.tenant_status !== 'active')
       return json(403, { error: 'School authority access is suspended.' });

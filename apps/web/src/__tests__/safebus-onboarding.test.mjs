@@ -55,6 +55,7 @@ function setupClients({
     },
   ],
   adminRpcResults = [{ data: null, error: null }],
+  contractResult = { data: true, error: null },
   inviteError = null,
   deleteUserError = null,
   resetPasswordError = null,
@@ -146,6 +147,7 @@ function setupClients({
     ...adminClient,
     rpc: async (name, args) => {
       if (name === 'write_server_audit_event') return { data: null, error: null };
+      if (name === 'district_agreement_billing_allowed') return contractResult;
       return adminClient.rpc(name, args);
     },
   };
@@ -177,6 +179,15 @@ function createTenantEvent(body = {}) {
 }
 
 describe('SafeBus member onboarding', () => {
+  it('does not send an email when a new district has not accepted its agreement', async () => {
+    const clients=setupClients({ contractResult: { data: false, error: null } });
+    const response=await handler(event({
+      firstName:'Guardian',lastName:'Test',email:'guardian@example.test',phone:'4035551111'
+    }));
+    expect(response.statusCode).toBe(409);
+    expect(clients.adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
+  });
+
   it('rejects an older requesting session even when another device just signed in', async () => {
     const { userClient, adminClient } = setupClients();
     userClient.auth.getClaims.mockResolvedValue({

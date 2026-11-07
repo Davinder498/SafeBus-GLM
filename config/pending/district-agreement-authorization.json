@@ -1,0 +1,18 @@
+{
+  "status": "prepared-unapplied",
+  "migration": "supabase/migrations/pending/20261107121500_district_agreement_workflow.sql",
+  "authenticated": [
+    "get_my_district_agreement()",
+    "get_platform_district_agreement(uuid)",
+    "accept_my_district_agreement(uuid,text,text,text,boolean,boolean,boolean)",
+    "list_my_district_agreement_receipts()",
+    "get_my_district_agreement_receipt(uuid)",
+    "platform_publish_agreement_document(text,text,text,text)",
+    "platform_list_agreement_documents()",
+    "platform_publish_agreement_catalog(uuid[])",
+    "platform_get_agreement_catalog()"
+  ],
+  "serviceRole": [
+    "district_agreement_billing_allowed(uuid)"
+  ]
+}

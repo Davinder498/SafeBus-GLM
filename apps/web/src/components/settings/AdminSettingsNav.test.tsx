@@ -55,6 +55,7 @@ describe('AdminSettingsNav', () => {
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
       '/admin/settings/support',
       '/admin/settings',
+      '/admin/settings/agreements',
       '/admin/settings/billing',
     ]);
     expect(

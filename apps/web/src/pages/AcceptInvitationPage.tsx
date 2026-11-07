@@ -55,7 +55,7 @@ export function AcceptInvitationPage() {
       }
       navigate(
         nextProfile.role === 'tenant_admin'
-          ? '/admin/settings/billing'
+          ? '/admin/onboarding/agreements'
           : getDashboardPath(nextProfile.role),
         { replace: true },
       );

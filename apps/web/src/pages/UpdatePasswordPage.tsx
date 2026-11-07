@@ -92,7 +92,7 @@ export function UpdatePasswordPage() {
       }
       navigate(
         nextProfile.role === 'tenant_admin' && profile?.status === 'invited'
-          ? '/admin/settings/billing'
+          ? '/admin/onboarding/agreements'
           : getDashboardPath(nextProfile.role),
         { replace: true },
       );
