@@ -94,7 +94,7 @@ subscription invoice and one corresponding paid invoice-payment record. The same
 invoice reports `automatic_tax.enabled=false` and no charged tax. The account's
 Stripe Tax settings are active with a Canadian registration entry, but the owner
 has not provided actual CRA registration evidence or decided the appropriate
-tax treatment. See the [restricted-data-safe review](../../../../qa/first-paid-invoice-tax-review-2026-11-07.md).
+tax treatment. See the [restricted-data-safe review](../../../qa/first-paid-invoice-tax-review-2026-11-07.md).
 
 This resolves only the earlier “first nonzero payment not observed” technical
 checkpoint. It does **not** verify tax accuracy, Stripe email delivery, merchant
