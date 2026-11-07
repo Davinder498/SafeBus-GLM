@@ -12,6 +12,8 @@ export interface AgreementStatus {
  tenantId:string;required:boolean;packageId?:string;revision?:number;bundleHash?:string;
  documents?:AgreementDocument[];signers?:SignerRecord[];
  customerSignedAt?:string|null;providerSignedAt?:string|null;activatedAt?:string|null;
+ customerSignerName?:string|null;customerSignerTitle?:string|null;
+ providerSignerName?:string|null;providerSignerTitle?:string|null;
 }
 export interface SignerPreview {
  state:'ready';signerName:string;signerTitle:string;tenantId:string;packageId:string;
@@ -61,3 +63,38 @@ export const agreementKinds:ReadonlyArray<{kind:AgreementKind;label:string}>=[
  {kind:'return',label:'Return & Destruction'},
  {kind:'suppliers',label:'Supplier Disclosure'},
 ];
+
+/** A human-readable copy of the exact saved terms; not a PDF certificate or
+ * independent validation of signing authority. Available only from a genuine
+ * click on the authenticated agreement page or signer receipt screen. */
+export function downloadAgreementCopy(details:{
+  revision:number;bundleHash:string;documents:AgreementDocument[];
+  status:string;customerSignerName?:string|null;customerSignerTitle?:string|null;
+  providerSignerName?:string|null;providerSignerTitle?:string|null;
+  customerSignedAt?:string|null;providerSignedAt?:string|null;
+}) {
+ const intro=[
+  'SafeBus school authority agreement copy',
+  'Document set: '+details.documents.length+' terms',
+  'Package revision: '+details.revision,
+  'Canonical SHA-256: '+details.bundleHash,
+  'Recorded state: '+details.status,
+  'District signer: '+(details.customerSignerName??'not recorded')+' / '+(details.customerSignerTitle??''),
+  'District signed UTC: '+(details.customerSignedAt??'not signed'),
+  'SafeBus signer: '+(details.providerSignerName??'not recorded')+' / '+(details.providerSignerTitle??''),
+  'SafeBus signed UTC: '+(details.providerSignedAt??'not signed'),
+  '',
+  'This is a download of the stored text and recorded signature metadata. It is not an independently certified PDF or a substitute for verified signing authority.',
+ ];
+ const documents=details.documents.flatMap(d=>[
+  '', '--- '+d.title+' ---','Version: '+d.version,'Kind: '+d.kind,'',d.body,
+ ]);
+ const blob=new Blob([[...intro,...documents].join('\n')],{type:'text/plain;charset=utf-8'});
+ const url=URL.createObjectURL(blob);
+ try {
+  const element=document.createElement('a');
+  element.href=url;
+  element.download=`SafeBus-agreement-revision-${details.revision}.txt`;
+  element.click();
+ } finally {URL.revokeObjectURL(url);}
+}
