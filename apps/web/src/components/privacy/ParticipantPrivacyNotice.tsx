@@ -54,7 +54,7 @@ export function ParticipantPrivacyNotice({
   const driver = role === 'driver';
   return (
     <Card className="mb-5 p-4 sm:p-5" data-testid="participant-privacy-notice">
-      <div className="flex items-start gap-3">
+      <div className="flex min-w-0 flex-col items-start gap-3 sm:flex-row">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-brand-soft)] text-[var(--color-action)]">
           <ShieldCheck className="h-5 w-5" aria-hidden />
         </span>
@@ -71,7 +71,7 @@ export function ParticipantPrivacyNotice({
           </div>
           <Link
             to={driver ? '/privacy#drivers' : '/privacy#guardians'}
-            className="inline-flex min-h-11 items-center text-sm font-semibold text-[var(--color-action)] underline underline-offset-4"
+            className="block min-h-11 max-w-full break-words text-sm font-semibold text-[var(--color-action)] underline underline-offset-4"
           >
             Read the full {driver ? 'driver' : 'guardian'} privacy notice
           </Link>
