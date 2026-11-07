@@ -116,3 +116,14 @@ the monthly/annual Stripe prices only after the owner approves exact CAD amounts
 and tax handling. Offer annual purchase-order invoice terms only through reviewed
 school-authority contracts. No price, trial duration, tax rate, or collection
 method is changed by this implementation.
+
+## Read-only first paid subscription invoice checkpoint — November 7, 2026
+
+The [invoice and tax reconciliation](../qa/first-paid-invoice-tax-review-2026-11-07.md)
+confirms one live nonzero recurring invoice of CAD 1.99 in `paid` status and
+one paid invoice-payment record. Its automatic tax was disabled, despite active
+Stripe Tax account settings and one Canadian registration entry; the business
+owner's actual CRA registration and invoice tax duties remain unverified. This
+is not proof of correct tax or email receipt. Do not mark the paid-receipt
+acceptance complete or change subscription tax settings without a separately
+approved finance decision.
