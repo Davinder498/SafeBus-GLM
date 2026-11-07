@@ -81,6 +81,13 @@ export function AdminSettingsPage() {
         <AdminSettingsNav role={profile?.role} />
         <AppearanceSettingsCard />
         <AccountSecurityLinkCard />
+        {profile?.role === 'tenant_admin' && (
+          <Card className="p-5">
+            <h2 className="text-lg font-semibold text-[var(--color-text)]">District agreements</h2>
+            <p className="mt-1 text-sm text-[var(--color-text-muted)]">View signed versions, pending signing requests and school authority activation status.</p>
+            <a className="mt-3 inline-flex min-h-11 items-center font-semibold text-[var(--color-action)] underline" href="/admin/onboarding/agreements">Review agreements</a>
+          </Card>
+        )}
         <RetentionPanel />
         <a href="/admin/records-disposal" className="font-semibold text-navy-700 underline">
           Records disposal and preservation
