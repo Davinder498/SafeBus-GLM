@@ -1,12 +1,18 @@
 import { runProductionHealth } from '../../../../scripts/lib/production-health.mjs';
 import { checkMonitorCadence } from '../../../../scripts/lib/monitor-cadence.mjs';
 import { sendMonitorAlerts } from '../../../../scripts/lib/monitor-alert-email.mjs';
+import {
+  runApplicationSignals,
+  validApplicationChecks,
+} from '../../../../scripts/lib/production-application-signals.mjs';
 
 export async function runScheduledHealth({
   deploy,
   health = runProductionHealth,
   cadence = checkMonitorCadence,
   notify = sendMonitorAlerts,
+  applicationSignals = runApplicationSignals,
+  applicationEnabled = process.env.SAFEBUS_APPLICATION_MONITOR_ENABLED === 'true',
   log = console.log,
 } = {}) {
   // Netlify schedules published production deploys only. Keep manual preview runs inert.
@@ -19,8 +25,9 @@ export async function runScheduledHealth({
   const observations = await Promise.allSettled([
     health({ origin: 'https://safebus.kids', retries: 0, timeoutMs: 6_000 }),
     cadence(),
+    ...(applicationEnabled ? [applicationSignals()] : []),
   ]);
-  const codes = observations.map((observation, i) => {
+  const codes = observations.slice(0, 2).map((observation, i) => {
     if (observation.status === 'fulfilled' && observation.value?.result === 'healthy')
       return { check: i === 0 ? 'public_health' : 'github_cadence', result: 'pass' };
     // A fulfilled but malformed/unhealthy return must not be counted as healthy.
@@ -46,6 +53,24 @@ export async function runScheduledHealth({
         : 'PUBLIC_HEALTH_FAILED';
     return { check: i === 0 ? 'public_health' : 'github_cadence', result: 'fail', code };
   });
+  if (applicationEnabled) {
+    const result = observations[2];
+    if (result?.status === 'fulfilled' && validApplicationChecks(result.value)) {
+      // The service result consists solely of reviewed fixed identifiers.
+      codes.push(...result.value);
+    } else {
+      // Never mark a missing/malformed backend observation healthy.
+      // Do not log arbitrary SDK errors or provider response text.
+      codes.push(
+        { check: 'app_database', result: 'fail', code: 'DATABASE_CHECK_UNAVAILABLE' },
+        { check: 'app_gps_freshness', result: 'fail', code: 'GPS_CHECK_UNAVAILABLE' },
+        { check: 'app_email_backlog', result: 'fail', code: 'EMAIL_QUEUE_UNAVAILABLE' },
+        { check: 'app_push_backlog', result: 'fail', code: 'PUSH_QUEUE_UNAVAILABLE' },
+        { check: 'app_delivery_failures', result: 'fail', code: 'DELIVERY_CHECK_UNAVAILABLE' },
+        { check: 'app_map_tiles', result: 'fail', code: 'MAP_TILE_CHECK_UNAVAILABLE' },
+      );
+    }
+  }
   const failed = codes.some((check) => check.result === 'fail');
   // Do not log arbitrary exceptions: fetch errors or map URLs may contain keys.
   log(

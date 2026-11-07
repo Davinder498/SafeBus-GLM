@@ -19,6 +19,26 @@ response bodies in screenshots, workflow logs, tickets, or incident records.
 - [ ] Confirm no workflow or log contains a Supabase credential, map key,
       personal record, response body, or map tile URL.
 
+## Application signal acceptance — staged, not automatically approved
+
+- [ ] Confirm the production Netlify deploy has the new source and the
+      application probe flag is disabled by default.
+- [ ] Verify read-only HEAD count contracts, exact Content-Range values and
+      existing server-only Supabase credentials without recording their value.
+- [ ] With approved synthetic test data and authorized scope, check active vs
+      paused vs recently started trip GPS states and email/push queue thresholds.
+      Do not create or edit production school/driver/guardian/test fixtures.
+- [ ] Confirm that healthy idle operation generates no false GPS/queue alarms.
+- [ ] Perform a fixed-key tile probe (one public tile) with no credential
+      disclosure and verify failure handling without routing to alternate providers.
+- [ ] Approve operational thresholds and a controlled production activation
+      of `SAFEBUS_APPLICATION_MONITOR_ENABLED=true` only after review.
+- [ ] Confirm real scheduled logs contain only safe check names/statuses;
+      verify email reaches the operations inbox for a synthetic failure.
+- [ ] Obtain separate error telemetry vendor/redaction evidence and seven
+      operating days before approving commercial operations. The aggregate
+      probes alone do not satisfy the complete application error monitoring gate.
+
 ## Alert drill
 
 - [ ] Name the primary on-call owner and backup before configuring delivery.

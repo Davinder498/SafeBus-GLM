@@ -51,10 +51,12 @@ const EVIDENCE_FILES = [
   'scripts/lib/production-health.mjs',
   'scripts/lib/monitor-cadence.mjs',
   'scripts/lib/monitor-alert-email.mjs',
+  'scripts/lib/production-application-signals.mjs',
   'scripts/print-operations-release-digest.mjs',
   'tests/release/operations-authorization.test.mjs',
   'tests/release/operations-readiness.test.mjs',
   'tests/release/production-health.test.mjs',
+  'tests/release/production-application-signals.test.mjs',
   'tests/release/monitor-alert-email.test.mjs',
 ];
 

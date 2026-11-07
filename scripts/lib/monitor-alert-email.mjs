@@ -1,6 +1,30 @@
 const RECIPIENT = 'info@safebus.kids';
 const WINDOW_MS = 6 * 60 * 60 * 1_000;
 const DETAILS = {
+  app_database: {
+    subject: 'SafeBus alert: production database check failed',
+    text: 'The read-only aggregate production database probe did not return a verified response. This is an operations signal, not proof that every user is offline. Review Supabase project health and the application-monitor runbook.',
+  },
+  app_gps_freshness: {
+    subject: 'SafeBus alert: active-trip GPS signal needs attention',
+    text: 'An eligible active trip may lack a recent recorded position, or the privacy-safe freshness probe was unverifiable. Trips recently started, paused, completed or cancelled are not counted as stale. Confirm current conditions using authorized district operations.',
+  },
+  app_email_backlog: {
+    subject: 'SafeBus alert: notification email queue needs attention',
+    text: 'The aggregate email delivery backlog is old or could not be checked. Inspect the scheduled dispatcher and the authorized delivery-health controls. Do not infer individual delivery outcomes from this alert.',
+  },
+  app_push_backlog: {
+    subject: 'SafeBus alert: notification push queue needs attention',
+    text: 'The aggregate push delivery backlog is old or could not be checked. Inspect the push worker and provider health using authorized operations tools.',
+  },
+  app_delivery_failures: {
+    subject: 'SafeBus alert: recent notification delivery failures',
+    text: 'The aggregate count of recent failed email/push deliveries exceeded the preliminary monitoring threshold, or delivery health could not be verified. Review notification incidents without reproducing recipient or student data.',
+  },
+  app_map_tiles: {
+    subject: 'SafeBus alert: Geoapify map tile probe failed',
+    text: 'The fixed read-only Geoapify basemap tile probe failed or could not be verified. Public map configuration alone does not establish map tile availability. Confirm provider restrictions and retain list/status fallback.',
+  },
   // These templates are intentionally inert until reviewed Geoapify
   // project-wide statistics are available to a trusted operator.
   geoapify_quota_70: {
