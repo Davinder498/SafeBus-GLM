@@ -6,6 +6,9 @@ const MAP_ATTRIBUTION =
 const responseHeaders = {
   'cache-control': 'public, max-age=300, stale-while-revalidate=86400',
   'content-type': 'application/json; charset=utf-8',
+  // Web and native callers can receive distinct public tile URLs. Never let
+  // an HTTP/CDN cache reuse one origin's key configuration for another.
+  vary: 'Origin',
 };
 
 const crossOriginClients = new Set(['https://localhost', 'capacitor://localhost']);
@@ -38,7 +41,18 @@ export async function handler(event = {}) {
     });
   }
 
-  const apiKey = process.env.GEOAPIFY_API_KEY?.trim();
+  // These keys are public browser/mobile tile credentials, not private
+  // server tokens. Keep each Geoapify credential scoped at the provider.
+  // Optional channel-specific keys stage a non-disruptive migration:
+  // production web can use a restricted key while existing signed Android
+  // builds continue using the legacy key until physical device acceptance.
+  // Native Origin is a routing hint, not proof of mobile identity; the
+  // caller can forge it. Never use this distinction for sensitive data.
+  const nativeRequest = crossOriginClients.has(origin);
+  const selectedKey = nativeRequest
+    ? (process.env.GEOAPIFY_ANDROID_API_KEY ?? process.env.GEOAPIFY_API_KEY)
+    : (process.env.GEOAPIFY_WEB_API_KEY ?? process.env.GEOAPIFY_API_KEY);
+  const apiKey = selectedKey?.trim();
   if (!apiKey || apiKey.length < 10) {
     return json(
       503,

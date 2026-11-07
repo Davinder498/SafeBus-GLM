@@ -27,11 +27,27 @@ Rejected production defaults:
 
 The browser and Android app do not read a map API key from a `VITE_` variable.
 They request a provider-neutral XYZ URL and attribution from the
-`map-tile-config` Netlify Function. The function reads the server-only
-`GEOAPIFY_API_KEY` setting and returns only the public, restricted client tile
-URL. Web calls use the same origin. The Capacitor Android origin
+`map-tile-config` Netlify Function. With no additional settings, the function
+uses the existing `GEOAPIFY_API_KEY` for both browser and native clients.
+A **staged, optional** `GEOAPIFY_WEB_API_KEY` lets the website use a separately
+restricted tile key while installed Android builds continue using the legacy
+key. A future `GEOAPIFY_ANDROID_API_KEY` can be set only after native request
+headers and provider restrictions are tested on a physical device. If a
+channel-specific setting is present but invalid/blank, that channel fails
+closed rather than silently using the legacy key.
+
+Web calls use the same origin. The Capacitor Android origin
 (`https://localhost`) calls the production function at
 `https://safebus.kids/.netlify/functions/map-tile-config`.
+Responses send `Vary: Origin` to prevent web/native key variants being
+cross-served by HTTP/CDN caches.
+
+The returned XYZ tile URL contains a **public client key**. Netlify storage
+does not make a browser/mobile tile key secret; restrictions must be enforced
+by the Geoapify provider. Origin in the config-function request is a routing
+hint and can be forged, **not** mobile attestation or authorization. Native
+WebViews may omit Referer/Origin on tile-image requests; do not assume web
+restriction rules protect a mobile key.
 
 Map requests contain no SafeBus account, student, guardian, driver, bus, or trip
 identifier. Geoapify still receives the requested tile coordinates, device IP,
@@ -39,22 +55,42 @@ HTTP origin/referrer, and normal network metadata.
 
 ## Setup
 
-1. Create a Geoapify project and key.
-2. Restrict the key to the approved production web origin and the Android
-   Capacitor origin (`https://localhost`). Add local web origins only while
-   actively developing.
-3. Set `GEOAPIFY_API_KEY` in the Netlify production environment. Never prefix it
-   with `VITE_`, commit it, or copy it into the Android environment.
-4. For local web development, put `GEOAPIFY_API_KEY` in `apps/web/.env` and run
-   `pnpm dev:netlify` so the local function is available.
-5. Confirm the function returns HTTP 200 without logging or recording the key:
+1. The existing Geoapify project and production `GEOAPIFY_API_KEY` have been
+   confirmed by the owner. **Keep the existing key unchanged** during setup.
+   On November 6 the account showed 340 tile requests / 85 credits over the
+   preceding 32 days with a 3,000-credit daily Free quota; this is historical
+   low usage, not a production capacity test.
+2. For the website, create **one additional key in the same project** named
+   `SafeBus Web Production`. Confirm the actual `Referer` or `Origin`
+   headers of browser tile requests and configure appropriate Geoapify
+   restrictions for `https://safebus.kids`; don't guess regexes or accept
+   `*` as a credential restriction. Test requests under the intended
+   restriction before any rotation. Do not modify the legacy key yet.
+3. After this code is merged and deployed, add the new credential to Netlify
+   production **Functions** scope as `GEOAPIFY_WEB_API_KEY`, mark it secret,
+   and redeploy the published site. Avoid `VITE_` prefixes and never paste
+   values in Git, chat, or screenshots. The existing
+   `GEOAPIFY_API_KEY` remains as Android/fallback. **Do not set**
+   `GEOAPIFY_ANDROID_API_KEY` before supported physical-device acceptance.
+4. For local development, keep `GEOAPIFY_API_KEY` in `apps/web/.env`
+   and run `pnpm dev:netlify`. The optional web/native keys need not be
+   present in development.
+5. Confirm the map config function returns HTTP 200 without logging
+   or documenting either key. Confirm the map still renders in the website
+   and note which Geoapify key the project Statistics attributes its usage to:
 
    ```text
    /.netlify/functions/map-tile-config
    ```
 
-6. Verify the guardian map, admin fleet map, routes map, and route-stop editor.
-   Confirm the attribution remains visible at every supported screen size.
+6. Verify the guardian map, admin fleet map, routes map, and route-stop editor,
+   and that no provider 403/429 errors occur. Confirm attribution at supported
+   screen sizes. Test the selected Android native version before replacing its
+   key or applying mobile-specific restrictions.
+7. If the web key is rejected by Geoapify, **rollback only**
+   `GEOAPIFY_WEB_API_KEY` in Netlify and redeploy; the previous legacy key
+   still serves the website. Do not remove the old Geoapify key until both
+   production web and signed Android distribution are verified.
 
 ## Reliability and cost controls
 
