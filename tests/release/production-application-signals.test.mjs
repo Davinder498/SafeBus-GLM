@@ -87,7 +87,7 @@ test('idle production snapshot is healthy without any synthetic trips or notific
   assert.deepEqual(checks.map(x => x.check), APPLICATION_SIGNAL_NAMES);
   assert.equal(checks.some(x => x.result === 'fail'), false);
   assert.deepEqual(checks[1], { check: 'app_gps_freshness', result: 'pass', mode: 'idle' });
-  assert.equal(fake.seen.filter(x => x.options.method === 'HEAD').length, 4);
+  assert.equal(fake.seen.filter(x => x.options.method === 'HEAD').length, 5);
   for (const observed of fake.seen) {
     assert.equal(observed.options.redirect, 'error');
     assert.ok(observed.options.signal);
