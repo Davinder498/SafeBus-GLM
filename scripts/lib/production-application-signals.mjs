@@ -1,7 +1,7 @@
 // Production-only, aggregate-only operations probes. No identifiers, coordinates,
 // response bodies, arbitrary errors or credentials enter logs or notifications.
 // The service API key stays only in Netlify Functions and is used for HEAD counts.
-// Read-only HEAD requests do not mutate customer data or bypass product UI RLS.
+// Service credentials bypass RLS, so use only fixed HEAD aggregates; no rows are read.
 export const APPLICATION_SIGNAL_NAMES = [
   'app_database',
   'app_gps_freshness',
