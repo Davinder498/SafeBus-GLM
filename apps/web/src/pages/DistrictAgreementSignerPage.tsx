@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
-import { agreementKinds, districtAgreementRequest, type AgreementKind, type SignerPreview } from '@/services/districtAgreementService';
+import { agreementKinds, downloadAgreementCopy, districtAgreementRequest, type AgreementKind, type SignerPreview } from '@/services/districtAgreementService';
 
 function getLinkToken() {
   const query = new URLSearchParams(window.location.hash.replace(/^#/,''));
@@ -70,6 +70,11 @@ export function DistrictAgreementSignerPage() {
     <p className="mt-2 text-sm leading-6 text-[var(--color-text-muted)]">
      SafeBus must countersign and complete the required privacy and operational approvals before the district can activate its transportation service. A completed signature is not proof that service has been activated.
     </p>
+    {preview&&<Button className="mt-5" variant="secondary" onClick={()=>downloadAgreementCopy({
+      revision:preview.revision,bundleHash:preview.bundleHash,
+      documents:preview.documents,status:'customer_signed',
+      customerSignerName:preview.signerName,customerSignerTitle:preview.signerTitle,
+    })}>Download customer-signed agreement copy</Button>}
    </Card>}
    {preview&&!finished&&<>
     <Card className="mb-5 p-5">
