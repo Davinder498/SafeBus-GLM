@@ -38,6 +38,52 @@ write data, test notification delivery, or exercise driver/guardian workflows.
 It therefore does not establish an SLA or prove database, Auth, Realtime,
 provider-tile, email-delivery, or end-to-end availability.
 
+## Staged, privacy-safe application signals (2026-11-06)
+
+The existing Netlify `production-health-scheduled` function can run **six
+additional read-only signals** when its production Functions environment
+contains `SAFEBUS_APPLICATION_MONITOR_ENABLED=true`. The flag defaults to
+**off**. Merging and deploying the code does not activate the probes, create
+monitoring approval, purchase a vendor, or send new kinds of alerts.
+
+- **Database:** exact count-only REST/HEAD request for active driver trips.
+  An HTTP 200 page alone is not considered database health.
+- **GPS freshness:** count only established `active` trips older than
+  three minutes and check latest positions updated within two minutes. A
+  paused, completed, cancelled, or just-started trip is not stale. If no
+  qualifying active trip exists, record `pass` with `mode: idle`.
+- **Email and push:** count deliveries with pending/retry/processing
+  statuses older than twenty minutes (created timestamp), independently.
+  These are preliminary operations signals, not approved delivery SLAs.
+- **Delivery failure spike:** email and push rows with failed status
+  created within the previous hour. Ten or more records trigger a signal.
+  Historical failures outside the window do not cause ongoing alarms.
+- **Map tiles:** retrieve the published fixed map configuration and one
+  bounded Geoapify tile using the website's expected Referer. This detects
+  one working tile response, not quota headroom, full provider availability,
+  or user map renderability.
+- **Alert delivery:** each failure uses a fixed template and the existing
+  Resend six-hour deduplication window. Provider acceptance is not recipient
+  receipt. No arbitrary exception/provider body enters the alert.
+
+The only database requests are HTTP `HEAD` count queries with exact filters;
+no rows or coordinates are returned, and no tenant/user/record identifier
+enters logs. A server-only Supabase key remains in the existing Netlify
+Functions environment; it must never be exposed via a public endpoint or in
+source. These probes do not add or change RLS, database objects, RPCs or
+customer workflows. An unavailable probe fails with a fixed non-secret code
+and cannot be reported as healthy. Backend queries are isolated from the
+GitHub/public health probes so a subsystem failure does not hide another.
+
+**Activation and evidence still needed:** inspect a complete protected
+Netlify invocation with real count responses, confirm all exact-HEAD queries
+work with current Supabase credentials, evaluate alert volumes and response
+owners, complete a safe synthetic failure drill with inbox receipt, and
+explicitly authorize `SAFEBUS_APPLICATION_MONITOR_ENABLED=true` in Netlify.
+The proposed thresholds require Operations approval. Until then the
+additional checks are staged, not continuously active. The full seven-day
+monitoring and final Point 9 readiness gates remain open.
+
 ## Alert and incident contract
 
 A failed scheduled run is a durable GitHub Actions failure. Before Point 9 can
