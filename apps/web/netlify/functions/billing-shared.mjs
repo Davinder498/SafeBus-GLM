@@ -126,6 +126,21 @@ export async function requireBillingCaller(
     if (failure) return { error: json(failure.statusCode, { error: failure.message }) };
   }
 
+  // A service-role Stripe operation bypasses PostgREST RLS. Enforce the
+  // school authority contract gate explicitly before even reading catalog,
+  // invoice or subscription state. No customer, subscription or invoice is
+  // created for an unapproved new district.
+  if (profile.role === 'tenant_admin') {
+    const { data: agreement, error: agreementError } =
+      await clients.user.rpc('get_district_agreement_status_secure');
+    if (agreementError || !agreement || typeof agreement !== 'object') {
+      return { error: json(503, { error: 'Unable to verify the school authority agreement.' }) };
+    }
+    if (agreement.required === true && agreement.state !== 'active') {
+      return { error: json(403, { error: 'Complete the school authority agreement before billing.' }) };
+    }
+  }
+
   const rateLimit = await clients.user.rpc('check_rate_limit', {
     p_action: rateLimitAction,
     p_actor_identifier: profile.id,
