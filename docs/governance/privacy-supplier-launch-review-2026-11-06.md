@@ -88,3 +88,7 @@ Do not change implementation or promises to match draft placeholders. Use the ex
 The following all remain **not approved**: `docs/governance/privacy-readiness.json`, `docs/governance/map-readiness.json`, `docs/governance/operations-readiness.json`, customer activation, supplier/cross-border authorization and general commercial launch. There is no executed customer agreement in the reviewed sources. This report supplies **review/evidence requests** only, not an approval ID, validity period, released evidence digest, vendor signature or actual negotiated SLA.
 
 **Owner-facing next action:** work down the P0 supplier ledger, then resolve the MSA/DPA/SLA owner-decision worksheet. Once source documents and evidence are privately available, reconcile them here using **only non-secret references** and run the protected privacy and operations readiness checks before any approval attempt.
+
+## Supporting machine-readable working register
+
+The [supplier approval evidence ledger](phase-3/supplier-approval-ledger-2026-11-06.json) records each supplier's enabled/conditional purpose, bounded observations, required private evidence and explicit pending decision. It is a checklist and is **not** an alternate release authorization. The protected `privacy-readiness.json` gate is the only release-controlled privacy approval record, and remains `not_approved`.
