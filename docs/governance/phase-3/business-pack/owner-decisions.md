@@ -86,3 +86,18 @@ condition is met, approve a particular customer's schedule, or authorize turning
 on deletion. Scoped holds, cascades, supplier handling and protected technical
 acceptance remain required. Do not mark readiness approved from this conditional
 statement or from a source merge.
+
+## First nonzero billing and tax evidence — November 7, 2026
+
+A read-only live Stripe review has now confirmed one paid **CAD 1.99** recurring
+subscription invoice and one corresponding paid invoice-payment record. The same
+invoice reports `automatic_tax.enabled=false` and no charged tax. The account's
+Stripe Tax settings are active with a Canadian registration entry, but the owner
+has not provided actual CRA registration evidence or decided the appropriate
+tax treatment. See the [restricted-data-safe review](../../../../qa/first-paid-invoice-tax-review-2026-11-07.md).
+
+This resolves only the earlier “first nonzero payment not observed” technical
+checkpoint. It does **not** verify tax accuracy, Stripe email delivery, merchant
+bank settlement, customer pricing acceptance or commercial launch. Do not alter
+tax configuration or issue corrective financial documents without an approved
+finance decision and documented customer treatment.
