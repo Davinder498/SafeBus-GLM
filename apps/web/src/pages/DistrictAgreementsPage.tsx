@@ -1,7 +1,7 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { Building2, CheckCircle2, FilePenLine, ShieldCheck, ArrowLeft } from 'lucide-react';
-import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
+import { CheckCircle2, FilePenLine, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { DashboardLayout, adminNavGroups, platformNavItems } from '@/components/layout/DashboardLayout';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -50,7 +50,7 @@ export function DistrictAgreementsPage() {
   privacy:'',operations:'',pilot:'',supplier:'',security:'',
  });
 
- async function refresh() {
+ const refresh=useCallback(async () => {
    try {
      const next=platform
        ? await getPlatformAgreementStatus(tenantId ?? '')
@@ -60,8 +60,8 @@ export function DistrictAgreementsPage() {
    } catch (err) {
      setError(err instanceof Error?err.message:'Could not load agreement status.');
    } finally {setLoading(false);}
- }
- useEffect(()=>{setLoading(true);void refresh();},[platform,tenantId]);
+ },[platform,tenantId]);
+ useEffect(()=>{setLoading(true);void refresh();},[refresh]);
 
  async function act(body:Record<string,unknown>,message:string) {
    setBusy(true);setError(null);setSuccess(null);
@@ -92,7 +92,7 @@ export function DistrictAgreementsPage() {
     'Versioned agreement package issued. An authorized officer must now be verified and invited.');
  };
  return (
-  <DashboardLayout title="District agreements" portal="admin" navItems={[]} navGroups={adminNavGroups}>
+  <DashboardLayout title="District agreements" portal="admin" navItems={platform?platformNavItems:[]} navGroups={platform?undefined:adminNavGroups}>
    <div className="space-y-5">
     <div className="flex flex-wrap items-center gap-3">
       <Button variant="ghost" onClick={()=>navigate(platform?'/admin/tenants':'/admin/settings')}>
