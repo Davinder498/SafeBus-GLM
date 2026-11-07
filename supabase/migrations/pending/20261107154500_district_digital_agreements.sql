@@ -171,6 +171,26 @@ $$;
 revoke all on function safebus_private.district_contract_access_allowed() from public,anon;
 grant execute on function safebus_private.district_contract_access_allowed() to authenticated,service_role;
 
+-- The pre-request wrapper must not rely on ordinary tenant RLS to
+-- determine whether a request is gated, because a denied tenant lookup
+-- could otherwise be mistaken for an ungated account.
+create function safebus_private.district_contract_pending()
+returns boolean language sql stable security definer
+set search_path=pg_catalog,public,safebus_private,auth,pg_temp
+as $
+  select exists (
+    select 1 from public.profiles p
+    join public.tenants t on t.id=p.tenant_id
+    where p.id=auth.uid() and p.status='active' and t.agreement_gate_required
+      and not exists (
+        select 1 from safebus_private.district_agreement_packages a
+        where a.tenant_id=p.tenant_id and a.status='active'
+      )
+  );
+$;
+revoke all on function safebus_private.district_contract_pending() from public,anon;
+grant execute on function safebus_private.district_contract_pending() to authenticated,service_role;
+
 -- Preserve existing hardened role, tenant and school helpers unchanged.
 -- SQL policies and the verified PostgREST hook below enforce contract status
 -- without overwriting MFA, session or legacy-role changes from later releases.
@@ -188,11 +208,7 @@ declare v_path text := ltrim(current_setting('request.path',true),'/');
 begin
   perform safebus_private.enforce_active_api_session();
   if auth.role()='service_role' then return; end if;
-  if auth.uid() is not null
-    and not safebus_private.district_contract_access_allowed()
-    and exists(select 1 from public.profiles p join public.tenants t on t.id=p.tenant_id
-      where p.id=auth.uid() and p.status='active' and t.agreement_gate_required)
-  then
+  if safebus_private.district_contract_pending() then
     if (v_path='profiles' and v_method in ('GET','HEAD'))
       or (v_path in (
         'rpc/register_current_user_session','rpc/record_own_auth_event',
