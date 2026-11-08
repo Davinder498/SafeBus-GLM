@@ -74,6 +74,9 @@ const PlatformAgreementsPage = lazy(() =>
 const DistrictAgreementsPage = lazy(() =>
   import('@/pages/DistrictAgreementsPage').then((page) => ({ default: page.DistrictAgreementsPage })),
 );
+const ParticipantAgreementsPage = lazy(() =>
+  import('@/pages/ParticipantAgreementsPage').then((page) => ({ default: page.ParticipantAgreementsPage })),
+);
 const AdminSettingsPage = lazy(() =>
   import('@/pages/AdminSettingsPage').then((page) => ({ default: page.AdminSettingsPage })),
 );
@@ -185,6 +188,14 @@ export const appRoutes: RouteObject[] = [
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/update-password', element: <UpdatePasswordPage /> },
   { path: '/privacy', element: <PrivacyPolicyPage /> },
+  {
+    path: '/participant/agreements',
+    element: (
+      <ProtectedRoute allowedRoles={['driver', 'guardian']}>
+        <ParticipantAgreementsPage />
+      </ProtectedRoute>
+    ),
+  },
   { path: '/account-deletion', element: <AccountDeletionPage /> },
   {
     path: '/support',

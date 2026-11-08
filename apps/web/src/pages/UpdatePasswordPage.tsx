@@ -93,7 +93,10 @@ export function UpdatePasswordPage() {
       navigate(
         nextProfile.role === 'tenant_admin' && profile?.status === 'invited'
           ? '/admin/onboarding/agreements'
-          : getDashboardPath(nextProfile.role),
+          : profile?.status === 'invited' &&
+              (nextProfile.role === 'driver' || nextProfile.role === 'guardian')
+            ? '/participant/agreements'
+            : getDashboardPath(nextProfile.role),
         { replace: true },
       );
     } catch (updateError) {

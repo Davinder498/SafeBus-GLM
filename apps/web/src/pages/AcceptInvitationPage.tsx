@@ -56,7 +56,9 @@ export function AcceptInvitationPage() {
       navigate(
         nextProfile.role === 'tenant_admin'
           ? '/admin/onboarding/agreements'
-          : getDashboardPath(nextProfile.role),
+          : nextProfile.role === 'driver' || nextProfile.role === 'guardian'
+            ? '/participant/agreements'
+            : getDashboardPath(nextProfile.role),
         { replace: true },
       );
     } catch (setupError) {

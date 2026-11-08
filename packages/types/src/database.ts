@@ -56,6 +56,13 @@ export type Database = Omit<HostedDatabase, 'public'> & {
     };
     Functions: HostedDatabase['public']['Functions'] & {
       get_my_district_agreement: { Args: Record<string, never>; Returns: Json };
+      get_my_participant_agreement: { Args: Record<string, never>; Returns: Json };
+      accept_my_participant_agreement: { Args: {
+        p_document_id: string; p_terms_sha256: string;
+        p_terms_accepted: boolean; p_notice_acknowledged: boolean;
+      }; Returns: Json };
+      platform_get_participant_terms: { Args: Record<string, never>; Returns: Json };
+      platform_publish_participant_terms: { Args: { p_document_id: string }; Returns: Json };
       get_platform_district_agreement: { Args: { p_tenant_id: string }; Returns: Json };
       accept_my_district_agreement: { Args: {
         p_package_id: string; p_bundle_sha256: string;
