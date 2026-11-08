@@ -44,6 +44,15 @@ describe('platform privacy boundary routing', () => {
     expect(paths.some((path) => path === '/parent' || path?.startsWith('/guardian'))).toBe(false);
   });
 
+  it('registers the approved participant agreement route on the native mobile surface', () => {
+    const participant = mobileRoutes.find((route) => route.path === '/participant/agreements');
+    expect(participant).toBeDefined();
+    const permittedRoles = JSON.stringify(participant?.element);
+    expect(permittedRoles).toContain('driver');
+    expect(permittedRoles).toContain('guardian');
+    expect(permittedRoles).not.toContain('tenant_admin');
+  });
+
   it('keeps driver and guardian routes in the mobile app without admin dashboards', () => {
     const paths = mobileRoutes.map((route) => route.path);
     expect(paths).toContain('/driver');
