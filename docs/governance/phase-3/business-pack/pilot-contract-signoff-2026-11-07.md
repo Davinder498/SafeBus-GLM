@@ -15,6 +15,8 @@ Alberta's POPA applies to school boards and requires public bodies to assess the
 
 **Evidence rule:** Keep corporate registration documents, insurance certificates, vendor account screenshots, tax records, contract versions, customer identifiers, signed orders, legal advice, names and contact details **out of GitHub**. Store them with the owner in restricted company records and put only non-sensitive evidence references in the formal privacy/supplier approval process. Do not add a `status=approved` entry without actual competent human acceptance.
 
+**November 8 follow-up:** The [public-source supplier DPA, insurance and district contract review](supplier-dpa-insurance-contract-review-2026-11-08.md) confirms provider-by-provider incorporation/signing routes and online quote options. This does **not** approve any business account or create insurance coverage. The owner has confirmed live Stripe prices are **temporary and must remain unchanged**; binding Order Form pricing is still pending.
+
 ## 1. Decisions the business owner can make before selecting a school district
 
 | Decision | What must be decided or checked | State |
@@ -57,7 +59,7 @@ This is **not** a vendor approval or a statement that all flows are Canada-only.
 | Supabase | Service account/legal party and DPA; Canada Central project; Auth/storage/backups/logs/support access and subprocessor countries; retention/incident/security terms | Account terms, primary and other processing locations, data categories, and decision owner recorded |
 | Netlify | Actual legal account/DPA; function, CDN/request, build and log locations; expiry, support access, privacy/security incident process | Written/portal evidence matches enabled use of web/functions/operational logs |
 | Resend | Account party/DPA; recipient/content and delivery metadata; US processing, expiration, tracking and third parties; request/incident assistance | Actual sending service, recipient impact and expiry recorded; one delivered operations alert is *technical* evidence only |
-| Zoho Mail | Contracting entity and applicable DPA route; account data centre vs Canadian MX routing; email retention/trash/backup; support access and secure privacy-request intake | Actual account region and processing terms confirmed rather than inferred from MX records |
+| Zoho Mail — business correspondence | Confirm mailbox security, ordinary business-email scope, service terms, account data centre vs Canadian MX routing, retention/trash/backup, support access and procedure for unsolicited personal information | **Not automatically a transport-data subprocessor or district DPA publication blocker.** Seek a separate Zoho DPA only if the actual account processing, law or accepted district contract makes one necessary. |
 | Geoapify | Actual API account/terms/DPA applicability; map tile/IP/viewport/referrer request processing, countries and log handling; project key lifecycle, quota/SLA and outage support | Map provider privacy, operational boundaries and selected pilot plan accepted |
 | Google FCM (conditional) | Actual Firebase project and terms; opt-in push payload/token scope, global support and deletion timelines; physical Android flow | Approved notification use and supplier path; device acceptance is still separately deferred |
 | Stripe (paid scope) | Seller/entity/terms, billing-only data, tax and financial records, countries, allowed billing practices; first paid invoice/receipt evidence | Actual contracts and owner finance decisions accepted; never include student roster or raw GPS in billing |

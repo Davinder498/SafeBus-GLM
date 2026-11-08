@@ -80,6 +80,10 @@ records and confidential provider evidence in restricted storage. Git contains
 drafts and non-secret evidence references only. `privacy-readiness.json` remains
 `not_approved`; it is activated only after the actual Point 6 evidence passes.
 
+## November 8 supplier, insurance and contract reconciliation
+
+The [sourced supplier DPA and online insurance review](supplier-dpa-insurance-contract-review-2026-11-08.md) distinguishes **publicly incorporated processing terms** from **verified SafeBus account acceptance**, gives online insurance quotation paths without inventing premiums, and records remaining district MSA/DPA publication dependencies. The owner confirmed existing Stripe prices are **temporary and unchanged**; they are not approved contract prices. The independently approved and published driver/guardian Terms of Use version 2026.1 does **not** approve this district draft pack.
+
 ## 2026-11-06 launch approval review
 
 Use the consolidated [privacy, supplier and commercial gap analysis](../../privacy-supplier-launch-review-2026-11-06.md) and [pending supplier evidence ledger](../supplier-approval-ledger-2026-11-06.json) before completing owner decisions or circulating customer documents for signature. The pack remains draft, the supplier agreements have **not** been accepted as proven for the actual business accounts, and the customer-specific PIA/contracting authority has not been verified. Confirm each negotiated field and signed version in restricted storage; do not put customer names, signatories, contract scans, private URLs, or credentials in Git.

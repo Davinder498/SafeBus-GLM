@@ -1,10 +1,10 @@
 {
   "format": 1,
-  "reviewedAt": "2026-11-06",
+  "reviewedAt": "2026-11-08",
   "scope": "SafeBus Alberta public school authority CR1 — account-specific supplier evidence",
   "releaseBaseline": "f2f3d367131dd0a1671b16befeda0f3c45e02bf4",
   "overallStatus": "not_approved",
-  "statement": "Inventory and public terms do not authorize customer processing. Real contracts and copies are stored outside Git; this record must contain no customer data, credentials, signatories, contract parties or links with private tokens.",
+  "statement": "Inventory and public terms do not authorize customer processing. Real contracts and copies are stored outside Git; this record must contain no customer data, credentials, signatories, contract parties or links with private tokens. 2026-11-08 read-only verification identified a P0 FCM generic-preview transport mismatch; no vendor or readiness approval follows.",
   "evidenceLegend": {
     "verified-project": "Technical observation only, not a vendor contract or processing-location guarantee",
     "public-terms-reviewed": "Public material reviewed; account acceptance unverified",
@@ -18,7 +18,9 @@
       "serviceStatus": "enabled",
       "observedFacts": [
         "active_project_canada_central",
-        "postgres_17"
+        "postgres_17",
+        "connected_production_project_ca_central_1_healthy_2026_11_08",
+        "connected_org_display_name_not_company_evidence"
       ],
       "status": "account-evidence-pending",
       "priority": "P0",
@@ -37,7 +39,10 @@
       "purpose": "website_functions_cdn_logs",
       "serviceStatus": "enabled",
       "observedFacts": [
-        "production_web_published"
+        "production_web_published",
+        "authenticated_dashboard_terms_unverified_extension_host_permission_blocked",
+        "hosted_notification_worker_processes_recipient_and_message_content",
+        "repo_netlify_config_no_explicit_functions_region_live_region_unverified"
       ],
       "status": "account-evidence-pending",
       "priority": "P0",
@@ -46,7 +51,8 @@
         "functions_cdn_logs_countries",
         "access_and_retention",
         "security_incident_assistance",
-        "privacy_owner_decision"
+        "privacy_owner_decision",
+        "verify_actual_function_execution_region_and_account_plan"
       ],
       "evidenceReferences": [],
       "decision": null
@@ -56,7 +62,10 @@
       "purpose": "authentication_invitations_notifications_operations_alerts",
       "serviceStatus": "enabled",
       "observedFacts": [
-        "operations_email_received"
+        "operations_email_received",
+        "deployed_email_can_include_student_full_name_and_bus_number",
+        "aggregate_8_student_pickup_dropoff_email_outbox_delivered",
+        "resend_public_dpa_pre_signed_on_signup_us_content_storage_30_day_standard"
       ],
       "status": "account-evidence-pending",
       "priority": "P0",
@@ -72,20 +81,21 @@
     },
     {
       "id": "zoho",
-      "purpose": "support_privacy_business_mailbox",
+      "purpose": "ordinary_business_mailbox_no_intentional_transport_data",
       "serviceStatus": "enabled",
       "observedFacts": [
         "business_mailbox_active",
-        "canadian_mx_routing_observed"
+        "canadian_mx_routing_observed",
+        "owner_states_business_email_only_no_school_transport_data_use_2026_11_08"
       ],
       "status": "account-evidence-pending",
-      "priority": "P0",
+      "priority": "P2",
       "required": [
-        "legal_party_dpa_process",
-        "account_data_centre_storage_support",
-        "trash_backup_log_retention",
-        "privacy_requests_access_controls",
-        "privacy_owner_decision"
+        "ordinary_business_correspondence_scope_verified",
+        "mailbox_service_terms_and_account_data_centre",
+        "mail_access_security_and_retention",
+        "unsolicited_sensitive_information_handling",
+        "conditional_dpa_review_only_if_actual_scope_or_contract_requires"
       ],
       "evidenceReferences": [],
       "decision": null
@@ -96,7 +106,9 @@
       "serviceStatus": "enabled",
       "observedFacts": [
         "web_referer_filter_configured",
-        "web_basemap_rendered"
+        "web_basemap_rendered",
+        "application_map_tiles_use_maps_geoapify_com_not_eu_only_endpoint_2026_11_08",
+        "current_tile_host_maps_geoapify_com_not_eu_only_api_host"
       ],
       "status": "account-evidence-pending",
       "priority": "P0",
@@ -115,17 +127,22 @@
       "purpose": "opt_in_android_push",
       "serviceStatus": "conditionally_enabled",
       "observedFacts": [
-        "push_delivery_product_flow_present"
+        "push_delivery_product_flow_present",
+        "deployed_push_uses_detailed_notification_copy_without_generic_preview_redaction",
+        "aggregate_10_student_event_push_outbox_delivered_all_generic_preference",
+        "google_fcm_terms_both_google_apis_and_firebase_processing_terms"
       ],
       "status": "account-evidence-pending",
-      "priority": "P0",
+      "priority": "P0-privacy-release-blocker",
       "required": [
         "project_party_terms",
         "recipient_and_installation_identifier_retention",
         "data_countries_subprocessors",
         "device_token_deletion_proof",
         "physical_mobile_acceptance",
-        "privacy_owner_decision"
+        "privacy_owner_decision",
+        "server_side_generic_preview_redaction_verified",
+        "student_push_provider_disclosure_privacy_review"
       ],
       "evidenceReferences": [],
       "decision": null
@@ -135,7 +152,9 @@
       "purpose": "business_subscription_payments",
       "serviceStatus": "live_account_connected",
       "observedFacts": [
-        "safebus_account_live_mode"
+        "safebus_account_live_mode",
+        "connected_livemode_account_company_identity_matches_sachman_gold_inc_2026_11_08",
+        "charges_and_payouts_enabled"
       ],
       "status": "account-evidence-pending",
       "priority": "P0",
