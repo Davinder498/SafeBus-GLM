@@ -50,7 +50,7 @@ create trigger participant_agreement_receipts_immutable
 
 create function safebus_private.require_participant_agreement()
 returns trigger language plpgsql security definer
-set search_path=pg_catalog,public,safebus_private,pg_temp as $
+set search_path=pg_catalog,public,safebus_private,pg_temp as $$
 declare v_changed boolean;
 begin
   if tg_op='INSERT' then
