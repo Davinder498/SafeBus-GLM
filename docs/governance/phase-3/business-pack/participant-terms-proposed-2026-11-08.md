@@ -1,6 +1,8 @@
 # SafeBus Terms of Use — Driver and Guardian Accounts
 
-**DRAFT FOR BUSINESS APPROVAL — NOT PUBLISHED OR EFFECTIVE**
+**Owner-approved wording: November 8, 2026 — NOT YET PUBLISHED OR EFFECTIVE.**
+
+*Approval is limited to the wording of this driver/guardian document. It does not approve a production release, digital publication, school-authority contract, supplier compliance, or commercial launch.*
 
 **Service operator:** Sachman Gold Inc., operating the SafeBus service
 **Customer:** The Alberta school authority that invited you
