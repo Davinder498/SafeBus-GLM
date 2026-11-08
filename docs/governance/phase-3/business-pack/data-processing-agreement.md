@@ -133,6 +133,10 @@ is returned and disposed of under the Data Return and Destruction Schedule.
 Account disablement, unlinking, primary deletion and backup expiry are separate
 actions. Do not certify full erasure unless its actual scope is verified.
 
+### Publication prerequisite — supplier evidence review (2026-11-08)
+
+The [current public-source supplier DPA review](supplier-dpa-insurance-contract-review-2026-11-08.md) identifies incorporated terms for Supabase, Netlify, Resend and Stripe, separately available Geoapify processing terms, Zoho's organization-admin e-sign route and conditional Firebase terms. **These findings do not establish actual SafeBus-account acceptance, coverage, geographic restrictions or suitability for a public school authority.** Complete the real account-specific supplier/country appendix and customer permission decisions before signing. Do not treat the separately published driver/guardian Terms of Use as approval of the district's acceptable-use schedule, and do not publish a global contract package with the temporary Stripe prices as though the owner had approved them.
+
 ## 8. Completion and review
 
 Complete the customer authority/notice appendix, suppliers/countries, request

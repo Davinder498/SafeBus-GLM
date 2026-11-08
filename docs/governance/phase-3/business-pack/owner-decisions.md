@@ -61,6 +61,12 @@ signing authority, liability amount or publication approval is inferred.
 Owner approval of a draft business position does not record a customer signature,
 make a technical safeguard pass, or activate the Point 6 launch record.
 
+## Temporary Stripe catalog values — November 8, 2026 (owner directive)
+
+The owner expressly confirmed that the live Stripe subscription prices **CA$1.99 per active bus/month** and **CA$20.29 per active bus/year** are **temporary testing values, not finalized commercial prices**. The owner instructed SafeBus to **leave both prices exactly as they are** and decide later when and how to change them. No authorization to edit Stripe products/prices, billing UI, historical invoices, active customer subscriptions, tax configuration or invoicing follows from this decision. Do not silently publish these values as binding price commitments in the district Order Form or claim that an alternative market benchmark has been approved. Reconcile any existing live customer obligations before future changes.
+
+A public-source supplier DPA and insurance review, including contract publication dependencies, is recorded in [November 8 review](supplier-dpa-insurance-contract-review-2026-11-08.md).
+
 ## Subscription setup assistance — confirmed owner clarification, 2026-11-05
 
 Setup assistance is included with the subscription. The SafeBus team helps

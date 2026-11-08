@@ -15,6 +15,8 @@ Alberta's POPA applies to school boards and requires public bodies to assess the
 
 **Evidence rule:** Keep corporate registration documents, insurance certificates, vendor account screenshots, tax records, contract versions, customer identifiers, signed orders, legal advice, names and contact details **out of GitHub**. Store them with the owner in restricted company records and put only non-sensitive evidence references in the formal privacy/supplier approval process. Do not add a `status=approved` entry without actual competent human acceptance.
 
+**November 8 follow-up:** The [public-source supplier DPA, insurance and district contract review](supplier-dpa-insurance-contract-review-2026-11-08.md) confirms provider-by-provider incorporation/signing routes and online quote options. This does **not** approve any business account or create insurance coverage. The owner has confirmed live Stripe prices are **temporary and must remain unchanged**; binding Order Form pricing is still pending.
+
 ## 1. Decisions the business owner can make before selecting a school district
 
 | Decision | What must be decided or checked | State |
