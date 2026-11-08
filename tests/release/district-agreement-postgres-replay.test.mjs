@@ -112,4 +112,69 @@ test('district MSA/DPA migration: isolated Postgres replay, clickwrap, scoped re
   const other=(await one('select public.get_my_district_agreement() a')).a;
   assert.equal(other.status,'issued');
   assert.notEqual(other.bundle_sha256,pkg.bundle_sha256);
+  // Independently verify the forward-only participant agreement extension in
+  // the same isolated PostgreSQL database, with no production accounts.
+  const participantSql = await readFile(
+    'supabase/migrations/pending/20261108130000_participant_terms_onboarding.sql', 'utf8',
+  );
+  await db.exec(participantSql);
+  await asUser(IDS.guardian);
+  assert.equal((await one('select public.get_my_participant_agreement() x')).x.required,false);
+
+  const newDriver='00000000-0000-4000-8000-000000000005';
+  await db.query('insert into auth.users(id) values ($1)',[newDriver]);
+  await db.query("insert into public.profiles(id,tenant_id,role,full_name,email) values ($1,$2,'driver','New Driver','new-driver@example.test')",[
+    newDriver,IDS.tenant1,
+  ]);
+  assert.equal((await one('select count(*)::int n from safebus_private.participant_agreement_requirements')).n,1);
+  assert.equal((await one('select count(*)::int n from safebus_private.participant_agreement_acceptances')).n,0);
+  await asUser(newDriver);
+  const beforeTerms=(await one('select public.get_my_participant_agreement() x')).x;
+  assert.equal(beforeTerms.required,true);
+  assert.equal(beforeTerms.status,'not_published');
+
+  assert.equal((await one("select has_function_privilege('anon','public.accept_my_participant_agreement(uuid,text,boolean,boolean)','EXECUTE') allowed")).allowed,false);
+  await asUser(IDS.guardian);
+  await assert.rejects(one('select public.platform_publish_participant_terms($1::uuid) x',[ids[0]]),/role cannot|cannot manage/i);
+
+  await asUser(IDS.platform);
+  const participantDoc=(await one("select id,sha256 from safebus_private.agreement_document_versions where kind='acceptable_use'")).id;
+  const publish=(await one('select public.platform_publish_participant_terms($1::uuid) x',[participantDoc])).x;
+  assert.equal(publish.published,true);
+  await asUser(newDriver);
+  const available=(await one('select public.get_my_participant_agreement() x')).x;
+  assert.equal(available.required,true);
+  assert.equal(available.status,'pending');
+  assert.equal(available.terms.id,participantDoc);
+  assert.equal(available.notice.url,'/privacy#drivers');
+
+  const submit=(digest,terms,notice)=>one('select public.accept_my_participant_agreement($1::uuid,$2,$3::boolean,$4::boolean) x',[
+    available.terms.id,digest,terms,notice,
+  ]);
+  await assert.rejects(submit(available.terms.sha256,true,false),/Review and affirm/i);
+  await assert.rejects(submit('0'.repeat(64),true,true),/Terms changed/i);
+  assert.equal((await submit(available.terms.sha256,true,true)).x.status,'accepted');
+  assert.equal((await submit(available.terms.sha256,true,true)).x.replayed,true);
+  const signed=(await one('select public.get_my_participant_agreement() x')).x;
+  assert.equal(signed.status,'accepted');
+  assert.equal((await one('select count(*)::int n from safebus_private.participant_agreement_acceptances')).n,1);
+  await assert.rejects(db.query('update safebus_private.participant_agreement_acceptances set terms_snapshot=$1',[
+    'tampered',
+  ]),/immutable/i);
+
+  // Changing a participant's role or school authority requires a new scoped receipt.
+  await db.query("update public.profiles set role='guardian' where id=$1",[newDriver]);
+  const asGuardian=(await one('select public.get_my_participant_agreement() x')).x;
+  assert.equal(asGuardian.status,'pending');
+  assert.equal(asGuardian.notice.url,'/privacy#guardians');
+  assert.equal((await submit(asGuardian.terms.sha256,true,true)).x.status,'accepted');
+  await db.query('update public.profiles set tenant_id=$1 where id=$2',[IDS.tenant2,newDriver]);
+  const asOtherTenant=(await one('select public.get_my_participant_agreement() x')).x;
+  assert.equal(asOtherTenant.status,'pending');
+  assert.equal((await submit(asOtherTenant.terms.sha256,true,true)).x.status,'accepted');
+  assert.equal((await one('select count(*)::int n from safebus_private.participant_agreement_acceptances')).n,3);
+
+  await asUser(IDS.first);
+  await assert.rejects(one('select public.get_my_participant_agreement() x'),/active driver or guardian/i);
+
 });

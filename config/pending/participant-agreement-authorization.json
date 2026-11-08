@@ -1,0 +1,11 @@
+{
+  "status": "prepared-unapplied",
+  "migration": "supabase/migrations/pending/20261108130000_participant_terms_onboarding.sql",
+  "authenticated": [
+    "accept_my_participant_agreement(uuid,text,boolean,boolean)",
+    "get_my_participant_agreement()",
+    "platform_get_participant_terms()",
+    "platform_publish_participant_terms(uuid)"
+  ],
+  "serviceRole": []
+}

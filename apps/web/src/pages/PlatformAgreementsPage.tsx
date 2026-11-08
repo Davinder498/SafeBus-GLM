@@ -11,6 +11,9 @@ import {
   listPlatformAgreementDocuments,getPlatformAgreementCatalog,publishAgreementCatalog,
   publishAgreementDocument,type AgreementCatalog,type AgreementDocumentVersion,
 } from '@/services/districtAgreementService';
+import {
+  getPublishedParticipantTerms,publishParticipantTerms,type PublishedParticipantTerms,
+} from '@/services/participantAgreementService';
 
 const kinds=[
   {kind:'msa',label:'Master Services Agreement'},
@@ -37,13 +40,17 @@ export function PlatformAgreementsPage() {
   const [notice,setNotice]=useState<string|null>(null);
   const [approved,setApproved]=useState(false);
   const [confirmCatalog,setConfirmCatalog]=useState(false);
+  const [participantTerms,setParticipantTerms]=useState<PublishedParticipantTerms|null>(null);
+  const [participantDocument,setParticipantDocument]=useState('');
+  const [confirmParticipant,setConfirmParticipant]=useState(false);
   const load=useCallback(async()=>{
     setLoading(true);setError(null);
     try {
-      const [docs,latest]=await Promise.all([
+      const [docs,latest,participant]=await Promise.all([
         listPlatformAgreementDocuments(),getPlatformAgreementCatalog(),
+        getPublishedParticipantTerms(),
       ]);
-      setDocuments(docs);setCatalog(latest);
+      setDocuments(docs);setCatalog(latest);setParticipantTerms(participant);
       setChosen(prev=>{
         const next={...prev};
         for(const item of kinds)if(!next[item.kind]){
@@ -77,6 +84,16 @@ export function PlatformAgreementsPage() {
       setNotice('Agreement package published for the district administrator portal.');
       setConfirmCatalog(false);await load();
     }catch(cause){setError(cause instanceof Error?cause.message:'Catalog publication failed.');}
+    finally{setBusy(false);}
+  }
+  async function publishParticipant(){
+    if(busy||!confirmParticipant||!participantDocument)return;
+    setBusy(true);setError(null);setNotice(null);
+    try {
+      await publishParticipantTerms(participantDocument);
+      setNotice('Approved mobile Terms of Use published for driver and guardian invitations.');
+      setConfirmParticipant(false);await load();
+    }catch(cause){setError(cause instanceof Error?cause.message:'Terms publication failed.');}
     finally{setBusy(false);}
   }
   return <DashboardLayout title="Platform Admin" portal="admin" navItems={platformNavItems}>
@@ -185,6 +202,35 @@ export function PlatformAgreementsPage() {
               to="/admin/tenants">Return to school authorities</Link>
           </Card>
         </div>
+        <Card className="space-y-4 p-5">
+          <h2 className="text-lg font-bold text-[var(--color-heading)]">3. Driver and guardian Terms of Use</h2>
+          <p className="text-sm text-[var(--color-text-muted)]">
+            Publish a separately approved Acceptable Use version for mobile participants.
+            This is not the school authority MSA/DPA, and the Privacy Notice remains a separate acknowledgment.
+          </p>
+          <p className="text-sm">Currently published: {participantTerms?.status==='published'
+            ? participantTerms.version : participantTerms?.status==='unavailable'
+              ? 'Pending database installation' : 'None'}</p>
+          <label className="block text-sm font-semibold" htmlFor="participant-terms-document">
+            Approved participant Terms of Use version
+          </label>
+          <select id="participant-terms-document" value={participantDocument}
+            onChange={e=>{setParticipantDocument(e.target.value);setConfirmParticipant(false);}}
+            className="min-h-11 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-2 text-sm">
+            <option value="">Select approved version</option>
+            {documents.filter(d=>d.kind==='acceptable_use').map(d=><option key={d.id} value={d.id}>
+              {d.version} — {d.title}
+            </option>)}
+          </select>
+          <label className="flex min-h-11 items-start gap-3 text-sm">
+            <input type="checkbox" className="mt-1 h-5 w-5" checked={confirmParticipant}
+              onChange={e=>setConfirmParticipant(e.target.checked)}/>
+            I confirm this exact complete version was approved for driver and guardian acceptance.
+            Publishing changes the terms offered to participants; it does not activate optional location or notifications.
+          </label>
+          <Button type="button" disabled={busy||participantTerms?.status==='unavailable'||!confirmParticipant||!participantDocument}
+            loading={busy} onClick={()=>void publishParticipant()}>Publish participant Terms of Use</Button>
+        </Card>
       </>}
     </div>
   </DashboardLayout>;

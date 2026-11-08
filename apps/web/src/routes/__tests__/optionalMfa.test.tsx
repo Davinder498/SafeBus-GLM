@@ -49,7 +49,13 @@ beforeEach(() => {
     signOut: vi.fn(),
     refreshMfa: vi.fn(async () => mocks.auth.mfaStatus),
   } as unknown as AuthContextValue;
-  mocks.rpc.mockResolvedValue({ error: null });
+  // These accounts predate the participant agreement release. Verify the
+  // MFA journey without fabricating a signed participant contract.
+  mocks.rpc.mockImplementation(async (name: string) =>
+    name === 'get_my_participant_agreement'
+      ? { data: { required: false, status: 'grandfathered' }, error: null }
+      : { data: null, error: null },
+  );
   mocks.refreshSession.mockResolvedValue({ error: null });
   mocks.listFactors.mockResolvedValue({ data: { all: [] }, error: null });
   mocks.enroll.mockResolvedValue({

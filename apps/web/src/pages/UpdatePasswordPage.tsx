@@ -14,6 +14,7 @@ import {
 } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 import { useAppSurface } from '@/contexts/AppSurfaceContext';
+import { participantAgreementOnboardingEnabled } from '@/config/participantAgreementRollout';
 
 const minimumPasswordLength = 12;
 
@@ -93,7 +94,10 @@ export function UpdatePasswordPage() {
       navigate(
         nextProfile.role === 'tenant_admin' && profile?.status === 'invited'
           ? '/admin/onboarding/agreements'
-          : getDashboardPath(nextProfile.role),
+          : participantAgreementOnboardingEnabled && profile?.status === 'invited' &&
+              (nextProfile.role === 'driver' || nextProfile.role === 'guardian')
+            ? '/participant/agreements'
+            : getDashboardPath(nextProfile.role),
         { replace: true },
       );
     } catch (updateError) {

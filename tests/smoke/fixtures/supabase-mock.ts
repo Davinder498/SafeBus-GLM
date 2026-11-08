@@ -219,6 +219,13 @@ export async function blockUnexpectedSupabaseRestAccess(
     await route.fulfill({ status: 200, contentType: 'application/json', body: 'true' });
     return;
   }
+  if (method === 'POST' && path === '/rest/v1/rpc/get_my_participant_agreement') {
+    // Existing synthetic accounts predate the new invitation terms migration.
+    // This is a server-returned grandfathering state, never a signed receipt.
+    await route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ required: false, status: 'grandfathered' }) });
+    return;
+  }
   await route.fulfill({
     status: 500,
     contentType: 'application/json',
