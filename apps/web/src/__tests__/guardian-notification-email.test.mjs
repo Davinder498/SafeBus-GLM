@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   buildGuardianEventEmail,
+  sendResendEmail,
   classifyProviderError,
   retryDelaySeconds,
 } from '../../netlify/functions/guardian-notification-email.mjs';
@@ -99,6 +100,43 @@ describe('guardian notification email template', () => {
       notificationBody: '',
     })).toThrow('canonical_notification_copy_required');
   });
+  it('sends only minimized student-event content in the outbound Resend JSON', async () => {
+    const rawName = 'Alex Morgan';
+    const rawBus = 'Bus 12 at Maple School';
+    const rendered = buildGuardianEventEmail({
+      notificationType: 'student_picked_up',
+      notificationTitle: rawName + ' pickup',
+      notificationBody: rawName + ' was picked up on ' + rawBus,
+      eventCreatedAt: '2026-11-08T10:17:00Z',
+    });
+    const request = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: 'provider-message' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', request);
+    try {
+      await expect(sendResendEmail({
+        apiKey: 'test-only-key',
+        from: 'no-reply@example.test',
+        fromName: 'SafeBus',
+        to: 'guardian@example.test',
+        ...rendered,
+        idempotency: 'existing-outbox-id',
+      })).resolves.toEqual({ providerMessageId: 'provider-message' });
+      expect(request.mock.calls[0][0]).toBe('https://api.resend.com/emails');
+      const sent = JSON.parse(request.mock.calls[0][1].body);
+      expect(sent.to).toEqual(['guardian@example.test']);
+      expect(sent.subject).toBe('SafeBus: Pickup recorded');
+      expect(sent.text).toContain('Sign in to SafeBus to view details.');
+      expect(JSON.stringify(sent)).not.toMatch(/Alex Morgan|Bus 12|Maple School|2026-11-08/);
+      expect(request.mock.calls[0][1].headers['Idempotency-Key']).toBe('existing-outbox-id');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
 });
 
 describe('provider error classification', () => {
