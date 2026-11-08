@@ -127,8 +127,18 @@ it('covers all 19 actual alert sources and shares their approved wording across 
             notificationBody: payload.body,
             eventCreatedAt: payload.event_occurred_at,
           });
-          expect(rendered.subject).toBe('SafeBus: ' + payload.title);
-          expect(rendered.text.split('\n')[0]).toBe(payload.body);
+          if (event === 'student_picked_up' || event === 'student_dropped_off') {
+            const label = event === 'student_picked_up' ? 'Pickup' : 'Drop-off';
+            const verb = event === 'student_picked_up' ? 'pickup' : 'drop-off';
+            expect(rendered.subject).toBe('SafeBus: ' + label + ' recorded');
+            expect(rendered.text.split('\n')[0]).toBe(
+              'A ' + verb + ' event has been recorded. Sign in to SafeBus to view details.',
+            );
+            expect(JSON.stringify(rendered)).not.toContain(payload.body);
+          } else {
+            expect(rendered.subject).toBe('SafeBus: ' + payload.title);
+            expect(rendered.text.split('\n')[0]).toBe(payload.body);
+          }
         }
       }
     }
@@ -219,9 +229,13 @@ it('keeps complete Unicode/HTML names and bus labels across all channels without
           notificationBody: payload.body,
           eventCreatedAt: payload.event_occurred_at,
         });
-        expect(rendered.html).toContain('&lt;&amp;&gt;');
-        expect(rendered.html).toContain('&amp; &lt;North&gt;');
-        expect(rendered.text.split('\n')[0]).toBe(expected);
+        expect(rendered.subject).toBe('SafeBus: Pickup recorded');
+        expect(rendered.text.split('\n')[0]).toBe(
+          'A pickup event has been recorded. Sign in to SafeBus to view details.',
+        );
+        expect(JSON.stringify(rendered)).not.toContain(first);
+        expect(JSON.stringify(rendered)).not.toContain(last);
+        expect(JSON.stringify(rendered)).not.toContain(bus);
       }
     }
   }));
@@ -288,7 +302,11 @@ it('uses the approved no-stop pickup/drop-off copy in inbox, push and email thro
               notificationBody: payload.body,
               eventCreatedAt: payload.event_occurred_at,
             }).text.split('\n')[0],
-          ).toBe(notice.body);
+          ).toBe(
+            event === 'student_picked_up'
+              ? 'A pickup event has been recorded. Sign in to SafeBus to view details.'
+              : 'A drop-off event has been recorded. Sign in to SafeBus to view details.',
+          );
       }
       expect(
         await rpc('settle_notification_deliveries', {
