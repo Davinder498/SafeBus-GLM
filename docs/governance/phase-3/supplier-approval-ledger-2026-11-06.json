@@ -75,20 +75,21 @@
     },
     {
       "id": "zoho",
-      "purpose": "support_privacy_business_mailbox",
+      "purpose": "ordinary_business_mailbox_no_intentional_transport_data",
       "serviceStatus": "enabled",
       "observedFacts": [
         "business_mailbox_active",
-        "canadian_mx_routing_observed"
+        "canadian_mx_routing_observed",
+        "owner_states_business_email_only_no_school_transport_data_use_2026_11_08"
       ],
       "status": "account-evidence-pending",
-      "priority": "P0",
+      "priority": "P2",
       "required": [
-        "legal_party_dpa_process",
-        "account_data_centre_storage_support",
-        "trash_backup_log_retention",
-        "privacy_requests_access_controls",
-        "privacy_owner_decision"
+        "ordinary_business_correspondence_scope_verified",
+        "mailbox_service_terms_and_account_data_centre",
+        "mail_access_security_and_retention",
+        "unsolicited_sensitive_information_handling",
+        "conditional_dpa_review_only_if_actual_scope_or_contract_requires"
       ],
       "evidenceReferences": [],
       "decision": null
