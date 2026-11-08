@@ -15,6 +15,7 @@ revoke all on safebus_private.participant_terms_publication from public, anon, a
 
 create table safebus_private.participant_agreement_requirements (
   profile_id uuid primary key references public.profiles(id),
+  required_tenant_id uuid references public.tenants(id),
   required_role text not null check(required_role in ('driver','guardian')),
   required_since timestamptz not null default statement_timestamp()
 );
@@ -37,7 +38,7 @@ create table safebus_private.participant_agreement_acceptances (
   terms_affirmed boolean not null check(terms_affirmed),
   privacy_notice_acknowledged boolean not null check(privacy_notice_acknowledged),
   receipt_sha256 text not null check(receipt_sha256 ~ '^[0-9a-f]{64}$'),
-  unique(profile_id, document_id)
+  unique(profile_id,tenant_id,role,document_id)
 );
 create index participant_agreement_acceptances_profile
   on safebus_private.participant_agreement_acceptances(profile_id,accepted_at desc);
@@ -55,12 +56,14 @@ begin
   if tg_op='INSERT' then
     v_changed:=true;
   else
-    v_changed:=old.role::text is distinct from new.role::text;
+    v_changed:=old.role::text is distinct from new.role::text
+       or old.tenant_id is distinct from new.tenant_id;
   end if;
   if new.role::text in ('driver','guardian') and v_changed then
-    insert into safebus_private.participant_agreement_requirements(profile_id,required_role)
-    values(new.id,new.role::text)
+    insert into safebus_private.participant_agreement_requirements(profile_id,required_tenant_id,required_role)
+    values(new.id,new.tenant_id,new.role::text)
     on conflict(profile_id) do update set
+      required_tenant_id=excluded.required_tenant_id,
       required_role=excluded.required_role,
       required_since=statement_timestamp();
   end if;
@@ -70,7 +73,7 @@ $$;
 revoke all on function safebus_private.require_participant_agreement()
   from public,anon,authenticated;
 create trigger require_terms_for_new_participants
-  after insert or update of role on public.profiles
+  after insert or update of role,tenant_id on public.profiles
   for each row when (new.role::text in ('driver','guardian'))
   execute function safebus_private.require_participant_agreement();
 
@@ -156,7 +159,8 @@ declare v_notice_version text;
 begin
   v_actor:=safebus_private.current_participant_agreement_actor();
   select * into v_requirement from safebus_private.participant_agreement_requirements
-    where profile_id=v_actor.id and required_role=v_actor.role::text;
+    where profile_id=v_actor.id and required_role=v_actor.role::text
+      and required_tenant_id=v_actor.tenant_id;
   if not found then
     return jsonb_build_object('required',false,'status','grandfathered');
   end if;
@@ -172,8 +176,8 @@ begin
   v_notice_version:=case when v_actor.role::text='driver'
     then 'driver-2026-11-05-v1' else 'guardian-2026-11-05-v1' end;
   select * into v_acceptance from safebus_private.participant_agreement_acceptances
-    where profile_id=v_actor.id and role=v_actor.role::text
-      and document_id=v_document.id;
+    where profile_id=v_actor.id and tenant_id=v_actor.tenant_id
+      and role=v_actor.role::text and document_id=v_document.id;
   return jsonb_build_object(
     'required',true,
     'status',case when v_acceptance.id is null then 'pending' else 'accepted' end,
@@ -210,6 +214,7 @@ begin
   if not exists (
     select 1 from safebus_private.participant_agreement_requirements r
     where r.profile_id=v_actor.id and r.required_role=v_actor.role::text
+      and r.required_tenant_id=v_actor.tenant_id
   ) then
     return jsonb_build_object('status','not_required');
   end if;
@@ -233,7 +238,8 @@ begin
   v_notice_version:=case when v_actor.role::text='driver'
     then 'driver-2026-11-05-v1' else 'guardian-2026-11-05-v1' end;
   select * into v_existing from safebus_private.participant_agreement_acceptances
-    where profile_id=v_actor.id and document_id=v_doc.id;
+    where profile_id=v_actor.id and tenant_id=v_actor.tenant_id
+      and role=v_actor.role::text and document_id=v_doc.id;
   if found then
     return jsonb_build_object('status','accepted','receipt_sha256',v_existing.receipt_sha256,
       'accepted_at',v_existing.accepted_at,'replayed',true);
@@ -252,9 +258,10 @@ begin
   values(v_actor.id,v_actor.tenant_id,v_actor.role::text,v_doc.id,v_doc.version,
     v_doc.sha256,v_doc.body_markdown,v_notice_version,v_notice_url,v_session,
     true,true,v_receipt_sha)
-  on conflict(profile_id,document_id) do nothing;
+  on conflict(profile_id,tenant_id,role,document_id) do nothing;
   select * into v_existing from safebus_private.participant_agreement_acceptances
-    where profile_id=v_actor.id and document_id=v_doc.id;
+    where profile_id=v_actor.id and tenant_id=v_actor.tenant_id
+      and role=v_actor.role::text and document_id=v_doc.id;
   if v_existing.role<>v_actor.role::text or
      v_existing.tenant_id<>v_actor.tenant_id or
      v_existing.terms_sha256<>v_doc.sha256 then

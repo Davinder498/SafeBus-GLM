@@ -162,6 +162,18 @@ test('district MSA/DPA migration: isolated Postgres replay, clickwrap, scoped re
     'tampered',
   ]),/immutable/i);
 
+  // Changing a participant's role or school authority requires a new scoped receipt.
+  await db.query("update public.profiles set role='guardian' where id=$1",[newDriver]);
+  const asGuardian=(await one('select public.get_my_participant_agreement() x')).x;
+  assert.equal(asGuardian.status,'pending');
+  assert.equal(asGuardian.notice.url,'/privacy#guardians');
+  assert.equal((await submit(asGuardian.terms.sha256,true,true)).x.status,'accepted');
+  await db.query('update public.profiles set tenant_id=$1 where id=$2',[IDS.tenant2,newDriver]);
+  const asOtherTenant=(await one('select public.get_my_participant_agreement() x')).x;
+  assert.equal(asOtherTenant.status,'pending');
+  assert.equal((await submit(asOtherTenant.terms.sha256,true,true)).x.status,'accepted');
+  assert.equal((await one('select count(*)::int n from safebus_private.participant_agreement_acceptances')).n,3);
+
   await asUser(IDS.first);
   await assert.rejects(one('select public.get_my_participant_agreement() x'),/active driver or guardian/i);
 
