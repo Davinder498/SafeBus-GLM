@@ -4,7 +4,7 @@
   "scope": "SafeBus Alberta public school authority CR1 — account-specific supplier evidence",
   "releaseBaseline": "f2f3d367131dd0a1671b16befeda0f3c45e02bf4",
   "overallStatus": "not_approved",
-  "statement": "Inventory and public terms do not authorize customer processing. Real contracts and copies are stored outside Git; this record must contain no customer data, credentials, signatories, contract parties or links with private tokens. 2026-11-08 read-only verification identified a P0 FCM generic-preview transport mismatch; no vendor or readiness approval follows.",
+  "statement": "Inventory and public terms do not authorize customer processing. Real contracts and copies are stored outside Git; this record must contain no customer data, credentials, signatories, contract parties or links with private tokens. 2026-11-08 read-only verification identified a P0 FCM generic-preview transport mismatch; no vendor or readiness approval follows. 2026-11-08: FCM mitigation deployed and source-verified on v7; historic provider data, account terms and deferred device test remain open. Resend email may include full student name and bus number, requiring district authorization. No privacy or supplier approval inferred.",
   "evidenceLegend": {
     "verified-project": "Technical observation only, not a vendor contract or processing-location guarantee",
     "public-terms-reviewed": "Public material reviewed; account acceptance unverified",
@@ -65,7 +65,9 @@
         "operations_email_received",
         "deployed_email_can_include_student_full_name_and_bus_number",
         "aggregate_8_student_pickup_dropoff_email_outbox_delivered",
-        "resend_public_dpa_pre_signed_on_signup_us_content_storage_30_day_standard"
+        "resend_public_dpa_pre_signed_on_signup_us_content_storage_30_day_standard",
+        "provider_public_faq_pre_signed_dpa_executed_on_signup",
+        "detailed_student_name_bus_email_separate_from_fixed_generic_fcm"
       ],
       "status": "account-evidence-pending",
       "priority": "P0",
@@ -74,7 +76,8 @@
         "email_content_headers_metadata_countries",
         "delivery_history_and_logs_retention",
         "subprocessors_and_incident_terms",
-        "privacy_owner_decision"
+        "privacy_owner_decision",
+        "authority_approved_detailed_student_email_content"
       ],
       "evidenceReferences": [],
       "decision": null
@@ -130,10 +133,14 @@
         "push_delivery_product_flow_present",
         "deployed_push_uses_detailed_notification_copy_without_generic_preview_redaction",
         "aggregate_10_student_event_push_outbox_delivered_all_generic_preference",
-        "google_fcm_terms_both_google_apis_and_firebase_processing_terms"
+        "google_fcm_terms_both_google_apis_and_firebase_processing_terms",
+        "production_fcm_v7_protected_run_42533721182_attempt2_success_20261108",
+        "deployed_fcm_shared_source_exactly_matches_reviewed_main_fa8082152e45108341066246244f31570fbdc2e3",
+        "provider_visible_notification_title_body_generic_even_if_db_copy_detailed",
+        "no_postdeploy_live_delivery_observed_device_acceptance_deferred"
       ],
       "status": "account-evidence-pending",
-      "priority": "P0-privacy-release-blocker",
+      "priority": "P0",
       "required": [
         "project_party_terms",
         "recipient_and_installation_identifier_retention",
@@ -141,8 +148,8 @@
         "device_token_deletion_proof",
         "physical_mobile_acceptance",
         "privacy_owner_decision",
-        "server_side_generic_preview_redaction_verified",
-        "student_push_provider_disclosure_privacy_review"
+        "student_push_provider_disclosure_privacy_review",
+        "verify_postdeploy_real_device_delivery"
       ],
       "evidenceReferences": [],
       "decision": null

@@ -1,7 +1,7 @@
 # SafeBus — Server-side generic Firebase push payload release
 
 **Date:** 2026-11-08 (Alberta)  
-**Status:** Reviewed source candidate only; **not yet deployed to Supabase**. Production distribution and field acceptance still require separate human-controlled steps.  
+**Status as of 2026-11-08:** **DEPLOYED, and exact production source verified.** Protected [release run #42533721182 (attempt 2)](https://github.com/Davinder498/SafeBus-GLM/actions/runs/42533721182) passed on merged commit `fa8082152e45108341066246244f31570fbdc2e3`. The active Supabase `push-notification-dispatcher` is **v7**, deployment SHA-256 `592f9c55a344ab248b74f06d7eb920618f32154db2a73be1df6d8280399079a7`. Its bundled shared source matches the approved GitHub source exactly and uses the generic event-title allowlist and fixed text, rather than forwarding original title/body. No post-deployment push delivery was observed in the read-only check; physical-device and end-to-end acceptance remain deferred.  
 **PR:** Separate from business/vendor documentation PR #411.
 
 ## Problem and verified behavior
@@ -15,6 +15,12 @@ Current production PostgreSQL notification copy can include a student's full nam
 - Preserve the existing delivery authorization/eligibility, FCM token, notification ID, event type/category, destination routing, private Android visibility, urgent alert channel and priority, retry/idempotency behavior, and **full authorized in-app notification copy**.
 - Keep the email pathway **unchanged** in this PR. Resend email content (which can include full student name and bus number) remains an independent privacy/business decision requiring actual district authorization and supplier terms assessment.
 - Do not change production SQL, notification preferences, recipients, message history, app UI, Android binaries, Geoapify, Stripe, or other supplier configuration in this code PR.
+
+## Historical and remaining verification boundary
+
+The old sender could forward full notification text to Google, so the Privacy Lead must assess historical processing and actual vendor retention before deciding whether an incident review/notification is required. A source fix does not retroactively delete messages already sent; a code finding by itself does not establish a reportable privacy breach. Detailed Resend emails continue unchanged and need separate school-authority content approval. No student names, actual emails or GPS were accessed during the source verification.
+
+The read-only aggregate check found **zero push deliveries after 2026-11-08T23:20:59Z** at the time reviewed; it does not prove mobile receipt. The [district supplier-processing appendix](../governance/phase-3/business-pack/district-supplier-processing-appendix-review-2026-11-08.md) tracks remaining supplier-account and contracting decisions.
 
 ## Verification gates
 
