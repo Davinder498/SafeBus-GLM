@@ -1,6 +1,6 @@
 # SafeBus participant invitation terms — reviewed implementation boundary
 
-**Status:** Owner approved the proposed driver/guardian Terms of Use wording on November 8, 2026. PR implementation remains under review; no participant migration installed, terms published, customer signature, or commercial activation. This wording approval is not authorization for an automatic Netlify deploy or production release.
+**Status as of November 8, 2026:** Owner-approved driver/guardian Terms of Use **2026.1 published**, participant migration installed and verified in production, [PR #409](https://github.com/Davinder498/SafeBus-GLM/pull/409) and [PR #410](https://github.com/Davinder498/SafeBus-GLM/pull/410) merged. [Signed Android 1.0.8 (code 9)](https://github.com/Davinder498/SafeBus-GLM/actions/runs/42473404481) built successfully; owner reports uploading its AAB to Play Internal Testing, but Play rollout/installation and actual signed-session invitation acceptance have **not** been independently verified. Owner has **deferred physical Android app testing**. This is **not** customer contract publication or commercial/pilot launch approval.
 
 ## Approved user journey
 
@@ -18,21 +18,19 @@
 - Frontend protects normal participant routes from skipping the agreement step, but this frontend gate is **not** a substitute for independent server authorization of bus, route or student data.
 - No draft Terms of Use may be published. Legal wording, supplier disclosures, privacy program, customer authority, taxes, pricing and operational go-live approvals remain separate.
 
-## Rollout-safe application staging
+## Rollout state and remaining installation boundary
 
-The participant-onboarding frontend guard is disabled by default in `apps/web/src/config/participantAgreementRollout.ts`. This prevents a main-branch Netlify deploy from blocking existing driver/guardian accounts before the protected participant migration is installed. The platform document-management page treats a missing participant RPC as **unavailable**, without confusing it with approved or published terms. Submission and required-user checks never invent successful acceptance.
+The frontend flag `participantAgreementOnboardingEnabled` was changed to **true** by merged PR #410, after the protected migration and approved participant Terms 2026.1 publication. The separate native mobile route `/participant/agreements` is registered; CI passed mobile browser acceptance tests and signed Android build 1.0.8. Production Supabase has the new receipt/requirement tables and public RPCs. Existing participant profiles that predate migration remain grandfathered by the database; acceptance must never be fabricated.
 
-**Enable the frontend enforcement flag only through a separately reviewed app release after the agreement migration, approved participant terms publication, and end-to-end hosted acceptance have succeeded.** Freeze new participant invitations during the short interval between database installation and UI enforcement because the SQL gate records required profiles but does not by itself block all transportation read APIs. Existing guardian/driver security, active-trip offline queues and normal auth remain unchanged.
+**Outstanding risk:** a signed Android bundle and simulated browser flows do not prove that every installed phone has received the new gate. New invited participants using an older mobile build may not see the current Terms screen, and the SQL requirement/receipt itself does not authorize blocking every transportation read RPC. **Do not invite new drivers or guardians until the exact supported Android build is distributed to authorized testers and a real signed-session acceptance and denial test has been completed using approved isolated/synthetic identities.** Owner has deferred this test. Driver/guardian session/privacy safeguards remain independent, and no school-authority MSA/DPA publication follows from participant Terms publication.
 
-## Required verification / release order
+## Verified milestones and deferred verification
 
-1. Review the proposed forward migration and run isolated PostgreSQL replay (including role refusal, no implicit consent, immutable receipts and grandfathering), frontend unit tests, browser and mobile builds.
-2. Finalize and separately approve the actual mobile Terms of Use content before publishing it.
-3. Rehearse and install this one migration using a protected **schema-first** release with a fresh exact-main fingerprint and authorized production backup/recovery evidence; do not replay historical migrations, bypass existing release provenance, or run persistent SQL from this review.
-4. Confirm existing profile counts, new-role trigger, private grants, RPC behavior and unchanged existing transport actions.
-5. Deploy web/native bundles only after installation and approved participant Terms publication; perform a real signed-session invitation and document-acceptance test with synthetic, isolated identities and no real notifications.
-6. Confirm device-local privacy notice is not duplicated after the server receipt, repeated acceptance is idempotent, and a rejected or revoked session cannot fabricate success.
-7. Do not claim commercial launch readiness from this implementation or an isolated test.
+1. **Completed:** reviewed migration and UI implementation; owner-approved participant wording; production participant tables/RPC/trigger confirmed installed; immutable `acceptable_use` 2026.1 published; PRs #409/#410 merged; CI browser/mobile tests and Android signed bundle 1.0.8 build passed.
+2. **Not independently verified:** Google Play Internal Testing release publication and installation, actual hosted new-profile invitation/password/MFA to agreement acceptance with a legitimate scoped user, role/tenant denial, notice display and no bypass on an older app version.
+3. **Deferred by owner:** physical Android field and app testing, including actual invitation/acceptance; do not mark accepted or send new real participant invites during this gap.
+4. **Before rollout sign-off:** verify approved test identities without production student/driver data, receipt idempotency and exact text/version/hash, failed/revoked session refusal, account grandfathering, OS/device permission separation, and older-app protection strategy. All transportation-data RPCs must retain independent server-side authorization; the UI route alone cannot prove legal acceptance enforcement.
+5. **Separate:** final school-authority MSA/DPA/Order Form and schedules, supplier account evidence, insurance and commercial launch authorization stay unpublished/unapproved. See [November 8 commercial review](../governance/phase-3/business-pack/supplier-dpa-insurance-contract-review-2026-11-08.md).
 
 ## Privacy/security limitation for release review
 
