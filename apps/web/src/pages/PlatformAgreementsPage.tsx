@@ -209,7 +209,8 @@ export function PlatformAgreementsPage() {
             This is not the school authority MSA/DPA, and the Privacy Notice remains a separate acknowledgment.
           </p>
           <p className="text-sm">Currently published: {participantTerms?.status==='published'
-            ? participantTerms.version : 'None'}</p>
+            ? participantTerms.version : participantTerms?.status==='unavailable'
+              ? 'Pending database installation' : 'None'}</p>
           <label className="block text-sm font-semibold" htmlFor="participant-terms-document">
             Approved participant Terms of Use version
           </label>
@@ -227,7 +228,7 @@ export function PlatformAgreementsPage() {
             I confirm this exact complete version was approved for driver and guardian acceptance.
             Publishing changes the terms offered to participants; it does not activate optional location or notifications.
           </label>
-          <Button type="button" disabled={busy||!confirmParticipant||!participantDocument}
+          <Button type="button" disabled={busy||participantTerms?.status==='unavailable'||!confirmParticipant||!participantDocument}
             loading={busy} onClick={()=>void publishParticipant()}>Publish participant Terms of Use</Button>
         </Card>
       </>}

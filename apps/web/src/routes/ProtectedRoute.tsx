@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { AppLoadingScreen } from '@/components/ui/AppLoadingScreen';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { ParticipantAgreementGate } from '@/components/privacy/ParticipantAgreementGate';
+import { participantAgreementOnboardingEnabled } from '@/config/participantAgreementRollout';
 import {
   adminRoles,
   getDashboardPath,
@@ -151,7 +152,8 @@ export function ProtectedRoute({ allowedRoles, children, requireMfa = true }: Pr
     );
   }
 
-  if ((profile.role === 'driver' || profile.role === 'guardian') &&
+  if (participantAgreementOnboardingEnabled &&
+      (profile.role === 'driver' || profile.role === 'guardian') &&
       location.pathname !== '/participant/agreements' &&
       location.pathname !== '/mfa') {
     return <ParticipantAgreementGate profileId={profile.id} role={profile.role} session={session}>

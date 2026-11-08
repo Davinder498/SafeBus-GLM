@@ -75,6 +75,11 @@ describe('participant agreement service', () => {
     await expect(getMyParticipantAgreement()).rejects.toThrow('not yet available');
   });
 
+  it('preserves the existing publisher before the forward RPC is installed', async () => {
+    rpc.mockResolvedValue({ data: null, error: { code: 'PGRST202' } });
+    expect(await getPublishedParticipantTerms()).toEqual({ status: 'unavailable' });
+  });
+
   it('never assumes that participant terms have been published', async () => {
     rpc.mockResolvedValue({ data: { status: 'not_published' }, error: null });
     expect(await getPublishedParticipantTerms()).toEqual({ status: 'not_published' });

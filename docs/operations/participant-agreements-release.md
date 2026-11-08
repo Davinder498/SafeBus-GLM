@@ -18,6 +18,12 @@
 - Frontend protects normal participant routes from skipping the agreement step, but this frontend gate is **not** a substitute for independent server authorization of bus, route or student data.
 - No draft Terms of Use may be published. Legal wording, supplier disclosures, privacy program, customer authority, taxes, pricing and operational go-live approvals remain separate.
 
+## Rollout-safe application staging
+
+The participant-onboarding frontend guard is disabled by default in `apps/web/src/config/participantAgreementRollout.ts`. This prevents a main-branch Netlify deploy from blocking existing driver/guardian accounts before the protected participant migration is installed. The platform document-management page treats a missing participant RPC as **unavailable**, without confusing it with approved or published terms. Submission and required-user checks never invent successful acceptance.
+
+**Enable the frontend enforcement flag only through a separately reviewed app release after the agreement migration, approved participant terms publication, and end-to-end hosted acceptance have succeeded.** Freeze new participant invitations during the short interval between database installation and UI enforcement because the SQL gate records required profiles but does not by itself block all transportation read APIs. Existing guardian/driver security, active-trip offline queues and normal auth remain unchanged.
+
 ## Required verification / release order
 
 1. Review the proposed forward migration and run isolated PostgreSQL replay (including role refusal, no implicit consent, immutable receipts and grandfathering), frontend unit tests, browser and mobile builds.

@@ -17,7 +17,7 @@ export interface ParticipantAgreementStatus {
 }
 
 export interface PublishedParticipantTerms {
-  status: 'published' | 'not_published';
+  status: 'published' | 'not_published' | 'unavailable';
   document_id?: string;
   version?: string;
   sha256?: string;
@@ -92,6 +92,11 @@ export async function acceptMyParticipantAgreement(input: {
 
 export async function getPublishedParticipantTerms(): Promise<PublishedParticipantTerms> {
   const { data, error } = await requireClient().rpc('platform_get_participant_terms');
+  if (error?.code === 'PGRST202' || error?.code === '42883') {
+    // A schema-first rollout has not installed this RPC. Keep the existing
+    // district document publisher working; never claim participant publication.
+    return { status: 'unavailable' };
+  }
   if (error) throw new Error(errorMessage(error));
   const result = object(data);
   if (result.status === 'not_published') return { status: 'not_published' };

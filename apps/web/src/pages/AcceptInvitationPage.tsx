@@ -14,6 +14,7 @@ import {
 } from '@/contexts/AuthContext';
 import { useAuth } from '@/contexts/useAuth';
 import { useAppSurface } from '@/contexts/AppSurfaceContext';
+import { participantAgreementOnboardingEnabled } from '@/config/participantAgreementRollout';
 
 const minimumPasswordLength = 12;
 
@@ -56,7 +57,8 @@ export function AcceptInvitationPage() {
       navigate(
         nextProfile.role === 'tenant_admin'
           ? '/admin/onboarding/agreements'
-          : nextProfile.role === 'driver' || nextProfile.role === 'guardian'
+          : participantAgreementOnboardingEnabled &&
+              (nextProfile.role === 'driver' || nextProfile.role === 'guardian')
             ? '/participant/agreements'
             : getDashboardPath(nextProfile.role),
         { replace: true },
