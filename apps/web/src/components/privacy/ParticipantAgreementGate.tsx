@@ -20,11 +20,13 @@ const verifiedSessions = new WeakMap<Session, Set<string>>();
 export function ParticipantAgreementGate({
   profileId,
   role,
+  tenantId,
   session,
   children,
 }: {
   profileId: string;
   role: 'driver' | 'guardian';
+  tenantId: string | null;
   session: Session;
   children: ReactNode;
 }) {
@@ -36,7 +38,9 @@ export function ParticipantAgreementGate({
 
   useEffect(() => {
     let current = true;
-    const key = profileId + ':' + role;
+    // If an existing user changes role or district, do not reuse an earlier
+    // grandfathered or signed grant from the same Auth session.
+    const key = [profileId, role, tenantId ?? ''].join(':');
     if (verifiedSessions.get(session)?.has(key)) {
       setResult({ profileId, status: 'allowed' });
       return () => { current = false; };
@@ -57,7 +61,7 @@ export function ParticipantAgreementGate({
         if (current) setResult({ profileId, status: 'error' });
       });
     return () => { current = false; };
-  }, [profileId, role, retry, session]);
+  }, [profileId, role, tenantId, retry, session]);
 
   if (!result || result.profileId !== profileId) return <AppLoadingScreen />;
   if (result.status === 'required') return <Navigate to="/participant/agreements" replace />;

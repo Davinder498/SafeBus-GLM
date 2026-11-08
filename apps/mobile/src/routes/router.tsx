@@ -22,6 +22,9 @@ import { PublicOnlyRoute } from '@/routes/PublicOnlyRoute';
 const AcceptInvitationPage = lazy(() =>
   import('@/pages/AcceptInvitationPage').then((page) => ({ default: page.AcceptInvitationPage })),
 );
+const ParticipantAgreementsPage = lazy(() =>
+  import('@/pages/ParticipantAgreementsPage').then((page) => ({ default: page.ParticipantAgreementsPage })),
+);
 const DriverDashboardPage = lazy(() =>
   import('@/pages/DriverDashboardPage').then((page) => ({ default: page.DriverDashboardPage })),
 );
@@ -124,6 +127,14 @@ export const appRoutes: RouteObject[] = [
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/update-password', element: <UpdatePasswordPage /> },
   { path: '/privacy', element: <PrivacyPolicyPage /> },
+  {
+    path: '/participant/agreements',
+    element: (
+      <ProtectedRoute allowedRoles={['driver', 'guardian']}>
+        <ParticipantAgreementsPage />
+      </ProtectedRoute>
+    ),
+  },
   { path: '/account-deletion', element: <AccountDeletionPage /> },
   {
     path: '/mfa',
