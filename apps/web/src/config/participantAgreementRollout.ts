@@ -1,8 +1,8 @@
 /**
- * The new participant Terms UI is staged until its protected migration is
- * installed, final terms are published, and hosted sign-in is verified.
- * This default prevents a Netlify main-branch auto-deploy from locking out
- * current drivers/guardians while the production RPC is still absent.
- * Enable only in a separately reviewed post-install application release.
+ * The reviewed driver/guardian agreement schema is installed in BusSafe,
+ * and the separately approved participant Terms of Use version 2026.1
+ * is published. Require server-verified acceptance for newly invited
+ * participants; existing profiles remain grandfathered by the database.
+ * This is only a client navigation gate, not transport-RPC authorization.
  */
-export const participantAgreementOnboardingEnabled = false;
+export const participantAgreementOnboardingEnabled = true;
