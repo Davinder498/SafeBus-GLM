@@ -63,8 +63,7 @@ supported Android permissions against the released binary.
 
 Android push is available to eligible guardians and drivers only after their
 opt-in and device permission. Google Firebase Cloud Messaging processes device
-tokens and limited delivery metadata; push previews exclude names, routes, stops,
-coordinates and internal identifiers. The owner approved the standard notification
+tokens, opaque notification identifiers, event categories and necessary delivery metadata. Following the verified November 8, 2026 dispatcher v7 release, outgoing notification **text** is fixed generic copy that excludes names, buses, routes, stops and coordinates. Source verification does not replace actual physical-device acceptance. The owner approved the standard notification
 setup on 2026-10-24; no separate approval is required for each school authority.
 This does not supply recipient consent or complete supplier-contract review.
 Student QR remains outside the commercial commitment pending its own acceptance.
@@ -88,17 +87,13 @@ request route if you cannot sign in.
 Hosting/authentication uses Supabase; web/function delivery uses Netlify; maps
 use Geoapify; transactional email uses Resend; subscription
 billing uses Stripe. Maps disclose tile coordinates describing the viewport,
-IP address and ordinary request metadata. Email may include recipient email,
-the student's first name for an enabled recorded pickup/drop-off notice, event
-type and time. Payment methods are provided to Stripe rather than stored in
+IP address and ordinary request metadata. Email may include the recipient's email address, the student's **full name and bus number** for an enabled recorded pickup/drop-off notice, event type and time. A school authority must determine whether this amount of personally identifying information is necessary in external email. Generic event emails directing recipients to the authenticated inbox are a proposed lower-disclosure option, not a released product change. Payment methods are provided to Stripe rather than stored in
 SafeBus application records.
 
 The official website is https://safebus.kids. On 2026-10-16 the owner confirmed
 Sachman Gold Inc. is an Alberta corporation doing business as SafeBus. Resend's
 sending domain is configured in North Virginia, United States (`us-east-1`).
-When enabled, email processing includes recipient addresses, message content
-(including invitation/recovery links, inquiries or enabled event notices) and
-delivery metadata in the United States. Domain verification alone does not enable
+Resend states that stored email content and logs reside in the United States regardless of the sending region. Standard plans retain email/log data for 30 days, subject to the actual applicable account terms. Enabled email processing includes recipient addresses, message content (including invitation/recovery links, inquiries or event notices) and delivery metadata. Verify the actual provider account, plan and downstream terms before any binding district processing commitment. Domain verification alone does not enable
 these application flows or establish supplier-contract approval.
 
 Before this policy takes effect, publish the final
