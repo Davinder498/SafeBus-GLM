@@ -18,7 +18,9 @@
       "serviceStatus": "enabled",
       "observedFacts": [
         "active_project_canada_central",
-        "postgres_17"
+        "postgres_17",
+        "connected_production_project_ca_central_1_healthy_2026_11_08",
+        "connected_org_display_name_not_company_evidence"
       ],
       "status": "account-evidence-pending",
       "priority": "P0",
@@ -37,7 +39,8 @@
       "purpose": "website_functions_cdn_logs",
       "serviceStatus": "enabled",
       "observedFacts": [
-        "production_web_published"
+        "production_web_published",
+        "authenticated_dashboard_terms_unverified_extension_host_permission_blocked"
       ],
       "status": "account-evidence-pending",
       "priority": "P0",
@@ -96,7 +99,8 @@
       "serviceStatus": "enabled",
       "observedFacts": [
         "web_referer_filter_configured",
-        "web_basemap_rendered"
+        "web_basemap_rendered",
+        "application_map_tiles_use_maps_geoapify_com_not_eu_only_endpoint_2026_11_08"
       ],
       "status": "account-evidence-pending",
       "priority": "P0",
@@ -135,7 +139,9 @@
       "purpose": "business_subscription_payments",
       "serviceStatus": "live_account_connected",
       "observedFacts": [
-        "safebus_account_live_mode"
+        "safebus_account_live_mode",
+        "connected_livemode_account_company_identity_matches_sachman_gold_inc_2026_11_08",
+        "charges_and_payouts_enabled"
       ],
       "status": "account-evidence-pending",
       "priority": "P0",
