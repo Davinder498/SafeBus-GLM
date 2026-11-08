@@ -41,7 +41,8 @@
       "observedFacts": [
         "production_web_published",
         "authenticated_dashboard_terms_unverified_extension_host_permission_blocked",
-        "hosted_notification_worker_processes_recipient_and_message_content"
+        "hosted_notification_worker_processes_recipient_and_message_content",
+        "repo_netlify_config_no_explicit_functions_region_live_region_unverified"
       ],
       "status": "account-evidence-pending",
       "priority": "P0",
@@ -50,7 +51,8 @@
         "functions_cdn_logs_countries",
         "access_and_retention",
         "security_incident_assistance",
-        "privacy_owner_decision"
+        "privacy_owner_decision",
+        "verify_actual_function_execution_region_and_account_plan"
       ],
       "evidenceReferences": [],
       "decision": null
