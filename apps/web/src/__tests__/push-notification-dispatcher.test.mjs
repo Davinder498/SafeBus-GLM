@@ -64,7 +64,7 @@ describe('Supabase Android push dispatcher', () => {
         },
       });
       expect(message.message.data.notificationId).toBe('notice');
-      expect(message.message.notification.body).toBe('Open SafeBus to view this update.');
+      expect(message.message.notification.body).toBe('Open SafeBus to view details.');
     },
   );
   it('uses private generic notification-plus-data payloads and stable collapse keys', () => {
@@ -80,8 +80,8 @@ describe('Supabase Android push dispatcher', () => {
       collapse_key: 'notification-notification-id',
     });
     expect(message.message.notification).toEqual({
-      title: 'Bussafe update',
-      body: 'Open BUSSAFE to view this update.',
+      title: 'Service update',
+      body: 'Open SafeBus to view details.',
     });
     expect(message.message.data).not.toHaveProperty('studentName');
     expect(message.message.android).toMatchObject({
@@ -90,6 +90,61 @@ describe('Supabase Android push dispatcher', () => {
       notification: { visibility: 'PRIVATE', tag: 'notification-notification-id' },
     });
   });
+
+  it.each([
+    ['student_picked_up', 'Pickup recorded'],
+    ['student_dropped_off', 'Drop-off recorded'],
+    ['driver_assignment_changed', 'Assignment update'],
+    ['student_service_changed', 'Service update'],
+    ['authority_announcement', 'New announcement'],
+    ['trip_started', 'Trip started'],
+    ['unknown_event', 'SafeBus update'],
+    ['constructor', 'SafeBus update'],
+  ])('redacts personal and free-text content for %s before FCM', (eventType, safeTitle) => {
+    const sensitive = 'Alex Morgan was picked up on Bus 42 at Maple Street by Driver Sam.';
+    const row = {
+      fcm_token: 'synthetic-token',
+      notification_id: 'notice',
+      event_type: eventType,
+      category: 'pickup_dropoff',
+      severity: 'info',
+      preview_mode: 'generic',
+      title: sensitive,
+      body: sensitive,
+      android_channel: 'trip_updates',
+      collapse_key: 'notification-notice',
+    };
+    const message = buildFcmMessage(row);
+    expect(message.message.notification).toEqual({
+      title: safeTitle,
+      body: 'Open SafeBus to view details.',
+    });
+    expect(JSON.stringify(message.message.notification)).not.toContain('Alex');
+    expect(JSON.stringify(message.message.notification)).not.toContain('Bus 42');
+    expect(JSON.stringify(message.message.notification)).not.toContain('Maple');
+    expect(row.body).toBe(sensitive);
+    expect(message.message.data).toMatchObject({ notificationId: 'notice', eventType });
+  });
+
+  it.each(['generic', 'limited', 'off'])(
+    'does not trust %s preference or detailed inbound provider copy',
+    (preview_mode) => {
+      const message = buildFcmMessage({
+        event_type: 'student_dropped_off',
+        preview_mode,
+        title: 'Guardian and student: Élodie 王',
+        body: 'Route 9, Bus 5, Maple Stop, 52.2700,-113.8000',
+        severity: 'urgent',
+      });
+      expect(message.message.notification).toEqual({
+        title: 'Drop-off recorded',
+        body: 'Open SafeBus to view details.',
+      });
+      expect(JSON.stringify(message.message.notification)).not.toMatch(
+        /Élodie|王|Route 9|Bus 5|Maple Stop|52\.2700/,
+      );
+    },
+  );
 
   it('classifies invalid and transient FCM errors', () => {
     expect(classifyFcmError({ fcmErrorCode: 'UNREGISTERED', httpStatus: 404 })).toMatchObject({
@@ -158,8 +213,8 @@ describe('Supabase Android push dispatcher', () => {
       event_type: 'trip_started',
       category: 'trip_status',
       severity: 'info',
-      title: 'SafeBus update',
-      body: 'Open SafeBus to view this update.',
+      title: 'Alex Morgan was picked up on Bus 42',
+      body: 'Alex Morgan was picked up on Bus 42 at Maple Street.',
       android_channel: 'trip_updates',
       collapse_key: 'notification-notification-id',
     };
@@ -170,6 +225,11 @@ describe('Supabase Android push dispatcher', () => {
     expect(fetchImpl.mock.calls[1][1].headers.authorization).toBe('Bearer access-token');
     const payload = JSON.parse(fetchImpl.mock.calls[1][1].body);
     expect(payload).not.toHaveProperty('validate_only');
+    expect(payload.message.notification).toEqual({
+      title: 'Trip started',
+      body: 'Open SafeBus to view details.',
+    });
+    expect(JSON.stringify(payload)).not.toMatch(/Alex Morgan|Bus 42|Maple Street/);
     expect(payload.message.data).toEqual({
       notificationId: 'notification-id',
       eventType: 'trip_started',
