@@ -24,8 +24,7 @@ and assist through authorized scoped workflows. Apply the
 without automatically refusing all transport-related information. Own-business
 SafeBus requests have a direct route to `[PRIVACY_EMAIL]`.
 
-Enabled recorded pickup/drop-off email may contain first name, event and time;
-recipients require current permitted scope and channel settings. A recorded
+Deployed recorded pickup/drop-off email can contain **first and last name, bus number, event and time**, with content sent to US-hosted Resend; actual district permission/content minimization remains to be assessed. The generic-preview setting is not currently enforced for outbound FCM push. See [November 8 supplier review](business-pack/supplier-dpa-insurance-contract-review-2026-11-08.md). Recipients still require current permitted scope and channel settings. A recorded
 transport event is not a child's present location. FCM/student QR and other
 CR1 exclusions need separate scope/privacy activation. The customer must review
 any change affecting a student's authority or recipients promptly.
