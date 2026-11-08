@@ -1,10 +1,16 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import { Navigate } from 'react-router';
 import { AppLoadingScreen } from '@/components/ui/AppLoadingScreen';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { getMyParticipantAgreement } from '@/services/participantAgreementService';
+
+// Positive server verification is cached only within the current Auth session
+// object. Offline route changes after successful verification must not strand
+// a working driver trip; no localStorage flag can authorize an unsigned user.
+const verifiedSessions = new WeakMap<Session, Set<string>>();
 
 /**
  * Invitation Terms gate for driver/guardian dashboards.
@@ -13,9 +19,13 @@ import { getMyParticipantAgreement } from '@/services/participantAgreementServic
  */
 export function ParticipantAgreementGate({
   profileId,
+  role,
+  session,
   children,
 }: {
   profileId: string;
+  role: 'driver' | 'guardian';
+  session: Session;
   children: ReactNode;
 }) {
   const [result, setResult] = useState<{
@@ -26,21 +36,28 @@ export function ParticipantAgreementGate({
 
   useEffect(() => {
     let current = true;
+    const key = profileId + ':' + role;
+    if (verifiedSessions.get(session)?.has(key)) {
+      setResult({ profileId, status: 'allowed' });
+      return () => { current = false; };
+    }
     setResult(null);
     void getMyParticipantAgreement()
       .then(agreement => {
         if (!current) return;
-        setResult({
-          profileId,
-          status: !agreement.required || agreement.status === 'accepted'
-            ? 'allowed' : 'required',
-        });
+        const allowed = !agreement.required || agreement.status === 'accepted';
+        if (allowed) {
+          const verified = verifiedSessions.get(session) ?? new Set<string>();
+          verified.add(key);
+          verifiedSessions.set(session, verified);
+        }
+        setResult({ profileId, status: allowed ? 'allowed' : 'required' });
       })
       .catch(() => {
         if (current) setResult({ profileId, status: 'error' });
       });
     return () => { current = false; };
-  }, [profileId, retry]);
+  }, [profileId, role, retry, session]);
 
   if (!result || result.profileId !== profileId) return <AppLoadingScreen />;
   if (result.status === 'required') return <Navigate to="/participant/agreements" replace />;
