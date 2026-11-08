@@ -85,8 +85,8 @@ it('records pickup and drop-off through the real driver recorder and sends the i
           [push.outbox_id, 'copy-worker'],
         );
         expect(buildFcmMessage(resolved).message.notification).toEqual({
-          title: notice.title,
-          body: notice.body,
+          title: notice.event_type === 'student_picked_up' ? 'Pickup recorded' : 'Drop-off recorded',
+          body: 'Open SafeBus to view details.',
         });
       }
     }
@@ -161,7 +161,8 @@ it('preserves Unicode, HTML characters, complete long names/stops and BusSafe as
     const push = (
       await query("select * from public.claim_push_notification_deliveries('long',100,120)")
     ).find((p) => p.category === 'pickup_dropoff');
-    expect(buildFcmMessage(push).message.notification.body).toBe(notice.body);
+    expect(buildFcmMessage(push).message.notification.body).toBe('Open SafeBus to view details.');
+    expect(JSON.stringify(buildFcmMessage(push).message.notification)).not.toContain(first);
     const rendered = buildGuardianEventEmail({
       notificationType: email.notification_type,
       notificationTitle: email.title,

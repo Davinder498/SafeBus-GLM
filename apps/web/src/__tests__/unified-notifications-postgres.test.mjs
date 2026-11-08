@@ -115,12 +115,12 @@ it('covers all 19 actual alert sources and shares their approved wording across 
         const event = payload.event_type ?? payload.notification_type;
         expect(event).not.toBe('trip_missing');
         expect([payload.title, payload.body]).toEqual(approved[event]);
-        if (channel === 'push')
-          expect(buildFcmMessage(payload).message.notification).toEqual({
-            title: payload.title,
-            body: payload.body,
-          });
-        else {
+        if (channel === 'push') {
+          const providerCopy = buildFcmMessage(payload).message.notification;
+          expect(providerCopy.body).toBe('Open SafeBus to view details.');
+          expect(JSON.stringify(providerCopy)).not.toContain(payload.body);
+          expect(providerCopy.title).toBeTruthy();
+        } else {
           const rendered = buildGuardianEventEmail({
             notificationType: event,
             notificationTitle: payload.title,
@@ -206,9 +206,13 @@ it('keeps complete Unicode/HTML names and bus labels across all channels without
       );
       expect(payload.body).toBe(expected);
       expect(payload.body.length).toBeGreaterThan(240);
-      if (channel === 'push')
-        expect(buildFcmMessage(payload).message.notification.body).toBe(expected);
-      else {
+      if (channel === 'push') {
+        expect(buildFcmMessage(payload).message.notification).toEqual({
+          title: 'Pickup recorded',
+          body: 'Open SafeBus to view details.',
+        });
+        expect(JSON.stringify(buildFcmMessage(payload).message.notification)).not.toContain(first);
+      } else {
         const rendered = buildGuardianEventEmail({
           notificationType: payload.notification_type,
           notificationTitle: payload.title,
@@ -272,7 +276,10 @@ it('uses the approved no-stop pickup/drop-off copy in inbox, push and email thro
         );
         expect([payload.title, payload.body]).toEqual([notice.title, notice.body]);
         if (channel === 'push')
-          expect(buildFcmMessage(payload).message.notification).toEqual(notice);
+          expect(buildFcmMessage(payload).message.notification).toEqual({
+            title: event === 'student_picked_up' ? 'Pickup recorded' : 'Drop-off recorded',
+            body: 'Open SafeBus to view details.',
+          });
         else
           expect(
             buildGuardianEventEmail({

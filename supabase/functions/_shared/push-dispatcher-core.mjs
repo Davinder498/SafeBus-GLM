@@ -113,14 +113,44 @@ export function classifyFcmError(error) {
   return { category: 'unknown', code, retry: true, invalidateDevice: false, retryAfter };
 }
 
+// Never send the detailed, authenticated-inbox notification copy to FCM.
+// Firebase receives a constrained event label only; the signed-in SafeBus inbox
+// remains the sole surface for student names, bus/route/stop labels and free text.
+// This boundary applies regardless of a saved preview preference or an old app.
+const PUBLIC_PUSH_TITLES = Object.freeze({
+  student_picked_up: 'Pickup recorded',
+  student_dropped_off: 'Drop-off recorded',
+  trip_started: 'Trip started',
+  trip_completed: 'Trip completed',
+  trip_cancelled: 'Trip cancelled',
+  trip_late: 'Service update',
+  trip_missing: 'Service update',
+  traffic_disruption: 'Service update',
+  weather_disruption: 'Service update',
+  road_closure: 'Service update',
+  mechanical_disruption: 'Service update',
+  driver_assignment_created: 'Assignment update',
+  driver_assignment_changed: 'Assignment update',
+  driver_assignment_ended: 'Assignment update',
+  student_service_changed: 'Service update',
+  guardian_access_changed: 'Account access update',
+  authority_announcement: 'New announcement',
+});
+const GENERIC_PUSH_BODY = 'Open SafeBus to view details.';
+
 export function buildFcmMessage(row) {
   const urgent = row.severity === 'urgent';
+  const eventType = row.event_type;
+  const safeTitle =
+    typeof eventType === 'string' && Object.hasOwn(PUBLIC_PUSH_TITLES, eventType)
+      ? PUBLIC_PUSH_TITLES[eventType]
+      : 'SafeBus update';
   return {
     message: {
       token: row.fcm_token,
       notification: {
-        title: row.title,
-        body: row.body,
+        title: safeTitle,
+        body: GENERIC_PUSH_BODY,
       },
       data: {
         notificationId: row.notification_id,

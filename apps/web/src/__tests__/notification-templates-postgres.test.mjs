@@ -193,7 +193,9 @@ it('initiates all 19 real source events, uses approved copy, and queues each eli
       expect([resolved.title, resolved.body]).toEqual(expected[claim.event_type]);
       const payload = buildFcmMessage(resolved);
       expect(payload.message.data.notificationId).toBe(claim.notification_id);
-      expect(payload.message.notification).toEqual({ title: claim.title, body: claim.body });
+      expect(payload.message.notification.body).toBe('Open SafeBus to view details.');
+      expect(JSON.stringify(payload.message.notification)).not.toContain(claim.body);
+      expect(payload.message.notification.title).toBeTruthy();
       expect(payload.message.android.notification.visibility).toBe('PRIVATE');
       await query('select public.complete_push_notification_delivery($1,$2,$3)', [
         claim.outbox_id,

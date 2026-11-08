@@ -201,13 +201,15 @@ test('historical push SQL remains immutable and diagnostics remain privacy safe'
   assert.match(rebrandMigration, /for update of o skip locked/i);
   assert.match(rebrandMigration, /access_expires_at/i);
   const push = buildFcmMessage({
-    title: 'BusSafe update',
-    body: 'Open BusSafe to view this update.',
+    event_type: 'student_picked_up',
+    title: 'Alex Morgan was picked up on Bus 12',
+    body: 'Alex Morgan was picked up on Bus 12 at Maple Street.',
   });
   assert.deepEqual(push.message.notification, {
-    title: 'BusSafe update',
-    body: 'Open BusSafe to view this update.',
+    title: 'Pickup recorded',
+    body: 'Open SafeBus to view details.',
   });
+  assert.doesNotMatch(JSON.stringify(push.message.notification), /Alex|Morgan|Bus 12|Maple/);
   assert.match(dispatcherCore, /visibility: 'PRIVATE'/);
   assert.doesNotMatch(dispatcherCore, /studentName|routeName|stopName|latitude|longitude/);
   assert.doesNotMatch(dispatcherCore, /console\.(?:log|error)[\s\S]*outbox_id/);
