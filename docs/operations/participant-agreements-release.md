@@ -1,6 +1,6 @@
 # SafeBus participant invitation terms — reviewed implementation boundary
 
-**Status:** implementation proposed for review; no migration installed, terms published, customer signature, or commercial activation.
+**Status:** Owner approved the proposed driver/guardian Terms of Use wording on November 8, 2026. PR implementation remains under review; no participant migration installed, terms published, customer signature, or commercial activation. This wording approval is not authorization for an automatic Netlify deploy or production release.
 
 ## Approved user journey
 
