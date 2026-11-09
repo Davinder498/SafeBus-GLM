@@ -146,9 +146,12 @@ with a payment method collected in standard Stripe Checkout, followed by the
 first recurring monthly or annual payment if the subscription is not canceled
 during trial. For a separately approved invoice/PO arrangement, the first
 invoice is issued at trial end instead of charging a card. A previously
-subscribed or trialed authority receives no repeat trial. The Customer must
-see the actual trial end, selected billing interval and amount, collection
-method, first charge/invoice date, and cancellation consequences at activation.
+subscribed or trialed authority receives no repeat trial. A trial must
+not be treated as a free pilot or authorization to process actual student
+transportation data without separately accepted security, privacy and
+school-authority terms. The Customer must see the actual trial end,
+selected billing interval and amount, collection method, first charge/invoice
+date, and cancellation consequences at activation.
 
 The Customer may **cancel automatic renewal at any time**, without an early
 cancellation fee. Cancellation takes effect at the end of the current trial
