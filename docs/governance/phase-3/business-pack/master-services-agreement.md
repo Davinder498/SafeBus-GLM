@@ -221,18 +221,80 @@ Mandatory legal duties and the DPA are not excused by supplier outages.
 
 ## 8. Liability and third-party claims
 
-The general aggregate liability cap is `[GENERAL_LIABILITY_CAP]`; any separate
-privacy/confidentiality cap is `[PRIVACY_LIABILITY_CAP]`. The parties must settle
-amounts, excluded loss categories, covered claims and insurance alignment before
-signing. Do not interpret an unfilled cap as zero liability or unlimited liability.
-Any limitation must preserve liability that applicable law does not permit the
-parties to exclude, and agreed treatment of fraud or wilful misconduct.
+### 8.1 Owner-approved proposed initial-pilot limits (November 9, 2026)
 
-The parties will negotiate the allocation of intellectual-property infringement
-and unlawful-data/instruction claims in the Order Form or a signed addendum.
-Required mechanics include prompt claim notice, control of defence, cooperation
-and no settlement admitting liability or imposing duties without consent.
-No defence/indemnity amount or scope is accepted by this draft.
+Subject to section 8.2 and only when incorporated in an **accepted
+Customer-specific MSA and Order Form**, the proposed aggregate limits on the
+Provider's liability arising out of or relating to this Agreement (whether in
+contract, tort including negligence, or otherwise, to the extent legally
+permitted) are:
+
+- **General claims:** the **greater of CA$25,000 or the 12-Month Fees**.
+- **Privacy/security claims:** the **greater of CA$100,000 or twice the
+  12-Month Fees**, for claims arising from the Provider's breach of its
+  contractual confidentiality, privacy, data-protection or information-security
+  obligations concerning Customer information.
+
+**12-Month Fees** means the subscription service fees **paid or contractually
+payable by this Customer under its accepted SafeBus Order Form and attributable
+to the 12 months immediately preceding the earliest event giving rise to the
+claim**, net of approved discounts and **excluding GST/HST and other taxes**.
+For a contract in force for less than 12 months (including a free trial), use
+fees attributable to its actual shorter service period; the stated CA$25,000
+and CA$100,000 minimums still apply. Allocate prepaid annual charges to the
+covered service months and do not count the same fee twice or count an unrelated
+Customer's subscription. If the relevant event spans multiple dates, use the
+first event giving rise to the related claims. This definition does not change
+the Customer's accepted subscription price or create extra fees.
+
+The limits apply to the total of **all related and unrelated covered claims
+combined for the entire accepted Agreement**, including successive terms or
+renewals: they **do not reset for each incident, claim, invoice, year or renewal**.
+The privacy/security cap **replaces**, rather than adds to, the general cap
+for claims within the privacy/security category. A single event raising both
+categories does not allow stacking the two caps or duplicate recovery. Where
+different covered claims arise under both categories, the aggregate recovery
+under this clause cannot exceed the higher applicable privacy/security cap;
+the general-claim portion remains subject to the general cap.
+
+### 8.2 Mandatory exceptions and preserved duties
+
+Neither cap excludes or limits liability for **fraud, intentional or wilful
+misconduct, or any liability that applicable law does not permit the parties
+to exclude or limit**, to the extent of that prohibition. No monetary cap
+prevents required incident containment, notice, cooperation, lawful regulatory
+responses, data return, deletion or other performance obligations under the
+DPA, Security Schedule or applicable law. The Customer retains its public-body
+privacy accountability. A contractual cap is **not insurance**, not a statement
+of available funds, and not a guarantee that a court or public authority will
+accept the proposed limitation.
+
+The general no-partial-refund rule concerns **convenience cancellation only**.
+It does not waive statutory refunds or relief, remedies for material breach,
+or any express exception accepted by both parties. The absence of automatic
+SLA credits does not by itself waive available legal or agreed remedies.
+
+### 8.3 Third-party claims, procurement and insurance status
+
+No intellectual-property infringement, personal injury/property damage,
+third-party privacy claim or Customer-instruction **indemnity is granted,
+assumed to be unlimited or assigned a separate cap merely by this draft**.
+Any duty to defend or indemnify, covered claims, defence-cost treatment and
+exceptions must be expressly negotiated and recorded in a Customer-specific
+signed Order Form rider or amendment, consistent with mandatory law. Any
+negotiated defence must include prompt notice, control of defence, cooperation
+and no settlement admitting liability or imposing obligations on the other
+party without consent. No separate reciprocal Customer liability cap is
+selected by this Provider proposal.
+
+The owner **deferred insurance quotations**. **No active CGL, technology E&O,
+cyber/privacy policy, certificate, insured amount or insurer backing is
+represented**. The Provider must assess each school authority's procurement
+requirements, requested limits/indemnities and risk/financial capacity before
+entering a binding contract; a customer-specific exception requires an express
+authorized written agreement, not a silent change to this standard draft.
+These approved proposed caps do **not** approve insurance, customer acceptance
+or commercial/pilot launch.
 
 ## 9. Suspension, termination and exit
 
