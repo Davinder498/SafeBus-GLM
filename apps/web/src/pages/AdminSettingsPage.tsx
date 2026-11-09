@@ -123,7 +123,7 @@ export function AdminSettingsPage() {
           <Link to="/admin/records-disposal" className="font-semibold text-navy-700 underline">
             Records disposal and preservation
           </Link>
-        )>
+        )}
         <RetentionPanel />
 
         {loading && (
