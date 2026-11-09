@@ -75,3 +75,18 @@ Read-only Stripe observations: the Canadian Tax registration has `active_from=20
 A verified before/after Stripe API inspection established `tax_behavior=unspecified` immediately before the owner-authorized update, and **`tax_behavior=inclusive`** on both Price objects after. Both remain active; there is still one observed active subscription on the original monthly ID, with automatic tax enabled. No new price, charge, subscription migration or historical invoice mutation was performed. The Netlify client/server price policy now uses the same two amounts and requires inclusive treatment for new checkout/tenant selection; users cannot silently publish a different amount or archive the last approved active price.
 
 **Historical financial caveat:** The earlier Stripe Canada registration effective 2026-10-23T14:19:38Z still differs from the reported CRA 2026-11-08 registration date. The actual CRA confirmation remains private and unverified here. Do not change tax history automatically or claim that a November 7 paid invoice included GST/HST. A customer-specific approved order, applicable province/exemption, tested final tax breakout, and privacy/vendor/legal approvals remain separate launch requirements. This owner-approved tariff alone is not a signed contract or customer billing authorization.
+
+## November 9 update — liability business decision closed, insurance deferred
+
+The earlier open-liability row reflects the November 7 review, **not the current
+owner decision**. The owner approved a proposed SafeBus Provider cap of the
+**greater of CA$25,000 or 12-Month Fees** for general claims, and the
+**greater of CA$100,000 or twice 12-Month Fees** for privacy/security claims.
+The privacy/security cap is non-stacking and aggregate across the accepted
+agreement. MSA section 8 defines the 12-month, net-of-discount, GST/HST-exclusive
+fee base, non-excludable liability exceptions and mandatory DPA duties.
+
+**Insurance quotations and purchase were deferred; no policy, coverage or
+insurer has been verified.** Customer-specific acceptance, procurement terms,
+negotiated third-party indemnities and financial-risk review remain required.
+No customer agreement publication or launch authorization follows.
