@@ -73,3 +73,24 @@ represented** in the agreement UI or released contract documents. The existing
 unpublished agreement catalog must not be published merely because the owner
 approved monetary cap amounts. Customer procurement, legal/risk/insurance and
 pilot release gates remain independent.
+
+
+## November 9 addendum — limited indemnity clauses in the electronic contract
+
+Owner has also approved a **limited, fault-based SafeBus third-party indemnity**
+for its covered contractual privacy/security breach claims and for alleged
+infringement by unmodified SafeBus software under authorized use. The privacy
+and general caps respectively control, with reasonable defence costs inside
+rather than on top of the aggregate amounts; no claim stacking. Do not add
+indemnities for the school authority's independent negligence, unlawful
+instructions or unauthorized changes. MSA §§8.3–8.5 and the Order Form define
+notice, defence management, settlement consent, mandatory-law exceptions and
+the continuing absence of any insurance representation.
+
+Before allowing electronic customer acceptance, provide the **exact final
+published clauses** as part of the versioned eight-document agreement and
+record customer assent under the existing authenticated signing process.
+No new standalone checkbox or silent retroactive contract amendment is needed
+or approved. District-specific procurement indemnity requests must first be
+reviewed and incorporated into the authorized signed customer package; do not
+activate the unsigned drafts or claim insurer funding based on owner approval.
