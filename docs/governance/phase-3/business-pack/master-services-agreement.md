@@ -274,27 +274,95 @@ It does not waive statutory refunds or relief, remedies for material breach,
 or any express exception accepted by both parties. The absence of automatic
 SLA credits does not by itself waive available legal or agreed remedies.
 
-### 8.3 Third-party claims, procurement and insurance status
+### 8.3 Owner-approved limited, fault-based third-party indemnification (proposed)
 
-No intellectual-property infringement, personal injury/property damage,
-third-party privacy claim or Customer-instruction **indemnity is granted,
-assumed to be unlimited or assigned a separate cap merely by this draft**.
-Any duty to defend or indemnify, covered claims, defence-cost treatment and
-exceptions must be expressly negotiated and recorded in a Customer-specific
-signed Order Form rider or amendment, consistent with mandatory law. Any
-negotiated defence must include prompt notice, control of defence, cooperation
-and no settlement admitting liability or imposing obligations on the other
-party without consent. No separate reciprocal Customer liability cap is
-selected by this Provider proposal.
+**Only if expressly incorporated into the Customer's accepted MSA and Order
+Form**, SafeBus, as Provider, will defend and indemnify the Customer against
+the following **third-party claims**, and only to the extent attributable to
+SafeBus's covered conduct:
 
-The owner **deferred insurance quotations**. **No active CGL, technology E&O,
-cyber/privacy policy, certificate, insured amount or insurer backing is
-represented**. The Provider must assess each school authority's procurement
-requirements, requested limits/indemnities and risk/financial capacity before
-entering a binding contract; a customer-specific exception requires an express
-authorized written agreement, not a silent change to this standard draft.
-These approved proposed caps do **not** approve insurance, customer acceptance
-or commercial/pilot launch.
+1. **Provider-caused privacy/security claims.** A third party's claim against
+   the Customer arising from SafeBus's breach of its own contractual
+   confidentiality, privacy, data-protection or information-security
+   obligations concerning Customer information, to the extent caused by
+   SafeBus's acts or omissions (including acts of its personnel or
+   subcontractors for which SafeBus is contractually responsible). The
+   **privacy/security aggregate cap in section 8.1** applies.
+2. **Provider-software intellectual-property claims.** A third party's claim
+   that the **unmodified SafeBus software as provided by SafeBus**, when used
+   by the Customer **as authorized under the Agreement**, infringes that
+   third party's enforceable intellectual-property rights in Canada. The
+   **general aggregate cap in section 8.1** applies. This does not create a
+   guarantee concerning Customer-supplied content or third-party materials
+   not provided as SafeBus software.
+
+The indemnity covers **reasonable, documented costs of defending a covered
+third-party claim and finally awarded damages or a settlement approved under
+section 8.4**. **Defence costs, settlements and damages all count toward,
+and do not increase, the single applicable aggregate cap** in section 8.1.
+Claims raising more than one category cannot stack the general and
+privacy/security caps or recover the same loss twice. Section 8.2's
+non-excludable liability exceptions remain controlling. No blanket,
+uncapped or unlimited third-party indemnity is granted.
+
+SafeBus does **not** indemnify the Customer to the extent a third-party
+claim results from the Customer's **independent negligence, unlawful
+instructions, unauthorized modifications or combinations, misuse of SafeBus,
+Customer-supplied materials, or other independently wrongful Customer
+conduct**. Where more than one party contributed, only the portion
+attributable to SafeBus's covered conduct is eligible; allegations alone
+do not allocate ultimate fault. This is **not** a waiver of SafeBus's
+independent DPA, security, subprocessor or non-excludable legal duties.
+No reciprocal Customer indemnity is silently imposed.
+
+### 8.4 Claim defence, cooperation and settlement controls (proposed)
+
+The Customer must give SafeBus **reasonably prompt written notice** of a
+covered third-party claim, with available details; late notice reduces
+SafeBus's duties only to the extent that the delay materially prejudices
+the defence. SafeBus may direct the defence with suitably qualified
+counsel and must keep the Customer reasonably informed; the Customer
+may participate with its own counsel at its own expense, subject to
+non-excludable legal rights and an actual conflict of interest. Both
+parties must provide reasonable cooperation and preserve relevant
+evidence, without requiring unlawful disclosure or weakening privacy.
+
+Neither party may settle a claim on the other's behalf **without prior
+written consent** where the settlement admits the other party's fault,
+imposes nonmonetary duties, restricts its operations, requires disclosure
+or creates payment obligations for it. Consent must not be unreasonably
+withheld or delayed when its interests are adequately protected. A
+settlement does not override a public authority's mandatory powers or
+legal/privacy reporting duties. No indemnity payment or legal fee may
+circumvent the applicable aggregate limit by reclassification.
+
+For a covered intellectual-property allegation, SafeBus may seek a right
+to continue the Customer's authorized use, or offer a non-infringing
+replacement or modification consistent with the accepted service scope.
+If these cannot reasonably resolve the issue, any further termination,
+breach remedy or refund must follow the accepted MSA, Order Form and
+applicable mandatory law; this clause does **not** invent a blanket
+termination fee or automatic paid-period refund.
+
+### 8.5 Procurement, exclusions and insurance status
+
+**Personal injury/property damage indemnities, additional third-party
+privacy guarantees, broader intellectual-property indemnities, special
+defence-cost treatment and school-authority procurement exceptions**
+are **not silently agreed** and require separate, authorized written
+review and acceptance in the relevant customer-specific Order Form
+rider or amendment. Any variation must state precisely whether and how
+it modifies the section 8.1 caps and section 8.2 mandatory exceptions;
+there is no unilateral district variation or implied unlimited obligation.
+
+The owner **deferred insurance quotations and purchases**. **No active
+CGL, technology E&O, cyber/privacy insurance, certificate, insured
+limit or insurer backing is represented**. Before any real district
+agreement, SafeBus must examine the school authority's procurement
+requirements, third-party exposure and ability to fund uninsured
+liabilities. This approved business **proposal is not an executed
+customer agreement, an insurer confirmation, legal enforceability
+assurance or commercial/pilot launch authorization**.
 
 ## 9. Suspension, termination and exit
 
