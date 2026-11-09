@@ -177,7 +177,9 @@ export async function fetchTenantPrices(): Promise<SubscriptionPrice[]> {
         p.currency !== 'cad' ||
         !Number.isSafeInteger(p.unitAmount) ||
         p.unitAmount < 0 ||
-        !['month', 'year'].includes(p.interval),
+        !['month', 'year'].includes(p.interval) ||
+        (p.taxBehavior !== undefined &&
+          !['inclusive', 'exclusive', 'unspecified'].includes(p.taxBehavior)),
     )
   )
     throw new Error('Subscription options could not be loaded. Try again shortly.');

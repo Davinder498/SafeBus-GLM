@@ -102,7 +102,7 @@ function FleetMapUnavailable({ reason }: { reason: string }) {
   );
 }
 
-function CoordinateFallback({ trips, formatters, missingConfig }: { trips: AdminLiveTrip[]; formatters: FleetMapFormatters; missingConfig: boolean }) {
+function CoordinateFallback({ trips, formatters, missingConfig, onRetry }: { trips: AdminLiveTrip[]; formatters: FleetMapFormatters; missingConfig: boolean; onRetry?: () => void }) {
   const locations = toFleetMapLocations(trips, formatters.safeFleetLabel);
   return (
     <Card className="p-5" data-testid={locations.length === 0 ? 'admin-live-fleet-map-empty' : 'admin-live-fleet-map-fallback'}>
@@ -116,6 +116,11 @@ function CoordinateFallback({ trips, formatters, missingConfig }: { trips: Admin
         <div className="mt-3 rounded-lg bg-warning-50 p-3 text-sm text-warning-700" role="alert" data-testid="admin-live-fleet-map-tile-error">
           The map provider could not load. Verified fleet status remains available below.
         </div>
+      )}
+      {onRetry && (
+        <Button type="button" size="sm" variant="secondary" className="mt-3" onClick={onRetry}>
+          Retry map
+        </Button>
       )}
       {locations.length === 0 ? (
         <DataState title="No active buses with valid coordinates." message="Active trips are listed below. Map markers appear after a current GPS update includes valid coordinates." />
@@ -159,6 +164,7 @@ function ViewportChangeReporter({ onViewportChange }: { onViewportChange?: (boun
 
 export function AdminFleetMap({ trips, overlays = [], tileConfig, formatters, onViewportChange }: { trips: AdminLiveTrip[]; overlays?: RouteOverlay[]; tileConfig: MapTileConfig; formatters: FleetMapFormatters; onViewportChange?: (bounds: AdminMapViewportBounds) => void }) {
   const [tileFailed, setTileFailed] = useState(false);
+  const [tileAttempt, setTileAttempt] = useState(0);
   const locations = useMemo(() => toFleetMapLocations(trips, formatters.safeFleetLabel), [trips, formatters.safeFleetLabel]);
   const overlayPositions = useMemo(
     () => overlays.flatMap((overlay) => overlay.stops.map((stop) => [stop.latitude, stop.longitude] as LatLngExpression)),
@@ -171,13 +177,17 @@ export function AdminFleetMap({ trips, overlays = [], tileConfig, formatters, on
   const center = useMemo<LatLngExpression>(() => locations[0]?.position ?? overlayPositions[0] ?? [51.0447, -114.0719], [locations, overlayPositions]);
 
   const handleTileError = useCallback(() => setTileFailed(true), []);
+  const retryMap = useCallback(() => {
+    setTileFailed(false);
+    setTileAttempt((current) => current + 1);
+  }, []);
 
   if (!tileConfig.isConfigured) {
     return <CoordinateFallback trips={trips} formatters={formatters} missingConfig />;
   }
 
   if (tileFailed) {
-    return <CoordinateFallback trips={trips} formatters={formatters} missingConfig={false} />;
+    return <CoordinateFallback trips={trips} formatters={formatters} missingConfig={false} onRetry={retryMap} />;
   }
 
   return (
@@ -190,7 +200,7 @@ export function AdminFleetMap({ trips, overlays = [], tileConfig, formatters, on
           {locations.length === 0 && <p className="mt-3 text-sm font-semibold text-gray-700" data-testid="admin-live-fleet-map-empty">No active buses with valid coordinates.</p>}
         </div>
         <section className="h-96" aria-label="Admin live fleet interactive map" data-testid="admin-live-fleet-map-region">
-          <MapContainer center={center} zoom={locations.length === 1 ? 14 : 11} scrollWheelZoom className="h-full w-full" data-testid="admin-live-fleet-leaflet-map">
+          <MapContainer key={tileAttempt} center={center} zoom={locations.length === 1 ? 14 : 11} scrollWheelZoom className="h-full w-full" data-testid="admin-live-fleet-leaflet-map">
             <FleetTileLayer config={tileConfig} onTileError={handleTileError} />
             <FitInitialBounds bounds={bounds} />
             <FitFleetControl bounds={bounds} disabled={bounds === null} />

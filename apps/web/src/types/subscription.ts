@@ -65,6 +65,7 @@ export interface SubscriptionPrice {
   currency: string;
   unitAmount: number;
   interval: 'month' | 'year';
+  taxBehavior?: 'inclusive' | 'exclusive' | 'unspecified';
 }
 
 export interface SubscriptionInvoice {

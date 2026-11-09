@@ -91,7 +91,11 @@ async function customerForCheckout(ctx, stripe, state) {
 }
 
 async function startCheckout(ctx, stripe, state, input) {
-  await validateApprovedPrice(stripe, input.priceId, ctx.config.stripeProductId);
+  const selectedPrice = await validateApprovedPrice(stripe, input.priceId, ctx.config.stripeProductId);
+  // Never infer tax-inclusive treatment from a legacy 'unspecified' price.
+  // A newly approved inclusive Stripe price uses automatic tax for the
+  // district's actual billing address, without changing old catalog records.
+  const isInclusivePrice = selectedPrice.tax_behavior === 'inclusive';
   const origin = validatePortalOrigin(ctx.config.appOrigin);
   if (!origin) throw new Error('billing_not_configured');
   const customer = await customerForCheckout(ctx, stripe, state);
@@ -110,7 +114,8 @@ async function startCheckout(ctx, stripe, state, input) {
       throw new Error('billing_subscription_review_required');
     if (
       session.metadata?.price_id === input.priceId &&
-      session.metadata?.quantity === String(input.quantity)
+      session.metadata?.quantity === String(input.quantity) &&
+      (!isInclusivePrice || session.automatic_tax?.enabled === true)
     )
       return { url: session.url };
     await stripe.checkout.sessions.expire(
@@ -127,6 +132,9 @@ async function startCheckout(ctx, stripe, state, input) {
       client_reference_id: state.tenant_id,
       integration_identifier: 'safebus_checkout_hqrzftkm',
       line_items: [{ price: input.priceId, quantity: input.quantity }],
+      // Enabled only for an explicitly inclusive price; the two existing
+      // temporary unspecified Stripe prices keep their existing behavior.
+      ...(isInclusivePrice ? { automatic_tax: { enabled: true } } : {}),
       payment_method_collection: 'always',
       // Stripe keeps business billing details with the invoice, outside SafeBus.
       billing_address_collection: 'required',

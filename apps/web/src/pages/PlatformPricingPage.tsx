@@ -21,7 +21,7 @@ import { safeBusDisplayText } from '@/utils/brand';
 const inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm';
 function describeChange(change: CatalogMutation): string {
   if (change.action === 'create_price')
-    return `Publish ${change.name} at ${formatMoney(change.unitAmount, 'cad')} per active bus per ${change.interval}? Existing subscribers keep their contracted price.`;
+    return `Publish ${change.name} at ${formatMoney(change.unitAmount, 'cad')} per active bus per ${change.interval}, including applicable GST/HST? Existing subscribers keep their contracted price.`;
   if (change.action === 'create_discount')
     return `Create ${change.code} for ${change.kind === 'percent' ? `${change.value}%` : formatMoney(change.value, 'cad')} off ${change.duration === 'once' ? 'one invoice' : 'every invoice'}? Customers can redeem it at secure checkout. Fixed discounts apply to the invoice subtotal, not to each bus.`;
   return `${change.active ? 'Make this item available for new selections again' : 'Archive this item to stop new selections'}? Existing subscription prices and redeemed discounts are preserved.`;
@@ -165,8 +165,9 @@ export function PlatformPricingPage() {
           <p className="font-semibold text-navy-900">A clear price for every active bus</p>
           <p className="mt-2 text-sm leading-6 text-navy-800">
             Prices are in Canadian dollars, billed monthly or annually. Publishing a new price makes
-            it available for selection; it does not move existing subscribers. Tax follows your
-            existing Stripe configuration.
+            it available for selection; it does not move existing subscribers. New prices created
+            here explicitly include applicable GST/HST; existing prices retain their original
+            Stripe tax behaviour.
           </p>
         </Card>
         {message && (
@@ -243,6 +244,13 @@ export function PlatformPricingPage() {
                             / bus / {p.interval === 'month' ? 'month' : 'year'}
                           </span>
                         </p>
+                        <p className="mt-2 text-sm text-slate-600">
+                          {p.taxBehavior === 'inclusive'
+                            ? 'Applicable GST/HST included in this price'
+                            : p.taxBehavior === 'exclusive'
+                              ? 'Applicable tax calculated in addition to this price'
+                              : 'Tax behaviour not specified on this existing Stripe price'}
+                        </p>
                         <Button
                           className="mt-3"
                           type="button"
@@ -276,6 +284,10 @@ export function PlatformPricingPage() {
               </Card>
               <Card className="p-5 sm:p-6">
                 <h2 className="text-lg font-bold text-navy-900">Publish a subscription price</h2>
+                <p className="mt-2 text-sm text-slate-600">
+                  Prices created here include applicable GST/HST. Confirm the final amount and
+                  billing terms before publishing. Existing prices are not changed.
+                </p>
                 <form aria-label="New subscription price" onSubmit={queuePrice}>
                   <fieldset disabled={locked} className="mt-5 space-y-4 disabled:opacity-60">
                     <Field label="Price name" htmlFor="price-name">
