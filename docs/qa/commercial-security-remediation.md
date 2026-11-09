@@ -234,3 +234,8 @@ cases then passed. The final workspace run passed all 18 cases, including the ne
 registration-failure scenario in both viewports. The complete mobile UI suite also
 passed all 32 cases. These are mocked browser checks, not hosted authorization or
 physical-device acceptance.
+
+
+## Live rollback-only security acceptance update — November 9, 2026
+
+Three existing repository SQL procedures were run, unmodified, through read-only production transactions, each ending in explicit `ROLLBACK`. `commercial-security-existing-database-readonly.sql` passed malformed/no-identity session and API/cross-column denial checks; `guardian-existing-database-readonly.sql` passed four anonymous/no-identity guardian checks; and `admin-trip-reporting-existing-database-readonly.sql` passed authorized/denied reporting scenarios for the **available** platform, district-admin, driver and guardian session roles, with one district-admin session unavailable/skipped. No customer row data or identity identifiers were returned, no fixtures were inserted, and no permission changes were made. The role/claim checks use transaction-local simulations against actual catalog/session state and do **not** establish cryptographic signed-JWT/refresh/Realtime revocation behavior or full two-district positive/negative access, which still require final controlled acceptance.

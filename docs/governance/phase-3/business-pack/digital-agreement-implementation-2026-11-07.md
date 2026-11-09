@@ -39,3 +39,12 @@ The order form must accurately specify the approved price, bus-count terms, bill
 **Engineering completeness is not commercial authorization.** The platform can implement the complete acceptance-and-receipt flow while initial agreement publication remains disabled until factual, customer-ready text exists.
 
 New code and migrations are part of PR #405; no automatic merge, Stripe configuration change, supplier approval, or legal representation is implied.
+
+
+## Installed database and precise archive status — November 9, 2026
+
+The production database already contains the agreement tables and RPCs with 35 transport-write triggers; the earlier “pending migration” note above is historical, **not current installation status**. A read-only aggregate audit found 1 immutable document version, 0 published catalogs, 0 packages, 0 receipts and 0 newly gated school authorities. It did not inspect private document contents.
+
+To prevent unsigned terms from being mistaken for a production offer, an absent RPC now surfaces as a configuration error rather than the ordinary `not_issued` status. The file upload now invalidates stale asynchronous reads when an operator changes document kind or chooses another file, so an older body cannot accidentally replace the reviewed selection.
+
+The on-demand PDF renderer is ASCII-compatible and can approximate non-ASCII contract characters. Therefore a signed-in school authority administrator can also download an **exact UTF-8 JSON archive** derived from the same protected immutable receipt RPC and containing all eight original source document bodies, metadata and receipt hashes. The JSON archive does not go to a public bucket or create a second source of truth. Publishing the final legal/commercial document set remains separately blocked until its actual approvals exist. Tests are synthetic and do not issue an actual contract.

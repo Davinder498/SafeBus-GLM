@@ -58,10 +58,6 @@ export interface AgreementCatalog {
   published_at?: string;
   content_sha256?: string;
 }
-const noAgreement: DistrictAgreement = {
-  tenant_name: 'School authority', status: 'not_issued', documents: [],
-};
-
 function client() {
   if (!supabase) throw new Error(supabaseConfigError ?? 'Supabase not configured.');
   return supabase;
@@ -87,7 +83,7 @@ async function callRpc(name: string, args?: Record<string, unknown>) {
 export async function getDistrictAgreement(): Promise<DistrictAgreement> {
   const { data, error } = await client().rpc('get_my_district_agreement');
   if (error) {
-    if (missingRpc(error)) return { ...noAgreement };
+    if (missingRpc(error)) throw new Error('Agreement service is not deployed. Contact SafeBus support.');
     throw new Error('Unable to securely load the agreement. Please retry.');
   }
   const value = requireObject(data);
@@ -114,7 +110,7 @@ export async function getPlatformAgreement(tenantId: string): Promise<PlatformAg
     p_tenant_id: tenantId,
   });
   if (error) {
-    if (missingRpc(error)) return { status: 'not_issued' };
+    if (missingRpc(error)) throw new Error('Agreement service is not deployed. Contact SafeBus support.');
     throw new Error('Unable to securely load contract status.');
   }
   const value = requireObject(data);
@@ -143,7 +139,7 @@ export async function listMyAgreementReceipts(): Promise<Array<{
   id: string; signed_at: string; receipt_sha256: string; bundle_sha256: string; actor_email: string;
 }>> {
   const { data, error } = await client().rpc('list_my_district_agreement_receipts');
-  if (error && missingRpc(error)) return [];
+  if (error && missingRpc(error)) throw new Error('Agreement archive service is not deployed. Contact SafeBus support.');
   if (error) throw new Error('Unable to load contract archive.');
   if (!Array.isArray(data)) throw new Error('Unexpected contract archive response.');
   return data as Array<{id: string; signed_at: string; receipt_sha256: string;
@@ -151,6 +147,66 @@ export async function listMyAgreementReceipts(): Promise<Array<{
 }
 export async function getAgreementReceipt(receiptId: string): Promise<AgreementReceipt> {
   return callRpc('get_my_district_agreement_receipt', { p_receipt_id: receiptId }) as unknown as AgreementReceipt;
+}
+
+const requiredDocumentKinds = new Set([
+  'msa', 'dpa', 'order_form', 'security', 'sla',
+  'acceptable_use', 'data_return', 'suppliers',
+]);
+
+/**
+ * The receipt snapshot is the canonical UTF-8 source. The complementary PDF
+ * currently uses an ASCII-compatible font and may approximate Unicode text.
+ * JSON strings preserve each signed document body exactly, including accented
+ * school-authority names and non-Latin writing.
+ */
+export function serializeExecutedAgreementArchive(receipt: AgreementReceipt): string {
+  const snapshot = receipt?.document_snapshot;
+  const documents = snapshot?.documents;
+  if (
+    !receipt?.id || !receipt.signed_at ||
+    !/^[0-9a-f]{64}$/.test(receipt.bundle_sha256 ?? '') ||
+    !/^[0-9a-f]{64}$/.test(receipt.receipt_sha256 ?? '') ||
+    !Array.isArray(documents) ||
+    documents.length !== requiredDocumentKinds.size ||
+    new Set(documents.map((doc) => doc?.kind)).size !== requiredDocumentKinds.size ||
+    documents.some((doc) =>
+      !doc || !requiredDocumentKinds.has(doc.kind) ||
+      typeof doc.body !== 'string' || doc.body.trim().length === 0 ||
+      typeof doc.title !== 'string' ||
+      typeof doc.version !== 'string' ||
+      !/^[0-9a-f]{64}$/.test(doc.sha256)
+    )
+  ) {
+    throw new Error('Executed agreement archive is incomplete. Contact SafeBus support.');
+  }
+  return JSON.stringify({
+    format: 'safebus-executed-agreement-utf8-v1',
+    receipt_id: receipt.id,
+    signed_at: receipt.signed_at,
+    bundle_sha256: receipt.bundle_sha256,
+    receipt_sha256: receipt.receipt_sha256,
+    document_snapshot: snapshot,
+  }, null, 2) + '\n';
+}
+
+/** Download the authenticated, exact UTF-8 snapshot. No public file bucket. */
+export async function downloadExecutedAgreementArchive(receiptId: string): Promise<void> {
+  const receipt = await getAgreementReceipt(receiptId);
+  const data = new Blob([serializeExecutedAgreementArchive(receipt)], {
+    type: 'application/json;charset=utf-8',
+  });
+  const url = URL.createObjectURL(data);
+  try {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `SafeBus-Executed-Agreement-${receiptId}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
 }
 export async function downloadExecutedAgreementPdf(receiptId: string): Promise<void> {
   const { data: { session } } = await client().auth.getSession();

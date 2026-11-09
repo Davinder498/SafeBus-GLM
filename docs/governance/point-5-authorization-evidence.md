@@ -143,3 +143,8 @@ The deferred one-time production adoption is cryptographically pinned through
 migration `0088`. It cannot silently mark migration `0089` as applied; `0089`
 remains a blocking pending migration until its separately approved validation
 and production rollout are complete.
+
+
+## Read-only current-system checks — November 9, 2026
+
+The current connected production Supabase project passes the repository's unmodified, rollback-only `commercial-security-existing-database-readonly.sql` and `guardian-existing-database-readonly.sql` (including four explicit anonymous/no-identity denial assertions). The `admin-trip-reporting-existing-database-readonly.sql` suite also passed for all available platform, tenant-admin, guardian and driver session cases; one tenant-admin case was skipped because no current session was available. These are catalog and transaction-local role/claim tests against existing state, **not** authenticated HTTP requests with independently signed JWTs. The original Point 5 requirement for real cross-tenant signed-session/API and already-open Realtime revocation, authorized operational evidence and human approval remains open. The recorded results neither grant a new permission nor modify production schema.

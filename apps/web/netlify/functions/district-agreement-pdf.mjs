@@ -93,6 +93,8 @@ export function renderExecutedAgreementPdf(receipt) {
     'Agreement package ID: ' + snap.package_id,
     'Package SHA-256: ' + receipt.bundle_sha256,
     'Immutable receipt SHA-256: ' + receipt.receipt_sha256,
+    'PDF rendering note: non-ASCII characters may be approximated.',
+    'The authenticated UTF-8 agreement archive preserves the exact signed source.',
     'Affirmations: electronic-record consent, binding-authority declaration,',
     'and deliberate acceptance of the complete identified document package.',
     '',
