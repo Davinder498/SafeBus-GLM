@@ -92,3 +92,19 @@ The following all remain **not approved**: `docs/governance/privacy-readiness.js
 ## Supporting machine-readable working register
 
 The [supplier approval evidence ledger](phase-3/supplier-approval-ledger-2026-11-06.json) records each supplier's enabled/conditional purpose, bounded observations, required private evidence and explicit pending decision. It is a checklist and is **not** an alternate release authorization. The protected `privacy-readiness.json` gate is the only release-controlled privacy approval record, and remains `not_approved`.
+
+## November 9 commercial update — approved negotiating caps, no insured status
+
+The November 6 review's insurance/liability row was a historical open-issue
+snapshot. Subsequently the owner approved proposed SafeBus Provider limits for
+its initial-pilot MSA: general aggregate **greater of CA$25,000 or 12-Month
+Fees** and privacy/security aggregate **greater of CA$100,000 or twice
+12-Month Fees**, non-stacking and excluding liability prohibited by law from
+being limited. The formal source is MSA section 8 and the matching Order Form;
+no customer has accepted the proposed limits merely through this decision.
+
+**Insurance quotations and purchase are deferred**, and **no policy or
+coverage is claimed**. Customer-specific public-authority procurement,
+indemnity/legal-risk assessment, supplier accountability and privacy/operational
+release approval remain unresolved. Do not turn any protected release gate to
+approved because these monetary terms have been drafted.
