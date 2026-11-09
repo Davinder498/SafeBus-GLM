@@ -22,14 +22,14 @@ The app does not use data for advertising, advertising profiles, sale, or in-app
 - Supabase provides authentication, database, realtime, and approved server-side functions.
 - Netlify delivers the web application and approved functions.
 - Geoapify receives map tile coordinates, IP address, origin/referrer, and ordinary request metadata; SafeBus account identifiers are not added to tile requests.
-- Firebase Cloud Messaging receives the Android registration token and notification/event identifiers **and currently may receive detailed notification titles/bodies containing student names or bus details**, plus network/delivery metadata. This fails the desired generic-payload policy; see the November 8 supplier review.
+- Firebase Cloud Messaging receives the opt-in Android token, opaque notification identifier, event type/category and delivery metadata. **After protected dispatcher v7 deployment on November 8, 2026**, the provider-visible notification title is a fixed generic event label and the body is `Open SafeBus to view details.` Student names, buses, routes and stops remain in the authorized in-app inbox. Historical provider disclosures and account-country/retention evidence still require assessment.
 - The final declaration must identify every approved email, monitoring, or support processor actually enabled in production. Do not declare a planned processor as active or omit an enabled processor.
 
 ## Notification evidence
 
 - FCM token and installation identity are collected only after contextual opt-in for guardian/driver Android push.
 - Tokens are restricted service credentials, never exposed to browser table access, application logs, lock-screen content, or analytics.
-- **November 8, 2026 deployed discrepancy / release blocker:** The server-side generic-preview setting does not redact payloads before the FCM transport. The live resolver passes detailed notification copy and the dispatcher sends it directly to Google; Android PRIVATE display visibility does not prevent provider disclosure. Do not approve privacy-safe push claims or the Play data-safety declaration until a separately reviewed redaction fix is installed and verified.
+- **November 8, 2026 mitigation deployed and source verified:** The former FCM detailed-text mismatch was fixed in the v7 Edge Function (protected [run #42533721182](https://github.com/Davinder498/SafeBus-GLM/actions/runs/42533721182), merged source `fa8082152e45108341066246244f31570fbdc2e3`). The bundled production module exactly matches reviewed code and no longer copies the database's detailed title/body into Firebase notification text. Android PRIVATE display visibility is separate. **There have been no observed post-release real-device deliveries**; historical message handling, provider terms, delivery acceptance and Play declarations remain pending.
 - Tokens are refreshed at enabled app startup, revoked on sign-out/account change/user action, invalidated on definitive FCM rejection, and staled after 90 days without refresh.
 - Firebase Cloud Messaging is a required subprocessor and push remains tenant-gated off until approval is recorded.
 - Users can disable push, revoke registered devices, or open Android system notification controls. The authenticated in-app inbox remains authoritative.

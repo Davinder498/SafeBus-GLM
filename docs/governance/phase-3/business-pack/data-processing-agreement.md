@@ -90,6 +90,12 @@ agreed fee/data-return treatment. No change proceeds without the approvals
 required by the contract and applicable law. Confirm the notice period before
 signing. SafeBus remains responsible for its agreed supplier obligations.
 
+### Current supplier-specific facts for the final processing appendix (non-binding review)
+
+The [verified supplier-processing worksheet](district-supplier-processing-appendix-review-2026-11-08.md) records the data flows to assess with a public school authority: Supabase stores core records in Canada Central but secondary countries remain under review; Netlify functions handle invitation and notification data while live execution/log countries are unverified; Resend stores outbound email content in the **United States**, and enabled pickup/drop-off emails can include a student's full name and bus number; generic Firebase notification text is deployed to the provider after the November 8, 2026 v7 update, while device tokens, opaque IDs and event categories still reach Google; Geoapify maps use the standard CDN-hosted tile endpoint, not the separately identified EU-only API host.
+
+The authority and SafeBus must settle whether detailed student event emails and the relevant cross-border flows are lawful and necessary, plus vendor-specific contracts, countries, retention and notice requirements. Stripe billing and Zoho ordinary business email are separate SafeBus-purpose services, not automatically transport-data subprocessors. **Do not treat this review paragraph as an executed supplier appendix, an insurance claim, a GDPR determination or final approval.**
+
 ## 5. Requests and customer cooperation
 
 For Customer records, the Customer normally decides statutory access,

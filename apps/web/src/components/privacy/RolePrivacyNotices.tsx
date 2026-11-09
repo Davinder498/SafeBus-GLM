@@ -73,7 +73,9 @@ export function RolePrivacyNotices() {
           You do not need to share your phone's GPS to see the bus. The map represents the bus, not
           your child's phone or current whereabouts. A pickup/drop-off entry records an operational
           action; it is not continuous child tracking. If you enable event emails, they may include
-          your student's first name, the recorded event and its time.
+          your student's full name, the bus number, the recorded event and its time. Email delivery
+          uses Resend, which stores message content and delivery logs in the United States. The
+          school authority decides which external notification content and recipients are authorized.
         </p>
         <p className="mt-3">
           Manage optional notifications in settings. Ask the issuing school authority's privacy

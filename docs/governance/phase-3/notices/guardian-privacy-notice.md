@@ -28,11 +28,8 @@ transport records on its instructions and separately handles its necessary
 business/security/support records as described in the business privacy policy.
 Your guardian app link does not settle a statutory right to every student record.
 
-Enabled pickup/drop-off email can contain the student's first name, recorded
-event and time. It is not continuous child location or proof of current whereabouts.
-Android FCM push requires your own opt-in and device permission. It uses a
-device token and limited delivery data; private previews exclude names, routes,
-stops, coordinates and internal identifiers. Student QR remains outside this
+Enabled pickup/drop-off emails can contain the student's **full name, bus number, recorded event and time**. SafeBus uses Resend for delivery, and Resend states it stores message content and logs in the United States. The school authority determines which external email content and recipients are authorized; using an app notification instead may reduce external disclosure. An email event is not continuous child tracking or proof of current whereabouts.
+Android FCM push requires your opt-in and device permission. It sends the device token, an opaque notification identifier, event category and necessary delivery metadata to Google. Following the protected November 8 server update, the provider-visible notification **text** is generic and excludes student names, bus/route/stop labels and coordinates. Full details stay in the authorized SafeBus inbox. Student QR remains outside this
 commercial notice pending its own acceptance. Maps disclose
 viewport tile coordinates, IP and request metadata to the map provider. Hosting,
 Auth and email providers process necessary information; actual countries and
