@@ -157,7 +157,8 @@ export function SubscriptionOverview({
           {subscription.collectionMethod === 'send_invoice'
             ? 'Invoice/PO subscriptions follow their accepted customer-specific terms. Outstanding invoices remain payable. Any new approved invoice/PO arrangement uses the standard renewal and cancellation policy.'
             : 'Cancel at any time with no early cancellation fee, effective at the end of the trial or paid term. Cancel during the trial to avoid the first charge. No partial refund of a paid period applies except where required by law or expressly agreed.'}
-          {' '}Applicable taxes and discounts are detailed on the actual invoice;
+          {' '}Applicable taxes and discounts are detailed on the actual invoice.
+          This summary does not independently verify the final tax calculation;
           the accepted school-authority order governs.
         </p>
         {subscription.usageExceedsAllowance && (
