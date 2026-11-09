@@ -40,9 +40,9 @@ signing authority, insurance and backup coverage require separate verification.
 | Non-payment                                                      | Written escalation; no automated operational suspension                                       | Approved suspension notice/process; billing state never automatically disables a tenant                                                   |
 | `[GENERAL_LIABILITY_CAP]`, `[PRIVACY_LIABILITY_CAP]`             | No selected amounts                                                                           | Owner risk/insurance review, customer negotiation and legal review of exclusions                                                          |
 | Insurance | Purchase deferred by owner; no active coverage asserted | Insurance quotes, customer requirements, bound policy and liability caps pending before applicable pilot |
-| Support hours, timezone and holidays | Owner reconfirmed Monday–Friday 8 a.m.–5 p.m. Alberta local time (America/Edmonton) | Holiday/owner-absence/backup escalation unresolved; no 24/7 promise |
-| Availability, latency, GPS freshness and notification targets    | All unapproved; recovery commitments excluded from this launch review                         | Evidence for any selected promise; architecture review does not establish measured capacity                                               |
-| Credit rates/cap                                                 | Unfilled                                                                                      | Commercial remedy and claim process after service targets are approved; define credit treatment for monthly vs annual billings                                                                    |
+| Support hours, timezone and holidays | **Owner-approved 2026-11-09:** ordinary staffed support Monday–Friday 8:00 a.m.–5:00 p.m. America/Edmonton **excluding Alberta's nine general holidays**; no guaranteed after-hours human response | Verify staffed access, monitored support inbox and independently required security/privacy escalation before pilot; holiday calendar follows official Alberta list, with no additional optional holiday closures |
+| Availability, latency, GPS freshness and notification targets | **Owner-approved initial-pilot SLA:** no guaranteed uptime, request latency, GPS/ETA freshness, notification delivery, response/repair time or recovery objective; monitoring is not 24/7 human support | Preserve accurate outage/stale-location disclosures; future guarantees only after measured evidence, staffing and accepted amendment |
+| Credit rates/cap | **Owner-approved initial-pilot SLA:** no automatic SLA credits/penalties on monthly or annual subscriptions; no unsupported credit tiers | Preserve mandatory legal remedies, customer-specific breach remedies and DPA/security duties; do not treat this as a liability-cap decision |
 | Incident notification                                            | Proposed initial customer notice within 24 hours of awareness, sooner when required           | Operational capability and applicable legal/contract deadlines; never wait for final forensics or counsel appointment to contain/escalate |
 | Supplier/cross-border list                                       | Known/proposed suppliers; locations unverified                                                | Actual agreements, countries, retention/logging, security review, customer approval and required notices                                  |
 | Retention                                                        | Existing proposed periods; not activated                                                      | Purpose, legal duties/holds, approved schedule, enforcement tests and separate backup windows                                             |
@@ -185,3 +185,29 @@ invoice/PO renewal updates explicitly use `proration_behavior: 'none'`,
 adds consistent term/trial/refund disclosures to customer UI, and tests
 that no immediate cancellation or refund operation is requested. No existing
 customer subscription has been modified by this change.
+
+## Final initial-pilot staffed support, holiday and SLA policy — November 9, 2026
+
+The owner explicitly approved **Option A** for the initial pilot: **Monday–Friday
+8:00 a.m.–5:00 p.m. America/Edmonton**, **excluding Alberta's nine general
+holidays**: New Year's Day, Alberta Family Day, Good Friday, Victoria Day,
+Canada Day, Labour Day, Thanksgiving Day, Remembrance Day and Christmas Day.
+Use the official Alberta holiday date for each year:
+https://www.alberta.ca/alberta-general-holidays . Optional holidays such as
+Heritage Day, Easter Monday, National Day for Truth and Reconciliation and
+Boxing Day are not automatically added as closures. This is an approved
+business policy, not evidence that backup staffing exists.
+
+The owner **did not approve** 24/7 staffed response, guaranteed after-hours
+acknowledgement, uptime/latency/GPS/ETA/notification targets, guaranteed
+resolution or recovery times, or automatic SLA credits for either monthly
+or annual plans. Monitoring may operate outside support hours but is not a
+human-response promise. The MSA, SLA and Order Form must apply this same
+calendar and no-guarantee model. Material service issues are investigated
+with commercially reasonable efforts; mandatory remedies are not waived.
+
+**Open operational gate, not an unasked business choice:** Verify a practical
+security/privacy incident reporting and containment route that meets the
+separate DPA and applicable legal obligations after actual awareness,
+including on excluded holidays. Do not publish the agreement or authorize
+a real pilot until this and other approved launch gates are evidenced.
