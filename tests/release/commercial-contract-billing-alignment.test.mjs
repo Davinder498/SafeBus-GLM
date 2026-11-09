@@ -76,7 +76,7 @@ test('SLA, MSA, Order Form and decision ledger preserve ordinary-hours vs urgent
   const operations = await fs.readFile('docs/operations/cr1-remaining-launch-work-2026-11-08.md','utf8');
   for (const [name,document] of Object.entries({sla,msa,order,owner,operations})) {
     assert.match(document,/America\/Edmonton/,name);
-    assert.match(document,/nine\s+general holidays/,name);
+    assert.match(document,/nine\s+general\s+holidays/,name);
     assert.match(document,/no (?:guaranteed |contractual |automatic |24\/7 |staffed )/i,name);
   }
   assert.match(sla,/do not postpone or\s+override/i);
