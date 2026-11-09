@@ -47,7 +47,7 @@ signing authority, insurance and backup coverage require separate verification.
 | Incident notification                                            | Proposed initial customer notice within 24 hours of awareness, sooner when required           | Operational capability and applicable legal/contract deadlines; never wait for final forensics or counsel appointment to contain/escalate |
 | Supplier/cross-border list                                       | Known/proposed suppliers; locations unverified                                                | Actual agreements, countries, retention/logging, security review, customer approval and required notices                                  |
 | Retention                                                        | Existing proposed periods; not activated                                                      | Purpose, legal duties/holds, approved schedule, enforcement tests and separate backup windows                                             |
-| Return/deletion                                                  | Proposed 30-day return request and 60-day primary deletion windows                            | Tested export/deletion workflow, feasible supplier cleanup and approved backup handling                                                   |
+| Data return, record deletion and account closure | **Owner-approved 2026-11-09:** district-controlled self-service directory downloads and supported record-level deletion/archive/preservation; authorized district admin may request scoped additional return or account closure | **No mandatory 30-day export or 60-day purge** in the standard contract. Complete district-wide export/deletion and provider backup erasure are not verified, and legal holds/records duties remain; test any new workflow before promising it or enabling destructive retention |
 | Customer PIA/signatures                                          | Deferred until onboarding                                                                     | Public-body status, collection authority, deployment scope and head/delegate sign-off where required                                      |
 
 ## Review order
@@ -277,3 +277,27 @@ applicable breach remedies remain protected in MSA §§8.1–8.5.
 exists as verified evidence.** This closes the owner's **business policy**
 only; no district has accepted the draft, no insurer funds the cap, and
 customer procurement/risk, legal review and launch permission remain open.
+
+
+## Final district-controlled data management and closure policy — November 9, 2026
+
+The owner rejected a mandatory 30-day return/60-day deletion exit process
+and approved a **simple school-authority-controlled model**. Tenant admins
+manage their own authorized records: existing student, guardian, driver and
+bus directory CSV exports, and available per-record delete, deactivate,
+archive and preservation actions. The owner does **not** approve a new
+unrestricted bulk-delete action, automatic account-wide erasure or a claim
+that directory CSVs represent the complete district history. When records
+or full account closure require additional assistance, the district admin
+can contact SafeBus support for a verified, tenant-scoped request.
+
+Lawful retention, public-body decision-use minimums, holds, connected records,
+security/financial evidence, device/offline limitations, supplier logs and
+backups remain separate. The application must not represent a backup as erased
+solely because a user deletes a live row. Destructive scheduled retention
+remains gated/off until independently verified and authorized; **the standard
+MSA/DPA/Order Form/Return Schedule makes no universal 30-day return or
+60-day deletion promise**. An individual district may negotiate a tested,
+accepted time commitment. This decision closes the **business model only**,
+not the operational/security/legal acceptance gates, contract publication,
+customer acceptance or live school-data processing authorization.
