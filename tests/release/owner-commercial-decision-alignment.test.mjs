@@ -21,7 +21,7 @@ test('contract drafts keep address private while recording the owner-approved fi
   const msa = read('docs/governance/phase-3/business-pack/master-services-agreement.md');
   const order = read('docs/governance/phase-3/business-pack/order-form.md');
   const pilot = read('docs/governance/phase-3/business-pack/pilot-contract-signoff-2026-11-07.md');
-  assert.ok(msa.includes('**inclusive of'));
+  assert.ok(msa.includes('**including applicable GST/HST**'));
   assert.ok(order.includes('including applicable GST/HST'));
   assert.ok(order.includes('CA$1.99 per active bus/month'));
   assert.ok(order.includes('CA$20.29 per active bus/year'));
