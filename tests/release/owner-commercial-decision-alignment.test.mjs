@@ -30,6 +30,16 @@ test('contract drafts keep address private while recording the owner-approved fi
   assert.ok(pilot.includes('Insurance purchase deferred'));
 });
 
+test('owner-approved proposed liability caps are not misrepresented as insured or executed', () => {
+  const owner = read('docs/governance/phase-3/business-pack/owner-decisions.md');
+  const msa = read('docs/governance/phase-3/business-pack/master-services-agreement.md');
+  assert.ok(owner.includes('greater of CA$25,000 or 12-Month'));
+  assert.ok(owner.includes('greater of CA$100,000 or twice 12-Month'));
+  assert.ok(owner.includes('insurance quotations and purchase') || owner.includes('insurance quotations are deferred') || owner.includes('Insurance quotations are deferred'));
+  assert.match(msa, /No active CGL, technology E&O,/);
+  assert.match(msa, /accepted Customer-specific MSA and Order Form/);
+});
+
 test('tax update does not approve privacy, map, operations, or pilot readiness', () => {
   for (const path of ['docs/governance/privacy-readiness.json','docs/governance/map-readiness.json','docs/governance/operations-readiness.json']) {
     assert.equal(JSON.parse(read(path)).status, 'not_approved', path);
