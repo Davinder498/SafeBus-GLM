@@ -11,7 +11,7 @@ Git. A drafted document is not an approved, signed or effective agreement.
 
 | Document                    | Prepared draft                                            | Drafted                                   | Review / approved / executed |
 | --------------------------- | --------------------------------------------------------- | ----------------------------------------- | ---------------------------- |
-| Master Services Agreement   | [MSA](business-pack/master-services-agreement.md)         | Yes; commercial inputs remain open        | Pending                      |
+| Master Services Agreement   | [MSA](business-pack/master-services-agreement.md)         | Yes; proposed Provider liability caps and SLA/commercial owner decisions recorded; indemnities/insurance unresolved | Customer execution/procurement/legal review pending |
 | Customer order form         | [Order form](business-pack/order-form.md)                 | Yes; customer inputs unfilled             | Pending                      |
 | Data Processing Agreement   | [DPA](business-pack/data-processing-agreement.md)         | Yes; actual authority/suppliers pending   | Pending                      |
 | Security Schedule           | [Security](business-pack/security-schedule.md)            | Yes; evidence gaps explicit               | Pending                      |
@@ -26,9 +26,13 @@ Start with the [owner decisions](business-pack/owner-decisions.md) and
 is described in the [commercial billing alignment review](../commercial-billing-contract-alignment-2026-11-07.md). Owner-approved November 9 GST/HST-inclusive standard prices, trial and
 renewal/cancellation rules are recorded in the commercial files. The pilot
 staffed-hours/holiday and no-numerical-SLA-guarantee business choices are
-also approved, but customer-specific acceptance, tax reconciliation,
-liability, insurance, supplier, DPA incident escalation and retention evidence
-remain open. Do not configure operational promises from unsupported claims.
+also approved. Owner-approved **proposed** Provider liability caps
+are greater of CA$25,000 or 12-Month Fees for general claims and greater
+of CA$100,000 or twice 12-Month Fees for privacy/security claims, without
+stacking or limiting non-excludable duties. Customer-specific acceptance,
+tax reconciliation, indemnities, insurance procurement requirements (quotes
+and purchase deferred), suppliers, DPA escalation and retention evidence
+remain open. No insurance coverage is represented. Do not configure operational promises from unsupported claims.
 
 Review roles and purpose/authority, allowed data, suppliers/countries, access/
 correction support, incident duties, retention/holds, safeguards, audit and exit
