@@ -62,6 +62,7 @@ export async function approvedPrices(stripe, productId) {
       currency: p.currency,
       unitAmount: p.unit_amount,
       interval: p.recurring.interval,
+      taxBehavior: p.tax_behavior ?? 'unspecified',
     }));
 }
 
