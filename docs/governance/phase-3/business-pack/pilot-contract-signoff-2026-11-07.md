@@ -33,7 +33,7 @@ Alberta's POPA applies to school boards and requires public bodies to assess the
 | Service performance / credits | **Owner-approved initial-pilot SLA:** no guaranteed uptime, response latency, GPS freshness, ETA, notification delivery, repair/recovery time or automatic monthly/annual credits; future promises require evidence and signed amendment | Business no-guarantee policy CLOSED; customer-specific acceptance and operating proof remain pending |
 | Supplier acceptance | Review each enabled supplier account's data contract, purpose, countries, logs/backup/support access, incident handling and downstream access | Pending |
 | Privacy leadership | Owner selected themself as Privacy Lead; identify a capable alternative or documented coverage limitation and run access/request/breach tabletop | Pending |
-| Record lifecycle | Confirm legal retention exceptions and customer instructions, data export/return method, provider backups/held records and safe disposal activation; dry-run != approved deletion | Pending |
+| District-controlled data management and exit | **Owner-approved:** directory CSV downloads and existing record-level delete/archive/preservation where supported, plus authorized support requests for additional scoped return and account closure; no universal 30-day export or 60-day deletion target | **Business model CLOSED**; complete district-wide return/closure capability, lawful retention/holds, supplier copies, backup expiry, authenticated acceptance and destructive-worker controls still require evidence |
 
 **Insurance is a negotiation and risk-transfer decision**, not an assertion that a particular policy or minimum is required universally by Alberta law. An actual district procurement package may prescribe types and minimum limits, endorsements or certificates; record its requirements and request a licensed insurance broker's explanation for suitability before quoting or signing.
 
@@ -133,3 +133,19 @@ Personal injury/property damage, special procurement requirements, broader
 indemnities and customer-specific carve-outs still require express written
 agreement and assessment of uninsured financial risk. This document is not a
 signed contract or pilot launch authorization.
+
+
+## November 9 district-controlled exit policy — no unverified blanket purge
+
+The owner approved the district's ability to manage its own supported SafeBus
+transportation records and declined a complicated automatic post-termination
+30/60-day return/deletion promise. Existing CSV downloads cover the supported
+student/guardian/driver/bus directories; only supported record-level delete,
+deactivate, archive and preservation controls are represented as self-service.
+Account-wide closure and data beyond those views require a verified scoped
+request, not a new unrestricted delete-all endpoint. Historical trips,
+notifications, audit, supplier copies and backups are assessed independently.
+The Data Management, Return and Destruction Schedule contains the operative
+draft. Do not claim that the school authority can erase every record, that
+scheduled deletion is enabled, or that any supplier backup has been deleted.
+Customer-specific negotiated deadlines require an actually tested process.
