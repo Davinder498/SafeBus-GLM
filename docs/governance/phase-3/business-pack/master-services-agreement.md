@@ -197,11 +197,23 @@ does not predetermine a Customer's statutory disclosure decision.
 
 ## 7. Service assurance and remedies
 
-SafeBus will perform the accepted service with reasonable care and skill and
-meet only the quantified commitments in the completed SLA. The Customer must
-report a material failure through the agreed channel; SafeBus investigates,
-provides applicable contractual credits and remedies the failure. Any additional
-warranty, remedy or termination right must be included in the accepted terms.
+SafeBus will perform the accepted service with reasonable care and skill.
+The initial-pilot Service-Level Agreement uses **Monday–Friday, 8:00 a.m.–5:00
+p.m. Alberta local time (America/Edmonton), excluding Alberta's nine general
+holidays**, for ordinary staffed support. The complete holiday calendar and
+request-triage rules appear in the SLA. There is **no 24/7 staffed support,
+guaranteed after-hours response, uptime percentage, fixed repair time or
+automatic SLA credit** for the initial pilot. Automated monitoring outside
+staffed hours is not evidence of a person responding. Where supported by
+operational evidence, any later numerical guarantee or expanded staffing
+requires an express written agreement.
+
+The Customer reports material service failures through the agreed channel;
+SafeBus investigates with commercially reasonable efforts under the accepted
+SLA. The absence of automatic SLA credits does not exclude mandatory remedies,
+expressly agreed breach remedies or privacy/security obligations. The SLA's
+support hours and holidays do not change the DPA's incident-notification duties
+or applicable law, including deadlines triggered by actual awareness.
 
 No certification, insurance, unlimited capacity, continuous GPS, fixed repair
 time or supplier SLA is represented unless supported and expressly agreed.
