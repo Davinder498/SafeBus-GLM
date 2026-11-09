@@ -104,7 +104,7 @@ The latest [owner decision register](owner-decisions.md) supersedes historical G
 
 ## November 9 finalized standard subscription prices
 
-The owner approved **CA$1.99 per active bus monthly** and **CA$20.29 per active bus annually**, **including applicable GST/HST**. These rates supersede earlier temporary-price wording; the two live existing Stripe prices were converted in place to `tax_behavior=inclusive` and independently retrieved after updating. The signed school-authority Order Form must still select the interval, quantity, collection method, trial, effective dates and any documented exemptions. The entire eight-document district contract package is still DRAFT and unpublished; rate approval does not approve insurance, liability caps, supplier disclosures, remaining terms or a pilot. See [owner decisions](owner-decisions.md).
+The owner approved **CA$1.99 per active bus monthly** and **CA$20.29 per active bus annually**, **including applicable GST/HST**. These rates supersede earlier temporary-price wording; the two live existing Stripe prices were converted in place to `tax_behavior=inclusive` and independently retrieved after updating. The signed school-authority Order Form must still select the interval, quantity, collection method, trial, effective dates and any documented exemptions. The entire eight-document district contract package is still DRAFT and unpublished; rate approval alone did not approve insurance, liability caps, supplier disclosures, remaining terms or a pilot. The later November 9 owner-approved *proposed* liability limits are recorded below; no customer contract or launch is approved. See [owner decisions](owner-decisions.md).
 
 
 ## November 9 — approved pilot support calendar and SLA boundary
@@ -125,3 +125,24 @@ contract pack remains a **draft and unpublished**. Privacy/security incident
 notice and cooperation requirements still apply independently of staffed
 support holidays/hours; a credible escalation route and actual staffed-window
 coverage must be evidenced before customer activation.
+
+
+## November 9 — proposed Provider liability caps and deferred insurance
+
+The owner approved the initial-pilot negotiating position: **general Provider
+aggregate liability = greater of CA$25,000 or 12-Month Fees** and
+**privacy/security Provider aggregate liability = greater of CA$100,000 or
+twice 12-Month Fees**. The privacy/security limit is in place of, not on top
+of, the general limit. Fees are the contracted, net-of-discount, tax-exclusive
+subscription fees attributable to the 12 months preceding the first claim-causing
+event, with annual prepayments allocated to service months. The owner preserved
+liabilities which applicable law prohibits limiting, fraud and wilful wrongdoing,
+and separate DPA/privacy duties and legal/express breach remedies.
+
+Insurance quotations and purchase are **deferred**; do not represent active
+coverage. No broad third-party indemnity or separate Customer cap was silently
+approved. See [MSA §8](master-services-agreement.md), the
+[Order Form](order-form.md), [owner decisions](owner-decisions.md), and
+[pilot sign-off worksheet](pilot-contract-signoff-2026-11-07.md).
+These drafts remain **unpublished and unexecuted** pending customer-specific
+procurement/legal review, risk and supplier evidence, and release authorization.
