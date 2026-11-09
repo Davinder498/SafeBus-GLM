@@ -2,6 +2,7 @@ import { RetentionPanel } from '@/components/admin/RetentionPanel';
 import { AppearanceSettingsCard } from '@/components/settings/AppearanceToggle';
 import { AccountSecurityLinkCard } from '@/components/settings/AccountSecurityLinkCard';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
 import { AdminSettingsNav } from '@/components/settings/AdminSettingsNav';
 import { Card } from '@/components/ui/Card';
@@ -82,9 +83,48 @@ export function AdminSettingsPage() {
         <AppearanceSettingsCard />
         <AccountSecurityLinkCard />
         <RetentionPanel />
-        <a href="/admin/records-disposal" className="font-semibold text-navy-700 underline">
-          Records disposal and preservation
-        </a>
+        {profile?.role === 'tenant_admin' ? (
+          <Card className="space-y-4 p-5" data-testid="tenant-data-management">
+            <div>
+              <h2 className="text-xl font-bold text-navy-900">School authority data</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Your authority controls its transportation records. Download the supported directories
+                or manage individual records using the existing pages. Only authorized records can be
+                deleted; trip history, legal holds, audit records and supplier backups are handled
+                separately under applicable retention rules.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                { to: '/admin/students', label: 'Students' },
+                { to: '/admin/guardians', label: 'Guardians' },
+                { to: '/admin/drivers', label: 'Drivers' },
+                { to: '/admin/buses', label: 'Buses' },
+              ].map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className="flex min-h-11 items-center rounded-lg border border-slate-200 px-4 py-3 font-semibold text-navy-700 hover:bg-navy-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500"
+                >
+                  {item.label} — view or download CSV
+                </Link>
+              ))}
+            </div>
+            <Link to="/admin/records-disposal" className="inline-flex min-h-11 items-center font-semibold text-navy-700 underline">
+              Review record preservation and disposal
+            </Link>
+            <p className="text-sm text-slate-600">
+              These downloads are filtered directory exports, not a complete legal archive or
+              school-authority-wide deletion. To request account closure, or access records outside
+              the available downloads, <Link className="font-semibold text-navy-700 underline" to="/admin/settings/support">contact SafeBus support</Link>.
+              Closing an account does not immediately erase legally retained records or backups.
+            </p>
+          </Card>
+        ) : (
+          <Link to="/admin/records-disposal" className="font-semibold text-navy-700 underline">
+            Records disposal and preservation
+          </Link>
+        )>
 
         {loading && (
           <DataState
