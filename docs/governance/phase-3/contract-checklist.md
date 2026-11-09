@@ -11,7 +11,7 @@ Git. A drafted document is not an approved, signed or effective agreement.
 
 | Document                    | Prepared draft                                            | Drafted                                   | Review / approved / executed |
 | --------------------------- | --------------------------------------------------------- | ----------------------------------------- | ---------------------------- |
-| Master Services Agreement   | [MSA](business-pack/master-services-agreement.md)         | Yes; proposed Provider liability caps and SLA/commercial owner decisions recorded; indemnities/insurance unresolved | Customer execution/procurement/legal review pending |
+| Master Services Agreement   | [MSA](business-pack/master-services-agreement.md)         | Yes; proposed Provider caps and limited fault-based indemnity approved as business position; insured status and customer-specific exceptions unresolved | Customer execution/procurement/legal review pending |
 | Customer order form         | [Order form](business-pack/order-form.md)                 | Yes; customer inputs unfilled             | Pending                      |
 | Data Processing Agreement   | [DPA](business-pack/data-processing-agreement.md)         | Yes; actual authority/suppliers pending   | Pending                      |
 | Security Schedule           | [Security](business-pack/security-schedule.md)            | Yes; evidence gaps explicit               | Pending                      |
@@ -30,9 +30,9 @@ also approved. Owner-approved **proposed** Provider liability caps
 are greater of CA$25,000 or 12-Month Fees for general claims and greater
 of CA$100,000 or twice 12-Month Fees for privacy/security claims, without
 stacking or limiting non-excludable duties. Customer-specific acceptance,
-tax reconciliation, indemnities, insurance procurement requirements (quotes
-and purchase deferred), suppliers, DPA escalation and retention evidence
-remain open. No insurance coverage is represented. Do not configure operational promises from unsupported claims.
+tax reconciliation, any broader or district-specific indemnities,
+insurance procurement requirements (quotes and purchase deferred),
+suppliers, DPA escalation and retention evidence remain open. No insurance coverage is represented. Do not configure operational promises from unsupported claims.
 
 Review roles and purpose/authority, allowed data, suppliers/countries, access/
 correction support, incident duties, retention/holds, safeguards, audit and exit
@@ -56,3 +56,16 @@ register.
 ## Launch sign-off intake (2026-11-07)
 
 The [pilot contract and supplier/insurance sign-off worksheet](business-pack/pilot-contract-signoff-2026-11-07.md) links the existing agreement pack to **actual** owner, supplier-account and district decisions. It records unresolved insurance coverage, liability caps, tax, vendor agreement/country evidence, customer PIA and contract execution. It is a preparation document rather than a signed order or launch authorization.
+
+
+## November 9 limited fault-based indemnity update
+
+Owner has approved two **proposed** covered SafeBus third-party indemnity
+categories: Provider-caused privacy/security breach under the privacy/security
+aggregate cap and unmodified authorized-use SafeBus software-IP infringement
+under the general aggregate cap. Reasonable legal defence costs are inside
+those limits. No blanket/unlimited indemnity, no indemnification of school
+authority independent wrongdoing, no separate reciprocal Customer indemnity,
+and no waiver of mandatory legal/DPA obligations is approved. No insurance
+quote or policy is in place; customer procurement and final signed terms
+remain pending. See MSA §§8.3–8.5 and the Order Form.
