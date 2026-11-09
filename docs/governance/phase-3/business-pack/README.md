@@ -82,7 +82,7 @@ drafts and non-secret evidence references only. `privacy-readiness.json` remains
 
 ## November 8 verified supplier and guardian notice reconciliation
 
-Use the [school-authority supplier-processing review](district-supplier-processing-appendix-review-2026-11-08.md) to prepare the eventual DPA supplier appendix: it distinguishes core transport vendors from SafeBus business-only services and records verified primary data flows, US-hosted Resend emails, and the server-side Firebase v7 redaction deployment. Guardian notices have been updated to reflect full student-name/bus-number email content; **that notice correction is not authorization to publish an agreement or to change email contents without a customer/privacy decision.** The eight-document school-authority contract catalog remains unpublished.
+Use the [school-authority supplier-processing review](district-supplier-processing-appendix-review-2026-11-08.md) to prepare the eventual DPA supplier appendix: it distinguishes core transport vendors from SafeBus business-only services and records verified primary data flows, US-hosted Resend emails, and the server-side Firebase v7 redaction deployment. Following owner-approved PR #414 and the [protected Netlify published-source attestation](https://github.com/Davinder498/SafeBus-GLM/actions/runs/42543503884), guardian pickup/drop-off external email subject/body are now generic; the authorized in-app inbox retains event details. The companion guardian notice and supplier appendix are being reconciled in PR #416. Other email types, previous delivered messages, real provider delivery acceptance, supplier-country decisions and customer authorization remain separate. **This wording correction does not publish or approve a district agreement.** The eight-document school-authority contract catalog remains unpublished.
 
 ## November 8 supplier, insurance and contract reconciliation
 
@@ -95,3 +95,8 @@ Use the consolidated [privacy, supplier and commercial gap analysis](../../priva
 ## Pilot sign-off and supplier evidence (2026-11-07)
 
 Use the [pilot contract, supplier and insurance sign-off pack](pilot-contract-signoff-2026-11-07.md) to collect business-owner decisions and district-specific acceptance **before** any customer signature or launch approval. It lists insurance/liability questions and account-specific vendor evidence requests without assuming policy coverage, vendor signatures, tax status, approved SLA targets, or a customer PIA. Store private evidence outside Git; this checklist does not change any `not_approved` release state.
+
+
+## Owner business choices — November 8, 2026
+
+The latest [owner decision register](owner-decisions.md) supersedes historical GST/HST-unregistered notes: the owner reports GST/HST registration effective 2026-11-08, SafeBus registered as Sachman Gold Inc.'s trade name and info@safebus.kids selected for formal notices. The provided business mailing address is **confidential and not to be published or committed to Git**. Final monthly/annual prices are still undecided; the future approved customer-facing totals must include applicable GST/HST. Insurance will be purchased later. Support remains Monday–Friday, 08:00–17:00 Alberta time, with backup/holiday coverage unresolved. No customer agreement publication, live tax mutation or launch approval follows from these choices.

@@ -4,7 +4,7 @@
   "scope": "SafeBus Alberta public school authority CR1 — account-specific supplier evidence",
   "releaseBaseline": "f2f3d367131dd0a1671b16befeda0f3c45e02bf4",
   "overallStatus": "not_approved",
-  "statement": "Inventory and public terms do not authorize customer processing. Real contracts and copies are stored outside Git; this record must contain no customer data, credentials, signatories, contract parties or links with private tokens. 2026-11-08 read-only verification identified a P0 FCM generic-preview transport mismatch; no vendor or readiness approval follows. 2026-11-08: FCM mitigation deployed and source-verified on v7; historic provider data, account terms and deferred device test remain open. Resend email may include full student name and bus number, requiring district authorization. No privacy or supplier approval inferred.",
+  "statement": "Inventory and public terms do not authorize customer processing. Supplier account terms and restricted evidence remain pending. HISTORICAL: pre-November 8, 2026, FCM push and pickup/drop-off email payloads could expose detailed transport information. CURRENT VERIFIED SOURCE: FCM provider text was redacted by deployed v7 and generic pickup/drop-off email rendering shipped in PR #414; protected Netlify source attestation run 42543503884 passed for published commit 6ae32d43665e2fdf51ee6321dbe9a2e62db8ca03. Live synthetic Resend delivery and Android device acceptance are deferred to final testing. Resend still processes recipient/event/delivery metadata in the US; other email categories and earlier delivered emails are unchanged. No vendor, district or readiness approval inferred.",
   "evidenceLegend": {
     "verified-project": "Technical observation only, not a vendor contract or processing-location guarantee",
     "public-terms-reviewed": "Public material reviewed; account acceptance unverified",
@@ -63,11 +63,16 @@
       "serviceStatus": "enabled",
       "observedFacts": [
         "operations_email_received",
-        "deployed_email_can_include_student_full_name_and_bus_number",
+        "historical_pre_2026_11_08_pickup_dropoff_email_copy_included_student_name_bus",
         "aggregate_8_student_pickup_dropoff_email_outbox_delivered",
         "resend_public_dpa_pre_signed_on_signup_us_content_storage_30_day_standard",
         "provider_public_faq_pre_signed_dpa_executed_on_signup",
-        "detailed_student_name_bus_email_separate_from_fixed_generic_fcm"
+        "historical_detailed_email_pre_pr_414_separate_from_fcm_redaction",
+        "pr_414_merged_generic_pickup_dropoff_subject_text_html_2026_11_08",
+        "protected_netlify_published_source_attested_in_run_42543503884",
+        "published_commit_6ae32d43665e2fdf51ee6321dbe9a2e62db8ca03_contains_email_fix",
+        "outbound_resend_http_json_mocked_test_only_no_live_delivery",
+        "other_email_categories_and_historical_mailbox_copies_unchanged"
       ],
       "status": "account-evidence-pending",
       "priority": "P0",
@@ -77,7 +82,7 @@
         "delivery_history_and_logs_retention",
         "subprocessors_and_incident_terms",
         "privacy_owner_decision",
-        "authority_approved_detailed_student_email_content"
+        "authority_approves_remaining_us_hosted_recipient_event_delivery_metadata_and_other_email_content"
       ],
       "evidenceReferences": [],
       "decision": null
@@ -131,7 +136,7 @@
       "serviceStatus": "conditionally_enabled",
       "observedFacts": [
         "push_delivery_product_flow_present",
-        "deployed_push_uses_detailed_notification_copy_without_generic_preview_redaction",
+        "historical_pre_2026_11_08_v7_push_forwarded_detailed_provider_copy",
         "aggregate_10_student_event_push_outbox_delivered_all_generic_preference",
         "google_fcm_terms_both_google_apis_and_firebase_processing_terms",
         "production_fcm_v7_protected_run_42533721182_attempt2_success_20261108",

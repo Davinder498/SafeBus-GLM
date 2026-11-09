@@ -87,7 +87,7 @@ request route if you cannot sign in.
 Hosting/authentication uses Supabase; web/function delivery uses Netlify; maps
 use Geoapify; transactional email uses Resend; subscription
 billing uses Stripe. Maps disclose tile coordinates describing the viewport,
-IP address and ordinary request metadata. Email may include the recipient's email address, the student's **full name and bus number** for an enabled recorded pickup/drop-off notice, event type and time. A school authority must determine whether this amount of personally identifying information is necessary in external email. Generic event emails directing recipients to the authenticated inbox are a proposed lower-disclosure option, not a released product change. Payment methods are provided to Stripe rather than stored in
+IP address and ordinary request metadata. Enabled pickup/drop-off emails use generic subject/body text directing recipients to the authenticated inbox, without student names, bus numbers, stop labels or recorded event times. Recipient addresses, event category and delivery metadata still leave SafeBus. Other email types may include necessary account or operational content, and historical provider/mailbox copies are unchanged. A protected [Netlify production-source verification](https://github.com/Davinder498/SafeBus-GLM/actions/runs/42543503884) passed on November 8, 2026 (Alberta time); a real synthetic Resend delivery test remains outstanding. The school authority must authorize the remaining external data disclosures. Payment methods are provided to Stripe rather than stored in
 SafeBus application records.
 
 The official website is https://safebus.kids. On 2026-10-16 the owner confirmed

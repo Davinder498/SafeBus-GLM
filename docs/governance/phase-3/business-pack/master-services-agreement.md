@@ -109,9 +109,13 @@ For expressly agreed `send_invoice` contracts, the proposed payment term is
 `charge_automatically` self-service Checkout, the trial, payment method,
 automatic charge/renewal and cancellation terms must instead be disclosed and
 accepted before the Customer confirms checkout. Do not represent a card-funded
-subscription as a net-30 invoicing contract. Applicable taxes are charged only
-when legally required and correctly configured; no GST/HST registration, tax
-rate, tax exemption or tax-collection approval is presumed by this draft.
+subscription as a net-30 invoicing contract. The owner reports GST/HST
+registration effective November 8, 2026; CRA evidence still requires private
+verification. The eventual approved SafeBus prices will be **inclusive of
+applicable GST/HST**, not subject to unannounced tax added above the agreed
+total. Determine place-of-supply, exemptions, applicable tax amount, invoice
+disclosures and lawful historical adjustments before configuring final prices.
+No final selling price or rate is approved by this draft.
 
 Stripe administers invoices and payment methods; SafeBus keeps a limited billing
 projection. Bus-count, price and proration changes require Customer authorization
@@ -227,7 +231,7 @@ permitted after prompt notice and reasonable mitigation, but does not waive
 confidentiality, incident reporting or information-protection duties. Neither
 party becomes the other's partner or agent by this agreement.
 
-Formal notices use `[NOTICE_EMAIL]` and the Customer notice details in the Order
+Formal notices use owner-selected `info@safebus.kids` (`[NOTICE_EMAIL]`) and the Customer notice details in the Order
 Form. Amendments require authorized written agreement. The agreement constitutes
 the accepted business terms, with severability and electronic records where
 lawful. Acceptance receipts and customer identities belong in restricted contract storage.
