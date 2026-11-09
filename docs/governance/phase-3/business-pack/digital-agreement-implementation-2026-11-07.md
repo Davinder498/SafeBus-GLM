@@ -94,3 +94,24 @@ No new standalone checkbox or silent retroactive contract amendment is needed
 or approved. District-specific procurement indemnity requests must first be
 reviewed and incorporated into the authorized signed customer package; do not
 activate the unsigned drafts or claim insurer funding based on owner approval.
+
+
+## November 9 addendum — district-controlled records and exit terms
+
+The owner selected self-service district record management rather than the
+previous blanket 30-day return/60-day deletion contract proposal. The
+published customer agreement must explain that tenant administrators can
+access supported student, guardian, driver and bus directory downloads and
+available individual record actions; these are **not** full-district export
+or delete-all facilities. The district may request additional scoped export
+or account closure through SafeBus support. Mandatory retention, legal holds,
+independent financial/security evidence, vendor copies and immutable backups
+remain separately governed by the DPA and Return Schedule.
+
+No new unrestricted bulk-delete endpoint or automatic complete export is
+implemented by the wording change. No 30/60-day guaranteed deadline is accepted
+without working technical evidence and customer-specific written agreement.
+The existing authenticated one-action MSA/DPA acceptance can bind this
+schedule **only after** publication is independently authorized and the exact
+versioned documents are presented. No production publication or personal-data
+deletion follows from this owner business decision.
