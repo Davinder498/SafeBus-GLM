@@ -29,6 +29,7 @@ Alberta's POPA applies to school boards and requires public bodies to assess the
 | Payment alternatives | Card-funded Checkout is the default. Invoice/PO requires a district request, distinct platform-super-admin approval and district activation, with 14/30/45/60 invoice days selected per request | Owner policy approved; verify each public-authority approval, due date, customer order and first invoice delivery; no blanket net-30 commitment |
 | Service/support | **Owner-approved 2026-11-09:** Monday–Friday, 08:00–17:00 America/Edmonton, excluding Alberta's nine general holidays; no after-hours staffed response guarantee | Business calendar CLOSED; operational staffed coverage, backup and independent DPA/security incident escalation still require evidence |
 | Insurance and liability | **Owner-approved Provider caps (proposed):** general greater of CA$25,000 or 12-Month Fees; privacy/security greater of CA$100,000 or twice 12-Month Fees, aggregate/non-stacking with non-excludable liabilities preserved. **Insurance quotations and purchase deferred; no coverage claimed.** | Business proposal CLOSED; procurement, indemnity carve-outs, risk/cap capacity and any required insurance remain OPEN before contract execution |
+| Third-party indemnification business decision | **Owner-approved 2026-11-09:** limited, fault-based Provider privacy/security and unmodified software-IP defence/indemnification; defence costs included within approved non-stacking aggregate caps; no broad or unlimited indemnity | Business position CLOSED; district-specific indemnity/defence/insurance procurement and customer acceptance OPEN |
 | Service performance / credits | **Owner-approved initial-pilot SLA:** no guaranteed uptime, response latency, GPS freshness, ETA, notification delivery, repair/recovery time or automatic monthly/annual credits; future promises require evidence and signed amendment | Business no-guarantee policy CLOSED; customer-specific acceptance and operating proof remain pending |
 | Supplier acceptance | Review each enabled supplier account's data contract, purpose, countries, logs/backup/support access, incident handling and downstream access | Pending |
 | Privacy leadership | Owner selected themself as Privacy Lead; identify a capable alternative or documented coverage limitation and run access/request/breach tabletop | Pending |
@@ -43,7 +44,7 @@ Alberta's POPA applies to school boards and requires public bodies to assess the
 | General commercial liability | What bodily injury/property damage risks could arise in installation, support or customer interaction? Does the district demand specific CGL coverage? | Actual policy wording/certificate and district procurement instructions |
 | Technology errors & omissions | Coverage for failure of software, data delivery, ETA/location availability and professional services? What are waiting periods, exclusions and claims-made dates? | Broker quote/policy terms and insured activities |
 | Cyber/privacy liability | Incident response, unauthorized disclosure, notification, breach counsel, third-party claims, network liability and exclusions for minors/contracted data? | Policy summary and exclusions; approved handling procedures |
-| Contract indemnities | Which legal claims are covered and by whom, including IP and unlawful processing instructions? What is the defence/settlement process? | Negotiated MSA rider, insurer alignment, accountable legal assessment |
+| Contract indemnities | **Owner-approved limited fault-based SafeBus indemnity proposal:** covered Provider-caused privacy/security breach claims under privacy aggregate cap and unmodified authorized-use SafeBus software IP claims under general aggregate cap; reasonable defence/settlement costs **inside** cap; no indemnity for school-authority independent fault, unlawful instructions or unauthorized changes, and no unlimited/reciprocal indemnity | Customer-specific procurement/indemnity exceptions, personal injury/property damage, defence procedure and legally mandated protections reviewed before a signed Order Form |
 | General liability cap | Owner-approved **greater of CA$25,000 or 12-Month Fees** aggregate for SafeBus Provider ordinary claims; does not reset on renewal | Signed district acceptance, mandatory carve-outs, claim scope and procurement review pending |
 | Privacy/security liability cap | Owner-approved **greater of CA$100,000 or twice 12-Month Fees** aggregate; replaces, never stacks with, general cap on qualifying claims | Verify POPA/DPA duties, exceptions and signed Customer-specific acceptance |
 | Cyber events and service interruption | Are GPS/notification outages or platform failures excluded? Can contractual SLA remedies be sustained? | Policy and accepted SLA/operational evidence |
@@ -113,3 +114,22 @@ are **deferred**; no active policy, insured limit or certificate is asserted.
 An actual school authority may demand different coverage, defence terms,
 indemnities or carve-outs. These require specific review before signature;
 no blanket acceptance, funding assurance or readiness gate follows.
+
+
+## November 9 — owner-approved third-party indemnification scope (draft)
+
+MSA §§8.3–8.5 and the Order Form now offer a **limited, fault-based** SafeBus
+Provider defence/indemnity for third-party privacy/security claims caused by
+its covered breach (privacy/security cap) and authorized use of the unmodified
+SafeBus software allegedly infringing third-party Canadian IP rights (general
+cap). Reasonable covered legal defence costs count toward the relevant cap;
+claims do not stack. The school authority's independent negligence, unlawful
+instructions, unauthorized changes/combinations or other independent fault are
+not covered. The defence requires prompt notice, cooperation, appropriate
+control and settlement consent. Mandatory DPA/legal obligations remain intact.
+
+**No insurance quote, purchase, policy or active coverage has been approved.**
+Personal injury/property damage, special procurement requirements, broader
+indemnities and customer-specific carve-outs still require express written
+agreement and assessment of uninsured financial risk. This document is not a
+signed contract or pilot launch authorization.
