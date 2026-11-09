@@ -48,9 +48,10 @@ test('owner decisions record approved trial, recurring contract and tax registra
   assert.match(s, /tax_behavior=inclusive/);
   assert.match(s, /\*\*GST\/HST-inclusive prices\*\*/);
   assert.match(s, /Insurance/);
-  assert.match(s, /CA\\$25,000 or 12-Month Fees/);
-  assert.match(s, /CA\\$100,000 or twice 12-Month Fees/);
-  assert.doesNotMatch(s, /\\[GENERAL_LIABILITY_CAP\\]|\\[PRIVACY_LIABILITY_CAP\\]/);
+  const liabilityText = s.replace(/\s+/g,' ').replace(/\*\*/g,'');
+  assert.match(liabilityText, /CA\$25,000 or 12-Month Fees/);
+  assert.match(liabilityText, /CA\$100,000 or twice 12-Month Fees/);
+  assert.doesNotMatch(s, /\[GENERAL_LIABILITY_CAP\]|\[PRIVACY_LIABILITY_CAP\]/);
 });
 
 test('initial-pilot MSA, Order Form and DPA retain insured-risk and statutory carve-outs', async () => {
@@ -58,12 +59,12 @@ test('initial-pilot MSA, Order Form and DPA retain insured-risk and statutory ca
   const order = await read('order-form.md');
   const dpa = await read('data-processing-agreement.md');
   for (const document of [msa,order]) {
-    assert.match(document, /CA\\$25,000/);
-    assert.match(document, /CA\\$100,000/);
+    assert.match(document, /CA\$25,000/);
+    assert.match(document, /CA\$100,000/);
     assert.match(document, /12-Month Fees/);
     assert.match(document, /insurance/i);
   }
-  assert.match(msa, /privacy\\/security cap[\\s\\S]*?replaces/);
+  assert.match(msa, /privacy\/security cap[\s\S]*?replaces/);
   assert.match(msa, /non-excludable|does not permit the parties/);
   assert.match(msa, /no partial refund|no-partial-refund/i);
   assert.match(dpa, /separate from and do not eliminate or postpone any non-excludable/);
