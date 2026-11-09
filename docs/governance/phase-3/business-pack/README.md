@@ -80,6 +80,10 @@ records and confidential provider evidence in restricted storage. Git contains
 drafts and non-secret evidence references only. `privacy-readiness.json` remains
 `not_approved`; it is activated only after the actual Point 6 evidence passes.
 
+## November 8 verified supplier and guardian notice reconciliation
+
+Use the [school-authority supplier-processing review](district-supplier-processing-appendix-review-2026-11-08.md) to prepare the eventual DPA supplier appendix: it distinguishes core transport vendors from SafeBus business-only services and records verified primary data flows, US-hosted Resend emails, and the server-side Firebase v7 redaction deployment. Guardian notices have been updated to reflect full student-name/bus-number email content; **that notice correction is not authorization to publish an agreement or to change email contents without a customer/privacy decision.** The eight-document school-authority contract catalog remains unpublished.
+
 ## November 8 supplier, insurance and contract reconciliation
 
 The [sourced supplier DPA and online insurance review](supplier-dpa-insurance-contract-review-2026-11-08.md) distinguishes **publicly incorporated processing terms** from **verified SafeBus account acceptance**, gives online insurance quotation paths without inventing premiums, and records remaining district MSA/DPA publication dependencies. The owner confirmed existing Stripe prices are **temporary and unchanged**; they are not approved contract prices. The independently approved and published driver/guardian Terms of Use version 2026.1 does **not** approve this district draft pack.

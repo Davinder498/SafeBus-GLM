@@ -1,0 +1,29 @@
+# SafeBus — School-Authority Supplier Processing Appendix (Review Draft)
+
+**Prepared:** November 8, 2026, Alberta. **Status:** DPA/Supplier Disclosure **draft input only**, not published, legally executed or customer-approved.
+
+**Operator:** Sachman Gold Inc. (SafeBus). **Customer:** Alberta school authority to identify at onboarding. The school authority controls transportation, bus operations and authorized participants; SafeBus provides software and tracks buses, not children.
+
+## Verified transport-service suppliers
+
+| Supplier | Purpose and information processed | Confirmed location/terms | Unresolved before school-authority sign-off |
+| --- | --- | --- | --- |
+| **Supabase** | Database/Auth, identity and student–guardian links, school transport assignments, trip/driver location, secure functions and notifications | Live BusSafe PostgreSQL uses **Canada Central**; [Supabase DPA (Aug 1, 2026)](https://supabase.com/legal/customer-resources/data-processing-addendum) forms part of the account agreement | Actual contracting entity, backup/log/support and onward-processing countries, data retention and customer authorization |
+| **Netlify** | Web hosting/CDN, district/participant invitations, server-side notification email worker, recipient and event data, request logs | Public DPA/Trust Center reviewed; live function/CDN/log regions **not established** | Actual SafeBus team account/contract, processing/log countries, role access, backups, expiry and security terms |
+| **Resend** | Invitation/recovery SMTP, opt-in event email and inquiries; email recipient, subject, body and delivery logs. **Pickup/drop-off email can include a child's full name and bus number** | [Resend's security FAQ](https://resend.com/security) states US storage of email content/logs, standard-plan 30-day retention, and a standard DPA **pre-signed/executed at signup** with a signed copy under account Documents | Confirm actual sending account/plan/contract, account-specific downstream processing, collection notice, recipients and **school-authority approval for detailed US-hosted student email content**. No second vendor DPA signature presumed |
+| **Firebase Cloud Messaging** | Opt-in Android device token, opaque notification ID/event category and generic provider-visible event labels/body, plus delivery metadata | Protected [Nov 8 release](https://github.com/Davinder498/SafeBus-GLM/actions/runs/42533721182) updated Supabase Edge Function **v7**. Exact reviewed deployed module match; raw notification body no longer reaches FCM | Google processing/retention/terms, historical prior detailed-payload scope and real-device acceptance, deferred by owner. No post-release push delivery yet observed |
+| **Geoapify** | Map tile coordinates/viewport, IP address, request metadata; no tenant/student IDs deliberately embedded in tile URLs | App uses standard `maps.geoapify.com`, **not** the EU-only `api-eu.geoapify.com`. [Geoapify DPA](https://www.geoapify.com/data-processing-agreement/) public | Actual account agreement, CDN/request countries, log retention, mobile/web key boundaries, quotas and data minimization |
+
+## Separate SafeBus business suppliers
+
+**Stripe** is used for school-authority subscription and financial information, not roster or bus GPS. Its live prices are **temporary** CA$1.99/month and CA$20.29/year per bus and must remain unchanged pending owner pricing approval. Stripe tax configuration also requires a separate decision. **Zoho Mail** is ordinary company business, support and privacy correspondence, not automatically a school-authority transportation-data subprocessor; do not intentionally email roster/GPS data there. **GitHub/recovery storage** may handle encrypted recovery archives and needs independent custody/country/retention controls when applicable.
+
+## Before the eight-document MSA/DPA package is published
+
+The authority and SafeBus must confirm statutory authority for each collection/disclosure and applicable POPA/ATIA/PIA and procurement/signing duties, following [Alberta OIPC public-body service-provider guidance](https://oipc.ab.ca/resource/popa-guidance-service-providers/). Record supplier account contract terms, actual processing/support/backup countries, incident cooperation, retention/return/deletion and approval evidence separately.
+
+**Specific content choice required:** Retain full student name/bus information in guardian **external emails**, or change future external email to a generic notification directing the guardian to the secure in-app inbox. That is a business/privacy decision and **no email code change is authorized by the Firebase push approval**.
+
+Finalize binding price, billing interval, bus allowance, tax/term/renewal, risk/insurance limits, support/SLA and order-form personalization. The existing catalog is a versioned **standard eight-document offer** and cannot substitute for genuinely customer-specific pricing/procurement choices. The school-authority tenant administrator signs online only when correctly authorized and the complete final package is published.
+
+**Evidence limits:** A clean merged source, approved v7 deployment and exact source match do not prove device display, historic provider-data deletion or legal compliance. No student names, addresses, GPS, supplier secrets, private contract receipts or signatory details belong in this public worksheet. Supplier approval, Play privacy approval and pilot readiness remain `not_approved`/`not_authorized`.

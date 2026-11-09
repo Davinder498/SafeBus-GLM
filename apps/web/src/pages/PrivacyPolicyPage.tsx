@@ -104,9 +104,10 @@ export function PrivacyPolicyPage() {
                 stores only a limited subscription summary and does not store card or bank details.
                 Inquiries from prospective school authorities are delivered to SafeBus through the
                 transactional email provider and are not stored in the application database. Access
-                is limited to what is needed to provide each service. Push previews exclude names,
-                routes, stops, coordinates, driver identity, school authority identifiers, and
-                internal identifiers.
+                is limited to what is needed to provide each service. Firebase push notification
+                text uses generic event labels rather than names, buses, routes, stops or
+                coordinates. The provider still receives a device token, an opaque notification
+                identifier and event category as delivery metadata.
               </p>
             </section>
 
@@ -115,10 +116,12 @@ export function PrivacyPolicyPage() {
               <p className="mt-2">
                 Core application records are intended to be stored in Canada. Some supporting
                 providers may process information outside Canada. Resend is configured to send email
-                from North Virginia, United States. When email delivery is enabled, it processes the
-                recipient address, message content and delivery metadata there, including account
+                from North Virginia, United States, and states that it stores message content and
+                delivery logs in the United States. When email delivery is enabled, it processes the
+                recipient address, message content and delivery metadata, including account
                 invitation or password-recovery links, business inquiries, and any enabled event
-                notices. Raw bus location, notifications and operational records are retained for
+                notices. Pickup/drop-off emails may contain a student&apos;s full name, bus number,
+                recorded event and time. Raw bus location, notifications and operational records are retained for
                 their authorized purposes under the applicable business or issuing
                 organization&apos;s retention schedule. Retention depends on the record and its
                 purpose, including applicable legal requirements and scoped legal holds. Contact the
