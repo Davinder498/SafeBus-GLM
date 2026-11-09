@@ -42,7 +42,7 @@ test('fraud, non-excludable liability, breach remedies and DPA duties survive fi
   assert.match(msa, /does not waive statutory refunds or relief, remedies for material breach/i);
   assert.match(dpa, /do not eliminate or postpone any non-excludable privacy\/security duty/i);
   assert.match(msa, /No intellectual-property infringement, personal injury\/property damage/i);
-  assert.match(msa, /no separate reciprocal Customer liability cap is selected/i);
+  assert.match(msa, /no separate reciprocal Customer liability cap is selected/ii);
 });
 
 test('MSA, Order Form and governance decisions agree without claiming insurance or contract execution', async () => {
