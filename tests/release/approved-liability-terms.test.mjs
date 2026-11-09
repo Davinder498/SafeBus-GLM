@@ -41,8 +41,43 @@ test('fraud, non-excludable liability, breach remedies and DPA duties survive fi
   assert.match(msa, /convenience cancellation only/i);
   assert.match(msa, /does not waive statutory refunds or relief, remedies for material breach/i);
   assert.match(dpa, /do not eliminate or postpone any non-excludable privacy\/security duty/i);
-  assert.match(msa, /No intellectual-property infringement, personal injury\/property damage/i);
-  assert.match(msa, /no separate reciprocal Customer liability cap is selected/ii);
+  assert.match(msa, /unmodified SafeBus software as provided by SafeBus/i);
+  assert.match(msa, /Personal injury\/property damage indemnities/i);
+  assert.match(msa, /No reciprocal Customer indemnity is silently imposed/i);
+  assert.match(msa, /No separate reciprocal Customer liability cap is selected/i);
+});
+
+test('limited third-party indemnities use the applicable non-stacking caps and preserve school-authority fault', async () => {
+  const msa = normalized(await read('docs/governance/phase-3/business-pack/master-services-agreement.md'));
+  const order = normalized(await read('docs/governance/phase-3/business-pack/order-form.md'));
+  assert.match(msa, /Provider-caused privacy\/security claims/i);
+  assert.match(msa, /to the extent caused by SafeBus's acts or omissions/i);
+  assert.match(msa, /privacy\/security aggregate cap in section 8\.1 applies/i);
+  assert.match(msa, /Provider-software intellectual-property claims/i);
+  assert.match(msa, /unmodified SafeBus software as provided by SafeBus/i);
+  assert.match(msa, /used by the Customer as authorized under the Agreement/i);
+  assert.match(msa, /general aggregate cap in section 8\.1 applies/i);
+  assert.match(msa, /Defence costs, settlements and damages all count toward, and do not increase, the single applicable aggregate cap/i);
+  assert.match(msa, /No blanket, uncapped or unlimited third-party indemnity is granted/i);
+  assert.match(msa, /Customer's independent negligence, unlawful instructions, unauthorized modifications or combinations/i);
+  assert.match(msa, /No reciprocal Customer indemnity is silently imposed/i);
+  assert.match(order, /defence costs, approved settlements and damages count inside/i);
+  assert.match(order, /No indemnity for the district's independent negligence/i);
+});
+
+test('third-party claim handling includes notice, defence and settlement safeguards but no insurer guarantee', async () => {
+  const msa = normalized(await read('docs/governance/phase-3/business-pack/master-services-agreement.md'));
+  const dpa = normalized(await read('docs/governance/phase-3/business-pack/data-processing-agreement.md'));
+  assert.match(msa, /reasonably prompt written notice/i);
+  assert.match(msa, /only to the extent that the delay materially prejudices/i);
+  assert.match(msa, /suitably qualified counsel/i);
+  assert.match(msa, /reasonable cooperation/i);
+  assert.match(msa, /without prior written consent/i);
+  assert.match(msa, /fraud, intentional or wilful misconduct/i);
+  assert.match(msa, /mandatory powers or legal\/privacy reporting duties/i);
+  assert.match(msa, /deferred insurance quotations and purchases/i);
+  assert.match(msa, /No active CGL, technology E&O, cyber\/privacy insurance/i);
+  assert.match(dpa, /not a substitute for the timely independent incident notification/i);
 });
 
 test('MSA, Order Form and governance decisions agree without claiming insurance or contract execution', async () => {
@@ -70,7 +105,7 @@ test('MSA, Order Form and governance decisions agree without claiming insurance 
   const owner = normalized(await read(paths[2]));
   const pilot = normalized(await read(paths[3]));
   assert.match(msa, /deferred insurance quotations/);
-  assert.match(msa, /No active CGL, technology E&O, cyber\/privacy policy/);
+  assert.match(msa, /No active CGL, technology E&O, cyber\/privacy insurance/);
   assert.match(order, /Insurance quotation and purchase deferred by owner/);
   assert.match(owner, /deferred quotations and purchase/i);
   assert.match(pilot, /Insurance quotations and purchase deferred/);
