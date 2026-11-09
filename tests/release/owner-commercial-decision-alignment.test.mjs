@@ -27,7 +27,7 @@ test('contract drafts keep address private while recording the owner-approved fi
   assert.ok(order.includes('CA$20.29 per active bus/year'));
   assert.ok(order.includes('[PROVIDER_BUSINESS_ADDRESS]'));
   assert.ok(pilot.includes('private mailing address must not appear in Git'));
-  assert.ok(pilot.includes('Insurance purchase deferred'));
+  assert.match(pilot, /Insurance quotations and purchase deferred/);
 });
 
 test('owner-approved proposed liability caps are not misrepresented as insured or executed', () => {
