@@ -55,3 +55,21 @@ The on-demand PDF renderer is ASCII-compatible and can approximate non-ASCII con
 The code supports a fixed **14-day free trial for first-time school authorities**, with card collection during the standard Stripe Checkout and automatic recurring charges for the chosen GST/HST-inclusive monthly or annual bus tariff. The owner separately approved **invoice / purchase order billing when a platform administrator explicitly approves the specific district request**. The district tenant admin first supplies the bill-to contact, postal/province information, exact price, bus allowance and optional PO. The platform admin (MFA/recent auth required) selects a 14-, 30-, 45- or 60-day payment window and approves or rejects; approval **does not** create a subscription, collect payment or start a trial. Only a distinct district tenant-admin confirmation activates the approved Stripe `send_invoice` subscription; a first-time district receives the same one 14-day trial, with the invoice issued for manual payment after expiry, otherwise an immediate invoice may be issued. The default card path retains its payment-method requirement. Both paths require the **existing executed district MSA/DPA billing gate**; no trial or invoice waives a contractual signature.
 
 Signed district Order Forms must reflect the selected method, trial applicability, interval, active bus quantity, PO (where issued), approved due window and billing email. Invoice/PO approval is recorded at the existing Stripe customer with tenant/source identity and in restricted SafeBus billing audit events. New invoice plans allow authorized cancellation/resumption of renewals while protecting older legacy invoice contracts. Supplier privacy, insurance and other legal/operational approvals remain pending and are not created by this change. See [invoice and PO technical acceptance](../../../operations/invoice-po-acceptance-2026-11-09.md).
+
+## November 9 addendum — proposed liability language for digital agreement acceptance
+
+The owner approved proposed Provider caps for the initial-pilot contract: general
+aggregate **greater of CA$25,000 or 12-Month Fees**, privacy/security aggregate
+**greater of CA$100,000 or twice 12-Month Fees**. The signed package must show
+the specific MSA section 8 and Order Form wording, including the non-stacking
+privacy cap, the tax-exclusive fee basis, non-excludable legal liabilities and
+preserved DPA/incident duties. This is **a business proposal, not customer
+acceptance**: the authenticated authority must explicitly accept the final
+versioned package, and district-specific changes require reviewed written terms.
+Do not silently inherit the cap into prior executed customer agreements.
+
+Insurance quotations and purchase are deferred; **no insurance coverage may be
+represented** in the agreement UI or released contract documents. The existing
+unpublished agreement catalog must not be published merely because the owner
+approved monetary cap amounts. Customer procurement, legal/risk/insurance and
+pilot release gates remain independent.
