@@ -62,7 +62,7 @@ it('fails closed on missing configuration', async () => {
   delete process.env.SAFEBUS_EMAIL_FROM;
   expect((await handler(event)).statusCode).toBe(500);
 });
-it('sends the exact authorized copy with stable idempotency and settles one group', async () => {
+it('sends generic pickup copy with stable idempotency and settles one group', async () => {
   const rpc = client(),
     send = vi.fn().mockResolvedValue({ providerMessageId: 'provider-id' }),
     result = await runDispatcher(event, send);
@@ -70,10 +70,15 @@ it('sends the exact authorized copy with stable idempotency and settles one grou
   expect(send).toHaveBeenCalledOnce();
   expect(send.mock.calls[0][0]).toMatchObject({
     to: payload.recipient_email,
-    subject: 'SafeBus: Student picked up',
+    subject: 'SafeBus: Pickup recorded',
     idempotency: payload.idempotency_key,
   });
-  expect(send.mock.calls[0][0].text.split('\n')[0]).toBe(payload.body);
+  expect(send.mock.calls[0][0].text.split('\n')[0]).toBe(
+    'A pickup event has been recorded. Sign in to SafeBus to view details.',
+  );
+  expect(JSON.stringify(send.mock.calls[0][0])).not.toContain('Alex Morgan');
+  expect(JSON.stringify(send.mock.calls[0][0])).not.toContain('Bus 12');
+  expect(JSON.stringify(send.mock.calls[0][0])).not.toContain('2026-10-28');
   expect(rpc.mock.calls.find(([n]) => n === 'settle_notification_deliveries')[1].p_results).toEqual(
     [{ id: payload.id, state: 'delivered', provider_id: 'provider-id' }],
   );
@@ -127,6 +132,25 @@ it('ignores development recipient overrides in production', async () => {
   await runDispatcher(event, send);
   expect(send.mock.calls[0][0].to).toBe(payload.recipient_email);
 });
+it('sends generic drop-off copy even when source body contains names and coordinates', async () => {
+  client({
+    resolved: {
+      ...payload,
+      notification_type: 'student_dropped_off',
+      title: 'Élodie dropped off at the school',
+      body: 'Élodie 王 on Bus 45 at Maple Street, 52.27,-113.8',
+    },
+  });
+  const send = vi.fn().mockResolvedValue({ providerMessageId: 'provider-id' });
+  await runDispatcher(event, send);
+  const sent = send.mock.calls[0][0];
+  expect(sent.subject).toBe('SafeBus: Drop-off recorded');
+  expect(sent.text.split('\n')[0]).toBe(
+    'A drop-off event has been recorded. Sign in to SafeBus to view details.',
+  );
+  expect(JSON.stringify(sent)).not.toMatch(/Élodie|王|Bus 45|Maple Street|52\.27/);
+});
+
 it('renders driver copy using the same envelope', async () => {
   client({
     resolved: {

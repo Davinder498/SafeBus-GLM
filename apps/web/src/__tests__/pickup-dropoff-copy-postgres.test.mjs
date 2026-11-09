@@ -77,8 +77,14 @@ it('records pickup and drop-off through the real driver recorder and sends the i
         eventCreatedAt: email.event_occurred_at,
         tenantTimezone: email.tenant_timezone,
       });
-      expect(rendered.subject).toBe('SafeBus: ' + notice.title);
-      expect(rendered.text.split('\n')[0]).toBe(notice.body);
+      const isPickup = notice.event_type === 'student_picked_up';
+      expect(rendered.subject).toBe('SafeBus: ' + (isPickup ? 'Pickup' : 'Drop-off') + ' recorded');
+      expect(rendered.text.split('\n')[0]).toBe(
+        isPickup
+          ? 'A pickup event has been recorded. Sign in to SafeBus to view details.'
+          : 'A drop-off event has been recorded. Sign in to SafeBus to view details.',
+      );
+      expect(JSON.stringify(rendered)).not.toContain(notice.body);
       for (const push of pickupPushes.filter((p) => p.notification_id === notice.id)) {
         const [resolved] = await query(
           'select * from public.resolve_push_notification_delivery($1,$2)',
@@ -169,8 +175,13 @@ it('preserves Unicode, HTML characters, complete long names/stops and BusSafe as
       notificationBody: email.body,
       eventCreatedAt: email.event_occurred_at,
     });
-    expect(rendered.html).toContain('&lt;Street&gt; &amp; &quot;School&quot;');
-    expect(rendered.text.split('\n')[0]).toBe(notice.body);
+    expect(rendered.subject).toBe('SafeBus: Pickup recorded');
+    expect(rendered.text.split('\n')[0]).toBe(
+      'A pickup event has been recorded. Sign in to SafeBus to view details.',
+    );
+    expect(JSON.stringify(rendered)).not.toContain(first);
+    expect(JSON.stringify(rendered)).not.toContain(last);
+    expect(JSON.stringify(rendered)).not.toContain(stop);
   }));
 
 it.each([

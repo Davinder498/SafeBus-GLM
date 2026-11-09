@@ -35,6 +35,20 @@ function safeLog(details) {
   return copy;
 }
 
+// These external guardian pickup/drop-off emails must never contain student identity,
+// bus/route/stop labels, raw server copy, or event timestamps. The authorized
+// in-app inbox retains the complete event; this affects email output only.
+const GENERIC_GUARDIAN_EVENT_EMAILS = Object.freeze({
+  student_picked_up: Object.freeze({
+    subject: 'SafeBus: Pickup recorded',
+    message: 'A pickup event has been recorded. Sign in to SafeBus to view details.',
+  }),
+  student_dropped_off: Object.freeze({
+    subject: 'SafeBus: Drop-off recorded',
+    message: 'A drop-off event has been recorded. Sign in to SafeBus to view details.',
+  }),
+});
+
 export function buildGuardianEventEmail({
   notificationType,
   notificationTitle,
@@ -49,6 +63,20 @@ export function buildGuardianEventEmail({
     !notificationBody.trim()
   ) {
     throw new Error('canonical_notification_copy_required');
+  }
+  // Do not use the detailed title/body or timestamps in external student-event
+  // emails. The same safe content is produced for retries and older clients.
+  const generic =
+    typeof notificationType === 'string' &&
+    Object.hasOwn(GENERIC_GUARDIAN_EVENT_EMAILS, notificationType)
+      ? GENERIC_GUARDIAN_EVENT_EMAILS[notificationType]
+      : null;
+  if (generic) {
+    return {
+      subject: generic.subject,
+      text: [generic.message, '', 'SafeBus'].join('\n'),
+      html: '<p>' + escapeHtml(generic.message) + '</p><p>SafeBus</p>',
+    };
   }
   let tz = DEFAULT_TZ;
   try {

@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   buildGuardianEventEmail,
+  sendResendEmail,
   classifyProviderError,
   retryDelaySeconds,
 } from '../../netlify/functions/guardian-notification-email.mjs';
@@ -28,29 +29,30 @@ describe('guardian notification email template', () => {
     expect(email.subject).toBe('SafeBus: Approved title');
     expect(email.text.split('\n')[0]).toBe('Approved server message.');
   });
-  it.each(['student_picked_up', 'student_dropped_off'])(
-    'renders the canonical title and message for %s',
-    (notificationType) => {
-      const notificationTitle =
-        notificationType === 'student_picked_up' ? 'Student picked up' : 'Student dropped off';
-      const notificationBody =
-        'Alex Morgan was ' +
-        (notificationType === 'student_picked_up' ? 'picked up' : 'dropped off') +
-        ' on Bus 12.';
+  it.each([
+    ['student_picked_up', 'Pickup recorded', 'A pickup event has been recorded.'],
+    ['student_dropped_off', 'Drop-off recorded', 'A drop-off event has been recorded.'],
+  ])('removes student details and timestamps from %s external email',
+    (notificationType, title, opening) => {
+      const secret = 'Élodie 王 <Student> on Bus 12 at Maple Street, 52.27,-113.8';
       const email = buildGuardianEventEmail({
         notificationType,
-        notificationTitle,
-        notificationBody,
+        notificationTitle: secret,
+        notificationBody: secret,
         eventCreatedAt: '2026-07-14T15:30:00Z',
         tenantTimezone: 'America/Edmonton',
       });
-      expect(email.subject).toBe('SafeBus: ' + notificationTitle);
-      expect(email.text.split('\n')[0]).toBe(notificationBody);
-      expect(email.html).toContain('<p>' + notificationBody + '</p>');
-      expect(email.text).toContain('Recorded:');
-      expect(email.text).not.toContain('not live child tracking');
+      expect(email.subject).toBe('SafeBus: ' + title);
+      expect(email.text.split('\n')[0]).toBe(
+        opening + ' Sign in to SafeBus to view details.',
+      );
+      expect(email.html).toContain('Sign in to SafeBus to view details.');
+      for (const value of Object.values(email)) {
+        expect(value).not.toMatch(/Élodie|王|Student|Bus 12|Maple|52\.27|Recorded:|2026/);
+      }
     },
   );
+
 
   it('rejects missing canonical copy instead of reverting to first-name-only email', () => {
     expect(() =>
@@ -59,12 +61,12 @@ describe('guardian notification email template', () => {
   });
 
   it.each([null, 'Not/A/Real_Zone'])(
-    'uses the Alberta timezone for a legacy invalid timezone %s',
+    'uses the Alberta timezone for a non-student event with invalid zone %s',
     (tenantTimezone) => {
       const email = buildGuardianEventEmail({
-        notificationType: 'student_picked_up',
-        notificationTitle: 'Student picked up',
-        notificationBody: 'Alex Morgan was picked up on Bus 12.',
+        notificationType: 'trip_started',
+        notificationTitle: 'Trip started',
+        notificationBody: 'The trip has started.',
         eventCreatedAt: '2026-07-14T15:30:00Z',
         tenantTimezone,
       });
@@ -72,18 +74,70 @@ describe('guardian notification email template', () => {
     },
   );
 
-  it('escapes complete canonical message HTML while preserving plain text', () => {
-    const notificationBody = 'Alex <Morgan> was picked up on Bus 12 at Maple & School.';
+
+  it('keeps detailed non-pickup operations email copy unchanged', () => {
     const email = buildGuardianEventEmail({
-      notificationType: 'student_picked_up',
-      notificationTitle: 'Student picked up',
-      notificationBody,
+      notificationType: 'trip_late',
+      notificationTitle: 'Approved delayed service',
+      notificationBody: 'The bus service is delayed.',
       eventCreatedAt: '2026-07-14T15:30:00Z',
     });
-    expect(email.text.split('\n')[0]).toBe(notificationBody);
-    expect(email.html).toContain('Alex &lt;Morgan&gt;');
-    expect(email.html).toContain('Maple &amp; School');
+    expect(email.subject).toBe('SafeBus: Approved delayed service');
+    expect(email.text).toContain('The bus service is delayed.');
+    expect(email.text).toContain('Recorded:');
   });
+
+  it('does not redact unknown types or silently accept missing canonical data', () => {
+    const email = buildGuardianEventEmail({
+      notificationType: 'constructor',
+      notificationTitle: 'Service notice',
+      notificationBody: 'Authorized content.',
+      eventCreatedAt: '2026-07-14T15:30:00Z',
+    });
+    expect(email.subject).toBe('SafeBus: Service notice');
+    expect(() => buildGuardianEventEmail({
+      notificationType: 'student_dropped_off',
+      notificationTitle: '',
+      notificationBody: '',
+    })).toThrow('canonical_notification_copy_required');
+  });
+  it('sends only minimized student-event content in the outbound Resend JSON', async () => {
+    const rawName = 'Alex Morgan';
+    const rawBus = 'Bus 12 at Maple School';
+    const rendered = buildGuardianEventEmail({
+      notificationType: 'student_picked_up',
+      notificationTitle: rawName + ' pickup',
+      notificationBody: rawName + ' was picked up on ' + rawBus,
+      eventCreatedAt: '2026-11-08T10:17:00Z',
+    });
+    const request = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: 'provider-message' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', request);
+    try {
+      await expect(sendResendEmail({
+        apiKey: 'test-only-key',
+        from: 'no-reply@example.test',
+        fromName: 'SafeBus',
+        to: 'guardian@example.test',
+        ...rendered,
+        idempotency: 'existing-outbox-id',
+      })).resolves.toEqual({ providerMessageId: 'provider-message' });
+      expect(request.mock.calls[0][0]).toBe('https://api.resend.com/emails');
+      const sent = JSON.parse(request.mock.calls[0][1].body);
+      expect(sent.to).toEqual(['guardian@example.test']);
+      expect(sent.subject).toBe('SafeBus: Pickup recorded');
+      expect(sent.text).toContain('Sign in to SafeBus to view details.');
+      expect(JSON.stringify(sent)).not.toMatch(/Alex Morgan|Bus 12|Maple School|2026-11-08/);
+      expect(request.mock.calls[0][1].headers['Idempotency-Key']).toBe('existing-outbox-id');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
 });
 
 describe('provider error classification', () => {
