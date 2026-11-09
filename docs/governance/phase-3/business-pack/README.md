@@ -140,9 +140,34 @@ liabilities which applicable law prohibits limiting, fraud and wilful wrongdoing
 and separate DPA/privacy duties and legal/express breach remedies.
 
 Insurance quotations and purchase are **deferred**; do not represent active
-coverage. No broad third-party indemnity or separate Customer cap was silently
-approved. See [MSA §8](master-services-agreement.md), the
+coverage. The later November 9 owner decision approves **limited fault-based
+SafeBus third-party indemnification** for Provider-caused privacy/security
+breach claims within the privacy cap, and alleged infringement by unmodified
+SafeBus software under authorized use within the general cap. Covered defence
+costs count inside the applicable non-stacking aggregate limit; no independent
+district negligence or unlawful instructions are indemnified. No blanket or
+unlimited indemnity or reciprocal Customer indemnity was approved. See
+[MSA §8](master-services-agreement.md), the
 [Order Form](order-form.md), [owner decisions](owner-decisions.md), and
 [pilot sign-off worksheet](pilot-contract-signoff-2026-11-07.md).
 These drafts remain **unpublished and unexecuted** pending customer-specific
 procurement/legal review, risk and supplier evidence, and release authorization.
+
+
+## November 9 — approved limited fault-based indemnification proposal
+
+The Provider proposes defending/indemnifying only covered third-party
+**privacy/security claims caused by SafeBus's own contractual breach** and
+**software intellectual-property claims involving its unmodified software
+as provided and used as authorized**. The respective privacy/security and
+general aggregate liability caps apply; reasonable legal defence costs,
+covered settlements and damages are **inside those caps**, not added on top.
+The Customer's separate negligence, unlawful instructions, unauthorized
+changes/combination and independently wrongful acts are excluded to the extent
+of their contribution. Fraud, wilful wrongdoing, non-excludable liability and
+the DPA duties remain preserved.
+
+Customer-specific procurement exceptions and bodily injury/property damage
+indemnity requests require review, and **no insurance coverage is claimed**.
+The contract package remains **unpublished and unexecuted**; neither an
+unsigned Order Form nor this owner decision binds a school authority.
