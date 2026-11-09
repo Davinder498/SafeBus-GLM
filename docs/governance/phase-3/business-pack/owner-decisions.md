@@ -38,8 +38,8 @@ signing authority, insurance and backup coverage require separate verification.
 | Trial, service term and renewal | **Owner-approved 2026-11-09:** one 14-day free trial for a first-time school authority; monthly month-to-month automatic renewal or annual 12-month automatic renewal. Cancel at trial/paid term end, no early fee, and no partial paid-term refund except where legally required or expressly agreed | Standard policy approved; verify actual customer-specific interval, trial end/first charge, notices and signed Order Form. Trial never overrides pilot, privacy or launch authorization |
 | Bus-count changes/proration                                      | Written change order before billing change                                                    | Define effective date, approved credit/debit method and evidence of customer authorization                                                |
 | Non-payment                                                      | Written escalation; no automated operational suspension                                       | Approved suspension notice/process; billing state never automatically disables a tenant                                                   |
-| `[GENERAL_LIABILITY_CAP]`, `[PRIVACY_LIABILITY_CAP]`             | No selected amounts                                                                           | Owner risk/insurance review, customer negotiation and legal review of exclusions                                                          |
-| Insurance | Purchase deferred by owner; no active coverage asserted | Insurance quotes, customer requirements, bound policy and liability caps pending before applicable pilot |
+| Provider liability caps | **Owner-approved proposed initial-pilot position 2026-11-09:** general aggregate greater of **CA$25,000 or 12-Month Fees**; privacy/security aggregate greater of **CA$100,000 or twice 12-Month Fees**; non-cumulative and agreement-wide, with fraud, wilful wrongdoing and legally non-excludable liabilities preserved | Customer-specific authorized acceptance, indemnities, third-party injury/IP claim treatment, financial exposure and procurement review pending; no executed contract or insurance implied |
+| Insurance | **Owner explicitly deferred quotations and purchase**; no verified active insurance or coverage representation | Examine each authority's tender/contract terms and actual coverage needs before signing; no quote, policy, certificate or amount may be asserted |
 | Support hours, timezone and holidays | **Owner-approved 2026-11-09:** ordinary staffed support Monday–Friday 8:00 a.m.–5:00 p.m. America/Edmonton **excluding Alberta's nine general holidays**; no guaranteed after-hours human response | Verify staffed access, monitored support inbox and independently required security/privacy escalation before pilot; holiday calendar follows official Alberta list, with no additional optional holiday closures |
 | Availability, latency, GPS freshness and notification targets | **Owner-approved initial-pilot SLA:** no guaranteed uptime, request latency, GPS/ETA freshness, notification delivery, response/repair time or recovery objective; monitoring is not 24/7 human support | Preserve accurate outage/stale-location disclosures; future guarantees only after measured evidence, staffing and accepted amendment |
 | Credit rates/cap | **Owner-approved initial-pilot SLA:** no automatic SLA credits/penalties on monthly or annual subscriptions; no unsupported credit tiers | Preserve mandatory legal remedies, customer-specific breach remedies and DPA/security duties; do not treat this as a liability-cap decision |
@@ -211,3 +211,35 @@ security/privacy incident reporting and containment route that meets the
 separate DPA and applicable legal obligations after actual awareness,
 including on excluded holidays. Do not publish the agreement or authorize
 a real pilot until this and other approved launch gates are evidenced.
+
+
+## Final proposed initial-pilot Provider liability caps — November 9, 2026
+
+Owner approved **Option A as the proposed MSA/Order Form negotiating position**:
+**General Provider liability aggregate = greater of CA$25,000 or 12-Month
+Fees**; **privacy/security Provider liability aggregate = greater of
+CA$100,000 or twice 12-Month Fees**. For this proposal, 12-Month Fees means
+subscription fees paid or contractually payable by that school authority for
+the 12 months before the first claim-causing event, net of discounts and
+excluding GST/HST; allocate annual prepayments to their service months and
+use actual shorter service period where relevant (minimum floors still apply).
+A covered privacy/security claim uses the higher specific cap instead of
+stacking with the general cap. The aggregate does not renew per claim,
+incident or subscription cycle.
+
+**Preserved safeguards:** no limitation for fraud, intentional/wilful
+misconduct or liability that applicable law forbids limiting; preserve
+mandatory privacy/security reporting, protection, data return/deletion and
+regulatory cooperation, statutory and express breach remedies. Convenience
+cancellation terms do not override breach remedies. IP, bodily injury,
+third-party indemnity and defence arrangements require deliberate,
+customer-specific negotiation; do not imply unlimited indemnity or new
+Customer liability cap. The proposed cap is not insurance or cash reserved.
+
+**Insurance quotations are deferred by owner. No active CGL, technology E&O,
+cyber/privacy policy, insurer, certificate, or coverage is asserted.**
+These figures are a closed **owner business proposal**, not a signed district
+contract, procurement acceptance, legal enforceability assessment, insurance
+approval or permission to activate any real school-authority data. Confirm
+actual school-authority procurement requirements, suitable risk financing,
+contract carve-outs and authoritative customer acceptance before execution.
