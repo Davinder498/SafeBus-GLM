@@ -138,3 +138,26 @@ procurement and mandatory-law requirements and whether uninsured financial
 exposure can be borne. Do not make a payment, claim coverage or change launch
 gates. The MSA, Order Form, DPA, owner decisions, sign-off pack, contract index,
 release notes and contract tests are aligned on PR #419.
+
+
+## November 9 — limited third-party indemnification business policy CLOSED
+
+The owner approved a **limited, fault-based SafeBus Provider indemnity**
+for third-party claims arising from its covered contractual privacy/security
+breach (privacy/security aggregate cap) or alleged infringement by the
+**unmodified SafeBus software as provided and used as authorized** (general
+aggregate cap). Reasonable covered defence costs, approved settlements and
+damages are **inside** the existing non-stacking caps (greater of CA$100,000
+or twice 12-Month Fees for privacy/security; greater of CA$25,000 or
+12-Month Fees for ordinary/IP claims). The school authority's independent
+negligence, unlawful instructions, unauthorized modifications/combinations
+or other independent wrongdoing is not automatically indemnified.
+
+The MSA provides notice, defence control, cooperation and settlement-consent
+conditions. Fraud, wilful misconduct, other legally non-excludable liability
+and DPA obligations remain protected. Broader district procurement, bodily
+injury/property damage, special IP arrangements and indemnity exceptions still
+require customer-specific authorized review; there is no blanket unlimited or
+reciprocal Customer indemnity. **Insurance quotations and purchase remain
+deferred; no policy or coverage is represented.** No agreement publication,
+live customer action, financial/Stripe change or launch authorization follows.
