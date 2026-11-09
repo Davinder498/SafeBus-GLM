@@ -61,18 +61,19 @@ describe('guardian notification email template', () => {
   });
 
   it.each([null, 'Not/A/Real_Zone'])(
-    'uses the Alberta timezone for a legacy invalid timezone %s',
+    'uses the Alberta timezone for a non-student event with invalid zone %s',
     (tenantTimezone) => {
       const email = buildGuardianEventEmail({
-        notificationType: 'student_picked_up',
-        notificationTitle: 'Student picked up',
-        notificationBody: 'Alex Morgan was picked up on Bus 12.',
+        notificationType: 'trip_started',
+        notificationTitle: 'Trip started',
+        notificationBody: 'The trip has started.',
         eventCreatedAt: '2026-07-14T15:30:00Z',
         tenantTimezone,
       });
       expect(email.text).toContain('America/Edmonton');
     },
   );
+
 
   it('keeps detailed non-pickup operations email copy unchanged', () => {
     const email = buildGuardianEventEmail({
