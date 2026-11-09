@@ -70,7 +70,7 @@ test('data management terms preserve holds, supplier copies and real readiness g
   const schedule = normalized(await read(files.returnSchedule));
   const msa = normalized(await read(files.msa));
   const dpa = normalized(await read(files.dpa));
-  assert.match(schedule, /Destructive scheduled retention remains disabled until separately authorized and verified/i);
+  assert.match(schedule, /Scheduled destructive disposal remains disabled until separately authorized and verified/i);
   assert.match(schedule, /The application cannot selectively erase every immutable backup/i);
   assert.match(schedule, /mandatory retention obligation/i);
   assert.match(schedule, /not a blanket certificate of complete destruction/i);
