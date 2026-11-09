@@ -5,6 +5,8 @@ import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLa
 import { AdminSettingsNav } from '@/components/settings/AdminSettingsNav';
 import { SubscriptionOverview } from '@/components/subscription/SubscriptionOverview';
 import { InvoiceHistory } from '@/components/subscription/InvoiceHistory';
+import { InvoiceBillingTenantCard } from '@/components/subscription/InvoiceBillingTenantCard';
+import { InvoiceBillingRenewalCard } from '@/components/subscription/InvoiceBillingRenewalCard';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -515,11 +517,20 @@ export function AdminSubscriptionPage() {
                 )}
               </Card>
             )}
+            {!liveContract && !subscription.subscriptionExempt && !processing && prices.length>0 &&
+              <InvoiceBillingTenantCard prices={prices}
+                minimumBuses={subscription.activeBusCount}
+                trialEligible={subscription.trialEligible}
+                onActivated={load}/>}
             {legacy && (
-              <p className="rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
-                Your existing invoice contract is preserved. Contact support to review changes to
-                this contract.
-              </p>
+              <>
+                <InvoiceBillingRenewalCard canceled={subscription.cancelAtPeriodEnd}
+                  onUpdated={load}/>
+                <p className="rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
+                  Invoice subscriptions retain their agreed terms. Plan, bus-count or collection
+                  changes outside the approved arrangement require SafeBus support and customer authorization.
+                </p>
+              </>
             )}
             {subscription.pendingChange && (
               <div className="space-y-3 rounded-lg bg-navy-50 p-4">

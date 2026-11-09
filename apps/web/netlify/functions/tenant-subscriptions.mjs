@@ -135,8 +135,8 @@ async function startCheckout(ctx, stripe, state, input) {
       client_reference_id: state.tenant_id,
       integration_identifier: 'safebus_checkout_hqrzftkm',
       line_items: [{ price: input.priceId, quantity: input.quantity }],
-      // Enabled only for an explicitly inclusive price; the two existing
-      // temporary unspecified Stripe prices keep their existing behavior.
+      // Owner-approved monthly and annual prices are explicitly tax-inclusive.
+      // Never rely on an unspecified historical price to collect the right tax.
       ...(isInclusivePrice ? { automatic_tax: { enabled: true } } : {}),
       payment_method_collection: 'always',
       // Stripe keeps business billing details with the invoice, outside SafeBus.

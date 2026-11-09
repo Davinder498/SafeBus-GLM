@@ -40,3 +40,12 @@ Do not publish private mailing details or any agreement until actual price, tax,
 liability and supplier positions have been approved and completed. This
 public template contains no real customer personal data or signatures.
 Payment does not replace explicit acceptance or launch requirements.
+
+
+## Owner-approved default trial and invoice/PO exception — November 9, 2026
+
+SafeBus's standard payment policy is one **14-day free trial** for a first-time school authority, with a payment method collected during Stripe Checkout and automatic charging for the approved **CA$1.99/month** or **CA$20.29/year per active bus** tariff after the trial. The selected price includes applicable GST/HST. The trial begins only after the Stripe subscription is confirmed; existing subscribers and previously used trials do not receive another one.
+
+A school authority may instead request **invoice or purchase-order billing**, subject to a **separate affirmative SafeBus platform-admin approval**. The Order Form must record the authority-approved billing email, bill-to business address, applicable PO reference (if issued), chosen monthly/annual interval, quantity and explicit invoice due window of **14, 30, 45 or 60 days**. The selected invoice due days apply **after issuance**. Under an approved invoice arrangement, a first-time customer can use the same one 14-day trial **without a card**; Stripe `send_invoice` produces a manual-pay invoice after trial expiry. Previously trialed subscribers receive no second trial, and the first invoice may be issued upon explicit tenant-admin activation. Approval itself neither starts the trial nor creates the invoice; tenant-admin confirmation is required. Monthly/annual recurring invoices follow until renewal is canceled according to the executed terms. Existing issued invoices remain payable after cancellation.
+
+The fixed standard rates are owner-approved; **this template remains unsigned and unpublished** pending final customer-specific order acceptance and the rest of the contract package. No customer PO, district signing authority or support/insurance representation is invented.

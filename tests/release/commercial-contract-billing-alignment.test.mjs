@@ -64,3 +64,18 @@ test('review record does not infer commercial launch authorization from Stripe l
   assert.match(s, /not_approved/);
   assert.match(s, /No launch authorization/i);
 });
+
+test('owner-approved trial policy is reflected in subscription contracts and operating docs', async () => {
+  const msa = await read('master-services-agreement.md');
+  const order = await read('order-form.md');
+  const runbook = await fs.readFile('docs/operations/stripe-subscription-release.md','utf8');
+  for (const value of ['14-day','invoice','purchase']) {
+    assert.ok((msa+'\n'+order+'\n'+runbook).toLowerCase().includes(value), value);
+  }
+  assert.match(order,/CA\$1\.99/);
+  assert.match(order,/CA\$20\.29/);
+  assert.match(runbook,/payment_method_collection=always/);
+  assert.match(runbook,/missing_payment_method=create_invoice/);
+  assert.match(runbook,/platform-super-admin/i);
+  assert.match(runbook,/send_invoice/);
+});

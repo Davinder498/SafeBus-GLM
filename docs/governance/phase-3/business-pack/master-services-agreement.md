@@ -238,3 +238,12 @@ Formal notices use owner-selected `info@safebus.kids` (`[NOTICE_EMAIL]`) and the
 Form. Amendments require authorized written agreement. The agreement constitutes
 the accepted business terms, with severability and electronic records where
 lawful. Acceptance receipts and customer identities belong in restricted contract storage.
+
+
+## November 9 business-approved collection policy — current terms for final review
+
+Default payment: Stripe-hosted Checkout collects the school authority's card/payment method when its first subscription is confirmed. First-time authorities receive **14 days free**; after expiration the selected **CA$1.99/month** or **CA$20.29/year per active bus, GST/HST-inclusive** plan bills automatically. Trial eligibility is checked against both SafeBus's billing control record and the account's Stripe subscription history. Annual billing interval does not silently create a one-year service term.
+
+Exception: a district may request invoice/PO billing **only with a distinct platform-admin approval** of its contact, address, exact price and quantity, any purchase order, and due window (14/30/45/60 days). The district administrator must subsequently affirmatively activate the approved recurring plan. Invoice billing uses `send_invoice` (manual payment), not an automatic card charge. First-time districts still have one 14-day trial; their first payment invoice is issued at its expiry. Previous subscribers cannot receive another trial; activation can generate an invoice immediately. Approved invoice renewals generate recurring invoices until cancelled. Cancellation does not void invoices already issued. The customer-specific order must explicitly choose the collection method, bill-to contact, trial and due dates; the proposed net-30 term is not automatically approved for every district.
+
+These policies are **approved commercial decisions**, but this MSA remains a draft pending binding contract clauses and actual customer acceptance; no insurance/liability amount, data-processing permission, final SLA or pilot sign-off is implied.

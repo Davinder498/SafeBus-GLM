@@ -36,3 +36,11 @@ test('tax update does not approve privacy, map, operations, or pilot readiness',
   }
   assert.equal(JSON.parse(read('docs/governance/pilot-authorization.json')).status, 'not_authorized');
 });
+
+test('owner-approved 14-day card trial and platform-approved invoice exception stay documented',()=>{
+  const owner=read('docs/governance/phase-3/business-pack/owner-decisions.md');
+  assert.ok(owner.includes('**one 14-day free trial per first-time school authority**'));
+  assert.ok(owner.includes('**invoice/purchase-order alternative when a platform administrator authorizes it**'));
+  assert.ok(owner.includes('monthly / CA$20.29 annual'));
+  assert.ok(owner.includes('Approval alone does not create a subscription or invoice'));
+});
