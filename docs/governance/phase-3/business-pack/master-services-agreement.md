@@ -380,9 +380,26 @@ because of cancellation, except where legally required or expressly agreed.
 Any customer-specific exception must be explicit in the accepted Order Form. Accrued undisputed fees,
 confidentiality, valid claims and necessary record duties survive termination.
 
-At exit, apply the Data Return and Destruction Schedule. Customer-directed
-records are not held hostage to a billing dispute, subject to lawful instructions
-and a proportionate, secure transfer process.
+At exit, apply the **district-controlled Data Management, Return and
+Destruction Schedule**. During service, the authorized school-authority
+tenant administrator can download available directory CSVs and use existing
+record-level deletion or archive controls where supported. Neither the
+subscription cancellation action nor removal of a visible record constitutes
+immediate deletion of all trip history, notification copies, audit, supplier
+logs, immutable backups or legally held records. The administrator may request
+assistance for additional records or account closure through SafeBus support;
+SafeBus verifies authority, scoped data classes, applicable retention/holds,
+supplier limitations and a secure recipient before carrying out such work.
+
+**The standard initial-pilot contract does not impose a blanket 30-day
+data-return period or 60-day primary-deletion deadline.** Any customer-specific
+time commitment must be expressly agreed and supported by tested technical
+and provider processes. The approved owner policy does not activate destructive
+automatic retention or authorize an untested school-authority-wide purge.
+Customer-directed records must not be held hostage to an unrelated billing
+dispute, subject to lawful instructions and a proportionate secure transfer.
+Mandatory DPA/records duties and verified supplier-backup expiry remain
+applicable after access ends.
 
 ## 10. General terms
 
