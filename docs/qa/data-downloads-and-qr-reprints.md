@@ -120,3 +120,26 @@ in the existing forward-type overlay. An application rollback can retain the
 compatible issuer wrappers, encrypted data and key. Human PR/merge approval and
 protected production release remain required. Encryption key loss prevents
 reprinting saved copies but does not invalidate scanner hashes or printed codes.
+
+## November 9 — district-controlled data-management policy
+
+The owner selected a simple model in which **school-authority tenant
+administrators manage supported records directly** rather than requiring
+mandatory blanket 30-day export and 60-day post-termination deletion.
+Admin Settings now links to the existing student, guardian, driver and bus
+directory CSV controls and Records disposal/preservation, with a SafeBus
+support contact for additional scoped exports and account closure.
+
+**Scope boundary:** the directory CSV feature returns authorized filtered
+directory fields, not complete route, event, GPS, notification, billing or
+audit histories. It does not perform bulk erasure. Existing per-record
+deletion/archive and protected preservation features are separate
+operations. The current controlled disposal worker remains disabled,
+and closing a district account is not instantaneous deletion of all
+Supabase/provider backups. The customer contract promises no universal
+30/60-day deadlines until operationally proven and separately agreed.
+
+The smoke test `tests/smoke/records-disposal.spec.ts` exercises the Settings
+links and limitations. Release tests protect the contract wording and the
+absence of an unguarded bulk-delete command. None of these tests authorizes
+a production customer-data operation.

@@ -28,7 +28,7 @@ while its necessary inputs or evidence are missing.
 | [Order form](order-form.md)                                        | Customer-specific scope, dates, annual per-bus CAD price and signatures            |
 | [Data Processing Agreement](data-processing-agreement.md)          | Instructions, permitted data, roles, suppliers and privacy cooperation             |
 | [Security Schedule](security-schedule.md)                          | Proposed safeguards and the evidence required before operation                     |
-| [Service-Level Agreement](service-level-agreement.md)              | Measurable service/support terms with unapproved targets left open                 |
+| [Service-Level Agreement](service-level-agreement.md)              | Owner-approved initial-pilot staffed hours, nine holiday exclusions and no unsupported uptime/response/credit guarantees; customer execution pending |
 | [Acceptable-Use Terms](acceptable-use-terms.md)                    | Rules for administrators, drivers and guardians                                    |
 | [Data Return and Destruction Schedule](data-return-destruction.md) | Exit, export, deletion, backups and legal holds                                    |
 | [Supplier disclosure draft](supplier-disclosure.md)                | Supplier purposes, information involved and location decisions still pending       |
@@ -100,3 +100,94 @@ Use the [pilot contract, supplier and insurance sign-off pack](pilot-contract-si
 ## Owner business choices — November 8, 2026
 
 The latest [owner decision register](owner-decisions.md) supersedes historical GST/HST-unregistered notes: the owner reports GST/HST registration effective 2026-11-08, SafeBus registered as Sachman Gold Inc.'s trade name and info@safebus.kids selected for formal notices. The provided business mailing address is **confidential and not to be published or committed to Git**. Final monthly/annual prices are still undecided; the future approved customer-facing totals must include applicable GST/HST. Insurance will be purchased later. Support remains Monday–Friday, 08:00–17:00 Alberta time, with backup/holiday coverage unresolved. No customer agreement publication, live tax mutation or launch approval follows from these choices.
+
+
+## November 9 finalized standard subscription prices
+
+The owner approved **CA$1.99 per active bus monthly** and **CA$20.29 per active bus annually**, **including applicable GST/HST**. These rates supersede earlier temporary-price wording; the two live existing Stripe prices were converted in place to `tax_behavior=inclusive` and independently retrieved after updating. The signed school-authority Order Form must still select the interval, quantity, collection method, trial, effective dates and any documented exemptions. The entire eight-document district contract package is still DRAFT and unpublished; rate approval alone did not approve insurance, liability caps, supplier disclosures, remaining terms or a pilot. The later November 9 owner-approved *proposed* liability limits are recorded below; no customer contract or launch is approved. See [owner decisions](owner-decisions.md).
+
+
+## November 9 — approved pilot support calendar and SLA boundary
+
+For the initial pilot, ordinary SafeBus staffed support runs **Monday–Friday,
+8:00 a.m.–5:00 p.m. America/Edmonton**, excluding Alberta's **nine general
+holidays** (official list: https://www.alberta.ca/alberta-general-holidays).
+No 24/7 staffed or guaranteed after-hours response, numerical uptime/latency/GPS
+or notification promise, fixed repair time, or automatic monthly/annual SLA
+credit is offered. This owner-approved business choice is reflected in the
+[MSA](master-services-agreement.md), [Order Form](order-form.md),
+[SLA](service-level-agreement.md), [owner register](owner-decisions.md) and
+[sign-off pack](pilot-contract-signoff-2026-11-07.md).
+
+The November 8 holiday-coverage and price statements elsewhere in this index
+are historical and superseded by the November 9 decisions. The eight-document
+contract pack remains a **draft and unpublished**. Privacy/security incident
+notice and cooperation requirements still apply independently of staffed
+support holidays/hours; a credible escalation route and actual staffed-window
+coverage must be evidenced before customer activation.
+
+
+## November 9 — proposed Provider liability caps and deferred insurance
+
+The owner approved the initial-pilot negotiating position: **general Provider
+aggregate liability = greater of CA$25,000 or 12-Month Fees** and
+**privacy/security Provider aggregate liability = greater of CA$100,000 or
+twice 12-Month Fees**. The privacy/security limit is in place of, not on top
+of, the general limit. Fees are the contracted, net-of-discount, tax-exclusive
+subscription fees attributable to the 12 months preceding the first claim-causing
+event, with annual prepayments allocated to service months. The owner preserved
+liabilities which applicable law prohibits limiting, fraud and wilful wrongdoing,
+and separate DPA/privacy duties and legal/express breach remedies.
+
+Insurance quotations and purchase are **deferred**; do not represent active
+coverage. The later November 9 owner decision approves **limited fault-based
+SafeBus third-party indemnification** for Provider-caused privacy/security
+breach claims within the privacy cap, and alleged infringement by unmodified
+SafeBus software under authorized use within the general cap. Covered defence
+costs count inside the applicable non-stacking aggregate limit; no independent
+district negligence or unlawful instructions are indemnified. No blanket or
+unlimited indemnity or reciprocal Customer indemnity was approved. See
+[MSA §8](master-services-agreement.md), the
+[Order Form](order-form.md), [owner decisions](owner-decisions.md), and
+[pilot sign-off worksheet](pilot-contract-signoff-2026-11-07.md).
+These drafts remain **unpublished and unexecuted** pending customer-specific
+procurement/legal review, risk and supplier evidence, and release authorization.
+
+
+## November 9 — approved limited fault-based indemnification proposal
+
+The Provider proposes defending/indemnifying only covered third-party
+**privacy/security claims caused by SafeBus's own contractual breach** and
+**software intellectual-property claims involving its unmodified software
+as provided and used as authorized**. The respective privacy/security and
+general aggregate liability caps apply; reasonable legal defence costs,
+covered settlements and damages are **inside those caps**, not added on top.
+The Customer's separate negligence, unlawful instructions, unauthorized
+changes/combination and independently wrongful acts are excluded to the extent
+of their contribution. Fraud, wilful wrongdoing, non-excludable liability and
+the DPA duties remain preserved.
+
+Customer-specific procurement exceptions and bodily injury/property damage
+indemnity requests require review, and **no insurance coverage is claimed**.
+The contract package remains **unpublished and unexecuted**; neither an
+unsigned Order Form nor this owner decision binds a school authority.
+
+
+## November 9 — owner-approved district-controlled data model
+
+Instead of a blanket 30-day data-return and 60-day primary deletion promise,
+the owner approved **district-controlled data management**. The tenant
+administrator may use existing student/guardian/driver/bus directory CSVs
+and supported per-record delete/archive/preservation actions, subject to
+security and mandatory retention. If a district requests additional records
+or account closure, SafeBus verifies the authority and tenant, scopes and
+securely transfers eligible information, and handles deletion only through
+approved workflows. A CSV is not a complete district-wide export and the app
+has not established an instant delete-all or full backup-erasure capability.
+
+The [Data Management, Return and Destruction Schedule](data-return-destruction.md),
+[MSA](master-services-agreement.md), [DPA](data-processing-agreement.md) and
+[Order Form](order-form.md) carry the same policy. Any binding customer-specific
+turnaround must be technically verified and agreed in writing. Automatic
+destructive retention remains disabled; contracts remain unpublished until
+customer and operational requirements are approved.

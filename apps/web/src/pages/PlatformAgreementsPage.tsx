@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
+import { createLatestAgreementFileReader } from '@/utils/latestAgreementFileReader';
 import { FileCheck2, ShieldCheck } from 'lucide-react';
 import { DashboardLayout, platformNavItems } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
@@ -43,6 +44,8 @@ export function PlatformAgreementsPage() {
   const [participantTerms,setParticipantTerms]=useState<PublishedParticipantTerms|null>(null);
   const [participantDocument,setParticipantDocument]=useState('');
   const [confirmParticipant,setConfirmParticipant]=useState(false);
+  const fileReader = useMemo(createLatestAgreementFileReader, []);
+  useEffect(() => () => fileReader.invalidate(), [fileReader]);
   const load=useCallback(async()=>{
     setLoading(true);setError(null);
     try {
@@ -123,6 +126,8 @@ export function PlatformAgreementsPage() {
               <Field label="Document type" htmlFor="agreement-kind" required>
                 <select id="agreement-kind" className="min-h-11 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-2"
                   value={kind} onChange={e=>{
+                    fileReader.invalidate();
+                    setText('');
                     setKind(e.target.value);
                     setTitle(kinds.find(k=>k.kind===e.target.value)?.label??'');
                     setApproved(false);
@@ -139,13 +144,20 @@ export function PlatformAgreementsPage() {
                   onChange={e=>{setVersion(e.target.value);setApproved(false);}}/>
               </Field>
               <Field label="Final approved Markdown contract" htmlFor="agreement-document-upload" required>
-                <input id="agreement-document-upload" type="file" accept=".md,.txt,text/markdown,text/plain"
+                <input key={kind} id="agreement-document-upload" type="file" accept=".md,.txt,text/markdown,text/plain"
                   className="block min-h-11 w-full text-sm" onChange={e=>{
                     const file=e.target.files?.[0];
+                    fileReader.invalidate();
+                    // Clear old contract text immediately: a stale file must not
+                    // be approved while a replacement is still being read.
+                    setText('');
                     setApproved(false);
+                    setError(null);
                     if(!file)return;
                     if(file.size>150000){setError('The maximum document size is 150 KB.');return;}
-                    void file.text().then(setText).catch(()=>setError('Document could not be read.'));
+                    void fileReader.read(file).then(nextText=>{
+                      if(nextText!==null)setText(nextText);
+                    }).catch(()=>setError('Document could not be read.'));
                   }}/>
               </Field>
               {text&&<div className="space-y-2">

@@ -37,8 +37,8 @@ export function PlatformPricingPage() {
   const [pending, setPending] = useState<PendingCatalogRequest | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [priceName, setPriceName] = useState('');
-  const [priceAmount, setPriceAmount] = useState('');
   const [interval, setInterval] = useState<'month' | 'year'>('month');
+  const priceAmount = interval === 'month' ? '1.99' : '20.29';
   const [discountName, setDiscountName] = useState('');
   const [code, setCode] = useState('');
   const [kind, setKind] = useState<'percent' | 'amount'>('percent');
@@ -166,8 +166,9 @@ export function PlatformPricingPage() {
           <p className="mt-2 text-sm leading-6 text-navy-800">
             Prices are in Canadian dollars, billed monthly or annually. Publishing a new price makes
             it available for selection; it does not move existing subscribers. New prices created
-            here explicitly include applicable GST/HST; existing prices retain their original
-            Stripe tax behaviour.
+            here explicitly include applicable GST/HST. The owner-approved tariff is
+            CA$1.99 per active bus monthly or CA$20.29 annually. Changes to these amounts
+            require a new business decision; existing subscribers retain their agreed terms.
           </p>
         </Card>
         {message && (
@@ -285,8 +286,9 @@ export function PlatformPricingPage() {
               <Card className="p-5 sm:p-6">
                 <h2 className="text-lg font-bold text-navy-900">Publish a subscription price</h2>
                 <p className="mt-2 text-sm text-slate-600">
-                  Prices created here include applicable GST/HST. Confirm the final amount and
-                  billing terms before publishing. Existing prices are not changed.
+                  Current approved amounts are CA$1.99/month and CA$20.29/year per active bus,
+                  including applicable GST/HST. An existing active price is reused; different
+                  selling amounts require a new business approval.
                 </p>
                 <form aria-label="New subscription price" onSubmit={queuePrice}>
                   <fieldset disabled={locked} className="mt-5 space-y-4 disabled:opacity-60">
@@ -311,7 +313,8 @@ export function PlatformPricingPage() {
                           max="1000000"
                           step="0.01"
                           value={priceAmount}
-                          onChange={(e) => setPriceAmount(e.target.value)}
+                          readOnly
+                          aria-readonly="true"
                         />
                       </Field>
                       <Field label="Billing interval" htmlFor="price-interval">

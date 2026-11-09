@@ -340,7 +340,9 @@ test('platform pricing forms, dropdowns and confirmation dialogs use the same da
   await page.goto('/admin/pricing');
   const form = page.getByRole('form', { name: 'New subscription price' });
   await form.getByLabel('Price name').fill('Synthetic preview only');
-  await form.getByLabel('Price per bus (CAD)').fill('25');
+  // The final owner-approved tariff is read-only; the appearance test must
+  // not try to edit that locked business decision.
+  await expect(form.getByLabel('Price per bus (CAD)')).toHaveValue('1.99');
   await form.getByRole('button', { name: 'Review price' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.locator('[data-ui=dialog-panel]')).toHaveCSS(

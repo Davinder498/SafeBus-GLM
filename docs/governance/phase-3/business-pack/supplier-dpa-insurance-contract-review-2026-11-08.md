@@ -113,3 +113,46 @@ For the [Zensurance online application](https://www.zensurance.com/technology-in
 **Not completed:** applicable supplier-account contractual evidence for vendors that actually handle district transport information; business-mail security and occasional inbound personal-information handling; insurance applications/quotes/binding, final commercial prices, CRA tax reconciliation, contractual caps, district customer authority/PIA, customer-specific offer, school-authority eight-document publication and operational launch authorizations. **Zoho's optional separate DPA execution is not a blanket launch or district-contract gate.**
 
 **Release posture:** leave the supplier ledger, privacy-readiness, map-readiness, operations-readiness and pilot-authorization gates unchanged and `not_approved`/`not_authorized`. No production migration, vendor account mutation, payment, insurance purchase, legal publication or customer invitation is authorized by this document.
+
+## November 9 decision update — insurer quote work deferred
+
+This November 8 public-source review is retained as historical evidence; its
+instructions to obtain quotes **before selecting a proposed liability cap**
+were superseded by the owner's November 9 decision. The owner chose a
+**proposed general Provider aggregate cap equal to the greater of CA$25,000
+or 12-Month Fees**, and a **proposed privacy/security Provider aggregate cap
+equal to the greater of CA$100,000 or twice 12-Month Fees**; the latter
+substitutes for (rather than stacks with) the former for qualifying claims.
+MSA section 8 and the Order Form control the exact definition, mandatory
+exceptions, and negotiations.
+
+The owner **deferred all insurance quotations and any purchase**. Broker links,
+sample prices and illustrative coverage figures above are historical research
+only, **not approved targets, completed quotations, quotes to submit, a
+binding policy, or confirmed coverage**. School-authority procurement needs,
+indemnities, affordability and whether/when any insurance is actually required
+remain open until real customer contracting. Public supplier/DPA account
+acceptance also remains pending. No release/contract-publication gate changes.
+
+## November 9 follow-up — limited third-party indemnification business decision
+
+This dated supplier/insurance review remains historical. The owner has now
+approved a **limited, fault-based SafeBus Provider indemnification proposal** for
+the initial pilot: third-party privacy/security claims to the extent caused by
+SafeBus's own covered contractual breach under the **greater of CA$100,000 or
+twice 12-Month Fees** privacy/security aggregate cap, and claims alleging
+infringement by **unmodified SafeBus software as provided and used as authorized**
+under the **greater of CA$25,000 or 12-Month Fees** general aggregate cap.
+Reasonable covered defence costs, settlements and damages count **inside** those
+non-stacking caps. Customer negligence, unlawful instructions, unauthorized
+changes/combinations and independent wrongdoing are not automatically
+indemnified.
+
+The proposed defence includes timely notice, defence control, cooperation and
+settlement consent, without waiving fraud, wilful wrongdoing, legally
+non-excludable claims or DPA duties. Broader district procurement and
+injury/property-damage claims still require negotiated customer-specific terms.
+**Insurance quotations and purchase remain deferred. No active insurer or
+coverage is claimed.** This closes only the owner's standard negotiating
+position; customer acceptance, supplier legal/risk review and release gates
+remain outstanding.

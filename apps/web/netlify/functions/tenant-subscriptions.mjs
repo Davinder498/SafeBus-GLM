@@ -1,3 +1,5 @@
+import { isApprovedInclusiveBusPrice } from './approved-bus-pricing.mjs';
+import { scheduledRenewalChange } from './billing-renewal-terms.mjs';
 import {
   UUID_PATTERN,
   clean,
@@ -54,7 +56,8 @@ export async function approvedPrices(stripe, productId) {
         p.recurring?.usage_type === 'licensed' &&
         p.currency === 'cad' &&
         Number.isSafeInteger(p.unit_amount) &&
-        p.unit_amount >= 0,
+        p.unit_amount >= 0 &&
+        isApprovedInclusiveBusPrice(p),
     )
     .map((p) => ({
       id: p.id,
@@ -133,8 +136,8 @@ async function startCheckout(ctx, stripe, state, input) {
       client_reference_id: state.tenant_id,
       integration_identifier: 'safebus_checkout_hqrzftkm',
       line_items: [{ price: input.priceId, quantity: input.quantity }],
-      // Enabled only for an explicitly inclusive price; the two existing
-      // temporary unspecified Stripe prices keep their existing behavior.
+      // Owner-approved monthly and annual prices are explicitly tax-inclusive.
+      // Never rely on an unspecified historical price to collect the right tax.
       ...(isInclusivePrice ? { automatic_tax: { enabled: true } } : {}),
       payment_method_collection: 'always',
       // Stripe keeps business billing details with the invoice, outside SafeBus.
@@ -377,8 +380,9 @@ export async function handler(event) {
         sub = await stripe.subscriptions.update(
           sub.id,
           {
-            cancel_at_period_end:
-              input.action === 'unschedule' ? sub.cancel_at_period_end : input.action === 'cancel',
+            ...(input.action === 'unschedule'
+              ? { cancel_at_period_end: Boolean(sub.cancel_at_period_end), proration_behavior: 'none' }
+              : scheduledRenewalChange(input.action)),
             expand: ['customer', 'items.data.price.product', 'latest_invoice'],
           },
           { idempotencyKey: `safebus:${input.requestId}:renewal` },

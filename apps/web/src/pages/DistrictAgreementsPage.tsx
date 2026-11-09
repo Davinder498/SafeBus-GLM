@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/contexts/useAuth';
 import {
-  acceptDistrictAgreement, downloadExecutedAgreementPdf, getDistrictAgreement,
+  acceptDistrictAgreement, downloadExecutedAgreementPdf, downloadExecutedAgreementArchive, getDistrictAgreement,
   listMyAgreementReceipts, type AgreementDocument, type DistrictAgreement,
 } from '@/services/districtAgreementService';
 
@@ -75,10 +75,12 @@ export function DistrictAgreementsPage() {
     }catch(cause){setError(cause instanceof Error?cause.message:'Agreement acceptance failed.');}
     finally {setBusy(false);}
   }
-  async function download(id:string){
+  async function download(id:string, format:'pdf'|'exact'='pdf'){
     setBusy(true);setError(null);
-    try{await downloadExecutedAgreementPdf(id);}
-    catch(cause){setError(cause instanceof Error?cause.message:'Agreement download failed.');}
+    try {
+      if(format==='exact') await downloadExecutedAgreementArchive(id);
+      else await downloadExecutedAgreementPdf(id);
+    } catch(cause) {setError(cause instanceof Error?cause.message:'Agreement download failed.');}
     finally{setBusy(false);}
   }
 
@@ -213,8 +215,16 @@ export function DistrictAgreementsPage() {
                 archive.map(r=><div key={r.id} className="space-y-2 border-t border-[var(--color-border)] pt-3">
                   <p className="text-sm font-semibold">Signed {new Date(r.signed_at).toLocaleString('en-CA')}</p>
                   <p className="break-all text-xs text-[var(--color-text-muted)]">Receipt SHA-256: {r.receipt_sha256}</p>
-                  <Button type="button" variant="secondary" disabled={busy} onClick={()=>void download(r.id)}
-                    leftIcon={<Download className="h-4 w-4"/>}>Download executed PDF</Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="secondary" disabled={busy} onClick={()=>void download(r.id)}
+                      leftIcon={<Download className="h-4 w-4"/>}>Download executed PDF</Button>
+                    <Button type="button" variant="secondary" disabled={busy} onClick={()=>void download(r.id,'exact')}
+                      leftIcon={<Download className="h-4 w-4"/>}>Download exact UTF-8 archive</Button>
+                  </div>
+                  <p className="text-xs text-[var(--color-text-muted)]">
+                    The UTF-8 archive preserves the original signed contract text, including accents
+                    and non-Latin characters. The PDF is a simplified printable rendering.
+                  </p>
                 </div>)}
             </Card>
           </div>

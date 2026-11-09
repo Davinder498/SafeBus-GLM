@@ -11,21 +11,28 @@ Git. A drafted document is not an approved, signed or effective agreement.
 
 | Document                    | Prepared draft                                            | Drafted                                   | Review / approved / executed |
 | --------------------------- | --------------------------------------------------------- | ----------------------------------------- | ---------------------------- |
-| Master Services Agreement   | [MSA](business-pack/master-services-agreement.md)         | Yes; commercial inputs remain open        | Pending                      |
+| Master Services Agreement   | [MSA](business-pack/master-services-agreement.md)         | Yes; proposed Provider caps and limited fault-based indemnity approved as business position; insured status and customer-specific exceptions unresolved | Customer execution/procurement/legal review pending |
 | Customer order form         | [Order form](business-pack/order-form.md)                 | Yes; customer inputs unfilled             | Pending                      |
 | Data Processing Agreement   | [DPA](business-pack/data-processing-agreement.md)         | Yes; actual authority/suppliers pending   | Pending                      |
 | Security Schedule           | [Security](business-pack/security-schedule.md)            | Yes; evidence gaps explicit               | Pending                      |
-| Service-Level Agreement     | [SLA](business-pack/service-level-agreement.md)           | Yes; targets/remedies unapproved          | Pending                      |
+| Service-Level Agreement     | [SLA](business-pack/service-level-agreement.md)           | Yes; initial-pilot support/holiday policy approved; no numerical performance guarantees or automatic credits | Customer execution/operational evidence pending |
 | Acceptable-Use Terms        | [AUP](business-pack/acceptable-use-terms.md)              | Yes; effective/acceptance process pending | Pending                      |
 | Business Privacy Policy     | [Policy](business-pack/privacy-policy.md)                 | Yes; contacts/countries/periods pending   | Pending                      |
-| Data Return and Destruction | [Exit schedule](business-pack/data-return-destruction.md) | Yes; capability/windows pending           | Pending                      |
+| Data Management, Return and Destruction | [Exit schedule](business-pack/data-return-destruction.md) | Yes; owner-approved district-controlled approach, no automatic 30/60-day promise | Self-service limits, retention/holds, supplier evidence and customer acceptance pending |
 | Supplier disclosure         | [Supplier draft](business-pack/supplier-disclosure.md)    | Yes; actual countries/contracts pending   | Pending                      |
 
 Start with the [owner decisions](business-pack/owner-decisions.md) and
 [pack index](business-pack/README.md). The actual monthly and annual per-active-bus CAD catalog
-is described in the [commercial billing alignment review](../commercial-billing-contract-alignment-2026-11-07.md). Published Stripe prices are not owner-approved contract prices; price, tax, trial, payment/renewal, liability, insurance,
-service targets and disposal windows still need owner/customer decisions.
-Do not configure billing or operational promises from unapproved placeholders.
+is described in the [commercial billing alignment review](../commercial-billing-contract-alignment-2026-11-07.md). Owner-approved November 9 GST/HST-inclusive standard prices, trial and
+renewal/cancellation rules are recorded in the commercial files. The pilot
+staffed-hours/holiday and no-numerical-SLA-guarantee business choices are
+also approved. Owner-approved **proposed** Provider liability caps
+are greater of CA$25,000 or 12-Month Fees for general claims and greater
+of CA$100,000 or twice 12-Month Fees for privacy/security claims, without
+stacking or limiting non-excludable duties. Customer-specific acceptance,
+tax reconciliation, any broader or district-specific indemnities,
+insurance procurement requirements (quotes and purchase deferred),
+suppliers, DPA escalation and retention evidence remain open. No insurance coverage is represented. Do not configure operational promises from unsupported claims.
 
 Review roles and purpose/authority, allowed data, suppliers/countries, access/
 correction support, incident duties, retention/holds, safeguards, audit and exit
@@ -49,3 +56,27 @@ register.
 ## Launch sign-off intake (2026-11-07)
 
 The [pilot contract and supplier/insurance sign-off worksheet](business-pack/pilot-contract-signoff-2026-11-07.md) links the existing agreement pack to **actual** owner, supplier-account and district decisions. It records unresolved insurance coverage, liability caps, tax, vendor agreement/country evidence, customer PIA and contract execution. It is a preparation document rather than a signed order or launch authorization.
+
+
+## November 9 limited fault-based indemnity update
+
+Owner has approved two **proposed** covered SafeBus third-party indemnity
+categories: Provider-caused privacy/security breach under the privacy/security
+aggregate cap and unmodified authorized-use SafeBus software-IP infringement
+under the general aggregate cap. Reasonable legal defence costs are inside
+those limits. No blanket/unlimited indemnity, no indemnification of school
+authority independent wrongdoing, no separate reciprocal Customer indemnity,
+and no waiver of mandatory legal/DPA obligations is approved. No insurance
+quote or policy is in place; customer procurement and final signed terms
+remain pending. See MSA §§8.3–8.5 and the Order Form.
+
+
+## November 9 — district data control (not a delete-all authorization)
+
+The owner approved self-service management through existing directory CSV
+exports and authorized individual delete/deactivate/archive/preservation
+controls, with a tenant-admin support request for additional return or account
+closure. Do **not** present unverified district-wide export or bulk deletion
+as available or imply a 30-day data-return and 60-day deletion mandate.
+Verify statutory retention, records holds, dependency-safe deletion, provider
+backups and any negotiated customer-specific timeline before execution.

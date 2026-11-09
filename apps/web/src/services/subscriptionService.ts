@@ -113,7 +113,7 @@ function unconfirmedBillingResult() {
   );
 }
 
-async function callBillingFunction<T>(path: string, body: Record<string, unknown>): Promise<T> {
+export async function callBillingFunction<T>(path: string, body: Record<string, unknown>): Promise<T> {
   const c = client();
   const { data: sessionData } = await c.auth.getSession();
   const token = sessionData.session?.access_token;

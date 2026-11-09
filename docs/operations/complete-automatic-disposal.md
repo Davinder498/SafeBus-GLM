@@ -105,3 +105,19 @@ held supplier data. Verify the actual retention setting and evidence per supplie
 These remain operational/provider acceptance tasks; the platform page reports
 application records only. Do not sign full disposal completion until evidence for
 these separate stores exists.
+
+## November 9 — district-controlled user experience; no change to destructive execution
+
+The owner approved using existing self-service, scoped school-authority
+record controls as the first option, rather than a mandatory blanket
+30-day return/60-day deletion on cancellation. The tenant-admin Settings
+page now points to directory CSV exports, supported record-level
+management, preservation and a request path for account closure or
+additional export. It does **not** expose a one-click tenant wipe, legal
+archive export, direct cloud-backup erasure or new client-side deletion API.
+
+**This business decision does not change this worker's separate protected
+activation requirements.** Keep the database approval reference and
+server-side destructive execution flag **off** until legally and technically
+verified. Auth, tenant isolation, holds, provider backups, financial/security
+record duties and customer-specific agreements remain independent.

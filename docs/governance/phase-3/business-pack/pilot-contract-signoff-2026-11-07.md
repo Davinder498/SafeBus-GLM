@@ -15,7 +15,7 @@ Alberta's POPA applies to school boards and requires public bodies to assess the
 
 **Evidence rule:** Keep corporate registration documents, insurance certificates, vendor account screenshots, tax records, contract versions, customer identifiers, signed orders, legal advice, names and contact details **out of GitHub**. Store them with the owner in restricted company records and put only non-sensitive evidence references in the formal privacy/supplier approval process. Do not add a `status=approved` entry without actual competent human acceptance.
 
-**November 8 follow-up:** The [public-source supplier DPA, insurance and district contract review](supplier-dpa-insurance-contract-review-2026-11-08.md) confirms provider-by-provider incorporation/signing routes and online quote options. This does **not** approve any business account or create insurance coverage. The owner has confirmed live Stripe prices are **temporary and must remain unchanged**; binding Order Form pricing is still pending.
+**November 8 follow-up:** The [public-source supplier DPA, insurance and district contract review](supplier-dpa-insurance-contract-review-2026-11-08.md) confirms provider-by-provider incorporation/signing routes and online quote options. This does **not** approve any business account or create insurance coverage. At that time the owner treated live Stripe prices as temporary. **This was superseded on November 9:** the owner approved the same two prices as final GST/HST-inclusive standard rates. Customer-specific Order Form acceptance remains pending.
 
 ## 1. Decisions the business owner can make before selecting a school district
 
@@ -23,16 +23,17 @@ Alberta's POPA applies to school boards and requires public bodies to assess the
 | --- | --- | --- |
 | Contracting identity | Owner reports registered SafeBus trade name under Sachman Gold Inc.; signatory/registration proof to be checked privately | Reported decision; independent evidence pending |
 | Public legal-notice channel | Owner selected info@safebus.kids for formal notices; private mailing address must not appear in Git or on public pages | Email selected; restricted execution fields and monitored escalation pending |
-| Commercial price | Monthly/annual amounts undecided; final prices to include applicable GST/HST; temporary live prices unchanged | Approved amounts and inclusive Stripe configuration pending |
-| Trial and cancellation | Approve 14-day first-customer trial eligibility, first charge, service term, cancellation and renewal messages; an implemented default is not a contractual entitlement | Pending |
+| Commercial price | **Owner approved CA$1.99 monthly and CA$20.29 annually per active bus, including applicable GST/HST, on 2026-11-09** | Stripe price amounts and inclusive tax behavior verified; district order/interval/quantity consent still pending |
+| Trial and cancellation | **Owner-approved November 9:** one 14-day first-time trial; cancel before trial end to avoid the first charge; monthly month-to-month or annual 12-month automatic renewal; cancellation at term end, no early fee or partial paid-term refunds except legal/expressly agreed exceptions | Business policy approved; customer-specific acceptance, notices and trial dates pending |
 | Tax | Owner reports GST/HST registration effective 2026-11-08; Stripe Canadian Tax registration start 2026-10-23 needs reconciliation; current subscription tax enabled but past paid invoice tax disabled | Confirm CRA notice privately, region-specific tax, price behaviour, invoices and configuration; do not mutate live values |
-| Payment alternatives | Determine when customer can pay automatically, when an approved public-authority PO/`send_invoice` process applies, and whether a proposed net-30 term will be offered | Pending |
-| Service/support | Owner reconfirmed Mon–Fri 08:00–17:00 Alberta | Holiday/owner absence, backup and P1 escalation pending |
-| Insurance and liability | Insurance purchase deferred; none claimed active | Quotes/bound policy, district requirements and caps pending before contractual commitment |
-| Service performance / credits | Set measurable availability, latency, GPS freshness, notification response and credits only where evidence supports each claim; keep unsupported service levels blank | Pending |
+| Payment alternatives | Card-funded Checkout is the default. Invoice/PO requires a district request, distinct platform-super-admin approval and district activation, with 14/30/45/60 invoice days selected per request | Owner policy approved; verify each public-authority approval, due date, customer order and first invoice delivery; no blanket net-30 commitment |
+| Service/support | **Owner-approved 2026-11-09:** Monday–Friday, 08:00–17:00 America/Edmonton, excluding Alberta's nine general holidays; no after-hours staffed response guarantee | Business calendar CLOSED; operational staffed coverage, backup and independent DPA/security incident escalation still require evidence |
+| Insurance and liability | **Owner-approved Provider caps (proposed):** general greater of CA$25,000 or 12-Month Fees; privacy/security greater of CA$100,000 or twice 12-Month Fees, aggregate/non-stacking with non-excludable liabilities preserved. **Insurance quotations and purchase deferred; no coverage claimed.** | Business proposal CLOSED; procurement, indemnity carve-outs, risk/cap capacity and any required insurance remain OPEN before contract execution |
+| Third-party indemnification business decision | **Owner-approved 2026-11-09:** limited, fault-based Provider privacy/security and unmodified software-IP defence/indemnification; defence costs included within approved non-stacking aggregate caps; no broad or unlimited indemnity | Business position CLOSED; district-specific indemnity/defence/insurance procurement and customer acceptance OPEN |
+| Service performance / credits | **Owner-approved initial-pilot SLA:** no guaranteed uptime, response latency, GPS freshness, ETA, notification delivery, repair/recovery time or automatic monthly/annual credits; future promises require evidence and signed amendment | Business no-guarantee policy CLOSED; customer-specific acceptance and operating proof remain pending |
 | Supplier acceptance | Review each enabled supplier account's data contract, purpose, countries, logs/backup/support access, incident handling and downstream access | Pending |
 | Privacy leadership | Owner selected themself as Privacy Lead; identify a capable alternative or documented coverage limitation and run access/request/breach tabletop | Pending |
-| Record lifecycle | Confirm legal retention exceptions and customer instructions, data export/return method, provider backups/held records and safe disposal activation; dry-run != approved deletion | Pending |
+| District-controlled data management and exit | **Owner-approved:** directory CSV downloads and existing record-level delete/archive/preservation where supported, plus authorized support requests for additional scoped return and account closure; no universal 30-day export or 60-day deletion target | **Business model CLOSED**; complete district-wide return/closure capability, lawful retention/holds, supplier copies, backup expiry, authenticated acceptance and destructive-worker controls still require evidence |
 
 **Insurance is a negotiation and risk-transfer decision**, not an assertion that a particular policy or minimum is required universally by Alberta law. An actual district procurement package may prescribe types and minimum limits, endorsements or certificates; record its requirements and request a licensed insurance broker's explanation for suitability before quoting or signing.
 
@@ -43,9 +44,9 @@ Alberta's POPA applies to school boards and requires public bodies to assess the
 | General commercial liability | What bodily injury/property damage risks could arise in installation, support or customer interaction? Does the district demand specific CGL coverage? | Actual policy wording/certificate and district procurement instructions |
 | Technology errors & omissions | Coverage for failure of software, data delivery, ETA/location availability and professional services? What are waiting periods, exclusions and claims-made dates? | Broker quote/policy terms and insured activities |
 | Cyber/privacy liability | Incident response, unauthorized disclosure, notification, breach counsel, third-party claims, network liability and exclusions for minors/contracted data? | Policy summary and exclusions; approved handling procedures |
-| Contract indemnities | Which legal claims are covered and by whom, including IP and unlawful processing instructions? What is the defence/settlement process? | Negotiated MSA rider, insurer alignment, accountable legal assessment |
-| General liability cap | Select amount and basis (e.g., fees or negotiated sum); state exclusions, claims aggregation and survival. Do not default to zero or unlimited. | Owner decision and accepted contract |
-| Privacy/security liability cap | Separate risk allocation/cap if negotiated, consistent with the accepted DPA and non-excludable duties | Owner decision, legal/risk assessment and contract |
+| Contract indemnities | **Owner-approved limited fault-based SafeBus indemnity proposal:** covered Provider-caused privacy/security breach claims under privacy aggregate cap and unmodified authorized-use SafeBus software IP claims under general aggregate cap; reasonable defence/settlement costs **inside** cap; no indemnity for school-authority independent fault, unlawful instructions or unauthorized changes, and no unlimited/reciprocal indemnity | Customer-specific procurement/indemnity exceptions, personal injury/property damage, defence procedure and legally mandated protections reviewed before a signed Order Form |
+| General liability cap | Owner-approved **greater of CA$25,000 or 12-Month Fees** aggregate for SafeBus Provider ordinary claims; does not reset on renewal | Signed district acceptance, mandatory carve-outs, claim scope and procurement review pending |
+| Privacy/security liability cap | Owner-approved **greater of CA$100,000 or twice 12-Month Fees** aggregate; replaces, never stacks with, general cap on qualifying claims | Verify POPA/DPA duties, exceptions and signed Customer-specific acceptance |
 | Cyber events and service interruption | Are GPS/notification outages or platform failures excluded? Can contractual SLA remedies be sustained? | Policy and accepted SLA/operational evidence |
 
 Do not represent SafeBus as “insured”, “SOC 2 certified”, “24/7 staffed”, or holding any particular coverage limit until evidence establishes it.
@@ -95,3 +96,56 @@ The following is necessary **after a real authorized school district** is identi
 It does **not** approve vendor contracts, privacy law applicability, a PIA, customer processing, cyber insurance, price, GST/HST, support coverage, SLA, signed orders, approved key/quota plan, destructive retention, physical Android use, leaked-password protection or commercial launch. The protected `privacy-readiness.json`, `operations-readiness.json`, `map-readiness.json` and customer-activation records remain the authority for release gates and are not changed here.
 
 **Recommended next actions in order:** owner verifies corporate signatory/trade-name and insurance requirements, owner or authorized vendor account holder gathers first-wave supplier evidence, owner resolves GST/HST/Stripe inconsistency, then the first school district negotiates its own terms and PIA with actual documents. Record concrete evidence privately; continue engineering monitoring without inventing approvals.
+
+
+### November 9 owner-approved rate reconciliation
+
+The previous November 8 statement that Stripe prices were only temporary is historical and **superseded**. Final standard tariff: **CA$1.99 per active bus/month** and **CA$20.29 per active bus/year**, GST/HST-inclusive. Both LIVE existing Stripe Price objects now have `tax_behavior=inclusive`, confirmed by post-update reads; original IDs and active subscriptions were preserved. Prices are a CLOSED owner business decision. Only actual order acceptance, private CRA effective-date/earlier Stripe-registration reconciliation, province/exemption calculations and first reviewed inclusive invoice remain for commercial tax acceptance. Insurance and supplier approvals remain open; nothing authorizes offering unsigned drafts.
+
+
+## Owner liability decision — November 9, 2026 (not insurance evidence)
+
+The owner selected **CA$25,000/12-Month Fees general cap** and
+**CA$100,000/twice 12-Month Fees privacy/security cap** as the standard
+Provider negotiating position, not a signed term for any customer.
+The 12-Month Fees definition, non-stacking aggregate treatment and mandatory
+exceptions are in MSA §8 and the Order Form. Quotations and insurance purchase
+are **deferred**; no active policy, insured limit or certificate is asserted.
+An actual school authority may demand different coverage, defence terms,
+indemnities or carve-outs. These require specific review before signature;
+no blanket acceptance, funding assurance or readiness gate follows.
+
+
+## November 9 — owner-approved third-party indemnification scope (draft)
+
+MSA §§8.3–8.5 and the Order Form now offer a **limited, fault-based** SafeBus
+Provider defence/indemnity for third-party privacy/security claims caused by
+its covered breach (privacy/security cap) and authorized use of the unmodified
+SafeBus software allegedly infringing third-party Canadian IP rights (general
+cap). Reasonable covered legal defence costs count toward the relevant cap;
+claims do not stack. The school authority's independent negligence, unlawful
+instructions, unauthorized changes/combinations or other independent fault are
+not covered. The defence requires prompt notice, cooperation, appropriate
+control and settlement consent. Mandatory DPA/legal obligations remain intact.
+
+**No insurance quote, purchase, policy or active coverage has been approved.**
+Personal injury/property damage, special procurement requirements, broader
+indemnities and customer-specific carve-outs still require express written
+agreement and assessment of uninsured financial risk. This document is not a
+signed contract or pilot launch authorization.
+
+
+## November 9 district-controlled exit policy — no unverified blanket purge
+
+The owner approved the district's ability to manage its own supported SafeBus
+transportation records and declined a complicated automatic post-termination
+30/60-day return/deletion promise. Existing CSV downloads cover the supported
+student/guardian/driver/bus directories; only supported record-level delete,
+deactivate, archive and preservation controls are represented as self-service.
+Account-wide closure and data beyond those views require a verified scoped
+request, not a new unrestricted delete-all endpoint. Historical trips,
+notifications, audit, supplier copies and backups are assessed independently.
+The Data Management, Return and Destruction Schedule contains the operative
+draft. Do not claim that the school authority can erase every record, that
+scheduled deletion is enabled, or that any supplier backup has been deleted.
+Customer-specific negotiated deadlines require an actually tested process.

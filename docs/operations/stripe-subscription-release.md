@@ -76,3 +76,47 @@ and the invoice delivery runbook for current acceptance steps.
 
 Production migration application, deployment, and final merge require the existing protected
 release workflow and human approval. This PR performs none of those actions.
+
+
+## November 9 approved tariff and live Stripe verification
+
+The SafeBus owner approved **CA$1.99/active bus/month** and **CA$20.29/active bus/year**, **including applicable GST/HST**. On the live SafeBus Stripe account, existing Price IDs `price_1URbJ3JayDoqdBIzNBcBJyNj` and `price_1URbJ3JayDoqdBIzCTnaHtFq` were changed from unspecified tax behavior to `tax_behavior=inclusive`, and verified by fresh GET requests. Both remain active and associated with the same SafeBus Subscription product. The existing active subscription still references the same monthly Price ID. No subscriptions or historical invoices were modified.
+
+**Production safeguarding:** application code only allows the approved prices and inclusive behavior for new tenant selections and catalog creations. The same approved price object is reused instead of creating a duplicate, and the last active price for each approved interval cannot be archived via platform management. Server-side price validation, not editable UI text, is authoritative. Publish approved pricing through the already-existing catalog; do not create or migrate subscriptions merely to reconcile prices.
+
+Automatic tax on the existing active subscription was enabled at the time of inspection; future finalized invoices may show an inclusive tax component within the CA$1.99 gross, according to customer location and taxability. Taxes must not be added *above* the approved gross price. Never infer that the historical November 7 paid invoice contained GST/HST. Stripe's registration effective 2026-10-23 differs from the owner-reported CRA November 8 date; separately reconcile with the private CRA document before filing/adjustment. A signed customer's Order Form, final applicable tax evidence, and approved commercial/insurance/supplier terms remain required.
+
+
+## November 9 finalized first-customer trial and approved invoice/PO implementation
+
+**Authoritative implementation:** `apps/web/netlify/functions/tenant-subscriptions.mjs` remains the default card Checkout path: verified tenant-admin session with recent MFA, executed MSA/DPA gate, price/quantity and bus scope validation, one 14-day trial only if `billing_find_customer.trial_used` is false **and** Stripe has no prior subscription, `payment_method_collection=always`, automatic tax for the final inclusive price, and automatic subsequent billing. Payment/Trial start must be confirmed from Stripe webhooks/projection, not from browser redirect.
+
+**Separate school-authority invoice or PO exception:** `apps/web/netlify/functions/invoice-billing.mjs` handles server-authorized, audited `request`, `status`, `review`, `activate`, `cancel_renewal` and `resume_renewal`. The tenant-admin request captures the chosen price, bus allowance, business billing email, Canadian business address and optional PO number. The platform-super-admin with recent MFA separately approves a specific request and selects **14/30/45/60 invoice days**; approval never starts billing. The district tenant admin later confirms activation. Only this approved route may create `collection_method=send_invoice`, `automatic_tax.enabled=true`, per-active-bus licensed pricing, and if eligible `trial_period_days=14` with `missing_payment_method=create_invoice`. If the account already had a subscription/trial, omit the trial and make the first invoice due as configured. The approved PO number is preserved in Stripe customer/subscription metadata and the existing private billing account/projection; no student or guardian fields are involved.
+
+**Audit and failure recovery:** Tenant/provider customer mapping is source-scoped; Stripe customer metadata records an approval's tenant, request ID, price, quantity, PO, review actor and timestamp. Public clients cannot approve their own request, access another tenant's billing or mutate Stripe directly. Before activation, the server rechecks the exact approved price, customer address, active district, executed agreement, current bus allowance, approval actor, pending Stripe Checkout sessions and subscription history. Deterministic subscription idempotency and canonical provider subscription lookup stop duplicate creation after retries. Customer and subscription changes are also written to the restricted server audit trail. Existing untagged legacy invoice contracts are explicitly excluded from new renewal actions. Errors and logs mask billing addresses and contact details.
+
+**Acceptance, not claimed here:** CI test fixtures are synthetic; we did **not** issue real invoices, charge or migrate real subscriptions, send real emails, or change Stripe registration dates. A non-live Stripe end-to-end review of trial expiry, invoice generation, PDF and recipient delivery is required before a real district uses this route, plus evidence of customer order acceptance. Actual provider billing email setup must be checked; creating a `send_invoice` subscription does not by itself prove the recipient received an invoice. The physical Android testing phase remains separately deferred.
+
+
+## Standard renewal, cancellation and refunds — approved November 9, 2026
+
+The selected approved price sets the term: **CA$1.99 per bus/month** runs
+month-to-month with automatic monthly renewal; **CA$20.29 per bus/year**
+runs for 12 months with automatic annual renewal. Both include applicable
+GST/HST. A first-time authority may cancel during its 14-day free trial
+before the first charge; its trial access ends at the scheduled trial end.
+
+For both card and approved invoice/PO subscriptions, the tenant-admin
+cancel action updates `cancel_at_period_end=true` and
+`proration_behavior='none'`. Resume renewal sets
+`cancel_at_period_end=false` and also requests no proration.
+The approved policy never automatically calls an immediate cancellation
+or refund endpoint. No early exit fee applies, and paid terms are not
+partially refunded solely because of cancellation unless required by
+law or expressly agreed in writing. Issued invoices remain payable.
+Signed customer-specific exceptions must be handled separately; historical
+subscription agreements must not be silently rewritten.
+
+Verify the period-end behavior, trial state, no-proration API payload and
+billing UI disclosures in automated tests; no production trial, cancellation,
+refund or invoice is created as synthetic QA.

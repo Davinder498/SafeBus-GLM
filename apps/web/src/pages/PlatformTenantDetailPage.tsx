@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router';
 import { ArrowLeft, Building2, CheckCircle2, CircleDashed, RefreshCw } from 'lucide-react';
 import { DashboardLayout, platformNavItems } from '@/components/layout/DashboardLayout';
 import { SubscriptionOverview } from '@/components/subscription/SubscriptionOverview';
+import { InvoiceBillingPlatformCard } from '@/components/subscription/InvoiceBillingPlatformCard';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
@@ -388,6 +389,8 @@ export function PlatformTenantDetailPage() {
               ) : null
             }
           />
+          {summary.tenant_status === 'active' && !subscription.subscriptionExempt &&
+            <InvoiceBillingPlatformCard tenantId={tenantId}/>}
         </div>
       </div>
     </DashboardLayout>

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { isApprovedInclusiveBusPrice } from './approved-bus-pricing.mjs';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 import { verifyActiveCallerSession, verifyRecentCallerAuthentication } from './session-security.mjs';
@@ -206,7 +207,8 @@ export async function validateApprovedPrice(stripe, priceId, productId) {
     price.recurring?.usage_type !== 'licensed' ||
     price.currency !== 'cad' ||
     !Number.isSafeInteger(price.unit_amount) ||
-    price.unit_amount < 0
+    price.unit_amount < 0 ||
+    !isApprovedInclusiveBusPrice(price)
   ) {
     throw new Error('billing_price_not_approved');
   }
