@@ -43,7 +43,6 @@ export function validateWorkload(workload) {
       'adminPollSeconds',
       'adminRpcsPerRefresh',
       'activeHoursPerDay',
-      'historyDaysForSensitivity',
       'linkedBusesPerGuardian',
       'largestTenantShare',
       'offlineSeconds',
@@ -57,7 +56,6 @@ export function validateWorkload(workload) {
   for (const key of ['guardianRpcsPerRefresh', 'adminRpcsPerRefresh', 'linkedBusesPerGuardian'])
     integer(a[key], key, 1, 20);
   integer(a.activeHoursPerDay, 'active hours', 1, 24);
-  integer(a.historyDaysForSensitivity, 'history sensitivity days', 1, 365);
   integer(a.offlineSeconds, 'offline seconds', 1, 86400);
   number(a.largestTenantShare, 'largest tenant share', 0.01, 1);
   number(a.reconnectingBusShare, 'reconnecting bus share', 0, 1);
@@ -119,9 +117,7 @@ export function estimateScenario(workload, name) {
     population: { ...s, activeDrivers: s.buses, activeGuardians: guardians },
     workItemsPerSecond: rates,
     baselineWorkItemsPerSecond: Object.values(rates).reduce((sum, rate) => sum + rate, 0),
-    gpsHistoryEventsPerOperatingDay: (s.buses * a.activeHoursPerDay * 3600) / a.gpsSeconds,
-    rawHistoryEventsAtDraftRetention:
-      ((s.buses * a.activeHoursPerDay * 3600) / a.gpsSeconds) * a.historyDaysForSensitivity,
+    gpsUpdatesPerOperatingDay: (s.buses * a.activeHoursPerDay * 3600) / a.gpsSeconds,
     realtimeInvalidationsPerSecondUncoalesced: invalidations,
     guardianReadsPerSecondWithUncoalescedInvalidations:
       rates.guardianRead + invalidations * a.guardianRpcsPerRefresh,

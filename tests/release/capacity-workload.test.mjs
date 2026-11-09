@@ -45,8 +45,8 @@ test('planning target reflects the requested fleet, registered accounts, tenants
 test('calculations include current GPS cadence, polling, invalidations and tenant skew', () => {
   const peak = estimateScenario(workload, 'peak');
   near(peak.workItemsPerSecond.gps, 10000 / 3);
-  assert.equal(peak.gpsHistoryEventsPerOperatingDay, 96000000);
-  assert.equal(peak.rawHistoryEventsAtDraftRetention, 2880000000);
+  assert.equal(peak.gpsUpdatesPerOperatingDay, 96000000);
+  assert.equal(Object.hasOwn(peak, 'rawHistoryEventsAtDraftRetention'), false);
   near(peak.workItemsPerSecond.guardianRead, (88000 * 2) / 15);
   near(peak.realtimeInvalidationsPerSecondUncoalesced, 88000 / 3);
   near(peak.guardianReadsPerSecondWithUncoalescedInvalidations, 70400);
@@ -79,6 +79,9 @@ test('source cadence and guardian polling are reflected instead of trusting stal
 
 test('invalid, inconsistent or caller-added workload settings fail before a fixture starts', () => {
   for (const change of [
+    (w) => {
+      w.assumptions.historyDaysForSensitivity = 30;
+    },
     (w) => {
       w.assumptions.gpsSeconds = 0;
     },

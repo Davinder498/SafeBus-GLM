@@ -165,20 +165,6 @@ export interface LiveBusLocation {
   updated_at: string;
 }
 
-export interface TripLocationHistoryEntry {
-  trip_id: string;
-  bus_id: string;
-  tenant_id: string;
-  latitude: number;
-  longitude: number;
-  speed: number | null;
-  heading: number | null;
-  accuracy: number | null;
-  battery_level: number | null;
-  recorded_at: string;
-  location_source: 'driver_web' | 'driver_mobile' | 'hardware_tracker';
-}
-
 // ─── Alerts ────────────────────────────────────────────────────────────────
 
 export interface TripAlert {

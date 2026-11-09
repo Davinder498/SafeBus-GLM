@@ -14,7 +14,6 @@
     "adminPollSeconds": 30,
     "adminRpcsPerRefresh": 2,
     "activeHoursPerDay": 8,
-    "historyDaysForSensitivity": 30,
     "linkedBusesPerGuardian": 1,
     "largestTenantShare": 0.2,
     "offlineSeconds": 900,
