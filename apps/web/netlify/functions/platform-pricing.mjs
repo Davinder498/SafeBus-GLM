@@ -110,6 +110,7 @@ function priceSummary(p) {
     unitAmount: p.unit_amount,
     interval: p.recurring.interval,
     currency: p.currency,
+    taxBehavior: p.tax_behavior ?? 'unspecified',
     active: p.active,
   };
 }
@@ -181,6 +182,9 @@ async function mutateCatalog(stripe, productId, input) {
         nickname: input.name,
         unit_amount: input.unitAmount,
         currency: 'cad',
+        // New catalog prices reflect the owner's GST/HST-inclusive choice.
+        // Existing catalog prices, subscribers and invoices are not modified.
+        tax_behavior: 'inclusive',
         recurring: { interval: input.interval, usage_type: 'licensed' },
         billing_scheme: 'per_unit',
         lookup_key: lookup,

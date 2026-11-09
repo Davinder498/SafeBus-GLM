@@ -1,6 +1,7 @@
 import { Component, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { CircleMarker, MapContainer, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { useMapTileConfig } from '@/hooks/useMapTileConfig';
 import type { AdminTripDetail } from '@/types/adminTripDetail';
 import type { LatLngTuple } from 'leaflet';
@@ -38,6 +39,7 @@ function TripMapContent({
 }) {
   const config = useMapTileConfig();
   const [tileFailed, setTileFailed] = useState(false);
+  const [tileAttempt, setTileAttempt] = useState(0);
   const stops = detail.stops.filter(
     (s) =>
       s.latitude !== null &&
@@ -62,12 +64,24 @@ function TripMapContent({
   const bounds = useMemo<LatLngTuple[]>(() => JSON.parse(boundsKey), [boundsKey]);
   const center: LatLngTuple | undefined =
     bounds[0] ?? (location ? [location.latitude, location.longitude] : undefined);
-  if (!config.isConfigured || !config.tileUrl || !config.attribution || tileFailed)
+  if (!config.isConfigured || !config.tileUrl || !config.attribution)
     return (
       <p role="status" className="p-5 text-sm text-gray-600">
         Map unavailable. The platform map service could not load. Trip details and stops remain
         available.
       </p>
+    );
+  if (tileFailed)
+    return (
+      <div className="p-5 text-sm text-gray-600" role="status">
+        <p>Map unavailable. The map provider could not load. Trip details and stops remain available.</p>
+        <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={() => {
+          setTileFailed(false);
+          setTileAttempt((current) => current + 1);
+        }}>
+          Retry map
+        </Button>
+      </div>
     );
   if (!center)
     return (
@@ -77,7 +91,7 @@ function TripMapContent({
     );
   return (
     <div className="h-96" aria-label="Trip route and bus map">
-      <MapContainer center={center} zoom={12} className="h-full w-full" scrollWheelZoom={false}>
+      <MapContainer key={tileAttempt} center={center} zoom={12} className="h-full w-full" scrollWheelZoom={false}>
         <TileLayer
           url={config.tileUrl}
           attribution={config.attribution}

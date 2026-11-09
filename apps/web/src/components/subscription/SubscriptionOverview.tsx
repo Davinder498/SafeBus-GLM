@@ -101,7 +101,7 @@ export function SubscriptionOverview({
             value={subscription.billingInterval === 'month' ? 'Monthly' : 'Annual'}
           />
           <Detail
-            label="Plan subtotal before discounts and tax"
+            label="Plan amount before discounts and invoice adjustments"
             value={formatMoney(
               subscription.periodTotal ?? subscription.annualTotal,
               subscription.currency,
@@ -142,6 +142,10 @@ export function SubscriptionOverview({
           <Detail label="Contracted buses" value={String(subscription.licensedBusCount ?? 0)} />
           <Detail label="Active buses" value={String(subscription.activeBusCount)} />
         </dl>
+        <p className="mt-3 text-xs leading-5 text-slate-500">
+          Applicable tax and discounts are detailed on the actual invoice. This summary does not
+          independently confirm tax-inclusive pricing; the accepted school-authority order governs.
+        </p>
         {subscription.usageExceedsAllowance && (
           <p className="mt-3 text-sm font-semibold text-warning-700">
             Active usage exceeds the contracted allowance. No automatic charge was made.

@@ -119,7 +119,7 @@ describe('catalog ownership and request boundary', () => {
       expect.objectContaining({ recentAuth: true, rateLimitAction: 'billing_mutation' }),
     );
   });
-  it('uses only the configured product and leaves tax and existing subscriptions untouched', async () => {
+  it('uses the configured product and creates new tax-inclusive prices only', async () => {
     expect(
       (await handler(event({ ...priceInput, productId: 'prod_attacker', tenantId: 'victim' })))
         .statusCode,
@@ -129,12 +129,14 @@ describe('catalog ownership and request boundary', () => {
         product: 'prod_safebus',
         unit_amount: 2500,
         currency: 'cad',
+        tax_behavior: 'inclusive',
         recurring: { interval: 'month', usage_type: 'licensed' },
         lookup_key: `safebus_${requestId.replaceAll('-', '')}`,
       }),
       expect.objectContaining({ idempotencyKey: `safebus:catalog:${requestId}:price` }),
     );
-    expect(stripe.prices.create.mock.calls[0][0]).not.toHaveProperty('tax_behavior');
+    expect(stripe.prices.create.mock.calls[0][0].tax_behavior).toBe('inclusive');
+    expect(stripe.prices.update).not.toHaveBeenCalled();
     expect(ctx.admin.rpc).toHaveBeenCalledWith(
       'billing_finish_catalog_operation',
       expect.objectContaining({ p_actor_id: 'actor', p_response: { id: 'price_test' } }),

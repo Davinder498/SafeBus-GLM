@@ -455,7 +455,7 @@ export function AdminSubscriptionPage() {
                     </div>
                     <div className="flex min-w-0 flex-col rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
                       <p className="text-sm font-medium text-slate-500">
-                        Recurring price before discounts and tax
+                        Recurring plan amount before discounts
                       </p>
                       <p className="mt-2 text-3xl font-bold tracking-tight text-navy-900">
                         {selected
@@ -466,8 +466,12 @@ export function AdminSubscriptionPage() {
                         </span>
                       </p>
                       <p className="mt-2 text-sm text-slate-600">
-                        {quantity} active {quantity === 1 ? 'bus' : 'buses'} · CAD · applicable
-                        taxes shown at checkout
+                        {quantity} active {quantity === 1 ? 'bus' : 'buses'} · CAD ·{' '}
+                        {selected?.taxBehavior === 'inclusive'
+                          ? 'applicable GST/HST included'
+                          : selected?.taxBehavior === 'exclusive'
+                            ? 'tax added at checkout'
+                            : 'tax treatment confirmed at checkout and on the invoice'}
                       </p>
                       <p className="my-5 text-sm leading-6 text-slate-600">
                         {!liveContract && subscription.trialEligible

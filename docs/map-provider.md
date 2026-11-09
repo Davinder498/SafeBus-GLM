@@ -95,10 +95,17 @@ HTTP origin/referrer, and normal network metadata.
 ## Reliability and cost controls
 
 - The config response is cached for five minutes and may be served stale for a
-  day by the CDN during revalidation; the client retries one failed config
-  request.
+  day by the CDN during revalidation. Client config fetches have an eight-second
+  timeout, retry a transient error once, and then respect a one-minute cooldown.
+  Mounted map views retry after the cooldown instead of permanently caching
+  their first failure. Concurrent views share one in-flight request. A
+  successful config remains cached in the current app session.
 - Existing map surfaces retain their controlled list/status fallback when the
-  provider or configuration is unavailable.
+  provider or configuration is unavailable. Guardian, live-fleet, routes, and
+  trip maps now offer an explicit **Retry map** action after tile errors. Route
+  stop and route-path editing already provided their own retry action. Retry
+  remounts the map only when requested; it does not switch to an unapproved
+  supplier or alter transport records.
 - Record **project-wide credit usage** during the pilot, not only tile counts
   for one API key. All keys in a Geoapify project share the same credit quota
   and other Geoapify API calls can consume credits.

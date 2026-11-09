@@ -269,6 +269,41 @@ describe('checkout and trial lifecycle', () => {
       expect.objectContaining({ idempotencyKey: expect.stringContaining(requestId) }),
     );
   });
+  it('enables automatic tax only for explicit inclusive prices, preserving legacy checkout behavior', async () => {
+    shared.validateApprovedPrice.mockResolvedValue({
+      id: 'price_month',
+      recurring: { interval: 'month' },
+      tax_behavior: 'inclusive',
+    });
+    await handler(event('checkout', { priceId: 'price_month', quantity: 3 }));
+    expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
+      expect.objectContaining({ automatic_tax: { enabled: true } }),
+      expect.anything(),
+    );
+  });
+  it('does not reuse a tax-disabled open session for a tax-inclusive price', async () => {
+    shared.validateApprovedPrice.mockResolvedValue({
+      id: 'price_month',
+      recurring: { interval: 'month' },
+      tax_behavior: 'inclusive',
+    });
+    stripe.checkout.sessions.list.mockResolvedValue({ data: [{
+      id: 'cs_legacy',
+      mode: 'subscription',
+      client_reference_id: tenant,
+      metadata: { price_id: 'price_month', quantity: '3' },
+      automatic_tax: { enabled: false },
+      url: 'https://checkout.stripe.com/legacy',
+    }] });
+    await handler(event('checkout', { priceId: 'price_month', quantity: 3 }));
+    expect(stripe.checkout.sessions.expire).toHaveBeenCalledWith(
+      'cs_legacy', {}, expect.anything(),
+    );
+    expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
+      expect.objectContaining({ automatic_tax: { enabled: true } }),
+      expect.anything(),
+    );
+  });
   it('does not grant another trial after a canceled subscription', async () => {
     stripe.subscriptions.list.mockResolvedValue({ data: [{ status: 'canceled' }] });
     await handler(event('checkout', { priceId: 'price_month', quantity: 3 }));

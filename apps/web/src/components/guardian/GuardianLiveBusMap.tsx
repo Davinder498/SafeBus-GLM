@@ -11,6 +11,7 @@ import {
 import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import { divIcon, latLngBounds, type LatLngExpression } from 'leaflet';
 import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { DataState } from '@/components/ui/DataState';
 import type { MapTileConfig } from '@/config/mapTiles';
 import type {
@@ -183,14 +184,21 @@ class GuardianMapBoundary extends Component<{ children: ReactNode }, { hasError:
 function GuardianMapUnavailable({
   reason = 'The interactive map could not be shown. Bus status remains available.',
   availableBusCount = 0,
+  onRetry,
 }: {
   reason?: string;
   availableBusCount?: number;
+  onRetry?: () => void;
 }) {
   return (
     <Card className="p-5" data-testid="guardian-live-bus-map-unavailable">
       <h2 className="text-lg font-bold text-navy-900">Live bus map</h2>
       <DataState title="Map unavailable" message={reason} />
+      {onRetry && (
+        <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={onRetry}>
+          Retry map
+        </Button>
+      )}
       {availableBusCount > 0 && (
         <p className="mt-3 text-sm font-semibold text-success-700">
           Current location is still available for {availableBusCount} bus
@@ -263,6 +271,7 @@ export function GuardianLiveBusMap({
   fullScreen = false,
 }: GuardianLiveBusMapProps) {
   const [tileFailed, setTileFailed] = useState(false);
+  const [tileAttempt, setTileAttempt] = useState(0);
   const [followBus, setFollowBus] = useState(false);
   const markerEntries = useMemo(() => buildMarkerEntries(locations), [locations]);
   const stopMarkerEntries = useMemo(() => buildStopMarkerEntries(serviceLines), [serviceLines]);
@@ -278,6 +287,10 @@ export function GuardianLiveBusMap({
     [allPositions],
   );
   const handleTileError = useCallback(() => setTileFailed(true), []);
+  const retryMap = useCallback(() => {
+    setTileFailed(false);
+    setTileAttempt((current) => current + 1);
+  }, []);
   const pauseFollowing = useCallback(() => setFollowBus(false), []);
   const busPositions = useMemo(() => markerEntries.map((entry) => entry.position), [markerEntries]);
 
@@ -306,6 +319,7 @@ export function GuardianLiveBusMap({
       <GuardianMapUnavailable
         reason="The map provider could not load. Verified bus status remains available below."
         availableBusCount={markerEntries.length}
+        onRetry={retryMap}
       />
     );
   }
@@ -350,6 +364,7 @@ export function GuardianLiveBusMap({
             {followBus ? 'Stop following' : 'Follow bus'}
           </button>
           <MapContainer
+            key={tileAttempt}
             center={center}
             zoom={markerEntries.length === 1 ? 14 : 11}
             scrollWheelZoom

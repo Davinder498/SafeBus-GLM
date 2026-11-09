@@ -131,9 +131,11 @@ function RoutesMapUnavailable({ reason }: { reason: string }) {
 function RoutesMapCoordinateFallback({
   routes,
   missingConfig,
+  onRetry,
 }: {
   routes: RouteMapRoute[];
   missingConfig: boolean;
+  onRetry?: () => void;
 }) {
   const withCoords = routes.filter((entry) =>
     entry.stops.some((s) => s.status !== 'archived' && hasValidCoordinates(s)),
@@ -158,6 +160,11 @@ function RoutesMapCoordinateFallback({
         >
           The map provider could not load. Saved route-stop coordinates remain available below.
         </div>
+      )}
+      {onRetry && (
+        <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={onRetry}>
+          Retry map
+        </Button>
       )}
       {withCoords.length === 0 ? (
         <DataState
@@ -198,6 +205,7 @@ interface AdminRoutesMapProps {
 
 export function AdminRoutesMap({ routes, tileConfig }: AdminRoutesMapProps) {
   const [tileFailed, setTileFailed] = useState(false);
+  const [tileAttempt, setTileAttempt] = useState(0);
 
   const locations = useMemo(() => toLocations(routes), [routes]);
   const stopMarkerEntries = useMemo(
@@ -217,13 +225,17 @@ export function AdminRoutesMap({ routes, tileConfig }: AdminRoutesMapProps) {
   );
 
   const handleTileError = useCallback(() => setTileFailed(true), []);
+  const retryMap = useCallback(() => {
+    setTileFailed(false);
+    setTileAttempt((current) => current + 1);
+  }, []);
 
   if (!tileConfig.isConfigured) {
     return <RoutesMapCoordinateFallback routes={routes} missingConfig />;
   }
 
   if (tileFailed) {
-    return <RoutesMapCoordinateFallback routes={routes} missingConfig={false} />;
+    return <RoutesMapCoordinateFallback routes={routes} missingConfig={false} onRetry={retryMap} />;
   }
 
   return (
@@ -247,6 +259,7 @@ export function AdminRoutesMap({ routes, tileConfig }: AdminRoutesMapProps) {
           data-testid="admin-routes-map-region"
         >
           <MapContainer
+            key={tileAttempt}
             center={center}
             zoom={locations.length === 1 ? 14 : 11}
             scrollWheelZoom
