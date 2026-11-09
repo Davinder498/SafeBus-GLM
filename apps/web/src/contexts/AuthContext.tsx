@@ -459,28 +459,47 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!supabase) {
       throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
     }
+    const revision = sessionRevision.current;
+    const original = sessionRef.current;
+    if (!original?.access_token) throw new Error('Sign in again before updating your password.');
     const { error: policyError } = await supabase.rpc('enforce_new_password_policy', {
       p_password: password,
     });
+    requireCurrentSession(revision);
+    if (sessionRef.current?.user.id !== original.user.id) {
+      throw new Error('Your session changed. Please try again.');
+    }
     if (policyError) throw new Error(policyError.message);
     const { error } = await supabase.auth.updateUser({ password });
     if (error) throw new Error(error.message);
-    void supabase.rpc('record_own_auth_event', {
-      p_action: 'auth.password_changed',
-      p_outcome: 'success',
-      p_detail: {},
-    });
-  }, []);
+    // USER_UPDATED may rotate the token after a successful password update.
+    // Record only when the same account remains active; never record under
+    // another account that signed in while the update was in flight.
+    if (mounted.current && sessionRef.current?.user.id === original.user.id) {
+      void supabase.rpc('record_own_auth_event', {
+        p_action: 'auth.password_changed',
+        p_outcome: 'success',
+        p_detail: {},
+      });
+    }
+  }, [requireCurrentSession]);
 
   const completeInvitation = useCallback(
     async (password: string) => {
       if (!supabase) {
         throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
       }
+      const revision = sessionRevision.current;
       const {
         data: { session: currentSession },
       } = await supabase.auth.getSession();
-      if (!currentSession) {
+      requireCurrentSession(revision);
+      if (
+        !currentSession ||
+        !currentSession.access_token ||
+        currentSession.access_token !== sessionRef.current?.access_token ||
+        currentSession.user.id !== sessionRef.current?.user.id
+      ) {
         throw new Error(
           'This invitation session is missing or expired. Ask your administrator to resend the invitation.',
         );
@@ -489,11 +508,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { error: policyError } = await supabase.rpc('enforce_new_password_policy', {
         p_password: password,
       });
+      requireCurrentSession(revision);
       if (policyError) throw new Error(policyError.message);
 
       const { error: passwordError } = await supabase.auth.updateUser({ password });
       if (passwordError) throw new Error(passwordError.message);
 
+      // A password update can legitimately rotate the token, but must never
+      // activate the other account if the user signed out/switched meanwhile.
+      if (!mounted.current || sessionRef.current?.user.id !== currentSession.user.id) {
+        throw new Error('Your session changed. Please try again.');
+      }
       const { error: activationError } = await supabase.rpc('complete_invited_account');
       if (activationError) {
         throw new Error(
@@ -514,7 +539,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
       return nextProfile;
     },
-    [loadProfile],
+    [loadProfile, requireCurrentSession],
   );
 
   const value = useMemo<AuthContextValue>(

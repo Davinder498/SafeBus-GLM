@@ -48,3 +48,10 @@ The owner left final monthly/annual unit prices **undecided** but selected **GST
 ## Future inclusive-price checkout guard
 
 A newly authorized Stripe price that explicitly has `tax_behavior=inclusive` will now generate Checkout with `automatic_tax.enabled=true`, using the verified customer billing address to calculate the applicable tax *within* that inclusive amount. It does not change the existing temporary `unspecified` prices, Stripe account Tax settings, old live subscriptions or historical invoices. An already-open Checkout session for the same inclusive price is only reused when it already has automatic tax enabled; otherwise the existing safe expiration/recreation path is used. Exact inclusive prices, the earlier Stripe/CRA registration-date mismatch, discount and proration semantics, and first live paid invoice verification remain subject to final authorized acceptance.
+
+
+## November 8 consolidated authentication follow-up
+
+A read-only current BusSafe catalog review confirmed: public privileged `SECURITY DEFINER` routines have **zero anonymous execute grants**, the current authenticated callable count is **162**, the `authenticator` pre-request active-session hook is installed, and the previously flagged bus create/update functions and announcement-admin helper no longer contain the obsolete direct `school_admin` role allowance. This corrects the dated November 1 review's unresolved source assumptions; it does **not** establish positive/negative cross-authority test outcomes or close Point 5. See [current catalog reconciliation](../qa/security-definer-initial-audit-2026-11-01.md).
+
+A separately scoped code change now binds asynchronous password changes and invitation activation to the current account/session before mutation, with synthetic sign-out and account-switch regression tests. This protects against stale client Auth results but is not proof of hosted signed Auth, Realtime or physical device acceptance. See [account-session mutation hardening](auth-client-mutation-race-2026-11-08.md). Maintain the owner's consolidated PR strategy and keep business/supplier/pilot gates pending until real evidence is accepted.
