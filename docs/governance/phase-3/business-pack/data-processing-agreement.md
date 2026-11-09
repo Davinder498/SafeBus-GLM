@@ -130,6 +130,13 @@ SafeBus supplies relevant security evidence, assists the Customer's PIA and
 reasonable compliance review, and reports material unresolved findings. No SOC 2,
 ISO, insurance, hosted isolation or recovery certification is implied.
 
+The proposed Provider monetary caps in MSA section 8, if later accepted by a
+Customer, are separate from and do not eliminate or postpone any non-excludable
+privacy/security duty, incident notification, cooperation, access assistance,
+data return or deletion obligation. A privacy/security financial cap is not
+insurance or permission to diminish safeguards under this DPA. No policy,
+coverage amount or insurance certificate is represented.
+
 ## 7. Retention and exit
 
 The accepted schedule identifies each data class's purpose, trigger, period,
