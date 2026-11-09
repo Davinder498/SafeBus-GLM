@@ -115,3 +115,26 @@ routing, an incident-escalation route capable of meeting separate DPA and
 legal obligations (which are not waived on holidays), actual pilot acceptance,
 supplier/privacy approvals, controlled security tests and final field/provider
 acceptance. Do not mark readiness gates approved based on contract language.
+
+
+## November 9 — proposed liability cap decision CLOSED; insurance deferred
+
+The owner approved the standard **proposed** SafeBus Provider liability
+position: general aggregate cap is the **greater of CA$25,000 or 12-Month
+Fees**; privacy/security aggregate cap is the **greater of CA$100,000 or twice
+12-Month Fees**. The specific privacy cap replaces—not stacks with—the general
+cap. The fee base covers tax-exclusive subscription fees attributable to the
+12 months before the first claim-causing event, net of discounts; actual shorter
+service period and annual-fee allocation rules remain in MSA §8. No cap resets
+per renewal/claim and no mandatory legal liability, fraud/wilful misconduct,
+incident reporting or data return duty is waived. No customer indemnity rider
+or specific contractual acceptance is implied.
+
+**Insurance quotations and purchase were explicitly deferred**. The owner has
+not represented a bound CGL, technology E&O or cyber/privacy policy or any
+insured limit. Before offering an Order Form, confirm that the school authority
+accepts the caps and any required exclusions/indemnities; validate actual
+procurement and mandatory-law requirements and whether uninsured financial
+exposure can be borne. Do not make a payment, claim coverage or change launch
+gates. The MSA, Order Form, DPA, owner decisions, sign-off pack, contract index,
+release notes and contract tests are aligned on PR #419.
