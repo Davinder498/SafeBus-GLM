@@ -339,7 +339,7 @@ async function manageInvoiceRenewal(ctx, stripe, state, input) {
   const next = await stripe.subscriptions.update(sub.id, {
     cancel_at_period_end: cancel,
     expand: ['customer','items.data.price.product','latest_invoice'],
-  }, { idempotencyKey: \`safebus:invoice:\${state.tenant_id}:\${input.requestId}:renewal:\${cancel?'cancel':'keep'}\` });
+  }, { idempotencyKey: `safebus:invoice:${state.tenant_id}:${input.requestId}:renewal:${cancel?'cancel':'keep'}` });
   const projection = await syncSubscriptionProjection(ctx.admin, stripe, next);
   if (!projection.applied) throw new Error('billing_projection_not_applied');
   await writeBillingAudit(ctx.admin, ctx.caller.id,
