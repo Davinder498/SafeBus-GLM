@@ -85,6 +85,18 @@ test('SLA, MSA, Order Form and decision ledger preserve ordinary-hours vs urgent
   assert.match(owner,/Open operational gate/);
 });
 
+test('support policy closes holiday business decision without approving customer contracts or incident staffing', async () => {
+  const pilot = await read('pilot-contract-signoff-2026-11-07.md');
+  const index = await read('README.md');
+  const checklist = await fs.readFile('docs/governance/phase-3/contract-checklist.md', 'utf8');
+  assert.match(pilot, /Business calendar CLOSED/);
+  assert.match(pilot, /independent DPA\/security incident escalation still require evidence/);
+  assert.match(index, /nine general\s+holidays/);
+  assert.match(index, /eight-document\s+contract pack remains a \*\*draft and unpublished\*\*/);
+  assert.match(checklist, /no numerical performance guarantees or automatic credits/);
+  assert.match(checklist, /Customer execution\/operational evidence pending/);
+});
+
 test('review record does not infer commercial launch authorization from Stripe live catalog', async () => {
   const s = await fs.readFile('docs/governance/commercial-billing-contract-alignment-2026-11-07.md', 'utf8');
   assert.match(s, /1\.99/);
