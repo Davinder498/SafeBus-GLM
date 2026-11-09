@@ -2,7 +2,7 @@
 
 **Owner approval:** November 8, 2026.  
 **Implementation:** Separate code PR following the Firebase FCM provider-text fix and supplier documentation review.  
-**Status:** Code/review candidate only. No Netlify production deployment, Resend account change, historical message deletion or district agreement publication was performed by this milestone.
+**Status as of November 8, 2026:** PR #414 merged to `main` at commit `e05c286446a56138814d9548cb262155d721f767`; GitHub CI and security checks passed. The published Netlify production commit and real Resend deliveries have **not** been attested. The merge alone is not a production release. No Resend account change, historical message deletion or district agreement publication was performed by this milestone.
 
 ## Exact change
 
@@ -16,6 +16,10 @@ The existing Netlify `guardian-notification-email.mjs` worker still obtains an a
 For these two events, the external subject, plain text and HTML **never use the incoming database title or body** and do **not include the recorded event timestamp/timezone**. This prevents student names, bus/route/stop names, coordinates or identifiers embedded in the original title/body from being sent in those email fields. The recipient address and delivery metadata still go to Resend in the United States; the event type is inferable from the subject and delivery record. This is data minimization, **not** an assertion of anonymous email or Canada-only processing.
 
 The **signed-in, role- and tenant-authorized inbox** retains the complete recorded event details. No SQL/RPC, guardian eligibility/consent, scheduled cadence, message outbox, worker retry/lease, idempotency, source event history, Supabase Auth invitation/recovery email, operations alerts, website business inquiry, driver-assignment email or non-pickup event copy changes are included. Existing queued but **not yet delivered** pickup/drop-off emails get the new generic text **only after deployment**; previously delivered provider/mailbox copies are not retroactively redacted.
+
+## Read-only published-deploy attestation
+
+A new manually dispatched, protected GitHub Actions workflow, `Verify guardian-email production deploy`, checks Netlify's current `published_deploy.commit_ref` against the merged PR #414 fix commit and the reachable `main` history. This uses existing protected Netlify credentials; it only makes a GET request and **cannot** deploy a site, approve production readiness, edit messages or send email. Matching source ancestry is evidence of a published source version, **not** proof of the packaged function code or a live Resend delivery. If Netlify does not expose an immutable `commit_ref` (for example, for some manual CLI deploys), it reports `not_verified` instead of trusting a free-form deploy title. See the workflow summary and consult the Netlify deploy details for independent review.
 
 ## Verification and release controls
 

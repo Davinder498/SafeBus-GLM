@@ -1,0 +1,30 @@
+name: Verify guardian-email production deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Read-only Netlify published source verification
+    runs-on: ubuntu-latest
+    # Uses the same protected credential scope as the existing production release.
+    # This workflow cannot deploy, approve release readiness, or send emails.
+    environment: production
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+      - name: Test fail-closed assessment without production access
+        run: node --test tests/release/netlify-guardian-email-verification.test.mjs
+      - name: Verify current published production commit contains PR 414
+        run: node scripts/verify-netlify-guardian-email-production.mjs

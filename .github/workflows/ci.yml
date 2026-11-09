@@ -51,6 +51,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
+      - name: Read-only Netlify verification logic tests
+        run: node --test tests/release/netlify-guardian-email-verification.test.mjs
       - name: Validate the owned local workload generator (not application capacity)
         run: pnpm capacity:simulate
 
