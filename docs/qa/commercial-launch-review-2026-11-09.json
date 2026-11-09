@@ -1,0 +1,461 @@
+{
+  "reviewDate": "2026-11-09",
+  "recordedAt": "2026-11-09T14:13:49.745Z",
+  "verdict": "NO-GO for broad commercial launch",
+  "reviewedCommit": "49f22faea182a292b1964c2c390ad69a0150965e",
+  "mainResynced": true,
+  "reviewBranch": "codex/commercial-launch-review-20261109",
+  "requestedPopulation": {
+    "schoolAuthorities": 500,
+    "buses": 5000,
+    "registeredGuardians": 500000,
+    "peakConcurrentGuardians": null
+  },
+  "findingCounts": {
+    "P1": 8,
+    "P2": 4,
+    "P3": 1
+  },
+  "method": {
+    "primaryEvidence": [
+      "executable repository source",
+      "hosted function and policy catalogs",
+      "rollback-only read-only authorization checks",
+      "GitHub, Netlify and Stripe read-only configuration",
+      "local synthetic browser/native tests",
+      "read-only production public browser and map requests"
+    ],
+    "historicalMarkdownUsedAsLaunchProof": false,
+    "productionMutations": false,
+    "productionLoadTest": false,
+    "externalQaNotifications": false
+  },
+  "netlify": {
+    "published": {
+      "id": "6af1663962cb03941030f297",
+      "commit": "49f22faea182a292b1964c2c390ad69a0150965e",
+      "state": "ready",
+      "branch": "main",
+      "context": "production",
+      "publishedAt": "2026-11-09T06:21:28.759Z"
+    },
+    "deployMechanism": {
+      "build_id": "6af1663962cb03941030f295",
+      "manual_deploy": false,
+      "deploy_origin": null,
+      "trigger_title": null,
+      "title": "Merge pull request #418 from Davinder498/security/cr1-account-session-mutation-20261108\n\nSafeBus CR1 consolidated auth hardening: block cross-session password and invitation races"
+    },
+    "previewSecrets": [
+      {
+        "key": "SUPABASE_SECRET_KEY",
+        "previewConfigured": true,
+        "sameAsProduction": true
+      },
+      {
+        "key": "SUPABASE_SERVICE_ROLE_KEY",
+        "previewConfigured": true,
+        "sameAsProduction": true
+      },
+      {
+        "key": "SAFEBUS_RETENTION_ARCHIVE_KEYS",
+        "previewConfigured": true,
+        "sameAsProduction": true
+      }
+    ],
+    "executionFlags": {
+      "SAFEBUS_RETENTION_EXECUTE": null,
+      "SAFEBUS_RETENTION_LIFECYCLE_EXECUTE": null,
+      "SAFEBUS_APPLICATION_MONITOR_MODE": "observe",
+      "SAFEBUS_APPLICATION_MONITOR_ENABLED": null
+    }
+  },
+  "github": {
+    "enforceAdmins": true,
+    "requiredApprovingReviews": 0,
+    "requiredChecks": [
+      "Typecheck, lint, and build",
+      "Unit tests",
+      "Browser smoke tests",
+      "Migration verification",
+      "Dependency audit",
+      "Secret scanning",
+      "CodeQL JavaScript and TypeScript",
+      "CodeQL"
+    ]
+  },
+  "database": {
+    "project": "BusSafe",
+    "production": true,
+    "publicTables": 57,
+    "publicTablesWithoutRls": 0,
+    "publicPolicies": 230,
+    "functionsInventoried": 433,
+    "publicDefinerFunctionsExecutableByAnon": 0,
+    "apiPreRequest": "safebus_private.enforce_active_api_session",
+    "newNotificationDefault": "approved",
+    "oldActiveAuthorityPendingPolicies": 1,
+    "retentionExecutionEnabled": false,
+    "retentionApprovalPresent": false,
+    "gpsRetentionDays": 30,
+    "asyncTrackingQueueInstalled": false,
+    "asyncTrackingWorkerInstalled": false,
+    "cronJobs": [
+      {
+        "name": "safebus-push-notification-dispatcher",
+        "schedule": "20 seconds",
+        "active": true
+      }
+    ],
+    "missingIdentityGuardianAssertions": {
+      "passed": 4,
+      "transactionReadOnly": true,
+      "rolledBack": true
+    },
+    "advisors": {
+      "healthFindings": 0,
+      "leakedPasswordProtection": "disabled",
+      "authenticatedDefinerNotices": 162,
+      "performance": {
+        "unindexedForeignKeys": 53,
+        "rlsInitplan": 9,
+        "multiplePermissivePolicies": 25,
+        "unusedIndexes": 161
+      }
+    },
+    "deliveryHistoricalCounts": {
+      "push": {
+        "delivered": 60,
+        "failed": 3
+      },
+      "email": {
+        "delivered": 33,
+        "cancelled": 7
+      },
+      "receiptVerified": false
+    },
+    "hostedFunctionDefinitionHashes": [
+      {
+        "schema": "public",
+        "name": "run_retention_lifecycle",
+        "sha256": "263825c118f890f2c8d3a7bf40c5c168fe5cdcbbdc06719159c4502fb51fc7e2"
+      },
+      {
+        "schema": "safebus_private",
+        "name": "broadcast_route_tracking_invalidation",
+        "sha256": "84be6f84db8786e0dda347e0f3270b3f8705dcf83951891704c9b24971ac7880"
+      },
+      {
+        "schema": "safebus_private",
+        "name": "enforce_active_api_session",
+        "sha256": "7846908cdbac7ca77925718a608fb897aa9847120b2a48787586a8bcaccb2fe8"
+      },
+      {
+        "schema": "safebus_private",
+        "name": "has_completed_optional_mfa",
+        "sha256": "1d381bd81ca651c754b0aa34beff7b9a35647f9df65c2b341926700bf3979bf9"
+      },
+      {
+        "schema": "safebus_private",
+        "name": "notify_tracking_location_change",
+        "sha256": "dc3e7fa4e73add1758c67af4564f2843f331901bc51fba3cb41df97a9fe50166"
+      }
+    ]
+  },
+  "stripe": {
+    "mode": "live",
+    "webhookEnabled": true,
+    "endpoint": "https://safebus.kids/.netlify/functions/stripe-webhook",
+    "missingRiskEvents": [
+      "charge.refunded",
+      "charge.dispute.created",
+      "radar.early_fraud_warning.created"
+    ],
+    "activeCanadianTaxRegistration": true,
+    "activeCadInclusiveRecurringPrices": 2,
+    "noTransactionsPerformed": true
+  },
+  "capacity": {
+    "evidenceType": "source-derived planning estimate; not measured capacity",
+    "population": {
+      "buses": 5000,
+      "guardians": 500000,
+      "schoolAuthorities": 500
+    },
+    "assumptions": {
+      "allBusesActive": true,
+      "gpsSeconds": 3,
+      "operatingHoursPerDay": 4,
+      "historyRetentionDays": 30,
+      "detailRpcs": 2,
+      "pollSeconds": 15,
+      "oneBusPerGuardian": true
+    },
+    "gpsRequestsPerSecond": 1666.6666666666667,
+    "nativeRowWritesPerSecondMinimum": 6666.666666666667,
+    "historyRowsPerOperatingHour": 6000000,
+    "historyRowsPerFourHourDay": 24000000,
+    "historyRowsAtThirtyOperatingDays": 720000000,
+    "guardianDetailScenarios": [
+      {
+        "fractionViewing": 0.01,
+        "concurrentViewers": 5000,
+        "pollOnlyRpcsPerSecond": 666.6666666666666,
+        "realtimeDrivenRpcsPerSecondIfEveryGpsEventReachesEachViewer": 3333.3333333333335
+      },
+      {
+        "fractionViewing": 0.1,
+        "concurrentViewers": 50000,
+        "pollOnlyRpcsPerSecond": 6666.666666666667,
+        "realtimeDrivenRpcsPerSecondIfEveryGpsEventReachesEachViewer": 33333.333333333336
+      },
+      {
+        "fractionViewing": 1,
+        "concurrentViewers": 500000,
+        "pollOnlyRpcsPerSecond": 66666.66666666667,
+        "realtimeDrivenRpcsPerSecondIfEveryGpsEventReachesEachViewer": 333333.3333333333
+      }
+    ],
+    "synchronousGuardianSignalsPerSecondIfEveryGuardianIsRouteLinked": 166666.66666666666,
+    "retentionMaximumRowsPerDay": 2880000,
+    "retentionDeficitPerOperatingDay": 21120000,
+    "retentionCapacityShortfallRatio": 8.333333333333334
+  },
+  "publicMaps": [
+    {
+      "mode": "web",
+      "configStatus": 200,
+      "cors": null,
+      "tileStatus": 200,
+      "contentType": "image/png",
+      "png": true
+    },
+    {
+      "mode": "native-origin",
+      "configStatus": 200,
+      "cors": "https://localhost",
+      "tileStatus": 200,
+      "contentType": "image/png",
+      "png": true
+    }
+  ],
+  "checks": {
+    "install": "passed",
+    "typecheck": "passed",
+    "lint": "passed",
+    "build": "passed with bundle size warning",
+    "test": {
+      "firstRun": {
+        "webUnitPassed": 1178,
+        "mobileUnitPassed": 32,
+        "releasePassed": 495,
+        "releaseFailed": 3
+      },
+      "canonicalGitBytesRun": {
+        "webUnitPassed": 1178,
+        "mobileUnitPassed": 32,
+        "releasePassed": 506,
+        "failed": 0
+      },
+      "diagnosis": "CRLF checkout changed checksum-bound SQL bytes and generated text comparison; exact Git blob bytes passed; original checkout restored"
+    },
+    "migrationVerification": {
+      "passed": true,
+      "immutableFiles": 125
+    },
+    "productionDependencyAudit": "passed; no known vulnerabilities",
+    "webBrowser": {
+      "firstRun": {
+        "passed": 383,
+        "failed": 2,
+        "skipped": 7
+      },
+      "isolatedRechecks": {
+        "passed": 2,
+        "failed": 0
+      },
+      "cleanSingleRunAllGreen": false
+    },
+    "mobileBrowser": {
+      "passed": 123,
+      "failed": 0
+    },
+    "appearance": {
+      "firstRun": {
+        "passed": 21,
+        "failed": 1,
+        "skipped": 8
+      },
+      "isolatedRecheck": {
+        "passed": 1,
+        "failed": 0
+      },
+      "initialFailure": "navigation exceeded 60-second budget"
+    },
+    "productionBundleRouteLoading": {
+      "passed": 10,
+      "failed": 0
+    },
+    "livePublicUi": {
+      "routes": 7,
+      "widths": [
+        1280,
+        390,
+        320
+      ],
+      "firstRun": {
+        "passed": 19,
+        "failed": 2
+      },
+      "correctedLocatorRechecks": {
+        "passed": 2,
+        "failed": 0
+      },
+      "harnessCorrection": "select the visible responsive wordmark; first DOM wordmark is hidden at phone widths",
+      "exercisedCasesWithNoAxeViolationsOverflowOrPageErrors": 21,
+      "authenticatedJourneysVerified": false
+    },
+    "guardianHomeDefect": {
+      "reproduced": true,
+      "syntheticOnly": true,
+      "visibilityRpcCallsBefore": 1,
+      "visibilityRpcCallsAfter31Seconds": 1,
+      "activeBadgeRetainedOffline": true
+    },
+    "mobileBuild": "passed",
+    "androidSync": "passed after successful mobile build",
+    "nativeAndroid": {
+      "unitTests": "passed",
+      "assembleDebug": "passed",
+      "lintDebug": "passed",
+      "gradleTasks": 420,
+      "executedTasks": 65,
+      "java": "Android Studio bundled JBR",
+      "apkInstalled": false,
+      "aabPublished": false,
+      "physicalDeviceVerified": false
+    }
+  },
+  "concreteAccessLimits": {
+    "supabaseManagementApi": "HTTP 401 with available local management authentication; connected SQL/advisors worked",
+    "emailProviderDomainInspection": "HTTP 400; configuration presence and historical outbox observations do not prove SMTP/domain state",
+    "interactiveComputerUse": "browser access host unavailable; automated Playwright tests and screenshot inspection used"
+  },
+  "logs": [
+    {
+      "path": "artifacts/launch-review-20261109/android-native.log",
+      "bytes": 37024,
+      "sha256": "46d96aaf1e66a795d274c3648753942fdeabe79aa9ad71baf9ae2efa0767d9fd"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/android-sync-final.log",
+      "bytes": 577,
+      "sha256": "8dcbac04444612b9ebf0627d2ac9848aa4165af085b7c7c0ab58898c6edc02f1"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/android-sync.log",
+      "bytes": 578,
+      "sha256": "8fd52f53420dd3c2e45f2d0e5e1c7aca5240822ed9671d7d100a34833dacf6e1"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/appearance-recheck.log",
+      "bytes": 1117,
+      "sha256": "bc07f796ac5991740ef5a0eb994badc91396c08973631ad1449731d9116d4d03"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/browser-appearance.log",
+      "bytes": 7573,
+      "sha256": "925c1050163eb468a750bbb8cd749d98f8c429e836438e7e2f37c2409a9e3baa"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/browser-live-public.log",
+      "bytes": 8736,
+      "sha256": "e34c7152fe27844df188ebaa986ce48a2a8f5d2ec0f3e839cb55d930a0f90221"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/browser-mobile.log",
+      "bytes": 18603,
+      "sha256": "d8b974b078d71acab372517ca483418657d448482528a6cce0ee6e13374c7153"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/browser-route-loading.log",
+      "bytes": 2551,
+      "sha256": "ede5eb8f116eae1330118357bd04549ef944d13f5725a057863f655c804579d8"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/browser-web.log",
+      "bytes": 73824,
+      "sha256": "6b7e31f233d0ce5a84fdabf1200b887ccf5e792132228a49d7d1b4b873b53b21"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/build.log",
+      "bytes": 25355,
+      "sha256": "42d6d341adc2121e37870ae0bf6116e9204d3bdd6ff46d48483f29186aa43424"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/dependency-audit.log",
+      "bytes": 76,
+      "sha256": "9bc06214a19e844a74fe81a2e7171856da083db63bd2bb817d42423efe109c8b"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/guardian-home-reproduction.log",
+      "bytes": 770,
+      "sha256": "b541c68b11618e553675b4fc033c800d1e284912736345b4e2d07744f12cf34b"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/lint.log",
+      "bytes": 503,
+      "sha256": "8490d2b5a5d7b0c744a2dfd166903d67135ba28cb9293cf048c6ef6b45e7c82e"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/live-public-recheck.log",
+      "bytes": 463,
+      "sha256": "d4ead96428ec0977fa2f13e83a0e0e8464520f2bde4f722430adeaa8df717cd8"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/migrations.log",
+      "bytes": 92,
+      "sha256": "ddc3101c0d5ae542478e844f5ff0cbbefa0a74fe6951a9847c9d2ebdb29241b2"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/mobile-build-final.log",
+      "bytes": 6083,
+      "sha256": "0226cec6fed187bdfbf0f3a831df8779dd241d83b9e0e393a54e9e126c16defb"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/mobile-build.log",
+      "bytes": 6083,
+      "sha256": "3e7d95a29c0d28b2853149736afa7f37a7f327f5838544252bbb05d3bdad81fe"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/test-canonical-bytes.log",
+      "bytes": 83143,
+      "sha256": "7960a4d25fb73d935f72d6fa51d92c248119fea5ad19e6c9f2b2f2305213730d"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/test-line-ending-recheck.log",
+      "bytes": 2063,
+      "sha256": "be56b62a153e4cbd71008129bebf3b6f4b8398f068e6595989b04fc0e178f52e"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/test.log",
+      "bytes": 85608,
+      "sha256": "1c192640909166083b3d44c76200949583aae140c4c258bbacb6a24cc35ae8d6"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/typecheck.log",
+      "bytes": 856,
+      "sha256": "b81824654de6f05df2a02190a7fe404f04a2ca991d89ea6b2e50bcf10a0cb138"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/web-route-recheck.log",
+      "bytes": 738,
+      "sha256": "16ab0e3cefa9962f9fbb8b325f2121c7d05d7a0b8ce32976b01903edf93ceb44"
+    },
+    {
+      "path": "artifacts/launch-review-20261109/web-support-recheck.log",
+      "bytes": 760,
+      "sha256": "cf845d7dfcdeb18d95a18411287d00b191d3004cb3b8df3deeb3fdead240b95c"
+    }
+  ]
+}
