@@ -135,7 +135,15 @@ Customer, are separate from and do not eliminate or postpone any non-excludable
 privacy/security duty, incident notification, cooperation, access assistance,
 data return or deletion obligation. A privacy/security financial cap is not
 insurance or permission to diminish safeguards under this DPA. No policy,
-coverage amount or insurance certificate is represented.
+coverage amount or insurance certificate is represented. Any limited
+third-party privacy/security indemnification in a later accepted MSA
+applies only to covered claims attributable to SafeBus's own breach,
+including acts for which it is contractually responsible. That indemnity
+uses the agreed privacy/security monetary cap for reasonable defence costs
+and damages, with no separate additive cap; it does not excuse the
+Customer's independent unlawful instructions or its own legal duties.
+This indemnity clause is **not** a substitute for the timely independent
+incident notification, safeguards and cooperation duties stated above.
 
 ## 7. Retention and exit
 
