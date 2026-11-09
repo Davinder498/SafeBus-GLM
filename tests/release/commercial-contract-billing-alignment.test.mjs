@@ -72,12 +72,12 @@ test('initial-pilot MSA, Order Form and DPA retain insured-risk and statutory ca
 });
 
 test('approved limited indemnification appears in the MSA, Order Form and decisions without removing liability limits', async () => {
-  const msa = (await read('master-services-agreement.md')).replace(/\\s+/g, ' ').replace(/\\*\\*/g, '');
+  const msa = (await read('master-services-agreement.md')).replace(/\s+/g, ' ').replace(/\*\*/g, '');
   const order = await read('order-form.md');
   const owner = await read('owner-decisions.md');
   const pilot = await read('pilot-contract-signoff-2026-11-07.md');
-  assert.match(msa, /greater of CA\\$25,000 or the 12-Month Fees/i);
-  assert.match(msa, /greater of CA\\$100,000 or twice the 12-Month Fees/i);
+  assert.match(msa, /greater of CA\$25,000 or the 12-Month Fees/i);
+  assert.match(msa, /greater of CA\$100,000 or twice the 12-Month Fees/i);
   assert.match(msa, /limited, fault-based third-party indemnification/i);
   assert.match(msa, /Defence costs, settlements and damages all count toward/i);
   assert.match(msa, /No reciprocal Customer indemnity is silently imposed/i);
@@ -85,7 +85,7 @@ test('approved limited indemnification appears in the MSA, Order Form and decisi
   assert.match(order, /defence costs, approved settlements and damages count inside/i);
   assert.match(owner, /Final limited third-party indemnification decision/i);
   assert.match(pilot, /owner-approved third-party indemnification scope/i);
-  assert.match(msa, /No active CGL, technology E&O, cyber\\/privacy insurance/i);
+  assert.match(msa, /No active CGL, technology E&O, cyber\/privacy insurance/i);
 });
 
 test('initial-pilot SLA states owner-approved business hours, nine holidays and no unverified guarantees', async () => {
