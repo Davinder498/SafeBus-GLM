@@ -92,3 +92,26 @@ The card and approved invoice/PO backend use non-prorating period-end renewal
 changes; MSA, Order Form, customer screens and synthetic tests now agree.
 The source code and live Stripe objects remain the implementation truth;
 historical planning documents are not evidence of deployed behavior.
+
+## November 9 — owner support and initial-pilot SLA decision CLOSED
+
+The owner approved ordinary staffed support **Monday–Friday, 08:00–17:00
+America/Edmonton**, **excluding Alberta's nine general holidays**: New Year's
+Day, Alberta Family Day, Good Friday, Victoria Day, Canada Day, Labour Day,
+Thanksgiving Day, Remembrance Day and Christmas Day (official annual dates:
+https://www.alberta.ca/alberta-general-holidays). No optional additional
+holidays are assumed. There is no guaranteed 24/7 human response or after-hours
+staffing. Automated operational monitoring does not create that promise.
+
+Initial-pilot commercial SLA targets are intentionally **not guaranteed**:
+no numerical availability/uptime, latency, GPS freshness, ETA, notification,
+repair, response or recovery target, and no automatic monthly/annual service
+credits or penalties. MSA, SLA, Order Form, owner decision register and
+contract tests carry this same policy. No live service, customer billing or
+release authorization follows from this documentation change.
+
+**Still pending:** operational proof of staffed-window coverage and contact
+routing, an incident-escalation route capable of meeting separate DPA and
+legal obligations (which are not waived on holidays), actual pilot acceptance,
+supplier/privacy approvals, controlled security tests and final field/provider
+acceptance. Do not mark readiness gates approved based on contract language.
