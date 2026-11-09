@@ -171,3 +171,23 @@ Customer-specific procurement exceptions and bodily injury/property damage
 indemnity requests require review, and **no insurance coverage is claimed**.
 The contract package remains **unpublished and unexecuted**; neither an
 unsigned Order Form nor this owner decision binds a school authority.
+
+
+## November 9 — owner-approved district-controlled data model
+
+Instead of a blanket 30-day data-return and 60-day primary deletion promise,
+the owner approved **district-controlled data management**. The tenant
+administrator may use existing student/guardian/driver/bus directory CSVs
+and supported per-record delete/archive/preservation actions, subject to
+security and mandatory retention. If a district requests additional records
+or account closure, SafeBus verifies the authority and tenant, scopes and
+securely transfers eligible information, and handles deletion only through
+approved workflows. A CSV is not a complete district-wide export and the app
+has not established an instant delete-all or full backup-erasure capability.
+
+The [Data Management, Return and Destruction Schedule](data-return-destruction.md),
+[MSA](master-services-agreement.md), [DPA](data-processing-agreement.md) and
+[Order Form](order-form.md) carry the same policy. Any binding customer-specific
+turnaround must be technically verified and agreed in writing. Automatic
+destructive retention remains disabled; contracts remain unpublished until
+customer and operational requirements are approved.
