@@ -359,8 +359,7 @@ try {
 
   const missingSchoolLocationPolicies = await client.query(`
     select table_name as object_name
-      from (values ('public.driver_trip_current_locations'),
-                   ('public.driver_trip_location_updates')) locations(table_name)
+      from (values ('public.driver_trip_current_locations')) locations(table_name)
      where not exists (
        select 1 from pg_policy p where p.polrelid = table_name::regclass
          and p.polname = 'safebus_school_location_scope'

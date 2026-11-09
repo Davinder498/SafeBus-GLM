@@ -37,7 +37,8 @@ test('another device sign-in cannot renew an old session; refresh, revocation an
     create table public.user_notifications(id uuid);create table public.push_notification_outbox(id uuid);
     create table public.guardian_notification_outbox(id uuid,worker_id text);`);
   const config = JSON.parse(await fs.readFile('config/pending/recent-auth-session.json', 'utf8'));
-  const sql = await fs.readFile(config.migration, 'utf8');
+  // Match the protected release runner's canonical SQL bytes on Windows too.
+  const sql = (await fs.readFile(config.migration, 'utf8')).replaceAll('\r', '');
   assert.equal(createHash('sha256').update(sql).digest('hex'), config.migrationSha256);
   const client = {
     query: async (sql, args) =>

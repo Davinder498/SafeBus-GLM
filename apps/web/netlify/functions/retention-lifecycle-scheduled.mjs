@@ -1,10 +1,8 @@
 import { disposeOneAccount } from './disposal-accounts.mjs';
 import { sendMonitorAlerts } from '../../../../scripts/lib/monitor-alert-email.mjs';
 import { createClient } from '@supabase/supabase-js';
-import { archiveKeys, archiveOne, encryptArchive } from './retention-archive.mjs';
 
 export const RETENTION_CLASSES = [
-  'gps',
   'student_events',
   'exceptions',
   'statuses',
@@ -12,7 +10,6 @@ export const RETENTION_CLASSES = [
   'email',
   'push',
   'inbox',
-  'archive_manifests',
   'audience_failures',
   'push_devices',
   'cases',
@@ -29,14 +26,20 @@ export const RETENTION_CLASSES = [
   'user_sessions',
 ];
 export function validateLifecycleResult(value, dryRun) {
+  // Allow the predecessor's two aggregate counters during a schema-first rollout.
+  // No history or archive work is performed by this worker.
+  const retired = ['gps', 'archive_manifests'];
+  const keys = Object.keys(value?.counts || {});
   if (
     !value ||
     value.version !== 1 ||
     value.dryRun !== dryRun ||
     value.limit !== 500 ||
     !value.counts ||
-    Object.keys(value.counts).length !== RETENTION_CLASSES.length ||
-    !RETENTION_CLASSES.every(
+    ![RETENTION_CLASSES.length, RETENTION_CLASSES.length + retired.length].includes(keys.length) ||
+    !keys.every((key) => [...RETENTION_CLASSES, ...retired].includes(key)) ||
+    !RETENTION_CLASSES.every((key) => keys.includes(key)) ||
+    !keys.every(
       (key) =>
         Number.isSafeInteger(value.counts[key]) &&
         value.counts[key] >= 0 &&
@@ -44,21 +47,7 @@ export function validateLifecycleResult(value, dryRun) {
     )
   )
     throw new Error('RETENTION_LIFECYCLE_RESULT');
-  return value.counts;
-}
-
-export function archiveRecoverySample(dryRun, env = process.env, now = Date.now()) {
-  const remaining = Date.parse(env.SAFEBUS_ARCHIVE_RECOVERY_CHECK_UNTIL ?? '') - now;
-  if (!dryRun || !(remaining > 0 && remaining <= 10 * 60_000)) return null;
-
-  const { id, keys } = archiveKeys(env);
-  return {
-    event: 'retention_archive_recovery_sample',
-    keyId: id,
-    sample: encryptArchive(Buffer.from('SafeBus archive recovery test'), id, keys.get(id)).toString(
-      'base64',
-    ),
-  };
+  return Object.fromEntries(RETENTION_CLASSES.map((key) => [key, value.counts[key]]));
 }
 
 // A single saturated dry-run is an observation, not an alert or a deletion.
@@ -75,14 +64,18 @@ export async function reportRetentionBacklog({
   try {
     const outcome = await notify({ checks: [{ check: 'retention_backlog', result: 'fail' }] });
     if (outcome?.result !== 'accepted') throw new Error('RETENTION_BACKLOG_ALERT_UNCONFIRMED');
-    log(JSON.stringify({ event: 'retention_lifecycle_backlog_alert', result: 'provider_accepted' }));
+    log(
+      JSON.stringify({ event: 'retention_lifecycle_backlog_alert', result: 'provider_accepted' }),
+    );
     return { result: 'accepted' };
   } catch {
-    log(JSON.stringify({
-      event: 'retention_lifecycle_backlog_alert',
-      result: 'failed',
-      code: 'MONITOR_ALERT_DELIVERY_FAILED',
-    }));
+    log(
+      JSON.stringify({
+        event: 'retention_lifecycle_backlog_alert',
+        result: 'failed',
+        code: 'MONITOR_ALERT_DELIVERY_FAILED',
+      }),
+    );
     return { result: 'failed' };
   }
 }
@@ -101,14 +94,12 @@ export async function handler() {
         fetch: (input, init = {}) => fetch(input, { ...init, signal: AbortSignal.timeout(8_000) }),
       },
     });
-    // Dry-runs perform no storage writes or archive mutations. Execute requires
-    // valid dedicated keys even when there are currently no preservation cases.
+    // Destructive operational-record disposal still requires its existing approval.
     if (!dryRun) {
       const state = await client.rpc('disposal_account_work', { p_action: 'state', p_id: null });
       if (state.error || state.data?.enabled !== true)
         throw new Error('RETENTION_LIFECYCLE_DISABLED');
     }
-    const archive = dryRun ? 'dry_run' : await archiveOne(client, archiveKeys());
     const counts = Object.fromEntries(RETENTION_CLASSES.map((name) => [name, 0]));
     const started = Date.now();
     let saturated = false;
@@ -125,28 +116,21 @@ export async function handler() {
     }
     const account = dryRun ? 'dry_run' : await disposeOneAccount(client);
     await reportRetentionBacklog({ dryRun, saturated });
-    try {
-      const sample = archiveRecoverySample(dryRun);
-      if (sample) console.log(JSON.stringify(sample));
-    } catch {
-      console.error(JSON.stringify({ event: 'retention_archive_recovery_config_invalid' }));
-    }
     console.log(
       JSON.stringify({
         event: 'retention_lifecycle_completed',
         dryRun,
         counts,
-        archive,
         account,
         saturated,
       }),
     );
     return {
       statusCode: 200,
-      body: JSON.stringify({ dryRun, counts, archive, account, saturated }),
+      body: JSON.stringify({ dryRun, counts, account, saturated }),
     };
   } catch (error) {
-    const code = /^RETENTION_(?:LIFECYCLE|ARCHIVE)_[A-Z_]+$/.test(error?.message || '')
+    const code = /^RETENTION_LIFECYCLE_[A-Z_]+$/.test(error?.message || '')
       ? error.message
       : 'RETENTION_LIFECYCLE_FAILED';
     console.error(JSON.stringify({ event: 'retention_lifecycle_failed', dryRun, code }));

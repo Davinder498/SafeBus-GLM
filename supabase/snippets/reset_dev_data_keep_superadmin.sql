@@ -48,7 +48,6 @@ declare
     'bus_route_assignments',
     'driver_route_assignments',
     'student_trip_events',
-    'driver_trip_location_updates',
     'driver_trip_current_locations',
     'driver_trips',
     'guardian_notification_outbox',

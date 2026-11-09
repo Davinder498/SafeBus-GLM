@@ -1,0 +1,33 @@
+{
+  "scope": "Remove continuous GPS history; retain live visibility and operational trip/event records",
+  "driver": {
+    "permitted": "Only the authenticated, active driver with a valid bound device/session can submit a fix; enrolled MFA remains enforced by the API session guard",
+    "retries": "An exact retry of the most recently accepted device sequence is acknowledged without repeating side effects; an older sequence is discardable out_of_order; reuse of the latest sequence with changed identity or payload is denied",
+    "state": "One private durable sequence cursor per device with IDs/timestamps/fingerprint only; movement validation uses the expiring latest live bus position per trip, including across replacement devices",
+    "offline": "Encrypted, ordered uploads are bounded to 24 hours; an ended/expired session cannot publish a live position; recovery cannot regress the latest live point",
+    "failure": "Invalid, impossible, stale, foreign, revoked and out-of-order submissions cannot advance the cursor or emit tracking changes"
+  },
+  "guardian": {
+    "permitted": "Latest authorized linked-student bus visibility and existing trip/event inbox categories only",
+    "denied": "No raw tracking state, other students, another authority, historical coordinates or archive endpoints",
+    "failure": "Stale/offline/unavailable visibility remains explicit; history removal does not grant additional scope or consent"
+  },
+  "schoolAuthorityAdmin": {
+    "permitted": "Authority-scoped live trip visibility, operational records and operational preservation with privileged MFA and recent authentication for preservation mutations",
+    "denied": "GPS archive listing, download, creation or replay"
+  },
+  "schoolScopedAdmin": {
+    "permitted": "Existing authorized school-scoped operations only; the retired school_admin role stays retired",
+    "denied": "Raw tracking state, GPS history, cross-school or cross-authority data and authority-wide preservation"
+  },
+  "transportationAdmin": {
+    "permitted": "Existing authority-scoped live operations and operational preservation with privileged MFA",
+    "denied": "GPS archives, raw tracking state or cross-authority data"
+  },
+  "platformAdmin": {
+    "permitted": "Existing platform operational/retention aggregate administration with mandatory MFA",
+    "denied": "New tenant-coordinate access, private sequence state or GPS history exports"
+  },
+  "channels": "Keep existing authorized coordinate-free live invalidations and operational notification categories; replayed/rejected fixes produce no new invalidation; no external notifications as QA",
+  "release": "Block removal if any active preservation, GPS-specific hold, archive manifest or archive storage object exists; reconcile exact hosted definitions, rehearse with rollback, retain verified encrypted recovery, then human-reviewed protected release"
+}

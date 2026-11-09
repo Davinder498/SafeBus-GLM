@@ -21,7 +21,6 @@ export interface Tenant {
 
 export interface TenantSettings {
   privacy_regime: PrivacyRegime;
-  gps_retention_days: number;
   ping_interval_seconds: number;
   stale_threshold_seconds: number;
   lost_threshold_seconds: number;
@@ -29,7 +28,6 @@ export interface TenantSettings {
 
 export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   privacy_regime: 'pipa',
-  gps_retention_days: 30,
   ping_interval_seconds: 5,
   stale_threshold_seconds: 30,
   lost_threshold_seconds: 60,

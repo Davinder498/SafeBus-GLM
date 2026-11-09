@@ -15,8 +15,8 @@ const notificationMigrationPath = 'supabase/migrations/0092_end_to_end_notificat
 
 
 test('private retention no-policy exceptions are exact and reject any access-control drift', () => {
-  assert.equal(REVIEWED_PRIVATE_RETENTION_TABLES.length, 8);
-  assert.equal(new Set(REVIEWED_PRIVATE_RETENTION_TABLES).size, 8);
+  assert.equal(REVIEWED_PRIVATE_RETENTION_TABLES.length, 7);
+  assert.equal(new Set(REVIEWED_PRIVATE_RETENTION_TABLES).size, 7);
   const safeRow = (name) => ({
     object_name: name,
     schema_name: 'safebus_private',
@@ -29,7 +29,7 @@ test('private retention no-policy exceptions are exact and reject any access-con
   });
   assert.deepEqual(
     assertMissingSessionPolicies(REVIEWED_PRIVATE_RETENTION_TABLES.map(safeRow)),
-    { reviewedPrivateNoPolicyTables: 8 },
+    { reviewedPrivateNoPolicyTables: 7 },
   );
   assert.throws(
     () => assertMissingSessionPolicies([safeRow('public.students')]),
@@ -414,7 +414,22 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
     assert.equal(actual.has(name), false);
     actual.set(name, entry.audience);
   }
-  const observedFunctions = [...launch.functions, ...offlineFunctions, ...installedRetention.functions];
+  // The prepared live-only release removes one service API. Its hosted evidence
+  // is explicitly rollback-only, not a claim that production has been installed.
+  const liveOnly = await readJson('config/pending/live-tracking-only.json');
+  const rehearsal = await readJson('config/observed/live-tracking-only-rehearsal-20261109.json');
+  const removalSql = (await fs.readFile(liveOnly.migration, 'utf8')).replaceAll('\r', '');
+  assert.equal(createHash('sha256').update(removalSql).digest('hex'), liveOnly.migrationSha256);
+  assert.equal(rehearsal.migrationSha256, liveOnly.migrationSha256);
+  assert.equal(rehearsal.persistentSqlChanges, false);
+  assert.equal(rehearsal.productionInstallationPending, true);
+  assert.equal(rehearsal.inTransaction.expectedFunctionsAndAcls, true);
+  assert.equal(rehearsal.postRollback.allFunctionsRestored, true);
+  assert.match(removalSql, /DROP FUNCTION public\.retention_archive_work\(text,jsonb\);/);
+  assert.equal(actual.get('retention_archive_work'), 'service_role');
+  actual.delete('retention_archive_work');
+  const observedFunctions = [...launch.functions, ...offlineFunctions, ...installedRetention.functions]
+    .filter(f => f.signature !== 'retention_archive_work(text,jsonb)');
   assert.deepEqual(
     observedFunctions.map((f) => f.signature).sort(),
     [...audiences.publicFunctions].sort(),

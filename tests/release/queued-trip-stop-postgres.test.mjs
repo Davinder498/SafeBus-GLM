@@ -9,7 +9,8 @@ test('durable stop replay retains atomic revision, ownership and authorization g
   const db = await queuedTripFixture();
   t.after(() => db.close());
   const config = JSON.parse(await fs.readFile('config/pending/offline-trip-actions.json', 'utf8'));
-  const sql = await fs.readFile(config.migration, 'utf8');
+  // Match the protected release runner's canonical SQL bytes on Windows too.
+  const sql = (await fs.readFile(config.migration, 'utf8')).replaceAll('\r', '');
   assert.equal(createHash('sha256').update(sql).digest('hex'), config.migrationSha256);
   await t.test('rehearses installation and rollback without persistent changes', async () => {
     await db.exec('begin');

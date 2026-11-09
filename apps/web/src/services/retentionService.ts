@@ -12,7 +12,6 @@ export interface RetentionCase {
   created_at: string;
   reviewed_at: string | null;
   released_at: string | null;
-  verified_chunks: number;
 }
 export async function retentionAction(
   action: string,
@@ -57,11 +56,7 @@ export async function listRetentionCases(data: Record<string, string>): Promise<
           'review_at',
           'created_at',
         ].every((key) => typeof r[key] === 'string') &&
-        ['reviewed_at', 'released_at'].every(
-          (key) => r[key] === null || typeof r[key] === 'string',
-        ) &&
-        Number.isSafeInteger(r.verified_chunks) &&
-        Number(r.verified_chunks) >= 0
+        ['reviewed_at', 'released_at'].every((key) => r[key] === null || typeof r[key] === 'string')
       );
     })
   )

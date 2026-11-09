@@ -7,7 +7,6 @@ export const RETENTION_POLICY_KEYS = [
   'invitations',
   'notifications',
   'rate_limit_buckets',
-  'raw_location_history',
   'student_records',
   'trip_records',
   'user_sessions',
@@ -117,7 +116,6 @@ export async function verifyCompleteDisposalDryRun(client) {
       rows: [row],
     } = await client.query('select public.run_retention_lifecycle(true,500) as result');
     const keys = [
-      'gps',
       'student_events',
       'exceptions',
       'statuses',
@@ -125,7 +123,6 @@ export async function verifyCompleteDisposalDryRun(client) {
       'email',
       'push',
       'inbox',
-      'archive_manifests',
       'audience_failures',
       'push_devices',
       'cases',
@@ -147,7 +144,9 @@ export async function verifyCompleteDisposalDryRun(client) {
       result?.dryRun !== true ||
       result?.limit !== 500 ||
       !result.counts ||
-      Object.keys(result.counts).length !== keys.length ||
+      Object.keys(result.counts).length !== keys.length + 2 ||
+      result.counts.gps !== 0 ||
+      result.counts.archive_manifests !== 0 ||
       !keys.every(
         (k) =>
           Number.isSafeInteger(result.counts[k]) &&

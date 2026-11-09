@@ -22,7 +22,6 @@ const row = {
   minimum_until: '2026-01-01T00:00:00Z',
   review_at: '2026-01-02T00:00:00Z',
   released_at: null,
-  verified_chunks: 0,
 };
 beforeEach(() => {
   mocks.role = 'tenant_admin';
@@ -66,6 +65,7 @@ it('shows preservation and overdue review without releasing records', async () =
   );
   expect(container.textContent).toContain('Preserved');
   expect(container.textContent).toContain('Review due');
+  expect(container.textContent).not.toMatch(/GPS|archive/i);
   expect(mocks.action).not.toHaveBeenCalled();
 });
 it('requires explicit release confirmation and respects server results', async () => {

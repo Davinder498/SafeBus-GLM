@@ -96,7 +96,8 @@ export function RolePrivacyNotices() {
           records to operate your assigned bus service. The authorized driver phone supplies precise
           location, timestamps, accuracy and movement information during collection for an active
           trip. This can identify your work location, even though the bus is the tracked unit.
-          Authorized staff and linked guardians receive their permitted view.
+          Authorized staff and linked guardians receive their permitted live view. Continuous GPS
+          journey replay is not provided.
         </p>
         <p className="mt-3">
           Android collection can continue in the background or with the screen locked, with the

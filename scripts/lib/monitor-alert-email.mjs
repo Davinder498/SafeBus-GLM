@@ -41,7 +41,7 @@ const DETAILS = {
   },
   retention_lifecycle: {
     subject: 'SafeBus alert: records retention needs attention',
-    text: 'The scoped retention or evidence archive worker failed. Review the retention-lifecycle-scheduled function logs and the protected database release. Unverified preserved GPS must remain in the source database. This alert does not mean customer records were deleted. Retention logs: https://app.netlify.com/projects/bussafe/functions/retention-lifecycle-scheduled',
+    text: 'The scoped operational-record retention worker failed. Review the retention-lifecycle-scheduled function logs and the protected database release. Preserve existing legal holds. This alert does not mean customer records were deleted. Retention logs: https://app.netlify.com/projects/bussafe/functions/retention-lifecycle-scheduled',
   },
   public_health: {
     subject: 'SafeBus alert: public health needs attention',

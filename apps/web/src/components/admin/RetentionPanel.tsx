@@ -1,6 +1,5 @@
 import { RetentionAnnouncements } from './RetentionAnnouncements';
 import { Link } from 'react-router';
-import { RetentionArchives } from './RetentionArchives';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useAuth } from '@/contexts/useAuth';
 import { Card } from '@/components/ui/Card';
@@ -57,8 +56,6 @@ function RetentionControls({ tripId }: { tripId?: string }) {
         values.tripId = tripId || '';
         values.reason = String(data.get('reason'));
         values.reference = String(data.get('reference'));
-        if (data.get('windowStart')) values.windowStart = iso('windowStart');
-        if (data.get('windowEnd')) values.windowEnd = iso('windowEnd');
       } else if (editing) values.id = editing.id;
       await retentionAction(editing === 'new' ? 'create' : 'review', values);
       setEditing(null);
@@ -146,13 +143,6 @@ function RetentionControls({ tripId }: { tripId?: string }) {
               {formatAdminTripTimestamp(item.review_at)}
               {!item.released_at && Date.parse(item.review_at) <= Date.now() ? ' · Review due' : ''}
             </p>
-            <p className="text-sm">
-              Verified GPS archive chunks: {item.verified_chunks}. Review dates do not release
-              records.
-            </p>
-            {!item.released_at && item.verified_chunks > 0 && (
-              <RetentionArchives caseId={item.id} />
-            )}
             {!item.released_at && (
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -234,20 +224,6 @@ function RetentionControls({ tripId }: { tripId?: string }) {
                   <option value="other">Other</option>
                 </select>
               </label>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label>
-                  Window start (optional)
-                  <input type="datetime-local" name="windowStart" className={field} />
-                </label>
-                <label>
-                  Window end (optional)
-                  <input type="datetime-local" name="windowEnd" className={field} />
-                </label>
-              </div>
-              <p className="text-sm">
-                Leave the window blank to preserve the trip from its start to its recorded end, or
-                the current time for an ongoing trip.
-              </p>
             </>
           )}
           <label className="block">
@@ -291,8 +267,8 @@ function RetentionControls({ tripId }: { tripId?: string }) {
         <div className="space-y-3 rounded-lg border border-danger-200 p-4">
           <h3 className="font-bold">Release {release.reference}</h3>
           <p>
-            Records eligible under normal retention may be permanently deleted, including archived
-            GPS. Other preservation requests remain in effect.
+            Records eligible under normal retention may be permanently deleted. Other preservation
+            requests remain in effect.
           </p>
           <label className="flex items-start gap-3">
             <input

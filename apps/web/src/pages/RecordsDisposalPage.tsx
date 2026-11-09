@@ -202,10 +202,7 @@ function DisposalWorkspace() {
                 <dd>{status.reviewDue}</dd>
               </div>
             </dl>
-            <p className="text-sm">
-              {status.activeHolds} active record preservation requests. Trip GPS archives have their
-              own scoped preservation controls.
-            </p>
+            <p className="text-sm">{status.activeHolds} active record preservation requests.</p>
             {platform ? (
               <Button
                 variant="secondary"
@@ -215,7 +212,7 @@ function DisposalWorkspace() {
               </Button>
             ) : (
               <Link className="font-semibold text-navy-700 underline" to="/admin/trips">
-                View trips and GPS archives
+                View trip records
               </Link>
             )}
             {status.totals.length > 0 && (
@@ -358,7 +355,7 @@ function DisposalWorkspace() {
                 <p className="text-sm">
                   Use an internal reference without student names or incident details. Dates use
                   this device’s timezone. Decision use adds at least one calendar year; a review
-                  never releases preservation. Preserve GPS from the trip page.
+                  never releases preservation. Preserve trip records from the trip page.
                 </p>
                 <Button type="submit" loading={busy} disabled={!editing && !recordId}>
                   Save record preservation

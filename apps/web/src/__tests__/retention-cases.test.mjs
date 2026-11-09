@@ -51,10 +51,11 @@ it('denial and unavailable migrations remain explicit; provider details are neve
     .mockResolvedValueOnce({ error: { code: 'PGRST202' } });
   expect((await handler(event())).statusCode).toBe(503);
 });
-it('cannot download an unlisted or other authority archive with service privileges', async () => {
+it('rejects retired archive requests before any privileged access', async () => {
+  mocks.clients.mockClear();
   const response = await handler(
     event('archive_read', { id: 'other-case', chunkId: 'other-chunk' }),
   );
-  expect(response.statusCode).toBe(404);
-  expect(mocks.clients.mock.results.at(-1).value.admin.storage.from).not.toHaveBeenCalled();
+  expect(response.statusCode).toBe(400);
+  expect(mocks.clients).not.toHaveBeenCalled();
 });
