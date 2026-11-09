@@ -29,13 +29,16 @@ test('customer order form requires approved interval, trial, first charge and co
   assert.doesNotMatch(s, /\[ANNUAL_PER_BUS_CAD\]/);
 });
 
-test('owner decisions require actual tax registration and keep price/coverage open', async () => {
+test('owner decisions record reported registration while leaving prices and insurance open', async () => {
   const s = await read('owner-decisions.md');
-  assert.match(s, /Stripe Tax currently shows active settings/);
-  assert.match(s, /not CRA registration evidence/);
-  assert.match(s, /CRA legal registration/);
+  // The November 8 statement supersedes the historical November 7 declaration.
+  // This is not a CRA-account audit or approval to change Stripe tax collection.
+  assert.match(s, /GST\/HST-registered effective 2026-11-08/);
+  assert.match(s, /CRA confirmation and account identifiers must be stored privately/i);
+  assert.match(s, /2026-10-23T14:19:38Z/);
   assert.match(s, /14-day trial default/);
-  assert.match(s, /approve each commercial price/i);
+  assert.match(s, /Final monthly and annual per-bus amounts are \*\*undecided\*\*/);
+  assert.match(s, /\*\*GST\/HST-inclusive prices\*\*/);
   assert.match(s, /Insurance/);
   assert.match(s, /\[GENERAL_LIABILITY_CAP\]/);
 });
