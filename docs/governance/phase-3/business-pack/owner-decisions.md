@@ -39,6 +39,7 @@ signing authority, insurance and backup coverage require separate verification.
 | Bus-count changes/proration                                      | Written change order before billing change                                                    | Define effective date, approved credit/debit method and evidence of customer authorization                                                |
 | Non-payment                                                      | Written escalation; no automated operational suspension                                       | Approved suspension notice/process; billing state never automatically disables a tenant                                                   |
 | Provider liability caps | **Owner-approved proposed initial-pilot position 2026-11-09:** general aggregate greater of **CA$25,000 or 12-Month Fees**; privacy/security aggregate greater of **CA$100,000 or twice 12-Month Fees**; non-cumulative and agreement-wide, with fraud, wilful wrongdoing and legally non-excludable liabilities preserved | Customer-specific authorized acceptance, indemnities, third-party injury/IP claim treatment, financial exposure and procurement review pending; no executed contract or insurance implied |
+| Third-party indemnification | **Owner-approved limited fault-based Provider policy 2026-11-09:** covered Provider-caused privacy/security breach claims under privacy cap and unmodified authorized-use SafeBus software IP infringement claims under general cap; reasonable defence costs within caps, no stacking; no indemnity for independent district wrongdoing | **Business position CLOSED;** customer procurement, defence-cost exceptions, personal injury/property damage and any district-specific rider remain subject to signed acceptance; no insurance is represented |
 | Insurance | **Owner explicitly deferred quotations and purchase**; no verified active insurance or coverage representation | Examine each authority's tender/contract terms and actual coverage needs before signing; no quote, policy, certificate or amount may be asserted |
 | Support hours, timezone and holidays | **Owner-approved 2026-11-09:** ordinary staffed support Monday–Friday 8:00 a.m.–5:00 p.m. America/Edmonton **excluding Alberta's nine general holidays**; no guaranteed after-hours human response | Verify staffed access, monitored support inbox and independently required security/privacy escalation before pilot; holiday calendar follows official Alberta list, with no additional optional holiday closures |
 | Availability, latency, GPS freshness and notification targets | **Owner-approved initial-pilot SLA:** no guaranteed uptime, request latency, GPS/ETA freshness, notification delivery, response/repair time or recovery objective; monitoring is not 24/7 human support | Preserve accurate outage/stale-location disclosures; future guarantees only after measured evidence, staffing and accepted amendment |
@@ -231,10 +232,16 @@ incident or subscription cycle.
 misconduct or liability that applicable law forbids limiting; preserve
 mandatory privacy/security reporting, protection, data return/deletion and
 regulatory cooperation, statutory and express breach remedies. Convenience
-cancellation terms do not override breach remedies. IP, bodily injury,
-third-party indemnity and defence arrangements require deliberate,
-customer-specific negotiation; do not imply unlimited indemnity or new
-Customer liability cap. The proposed cap is not insurance or cash reserved.
+cancellation terms do not override breach remedies. The owner
+subsequently approved **limited, fault-based Provider indemnification for
+covered Provider-caused privacy/security claims (privacy cap) and unmodified
+SafeBus-software IP claims under authorized use (general cap)**, with reasonable
+defence costs **inside** the applicable cap and no cap stacking. No indemnity
+for a district's independent negligence, unlawful instructions, unauthorized
+software changes or other independent wrongdoing. Broader injury/property
+damage, third-party terms and public-body procurement exceptions still require
+customer-specific written negotiation; no automatic reciprocal Customer
+indemnity. The proposed caps are not insurance or reserved cash.
 
 **Insurance quotations are deferred by owner. No active CGL, technology E&O,
 cyber/privacy policy, insurer, certificate, or coverage is asserted.**
@@ -243,3 +250,30 @@ contract, procurement acceptance, legal enforceability assessment, insurance
 approval or permission to activate any real school-authority data. Confirm
 actual school-authority procurement requirements, suitable risk financing,
 contract carve-outs and authoritative customer acceptance before execution.
+
+
+## Final limited third-party indemnification decision — November 9, 2026
+
+The owner approved a **limited, fault-based** indemnity proposal for the initial
+pilot. SafeBus will defend and indemnify the school authority only against covered
+third-party claims attributable to its own contractual privacy/security breach
+(**privacy/security cap: greater of CA$100,000 or twice 12-Month Fees**) or an
+alleged infringement by **unmodified SafeBus software provided by SafeBus and
+used as authorized** (**general cap: greater of CA$25,000 or 12-Month Fees**).
+Reasonable documented defence expenses, approved settlements and damages are
+**inside** the applicable non-stacking aggregate limit, not additional to it.
+
+SafeBus does **not indemnify independent school-authority negligence, unlawful
+instructions, unauthorized modifications/combinations, misuse or independent
+wrongdoing**. Covered claims require reasonably prompt notice (with material
+prejudice protection), controlled defence, reasonable cooperation and mutual
+written consent before a settlement imposes admissions or obligations on the
+other party. No broader or unlimited third-party indemnity, bodily-injury or
+property-damage guarantee, or reciprocal district indemnity is implied.
+Fraud, wilful misconduct, mandatory legal liability, DPA/security duties and
+applicable breach remedies remain protected in MSA §§8.1–8.5.
+
+**Insurance quotations and purchase remain deferred; no policy or coverage
+exists as verified evidence.** This closes the owner's **business policy**
+only; no district has accepted the draft, no insurer funds the cap, and
+customer procurement/risk, legal review and launch permission remain open.
