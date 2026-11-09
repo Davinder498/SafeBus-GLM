@@ -28,7 +28,7 @@ while its necessary inputs or evidence are missing.
 | [Order form](order-form.md)                                        | Customer-specific scope, dates, annual per-bus CAD price and signatures            |
 | [Data Processing Agreement](data-processing-agreement.md)          | Instructions, permitted data, roles, suppliers and privacy cooperation             |
 | [Security Schedule](security-schedule.md)                          | Proposed safeguards and the evidence required before operation                     |
-| [Service-Level Agreement](service-level-agreement.md)              | Measurable service/support terms with unapproved targets left open                 |
+| [Service-Level Agreement](service-level-agreement.md)              | Owner-approved initial-pilot staffed hours, nine holiday exclusions and no unsupported uptime/response/credit guarantees; customer execution pending |
 | [Acceptable-Use Terms](acceptable-use-terms.md)                    | Rules for administrators, drivers and guardians                                    |
 | [Data Return and Destruction Schedule](data-return-destruction.md) | Exit, export, deletion, backups and legal holds                                    |
 | [Supplier disclosure draft](supplier-disclosure.md)                | Supplier purposes, information involved and location decisions still pending       |
@@ -105,3 +105,23 @@ The latest [owner decision register](owner-decisions.md) supersedes historical G
 ## November 9 finalized standard subscription prices
 
 The owner approved **CA$1.99 per active bus monthly** and **CA$20.29 per active bus annually**, **including applicable GST/HST**. These rates supersede earlier temporary-price wording; the two live existing Stripe prices were converted in place to `tax_behavior=inclusive` and independently retrieved after updating. The signed school-authority Order Form must still select the interval, quantity, collection method, trial, effective dates and any documented exemptions. The entire eight-document district contract package is still DRAFT and unpublished; rate approval does not approve insurance, liability caps, supplier disclosures, remaining terms or a pilot. See [owner decisions](owner-decisions.md).
+
+
+## November 9 — approved pilot support calendar and SLA boundary
+
+For the initial pilot, ordinary SafeBus staffed support runs **Monday–Friday,
+8:00 a.m.–5:00 p.m. America/Edmonton**, excluding Alberta's **nine general
+holidays** (official list: https://www.alberta.ca/alberta-general-holidays).
+No 24/7 staffed or guaranteed after-hours response, numerical uptime/latency/GPS
+or notification promise, fixed repair time, or automatic monthly/annual SLA
+credit is offered. This owner-approved business choice is reflected in the
+[MSA](master-services-agreement.md), [Order Form](order-form.md),
+[SLA](service-level-agreement.md), [owner register](owner-decisions.md) and
+[sign-off pack](pilot-contract-signoff-2026-11-07.md).
+
+The November 8 holiday-coverage and price statements elsewhere in this index
+are historical and superseded by the November 9 decisions. The eight-document
+contract pack remains a **draft and unpublished**. Privacy/security incident
+notice and cooperation requirements still apply independently of staffed
+support holidays/hours; a credible escalation route and actual staffed-window
+coverage must be evidenced before customer activation.
