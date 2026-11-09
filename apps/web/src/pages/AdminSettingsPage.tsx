@@ -82,7 +82,6 @@ export function AdminSettingsPage() {
         <AdminSettingsNav role={profile?.role} />
         <AppearanceSettingsCard />
         <AccountSecurityLinkCard />
-        <RetentionPanel />
         {profile?.role === 'tenant_admin' ? (
           <Card className="space-y-4 p-5" data-testid="tenant-data-management">
             <div>
@@ -125,6 +124,7 @@ export function AdminSettingsPage() {
             Records disposal and preservation
           </Link>
         )>
+        <RetentionPanel />
 
         {loading && (
           <DataState
