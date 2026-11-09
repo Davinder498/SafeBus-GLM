@@ -31,14 +31,18 @@ test('customer order form requires approved interval, trial, first charge and co
   assert.doesNotMatch(s, /\[ANNUAL_PER_BUS_CAD\]/);
 });
 
-test('owner decisions record reported registration while leaving prices and insurance open', async () => {
+test('owner decisions record approved trial, recurring contract and tax registration evidence without authorizing launch', async () => {
   const s = await read('owner-decisions.md');
   // The November 8 statement supersedes the historical November 7 declaration.
   // This is not a CRA-account audit or approval to change Stripe tax collection.
   assert.match(s, /GST\/HST-registered effective 2026-11-08/);
   assert.match(s, /CRA confirmation and account identifiers must be stored privately/i);
   assert.match(s, /2026-10-23T14:19:38Z/);
-  assert.match(s, /14-day trial default/);
+  assert.match(s, /\*\*one 14-day free trial per first-time school authority\*\*/);
+  assert.match(s, /month-to-month automatic monthly renewal/);
+  assert.match(s, /12-month automatic annual renewal/);
+  assert.match(s, /no early cancellation fee/i);
+  assert.match(s, /no partial refund/i);
   assert.match(s, /approved CA\$1\.99 per active bus per month/);
   assert.match(s, /CA\$20\.29 per active bus per year/);
   assert.match(s, /tax_behavior=inclusive/);
