@@ -193,7 +193,7 @@ test('subscription cancellation stays in SafeBus and requires confirmation', asy
   expect(requests.some((r) => r.action === 'cancel')).toBe(false);
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel renewal' }).click();
   await expect(card.getByRole('heading')).toHaveText('Plan cancellation scheduled');
-  await expect(page.getByTestId('subscription-summary').getByText('Access through')).toBeVisible();
+  await expect(page.getByTestId('subscription-summary').getByText('Current term ends')).toBeVisible();
   expect(requests.filter((r) => r.action === 'cancel')).toHaveLength(1);
   await card.getByRole('button', { name: 'Resume renewal' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Confirm', exact: true }).click();
