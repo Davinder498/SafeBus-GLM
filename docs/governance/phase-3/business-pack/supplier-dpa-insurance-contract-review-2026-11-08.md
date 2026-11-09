@@ -7,6 +7,13 @@
 
 This is a sourced business and publication-control review, not legal advice, actual insurance coverage, a supplier approval, a school-authority signature or permission to launch. It complements the existing [pilot sign-off pack](pilot-contract-signoff-2026-11-07.md), [owner decisions](owner-decisions.md), [DPA](data-processing-agreement.md) and [MSA](master-services-agreement.md). The public-source analysis below does **not** verify that an individual SafeBus account accepted the terms, that the exact processing regions apply to the account, or that a supplier meets every district requirement. Private contracts and account evidence stay outside Git.
 
+## Later verification addendum — November 8, 2026 (Alberta)
+
+The **A1 live flow inspection below is a dated pre-remediation snapshot**, not a statement that the earlier detailed FCM/email payloads still leave the current production system. Do not delete its historical count evidence or reclassify it as a post-release observation.
+
+- **FCM**: the separately approved generic provider-visible push fix was deployed as Supabase `push-notification-dispatcher` v7 under [protected run #42533721182](https://github.com/Davinder498/SafeBus-GLM/actions/runs/42533721182). Original detailed titles/bodies are no longer forwarded in the reviewed deployed shared module; device token/category/metadata still reach Google. Real-device and historic-message disposition remain unverified.
+- **Guardian pickup/drop-off emails**: owner-approved PR #414 uses generic external subject/body/HTML, preserving full details in the authorized in-app inbox. The [read-only Netlify production-source attestation #42543503884](https://github.com/Davinder498/SafeBus-GLM/actions/runs/42543503884) passed for published commit `6ae32d43665e2fdf51ee6321dbe9a2e62db8ca03`. This is **source ancestry**, not live synthetic Resend delivery proof; already-delivered messages are not retroactively sanitized. Other email types may still contain personal or transport details.
+- **Supplier/contract disposition**: Resend still processes the recipient, generic category text and delivery metadata in the United States; no actual supplier-party/processing-location approvals, customer authorization, insurance or district DPA/MSA publication follow from this code deployment. [Current supplier ledger](../supplier-approval-ledger-2026-11-06.json) remains pending. Physical and live-provider acceptance is deferred to the owner-selected consolidated final test phase.
 ## A0. Read-only SafeBus account and deployment observations — November 8, 2026
 
 These are **verified limited technical/account facts**, not proof of supplier DPA execution, business-account contracting terms, legal approval or comprehensive geographic processing assurance:
