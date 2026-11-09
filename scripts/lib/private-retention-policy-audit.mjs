@@ -1,4 +1,4 @@
-// Only the eight installed retention/disposal tables are intentionally
+// Only these reviewed tracking/retention/disposal tables are intentionally
 // private, RLS-enabled, and without policies. They are not client-facing RLS
 // tables; adding a permissive or empty policy merely to appease an audit is
 // not a security improvement. Every other missing session guard must fail.
@@ -7,8 +7,7 @@ export const REVIEWED_PRIVATE_RETENTION_TABLES = Object.freeze([
   'safebus_private.disposal_extensions',
   'safebus_private.disposal_holds',
   'safebus_private.disposal_runs',
-  'safebus_private.retention_archive_chunks',
-  'safebus_private.retention_archive_coverage',
+  'safebus_private.driver_tracking_state',
   'safebus_private.retention_cases',
   'safebus_private.retention_lifecycle_totals',
 ]);

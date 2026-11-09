@@ -13,7 +13,7 @@ begin
   where schemaname = 'public'
     and tablename in (
       'schools','students','guardians','student_guardians','buses','drivers','routes','route_stops',
-      'student_route_assignments','driver_trips','driver_trip_location_updates','driver_trip_current_locations',
+      'student_route_assignments','driver_trips','driver_trip_current_locations',
       'driver_route_assignments','bus_route_assignments','student_bus_assignments'
     )
     and (policyname ilike '%platform admin%' or qual ilike '%is_platform_super_admin%');

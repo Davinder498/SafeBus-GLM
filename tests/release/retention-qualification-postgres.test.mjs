@@ -64,10 +64,10 @@ test('protected retention acceptance exercises all policies and never persists i
     );
   };
   await t.test(
-    'all twelve execute as service role in dry-run mode with complete rollback',
+    'all current policies execute as service role in dry-run mode with complete rollback',
     async () => {
       const result = await verifyRetentionDryRuns(db, expected);
-      assert.equal(result.policies.length, 12);
+      assert.equal(result.policies.length, RETENTION_POLICY_KEYS.length);
       assert.ok(
         result.policies.every(
           (p) => p.status === 'completed' && p.dryRun && p.eligibleRows === '3',

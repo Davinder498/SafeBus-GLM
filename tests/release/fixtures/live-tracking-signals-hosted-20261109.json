@@ -1,0 +1,21 @@
+{
+  "readOnly": true,
+  "functions": [
+    {
+      "signature": "safebus_private.broadcast_route_tracking_invalidation(uuid,uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.broadcast_route_tracking_invalidation(p_tenant_id uuid, p_route_id uuid, p_reason text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\ndeclare\n  v_profile_id uuid;\nbegin\n  if p_tenant_id is null then\n    return;\n  end if;\n\n  perform safebus_private.send_tracking_invalidation(\n    'safebus:tenant:' || p_tenant_id::text,\n    p_reason\n  );\n\n  if p_route_id is null then\n    return;\n  end if;\n\n  for v_profile_id in\n    select distinct g.profile_id\n    from public.student_route_assignments sra\n    join public.students s\n      on s.id = sra.student_id\n     and s.tenant_id = sra.tenant_id\n     and s.status = 'active'\n    join public.student_guardians sg\n      on sg.student_id = s.id\n     and sg.tenant_id = s.tenant_id\n     and sg.status = 'active'\n    join public.guardians g\n      on g.id = sg.guardian_id\n     and g.tenant_id = sg.tenant_id\n     and g.status = 'active'\n    where sra.tenant_id = p_tenant_id\n      and sra.route_id = p_route_id\n      and sra.status = 'active'\n      and sra.effective_from <= ((now() AT TIME ZONE 'America/Edmonton')::date)\n      and (sra.effective_to is null or sra.effective_to >= ((now() AT TIME ZONE 'America/Edmonton')::date))\n  loop\n    perform safebus_private.send_guardian_tracking_invalidation(v_profile_id, p_reason);\n  end loop;\nend;\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.notify_tracking_location_change()",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.notify_tracking_location_change()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\nbegin\n  perform safebus_private.broadcast_route_tracking_invalidation(\n    new.tenant_id,\n    new.route_id,\n    'location'\n  );\n  return null;\nend;\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.send_guardian_tracking_invalidation(uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.send_guardian_tracking_invalidation(p_profile_id uuid, p_reason text)\n RETURNS void\n LANGUAGE sql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\n  select safebus_private.send_tracking_invalidation(\n    'safebus:guardian:' || p_profile_id::text,\n    p_reason\n  )\n  where p_profile_id is not null;\n$function$\n"
+    },
+    {
+      "signature": "safebus_private.send_tracking_invalidation(text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION safebus_private.send_tracking_invalidation(p_topic text, p_reason text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\nbegin\n  if p_topic is null or p_reason is null then\n    return;\n  end if;\n\n  perform realtime.send(\n    jsonb_build_object(\n      'reason', p_reason,\n      'occurred_at', statement_timestamp()\n    ),\n    'tracking_changed',\n    p_topic,\n    true\n  );\nend;\n$function$\n"
+    }
+  ]
+}

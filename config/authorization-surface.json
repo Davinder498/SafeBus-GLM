@@ -239,7 +239,6 @@
     "resolve_notification_email_payload(uuid)",
     "resolve_notification_email_recipient(uuid)",
     "resolve_push_notification_delivery(uuid,text)",
-    "retention_archive_work(text,jsonb)",
     "retry_guardian_notification_email(uuid,text,text,integer,integer)",
     "retry_notification_email(uuid,text,text,integer,integer)",
     "retry_push_notification_delivery(uuid,text,text,text,timestamp with time zone,integer)",

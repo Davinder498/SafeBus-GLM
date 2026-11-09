@@ -1,5 +1,3 @@
-import { archiveKeys, decryptArchive, ARCHIVE_BUCKET } from './retention-archive.mjs';
-import { createHash } from 'node:crypto';
 import { createServerClients, json } from './billing-shared.mjs';
 
 const ACTIONS = new Set([
@@ -9,14 +7,10 @@ const ACTIONS = new Set([
   'review',
   'release',
   'resolve_announcement',
-  'archives',
-  'archive_read',
 ]);
 const FIELDS = new Set([
   'id',
   'tripId',
-  'windowStart',
-  'windowEnd',
   'reason',
   'reference',
   'reviewAt',
@@ -25,7 +19,6 @@ const FIELDS = new Set([
   'confirm',
   'before',
   'beforeId',
-  'chunkId',
 ]);
 export async function handler(event) {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed.' });
@@ -51,7 +44,7 @@ export async function handler(event) {
   const auth = event.headers?.authorization || event.headers?.Authorization || '';
   if (!auth.startsWith('Bearer ')) return json(401, { error: 'Sign in required.' });
   try {
-    const { user, admin } = createServerClients(auth.slice(7));
+    const { user } = createServerClients(auth.slice(7));
     const identity = await user.auth.getUser();
     if (identity.error || !identity.data.user) return json(401, { error: 'Sign in required.' });
     const rate = await user.rpc('check_rate_limit', {
@@ -65,7 +58,7 @@ export async function handler(event) {
     // Uses the caller JWT, never the service client. Database enforces authority,
     // active session, privileged MFA and recent authentication for every mutation.
     const result = await user.rpc('manage_retention_case', {
-      p_action: body.action === 'archive_read' ? 'archives' : body.action,
+      p_action: body.action,
       p_data: body.data,
     });
     if (result.error) {
@@ -76,8 +69,7 @@ export async function handler(event) {
         });
       if (result.error.code === '55006')
         return json(503, {
-          error:
-            'Archive disposal is in progress. No preservation was created; refresh before retrying.',
+          error: 'Preservation is busy. No change was confirmed; refresh before retrying.',
         });
       if (result.error.code === '42501')
         return json(403, {
@@ -93,34 +85,6 @@ export async function handler(event) {
         error:
           'Records preservation is unavailable. No change was confirmed; refresh before retrying.',
       });
-    }
-    if (body.action === 'archive_read') {
-      const chunk = Array.isArray(result.data)
-        ? result.data.find((entry) => entry.id === body.data.chunkId)
-        : null;
-      if (!chunk || !/^[0-9a-f-]{36}\.bin$/.test(chunk.object_key))
-        return json(404, { error: 'Archive unavailable. Refresh the archive list.' });
-      const downloaded = await admin.storage.from(ARCHIVE_BUCKET).download(chunk.object_key);
-      if (downloaded.error || !downloaded.data || downloaded.data.size > 2_000_000)
-        return json(503, { error: 'Archive unavailable. Try again.' });
-      const bytes = Buffer.from(await downloaded.data.arrayBuffer());
-      if (createHash('sha256').update(bytes).digest('hex') !== chunk.ciphertext_sha256)
-        return json(503, { error: 'Archive verification failed. Contact support.' });
-      const decoded = decryptArchive(bytes, archiveKeys().keys);
-      const payload = JSON.parse(decoded.payload.toString());
-      if (
-        decoded.keyId !== chunk.key_id ||
-        payload.chunkId !== chunk.id ||
-        payload.caseId !== chunk.source_case_id
-      )
-        return json(503, { error: 'Archive verification failed. Contact support.' });
-      payload.caseId = body.data.id;
-      payload.samples = payload.samples.filter(
-        (sample) =>
-          Date.parse(sample.recorded_at) >= Date.parse(chunk.window_start) &&
-          Date.parse(sample.recorded_at) <= Date.parse(chunk.window_end),
-      );
-      return json(200, { result: payload });
     }
     return json(200, { result: result.data });
   } catch {

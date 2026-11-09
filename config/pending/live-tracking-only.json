@@ -1,0 +1,518 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "beforeCatalogDigest": "f7d3a1d2c520e9d5da4ef6eee6f86268294f2ca41d42ea38996a5f3657a623b6",
+  "migration": "supabase/migrations/pending/20261109214533_remove_gps_history.sql",
+  "migrationSha256": "604ddb0ae2d7914e1c761e8fe7f9fbc281e88ae42ad6ed9cc8f5c3f790cc9b50",
+  "requiresPlatformRecovery": true,
+  "maxRemovalRows": 100000,
+  "functions": [
+    {
+      "signature": "public.ingest_driver_location_event(text,text,uuid,bigint,timestamp with time zone,double precision,double precision,double precision,double precision,double precision,integer,text)"
+    },
+    {
+      "signature": "public.manage_retention_case(text,jsonb)"
+    },
+    {
+      "signature": "public.retention_archive_work(text,jsonb)"
+    },
+    {
+      "signature": "public.run_all_retention_deletions(boolean)"
+    },
+    {
+      "signature": "public.run_retention_lifecycle(boolean,integer)"
+    },
+    {
+      "signature": "safebus_private.disposal_allowed(text,jsonb)"
+    },
+    {
+      "signature": "safebus_private.disposal_relation(text)"
+    },
+    {
+      "signature": "safebus_private.retention_authority(boolean)"
+    },
+    {
+      "signature": "safebus_private.retention_source_guard()"
+    },
+    {
+      "signature": "safebus_private.run_retention_deletion(text,boolean)"
+    },
+    {
+      "signature": "public.update_bus_tracking_location(text,double precision,double precision,double precision,double precision,double precision)"
+    },
+    {
+      "signature": "public.update_driver_trip_location(uuid,double precision,double precision,double precision,double precision,double precision,text)"
+    },
+    {
+      "signature": "public.manage_disposal(text,jsonb)"
+    },
+    {
+      "signature": "safebus_private.expire_driver_tracking_positions()"
+    },
+    {
+      "signature": "safebus_private.guard_new_tenant_operations()"
+    }
+  ],
+  "before": {
+    "tables": [
+      {
+        "name": "public.driver_trip_location_updates",
+        "definition": {
+          "rls": true,
+          "anon": false,
+          "owner": "postgres",
+          "columns": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "required": true
+            },
+            {
+              "name": "tenant_id",
+              "type": "uuid",
+              "required": true
+            },
+            {
+              "name": "driver_trip_id",
+              "type": "uuid",
+              "required": true
+            },
+            {
+              "name": "driver_id",
+              "type": "uuid",
+              "required": true
+            },
+            {
+              "name": "bus_id",
+              "type": "uuid",
+              "required": true
+            },
+            {
+              "name": "route_id",
+              "type": "uuid",
+              "required": true
+            },
+            {
+              "name": "latitude",
+              "type": "double precision",
+              "required": true
+            },
+            {
+              "name": "longitude",
+              "type": "double precision",
+              "required": true
+            },
+            {
+              "name": "accuracy_m",
+              "type": "double precision",
+              "required": false
+            },
+            {
+              "name": "heading_deg",
+              "type": "double precision",
+              "required": false
+            },
+            {
+              "name": "speed_mps",
+              "type": "double precision",
+              "required": false
+            },
+            {
+              "name": "source",
+              "type": "text",
+              "required": true
+            },
+            {
+              "name": "recorded_at",
+              "type": "timestamp with time zone",
+              "required": true
+            },
+            {
+              "name": "created_at",
+              "type": "timestamp with time zone",
+              "required": true
+            },
+            {
+              "name": "tracking_event_id",
+              "type": "uuid",
+              "required": false
+            },
+            {
+              "name": "tracking_device_id",
+              "type": "uuid",
+              "required": false
+            },
+            {
+              "name": "device_sequence",
+              "type": "bigint",
+              "required": false
+            },
+            {
+              "name": "battery_percent",
+              "type": "smallint",
+              "required": false
+            },
+            {
+              "name": "connectivity",
+              "type": "text",
+              "required": false
+            }
+          ],
+          "service": true,
+          "authenticated": true
+        }
+      },
+      {
+        "name": "safebus_private.retention_archive_chunks",
+        "definition": {
+          "rls": true,
+          "anon": false,
+          "owner": "postgres",
+          "columns": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "required": true
+            },
+            {
+              "name": "case_id",
+              "type": "uuid",
+              "required": true
+            },
+            {
+              "name": "object_key",
+              "type": "text",
+              "required": true
+            },
+            {
+              "name": "gps_ids",
+              "type": "uuid[]",
+              "required": true
+            },
+            {
+              "name": "created_at",
+              "type": "timestamp with time zone",
+              "required": true
+            },
+            {
+              "name": "verified_at",
+              "type": "timestamp with time zone",
+              "required": false
+            },
+            {
+              "name": "deleting_at",
+              "type": "timestamp with time zone",
+              "required": false
+            },
+            {
+              "name": "removed_at",
+              "type": "timestamp with time zone",
+              "required": false
+            },
+            {
+              "name": "last_removed_check",
+              "type": "timestamp with time zone",
+              "required": false
+            },
+            {
+              "name": "lease_until",
+              "type": "timestamp with time zone",
+              "required": true
+            },
+            {
+              "name": "ciphertext_sha256",
+              "type": "text",
+              "required": false
+            },
+            {
+              "name": "key_id",
+              "type": "text",
+              "required": false
+            }
+          ],
+          "service": false,
+          "authenticated": false
+        }
+      },
+      {
+        "name": "safebus_private.retention_archive_coverage",
+        "definition": {
+          "rls": true,
+          "anon": false,
+          "owner": "postgres",
+          "columns": [
+            {
+              "name": "case_id",
+              "type": "uuid",
+              "required": true
+            },
+            {
+              "name": "gps_id",
+              "type": "uuid",
+              "required": true
+            },
+            {
+              "name": "chunk_id",
+              "type": "uuid",
+              "required": true
+            }
+          ],
+          "service": false,
+          "authenticated": false
+        }
+      },
+      {
+        "name": "safebus_private.driver_tracking_state",
+        "definition": null
+      }
+    ],
+    "expiryJob": null,
+    "functions": [
+      {
+        "acl": ["authenticated=X/postgres", "postgres=X/postgres", "service_role=X/postgres"],
+        "md5": "c2f8f6b1d08b713a684f4aaacd46b12c",
+        "owner": "postgres",
+        "signature": "public.ingest_driver_location_event(text,text,uuid,bigint,timestamp with time zone,double precision,double precision,double precision,double precision,double precision,integer,text)"
+      },
+      {
+        "acl": ["authenticated=X/postgres", "postgres=X/postgres"],
+        "md5": "1dcb26152c4d9c260c29fc82cd5daacd",
+        "owner": "postgres",
+        "signature": "public.manage_retention_case(text,jsonb)"
+      },
+      {
+        "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+        "md5": "6fc64a7e4098fb1cf63ac67f5960a99b",
+        "owner": "postgres",
+        "signature": "public.retention_archive_work(text,jsonb)"
+      },
+      {
+        "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+        "md5": "e26a4ace8e91669ea0fc0fd86c6f7c9e",
+        "owner": "postgres",
+        "signature": "public.run_all_retention_deletions(boolean)"
+      },
+      {
+        "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+        "md5": "58f9951d70f648cb808d12b8e80fabb5",
+        "owner": "postgres",
+        "signature": "public.run_retention_lifecycle(boolean,integer)"
+      },
+      {
+        "acl": ["postgres=X/postgres"],
+        "md5": "3c754bcaaffe7699265e3ef39e6f14cd",
+        "owner": "postgres",
+        "signature": "safebus_private.disposal_allowed(text,jsonb)"
+      },
+      {
+        "acl": ["postgres=X/postgres"],
+        "md5": "6405433dfb53a2d48acc1f68632d331d",
+        "owner": "postgres",
+        "signature": "safebus_private.disposal_relation(text)"
+      },
+      {
+        "acl": ["postgres=X/postgres"],
+        "md5": "a62f16539f001f732918b01666d3d26b",
+        "owner": "postgres",
+        "signature": "safebus_private.retention_authority(boolean)"
+      },
+      {
+        "acl": ["postgres=X/postgres"],
+        "md5": "399d85d692e8b282a68e100bc4b8b730",
+        "owner": "postgres",
+        "signature": "safebus_private.retention_source_guard()"
+      },
+      {
+        "acl": ["authenticated=X/postgres", "postgres=X/postgres", "service_role=X/postgres"],
+        "md5": "e58413d6721792746d4133c8067d1729",
+        "owner": "postgres",
+        "signature": "safebus_private.run_retention_deletion(text,boolean)"
+      },
+      {
+        "acl": ["authenticated=X/postgres", "postgres=X/postgres", "service_role=X/postgres"],
+        "md5": "c3c22b770373e9381191df3946162ca1",
+        "owner": "postgres",
+        "signature": "public.update_bus_tracking_location(text,double precision,double precision,double precision,double precision,double precision)"
+      },
+      {
+        "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+        "md5": "586c968b774601f6499344e0ba606d09",
+        "owner": "postgres",
+        "signature": "public.update_driver_trip_location(uuid,double precision,double precision,double precision,double precision,double precision,text)"
+      },
+      {
+        "acl": ["authenticated=X/postgres", "postgres=X/postgres"],
+        "md5": "40783fc402d6eba281211effdbe66bab",
+        "owner": "postgres",
+        "signature": "public.manage_disposal(text,jsonb)"
+      },
+      {
+        "acl": [],
+        "md5": null,
+        "owner": null,
+        "signature": "safebus_private.expire_driver_tracking_positions()"
+      },
+      {
+        "signature": "safebus_private.guard_new_tenant_operations()",
+        "md5": "3e87d289b46252346347571ec381fe17",
+        "owner": "postgres",
+        "acl": ["postgres=X/postgres"]
+      }
+    ],
+    "retiredPolicyActive": true
+  },
+  "after": {
+    "functions": [
+      {
+        "signature": "public.ingest_driver_location_event(text,text,uuid,bigint,timestamp with time zone,double precision,double precision,double precision,double precision,double precision,integer,text)",
+        "md5": "a567e385b73bf59ef71a9fc8d47597ad",
+        "owner": "postgres",
+        "acl": ["authenticated=X/postgres", "postgres=X/postgres", "service_role=X/postgres"]
+      },
+      {
+        "signature": "public.manage_retention_case(text,jsonb)",
+        "md5": "e6bd41bda072e538bbed3d67cee740f3",
+        "owner": "postgres",
+        "acl": ["authenticated=X/postgres", "postgres=X/postgres"]
+      },
+      {
+        "signature": "public.retention_archive_work(text,jsonb)",
+        "md5": null,
+        "owner": null,
+        "acl": []
+      },
+      {
+        "signature": "public.run_all_retention_deletions(boolean)",
+        "md5": "422eefef1ba223bbb538f09ee92aaa2e",
+        "owner": "postgres",
+        "acl": ["postgres=X/postgres", "service_role=X/postgres"]
+      },
+      {
+        "signature": "public.run_retention_lifecycle(boolean,integer)",
+        "md5": "8583fbdbc6255dae69f5e9639b9bd598",
+        "owner": "postgres",
+        "acl": ["postgres=X/postgres", "service_role=X/postgres"]
+      },
+      {
+        "signature": "safebus_private.disposal_allowed(text,jsonb)",
+        "md5": "29e52d1b347d3c37707ebe0bc13cc992",
+        "owner": "postgres",
+        "acl": ["postgres=X/postgres"]
+      },
+      {
+        "signature": "safebus_private.disposal_relation(text)",
+        "md5": "1fe3f7e9ecd7c2a7850eec79a7717b18",
+        "owner": "postgres",
+        "acl": ["postgres=X/postgres"]
+      },
+      {
+        "signature": "safebus_private.retention_authority(boolean)",
+        "md5": "a62f16539f001f732918b01666d3d26b",
+        "owner": "postgres",
+        "acl": ["postgres=X/postgres"]
+      },
+      {
+        "signature": "safebus_private.retention_source_guard()",
+        "md5": "6b7df8f70299d4d685d9a3324f9932c9",
+        "owner": "postgres",
+        "acl": ["postgres=X/postgres"]
+      },
+      {
+        "signature": "safebus_private.run_retention_deletion(text,boolean)",
+        "md5": "44522f3fa49a9e61720c8de4756f7189",
+        "owner": "postgres",
+        "acl": ["authenticated=X/postgres", "postgres=X/postgres", "service_role=X/postgres"]
+      },
+      {
+        "signature": "public.update_bus_tracking_location(text,double precision,double precision,double precision,double precision,double precision)",
+        "md5": "0ab598db0eb1fa6baf095202eb35512e",
+        "owner": "postgres",
+        "acl": ["authenticated=X/postgres", "postgres=X/postgres", "service_role=X/postgres"]
+      },
+      {
+        "signature": "public.update_driver_trip_location(uuid,double precision,double precision,double precision,double precision,double precision,text)",
+        "md5": "586c968b774601f6499344e0ba606d09",
+        "owner": "postgres",
+        "acl": ["postgres=X/postgres", "service_role=X/postgres"]
+      },
+      {
+        "signature": "public.manage_disposal(text,jsonb)",
+        "md5": "3633162b26b01423e1259c95718db5ee",
+        "owner": "postgres",
+        "acl": ["authenticated=X/postgres", "postgres=X/postgres"]
+      },
+      {
+        "signature": "safebus_private.expire_driver_tracking_positions()",
+        "md5": "0caa75dd6a07a784093f6331a2f8efb9",
+        "owner": "postgres",
+        "acl": ["postgres=X/postgres"]
+      },
+      {
+        "signature": "safebus_private.guard_new_tenant_operations()",
+        "md5": "d99fdc787be87ba05149a759ffcfed30",
+        "owner": "postgres",
+        "acl": ["postgres=X/postgres"]
+      }
+    ],
+    "tables": [
+      {
+        "name": "public.driver_trip_location_updates",
+        "definition": null
+      },
+      {
+        "name": "safebus_private.retention_archive_chunks",
+        "definition": null
+      },
+      {
+        "name": "safebus_private.retention_archive_coverage",
+        "definition": null
+      },
+      {
+        "name": "safebus_private.driver_tracking_state",
+        "definition": {
+          "rls": true,
+          "owner": "postgres",
+          "anon": false,
+          "authenticated": false,
+          "service": false,
+          "columns": [
+            {
+              "name": "device_id",
+              "type": "uuid",
+              "required": true
+            },
+            {
+              "name": "last_sequence",
+              "type": "bigint",
+              "required": true
+            },
+            {
+              "name": "last_event_id",
+              "type": "uuid",
+              "required": false
+            },
+            {
+              "name": "last_trip_id",
+              "type": "uuid",
+              "required": false
+            },
+            {
+              "name": "recorded_at",
+              "type": "timestamp with time zone",
+              "required": false
+            },
+            {
+              "name": "payload_hash",
+              "type": "bytea",
+              "required": false
+            }
+          ]
+        }
+      }
+    ],
+    "retiredPolicyActive": false,
+    "expiryJob": {
+      "schedule": "* * * * *",
+      "command": "SELECT safebus_private.expire_driver_tracking_positions()"
+    }
+  }
+}

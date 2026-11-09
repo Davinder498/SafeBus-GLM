@@ -29,8 +29,7 @@ begin
       )
   ) then raise exception 'FAIL: missing restrictive session policy'; end if;
   if (select count(*) from pg_policy p
-      where p.polrelid in ('public.driver_trip_current_locations'::regclass,
-                          'public.driver_trip_location_updates'::regclass)
+      where p.polrelid in ('public.driver_trip_current_locations'::regclass)
         and p.polname = 'safebus_school_location_scope'
         and not p.polpermissive and p.polcmd = 'r') <> 2 then
     raise exception 'FAIL: school location restrictions missing';

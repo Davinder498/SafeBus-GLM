@@ -122,14 +122,15 @@ export function PrivacyPolicyPage() {
                 invitation or password-recovery links, business inquiries, and any enabled event
                 notices. Pickup/drop-off email subjects and bodies use generic event text without
                 student names, bus numbers, stops or recorded event times. Full details remain in
-                the authorized in-app inbox. Other email categories may include necessary account
-                or operational information. Previously delivered emails are not retroactively
-                changed. Raw bus location, notifications and operational records are retained for
-                their authorized purposes under the applicable business or issuing
-                organization&apos;s retention schedule. Retention depends on the record and its
-                purpose, including applicable legal requirements and scoped legal holds. Contact the
-                responsible privacy office for the periods that apply to your records. Closing an
-                account does not necessarily erase transportation, financial or security records
+                the authorized in-app inbox. Other email categories may include necessary account or
+                operational information. Previously delivered emails are not retroactively changed.
+                SafeBus uses the latest bus position for live visibility. Continuous GPS journey
+                replay is not provided. Temporary location data, notifications and operational
+                records are retained for their authorized purposes under the applicable business or
+                issuing organization&apos;s retention schedule. Retention depends on the record and
+                its purpose, including applicable legal requirements and scoped legal holds. Contact
+                the responsible privacy office for the periods that apply to your records. Closing
+                an account does not necessarily erase transportation, financial or security records
                 that must still be retained.
               </p>
             </section>

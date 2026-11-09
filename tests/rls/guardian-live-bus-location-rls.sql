@@ -17,12 +17,6 @@ delete from public.driver_trip_current_locations where driver_trip_id in (
   '11a20000-0000-0000-0000-000000000004'
 );
 
-delete from public.driver_trip_location_updates where driver_trip_id in (
-  '11a20000-0000-0000-0000-000000000001',
-  '11a20000-0000-0000-0000-000000000002',
-  '11a20000-0000-0000-0000-000000000003',
-  '11a20000-0000-0000-0000-000000000004'
-);
 
 delete from public.driver_trips where id in (
   '11a20000-0000-0000-0000-000000000001',
@@ -736,12 +730,6 @@ delete from public.driver_trip_current_locations where driver_trip_id in (
   '11a20000-0000-0000-0000-000000000004'
 );
 
-delete from public.driver_trip_location_updates where driver_trip_id in (
-  '11a20000-0000-0000-0000-000000000001',
-  '11a20000-0000-0000-0000-000000000002',
-  '11a20000-0000-0000-0000-000000000003',
-  '11a20000-0000-0000-0000-000000000004'
-);
 
 delete from public.driver_trips where id in (
   '11a20000-0000-0000-0000-000000000001',

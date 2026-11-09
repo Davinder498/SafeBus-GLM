@@ -24,7 +24,7 @@ const TABLES = [
   'student_qr_credentials','bus_qr_credentials','bus_admin_details',
   'bus_route_assignments','bus_run_dispatches','bus_tracking_sessions',
   'driver_route_assignments','driver_tracking_devices','driver_trips',
-  'driver_trip_location_updates','driver_trip_current_locations',
+  'driver_trip_current_locations',
   'student_trip_events','trip_exceptions','trip_operational_statuses',
   'pre_trip_confirmations','operational_notes','bulk_import_batches',
   'bulk_import_staging','guardian_notification_outbox',

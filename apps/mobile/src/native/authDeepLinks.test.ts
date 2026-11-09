@@ -74,11 +74,16 @@ it('deduplicates launch and foreground callbacks while the exchange is pending',
   mocks.exchange.mockReturnValue(pending.promise);
   mocks.launch.mockResolvedValue({ url });
   const starting = install();
-  await vi.waitFor(() => expect(mocks.exchange).toHaveBeenCalledOnce());
-  mocks.listener!({ url });
-  mocks.listener!({ url });
-  pending.resolve({ error: null });
-  await starting;
+  try {
+    // install() includes a cold dynamic import; full Windows suites can exceed
+    // waitFor's one-second default before the mocked exchange even starts.
+    await vi.waitFor(() => expect(mocks.exchange).toHaveBeenCalledOnce(), { timeout: 4000 });
+    mocks.listener!({ url });
+    mocks.listener!({ url });
+  } finally {
+    pending.resolve({ error: null });
+    await starting;
+  }
   expect(mocks.exchange).toHaveBeenCalledOnce();
   expect(mocks.navigate).toHaveBeenCalledOnce();
 });

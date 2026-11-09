@@ -23,6 +23,24 @@ class RetentionPolicyFailure extends Error {
   }
 }
 function policyResults(data, dryRun) {
+  // A compatible client release precedes the database removal. Accept the
+  // predecessor's aggregate-only retired policy result during that transition.
+  if (Array.isArray(data)) {
+    const retired = data.filter((row) => row?.policy_key === 'raw_location_history');
+    if (
+      retired.length > 1 ||
+      retired.some(
+        (row) =>
+          row.dry_run !== true ||
+          dryRun !== true ||
+          row.status !== 'completed' ||
+          row.error_code !== null,
+      )
+    )
+      throw new Error('RETENTION_POLICY_RESULT_INVALID');
+    for (const row of retired) count(row.affected_rows);
+    data = data.filter((row) => row?.policy_key !== 'raw_location_history');
+  }
   if (!Array.isArray(data) || data.length !== RETENTION_POLICY_KEYS.length)
     throw new Error('RETENTION_POLICY_RESULT_INVALID');
   const seen = new Set();

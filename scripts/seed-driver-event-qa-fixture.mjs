@@ -163,7 +163,6 @@ async function cleanupFixture(client, driverAuthUserId) {
     `
       delete from public.student_trip_events where driver_trip_id = $1;
       delete from public.driver_trip_current_locations where driver_trip_id = $1;
-      delete from public.driver_trip_location_updates where driver_trip_id = $1;
       delete from public.driver_trips where id = $1;
       delete from public.driver_route_assignments where id = $2;
       delete from public.student_route_assignments where id in ($3, $4);

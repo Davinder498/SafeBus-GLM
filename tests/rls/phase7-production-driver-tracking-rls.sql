@@ -19,13 +19,10 @@ begin
     or has_table_privilege('authenticated', 'public.driver_tracking_devices', 'DELETE') then
     raise exception 'PHASE7 FAIL: authenticated has direct device-table access';
   end if;
-  if not exists (
-    select 1 from pg_trigger
-    where tgrelid = 'public.driver_trip_location_updates'::regclass
-      and tgname = 'enforce_native_ingestion_for_bound_session'
-      and not tgisinternal
-  ) then
-    raise exception 'PHASE7 FAIL: device-bound legacy-ingestion guard is missing';
+  if to_regclass('public.driver_trip_location_updates') is not null
+    or not exists(select 1 from pg_class where oid='safebus_private.driver_tracking_state'::regclass and relrowsecurity)
+    or not exists(select 1 from pg_proc where oid='public.update_bus_tracking_location(text,double precision,double precision,double precision,double precision,double precision)'::regprocedure and prosrc like '%must use native ingestion%') then
+    raise exception 'PHASE7 FAIL: live-only native-ingestion boundary is missing';
   end if;
 
   foreach v_signature in array array[

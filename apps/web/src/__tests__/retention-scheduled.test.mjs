@@ -38,7 +38,7 @@ describe('scheduled retention acceptance', () => {
   it('defaults both calls to dry-run and accepts the complete aggregate result', async () => {
     const response = await runRetention();
     expect(response.statusCode).toBe(200);
-    expect(JSON.parse(response.body).results).toHaveLength(13);
+    expect(JSON.parse(response.body).results).toHaveLength(RETENTION_POLICY_KEYS.length + 1);
     expect(rpc.mock.calls.map((c) => c[1])).toEqual([{ p_dry_run: true }, { p_dry_run: true }]);
   });
   it.each([
