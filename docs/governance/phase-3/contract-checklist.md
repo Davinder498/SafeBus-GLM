@@ -18,7 +18,7 @@ Git. A drafted document is not an approved, signed or effective agreement.
 | Service-Level Agreement     | [SLA](business-pack/service-level-agreement.md)           | Yes; initial-pilot support/holiday policy approved; no numerical performance guarantees or automatic credits | Customer execution/operational evidence pending |
 | Acceptable-Use Terms        | [AUP](business-pack/acceptable-use-terms.md)              | Yes; effective/acceptance process pending | Pending                      |
 | Business Privacy Policy     | [Policy](business-pack/privacy-policy.md)                 | Yes; contacts/countries/periods pending   | Pending                      |
-| Data Return and Destruction | [Exit schedule](business-pack/data-return-destruction.md) | Yes; capability/windows pending           | Pending                      |
+| Data Management, Return and Destruction | [Exit schedule](business-pack/data-return-destruction.md) | Yes; owner-approved district-controlled approach, no automatic 30/60-day promise | Self-service limits, retention/holds, supplier evidence and customer acceptance pending |
 | Supplier disclosure         | [Supplier draft](business-pack/supplier-disclosure.md)    | Yes; actual countries/contracts pending   | Pending                      |
 
 Start with the [owner decisions](business-pack/owner-decisions.md) and
@@ -69,3 +69,14 @@ authority independent wrongdoing, no separate reciprocal Customer indemnity,
 and no waiver of mandatory legal/DPA obligations is approved. No insurance
 quote or policy is in place; customer procurement and final signed terms
 remain pending. See MSA §§8.3–8.5 and the Order Form.
+
+
+## November 9 — district data control (not a delete-all authorization)
+
+The owner approved self-service management through existing directory CSV
+exports and authorized individual delete/deactivate/archive/preservation
+controls, with a tenant-admin support request for additional return or account
+closure. Do **not** present unverified district-wide export or bulk deletion
+as available or imply a 30-day data-return and 60-day deletion mandate.
+Verify statutory retention, records holds, dependency-safe deletion, provider
+backups and any negotiated customer-specific timeline before execution.
