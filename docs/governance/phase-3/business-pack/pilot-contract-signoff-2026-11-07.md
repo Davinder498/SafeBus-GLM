@@ -28,7 +28,7 @@ Alberta's POPA applies to school boards and requires public bodies to assess the
 | Tax | Owner reports GST/HST registration effective 2026-11-08; Stripe Canadian Tax registration start 2026-10-23 needs reconciliation; current subscription tax enabled but past paid invoice tax disabled | Confirm CRA notice privately, region-specific tax, price behaviour, invoices and configuration; do not mutate live values |
 | Payment alternatives | Card-funded Checkout is the default. Invoice/PO requires a district request, distinct platform-super-admin approval and district activation, with 14/30/45/60 invoice days selected per request | Owner policy approved; verify each public-authority approval, due date, customer order and first invoice delivery; no blanket net-30 commitment |
 | Service/support | **Owner-approved 2026-11-09:** Monday–Friday, 08:00–17:00 America/Edmonton, excluding Alberta's nine general holidays; no after-hours staffed response guarantee | Business calendar CLOSED; operational staffed coverage, backup and independent DPA/security incident escalation still require evidence |
-| Insurance and liability | Insurance purchase deferred; none claimed active | Quotes/bound policy, district requirements and caps pending before contractual commitment |
+| Insurance and liability | **Owner-approved Provider caps (proposed):** general greater of CA$25,000 or 12-Month Fees; privacy/security greater of CA$100,000 or twice 12-Month Fees, aggregate/non-stacking with non-excludable liabilities preserved. **Insurance quotations and purchase deferred; no coverage claimed.** | Business proposal CLOSED; procurement, indemnity carve-outs, risk/cap capacity and any required insurance remain OPEN before contract execution |
 | Service performance / credits | **Owner-approved initial-pilot SLA:** no guaranteed uptime, response latency, GPS freshness, ETA, notification delivery, repair/recovery time or automatic monthly/annual credits; future promises require evidence and signed amendment | Business no-guarantee policy CLOSED; customer-specific acceptance and operating proof remain pending |
 | Supplier acceptance | Review each enabled supplier account's data contract, purpose, countries, logs/backup/support access, incident handling and downstream access | Pending |
 | Privacy leadership | Owner selected themself as Privacy Lead; identify a capable alternative or documented coverage limitation and run access/request/breach tabletop | Pending |
@@ -44,8 +44,8 @@ Alberta's POPA applies to school boards and requires public bodies to assess the
 | Technology errors & omissions | Coverage for failure of software, data delivery, ETA/location availability and professional services? What are waiting periods, exclusions and claims-made dates? | Broker quote/policy terms and insured activities |
 | Cyber/privacy liability | Incident response, unauthorized disclosure, notification, breach counsel, third-party claims, network liability and exclusions for minors/contracted data? | Policy summary and exclusions; approved handling procedures |
 | Contract indemnities | Which legal claims are covered and by whom, including IP and unlawful processing instructions? What is the defence/settlement process? | Negotiated MSA rider, insurer alignment, accountable legal assessment |
-| General liability cap | Select amount and basis (e.g., fees or negotiated sum); state exclusions, claims aggregation and survival. Do not default to zero or unlimited. | Owner decision and accepted contract |
-| Privacy/security liability cap | Separate risk allocation/cap if negotiated, consistent with the accepted DPA and non-excludable duties | Owner decision, legal/risk assessment and contract |
+| General liability cap | Owner-approved **greater of CA$25,000 or 12-Month Fees** aggregate for SafeBus Provider ordinary claims; does not reset on renewal | Signed district acceptance, mandatory carve-outs, claim scope and procurement review pending |
+| Privacy/security liability cap | Owner-approved **greater of CA$100,000 or twice 12-Month Fees** aggregate; replaces, never stacks with, general cap on qualifying claims | Verify POPA/DPA duties, exceptions and signed Customer-specific acceptance |
 | Cyber events and service interruption | Are GPS/notification outages or platform failures excluded? Can contractual SLA remedies be sustained? | Policy and accepted SLA/operational evidence |
 
 Do not represent SafeBus as “insured”, “SOC 2 certified”, “24/7 staffed”, or holding any particular coverage limit until evidence establishes it.
@@ -100,3 +100,16 @@ It does **not** approve vendor contracts, privacy law applicability, a PIA, cust
 ### November 9 owner-approved rate reconciliation
 
 The previous November 8 statement that Stripe prices were only temporary is historical and **superseded**. Final standard tariff: **CA$1.99 per active bus/month** and **CA$20.29 per active bus/year**, GST/HST-inclusive. Both LIVE existing Stripe Price objects now have `tax_behavior=inclusive`, confirmed by post-update reads; original IDs and active subscriptions were preserved. Prices are a CLOSED owner business decision. Only actual order acceptance, private CRA effective-date/earlier Stripe-registration reconciliation, province/exemption calculations and first reviewed inclusive invoice remain for commercial tax acceptance. Insurance and supplier approvals remain open; nothing authorizes offering unsigned drafts.
+
+
+## Owner liability decision — November 9, 2026 (not insurance evidence)
+
+The owner selected **CA$25,000/12-Month Fees general cap** and
+**CA$100,000/twice 12-Month Fees privacy/security cap** as the standard
+Provider negotiating position, not a signed term for any customer.
+The 12-Month Fees definition, non-stacking aggregate treatment and mandatory
+exceptions are in MSA §8 and the Order Form. Quotations and insurance purchase
+are **deferred**; no active policy, insured limit or certificate is asserted.
+An actual school authority may demand different coverage, defence terms,
+indemnities or carve-outs. These require specific review before signature;
+no blanket acceptance, funding assurance or readiness gate follows.
