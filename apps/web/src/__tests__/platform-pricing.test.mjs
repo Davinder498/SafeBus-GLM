@@ -16,7 +16,7 @@ const priceInput = {
   action: 'create_price',
   requestId,
   name: 'Test monthly',
-  unitAmount: 2500,
+  unitAmount: 199,
   interval: 'month',
 };
 const discountInput = {
@@ -37,7 +37,8 @@ const price = {
   type: 'recurring',
   active: true,
   currency: 'cad',
-  unit_amount: 2500,
+  unit_amount: 199,
+  tax_behavior: 'inclusive',
   recurring: { interval: 'month', usage_type: 'licensed', interval_count: 1 },
 };
 const coupon = {
@@ -143,8 +144,38 @@ describe('catalog ownership and request boundary', () => {
     );
   });
   it('publishes both approved billing intervals', async () => {
-    expect((await handler(event({ ...priceInput, interval: 'year' }))).statusCode).toBe(200);
+    expect((await handler(event({ ...priceInput, interval: 'year', unitAmount: 2029 }))).statusCode).toBe(200);
     expect(stripe.prices.create.mock.calls[0][0].recurring.interval).toBe('year');
+    expect(stripe.prices.create.mock.calls[0][0].unit_amount).toBe(2029);
+  });
+
+  it('rejects unapproved tariff amounts before any provider mutation', async () => {
+    for (const unitAmount of [198, 200, 2500, 0]) {
+      expect(validateCatalogInput({ ...priceInput, unitAmount })).toBeNull();
+      expect((await handler(event({ ...priceInput, unitAmount }))).statusCode).toBe(400);
+    }
+    expect(validateCatalogInput({ ...priceInput, interval: 'year', unitAmount: 199 })).toBeNull();
+    expect(stripe.prices.create).not.toHaveBeenCalled();
+  });
+
+  it('reuses the existing active tax-inclusive price without creating duplicates', async () => {
+    stripe.prices.list.mockImplementation(async (params) => ({
+      data: params.lookup_keys ? [] : [price], has_more: false,
+    }));
+    const response = await handler(event(priceInput));
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual({ id: price.id });
+    expect(stripe.prices.create).not.toHaveBeenCalled();
+  });
+
+  it('refuses to archive the last active tax-inclusive monthly price', async () => {
+    stripe.prices.list.mockResolvedValue({ data: [price], has_more: false });
+    const response = await handler(event({
+      action: 'set_price_active', requestId, id: price.id, active: false,
+    }));
+    expect(response.statusCode).toBe(409);
+    expect(JSON.parse(response.body).error).toContain('Cannot archive');
+    expect(stripe.prices.update).not.toHaveBeenCalled();
   });
   it('rejects archiving a price from another product', async () => {
     stripe.prices.retrieve.mockResolvedValue({ ...price, product: 'prod_other' });
@@ -154,7 +185,10 @@ describe('catalog ownership and request boundary', () => {
     ).toBe(409);
     expect(stripe.prices.update).not.toHaveBeenCalled();
   });
-  it('archives prices without modifying their amount or interval', async () => {
+  it('archives older unapproved prices without altering any amounts', async () => {
+    stripe.prices.retrieve.mockResolvedValue({
+      ...price, unit_amount: 2500, tax_behavior: 'unspecified',
+    });
     expect(
       (await handler(event({ action: 'set_price_active', requestId, id: price.id, active: false })))
         .statusCode,
