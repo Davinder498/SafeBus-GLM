@@ -108,3 +108,22 @@ coverage is claimed**. Customer-specific public-authority procurement,
 indemnity/legal-risk assessment, supplier accountability and privacy/operational
 release approval remain unresolved. Do not turn any protected release gate to
 approved because these monetary terms have been drafted.
+
+## November 9 follow-up — indemnification standard proposed, contract not executed
+
+After the historical review above, the owner approved a proposed
+**limited, fault-based SafeBus Provider indemnification** for covered
+Provider-caused privacy/security third-party claims under the **greater of
+CA$100,000 or twice 12-Month Fees** privacy/security aggregate cap and
+unmodified, authorized-use SafeBus-software IP claims under the **greater of
+CA$25,000 or 12-Month Fees** general aggregate cap. Covered legal defence
+costs, agreed settlements and damages are included within, not added
+to, the caps. SafeBus does not indemnify the school authority's independent
+negligence, unlawful instructions or unauthorized changes. DPA duties and
+legally non-excludable liability remain preserved in MSA §§8.1–8.5.
+
+**Insurance quotations and purchase are deferred; no coverage is asserted**.
+This is an owner-approved **business proposal only**: customer-specific
+indemnity exceptions, procurement rules, financial risk, supplier evidence
+and written school-authority acceptance remain unapproved. No live data,
+contract publication or readiness gate is authorized by this update.
