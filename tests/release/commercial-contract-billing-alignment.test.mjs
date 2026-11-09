@@ -21,11 +21,13 @@ test('MSA distinguishes monthly/annual licensing from service term and preserves
 test('customer order form requires approved interval, trial, first charge and collection mode', async () => {
   const s = await read('order-form.md');
   for (const placeholder of [
-    '[BILLING_INTERVAL_MONTH_OR_YEAR]', '[PRICE_PER_BUS_CAD]',
+    '[BILLING_INTERVAL_MONTH_OR_YEAR]',
     '[TRIAL_ELIGIBILITY_DAYS_END]', '[FIRST_CHARGE_DATE]',
     '[CHARGE_AUTOMATICALLY_OR_SEND_INVOICE]', '[APPLICABLE_TAXES]',
   ]) assert.ok(s.includes(placeholder), placeholder);
   assert.match(s, /not a purchase authorization/i);
+  assert.match(s, /CA\$1\.99 per active bus\/month/);
+  assert.match(s, /CA\$20\.29 per active bus\/year/);
   assert.doesNotMatch(s, /\[ANNUAL_PER_BUS_CAD\]/);
 });
 
@@ -37,7 +39,9 @@ test('owner decisions record reported registration while leaving prices and insu
   assert.match(s, /CRA confirmation and account identifiers must be stored privately/i);
   assert.match(s, /2026-10-23T14:19:38Z/);
   assert.match(s, /14-day trial default/);
-  assert.match(s, /Final monthly and annual per-bus amounts are \*\*undecided\*\*/);
+  assert.match(s, /approved CA\$1\.99 per active bus per month/);
+  assert.match(s, /CA\$20\.29 per active bus per year/);
+  assert.match(s, /tax_behavior=inclusive/);
   assert.match(s, /\*\*GST\/HST-inclusive prices\*\*/);
   assert.match(s, /Insurance/);
   assert.match(s, /\[GENERAL_LIABILITY_CAP\]/);

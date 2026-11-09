@@ -111,11 +111,14 @@ automatic charge/renewal and cancellation terms must instead be disclosed and
 accepted before the Customer confirms checkout. Do not represent a card-funded
 subscription as a net-30 invoicing contract. The owner reports GST/HST
 registration effective November 8, 2026; CRA evidence still requires private
-verification. The eventual approved SafeBus prices will be **inclusive of
-applicable GST/HST**, not subject to unannounced tax added above the agreed
-total. Determine place-of-supply, exemptions, applicable tax amount, invoice
-disclosures and lawful historical adjustments before configuring final prices.
-No final selling price or rate is approved by this draft.
+verification. The owner-approved standard SafeBus subscription prices are
+**CA$1.99 per active bus per month** or **CA$20.29 per active bus per year**,
+**including applicable GST/HST**. The customer selects the interval in its
+Order Form; the agreed gross tariff is not subject to unannounced tax added
+above that amount. Determine place-of-supply, exemptions, applicable tax
+breakdown and invoice disclosures before the first customer-specific execution.
+These standard rates are approved business prices, **not an executed contract**;
+the MSA, terms, liability, service level and customer acceptance remain drafts.
 
 Stripe administers invoices and payment methods; SafeBus keeps a limited billing
 projection. Bus-count, price and proration changes require Customer authorization

@@ -100,3 +100,8 @@ Use the [pilot contract, supplier and insurance sign-off pack](pilot-contract-si
 ## Owner business choices — November 8, 2026
 
 The latest [owner decision register](owner-decisions.md) supersedes historical GST/HST-unregistered notes: the owner reports GST/HST registration effective 2026-11-08, SafeBus registered as Sachman Gold Inc.'s trade name and info@safebus.kids selected for formal notices. The provided business mailing address is **confidential and not to be published or committed to Git**. Final monthly/annual prices are still undecided; the future approved customer-facing totals must include applicable GST/HST. Insurance will be purchased later. Support remains Monday–Friday, 08:00–17:00 Alberta time, with backup/holiday coverage unresolved. No customer agreement publication, live tax mutation or launch approval follows from these choices.
+
+
+## November 9 finalized standard subscription prices
+
+The owner approved **CA$1.99 per active bus monthly** and **CA$20.29 per active bus annually**, **including applicable GST/HST**. These rates supersede earlier temporary-price wording; the two live existing Stripe prices were converted in place to `tax_behavior=inclusive` and independently retrieved after updating. The signed school-authority Order Form must still select the interval, quantity, collection method, trial, effective dates and any documented exemptions. The entire eight-document district contract package is still DRAFT and unpublished; rate approval does not approve insurance, liability caps, supplier disclosures, remaining terms or a pilot. See [owner decisions](owner-decisions.md).

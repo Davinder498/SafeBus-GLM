@@ -1,6 +1,6 @@
 # SafeBus commercial billing and contract alignment — 2026-11-07
 
-**Status:** Contract drafts reconciled; customer terms, prices and tax authority remain **unapproved**.
+**Status:** Contract drafts remain unexecuted; **standard owner prices approved and Stripe inclusive tax behavior verified 2026-11-09**. Customer acceptance and private CRA/account tax reconciliation remain pending.
 
 ## Live evidence inspected (read-only)
 
@@ -8,8 +8,8 @@ The connected live-mode Stripe **SafeBus** account returned one active `SafeBus 
 
 | Interval | Unit amount | Source distinction |
 | --- | ---: | --- |
-| Monthly | CAD 1.99 per bus | Current live catalog; not an owner-approved selling price |
-| Annual | CAD 20.29 per bus | Current live catalog; not an owner-approved selling price |
+| Monthly | CAD 1.99 per bus | **Owner-approved final standard price 2026-11-09, GST/HST-inclusive** |
+| Annual | CAD 20.29 per bus | **Owner-approved final standard price 2026-11-09, GST/HST-inclusive** |
 
 Both displayed prices have `tax_behavior=unspecified`. Stripe Tax settings returned `status=active` and `defaults.tax_behavior=inferred_by_currency`; its list of registrations returned one active entry for Canada. **Do not mistake this Stripe setting for a CRA registration certificate, effective date, tax collection authorization or a tax opinion.** The owner previously reported (October 16) not being registered. The discrepancy is material and must be resolved privately with the company's actual legal CRA/tax records before collecting tax or sending executed price terms.
 
@@ -31,7 +31,7 @@ The account was inspected through read-only Stripe operations. No price, tax, cu
 | Gate | Present finding | Remaining action |
 | --- | --- | --- |
 | Identity and authority | Sachman Gold Inc. selected as legal operator; SafeBus as trade name | Verify corporation/DBA, mailing address, business signatory |
-| Price | Live catalog shows CAD 1.99/month and CAD 20.29/year per bus | Owner approves or revises price before publishing or signing |
+| Price | **CAD 1.99/month and CAD 20.29/year per active bus, GST/HST-inclusive** | Owner price decision closed; customer-specific order still requires acceptance |
 | Tax | Stripe Tax active with Canadian registration entry; old owner statement conflicts | Verify legal GST/HST registration, start date, applicable tax treatment and invoice display |
 | Trial | Eligible new-tenant self-service flow advertises 14 days | Approve eligibility, duration, start/end, first charge and trial cancellation terms |
 | Contract | Monthly/annual intervals and proposed 12-month term are separate | Accept service term, billing interval, cancellation and renewal |
@@ -61,6 +61,17 @@ acceptance and commercial authorization are still not verified.
 
 The owner now reports **GST/HST registration effective 2026-11-08** for Sachman Gold Inc. This supersedes the earlier report of being unregistered; the CRA record remains in private business storage. SafeBus is owner-reported as a registered trade name, with **info@safebus.kids** selected for formal contract notices. The supplied mailing address must remain restricted and must **never be put in public Git or web content**. Insurance purchase is deferred, and Monday–Friday 08:00–17:00 Alberta support remains selected with owner-absence coverage pending.
 
-The final monthly and annual prices are **undecided**, but approved future displayed per-bus prices must be **GST/HST-inclusive**. Existing temporary CAD 1.99/month and CAD 20.29/year prices and customer obligations remain unchanged. Both Stripe prices have `tax_behavior=unspecified` and the account default is `inferred_by_currency`, which does not prove tax-inclusive behaviour. Select final prices and verify tax behaviour, province-specific place-of-supply and invoice tax presentation before activation.
+At the prior November 8 review, monthly and annual prices were **undecided**, and future prices were to be **GST/HST-inclusive**. This historical state is superseded by the November 9 fixed-price approval below. At that earlier review the existing amounts and customer obligations remained unchanged. Both Stripe prices have `tax_behavior=unspecified` and the account default is `inferred_by_currency`, which does not prove tax-inclusive behaviour. Select final prices and verify tax behaviour, province-specific place-of-supply and invoice tax presentation before activation.
 
 Read-only Stripe observations: the Canadian Tax registration has `active_from=2026-10-23T14:19:38Z`, earlier than owner-reported CRA effective 2026-11-08; Stripe Tax settings are active. One currently active subscription reports `automatic_tax.enabled=true`, while the paid November 7 invoice had `automatic_tax.enabled=false`. These refer to different points in time; do not treat the earlier paid invoice as incorrect by default or change its historical tax amount without finance review. Reconcile effective-date liability, subscription renewals, customer location, inclusive final amount and receipt breakdown, without changing live Stripe settings in this review. [CRA registration start rules](https://www.canada.ca/en/revenue-agency/services/tax/businesses/topics/gst-hst-businesses/when-register-charge.html) apply to actual supply facts.
+
+
+## November 9 final tariff approval and live provider update — superseding the prior checkpoint
+
+**Owner-approved, final standard rates:** CA$1.99 per active bus/month (199 CAD cents) and CA$20.29 per active bus/year (2029 CAD cents), including applicable GST/HST. They are no longer testing prices. Existing LIVE Stripe price IDs are unchanged:
+- Monthly: `price_1URbJ3JayDoqdBIzNBcBJyNj`.
+- Annual: `price_1URbJ3JayDoqdBIzCTnaHtFq`.
+
+A verified before/after Stripe API inspection established `tax_behavior=unspecified` immediately before the owner-authorized update, and **`tax_behavior=inclusive`** on both Price objects after. Both remain active; there is still one observed active subscription on the original monthly ID, with automatic tax enabled. No new price, charge, subscription migration or historical invoice mutation was performed. The Netlify client/server price policy now uses the same two amounts and requires inclusive treatment for new checkout/tenant selection; users cannot silently publish a different amount or archive the last approved active price.
+
+**Historical financial caveat:** The earlier Stripe Canada registration effective 2026-10-23T14:19:38Z still differs from the reported CRA 2026-11-08 registration date. The actual CRA confirmation remains private and unverified here. Do not change tax history automatically or claim that a November 7 paid invoice included GST/HST. A customer-specific approved order, applicable province/exemption, tested final tax breakout, and privacy/vendor/legal approvals remain separate launch requirements. This owner-approved tariff alone is not a signed contract or customer billing authorization.

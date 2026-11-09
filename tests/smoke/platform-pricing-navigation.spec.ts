@@ -8,7 +8,7 @@ async function installPricing(page: Page, interrupt = false) {
     {
       id: 'price_existing',
       name: 'Synthetic monthly',
-      unitAmount: 2500,
+      unitAmount: 199,
       currency: 'cad',
       interval: 'month',
       active: true,
@@ -87,15 +87,15 @@ test('platform publishes and archives prices with an explicit review', async ({ 
   await page.goto('/admin/pricing');
   const form = page.getByRole('form', { name: 'New subscription price' });
   await form.getByLabel('Price name').fill('Synthetic annual');
-  await form.getByLabel('Price per bus (CAD)').fill('240');
   await form.getByLabel('Billing interval').selectOption('year');
+  await expect(form.getByLabel('Price per bus (CAD)')).toHaveValue('20.29');
   await form.getByRole('button', { name: 'Review price' }).click();
-  await expect(page.getByRole('dialog')).toContainText('$240.00');
+  await expect(page.getByRole('dialog')).toContainText('$20.29');
   expect(requests.filter((r) => r.action === 'create_price')).toHaveLength(0);
   await page.getByRole('button', { name: 'Confirm and publish' }).click();
   await expect(page.getByRole('status')).toContainText('Catalog updated');
   expect(requests.find((r) => r.action === 'create_price')).toMatchObject({
-    unitAmount: 24000,
+    unitAmount: 2029,
     interval: 'year',
   });
   const card = page
@@ -144,7 +144,7 @@ test('catalog recovers an interrupted request after reload using its original id
   const requests = await installPricing(page, true);
   await page.goto('/admin/pricing');
   await page.getByLabel('Price name', { exact: true }).fill('Synthetic recovery');
-  await page.getByLabel('Price per bus (CAD)').fill('25');
+  await expect(page.getByLabel('Price per bus (CAD)')).toHaveValue('1.99');
   await page.getByRole('button', { name: 'Review price' }).click();
   await page.getByRole('button', { name: 'Confirm and publish' }).click();
   await expect(page.getByRole('alert')).toContainText('Confirmation delayed');

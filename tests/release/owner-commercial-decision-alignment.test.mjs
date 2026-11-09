@@ -12,15 +12,19 @@ test('latest owner decisions reflect GST effective date and tax-inclusive future
   assert.ok(owner.includes('info@safebus.kids'));
   assert.ok(billing.includes('2026-10-23T14:19:38Z'));
   assert.ok(billing.includes('automatic_tax.enabled=true'));
-  assert.ok(billing.includes('final monthly and annual prices are **undecided**'));
+  assert.ok(billing.includes('Owner-approved, final standard rates'));
+  assert.ok(billing.includes('CA$1.99 per active bus/month'));
+  assert.ok(billing.includes('CA$20.29 per active bus/year'));
 });
 
-test('contract drafts keep address private and prices tax-inclusive without inventing amounts', () => {
+test('contract drafts keep address private while recording the owner-approved fixed tariff', () => {
   const msa = read('docs/governance/phase-3/business-pack/master-services-agreement.md');
   const order = read('docs/governance/phase-3/business-pack/order-form.md');
   const pilot = read('docs/governance/phase-3/business-pack/pilot-contract-signoff-2026-11-07.md');
   assert.ok(msa.includes('**inclusive of'));
   assert.ok(order.includes('including applicable GST/HST'));
+  assert.ok(order.includes('CA$1.99 per active bus/month'));
+  assert.ok(order.includes('CA$20.29 per active bus/year'));
   assert.ok(order.includes('[PROVIDER_BUSINESS_ADDRESS]'));
   assert.ok(pilot.includes('private mailing address must not appear in Git'));
   assert.ok(pilot.includes('Insurance purchase deferred'));

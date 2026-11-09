@@ -23,7 +23,7 @@ Alberta's POPA applies to school boards and requires public bodies to assess the
 | --- | --- | --- |
 | Contracting identity | Owner reports registered SafeBus trade name under Sachman Gold Inc.; signatory/registration proof to be checked privately | Reported decision; independent evidence pending |
 | Public legal-notice channel | Owner selected info@safebus.kids for formal notices; private mailing address must not appear in Git or on public pages | Email selected; restricted execution fields and monitored escalation pending |
-| Commercial price | Monthly/annual amounts undecided; final prices to include applicable GST/HST; temporary live prices unchanged | Approved amounts and inclusive Stripe configuration pending |
+| Commercial price | **Owner approved CA$1.99 monthly and CA$20.29 annually per active bus, including applicable GST/HST, on 2026-11-09** | Stripe price amounts and inclusive tax behavior verified; district order/interval/quantity consent still pending |
 | Trial and cancellation | Approve 14-day first-customer trial eligibility, first charge, service term, cancellation and renewal messages; an implemented default is not a contractual entitlement | Pending |
 | Tax | Owner reports GST/HST registration effective 2026-11-08; Stripe Canadian Tax registration start 2026-10-23 needs reconciliation; current subscription tax enabled but past paid invoice tax disabled | Confirm CRA notice privately, region-specific tax, price behaviour, invoices and configuration; do not mutate live values |
 | Payment alternatives | Determine when customer can pay automatically, when an approved public-authority PO/`send_invoice` process applies, and whether a proposed net-30 term will be offered | Pending |
@@ -95,3 +95,8 @@ The following is necessary **after a real authorized school district** is identi
 It does **not** approve vendor contracts, privacy law applicability, a PIA, customer processing, cyber insurance, price, GST/HST, support coverage, SLA, signed orders, approved key/quota plan, destructive retention, physical Android use, leaked-password protection or commercial launch. The protected `privacy-readiness.json`, `operations-readiness.json`, `map-readiness.json` and customer-activation records remain the authority for release gates and are not changed here.
 
 **Recommended next actions in order:** owner verifies corporate signatory/trade-name and insurance requirements, owner or authorized vendor account holder gathers first-wave supplier evidence, owner resolves GST/HST/Stripe inconsistency, then the first school district negotiates its own terms and PIA with actual documents. Record concrete evidence privately; continue engineering monitoring without inventing approvals.
+
+
+### November 9 owner-approved rate reconciliation
+
+The previous November 8 statement that Stripe prices were only temporary is historical and **superseded**. Final standard tariff: **CA$1.99 per active bus/month** and **CA$20.29 per active bus/year**, GST/HST-inclusive. Both LIVE existing Stripe Price objects now have `tax_behavior=inclusive`, confirmed by post-update reads; original IDs and active subscriptions were preserved. Prices are a CLOSED owner business decision. Only actual order acceptance, private CRA effective-date/earlier Stripe-registration reconciliation, province/exemption calculations and first reviewed inclusive invoice remain for commercial tax acceptance. Insurance and supplier approvals remain open; nothing authorizes offering unsigned drafts.

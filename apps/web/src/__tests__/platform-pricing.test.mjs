@@ -127,7 +127,7 @@ describe('catalog ownership and request boundary', () => {
     expect(stripe.prices.create).toHaveBeenCalledWith(
       expect.objectContaining({
         product: 'prod_safebus',
-        unit_amount: 2500,
+        unit_amount: 199,
         currency: 'cad',
         tax_behavior: 'inclusive',
         recurring: { interval: 'month', usage_type: 'licensed' },

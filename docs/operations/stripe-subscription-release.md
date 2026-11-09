@@ -76,3 +76,12 @@ and the invoice delivery runbook for current acceptance steps.
 
 Production migration application, deployment, and final merge require the existing protected
 release workflow and human approval. This PR performs none of those actions.
+
+
+## November 9 approved tariff and live Stripe verification
+
+The SafeBus owner approved **CA$1.99/active bus/month** and **CA$20.29/active bus/year**, **including applicable GST/HST**. On the live SafeBus Stripe account, existing Price IDs `price_1URbJ3JayDoqdBIzNBcBJyNj` and `price_1URbJ3JayDoqdBIzCTnaHtFq` were changed from unspecified tax behavior to `tax_behavior=inclusive`, and verified by fresh GET requests. Both remain active and associated with the same SafeBus Subscription product. The existing active subscription still references the same monthly Price ID. No subscriptions or historical invoices were modified.
+
+**Production safeguarding:** application code only allows the approved prices and inclusive behavior for new tenant selections and catalog creations. The same approved price object is reused instead of creating a duplicate, and the last active price for each approved interval cannot be archived via platform management. Server-side price validation, not editable UI text, is authoritative. Publish approved pricing through the already-existing catalog; do not create or migrate subscriptions merely to reconcile prices.
+
+Automatic tax on the existing active subscription was enabled at the time of inspection; future finalized invoices may show an inclusive tax component within the CA$1.99 gross, according to customer location and taxability. Taxes must not be added *above* the approved gross price. Never infer that the historical November 7 paid invoice contained GST/HST. Stripe's registration effective 2026-10-23 differs from the owner-reported CRA November 8 date; separately reconcile with the private CRA document before filing/adjustment. A signed customer's Order Form, final applicable tax evidence, and approved commercial/insurance/supplier terms remain required.

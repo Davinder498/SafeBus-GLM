@@ -1,3 +1,4 @@
+import { isApprovedInclusiveBusPrice } from './approved-bus-pricing.mjs';
 import {
   UUID_PATTERN,
   clean,
@@ -54,7 +55,8 @@ export async function approvedPrices(stripe, productId) {
         p.recurring?.usage_type === 'licensed' &&
         p.currency === 'cad' &&
         Number.isSafeInteger(p.unit_amount) &&
-        p.unit_amount >= 0,
+        p.unit_amount >= 0 &&
+        isApprovedInclusiveBusPrice(p),
     )
     .map((p) => ({
       id: p.id,

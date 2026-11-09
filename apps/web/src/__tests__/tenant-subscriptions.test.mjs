@@ -231,7 +231,8 @@ describe('tenant subscription input and ownership', () => {
     const price = {
       id: 'price_month',
       currency: 'cad',
-      unit_amount: 1000,
+      unit_amount: 199,
+      tax_behavior: 'inclusive',
       recurring: { interval: 'month', usage_type: 'licensed' },
       product: { name: 'SafeBus' },
     };
@@ -239,7 +240,9 @@ describe('tenant subscription input and ownership', () => {
       list: vi.fn(async () => ({
         data: [
           price,
-          { ...price, id: 'price_year', recurring: { ...price.recurring, interval: 'year' } },
+          { ...price, id: 'price_year', unit_amount: 2029, recurring: { ...price.recurring, interval: 'year' } },
+          { ...price, id: 'price_unapproved_amount', unit_amount: 2500 },
+          { ...price, id: 'price_tax_unspecified', tax_behavior: 'unspecified' },
           { ...price, currency: 'usd' },
           { ...price, recurring: { ...price.recurring, interval_count: 3 } },
           { ...price, recurring: { ...price.recurring, usage_type: 'metered' } },

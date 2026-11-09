@@ -1,7 +1,7 @@
 # Owner Decisions Before Signing or Publication
 
 **Status:** Decision worksheet; only expressly recorded owner choices are resolved
-**Prepared:** 2026-10-13; owner choices last reconciled 2026-11-08
+**Prepared:** 2026-10-13; owner choices last reconciled 2026-11-09
 
 The owner initially requested placeholders for business identity and contact
 details. On 2026-10-15 the owner identified Sachman Gold Inc., doing business as
@@ -17,7 +17,7 @@ confirmed on 2026-10-16 that the official domain is safebus.kids and Sachman Gol
 Inc. is an Alberta corporation doing business as SafeBus. The website and public
 privacy/deletion routes are available over HTTPS. The 2026-10-16 owner record
 was superseded by owner-reported GST/HST registration effective 2026-11-08;
-final prices remain undecided and are to be tax-inclusive. The owner reports
+on November 8 final prices were still undecided; the owner approved the fixed, tax-inclusive amounts on November 9 (see latest decision below). The owner reports
 SafeBus is now registered as a trade name and selects info@safebus.kids for
 formal notices. The owner supplied a private mailing address that must **never
 be put in GitHub or displayed on public pages**. Corporate and CRA records,
@@ -32,7 +32,7 @@ signing authority, insurance and backup coverage require separate verification.
 | `[PRIVACY_BACKUP]`                                               | Unresolved                                                                                    | Capable backup and routing evidence; personal details outside Git                                                                         |
 | `[EFFECTIVE_DATE]`, `[PUBLIC_POLICY_URL]`, `[DELETION_URL]`      | No effective or publication date                                                              | Approved wording, working public HTTPS pages and contact paths                                                                            |
 | `[CUSTOMER_LEGAL_NAME]`, customer privacy contacts and signatory | Unfilled                                                                                      | Customer onboarding inputs; not needed to write the business drafts                                                                       |
-| `[PRICE_PER_BUS_CAD]`, interval and bus quantity | Final monthly/annual prices undecided; future approved displayed prices are GST/HST-inclusive | Choose approved amounts and Stripe price configuration; temporary live catalog must not change |
+| Monthly/annual per-active-bus prices | **CA$1.99/month** and **CA$20.29/year**, both including applicable GST/HST; owner-approved 2026-11-09 | Stripe live prices verified inclusive on their original price IDs; retain customer-specific bus count, interval and order acceptance |
 | Tax registration, `[APPLICABLE_TAXES]`, exemptions | Owner reports CRA GST/HST registration effective 2026-11-08; Stripe Canada registration currently starts 2026-10-23 | Privately verify CRA date, province-specific tax, inclusive price/invoice treatment, historical and future subscription settings |
 | Collection method, invoice/payment period                        | Stripe self-service supports automatic payment; legacy invoice contracts remain separate; net 30 is proposed only for accepted `send_invoice` terms | Approve customer payment method and invoice terms; do not offer net 30 if card is charged automatically                                                                |
 | Trial, service term and renewal                                  | Current new-tenant Checkout has a 14-day trial default; 12-month service term is only proposed, and monthly/annual billing intervals are available | Approve eligibility, first recurring charge, initial service/pilot term, auto-renewal election, cancellation route, notice periods and Stripe implementation; do not treat trial as an approved free pilot                                                          |
@@ -64,7 +64,7 @@ signing authority, insurance and backup coverage require separate verification.
 Owner approval of a draft business position does not record a customer signature,
 make a technical safeguard pass, or activate the Point 6 launch record.
 
-## Temporary Stripe catalog values — November 8, 2026 (owner directive)
+## Historical temporary Stripe catalog decision — November 8, 2026 (superseded November 9)
 
 The owner expressly confirmed that the live Stripe subscription prices **CA$1.99 per active bus/month** and **CA$20.29 per active bus/year** are **temporary testing values, not finalized commercial prices**. The owner instructed SafeBus to **leave both prices exactly as they are** and decide later when and how to change them. No authorization to edit Stripe products/prices, billing UI, historical invoices, active customer subscriptions, tax configuration or invoicing follows from this decision. Do not silently publish these values as binding price commitments in the district Order Form or claim that an alternative market benchmark has been approved. Reconcile any existing live customer obligations before future changes.
 
@@ -135,6 +135,24 @@ from this declaration.
 
 The owner superseded the historical unregistered statement: **Sachman Gold Inc. is reported GST/HST-registered effective 2026-11-08**. The CRA confirmation and account identifiers must be stored privately, not in Git. SafeBus is reported registered as a trade name under Sachman Gold Inc.; the chosen formal legal-notice email is **info@safebus.kids**. The mailing address was provided privately with an explicit **no-public-display** instruction, and therefore is never reproduced in this repo. Keep the public address placeholder until a restricted signed contract needs it.
 
-Final monthly and annual per-bus amounts are **undecided**; the owner selected **GST/HST-inclusive prices** for future approved offers. The temporary live Stripe $1.99 monthly / $20.29 annual prices, existing subscriptions and historical invoices must remain unchanged pending a reviewed decision. Stripe's Canadian Tax registration is active from **2026-10-23T14:19:38Z**, earlier than the reported CRA date; one existing active subscription currently has `automatic_tax.enabled=true`, whereas the paid Nov 7 invoice had `automatic_tax.enabled=false`. Both active prices have `tax_behavior=unspecified`, with a default inferred by currency; **this is not proof of tax-inclusive billing**. Reconcile effective date, supply timing, customer region, the right tax rate, inclusive price and invoice tax disclosure before implementing any live financial correction.
+At the November 8 checkpoint, monthly and annual amounts were **undecided** and the owner had selected **GST/HST-inclusive prices** for future offers. **Superseded by the November 9 final fixed-price approval below.** The temporary live Stripe $1.99 monthly / $20.29 annual prices, existing subscriptions and historical invoices must remain unchanged pending a reviewed decision. Stripe's Canadian Tax registration is active from **2026-10-23T14:19:38Z**, earlier than the reported CRA date; one existing active subscription currently has `automatic_tax.enabled=true`, whereas the paid Nov 7 invoice had `automatic_tax.enabled=false`. Both active prices have `tax_behavior=unspecified`, with a default inferred by currency; **this is not proof of tax-inclusive billing**. Reconcile effective date, supply timing, customer region, the right tax rate, inclusive price and invoice tax disclosure before implementing any live financial correction.
 
 Insurance is to be purchased **later**; no coverage or limits are currently claimed. The support schedule remains **Monday–Friday 08:00–17:00 America/Edmonton**. Holiday and owner-absence response/backup are still unresolved. This statement does not authorize contract publication, a district pilot, tax-setting mutations or a readiness approval.
+
+
+## Final fixed-price approval and verified Stripe update — November 9, 2026
+
+The owner **approved CA$1.99 per active bus per month** and **CA$20.29 per active bus per year**, both **including applicable GST/HST**, as SafeBus's final standard selling prices. This explicitly supersedes the November 8 instruction to leave these figures as temporary testing amounts. It does not approve any customer-specific signing authority, insurance limit, SLA guarantee, or commercial launch.
+
+On the owner's express request, the two existing LIVE Stripe Price objects were updated in place from `tax_behavior=unspecified` to **`tax_behavior=inclusive`**, and freshly retrieved after each update:
+
+| Interval | Owner-approved CAD cents | Stripe price ID | Verified current tax behavior |
+| --- | ---: | --- | --- |
+| Monthly | 199 | `price_1URbJ3JayDoqdBIzNBcBJyNj` | `inclusive` |
+| Annual | 2029 | `price_1URbJ3JayDoqdBIzCTnaHtFq` | `inclusive` |
+
+Both prices remain active on the existing `SafeBus Subscription` product. No new Stripe prices, new subscriptions, subscription migration, changes to historical invoices, tax registration mutation, or payment capture was performed as part of the price-setting action. An existing active subscription remains attached to the same monthly price and had `automatic_tax.enabled=true` on the observed snapshot; future invoices may therefore reflect an **inclusive** tax breakout while preserving the stated gross amount, subject to exemptions, jurisdiction and provider calculation.
+
+The Stripe Canada Tax registration was still observed active from `2026-10-23T14:19:38Z`, earlier than the owner-reported CRA GST/HST registration effective **2026-11-08**. **Do not silently rewrite the provider registration date, retroactively change invoices or assume CRA verification.** Review the private CRA notice, applicable past collections, and payment/invoice records before tax filing or customer reconciliation. No account number or private mailing address belongs in Git.
+
+The code now restricts newly created prices and tenant selections to the approved interval amounts with `tax_behavior=inclusive`, prevents archiving the only approved active price in either interval, and reuses existing approved prices rather than creating duplicates. Future tariff changes must be explicitly approved and reviewed as a code/provider/contract migration.
