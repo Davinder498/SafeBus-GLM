@@ -51,12 +51,38 @@ test('owner decisions record approved trial, recurring contract and tax registra
   assert.match(s, /\[GENERAL_LIABILITY_CAP\]/);
 });
 
-test('SLA treats monthly and annual credits consistently and keeps limits unsigned', async () => {
+test('initial-pilot SLA states owner-approved business hours, nine holidays and no unverified guarantees', async () => {
   const s = await read('service-level-agreement.md');
+  assert.match(s, /Monday.Friday, 8:00 a\.m..5:00 p\.m\. Alberta local/i);
+  assert.match(s, /America\/Edmonton/);
+  assert.match(s, /nine general holidays/i);
+  for (const name of ["New Year's Day", 'Alberta Family Day', 'Good Friday', 'Victoria Day', 'Canada Day', 'Labour Day', 'Thanksgiving Day', 'Remembrance Day', 'Christmas Day']) {
+    assert.ok(s.includes(name), name);
+  }
+  assert.match(s, /not additional pilot closures/);
+  assert.match(s, /no contractual first-response time or after-hours human-response guarantee/i);
+  assert.match(s, /no numerical service-level commitment/i);
+  assert.match(s, /No automatic uptime-based service credits/i);
   assert.match(s, /both monthly and annual/i);
-  assert.match(s, /\[MONTHLY_AVAILABILITY_PERCENT\]/);
-  assert.match(s, /\[CREDIT_TIERS\]/);
-  assert.match(s, /numerical commitments and remedies unapproved/i);
+  assert.match(s, /DPA's separate/);
+  assert.doesNotMatch(s, /\[MONTHLY_AVAILABILITY_PERCENT\]|\[P1_ACK\]|\[CREDIT_TIERS\]/);
+});
+
+test('SLA, MSA, Order Form and decision ledger preserve ordinary-hours vs urgent-incident separation', async () => {
+  const sla = await read('service-level-agreement.md');
+  const msa = await read('master-services-agreement.md');
+  const order = await read('order-form.md');
+  const owner = await read('owner-decisions.md');
+  const operations = await fs.readFile('docs/operations/cr1-remaining-launch-work-2026-11-08.md','utf8');
+  for (const [name,document] of Object.entries({sla,msa,order,owner,operations})) {
+    assert.match(document,/America\/Edmonton/,name);
+    assert.match(document,/nine general holidays/,name);
+    assert.match(document,/no (?:guaranteed |contractual |automatic |24\/7 |staffed )/i,name);
+  }
+  assert.match(sla,/do not postpone or\s+override/i);
+  assert.match(msa,/DPA's incident-notification duties/);
+  assert.match(order,/independently verify DPA\/law urgent incident escalation/);
+  assert.match(owner,/Open operational gate/);
 });
 
 test('review record does not infer commercial launch authorization from Stripe live catalog', async () => {
