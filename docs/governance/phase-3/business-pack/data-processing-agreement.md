@@ -147,12 +147,29 @@ incident notification, safeguards and cooperation duties stated above.
 
 ## 7. Retention and exit
 
-The accepted schedule identifies each data class's purpose, trigger, period,
-hold exceptions, deletion/anonymization method and supplier backup handling.
-Draft repository periods are not activated by this agreement. Customer data
-is returned and disposed of under the Data Return and Destruction Schedule.
-Account disablement, unlinking, primary deletion and backup expiry are separate
-actions. Do not certify full erasure unless its actual scope is verified.
+The owner-approved approach is **school-authority-controlled data management**:
+authorized tenant administrators can download supported student, guardian,
+driver and bus directory CSVs, and use existing record-level deletion, archive
+and preservation controls only where the current application and applicable
+law permit. A directory download is not a complete historical data export;
+deleting an on-screen record does not erase unrelated trip history, supplier
+logs, audit evidence, immutable backups or legally preserved information.
+
+The accepted Data Management, Return and Destruction Schedule identifies
+purpose-based retention, lawful holds, customer-directed requests, export
+scope and supplier/backup handling. The Customer can request additional
+securely scoped records or account closure through the verified support
+channel, subject to authority and recipient checks. **No universal 30-day
+return or 60-day deletion commitment** is implied by this standard model;
+any customer-specific deadline requires a tested process and written
+agreement. Destructive automated retention remains separately gated and
+is not activated by contract approval.
+
+Account disablement, unlinking, primary deletion, provider deletion and
+backup expiry are distinct actions. Neither party should certify complete
+erasure without evidence of actual scope and lawful exceptions. The
+Customer's own statutory recordkeeping duties and SafeBus's separate
+DPA/security/financial retention duties remain intact.
 
 ### Publication prerequisite — supplier evidence review (2026-11-08)
 
