@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router';
 import { LegalPageLayout } from '@/components/layout/LegalPageLayout';
 import { RolePrivacyNotices } from '@/components/privacy/RolePrivacyNotices';
 
-const updatedDate = 'November 5, 2026';
+const updatedDate = 'November 8, 2026';
 
 export function PrivacyPolicyPage() {
   const { hash } = useLocation();
@@ -120,8 +120,11 @@ export function PrivacyPolicyPage() {
                 delivery logs in the United States. When email delivery is enabled, it processes the
                 recipient address, message content and delivery metadata, including account
                 invitation or password-recovery links, business inquiries, and any enabled event
-                notices. Pickup/drop-off emails may contain a student&apos;s full name, bus number,
-                recorded event and time. Raw bus location, notifications and operational records are retained for
+                notices. Pickup/drop-off email subjects and bodies use generic event text without
+                student names, bus numbers, stops or recorded event times. Full details remain in
+                the authorized in-app inbox. Other email categories may include necessary account
+                or operational information. Previously delivered emails are not retroactively
+                changed. Raw bus location, notifications and operational records are retained for
                 their authorized purposes under the applicable business or issuing
                 organization&apos;s retention schedule. Retention depends on the record and its
                 purpose, including applicable legal requirements and scoped legal holds. Contact the
