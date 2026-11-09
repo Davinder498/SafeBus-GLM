@@ -21,14 +21,14 @@ Alberta's POPA applies to school boards and requires public bodies to assess the
 
 | Decision | What must be decided or checked | State |
 | --- | --- | --- |
-| Contracting identity | Verify legal corporation and signer; confirm whether SafeBus trade-name registration is complete and how invoices/contract names read | Pending independent evidence |
-| Public legal-notice channel | Approve official service and legal mailing address and whether `info@safebus.kids` accepts formal contractual notices | Pending |
-| Commercial price | Approve exact monthly/annual CAD per active bus, billable reserve/replacement rules, discounts and effective dates; current Stripe catalog is *observed*, not owner sign-off | Pending |
+| Contracting identity | Owner reports registered SafeBus trade name under Sachman Gold Inc.; signatory/registration proof to be checked privately | Reported decision; independent evidence pending |
+| Public legal-notice channel | Owner selected info@safebus.kids for formal notices; private mailing address must not appear in Git or on public pages | Email selected; restricted execution fields and monitored escalation pending |
+| Commercial price | Monthly/annual amounts undecided; final prices to include applicable GST/HST; temporary live prices unchanged | Approved amounts and inclusive Stripe configuration pending |
 | Trial and cancellation | Approve 14-day first-customer trial eligibility, first charge, service term, cancellation and renewal messages; an implemented default is not a contractual entitlement | Pending |
-| Tax | Owner says corporation is **not currently CRA GST/HST registered**, with future registration intended; confirm registration duty/threshold and reconcile Stripe's active Canadian Tax registration entry *without changing tax settings in this review* | Pending finance review |
+| Tax | Owner reports GST/HST registration effective 2026-11-08; Stripe Canadian Tax registration start 2026-10-23 needs reconciliation; current subscription tax enabled but past paid invoice tax disabled | Confirm CRA notice privately, region-specific tax, price behaviour, invoices and configuration; do not mutate live values |
 | Payment alternatives | Determine when customer can pay automatically, when an approved public-authority PO/`send_invoice` process applies, and whether a proposed net-30 term will be offered | Pending |
-| Service/support | Confirm owner-selected Mon–Fri 8:00–17:00 Alberta hours, holiday/absence coverage, P1 escalation route and whether any 24/7 obligation is possible (do not promise one by default) | Pending operational coverage |
-| Insurance and liability | Get requirements/quotes and choose acceptable general, professional technology and privacy/security risk coverage and contract caps; **no blanket statutory coverage amount is inferred** | Pending |
+| Service/support | Owner reconfirmed Mon–Fri 08:00–17:00 Alberta | Holiday/owner absence, backup and P1 escalation pending |
+| Insurance and liability | Insurance purchase deferred; none claimed active | Quotes/bound policy, district requirements and caps pending before contractual commitment |
 | Service performance / credits | Set measurable availability, latency, GPS freshness, notification response and credits only where evidence supports each claim; keep unsupported service levels blank | Pending |
 | Supplier acceptance | Review each enabled supplier account's data contract, purpose, countries, logs/backup/support access, incident handling and downstream access | Pending |
 | Privacy leadership | Owner selected themself as Privacy Lead; identify a capable alternative or documented coverage limitation and run access/request/breach tabletop | Pending |

@@ -55,6 +55,8 @@ jobs:
         run: node --test tests/release/netlify-guardian-email-verification.test.mjs
       - name: Guardian notification disclosure consistency
         run: node --test tests/release/guardian-disclosure-consistency.test.mjs
+      - name: Commercial owner decisions regression
+        run: node --test tests/release/owner-commercial-decision-alignment.test.mjs
       - name: Validate the owned local workload generator (not application capacity)
         run: pnpm capacity:simulate
 

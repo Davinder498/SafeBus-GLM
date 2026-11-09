@@ -95,3 +95,8 @@ Use the consolidated [privacy, supplier and commercial gap analysis](../../priva
 ## Pilot sign-off and supplier evidence (2026-11-07)
 
 Use the [pilot contract, supplier and insurance sign-off pack](pilot-contract-signoff-2026-11-07.md) to collect business-owner decisions and district-specific acceptance **before** any customer signature or launch approval. It lists insurance/liability questions and account-specific vendor evidence requests without assuming policy coverage, vendor signatures, tax status, approved SLA targets, or a customer PIA. Store private evidence outside Git; this checklist does not change any `not_approved` release state.
+
+
+## Owner business choices — November 8, 2026
+
+The latest [owner decision register](owner-decisions.md) supersedes historical GST/HST-unregistered notes: the owner reports GST/HST registration effective 2026-11-08, SafeBus registered as Sachman Gold Inc.'s trade name and info@safebus.kids selected for formal notices. The provided business mailing address is **confidential and not to be published or committed to Git**. Final monthly/annual prices are still undecided; the future approved customer-facing totals must include applicable GST/HST. Insurance will be purchased later. Support remains Monday–Friday, 08:00–17:00 Alberta time, with backup/holiday coverage unresolved. No customer agreement publication, live tax mutation or launch approval follows from these choices.

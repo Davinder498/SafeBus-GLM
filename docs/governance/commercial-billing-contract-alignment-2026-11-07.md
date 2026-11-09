@@ -55,3 +55,12 @@ active account-level Canadian Tax registration remain unresolved until the
 business owner verifies its actual CRA registration and approves the tax
 treatment. Paid invoice email receipt, bank settlement, contractual price
 acceptance and commercial authorization are still not verified.
+
+
+## Owner-updated commercial and tax choices — November 8, 2026
+
+The owner now reports **GST/HST registration effective 2026-11-08** for Sachman Gold Inc. This supersedes the earlier report of being unregistered; the CRA record remains in private business storage. SafeBus is owner-reported as a registered trade name, with **info@safebus.kids** selected for formal contract notices. The supplied mailing address must remain restricted and must **never be put in public Git or web content**. Insurance purchase is deferred, and Monday–Friday 08:00–17:00 Alberta support remains selected with owner-absence coverage pending.
+
+The final monthly and annual prices are **undecided**, but approved future displayed per-bus prices must be **GST/HST-inclusive**. Existing temporary CAD 1.99/month and CAD 20.29/year prices and customer obligations remain unchanged. Both Stripe prices have `tax_behavior=unspecified` and the account default is `inferred_by_currency`, which does not prove tax-inclusive behaviour. Select final prices and verify tax behaviour, province-specific place-of-supply and invoice tax presentation before activation.
+
+Read-only Stripe observations: the Canadian Tax registration has `active_from=2026-10-23T14:19:38Z`, earlier than owner-reported CRA effective 2026-11-08; Stripe Tax settings are active. One currently active subscription reports `automatic_tax.enabled=true`, while the paid November 7 invoice had `automatic_tax.enabled=false`. These refer to different points in time; do not treat the earlier paid invoice as incorrect by default or change its historical tax amount without finance review. Reconcile effective-date liability, subscription renewals, customer location, inclusive final amount and receipt breakdown, without changing live Stripe settings in this review. [CRA registration start rules](https://www.canada.ca/en/revenue-agency/services/tax/businesses/topics/gst-hst-businesses/when-register-charge.html) apply to actual supply facts.

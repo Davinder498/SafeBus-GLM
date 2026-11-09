@@ -1,7 +1,7 @@
 # Owner Decisions Before Signing or Publication
 
 **Status:** Decision worksheet; only expressly recorded owner choices are resolved
-**Prepared:** 2026-10-13; owner inputs reconciled 2026-11-05
+**Prepared:** 2026-10-13; owner choices last reconciled 2026-11-08
 
 The owner initially requested placeholders for business identity and contact
 details. On 2026-10-15 the owner identified Sachman Gold Inc., doing business as
@@ -16,28 +16,31 @@ exercises remain unresolved. The owner
 confirmed on 2026-10-16 that the official domain is safebus.kids and Sachman Gold
 Inc. is an Alberta corporation doing business as SafeBus. The website and public
 privacy/deletion routes are available over HTTPS. The 2026-10-16 owner record
-reported no GST/HST registration and undecided pricing; re-confirm current tax
-status and pricing before execution. No staffed coverage, postal address, registration-document verification,
-signing authority, liability amount or publication approval is inferred.
+was superseded by owner-reported GST/HST registration effective 2026-11-08;
+final prices remain undecided and are to be tax-inclusive. The owner reports
+SafeBus is now registered as a trade name and selects info@safebus.kids for
+formal notices. The owner supplied a private mailing address that must **never
+be put in GitHub or displayed on public pages**. Corporate and CRA records,
+signing authority, insurance and backup coverage require separate verification.
 
 | Input                                                            | Draft treatment                                                                               | Required decision/evidence                                                                                                                |
 | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Provider legal name / public name                                | Sachman Gold Inc., doing business as SafeBus; owner-confirmed 2026-10-15                      | Registration documents and signing authority still require verification before execution                                                  |
-| `[PROVIDER_BUSINESS_ADDRESS]`                                    | Unfilled                                                                                      | Business mailing address                                                                                                                  |
-| Privacy and support email; `[NOTICE_EMAIL]`                      | info@safebus.kids for privacy/support; formal legal-notice election pending                   | Support coverage and backup routing; decide the formal contract-notice address separately                                                 |
+| Provider legal name / public name | Sachman Gold Inc. operating as SafeBus; owner reports SafeBus registered as a trade name | Confirm registration documents and signatory privately before execution |
+| `[PROVIDER_BUSINESS_ADDRESS]` | Address provided privately; explicitly withheld from Git and public pages | Insert only into a restricted signed document if required; no source or public disclosure |
+| Privacy/support and contract notice email; `[NOTICE_EMAIL]` | Owner confirmed info@safebus.kids for privacy, support and formal legal notices | Verify monitored mailbox and escalation/absence path before signed contracts |
 | `[PRIVACY_LEAD]`                                                 | Business owner; expressly selected on 2026-10-15                                              | Appointment decision recorded; training, resourcing, coverage and backup still required                                                   |
 | `[PRIVACY_BACKUP]`                                               | Unresolved                                                                                    | Capable backup and routing evidence; personal details outside Git                                                                         |
 | `[EFFECTIVE_DATE]`, `[PUBLIC_POLICY_URL]`, `[DELETION_URL]`      | No effective or publication date                                                              | Approved wording, working public HTTPS pages and contact paths                                                                            |
 | `[CUSTOMER_LEGAL_NAME]`, customer privacy contacts and signatory | Unfilled                                                                                      | Customer onboarding inputs; not needed to write the business drafts                                                                       |
-| `[PRICE_PER_BUS_CAD]`, `[BILLING_INTERVAL_MONTH_OR_YEAR]`, `[CONTRACTED_BUS_COUNT]` | Live Stripe and SafeBus UI support monthly and annual CAD per-active-bus licensing | Approve each commercial price, billing interval, definition of billable active/reserve/replacement bus and allowance; existing Stripe catalog is not an owner price decision                                     |
-| Tax registration, `[APPLICABLE_TAXES]`, exemptions               | Earlier owner report (Oct 16) said no GST/HST registration. Live Stripe Tax currently shows active settings and one Canadian registration entry; **this is not CRA registration evidence** | Reconfirm CRA legal registration, effective date, taxable supply/associated-person threshold analysis, tax collection authority, price tax behavior and invoices before commercial activation                                                           |
+| `[PRICE_PER_BUS_CAD]`, interval and bus quantity | Final monthly/annual prices undecided; future approved displayed prices are GST/HST-inclusive | Choose approved amounts and Stripe price configuration; temporary live catalog must not change |
+| Tax registration, `[APPLICABLE_TAXES]`, exemptions | Owner reports CRA GST/HST registration effective 2026-11-08; Stripe Canada registration currently starts 2026-10-23 | Privately verify CRA date, province-specific tax, inclusive price/invoice treatment, historical and future subscription settings |
 | Collection method, invoice/payment period                        | Stripe self-service supports automatic payment; legacy invoice contracts remain separate; net 30 is proposed only for accepted `send_invoice` terms | Approve customer payment method and invoice terms; do not offer net 30 if card is charged automatically                                                                |
 | Trial, service term and renewal                                  | Current new-tenant Checkout has a 14-day trial default; 12-month service term is only proposed, and monthly/annual billing intervals are available | Approve eligibility, first recurring charge, initial service/pilot term, auto-renewal election, cancellation route, notice periods and Stripe implementation; do not treat trial as an approved free pilot                                                          |
 | Bus-count changes/proration                                      | Written change order before billing change                                                    | Define effective date, approved credit/debit method and evidence of customer authorization                                                |
 | Non-payment                                                      | Written escalation; no automated operational suspension                                       | Approved suspension notice/process; billing state never automatically disables a tenant                                                   |
 | `[GENERAL_LIABILITY_CAP]`, `[PRIVACY_LIABILITY_CAP]`             | No selected amounts                                                                           | Owner risk/insurance review, customer negotiation and legal review of exclusions                                                          |
-| Insurance                                                        | No certification or policy assertion                                                          | Required types/limits, policy evidence and contractual representations                                                                    |
-| Support hours, timezone and holidays                             | Monday–Friday, 8 a.m.–5 p.m. Alberta local time (America/Edmonton); owner-selected 2026-11-05 | Owner handles support and backup escalation; holiday/urgent mechanics and owner-absence coverage remain open; no 24/7 promise             |
+| Insurance | Purchase deferred by owner; no active coverage asserted | Insurance quotes, customer requirements, bound policy and liability caps pending before applicable pilot |
+| Support hours, timezone and holidays | Owner reconfirmed Monday–Friday 8 a.m.–5 p.m. Alberta local time (America/Edmonton) | Holiday/owner-absence/backup escalation unresolved; no 24/7 promise |
 | Availability, latency, GPS freshness and notification targets    | All unapproved; recovery commitments excluded from this launch review                         | Evidence for any selected promise; architecture review does not establish measured capacity                                               |
 | Credit rates/cap                                                 | Unfilled                                                                                      | Commercial remedy and claim process after service targets are approved; define credit treatment for monthly vs annual billings                                                                    |
 | Incident notification                                            | Proposed initial customer notice within 24 hours of awareness, sooner when required           | Operational capability and applicable legal/contract deadlines; never wait for final forensics or counsel appointment to contain/escalate |
@@ -108,7 +111,7 @@ bank settlement, customer pricing acceptance or commercial launch. Do not alter
 tax configuration or issue corrective financial documents without an approved
 finance decision and documented customer treatment.
 
-## Owner declaration — GST/HST registration (November 7, 2026)
+## Superseded owner declaration — historical November 7, 2026
 
 The owner has now explicitly confirmed: **Sachman Gold Inc. is not registered
 for GST/HST at present and plans to register in the future**. This supersedes
@@ -126,3 +129,12 @@ correct tax collection setup for new and existing subscriptions, invoices,
 customer disclosures, and a verified post-registration payment test. No current
 Stripe configuration changes, new tax charges, or readiness approvals follow
 from this declaration.
+
+
+## Current business decisions — November 8, 2026
+
+The owner superseded the historical unregistered statement: **Sachman Gold Inc. is reported GST/HST-registered effective 2026-11-08**. The CRA confirmation and account identifiers must be stored privately, not in Git. SafeBus is reported registered as a trade name under Sachman Gold Inc.; the chosen formal legal-notice email is **info@safebus.kids**. The mailing address was provided privately with an explicit **no-public-display** instruction, and therefore is never reproduced in this repo. Keep the public address placeholder until a restricted signed contract needs it.
+
+Final monthly and annual per-bus amounts are **undecided**; the owner selected **GST/HST-inclusive prices** for future approved offers. The temporary live Stripe $1.99 monthly / $20.29 annual prices, existing subscriptions and historical invoices must remain unchanged pending a reviewed decision. Stripe's Canadian Tax registration is active from **2026-10-23T14:19:38Z**, earlier than the reported CRA date; one existing active subscription currently has `automatic_tax.enabled=true`, whereas the paid Nov 7 invoice had `automatic_tax.enabled=false`. Both active prices have `tax_behavior=unspecified`, with a default inferred by currency; **this is not proof of tax-inclusive billing**. Reconcile effective date, supply timing, customer region, the right tax rate, inclusive price and invoice tax disclosure before implementing any live financial correction.
+
+Insurance is to be purchased **later**; no coverage or limits are currently claimed. The support schedule remains **Monday–Friday 08:00–17:00 America/Edmonton**. Holiday and owner-absence response/backup are still unresolved. This statement does not authorize contract publication, a district pilot, tax-setting mutations or a readiness approval.

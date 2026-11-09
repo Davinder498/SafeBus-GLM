@@ -36,3 +36,10 @@ Perform after the preceding implementation and business controls are ready, with
 ## Rules for further changes
 
 Do not enable a live school authority, publish draft district agreements, charge test payments, send real student data to vendors, bypass production environment gates, enable destructive retention, or promise unmeasured fleet capacity. Retain historic privacy findings as dated evidence, while keeping **current** public claims consistent with deployed source. Any real-world acceptance remains separately marked pending until the final phase is carried out and evidenced.
+
+
+## November 8 owner decisions — restricted contact information
+
+The owner reports GST/HST registration effective **2026-11-08**, registered SafeBus trade-name status under Sachman Gold Inc., and **info@safebus.kids** for formal/legal contract notices. The owner supplied a private mailing address and explicitly prohibited its public display: **do not place the mailing address in public GitHub, the website, public privacy policies or shared unsigned templates**. Populate restricted executed contracts only where required. Independently validate corporate/CRA documents privately before signing.
+
+The owner left final monthly/annual unit prices **undecided** but selected **GST/HST included in future agreed prices**. Keep the two current temporary Stripe prices unchanged. Stripe's Canada Tax registration was observed active from **2026-10-23**, earlier than the owner's reported CRA November 8 date; active subscription automatic tax is now enabled but the paid Nov 7 invoice's was disabled. Resolve registration effective-date treatment, customer tax jurisdiction, inclusive price, future invoices and existing subscriptions with finance review before touching live billing. The owner will purchase insurance later and reconfirmed Monday–Friday **08:00–17:00 Alberta** support; unstaffed absence/holiday escalation remains open. All readiness approvals and consolidated physical/live-provider testing remain deferred as already planned.
