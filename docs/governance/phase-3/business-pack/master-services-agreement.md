@@ -430,4 +430,4 @@ Exception: a district may request invoice/PO billing **only with a distinct plat
 
 The standard **monthly month-to-month / annual 12-month** renewal and
 no-fee, end-of-term cancellation policy in section 5 is also owner-approved.
-These policies, proposed Provider liability caps and limited fault-based indemnity are **owner-approved business positions** only. This MSA remains a **draft, unsigned and unpublished**, pending customer-specific legal/procurement review and actual acceptance. **No insurance coverage, customer authorization to process school records or pilot/launch sign-off is implied**. The initial-pilot support policy is specified in the separate draft SLA.
+These policies, proposed Provider liability caps and limited fault-based indemnity are **owner-approved business positions** only. This MSA remains **not executed**, a **draft, unsigned and unpublished**, pending customer-specific legal/procurement review and actual acceptance. **No insurance coverage, customer authorization to process school records or pilot/launch sign-off is implied**. The initial-pilot support policy is specified in the separate draft SLA.
