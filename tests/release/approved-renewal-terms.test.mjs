@@ -31,6 +31,14 @@ test('MSA and Order Form match approved monthly annual and refund rules', async 
   }
 });
 
+test('invoice/PO drafts require an individually approved payment window rather than blanket net 30', async () => {
+  const msa = await fs.readFile('docs/governance/phase-3/business-pack/master-services-agreement.md', 'utf8');
+  const order = await fs.readFile('docs/governance/phase-3/business-pack/order-form.md', 'utf8');
+  assert.match(msa, /14, 30, 45 or 60 calendar days/);
+  assert.match(order, /14, 30, 45 or 60 days after invoice issuance/);
+  assert.match(msa, /Approval alone does not issue an invoice or start a subscription/);
+});
+
 test('card and invoice cancellation handlers do not issue immediate refunds', async () => {
   const files = [
     'apps/web/netlify/functions/tenant-subscriptions.mjs',
