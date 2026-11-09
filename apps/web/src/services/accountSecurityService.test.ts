@@ -3,6 +3,7 @@ import { changeOwnPassword, AccountSecurityError, accountSecurityErrorMessage } 
 
 const mocks = vi.hoisted(() => ({
   getUser: vi.fn(),
+  getSession: vi.fn(),
   policy: vi.fn(),
   updateUser: vi.fn(),
   recordEvent: vi.fn(),
@@ -19,7 +20,7 @@ vi.mock('@/lib/supabase', () => ({
   supabaseConfigError: null,
   supabaseEnv: { url: 'https://project.example.test', anonKey: 'public-key' },
   supabase: {
-    auth: { getUser: mocks.getUser, updateUser: mocks.updateUser },
+    auth: { getSession: mocks.getSession, getUser: mocks.getUser, updateUser: mocks.updateUser },
     rpc: vi.fn((name: string) =>
       name === 'enforce_new_password_policy' ? mocks.policy() : mocks.recordEvent(),
     ),
@@ -28,6 +29,10 @@ vi.mock('@/lib/supabase', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.getSession.mockResolvedValue({
+    data: { session: { user: { id: 'user-one' }, access_token: 'current-application-session' } },
+    error: null,
+  });
   mocks.getUser.mockResolvedValue({
     data: { user: { id: 'user-one', email: 'member@example.test' } },
     error: null,
@@ -94,6 +99,61 @@ describe('authenticated current-password change', () => {
       .rejects.toThrow('Sign in again');
     expect(mocks.createClient).not.toHaveBeenCalled();
     expect(mocks.updateUser).not.toHaveBeenCalled();
+  });
+
+
+  it('rejects password mutation if another user signs in while the proof is being checked', async () => {
+    mocks.signInWithPassword.mockImplementation(async () => {
+      mocks.getSession.mockResolvedValue({
+        data: { session: { user: { id: 'user-two' }, access_token: 'different-session' } },
+        error: null,
+      });
+      return { data: { user: { id: 'user-one' }, session: { access_token: 'ephemeral-session' } }, error: null };
+    });
+    await expect(changeOwnPassword('old-secret', 'new-secret-long-enough'))
+      .rejects.toThrow('Your session changed');
+    expect(mocks.updateUser).not.toHaveBeenCalled();
+    expect(mocks.recordEvent).not.toHaveBeenCalled();
+    expect(mocks.signOut).toHaveBeenCalledWith({ scope: 'local' });
+  });
+
+  it('rejects a token replacement for the same account while proving its old password', async () => {
+    mocks.getSession
+      .mockResolvedValueOnce({
+        data: { session: { user: { id: 'user-one' }, access_token: 'current-application-session' } },
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: { session: { user: { id: 'user-one' }, access_token: 'new-session-token' } },
+        error: null,
+      });
+    await expect(changeOwnPassword('old-secret', 'new-secret-long-enough'))
+      .rejects.toThrow('Your session changed');
+    expect(mocks.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('rejects a local session that disagrees with the Auth server verified user', async () => {
+    mocks.getUser.mockResolvedValue({
+      data: { user: { id: 'user-two', email: 'member@example.test' } },
+      error: null,
+    });
+    await expect(changeOwnPassword('old-secret', 'new-secret-long-enough'))
+      .rejects.toThrow('Sign in again');
+    expect(mocks.createClient).not.toHaveBeenCalled();
+    expect(mocks.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unverifiable session after the isolated password proof', async () => {
+    mocks.getSession
+      .mockResolvedValueOnce({
+        data: { session: { user: { id: 'user-one' }, access_token: 'current-application-session' } },
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: { session: null }, error: { message: 'private session detail' } });
+    await expect(changeOwnPassword('old-secret', 'new-secret-long-enough'))
+      .rejects.toThrow('Your session changed');
+    expect(mocks.updateUser).not.toHaveBeenCalled();
+    expect(mocks.recordEvent).not.toHaveBeenCalled();
   });
 
   it('does not announce success when Supabase fails the actual password update', async () => {

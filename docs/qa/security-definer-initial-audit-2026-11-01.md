@@ -47,3 +47,14 @@
 7. After an authorized deployment, rerun Supabase advisors and record approval, functional test results and rollback evidence.
 
 Supabase advisory: https://supabase.com/docs/guides/observability/advisors?queryGroups=lint&lint=0029_authenticated_security_definer_function_executable
+
+
+## Read-only post-PR #417 catalog reconciliation — November 8, 2026 (Alberta)
+
+A current **metadata-only** review of the live BusSafe Supabase project found **zero** `anon` execute grants on public `SECURITY DEFINER` RPCs and **162** such public routines callable by `authenticated`. That is a newer count than the historical 145 above, and **not 162 confirmed security defects**. The authenticated list includes intentionally role-scoped operations, while each actual signature/owner/tenant permission still needs reviewed authorization acceptance.
+
+For the previously flagged `public.admin_create_bus` and `public.admin_update_bus`, the live function body now references the central `safebus_private.current_user_role()` helper and does not contain the literal retired `school_admin` role. The live `safebus_private.require_announcement_admin()` helper also does not contain that literal. The current `authenticator` role has `pgrst.db_pre_request=safebus_private.enforce_active_api_session` configured. These observations demonstrate that the **specific source-text findings above no longer reproduce in the current catalog**, without proving which release installed the fix or establishing all signed-role deny/allow behavior.
+
+**Do not blindly apply `supabase/migrations/pending/20261101180000_definer_district_auth_hardening.sql` to “fix” these dated findings.** Before any protected production migration, reconcile exact function definitions, versions, migration ledger, expected preconditions and idempotency; otherwise a redundant/overwriting migration can itself be unsafe. No SQL write or authorization approval was performed during this follow-up.
+
+The leaked-password-protection setting still requires a supported account plan and owner authorization, and hosted cross-district signed-session tests still require their approved final acceptance procedure. The separate November 8 client-side password/invitation session-mutation hardening is recorded in [its operations note](../operations/auth-client-mutation-race-2026-11-08.md).

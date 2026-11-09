@@ -27,9 +27,17 @@ export async function changeOwnPassword(currentPassword: string, newPassword: st
     throw new AccountSecurityError('Account security is unavailable. Please try again later.');
   }
 
+  // Bind both password verification and the subsequent mutation to one
+  // application session. The isolated proof client signs into a separate
+  // temporary session and must never authorize a different active account.
+  const initial = await supabase.auth.getSession();
+  const original = initial.data.session;
+  if (initial.error || !original?.access_token || !original.user?.id) {
+    throw new AccountSecurityError('Sign in again before changing your password.');
+  }
   const existing = await supabase.auth.getUser();
   const user = existing.data.user;
-  if (existing.error || !user?.id || !user.email) {
+  if (existing.error || !user?.id || !user.email || user.id !== original.user.id) {
     throw new AccountSecurityError('Sign in again before changing your password.');
   }
 
@@ -67,6 +75,23 @@ export async function changeOwnPassword(currentPassword: string, newPassword: st
     await verifier.auth.signOut({ scope: 'local' }).catch(() => undefined);
   }
 
+  // A sign-out, account switch or token replacement during current-password
+  // verification invalidates this operation. Reject rather than changing the
+  // new session's credentials. The authenticated getUser result above supplies
+  // the trusted identity; getSession here is only a same-session comparison.
+  let current;
+  try {
+    current = await supabase.auth.getSession();
+  } catch {
+    throw new AccountSecurityError('Your session changed. Sign in again before changing your password.');
+  }
+  if (
+    current.error ||
+    current.data.session?.user.id !== user.id ||
+    current.data.session?.access_token !== original.access_token
+  ) {
+    throw new AccountSecurityError('Your session changed. Sign in again before changing your password.');
+  }
   const updated = await supabase.auth.updateUser({
     password: newPassword,
     current_password: currentPassword,

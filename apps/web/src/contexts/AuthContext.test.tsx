@@ -8,6 +8,7 @@ import { useAuth } from './useAuth';
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   signIn: vi.fn(),
+  updateUser: vi.fn(),
   signOut: vi.fn(),
   profile: vi.fn(),
   assurance: vi.fn(),
@@ -25,6 +26,7 @@ vi.mock('@/lib/supabase', () => ({
     auth: {
       getSession: mocks.getSession,
       signInWithPassword: mocks.signIn,
+      updateUser: mocks.updateUser,
       signOut: mocks.signOut,
       onAuthStateChange: (listener: typeof mocks.listener) => {
         mocks.listener = listener;
@@ -87,6 +89,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   mocks.listener = null;
   mocks.getSession.mockResolvedValue({ data: { session: null }, error: null });
+  mocks.updateUser.mockResolvedValue({ error: null });
   mocks.profile.mockImplementation(async (id: string) => profile(id));
   mocks.assurance.mockResolvedValue({
     data: { currentLevel: 'aal1', nextLevel: 'aal1' },
@@ -357,4 +360,101 @@ it('discards old assurance after the same account receives a new token', async (
   expect(auth.session?.access_token).toBe('new-token');
   expect(auth.profile?.id).toBe('a');
   expect(auth.mfaStatus.currentLevel).toBe('aal1');
+});
+ 
+
+it('rejects password update after sign-out while the policy check is in flight', async () => {
+  await render();
+  await emit('SIGNED_IN', session('a'));
+  const pending = deferred<{ error: null }>();
+  mocks.rpc.mockImplementation((name: string) =>
+    name === 'enforce_new_password_policy'
+      ? pending.promise
+      : Promise.resolve({ data: true, error: null }),
+  );
+  let result!: Promise<unknown>;
+  await act(async () => {
+    result = auth.updatePassword('new-password-test').catch((error) => error);
+  });
+  await emit('SIGNED_OUT', null);
+  await act(async () => pending.resolve({ error: null }));
+  expect(await result).toBeInstanceOf(Error);
+  expect(mocks.updateUser).not.toHaveBeenCalled();
+  expect(auth.session).toBeNull();
+});
+
+it('rejects password mutation when another account replaces the verified session', async () => {
+  await render();
+  await emit('SIGNED_IN', session('a'));
+  const pending = deferred<{ error: null }>();
+  mocks.rpc.mockImplementation((name: string) =>
+    name === 'enforce_new_password_policy'
+      ? pending.promise
+      : Promise.resolve({ data: true, error: null }),
+  );
+  let result!: Promise<unknown>;
+  await act(async () => {
+    result = auth.updatePassword('new-password-test').catch((error) => error);
+  });
+  await emit('SIGNED_IN', session('b'));
+  await act(async () => pending.resolve({ error: null }));
+  expect(await result).toBeInstanceOf(Error);
+  expect(mocks.updateUser).not.toHaveBeenCalled();
+  expect(auth.profile?.id).toBe('b');
+});
+
+it('rejects an invitation activation when its policy request finishes after an account switch', async () => {
+  await render();
+  await emit('SIGNED_IN', session('a'));
+  mocks.getSession.mockResolvedValue({ data: { session: session('a') }, error: null });
+  const pending = deferred<{ error: null }>();
+  mocks.rpc.mockImplementation((name: string) =>
+    name === 'enforce_new_password_policy'
+      ? pending.promise
+      : Promise.resolve({ data: true, error: null }),
+  );
+  let result!: Promise<unknown>;
+  await act(async () => {
+    result = auth.completeInvitation('new-password-test').catch((error) => error);
+  });
+  await emit('SIGNED_IN', session('b'));
+  await act(async () => pending.resolve({ error: null }));
+  expect(await result).toBeInstanceOf(Error);
+  expect(mocks.updateUser).not.toHaveBeenCalled();
+  expect(mocks.rpc).not.toHaveBeenCalledWith('complete_invited_account');
+  expect(auth.profile?.id).toBe('b');
+});
+
+it('does not activate the next account after a password update switches identities', async () => {
+  await render();
+  await emit('SIGNED_IN', session('a'));
+  mocks.getSession.mockResolvedValue({ data: { session: session('a') }, error: null });
+  mocks.updateUser.mockImplementation(async () => {
+    mocks.listener?.('SIGNED_IN', session('b'));
+    return { error: null };
+  });
+  let result!: Promise<unknown>;
+  await act(async () => {
+    result = auth.completeInvitation('new-password-test').catch((error) => error);
+  });
+  expect(await result).toBeInstanceOf(Error);
+  expect(mocks.rpc).not.toHaveBeenCalledWith('complete_invited_account');
+  expect(auth.profile?.id).toBe('b');
+});
+
+it('allows normal invitation activation after USER_UPDATED rotates the same account token', async () => {
+  await render();
+  await emit('SIGNED_IN', session('a'));
+  mocks.getSession.mockResolvedValue({ data: { session: session('a') }, error: null });
+  mocks.updateUser.mockImplementation(async () => {
+    mocks.listener?.('USER_UPDATED', session('a', 'rotated-token'));
+    return { error: null };
+  });
+  let completed: unknown;
+  await act(async () => {
+    completed = await auth.completeInvitation('new-password-test');
+  });
+  expect(completed).toMatchObject({ id: 'a' });
+  expect(mocks.rpc).toHaveBeenCalledWith('complete_invited_account');
+  expect(auth.profile?.id).toBe('a');
 });
