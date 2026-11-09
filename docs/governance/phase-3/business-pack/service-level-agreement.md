@@ -1,75 +1,157 @@
-# SafeBus Service-Level Agreement — Draft
+# SafeBus Service-Level Agreement — Initial Pilot Draft
 
-**Status:** Contract framework; numerical commitments and remedies unapproved
+**Status:** Owner-approved business-hours and holiday support policy (November 9, 2026); draft contract only, not executed or published  
+**Provider:** Sachman Gold Inc., operating as SafeBus  
+**Customer:** The school authority identified in the accepted Order Form
 
-This SLA applies only to the accepted service-start date, supported devices,
-approved geography and capacity envelope in the Order Form. A Free prelaunch
-deployment, localhost test or supplier SLA is not a commercial SafeBus SLA.
+This SLA applies only after the approved service-start date to the supported
+devices, geography, functions and controlled-pilot capacity identified in the
+Customer's accepted Order Form. It does not approve a pilot, authorize school
+records to be processed or replace privacy/security release gates. Preview
+deployments, internal engineering goals and supplier statements are not contractual
+SafeBus service guarantees.
 
-## Service measures
+## 1. Staffed support and Alberta holiday calendar
 
-| Measure               | Definition                                                                                                                       | Target to approve                                                   |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Availability          | Percentage of included service minutes in a calendar month in which an authorized user can perform the agreed core workflow      | `[MONTHLY_AVAILABILITY_PERCENT]`                                    |
-| Core response latency | p95 of the agreed authenticated workflow/request set, under the supported workload                                               | `[P95_RESPONSE_TARGET]`                                             |
-| Fresh-position lag    | Collection timestamp to authorized visible fresh position; report stale/unknown honestly                                         | `[GPS_FRESHNESS_TARGET]` and network/device boundary                |
-| Notifications         | Source event to email/push provider acceptance, with inbox receipt/device display measured separately; failures/retries measured | `[NOTIFICATION_TARGET]` and receipt definition                      |
-| Recovery point/time   | Optional separately negotiated service; excluded from the commercial launch assessment                                           | No commitment selected; any later promise needs supporting evidence |
+Ordinary support is provided **Monday–Friday, 8:00 a.m.–5:00 p.m. Alberta local
+time (America/Edmonton)**, **excluding Alberta's nine general holidays**.
+The support and ordinary contractual notice inbox is **info@safebus.kids**.
+Support received outside staffed hours may be queued or automatically acknowledged
+and is ordinarily handled when staffed support next resumes; there is **no
+contractual first-response time or after-hours human-response guarantee**.
+An automatic acknowledgement does not mean a person has reviewed the issue.
 
-Monthly availability is 100 × (included minutes − unavailable included minutes)
-/ included minutes. The parties agree how monitoring measures multi-tenant
-impact, partial outages, supplier failures, maintenance and dispute resolution.
-No target takes effect while its placeholder or evidence remains open.
+For this pilot the nine excluded Alberta general holidays are:
 
-Approved maintenance windows, advance notice, maximum exclusions and customer
-actions affecting measurement belong in the Order Form. Supplier outages count
-according to the accepted definition; they are not silently excluded merely
-because the supplier is external. Network/device limitations must be bounded
-and disclosed rather than excluding every tracking failure.
+1. New Year's Day
+2. Alberta Family Day
+3. Good Friday
+4. Victoria Day
+5. Canada Day
+6. Labour Day
+7. Thanksgiving Day
+8. Remembrance Day
+9. Christmas Day
 
-## Support and incident response
+Use the **official holiday dates for the applicable calendar year** (including
+the legally recognized date where Canada Day falls on Sunday):
+https://www.alberta.ca/alberta-general-holidays .
+If a holiday falls on an otherwise non-staffed Saturday or Sunday, this policy
+does not automatically add a separate weekday closure, except where a legal
+holiday date itself shifts. Easter Monday, Heritage Day, National Day for Truth
+and Reconciliation and Boxing Day are **not additional pilot closures** under
+this policy. Any additional closure or customer-specific support calendar
+requires a separately accepted written Order Form amendment.
 
-Owner-selected support hours (2026-11-05): Monday–Friday, 8:00 a.m.–5:00 p.m.
-Alberta local time (`America/Edmonton`, using current Alberta time rules).
-Holiday coverage and urgent escalation remain to be defined in the Order Form. The support inbox is [info@safebus.kids](mailto:info@safebus.kids); the urgent
-contact is unresolved. Complete the coverage decision before accepting the SLA and define staffed
-primary and backup coverage before promising around-the-clock support.
+The support calendar does not promise that the school transportation service
+itself is available only during these hours; the application may operate outside
+them, **without a contractual uptime or continuous-monitoring guarantee**.
+Staffed coverage and a monitored contact/backup escalation procedure must be
+verified operationally before pilot activation; this contract does not claim an
+independent backup responder exists.
 
-| Priority | Example                                                               | Acknowledgement/update targets                                     |
-| -------- | --------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| P1       | Suspected privacy/tenant boundary failure or core service unavailable | `[P1_ACK]`; `[P1_UPDATE]`; immediate safety/containment escalation |
-| P2       | Material maps, live visibility or email degradation                   | `[P2_ACK]`; `[P2_UPDATE]`                                          |
-| P3       | Non-critical issue or individual support request                      | `[P3_ACK]`; `[P3_UPDATE]`                                          |
+## 2. Issue categories and ordinary response process
 
-Acknowledgement is a substantive response by the responsible team, not merely
-an automated receipt. Restoration targets are not unconditional guaranteed fix
-times. Provide operational fallback and clear status while investigating.
-Privacy notifications follow the DPA/law even outside support hours.
+| Priority | Examples | Initial-pilot handling |
+| --- | --- | --- |
+| P1 — Critical | Core service unavailable; suspected cross-tenant or serious security/privacy event | Prioritize investigation when personnel are available, take proportionate protective actions, coordinate operational fallback and follow DPA/law incident duties |
+| P2 — High | Significant bus-location, map or authorized notification degradation | Investigate with priority during staffed support hours and communicate confirmed updates as practical |
+| P3 — Standard | Account questions, configuration support or noncritical defects | Handle in the ordinary business-hours queue |
 
-## Credits and repeated failure
+SafeBus will make commercially reasonable efforts to investigate service reports
+and provide accurate information about confirmed disruptions. **No fixed
+acknowledgement, update, repair or restoration time** is promised for any
+category, including P1. Classifications are for triage, not a guaranteed
+response clock or substitute for school-authority emergency procedures.
+Emergency safety response, transport dispatch and student supervision remain
+the Customer's responsibility.
 
-If agreed availability falls below the accepted threshold, credits are calculated
-using the affected recurring service fee, the approved tier/rate table and cap:
-`[CREDIT_TIERS]`, `[MONTHLY_CREDIT_CAP]`, `[CLAIM_WINDOW]`. The Customer supplies
-reasonable supporting dates; SafeBus's monitoring supports verification. The
-parties must decide whether credits are automatic or claimed and how they apply
-to **both monthly and annual** billing, including the basis for a monthly
-equivalent of an annual prepayment and any trial-period exclusions. No rate,
-cap or exclusive-remedy limitation is selected here. The customer service
-term, trial, subscription interval and renewal election are independently
-specified by the signed Order Form; the SLA does not override them.
+## 3. Monitoring, service performance and limitations
 
-Define a repeated/material failure exit right and its prepaid-fee treatment in
-the Order Form. Credits do not excuse legal privacy duties or the agreed DPA.
-Customer withdrawal and immediate pilot suspension authority remain available
-under the applicable agreement and launch policy.
+SafeBus may operate automated health checks, logging, alerting and incident
+monitoring outside staffed support hours. Such automation does **not** establish
+24/7 staffed support, continuous detection, immediate human intervention or
+guaranteed delivery of an alert.
 
-## Evidence required before signature
+For the initial pilot, **no numerical service-level commitment** is made for:
 
-Retain approved service targets, supplier plans/quotas, alert routing, supported
-Android results and evidence for each selected service promise. Backup/full-restore
-and disaster-recovery exercises are excluded from launch requirements. Actual
-capacity commitments require measurements; this review does not provide them.
-The business target of 10,000 buses/100,000 concurrent users is planning,
-not a service entitlement. The current controlled-pilot ceiling is 100 buses;
-expansion needs separately reviewed evidence and authorization.
+- platform or API uptime, availability percentage or latency;
+- position freshness, continuous GPS reporting, ETA accuracy or trip tracking;
+- email or push acceptance, recipient receipt or device display timing;
+- incident remediation or repair time;
+- recovery-time or recovery-point objectives.
+
+Where readings are stale or absent, the application must not claim verified live
+positions. Device permissions, network availability, provider outages, map tiles
+and operating conditions can affect delivery; these risks are disclosed, not
+treated as a blanket waiver of other contractual or legal responsibilities.
+
+Any future numeric target or 24/7 support commitment requires verified
+operational evidence, staffing, supplier readiness and an **expressly agreed
+written amendment**; an internal dashboard target does not amend this SLA.
+
+## 4. Privacy and security incidents — separate legal obligations
+
+The ordinary support schedule and holiday exclusions **do not postpone or
+override** the MSA, DPA or applicable legal duties for containment,
+cooperation, evidence preservation, privacy incident notices, data-subject
+requests or regulator/customer escalation. In particular, the DPA's separate
+incident-notification rule (including its no-later-than-24-hours-after-awareness
+provision, subject to its exact text and applicable law) continues to apply
+based on actual awareness, including outside staffed support hours.
+
+Before authorizing live school-authority data, SafeBus must verify an operational
+route capable of meeting those independent requirements. An automated ticket,
+health check or unstaffed inbox alone is not evidence of a workable urgent
+incident response process. This SLA **does not claim that 24/7 incident
+personnel or backup coverage have been established**.
+
+## 5. Maintenance and transport fallback
+
+SafeBus may perform reasonable maintenance and protective security updates.
+Where practicable, customers will receive advance notice of planned changes
+expected to materially affect contracted operations. Urgent proportionate
+security action may proceed without advance notice, with notice afterward
+where appropriate. No fixed maintenance notice period is guaranteed here.
+
+The Customer retains decision-making authority over routes, dispatch, student
+safety and emergency communication. On missing GPS, maps, ETA or notification
+delivery, the Customer must use its approved fallback procedures, including
+direct dispatcher/driver contact as appropriate. SafeBus is not a substitute
+for emergency services or an operational transportation control centre.
+
+## 6. Remedies, credits and contract precedence
+
+**No automatic uptime-based service credits, financial penalties or SLA credit
+tiers are offered during the initial pilot**, for **both monthly and annual**
+subscriptions. This SLA does not invent a credit rate, cap, claims window or
+exclusive remedy. Reported material failures will be investigated and dealt
+with under the accepted MSA and applicable law.
+
+The owner-approved subscription terms remain in the MSA and Order Form:
+monthly month-to-month and annual 12-month automatic renewal, scheduled
+cancellation at the end of the current trial or paid term, no early cancellation
+fee, and no partial refund solely for convenience cancellation except where
+legally required or expressly agreed. **None of these ordinary cancellation
+terms waives a mandatory legal remedy or an expressly agreed breach remedy**.
+Accrued invoice and lawful exit/data-return duties remain subject to the
+accepted agreements.
+
+The MSA, DPA, security schedules, applicable mandatory law and customer-specific
+Order Form govern their respective subjects; this SLA cannot narrow mandatory
+privacy/security duties or silently alter signed customer-specific terms.
+Only a properly accepted written amendment can add service guarantees.
+
+## 7. Pilot evidence and effectiveness
+
+Before signing or activation, verify correct notice routing, coverage during
+the promised staffed window, meaningful outage communications, incident
+escalation, supported Android behavior, supplier dependencies, and
+Customer-approved operational fallback. No measured SLA performance or
+customer-specific legal acceptance is asserted by this draft.
+
+The first controlled pilot remains bounded by the separately authorized
+scope and capacity. The SLA becomes binding only when the complete
+customer-specific agreement package is published and electronically accepted
+with the required release and school-authority approvals. Existing executed
+customer contracts are not changed by this owner decision.
