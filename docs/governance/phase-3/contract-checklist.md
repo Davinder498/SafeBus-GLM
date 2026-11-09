@@ -15,7 +15,7 @@ Git. A drafted document is not an approved, signed or effective agreement.
 | Customer order form         | [Order form](business-pack/order-form.md)                 | Yes; customer inputs unfilled             | Pending                      |
 | Data Processing Agreement   | [DPA](business-pack/data-processing-agreement.md)         | Yes; actual authority/suppliers pending   | Pending                      |
 | Security Schedule           | [Security](business-pack/security-schedule.md)            | Yes; evidence gaps explicit               | Pending                      |
-| Service-Level Agreement     | [SLA](business-pack/service-level-agreement.md)           | Yes; targets/remedies unapproved          | Pending                      |
+| Service-Level Agreement     | [SLA](business-pack/service-level-agreement.md)           | Yes; initial-pilot support/holiday policy approved; no numerical performance guarantees or automatic credits | Customer execution/operational evidence pending |
 | Acceptable-Use Terms        | [AUP](business-pack/acceptable-use-terms.md)              | Yes; effective/acceptance process pending | Pending                      |
 | Business Privacy Policy     | [Policy](business-pack/privacy-policy.md)                 | Yes; contacts/countries/periods pending   | Pending                      |
 | Data Return and Destruction | [Exit schedule](business-pack/data-return-destruction.md) | Yes; capability/windows pending           | Pending                      |
@@ -23,9 +23,12 @@ Git. A drafted document is not an approved, signed or effective agreement.
 
 Start with the [owner decisions](business-pack/owner-decisions.md) and
 [pack index](business-pack/README.md). The actual monthly and annual per-active-bus CAD catalog
-is described in the [commercial billing alignment review](../commercial-billing-contract-alignment-2026-11-07.md). Published Stripe prices are not owner-approved contract prices; price, tax, trial, payment/renewal, liability, insurance,
-service targets and disposal windows still need owner/customer decisions.
-Do not configure billing or operational promises from unapproved placeholders.
+is described in the [commercial billing alignment review](../commercial-billing-contract-alignment-2026-11-07.md). Owner-approved November 9 GST/HST-inclusive standard prices, trial and
+renewal/cancellation rules are recorded in the commercial files. The pilot
+staffed-hours/holiday and no-numerical-SLA-guarantee business choices are
+also approved, but customer-specific acceptance, tax reconciliation,
+liability, insurance, supplier, DPA incident escalation and retention evidence
+remain open. Do not configure operational promises from unsupported claims.
 
 Review roles and purpose/authority, allowed data, suppliers/countries, access/
 correction support, incident duties, retention/holds, safeguards, audit and exit
