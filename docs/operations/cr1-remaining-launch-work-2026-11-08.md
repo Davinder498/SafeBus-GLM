@@ -161,3 +161,24 @@ require customer-specific authorized review; there is no blanket unlimited or
 reciprocal Customer indemnity. **Insurance quotations and purchase remain
 deferred; no policy or coverage is represented.** No agreement publication,
 live customer action, financial/Stripe change or launch authorization follows.
+
+
+## November 9 — district-controlled records policy CLOSED, account-wide deletion still gated
+
+The owner approved a **simple district-controlled data model** rather than a
+mandatory automatic 30-day return and 60-day deletion exit procedure. The
+school-authority tenant admin may use existing secure student/guardian/driver/
+bus directory CSV downloads and supported record-level delete, deactivate,
+archive and Records disposal controls; the Settings page now links to these
+workflows and directs account-closure/additional data requests to support.
+These exports do **not** include all trip histories, notifications and other
+record classes, and account closure is **not an immediate district-wide wipe**.
+
+The MSA, DPA, Order Form and Data Management, Return and Destruction Schedule
+state the limits plainly. No automatic destruction, deletion flags, full-tenant
+purge, backup expiry claims or irreversible account changes were enabled.
+Still required before any broader tool or binding customer commitment:
+authenticated tenant-safe testing, hold/retention/dependency review, supported
+complete export coverage, supplier/log/backup evidence, verified customer
+identity and actual contract publication/acceptance. Preserve existing
+`not_approved` and `not_authorized` gates.
