@@ -126,8 +126,17 @@ export function SubscriptionOverview({
             value={formatBillingDate(subscription.currentPeriodStart)}
           />
           <Detail
-            label={subscription.cancelAtPeriodEnd ? 'Access through' : 'Renews'}
-            value={formatBillingDate(subscription.currentPeriodEnd)}
+            label={subscription.cancelAtPeriodEnd
+              ? 'Current term ends'
+              : status === 'trialing' ? 'First charge after trial' : 'Next renewal'}
+            value={formatBillingDate(status === 'trialing' && subscription.trialEnd
+              ? subscription.trialEnd : subscription.currentPeriodEnd)}
+          />
+          <Detail
+            label="Contract term"
+            value={subscription.billingInterval === 'month'
+              ? 'Month-to-month · automatic monthly renewal'
+              : '12 months · automatic annual renewal'}
           />
           <Detail label="Trial ends" value={formatBillingDate(subscription.trialEnd)} />
           <Detail label="Billing email" value={subscription.billingEmail ?? 'Not available'} />
@@ -143,8 +152,11 @@ export function SubscriptionOverview({
           <Detail label="Active buses" value={String(subscription.activeBusCount)} />
         </dl>
         <p className="mt-3 text-xs leading-5 text-slate-500">
-          Applicable tax and discounts are detailed on the actual invoice. This summary does not
-          independently confirm tax-inclusive pricing; the accepted school-authority order governs.
+          Cancel at any time without an early cancellation fee; cancellation takes effect at
+          the end of the trial or paid term. Cancel during the trial to avoid the first charge.
+          No partial refund of paid periods applies except where required by law or expressly
+          agreed. Applicable tax and discounts are detailed on the actual invoice; the
+          accepted school-authority order governs.
         </p>
         {subscription.usageExceedsAllowance && (
           <p className="mt-3 text-sm font-semibold text-warning-700">

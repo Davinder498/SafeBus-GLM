@@ -78,3 +78,17 @@ Outstanding independent obligations: private CRA evidence and October 23 versus 
 The business owner approved a **single 14-day trial with a payment method collected during signup and automatic monthly/annual billing afterward**, and also **platform-approved invoice/PO arrangements**. The original Stripe Checkout code already enforces the card path. An additional controlled invoice workflow now enables a tenant-admin request; a platform super-admin with MFA approves that exact selection, bill-to contact and invoice payment window (14/30/45/60 days); then only the tenant administrator may activate the `send_invoice` subscription. Neither submitting nor approving a PO creates a financial obligation. A first-time PO authority receives the same one 14-day trial and a manual-pay invoice when it ends; previously used trials aren't repeated and activation may invoice immediately. Approved invoice cancellation/resumption is available without modifying unrelated legacy send-invoice subscriptions. Server-side Stripe history, customer ownership, idempotency and Supabase audit/projection are required; client-only approval is not trusted.
 
 Business decision is **CLOSED** for the trial rule and available payment methods; exact due days are explicitly approved per school authority, not globally assumed. Real customer order acceptance, provider invoice delivery acceptance, other contractual clauses, tax effective-date reconciliation and general commercial launch gates remain separate. All application and document changes are in the same PR, with synthetic test coverage and no production customer mutation.
+
+
+## November 9 — owner renewal/cancellation decision closed
+
+Final owner approval: monthly subscription is month-to-month with automatic
+monthly renewal; annual subscription has a 12-month term and automatic annual
+renewal. Cancellation may occur any time, effective at the end of the current
+trial or paid term; cancellation before 14-day trial expiry avoids the first
+subscription charge. No early exit fee, and no partial refund of paid periods
+solely for cancellation except where required by law or expressly agreed.
+The card and approved invoice/PO backend use non-prorating period-end renewal
+changes; MSA, Order Form, customer screens and synthetic tests now agree.
+The source code and live Stripe objects remain the implementation truth;
+historical planning documents are not evidence of deployed behavior.

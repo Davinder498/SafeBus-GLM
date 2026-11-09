@@ -167,3 +167,21 @@ The owner separately approved an **invoice/purchase-order alternative when a pla
 The selected invoice term is a **per-request approval**, not a blanket net-30 promise; 30 days is the suggested form default and is not final unless a platform admin selects and approves it. PO reference may be absent for invoice-only public-authority arrangements. The signed customer Order Form must specify collection method, billing email, PO/reference where applicable, due days, trial end and renewal/cancellation. Existing subscriptions, historical invoices and issued customer agreements are preserved.
 
 The implementation uses the existing production Supabase tenant billing/role checks, agreement acceptance gate, server-side subscription projection and redacted audit events. An authorized platform review is stored as a scoped Stripe Customer metadata record (linked to the tenant and a unique request ID); only a separately approved request can create a `send_invoice` subscription, with a deterministic idempotency key and provider-history duplicate prevention. Never accept invoice activation from frontend claims or a mutable choice in client storage. Existing legacy `send_invoice` subscriptions cannot be silently changed through this new mechanism. New approved invoice subscribers may cancel/resume renewal through a separately authenticated tenant action. No customer billing action, real invoice, mail, account creation or trial was executed to test this implementation.
+
+
+## Final standard renewal and cancellation decision — November 9, 2026
+
+The owner approved **month-to-month automatic monthly renewal** and
+**12-month automatic annual renewal**. The school authority may cancel
+at any time, effective at the end of its current trial or paid period.
+Canceling before the initial 14-day trial expires means no first subscription
+charge. There is **no early cancellation fee** and **no partial refund**
+for a paid period solely because of cancellation except where legally
+required or expressly agreed. Already-issued unpaid invoices remain due.
+
+The existing Stripe subscription handlers already scheduled cancellation
+at period end. The approved engineering change now makes both card and
+invoice/PO renewal updates explicitly use `proration_behavior: 'none'`,
+adds consistent term/trial/refund disclosures to customer UI, and tests
+that no immediate cancellation or refund operation is requested. No existing
+customer subscription has been modified by this change.

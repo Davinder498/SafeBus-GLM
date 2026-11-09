@@ -107,8 +107,12 @@ export function InvoiceBillingTenantCard({prices,minimumBuses,trialEligible,onAc
               {trialEligible
                 ? 'A first-time 14-day trial is offered if no trial has previously been used. The first invoice is issued after the trial; no card is required for this approved arrangement.'
                 : 'Your authority is not eligible for another trial. The first invoice can be issued immediately when you activate this subscription.'}
-              {' '}The plan renews automatically and new invoices are sent at each billing interval.
-              Approved rates include applicable GST/HST.
+              {' '}Monthly service is month-to-month with automatic monthly renewal;
+              annual service has a 12-month term with automatic annual renewal.
+              Cancel at any time, effective at the end of the trial or paid period,
+              without an early cancellation fee. No partial refund of a paid period
+              applies except where required by law or expressly agreed.
+              Issued invoices remain payable. Approved rates include applicable GST/HST.
             </p>
             <label className="flex min-h-11 items-start gap-3 text-sm">
               <input type="checkbox" className="mt-1 h-5 w-5" checked={confirmed}

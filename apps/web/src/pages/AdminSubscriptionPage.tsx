@@ -483,8 +483,13 @@ export function AdminSubscriptionPage() {
                             : 'Your subscription begins after payment is confirmed. A new trial is not included.'}
                       </p>
                       <p className="mb-5 text-sm font-semibold text-slate-700">
-                        Renews automatically until canceled. Cancel before your next billing date to
-                        avoid renewal.
+                        {interval === 'month'
+                          ? 'Month-to-month: renews automatically every month.'
+                          : 'Annual: 12-month term, renews automatically each year.'}
+                        {' '}Cancel at any time with no early cancellation fee.
+                        Cancellation is effective at the end of the current trial or paid period.
+                        No partial refund of a paid period applies except where required by law
+                        or expressly agreed.
                       </p>
                       <p className="mb-5 text-sm text-slate-600">
                         Have a promotion code? Enter it at secure checkout to see your discount and
@@ -607,7 +612,9 @@ export function AdminSubscriptionPage() {
                     <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
                       {subscription.cancelAtPeriodEnd
                         ? `Your plan will not renew. Your current trial or paid term continues through ${formatBillingDate(subscription.currentPeriodEnd)}.`
-                        : 'If you cancel, your current trial or paid term continues until its end date. Existing transportation operations continue afterward.'}
+                        : subscription.subscriptionStatus === 'trialing'
+                          ? 'Cancel during your 14-day free trial before it ends to avoid the first subscription charge. Trial access continues until the end date. No cancellation fee applies.'
+                          : 'Cancel at any time without an early cancellation fee. Your paid term continues until its end date; no partial refund unless required by law or expressly agreed. Existing transportation operations continue afterward.'}
                     </p>
                   </div>
                   <Button
@@ -680,7 +687,9 @@ export function AdminSubscriptionPage() {
               </p>
             </>
           ) : confirm === 'cancel' ? (
-            'Your current term continues to its end date. Any scheduled plan change will be removed. Existing operations continue afterward, but new bus setup and activation will require a subscription.'
+            subscription?.subscriptionStatus === 'trialing'
+              ? 'Cancel before your trial expires to avoid your first subscription charge. Access continues until your trial ends. No cancellation fee applies; any scheduled plan change will be removed.'
+              : 'Cancellation stops the next renewal at the end of the current paid monthly or annual term. No early cancellation fee applies. No partial refund of the paid period is issued unless required by law or expressly agreed. Scheduled plan changes will be removed.'
           ) : (
             'Your subscription will renew automatically using the saved payment method.'
           )

@@ -34,3 +34,20 @@ The owner approved the two fixed CAD GST/HST-inclusive rates, 14-day first-custo
 ## Deployed audit-event compatibility
 
 The connected production audit table has a fixed event-action allowlist. This implementation uses existing allowed actions `billing.subscription_updated` for invoice request/approval/rejection metadata transitions (with a sanitized `invoiceArrangement` detail), `billing.subscription_created` for the confirmed new provider subscription, and `billing.cancellation_scheduled` / `billing.renewal_resumed` for invoice renewal changes. No new audit action labels, public grants or audit-table migration is required. No PO, billing address or contact email is placed in audit detail.
+
+
+## Renewal contract confirmed November 9
+
+An approved district invoice/PO arrangement uses the same standard terms:
+**month-to-month monthly billing**, or **a 12-month annually billed term**,
+automatically renewed unless canceled. A district can cancel at any time
+without an early exit fee; cancellation ends renewal at the current trial
+or paid-term end. Canceling before the end of the first eligible 14-day
+trial prevents issuance of the first recurring paid invoice. An existing
+issued invoice remains due under its agreed terms. No partial refund
+of an already-paid subscription period is automatically generated solely
+for early cancellation, unless required by law or expressly agreed.
+
+The invoice renewal API now uses the same period-end cancellation/no-proration
+policy as card billing; tenant acceptance UI reflects the approved monthly
+and annual terms. Existing legacy invoice contracts are not silently changed.

@@ -42,8 +42,11 @@ export function InvoiceBillingRenewalCard({canceled,onUpdated}:{
   return <Card className="p-5 sm:p-6" data-ui="tenant-invoice-renewal">
     <h2 className="text-lg font-bold text-[var(--color-heading)]">Invoice subscription renewal</h2>
     <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-      Manage renewal of a SafeBus-approved invoice arrangement. Invoices already issued
-      remain payable under their agreed terms.
+      Monthly service is month-to-month; annual service has a 12-month term.
+      Both renew automatically unless canceled. No early cancellation fee applies.
+      Cancellation stops renewal at the end of the current trial or paid term.
+      Paid periods are not partially refunded unless required by law or expressly
+      agreed. Invoices already issued remain payable.
     </p>
     <Button type="button" variant="secondary" className="mt-3" onClick={()=>void show()}>
       {open?'Hide invoice renewal':'Review invoice renewal'}
@@ -58,7 +61,7 @@ export function InvoiceBillingRenewalCard({canceled,onUpdated}:{
             checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>
           {canceled
             ? 'I authorize resuming automatic recurring invoices at the approved price.'
-            : 'I authorize canceling automatic invoice renewal at the end of the current trial or paid term. Existing invoices remain payable.'}
+            : 'I authorize canceling invoice renewal at the end of the current trial or paid term. No early cancellation fee applies; existing invoices remain payable.'}
         </label>
         <Button type="button" disabled={!confirmed||busy} loading={busy}
           onClick={()=>void change()}>

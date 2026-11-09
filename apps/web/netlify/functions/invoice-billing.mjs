@@ -3,6 +3,7 @@
 // only for the identified tenant after a separate authenticated platform
 // approval. Stripe Customer metadata holds the durable approval snapshot;
 // Supabase retains a restricted audit event and the subscription projection.
+import { scheduledRenewalChange } from './billing-renewal-terms.mjs';
 import {
   UUID_PATTERN, EMAIL_PATTERN, clean, createStripeClient, getInternalBillingState,
   json, requireBillingCaller, requireDistrictBillingAgreement,
@@ -337,7 +338,7 @@ async function manageInvoiceRenewal(ctx, stripe, state, input) {
     ok: true, cancelAtPeriodEnd: cancel,
   };
   const next = await stripe.subscriptions.update(sub.id, {
-    cancel_at_period_end: cancel,
+    ...scheduledRenewalChange(input.action),
     expand: ['customer','items.data.price.product','latest_invoice'],
   }, { idempotencyKey: `safebus:invoice:${state.tenant_id}:${input.requestId}:renewal:${cancel?'cancel':'keep'}` });
   const projection = await syncSubscriptionProjection(ctx.admin, stripe, next);

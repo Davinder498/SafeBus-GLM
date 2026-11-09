@@ -1,4 +1,5 @@
 import { isApprovedInclusiveBusPrice } from './approved-bus-pricing.mjs';
+import { scheduledRenewalChange } from './billing-renewal-terms.mjs';
 import {
   UUID_PATTERN,
   clean,
@@ -379,8 +380,9 @@ export async function handler(event) {
         sub = await stripe.subscriptions.update(
           sub.id,
           {
-            cancel_at_period_end:
-              input.action === 'unschedule' ? sub.cancel_at_period_end : input.action === 'cancel',
+            ...(input.action === 'unschedule'
+              ? { cancel_at_period_end: Boolean(sub.cancel_at_period_end), proration_behavior: 'none' }
+              : scheduledRenewalChange(input.action)),
             expand: ['customer', 'items.data.price.product', 'latest_invoice'],
           },
           { idempotencyKey: `safebus:${input.requestId}:renewal` },

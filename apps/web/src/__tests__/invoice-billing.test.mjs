@@ -182,14 +182,28 @@ describe('approved invoice billing request',()=>{
     subscription.cancel_at_period_end=false;
     expect((await handler(event('cancel_renewal'))).statusCode).toBe(200);
     expect(stripe.subscriptions.update).toHaveBeenCalledWith('sub_invoice',
-      expect.objectContaining({cancel_at_period_end:true}),expect.anything());
+      expect.objectContaining({cancel_at_period_end:true,proration_behavior:'none'}),expect.anything());
     expect(shared.syncSubscriptionProjection).toHaveBeenCalled();
     expect(shared.writeBillingAudit).toHaveBeenCalledWith(ctx.admin,actor,
       'billing.cancellation_scheduled',tenant);
     subscription.cancel_at_period_end=true;
     expect((await handler(event('resume_renewal'))).statusCode).toBe(200);
     expect(stripe.subscriptions.update).toHaveBeenCalledWith('sub_invoice',
-      expect.objectContaining({cancel_at_period_end:false}),expect.anything());
+      expect.objectContaining({cancel_at_period_end:false,proration_behavior:'none'}),expect.anything());
+  });
+  it('preserves an annual invoice term on cancellation, without refunding issued invoices',async()=>{
+    customer.metadata=metadata('activated');
+    state.external_subscription_id='sub_invoice';
+    subscription.status='active';
+    subscription.cancel_at_period_end=false;
+    subscription.items={data:[{price:{recurring:{interval:'year'}},quantity:3}]};
+    expect((await handler(event('cancel_renewal'))).statusCode).toBe(200);
+    const params=stripe.subscriptions.update.mock.calls[0][1];
+    expect(params).toMatchObject({cancel_at_period_end:true,proration_behavior:'none'});
+    expect(params).not.toHaveProperty('cancel_at');
+    expect(stripe.subscriptions).not.toHaveProperty('cancel');
+    expect(stripe).not.toHaveProperty('refunds');
+    expect(stripe).not.toHaveProperty('invoices');
   });
   it('never modifies a legacy or foreign invoice subscription through the new renewal path',async()=>{
     customer.metadata=metadata('activated');

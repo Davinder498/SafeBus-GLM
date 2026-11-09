@@ -96,3 +96,27 @@ Automatic tax on the existing active subscription was enabled at the time of ins
 **Audit and failure recovery:** Tenant/provider customer mapping is source-scoped; Stripe customer metadata records an approval's tenant, request ID, price, quantity, PO, review actor and timestamp. Public clients cannot approve their own request, access another tenant's billing or mutate Stripe directly. Before activation, the server rechecks the exact approved price, customer address, active district, executed agreement, current bus allowance, approval actor, pending Stripe Checkout sessions and subscription history. Deterministic subscription idempotency and canonical provider subscription lookup stop duplicate creation after retries. Customer and subscription changes are also written to the restricted server audit trail. Existing untagged legacy invoice contracts are explicitly excluded from new renewal actions. Errors and logs mask billing addresses and contact details.
 
 **Acceptance, not claimed here:** CI test fixtures are synthetic; we did **not** issue real invoices, charge or migrate real subscriptions, send real emails, or change Stripe registration dates. A non-live Stripe end-to-end review of trial expiry, invoice generation, PDF and recipient delivery is required before a real district uses this route, plus evidence of customer order acceptance. Actual provider billing email setup must be checked; creating a `send_invoice` subscription does not by itself prove the recipient received an invoice. The physical Android testing phase remains separately deferred.
+
+
+## Standard renewal, cancellation and refunds — approved November 9, 2026
+
+The selected approved price sets the term: **CA$1.99 per bus/month** runs
+month-to-month with automatic monthly renewal; **CA$20.29 per bus/year**
+runs for 12 months with automatic annual renewal. Both include applicable
+GST/HST. A first-time authority may cancel during its 14-day free trial
+before the first charge; its trial access ends at the scheduled trial end.
+
+For both card and approved invoice/PO subscriptions, the tenant-admin
+cancel action updates `cancel_at_period_end=true` and
+`proration_behavior='none'`. Resume renewal sets
+`cancel_at_period_end=false` and also requests no proration.
+The approved policy never automatically calls an immediate cancellation
+or refund endpoint. No early exit fee applies, and paid terms are not
+partially refunded solely because of cancellation unless required by
+law or expressly agreed in writing. Issued invoices remain payable.
+Signed customer-specific exceptions must be handled separately; historical
+subscription agreements must not be silently rewritten.
+
+Verify the period-end behavior, trial state, no-proration API payload and
+billing UI disclosures in automated tests; no production trial, cancellation,
+refund or invoice is created as synthetic QA.

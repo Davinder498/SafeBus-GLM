@@ -133,24 +133,35 @@ collection or tax behavior differently from the executed terms.
 
 ## 5. Term, renewal and change
 
-The initial **service term** and any distinct pilot period must be selected
-expressly in the Order Form; a 12-month term is a **proposal**, not an
-unconditional consequence of selecting monthly or annual billing. A monthly
-billing interval alone does not establish month-to-month termination rights;
-an annual billing interval does not extend an expired pilot authorization.
+**Owner-approved standard service terms (November 9, 2026).** The Customer
+chooses the billing interval in the accepted Order Form. A **monthly
+subscription is month-to-month**, renewing automatically each month. An
+**annual subscription has a 12-month term**, renewing automatically for
+successive 12-month periods. A separately approved public-body procurement or
+pilot agreement must be recorded in the Order Form; an automatic renewal does
+not extend a pilot beyond its separately authorized scope.
 
-The existing new-tenant self-service Checkout offers a **14-day trial** with
-payment-method collection, then recurring billing if the subscription remains
-eligible and is not canceled under its accepted terms. This software default
-must not be treated as a free pilot offered to every Customer or a contractual
-promise of trial duration: the final Order Form or applicable approved Checkout
-disclosures must state the actual trial eligibility, duration, end date,
-first-charge timing, price and cancellation/renewal consequences before
-acceptance. Existing invoice agreements are not silently converted to trials.
-Automatic renewal applies only if selected and disclosed expressly, with
-accepted notice periods and price-change terms; otherwise renewal requires
-a written agreement. The implemented billing configuration and signed terms
-must agree before commercial activation.
+An eligible first-time school authority receives a **single 14-day free trial**,
+with a payment method collected in standard Stripe Checkout, followed by the
+first recurring monthly or annual payment if the subscription is not canceled
+during trial. For a separately approved invoice/PO arrangement, the first
+invoice is issued at trial end instead of charging a card. A previously
+subscribed or trialed authority receives no repeat trial. The Customer must
+see the actual trial end, selected billing interval and amount, collection
+method, first charge/invoice date, and cancellation consequences at activation.
+
+The Customer may **cancel automatic renewal at any time**, without an early
+cancellation fee. Cancellation takes effect at the end of the current trial
+(if trialing) or the current paid monthly/annual term. Cancellation before the
+14-day trial expires prevents the first subscription charge. For a paid term,
+service continues through the end of that period and **no partial refund**
+is owed merely for canceling early, except as required by applicable law or
+expressly agreed in writing. Already-issued invoices remain payable under
+their approved terms. Cancellation does not automatically generate a refund
+or shorten the term, and does not override lawful data return/deletion duties.
+The Customer may resume renewal before the scheduled term end where its
+provider state and accepted terms permit; any customer-specific variation
+must be explicitly agreed.
 
 Material changes to features, processing purposes, suppliers, retention or
 service levels follow written change control and any required notices/approvals.
@@ -211,8 +222,10 @@ The Customer may immediately stop its operational use or withdraw pilot approval
 
 Proposed breach process: written notice and 30 calendar days to cure a material
 curable breach; urgent protective action and non-curable breaches are addressed
-separately. The Order Form must define convenience termination, prepaid-fee
-treatment and any early-exit fees; none are assumed. Accrued undisputed fees,
+separately. The standard convenience-cancellation terms are defined in section 5:
+no early cancellation fee and no partial refund for a paid period solely
+because of cancellation, except where legally required or expressly agreed.
+Any customer-specific exception must be explicit in the accepted Order Form. Accrued undisputed fees,
 confidentiality, valid claims and necessary record duties survive termination.
 
 At exit, apply the Data Return and Destruction Schedule. Customer-directed
@@ -242,8 +255,10 @@ lawful. Acceptance receipts and customer identities belong in restricted contrac
 
 ## November 9 business-approved collection policy — current terms for final review
 
-Default payment: Stripe-hosted Checkout collects the school authority's card/payment method when its first subscription is confirmed. First-time authorities receive **14 days free**; after expiration the selected **CA$1.99/month** or **CA$20.29/year per active bus, GST/HST-inclusive** plan bills automatically. Trial eligibility is checked against both SafeBus's billing control record and the account's Stripe subscription history. Annual billing interval does not silently create a one-year service term.
+Default payment: Stripe-hosted Checkout collects the school authority's card/payment method when its first subscription is confirmed. First-time authorities receive **14 days free**; after expiration the selected **CA$1.99/month** or **CA$20.29/year per active bus, GST/HST-inclusive** plan bills automatically. Trial eligibility is checked against both SafeBus's billing control record and the account's Stripe subscription history. The approved annual billing interval carries a 12-month service term; monthly billing is month-to-month.
 
 Exception: a district may request invoice/PO billing **only with a distinct platform-admin approval** of its contact, address, exact price and quantity, any purchase order, and due window (14/30/45/60 days). The district administrator must subsequently affirmatively activate the approved recurring plan. Invoice billing uses `send_invoice` (manual payment), not an automatic card charge. First-time districts still have one 14-day trial; their first payment invoice is issued at its expiry. Previous subscribers cannot receive another trial; activation can generate an invoice immediately. Approved invoice renewals generate recurring invoices until cancelled. Cancellation does not void invoices already issued. The customer-specific order must explicitly choose the collection method, bill-to contact, trial and due dates; the proposed net-30 term is not automatically approved for every district.
 
+The standard **monthly month-to-month / annual 12-month** renewal and
+no-fee, end-of-term cancellation policy in section 5 is also owner-approved.
 These policies are **approved commercial decisions**, but this MSA remains a draft pending binding contract clauses and actual customer acceptance; no insurance/liability amount, data-processing permission, final SLA or pilot sign-off is implied.
