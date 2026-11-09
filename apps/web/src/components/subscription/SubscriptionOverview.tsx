@@ -133,10 +133,12 @@ export function SubscriptionOverview({
               ? subscription.trialEnd : subscription.currentPeriodEnd)}
           />
           <Detail
-            label="Contract term"
-            value={subscription.billingInterval === 'month'
-              ? 'Month-to-month · automatic monthly renewal'
-              : '12 months · automatic annual renewal'}
+            label="Contract terms"
+            value={subscription.collectionMethod === 'send_invoice'
+              ? 'Refer to the accepted school authority invoice/PO agreement'
+              : subscription.billingInterval === 'month'
+                ? 'Month-to-month · automatic monthly renewal'
+                : '12 months · automatic annual renewal'}
           />
           <Detail label="Trial ends" value={formatBillingDate(subscription.trialEnd)} />
           <Detail label="Billing email" value={subscription.billingEmail ?? 'Not available'} />
@@ -152,11 +154,11 @@ export function SubscriptionOverview({
           <Detail label="Active buses" value={String(subscription.activeBusCount)} />
         </dl>
         <p className="mt-3 text-xs leading-5 text-slate-500">
-          Cancel at any time without an early cancellation fee; cancellation takes effect at
-          the end of the trial or paid term. Cancel during the trial to avoid the first charge.
-          No partial refund of paid periods applies except where required by law or expressly
-          agreed. Applicable tax and discounts are detailed on the actual invoice; the
-          accepted school-authority order governs.
+          {subscription.collectionMethod === 'send_invoice'
+            ? 'Invoice/PO subscriptions follow their accepted customer-specific terms. Outstanding invoices remain payable. Any new approved invoice/PO arrangement uses the standard renewal and cancellation policy.'
+            : 'Cancel at any time with no early cancellation fee, effective at the end of the trial or paid term. Cancel during the trial to avoid the first charge. No partial refund of a paid period applies except where required by law or expressly agreed.'}
+          {' '}Applicable taxes and discounts are detailed on the actual invoice;
+          the accepted school-authority order governs.
         </p>
         {subscription.usageExceedsAllowance && (
           <p className="mt-3 text-sm font-semibold text-warning-700">
