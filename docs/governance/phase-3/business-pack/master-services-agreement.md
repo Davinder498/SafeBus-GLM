@@ -104,8 +104,14 @@ change. Pre-existing signed invoice contracts retain their accepted terms.
 Additional services require a written price and scope. No guardian or driver
 is personally responsible for the school authority's subscription fees.
 
-For expressly agreed `send_invoice` contracts, the proposed payment term is
-30 calendar days after receipt, subject to the signed Order Form. For
+For separately approved `send_invoice` invoice/PO contracts, the school
+   authority's accepted Order Form must select 14, 30, 45 or 60 calendar days
+   **after invoice issuance**, with an authorized billing contact and any PO
+   reference. The district administrator requests the exception; a recently
+   authenticated SafeBus platform super administrator approves the specific
+   request; the district administrator then activates the subscription.
+   Approval alone does not issue an invoice or start a subscription, and no
+   blanket net-30 payment promise applies. For
 `charge_automatically` self-service Checkout, the trial, payment method,
 automatic charge/renewal and cancellation terms must instead be disclosed and
 accepted before the Customer confirms checkout. Do not represent a card-funded
