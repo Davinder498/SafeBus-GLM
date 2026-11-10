@@ -7,6 +7,7 @@ import {
   artifactManifest,
   deliveryState,
   verifyChecks,
+  collectCheckRuns,
   verifyHostedArtifact,
   publishEngineeringArtifact,
   requirePrelaunchMaintenance,
@@ -42,14 +43,20 @@ try {
     .split(/\s+/)[0];
   if (main !== sha) throw Error('ENGINEERING_RELEASE_MAIN_MOVED');
   if (action === 'checks') {
-    const response = JSON.parse(
-      execFileSync(
-        'gh',
-        ['api', `repos/Davinder498/SafeBus-GLM/commits/${sha}/check-runs?per_page=100`],
-        { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    stage = 'checks';
+    const runs = collectCheckRuns((page) =>
+      JSON.parse(
+        execFileSync(
+          'gh',
+          [
+            'api',
+            `repos/Davinder498/SafeBus-GLM/commits/${sha}/check-runs?per_page=100&filter=latest&page=${page}`,
+          ],
+          { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+        ),
       ),
     );
-    verifyChecks(response.check_runs ?? [], sha);
+    verifyChecks(runs, sha);
   } else {
     const policy = JSON.parse(
       await fs.readFile('config/pending/production-credential-isolation.json', 'utf8'),
@@ -161,6 +168,9 @@ try {
       code: /^ENGINEERING_RELEASE_[A-Z_]+$/.test(error?.message ?? '')
         ? error.message
         : 'ENGINEERING_RELEASE_FAILED',
+      ...(error?.message === 'ENGINEERING_RELEASE_CI_NOT_SUCCESSFUL'
+        ? { checks: error.checks }
+        : {}),
     }),
   );
   process.exitCode = 1;
