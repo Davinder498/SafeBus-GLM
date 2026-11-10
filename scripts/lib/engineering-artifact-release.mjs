@@ -17,15 +17,49 @@ export const REQUIRED_CHECKS = [
   'Dependency audit',
   'Secret scanning',
   'CodeQL JavaScript and TypeScript',
-  'CodeQL',
 ];
+export function collectCheckRuns(readPage) {
+  const runs = [];
+  // Bound release evidence independently of accumulated workflow history.
+  for (let page = 1; page <= 10; page++) {
+    const response = readPage(page);
+    if (!Array.isArray(response?.check_runs) || response.check_runs.length > 100)
+      fail('CI_EVIDENCE_INVALID');
+    runs.push(...response.check_runs);
+    if (response.check_runs.length < 100) return runs;
+  }
+  fail('CI_EVIDENCE_PAGE_LIMIT');
+}
 export function verifyChecks(runs, sha) {
-  for (const name of REQUIRED_CHECKS) {
+  const failures = [];
+  function verify(name, source, required) {
     const matching = runs
       .filter((r) => r.name === name && r.head_sha === sha)
       .sort((a, b) => b.id - a.id);
-    if (matching[0]?.status !== 'completed' || matching[0]?.conclusion !== 'success')
-      fail('CI_NOT_SUCCESSFUL');
+    const latest = matching[0];
+    if (!latest && !required) return;
+    const reason = !latest
+      ? 'missing'
+      : latest.app?.id !== source.id || latest.app?.slug !== source.slug
+        ? 'untrusted_source'
+        : latest.status !== 'completed'
+          ? 'incomplete'
+          : latest.conclusion !== 'success'
+            ? 'not_successful'
+            : null;
+    if (reason) failures.push({ name, reason });
+  }
+  for (const name of REQUIRED_CHECKS) {
+    verify(name, { id: 15368, slug: 'github-actions' }, true);
+  }
+  // This Advanced Security summary is present on PRs, but was absent on the
+  // observed main commit. The actual CodeQL analysis job above is mandatory.
+  // If a summary exists for this SHA, it must also succeed; never ignore it.
+  verify('CodeQL', { id: 57789, slug: 'github-advanced-security' }, false);
+  if (failures.length) {
+    const error = new Error('ENGINEERING_RELEASE_CI_NOT_SUCCESSFUL');
+    error.checks = failures;
+    throw error;
   }
 }
 export async function artifactManifest(directory, prefix = '') {

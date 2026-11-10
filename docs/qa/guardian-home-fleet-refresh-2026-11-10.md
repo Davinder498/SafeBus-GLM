@@ -157,3 +157,12 @@ Correct the test navigation to `/parent`; retain the trip-ending, reassignment,
 request-count, failed-verification and manual-recovery assertions. No production
 route alias, skipped check, increased timeout or application behavior change is
 needed. New CI must pass before browser verification can be claimed.
+
+## Protected release follow-up
+
+The first frontend release passed validation but stopped before hosted preflight
+or publication because its CI gate expected a CodeQL summary absent from main.
+The actual CodeQL analysis and all other main CI jobs succeeded. The correction
+and required new-main release procedure are documented in
+[engineering release CI evidence](../operations/engineering-release-ci-evidence.md).
+The home fix and background queue remain unverified in production.

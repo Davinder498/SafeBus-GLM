@@ -6,6 +6,7 @@ import path from 'node:path';
 import {
   REQUIRED_CHECKS,
   verifyChecks,
+  collectCheckRuns,
   artifactManifest,
   verifyHostedArtifact,
   publishEngineeringArtifact,
@@ -114,6 +115,7 @@ test('release requires successful exact-commit CI and rejects stale, skipped or 
     head_sha: sha,
     status: 'completed',
     conclusion: 'success',
+    app: { id: 15368, slug: 'github-actions' },
   }));
   verifyChecks(runs, sha);
   for (const change of [
@@ -128,6 +130,120 @@ test('release requires successful exact-commit CI and rejects stale, skipped or 
   assert.throws(
     () => verifyChecks([...runs, { ...runs[0], id: 999, conclusion: 'failure' }], sha),
     /CI_NOT_SUCCESSFUL/,
+  );
+});
+test('observed merged-main CI passes without the PR-only CodeQL summary, while the analysis remains mandatory', async () => {
+  const runs = JSON.parse(
+    await fs.readFile('tests/release/fixtures/engineering-ci-main-20261110.json', 'utf8'),
+  );
+  const sourceSha = runs[0].head_sha;
+  assert.equal(runs.length, 8);
+  assert.equal(
+    runs.some((r) => r.name === 'CodeQL'),
+    false,
+  );
+  assert.ok(runs.some((r) => r.name === 'CodeQL JavaScript and TypeScript'));
+  verifyChecks(runs, sourceSha);
+  // A failed deployment of the same commit is not a failed CI/security check.
+  verifyChecks(
+    [...runs, { ...runs[0], name: 'release', id: 999999999999, conclusion: 'failure' }],
+    sourceSha,
+  );
+  assert.throws(
+    () =>
+      verifyChecks(
+        runs.filter((r) => r.name !== 'CodeQL JavaScript and TypeScript'),
+        sourceSha,
+      ),
+    (error) => {
+      assert.equal(error.message, 'ENGINEERING_RELEASE_CI_NOT_SUCCESSFUL');
+      assert.deepEqual(error.checks, [
+        { name: 'CodeQL JavaScript and TypeScript', reason: 'missing' },
+      ]);
+      return true;
+    },
+  );
+});
+test('present CodeQL summaries must pass on the exact SHA and cannot replace the analysis job', async () => {
+  const runs = JSON.parse(
+    await fs.readFile('tests/release/fixtures/engineering-ci-main-20261110.json', 'utf8'),
+  );
+  const sourceSha = runs[0].head_sha;
+  const summary = {
+    ...runs[0],
+    name: 'CodeQL',
+    id: 999999999999,
+    app: { id: 57789, slug: 'github-advanced-security' },
+  };
+  verifyChecks([...runs, summary], sourceSha);
+  for (const change of [
+    { conclusion: 'failure' },
+    { conclusion: 'skipped' },
+    { conclusion: 'cancelled' },
+    { status: 'in_progress', conclusion: null },
+    { app: { id: 42, slug: 'untrusted' } },
+  ]) {
+    assert.throws(
+      () => verifyChecks([...runs, { ...summary, ...change }], sourceSha),
+      /CI_NOT_SUCCESSFUL/,
+    );
+  }
+  assert.throws(
+    () =>
+      verifyChecks(
+        [...runs.filter((r) => r.name !== 'CodeQL JavaScript and TypeScript'), summary],
+        sourceSha,
+      ),
+    /CI_NOT_SUCCESSFUL/,
+  );
+  verifyChecks(
+    [...runs, { ...summary, head_sha: 'f'.repeat(40), conclusion: 'failure' }],
+    sourceSha,
+  );
+  assert.throws(
+    () =>
+      verifyChecks(
+        [...runs, summary, { ...summary, id: summary.id + 1, conclusion: 'failure' }],
+        sourceSha,
+      ),
+    /CI_NOT_SUCCESSFUL/,
+  );
+  verifyChecks([...runs, { ...summary, id: 1, conclusion: 'failure' }, summary], sourceSha);
+});
+test('required checks reject spoofed app identity and report fixed missing/failure reasons', async () => {
+  const runs = JSON.parse(
+    await fs.readFile('tests/release/fixtures/engineering-ci-main-20261110.json', 'utf8'),
+  );
+  const sourceSha = runs[0].head_sha;
+  for (const app of [
+    undefined,
+    { id: 42, slug: 'github-actions' },
+    { id: 15368, slug: 'untrusted' },
+  ]) {
+    assert.throws(
+      () => verifyChecks([{ ...runs[0], app }, ...runs.slice(1)], sourceSha),
+      (error) => {
+        assert.deepEqual(error.checks, [{ name: runs[0].name, reason: 'untrusted_source' }]);
+        return true;
+      },
+    );
+  }
+  const changed = runs.map((r) =>
+    r.name === 'Browser smoke tests'
+      ? { ...r, status: 'in_progress', conclusion: null }
+      : r.name === 'Unit tests'
+        ? { ...r, conclusion: 'failure' }
+        : r,
+  );
+  assert.throws(
+    () => verifyChecks(changed, sourceSha),
+    (error) => {
+      assert.deepEqual(error.checks, [
+        { name: 'Unit tests', reason: 'not_successful' },
+        { name: 'Browser smoke tests', reason: 'incomplete' },
+      ]);
+      return true;
+    },
   );
 });
 test('publisher records rollback before upload and verifies the actual published artifact rather than its display title', async () => {
@@ -210,4 +326,31 @@ test('artifact manifests bind file content and reject public source maps', async
   assert.deepEqual(await artifactManifest(dir), manifest);
   await fs.writeFile(path.join(dir, 'source.map'), 'synthetic-map');
   await assert.rejects(artifactManifest(dir), /SOURCE_MAP/);
+});
+
+test('check collection follows later pages before verifying CI, with fixed evidence bounds', () => {
+  const fullPage = Array.from({ length: 100 }, (_, id) => ({ id, name: 'unrelated' }));
+  const calls = [];
+  const runs = collectCheckRuns((page) => {
+    calls.push(page);
+    return { check_runs: page === 1 ? fullPage : [{ name: 'later-page-check' }] };
+  });
+  assert.deepEqual(calls, [1, 2]);
+  assert.equal(runs.at(-1).name, 'later-page-check');
+  assert.equal(runs.length, 101);
+  assert.throws(() => collectCheckRuns(() => ({})), /CI_EVIDENCE_INVALID/);
+  assert.throws(
+    () => collectCheckRuns(() => ({ check_runs: [...fullPage, {}] })),
+    /CI_EVIDENCE_INVALID/,
+  );
+  let attempts = 0;
+  assert.throws(
+    () =>
+      collectCheckRuns(() => {
+        attempts++;
+        return { check_runs: fullPage };
+      }),
+    /CI_EVIDENCE_PAGE_LIMIT/,
+  );
+  assert.equal(attempts, 10);
 });
