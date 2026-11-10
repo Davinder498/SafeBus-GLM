@@ -110,7 +110,7 @@ test('invalid, inconsistent or caller-added workload settings fail before a fixt
 
 test('planning reports remain estimates without capacity or hosted security certification', () => {
   const report = planningReport(workload);
-  assert.equal(report.scenarios.length, 5);
+  assert.equal(report.scenarios.length, 6);
   assert.equal(report.evidenceType, 'workload_estimate');
   assert.equal(report.applicationCapacityVerified, false);
   assert.equal(report.hostedAuthRlsVerified, false);
@@ -240,4 +240,20 @@ test('local CLI ignores database configuration and ambient HTTP proxy settings',
   assert.equal(result.generatorPassed, true);
   assert.equal(result.applicationCapacityVerified, false);
   assert.equal(result.target, 'owned-loopback-fixture');
+});
+
+test('5,000-bus stage and home traffic are modeled without claiming qualification', async () => {
+  const mid = estimateScenario(workload, 'fleet5000');
+  assert.equal(mid.population.buses, 5000);
+  near(mid.workItemsPerSecond.gps, 5000 / 3);
+  near(mid.guardianHomeReadsPerSecondIfAllGuardiansOnHome, (44500 * 2) / 30);
+  const peak = estimateScenario(workload, 'peak');
+  near(peak.guardianHomeReadsPerSecondIfAllGuardiansOnHome, (88000 * 2) / 30);
+  const closure = JSON.parse(await fs.readFile('config/commercial-launch-closure.json', 'utf8'));
+  assert.equal(closure.scope.buses, workload.target.activeBuses);
+  assert.equal(closure.scope.minimumTargetBuses, mid.population.buses);
+  assert.equal(closure.scope.commercialLaunchApproved, false);
+  const hook = await fs.readFile('apps/web/src/hooks/useGuardianHomeData.ts', 'utf8');
+  assert.match(hook, /intervalMs: 30_000/);
+  assert.match(hook, /liveMinIntervalMs: 30_000/);
 });

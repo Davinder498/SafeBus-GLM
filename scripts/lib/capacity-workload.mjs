@@ -59,7 +59,11 @@ export function validateWorkload(workload) {
   integer(a.offlineSeconds, 'offline seconds', 1, 86400);
   number(a.largestTenantShare, 'largest tenant share', 0.01, 1);
   number(a.reconnectingBusShare, 'reconnecting bus share', 0, 1);
-  shape(workload.scenarios, ['pilot', 'regional', 'normal', 'peak', 'reconnect'], 'scenarios');
+  shape(
+    workload.scenarios,
+    ['pilot', 'regional', 'fleet5000', 'normal', 'peak', 'reconnect'],
+    'scenarios',
+  );
   for (const s of Object.values(workload.scenarios)) {
     shape(
       s,
@@ -121,6 +125,9 @@ export function estimateScenario(workload, name) {
     realtimeInvalidationsPerSecondUncoalesced: invalidations,
     guardianReadsPerSecondWithUncoalescedInvalidations:
       rates.guardianRead + invalidations * a.guardianRpcsPerRefresh,
+    // Home fetches two secured datasets at a minimum 30-second cadence.
+    // Ignore jitter/backoff here for a conservative steady-state upper bound.
+    guardianHomeReadsPerSecondIfAllGuardiansOnHome: (guardians * 2) / 30,
     reconnectBacklogEvents: backlog,
     hottestTenantGpsEventsPerSecond: rates.gps * Math.max(a.largestTenantShare, 1 / s.tenants),
     realtimeConnectionsIfEachActiveUserOpensOne: s.concurrentUsers,

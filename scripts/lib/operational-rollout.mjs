@@ -218,7 +218,9 @@ export function verifyOperationalSnapshot(snapshot, config, state) {
       actual?.md5 !== expected[state].md5 ||
       actual.owner !== (expected[state].md5 === null ? null : expected.owner) ||
       JSON.stringify(actual.acl) !==
-        JSON.stringify(expected[state].md5 === null ? [] : [...expected.acl].sort())
+        JSON.stringify(
+          expected[state].md5 === null ? [] : [...(expected[state].acl ?? expected.acl)].sort(),
+        )
     )
       throw new Error('OPERATIONAL_FUNCTION_DRIFT');
   }
@@ -323,10 +325,28 @@ export function operationalRestoreSql(snapshot, config) {
           ]),
     );
   }
-  for (const [index, job] of (config.jobs ?? []).entries())
+  for (const [index, job] of (config.jobs ?? []).entries()) {
+    const previous = snapshot.jobs[index];
     statements.push(
-      `SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname=${literal(job.name)}),schedule:=${literal(snapshot.jobs[index].schedule)});`,
+      previous === null
+        ? `SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname=${literal(job.name)};`
+        : `SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname=${literal(job.name)}),schedule:=${literal(previous.schedule)},active:=${previous.active ? 'true' : 'false'});`,
     );
+  }
+  // Function replacement preserves ACLs. Restore explicitly when a reviewed
+  // change tightens execution privileges, rather than restoring only the body.
+  for (const f of snapshot.functions) {
+    const expected = config.functions.find((entry) => entry.signature === f.signature);
+    if (f.definition === null || !expected.before.acl) continue;
+    statements.push(
+      `REVOKE ALL ON FUNCTION ${f.signature} FROM PUBLIC, anon, authenticated, service_role;`,
+    );
+    for (const acl of f.acl) {
+      const entry = /^([a-z_]+)=X\/([a-z_]+)$/.exec(acl);
+      if (!entry) throw new Error('OPERATIONAL_RECOVERY_ACL');
+      statements.push(`GRANT EXECUTE ON FUNCTION ${f.signature} TO ${identifier(entry[1])};`);
+    }
+  }
   for (const index of (config.indexes ?? []).filter((entry) => entry.before === null))
     statements.push(`DROP INDEX ${identifier(index.schema)}.${identifier(index.name)};`);
   for (const table of [...(config.newTables ?? [])].reverse()) {

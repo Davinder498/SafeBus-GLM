@@ -236,3 +236,29 @@ select cron.schedule('safebus-tracking-invalidation-dispatcher', '1 second', $jo
   set local lock_timeout = '100ms';
   select safebus_private.dispatch_tracking_invalidations(10, 250);
 $job$);
+
+-- Bound only these two jobs' completed run history. Never delete other jobs'
+-- diagnostics or in-progress runs. The minute batch exceeds steady 1Hz growth.
+create function safebus_private.prune_tracking_worker_history()
+returns integer language plpgsql security definer set search_path = ''
+as $$
+declare v_deleted integer;
+begin
+  delete from cron.job_run_details d where d.runid in (
+    select r.runid from cron.job_run_details r
+    join cron.job j on j.jobid = r.jobid
+    where j.jobname in ('safebus-tracking-invalidation-dispatcher', 'safebus-tracking-invalidation-history')
+      and r.end_time < pg_catalog.clock_timestamp() - interval '48 hours'
+    order by r.runid limit 1000
+  );
+  get diagnostics v_deleted = row_count;
+  return v_deleted;
+end;
+$$;
+revoke all on function safebus_private.prune_tracking_worker_history()
+  from public, anon, authenticated, service_role;
+select cron.schedule('safebus-tracking-invalidation-history', '* * * * *', $job$
+  set local statement_timeout = '750ms';
+  set local lock_timeout = '100ms';
+  select safebus_private.prune_tracking_worker_history();
+$job$);

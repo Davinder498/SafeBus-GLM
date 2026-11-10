@@ -1,0 +1,190 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/0125_async_tracking_invalidations.sql",
+  "migrationSha256": "6fdd08b6e085df60f5645b600eb50c293b330c941bd372df2cc10d615e56b4c3",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "safebus_private.notify_tracking_location_change()",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": "db4771f5905bcaaff1b2f51a27f74b03",
+        "acl": ["postgres=X/postgres", "authenticated=X/postgres", "service_role=X/postgres"]
+      },
+      "after": {
+        "md5": "8384974b83d4db3dbf40272ae63ed3fe"
+      }
+    },
+    {
+      "signature": "safebus_private.send_queued_tracking_invalidation(text)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "2d90a3ce6e537b1b333bb0eb589180e1"
+      }
+    },
+    {
+      "signature": "safebus_private.dispatch_tracking_invalidations(integer,integer)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "7a4393dd4a954df15e24bf378e733b32"
+      }
+    },
+    {
+      "signature": "safebus_private.prune_tracking_worker_history()",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "d91023956642f6abb190de7d8454d143"
+      }
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": [],
+  "relations": [
+    {
+      "name": "safebus_private.tracking_invalidation_queue",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": ["postgres=arwdDxtm/postgres"],
+        "columns": [
+          {
+            "name": "driver_trip_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "tenant_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "generation",
+            "type": "bigint",
+            "default": "1",
+            "required": true
+          },
+          {
+            "name": "pass_generation",
+            "type": "bigint",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "guardian_cursor",
+            "type": "uuid",
+            "default": null,
+            "required": false
+          },
+          {
+            "name": "admin_sent",
+            "type": "boolean",
+            "default": "false",
+            "required": true
+          },
+          {
+            "name": "first_pending_at",
+            "type": "timestamp with time zone",
+            "default": "clock_timestamp()",
+            "required": true
+          },
+          {
+            "name": "available_at",
+            "type": "timestamp with time zone",
+            "default": "clock_timestamp()",
+            "required": true
+          },
+          {
+            "name": "latest_at",
+            "type": "timestamp with time zone",
+            "default": "clock_timestamp()",
+            "required": true
+          },
+          {
+            "name": "failures",
+            "type": "integer",
+            "default": "0",
+            "required": true
+          },
+          {
+            "name": "last_error_code",
+            "type": "text",
+            "default": null,
+            "required": false
+          }
+        ],
+        "constraints": [
+          "CHECK (((pass_generation IS NULL) OR (pass_generation <= generation)))",
+          "FOREIGN KEY (driver_trip_id) REFERENCES driver_trips(id) ON DELETE CASCADE",
+          "CHECK ((generation > 0))",
+          "PRIMARY KEY (driver_trip_id)",
+          "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE"
+        ],
+        "policies": 0
+      }
+    }
+  ],
+  "jobs": [
+    {
+      "name": "safebus-tracking-invalidation-dispatcher",
+      "before": null,
+      "after": {
+        "name": "safebus-tracking-invalidation-dispatcher",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "b12e56fbe4fcb12833769e371a155ce2"
+      }
+    },
+    {
+      "name": "safebus-tracking-invalidation-history",
+      "before": null,
+      "after": {
+        "name": "safebus-tracking-invalidation-history",
+        "schedule": "* * * * *",
+        "active": true,
+        "command_md5": "0f85bbf8fef55dfcc525636c5a6634fc"
+      }
+    }
+  ],
+  "indexes": [
+    {
+      "schema": "safebus_private",
+      "name": "tracking_invalidation_queue_ready_idx",
+      "before": null,
+      "after": "CREATE INDEX tracking_invalidation_queue_ready_idx ON safebus_private.tracking_invalidation_queue USING btree (available_at, driver_trip_id)"
+    },
+    {
+      "schema": "public",
+      "name": "tracking_bus_service_active_idx",
+      "before": null,
+      "after": "CREATE INDEX tracking_bus_service_active_idx ON public.bus_route_assignments USING btree (tenant_id, bus_id, route_id, route_trip_pattern_id, id) WHERE (status = 'active'::text)"
+    }
+  ],
+  "triggers": [
+    {
+      "table": "public.driver_trip_current_locations",
+      "name": "notify_tracking_location_change",
+      "before": "CREATE TRIGGER notify_tracking_location_change AFTER INSERT OR UPDATE ON public.driver_trip_current_locations FOR EACH ROW EXECUTE FUNCTION safebus_private.notify_tracking_location_change()",
+      "after": "CREATE TRIGGER notify_tracking_location_change AFTER INSERT OR UPDATE ON public.driver_trip_current_locations FOR EACH ROW EXECUTE FUNCTION safebus_private.notify_tracking_location_change()"
+    }
+  ],
+  "newTables": ["safebus_private.tracking_invalidation_queue"],
+  "mustBeEmptyBeforeRestore": ["safebus_private.tracking_invalidation_queue"]
+}

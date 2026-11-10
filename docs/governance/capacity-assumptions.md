@@ -2,7 +2,22 @@
 
 Status: customer-selected planning target; remaining assumptions and service
 objectives proposed. No demonstrated application capacity or launch approval.
-Updated: 2026-10-28 (America/Edmonton). Decision: [DL-020](decision-log.md#dl-020--capacity-planning-and-local-workload-simulation).
+Updated: 2026-11-10. Owner confirmed the fleet target as 5,000–10,000 buses. Decision: [DL-020](decision-log.md#dl-020--capacity-planning-and-local-workload-simulation).
+
+## Current owner direction — 2026-11-10
+
+Fleet scope is 5,000–10,000 buses, superseding the commercial closure tracker's
+25,000-bus entry. The upper planning bound below stays 10,000; `fleet5000` now
+provides an explicit intermediate sensitivity case. Guardian concurrency remains
+unconfirmed for the commercial scope. Older registered-user and concurrency inputs
+below remain sensitivity assumptions, not demonstrated capacity.
+
+Guardian home now has a prepared 30–35 second check policy with rate-limited live
+hints, hidden/offline cancellation and failure backoff. Live maps retain frequent
+updates. The model reports home traffic separately; map/fallback traffic is an
+alternative page mix. See [implementation, release and limits](../qa/guardian-home-fleet-refresh-2026-11-10.md).
+The prepared async queue has a protected release manifest, but production is still
+synchronous and the queue's conservative defaults are not 10,000-bus qualification.
 
 ## Target and meaning
 
@@ -51,21 +66,21 @@ input; it does not change device cadence or implement pacing/downsampling.
 
 ## Derived peak demand
 
-| Demand                                                  | Calculation / result                                                               |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| New GPS events                                          | 10,000 / 3 = **3,333.33 events/second**                                            |
-| Raw history per operating day                           | 10,000 × 8 × 3,600 / 3 = **96 million events**                                     |
-| Raw history at draft 30-day sensitivity                 | **2.88 billion events**, excluding indexes, WAL and replicas                       |
-| Guardian polling calls                                  | 88,000 × 2 / 15 = **11,733.33 calls/second**                                       |
-| Admin calls                                             | 2,000 × 2 / 30 = **133.33 calls/second**                                           |
-| Login burst                                             | 10,000 / 60 = **166.67 requests/second**                                           |
-| Notification deliveries                                 | **6,667/second** across inbox, push and email; provider demand is channel-specific |
-| Baseline mixed request/delivery work                    | **22,033.67/second** during the combined stress window                             |
-| Uncoalesced per-guardian GPS invalidations              | 88,000 / 3 = **29,333.33 delivered messages/second**                               |
-| Guardian calls if every invalidation triggers two calls | Polling + refetch = **70,400/second** upper-bound model                            |
-| Hottest tenant GPS share                                | **666.67 new events/second** at 20%                                                |
-| Reconnect backlog                                       | 5,000 buses × 900 / 3 = **1.5 million events**                                     |
-| Extra evenly spread catch-up                            | 1.5 million / 300 = **5,000 events/second**, in addition to ongoing collection     |
+| Demand                                                  | Calculation / result                                                                          |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| New GPS events                                          | 10,000 / 3 = **3,333.33 events/second**                                                       |
+| GPS update volume per operating day                     | 10,000 × 8 × 3,600 / 3 = **96 million events**                                                |
+| Historical 30-day volume sensitivity (not stored)       | **2.88 billion update events**; production GPS history was removed; this is not retained rows |
+| Guardian polling calls                                  | 88,000 × 2 / 15 = **11,733.33 calls/second**                                                  |
+| Admin calls                                             | 2,000 × 2 / 30 = **133.33 calls/second**                                                      |
+| Login burst                                             | 10,000 / 60 = **166.67 requests/second**                                                      |
+| Notification deliveries                                 | **6,667/second** across inbox, push and email; provider demand is channel-specific            |
+| Baseline mixed request/delivery work                    | **22,033.67/second** during the combined stress window                                        |
+| Uncoalesced per-guardian GPS invalidations              | 88,000 / 3 = **29,333.33 delivered messages/second**                                          |
+| Guardian calls if every invalidation triggers two calls | Polling + refetch = **70,400/second** upper-bound model                                       |
+| Hottest tenant GPS share                                | **666.67 new events/second** at 20%                                                           |
+| Reconnect backlog                                       | 5,000 buses × 900 / 3 = **1.5 million events**                                                |
+| Extra evenly spread catch-up                            | 1.5 million / 300 = **5,000 events/second**, in addition to ongoing collection                |
 
 The notification sensitivity case includes one million pickup/drop-off source
 events in a fifteen-minute overlap, two guardians per student, and inbox, push
@@ -101,6 +116,7 @@ retention policy; raw event count alone does not establish storage GB or cost.
 | Scenario  | Active buses | Tenants | Concurrent users | Purpose                                                               |
 | --------- | -----------: | ------: | ---------------: | --------------------------------------------------------------------- |
 | pilot     |          100 |       3 |            1,000 | Small fixture/traffic stage; no authorization to operate a real pilot |
+| fleet5000 |        5,000 |     500 |           50,000 | Proposed intermediate fleet and viewer sensitivity case               |
 | regional  |        1,000 |     200 |           10,000 | Intermediate query and tenant-distribution model                      |
 | normal    |       10,000 |   2,000 |           30,000 | Full fleet, lower viewer concurrency                                  |
 | peak      |       10,000 |   2,000 |          100,000 | Customer-selected planning peak                                       |

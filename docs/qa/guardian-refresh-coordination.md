@@ -4,6 +4,13 @@ Status: repository implementation for human review. Customer authorized this
 frontend milestone on 2026-10-12. No database migration, hosted load, deployment
 or commercial capacity certification is included.
 
+## 2026-11-10 home policy and queue release update
+
+Home now reuses this lifecycle with a slower, jittered policy; map defaults remain
+unchanged. The queue SQL also has a reviewed operational release manifest and
+bounded cron diagnostic retention. Production installation and capacity remain
+unverified. See [current behavior and release evidence](guardian-home-fleet-refresh-2026-11-10.md).
+
 ## Before and after
 
 The guardian map mounts two data hooks: bus visibility and the selected bus's

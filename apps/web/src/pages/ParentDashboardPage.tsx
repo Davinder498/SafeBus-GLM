@@ -1,5 +1,4 @@
 import { seatLabel } from '@/utils/studentSeat';
-import { useEffect, useState } from 'react';
 import { BusFront, MapPin, Users } from 'lucide-react';
 import { Link } from 'react-router';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
@@ -9,47 +8,21 @@ import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { GuardianIconTile } from '@/components/ui/GuardianIconTile';
-import { fetchGuardianBusVisibility } from '@/services/guardianLiveBusLocationService';
-import {
-  fetchGuardianStudentStops,
-  type GuardianStudentStopAssignment,
-} from '@/services/guardianStudentStopsService';
-import type { GuardianBusVisibility } from '@/types/guardianLiveBusLocation';
+import { useGuardianHomeData } from '@/hooks/useGuardianHomeData';
+import { Button } from '@/components/ui/Button';
 import {
   groupGuardianBuses,
   guardianBusDetailsPath,
   guardianBusStatus,
 } from '@/utils/guardianBusGroups';
 
-type LoadState =
-  | { kind: 'loading' }
-  | { kind: 'error' }
-  | {
-      kind: 'ready';
-      buses: GuardianBusVisibility[];
-      stops: GuardianStudentStopAssignment[] | null;
-    };
-
 const actionLinkClass =
   'inline-flex rounded-lg bg-navy-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-navy-800';
 
 export function ParentDashboardPage() {
   const appSurface = useAppSurface();
-  const [state, setState] = useState<LoadState>({ kind: 'loading' });
-
-  useEffect(() => {
-    let active = true;
-    Promise.all([fetchGuardianBusVisibility(), fetchGuardianStudentStops().catch(() => null)])
-      .then(([buses, stops]) => {
-        if (active) setState({ kind: 'ready', buses, stops });
-      })
-      .catch(() => {
-        if (active) setState({ kind: 'error' });
-      });
-    return () => {
-      active = false;
-    };
-  }, [appSurface]);
+  const { state: verified, refreshing, lastRefreshedAt, refresh } = useGuardianHomeData();
+  const state = verified.kind === 'ready' ? { kind: 'ready' as const, ...verified.data } : verified;
 
   const busGroups = state.kind === 'ready' ? groupGuardianBuses(state.buses) : [];
 
@@ -71,6 +44,17 @@ export function ParentDashboardPage() {
           }
         />
 
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600">
+          <span role="status" data-testid="guardian-home-last-checked">
+            {lastRefreshedAt
+              ? `Last checked ${new Date(lastRefreshedAt).toLocaleTimeString()}`
+              : 'Not checked yet'}
+          </span>
+          <Button variant="secondary" size="sm" onClick={refresh} disabled={refreshing}>
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </div>
+
         {state.kind === 'loading' && (
           <DataState
             title="Loading your buses"
@@ -80,7 +64,7 @@ export function ParentDashboardPage() {
         {state.kind === 'error' && (
           <DataState
             title="We could not load your buses."
-            message="Please refresh the page and try again."
+            message="Bus status is unavailable. Check your connection and try Refresh."
           />
         )}
         {state.kind === 'ready' && state.buses.length === 0 && (
@@ -226,7 +210,11 @@ export function ParentDashboardPage() {
         {state.kind === 'ready' &&
           appSurface === 'web' &&
           state.buses.map((bus) => (
-            <Card key={bus.studentId} className="rounded-2xl border-[var(--color-border)] p-5 shadow-sm sm:p-6" data-testid="guardian-home-bus-card">
+            <Card
+              key={bus.studentId}
+              className="rounded-2xl border-[var(--color-border)] p-5 shadow-sm sm:p-6"
+              data-testid="guardian-home-bus-card"
+            >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-gray-500">{bus.studentName}</p>

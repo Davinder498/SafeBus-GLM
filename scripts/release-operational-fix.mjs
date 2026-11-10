@@ -30,6 +30,7 @@ const manifests = {
   retention_lifecycle: 'config/pending/retention-lifecycle.json',
   complete_disposal: 'config/pending/complete-disposal.json',
   tracking: 'config/pending/tracking-queue-recovery.json',
+  tracking_invalidations: 'config/pending/async-tracking-invalidations.json',
   calendar: 'config/pending/route-service-calendar.json',
   reporting: 'config/pending/privileged-admin-mfa.json',
   delivery: 'config/pending/unified-notification-delivery.json',
@@ -197,6 +198,10 @@ try {
   } else {
     stage = 'verify';
     const acceptance = verifyOperationalSnapshot(await capture(), config, 'after');
+    if (milestone === 'tracking_invalidations')
+      await client.query(
+        await fs.readFile('tests/rls/async-tracking-existing-database-readonly.sql', 'utf8'),
+      );
     const retention =
       milestone === 'retention'
         ? await verifyRetentionDryRuns(client, config.functions[0].after.md5)
