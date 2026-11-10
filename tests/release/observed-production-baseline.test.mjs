@@ -535,3 +535,40 @@ test('platform export preserves encryption, protected execution and the original
   ])
     assert.ok(script.includes(gate));
 });
+
+test('retained notification recovery table is accepted only with reviewed shape and isolation', async (t) => {
+  const { db, client, args, recovery } = await fixture(t);
+  await registerObservedBaseline(client, { ...args, mode: 'adopt', recovery });
+  await db.exec(`create table safebus_release.pickup_dropoff_event_copies(
+    student_trip_event_id uuid primary key,tenant_id uuid not null,
+    student_id uuid not null,driver_trip_id uuid not null,event_type text not null,
+    title text not null,body text not null);
+    alter table safebus_release.pickup_dropoff_event_copies enable row level security;`);
+  const inspect = () =>
+    inspectSchemaDeployment(client, args.manifest, args.binding, {
+      observedContract: args.contract,
+    });
+  assert.equal((await inspect()).pending.length, 0);
+  for (const sql of [
+    'create table safebus_release.unreviewed(id integer)',
+    'alter table safebus_release.pickup_dropoff_event_copies disable row level security',
+    'grant select on safebus_release.pickup_dropoff_event_copies to public',
+    'grant select on safebus_release.pickup_dropoff_event_copies to anon',
+    'grant update on safebus_release.pickup_dropoff_event_copies to authenticated',
+    'grant select on safebus_release.pickup_dropoff_event_copies to service_role',
+    'grant select(body) on safebus_release.pickup_dropoff_event_copies to anon',
+    'create policy unexpected on safebus_release.pickup_dropoff_event_copies for select using(true)',
+    'alter table safebus_release.pickup_dropoff_event_copies add column unexpected text',
+    'alter table safebus_release.pickup_dropoff_event_copies alter column body drop not null',
+    'alter table public.fixture_rows add column unexpected text',
+    `update safebus_release.migration_checksums set checksum=repeat('0',64)`,
+  ]) {
+    await db.exec('begin');
+    try {
+      await db.exec(sql);
+      await assert.rejects(inspect);
+    } finally {
+      await db.exec('rollback');
+    }
+  }
+});
