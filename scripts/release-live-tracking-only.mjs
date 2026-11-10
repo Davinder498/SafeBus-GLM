@@ -31,6 +31,8 @@ import {
   requireReviewedCatalog,
   registerTrackingSchemaRelease,
   verifyTrackingSchemaRelease,
+  trackingInstallationSha,
+  trackingExpiryHealth,
 } from './lib/live-tracking-removal.mjs';
 
 const mode = process.argv[2],
@@ -62,6 +64,24 @@ async function requireBackup() {
 }
 try {
   assertReviewedCheckout(sha);
+  const releaseMode = process.env.SAFEBUS_TRACKING_REMOVAL_MODE;
+  const installedSha = trackingInstallationSha({
+    sha,
+    installedSha: process.env.SAFEBUS_TRACKING_INSTALLED_SHA,
+    releaseMode,
+    confirmation: process.env.SAFEBUS_TRACKING_REMOVAL_CONFIRM,
+    action: mode,
+    isAncestor: (ancestor, descendant) => {
+      try {
+        execFileSync('git', ['merge-base', '--is-ancestor', ancestor, descendant], {
+          stdio: 'pipe',
+        });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+  });
   if (
     process.env.GITHUB_REF !== 'refs/heads/main' ||
     process.env.SAFEBUS_DEPLOY_ENV !== 'production' ||
@@ -106,6 +126,7 @@ try {
     });
   const identity = {
     sha,
+    installedReleaseSha: installedSha,
     runId: process.env.GITHUB_RUN_ID,
     binding,
     migrationSha256: config.migrationSha256,
@@ -115,10 +136,13 @@ try {
     const observed = await readOnly(client, () => snapshotTrackingRemoval(client, config));
     try {
       verifyTrackingRemoval(observed, config, 'after');
-      await readOnly(client, () => verifyTrackingSchemaRelease(client, sha));
+      await readOnly(client, () => verifyTrackingSchemaRelease(client, installedSha));
       await write('existing', { ...identity, observationOnly: true, historyRemoved: true });
       await fs.appendFile(process.env.GITHUB_OUTPUT, 'state=installed\n');
     } catch (error) {
+      // Finalization can only inspect an already installed, registered schema.
+      // Never fall through into rehearsal, backup, SQL installation or ledger writes.
+      if (releaseMode === 'finalize') throw error;
       if (error.message !== 'TRACKING_REMOVAL_SCHEMA_DRIFT') throw error;
       verifyTrackingRemoval(observed, config, 'before');
       await readOnly(client, () => requireReviewedCatalog(client, config));
@@ -269,7 +293,7 @@ try {
     await readOnly(client, async () =>
       verifyTrackingRemoval(await snapshotTrackingRemoval(client, config), config, 'after'),
     );
-    await readOnly(client, () => verifyTrackingSchemaRelease(client, sha));
+    await readOnly(client, () => verifyTrackingSchemaRelease(client, installedSha));
     const key = process.env.SUPABASE_SECRET_KEY;
     if (!key) throw new Error('TRACKING_REMOVAL_STORAGE_CREDENTIAL_REQUIRED');
     const require = createRequire(new URL('../apps/web/package.json', import.meta.url));
@@ -290,19 +314,13 @@ try {
       expiryExecuted = false;
     for (let attempt = 0; attempt < 12; attempt++) {
       result = await readOnly(client, async () => {
-        await verifyTrackingSchemaRelease(client, sha);
+        await verifyTrackingSchemaRelease(client, installedSha);
         const result = verifyTrackingRemoval(
           await snapshotTrackingRemoval(client, config),
           config,
           'after',
         );
-        const {
-          rows: [health],
-        } = await client.query(`select j.active,r.status,
-          r.end_time>now()-interval '5 minutes' as recent
-          from cron.job j left join lateral
-            (select status,end_time from cron.job_run_details where jobid=j.jobid order by runid desc limit 1) r on true
-          where j.jobname='safebus-expire-tracking-positions'`);
+        const health = await trackingExpiryHealth(client);
         if (health?.active !== true) throw new Error('TRACKING_REMOVAL_EXPIRY_DISABLED');
         if (health.status === 'failed' && health.recent)
           throw new Error('TRACKING_REMOVAL_EXPIRY_FAILED');
@@ -331,6 +349,7 @@ try {
         ? error.message
         : 'TRACKING_REMOVAL_FAILED',
       commitOutcomeRequiresInspection: commitAttempted,
+      databaseCode: /^[0-9A-Z]{5}$/.test(error?.code ?? '') ? error.code : undefined,
     }),
   );
   process.exitCode = 1;
