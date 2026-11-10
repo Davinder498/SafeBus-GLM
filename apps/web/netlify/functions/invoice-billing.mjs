@@ -161,11 +161,14 @@ const info = (customer) => {
   let status = ['pending', 'approved', 'rejected', 'activated'].includes(m[KEY + 'status'])
     ? m[KEY + 'status']
     : 'none';
+  // Reviews cannot overwrite the buyer's committed activation marker.
+  if (status !== 'activated' && ['approved', 'rejected'].includes(m[KEY + 'review_status']))
+    status = m[KEY + 'review_status'];
   // A delayed review of request A must never approve or reject a newer request B.
   if (status === 'rejected' && m[KEY + 'reviewed_request_id'] !== m[KEY + 'request_id'])
     status = 'pending';
   if (
-    ['approved', 'activated'].includes(status) &&
+    status === 'approved' &&
     (m[KEY + 'reviewed_request_id'] !== m[KEY + 'request_id'] ||
       m[KEY + 'approval_fingerprint'] !==
         invoiceSelectionFingerprint(customer, m[KEY + 'days_until_due']))
@@ -286,6 +289,7 @@ async function requestInvoice(ctx, stripe, state, input) {
         [KEY + 'status']: 'pending',
         [KEY + 'approved_by']: '',
         [KEY + 'approved_at']: '',
+        [KEY + 'review_status']: '',
         [KEY + 'reviewed_request_id']: '',
         [KEY + 'approval_fingerprint']: '',
         [KEY + 'days_until_due']: '30',
@@ -346,7 +350,7 @@ async function reviewInvoice(ctx, stripe, state, input) {
     customer.id,
     {
       metadata: {
-        [KEY + 'status']: input.approve ? 'approved' : 'rejected',
+        [KEY + 'review_status']: input.approve ? 'approved' : 'rejected',
         [KEY + 'approved_by']: input.approve ? ctx.caller.id : '',
         [KEY + 'approved_at']: input.approve ? new Date().toISOString() : '',
         [KEY + 'reviewed_request_id']: input.requestId,
@@ -382,6 +386,77 @@ async function activateInvoice(ctx, stripe, state, input) {
   assertTenantMatch(customer, state.tenant_id);
   const current = info(customer);
   const m = customer.metadata ?? {};
+  if (current.requestId !== arrangementId) throw new Error('billing_invoice_not_approved');
+  const history = await stripe.subscriptions.list({
+    customer: customer.id,
+    status: 'all',
+    limit: 100,
+  });
+  if (history.has_more) throw new Error('billing_subscription_review_required');
+  const matches = history.data.filter(
+    (s) =>
+      s.metadata?.safebus_invoice_request_id === arrangementId &&
+      s.metadata?.safebus_tenant_id === state.tenant_id,
+  );
+  if (
+    history.data.some(
+      (s) =>
+        !['canceled', 'incomplete_expired'].includes(s.status) &&
+        !matches.some((x) => x.id === s.id),
+    )
+  )
+    throw new Error('billing_subscription_already_exists');
+  if (
+    matches.length > 1 ||
+    (matches.length && !['trialing', 'active', 'past_due', 'unpaid'].includes(matches[0].status))
+  )
+    throw new Error('billing_subscription_review_required');
+  if (matches.length) {
+    // A committed Stripe subscription is the authority for recovering an
+    // interrupted activation. A delayed review cannot undo that contract.
+    const sub = await retrieveCanonicalSubscription(stripe, matches[0].id);
+    const owner = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id;
+    if (
+      owner !== customer.id ||
+      !['trialing', 'active', 'past_due', 'unpaid'].includes(sub.status) ||
+      sub.collection_method !== 'send_invoice' ||
+      sub.metadata?.safebus_tenant_id !== state.tenant_id ||
+      sub.metadata?.safebus_invoice_request_id !== arrangementId
+    )
+      throw new Error('billing_invoice_review_required');
+    const projection = await syncSubscriptionProjection(
+      ctx.admin,
+      stripe,
+      sub,
+      new Date().toISOString(),
+      ctx.invoiceOperationId,
+    );
+    if (!projection.applied) throw new Error('billing_projection_not_applied');
+    if (m[KEY + 'status'] !== 'activated') {
+      ctx.invoiceProviderStarted = true;
+      await stripe.customers.update(
+        customer.id,
+        { metadata: { [KEY + 'status']: 'activated' } },
+        { idempotencyKey: `safebus:invoice:${state.tenant_id}:${arrangementId}:activated` },
+      );
+    }
+    await writeBillingAudit(
+      ctx.admin,
+      ctx.caller.id,
+      'billing.subscription_created',
+      state.tenant_id,
+      {
+        invoiceArrangement: 'activated',
+        trialGranted: sub.status === 'trialing',
+        paymentCollection: 'send_invoice',
+      },
+    );
+    return {
+      status: 'activated',
+      subscriptionStatus: sub.status,
+      trialGranted: sub.status === 'trialing',
+    };
+  }
   if (
     current.requestId !== arrangementId ||
     !['approved', 'activated'].includes(current.status) ||
@@ -399,30 +474,6 @@ async function activateInvoice(ctx, stripe, state, input) {
     throw new Error('billing_invoice_not_approved');
   const price = await validateApprovedPrice(stripe, current.priceId, ctx.config.stripeProductId);
   if (price.tax_behavior !== 'inclusive') throw new Error('billing_price_not_approved');
-  const history = await stripe.subscriptions.list({
-    customer: customer.id,
-    status: 'all',
-    limit: 100,
-  });
-  if (history.has_more) throw new Error('billing_subscription_review_required');
-  const matches = history.data.filter(
-    (s) =>
-      s.metadata?.safebus_invoice_request_id === arrangementId &&
-      s.metadata?.safebus_tenant_id === state.tenant_id,
-  );
-  if (
-    history.data.some(
-      (s) =>
-        !['canceled', 'incomplete_expired'].includes(s.status) &&
-        !matches.some((matched) => matched.id === s.id),
-    )
-  )
-    throw new Error('billing_subscription_already_exists');
-  if (
-    matches.length > 1 ||
-    (matches.length && !['trialing', 'active', 'past_due', 'unpaid'].includes(matches[0].status))
-  )
-    throw new Error('billing_subscription_review_required');
   if (!matches.length) {
     if (current.status !== 'approved') throw new Error('billing_invoice_review_required');
     const sessions = await stripe.checkout.sessions.list({
@@ -478,6 +529,9 @@ async function activateInvoice(ctx, stripe, state, input) {
         metadata: {
           safebus_tenant_id: state.tenant_id,
           safebus_invoice_request_id: arrangementId,
+          safebus_invoice_approved_by: m[KEY + 'approved_by'],
+          safebus_invoice_approved_at: current.approvedAt,
+          safebus_invoice_approval_fingerprint: m[KEY + 'approval_fingerprint'],
           safebus_purchase_order_reference: current.purchaseOrder,
         },
         expand: ['customer', 'items.data.price.product', 'latest_invoice'],
@@ -488,6 +542,7 @@ async function activateInvoice(ctx, stripe, state, input) {
   sub = await retrieveCanonicalSubscription(stripe, sub.id);
   if (
     sub.collection_method !== 'send_invoice' ||
+    (typeof sub.customer === 'string' ? sub.customer : sub.customer?.id) !== customer.id ||
     sub.metadata?.safebus_invoice_request_id !== arrangementId ||
     sub.metadata?.safebus_tenant_id !== state.tenant_id
   )
@@ -535,6 +590,7 @@ async function manageInvoiceRenewal(ctx, stripe, state, input) {
   const sub = await retrieveCanonicalSubscription(stripe, state.external_subscription_id);
   if (
     sub.collection_method !== 'send_invoice' ||
+    (typeof sub.customer === 'string' ? sub.customer : sub.customer?.id) !== customer.id ||
     sub.metadata?.safebus_tenant_id !== state.tenant_id ||
     sub.metadata?.safebus_invoice_request_id !== current.requestId ||
     !['trialing', 'active', 'past_due', 'unpaid'].includes(sub.status)
@@ -623,7 +679,22 @@ export async function handler(event) {
     if (input.action === 'status') {
       const customer = await getCustomer(stripe, state);
       if (customer) assertTenantMatch(customer, tenantId);
-      return json(200, { arrangement: customer ? info(customer) : { status: 'none' } });
+      const arrangement = customer ? info(customer) : { status: 'none' };
+      if (customer && state.external_subscription_id && arrangement.status === 'activated') {
+        const sub = await retrieveCanonicalSubscription(stripe, state.external_subscription_id);
+        const owner = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id;
+        if (owner !== customer.id || sub.metadata?.safebus_tenant_id !== tenantId)
+          throw new Error('billing_tenant_mapping_mismatch');
+        if (sub.metadata?.safebus_invoice_request_id === arrangement.requestId) {
+          if (['canceled', 'incomplete_expired'].includes(sub.status)) arrangement.status = 'none';
+          else {
+            arrangement.daysUntilDue = sub.days_until_due;
+            arrangement.approvedAt =
+              sub.metadata?.safebus_invoice_approved_at || arrangement.approvedAt;
+          }
+        }
+      }
+      return json(200, { arrangement });
     }
     if (!platform) {
       // Reuse the same authority-wide lease as card Checkout. No parallel card

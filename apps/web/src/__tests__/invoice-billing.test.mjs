@@ -103,6 +103,7 @@ beforeEach(() => {
   history = { data: [], has_more: false };
   subscription = {
     id: 'sub_invoice',
+    customer: 'cus_example',
     status: 'trialing',
     collection_method: 'send_invoice',
     metadata: { safebus_tenant_id: tenant, safebus_invoice_request_id: requestId },
@@ -169,6 +170,44 @@ beforeEach(() => {
   shared.writeBillingAudit.mockResolvedValue(undefined);
 });
 describe('approved invoice billing request', () => {
+  it('a stale review cannot disable renewal or change the due window of an activated contract', async () => {
+    customer.metadata = {
+      ...metadata('activated'),
+      safebus_invoice_review_status: 'rejected',
+      safebus_invoice_reviewed_request_id: '77777777-7777-4777-8777-777777777777',
+      safebus_invoice_approval_fingerprint: 'stale',
+      safebus_invoice_days_until_due: '60',
+    };
+    state.external_subscription_id = 'sub_invoice';
+    subscription.days_until_due = 14;
+    subscription.status = 'active';
+    expect(result(await handler(event('status'))).arrangement).toMatchObject({
+      status: 'activated',
+      daysUntilDue: 14,
+    });
+    expect((await handler(event('cancel_renewal'))).statusCode).toBe(200);
+    expect(stripe.subscriptions.update).toHaveBeenCalledOnce();
+  });
+  it('recovers a committed activation after a stale review without creating another subscription', async () => {
+    customer.metadata = {
+      ...metadata('pending'),
+      safebus_invoice_review_status: 'approved',
+      safebus_invoice_reviewed_request_id: '77777777-7777-4777-8777-777777777777',
+      safebus_invoice_approval_fingerprint: 'stale',
+    };
+    history.data = [subscription];
+    expect((await handler(event('activate'))).statusCode).toBe(200);
+    expect(stripe.subscriptions.create).not.toHaveBeenCalled();
+    expect(shared.syncSubscriptionProjection).toHaveBeenCalledOnce();
+    expect(customer.metadata.safebus_invoice_status).toBe('activated');
+  });
+  it('rejects another Stripe customer before any renewal mutation', async () => {
+    customer.metadata = metadata('activated');
+    state.external_subscription_id = 'sub_invoice';
+    subscription.customer = 'cus_foreign';
+    expect((await handler(event('cancel_renewal'))).statusCode).toBe(409);
+    expect(stripe.subscriptions.update).not.toHaveBeenCalled();
+  });
   it.each([7, 13, 21, 61])(
     'rejects an unapproved invoice payment window: %s days',
     (daysUntilDue) => {
@@ -297,7 +336,7 @@ describe('approved invoice billing request', () => {
     expect(captured).toHaveLength(2);
     expect(captured[0]).toBe(captured[1]);
     expect(results.filter((r) => r.statusCode === 200)).toHaveLength(1);
-    expect(customer.metadata.safebus_invoice_status).toBe('approved');
+    expect(customer.metadata.safebus_invoice_review_status).toBe('approved');
   });
   it('rejects invalid email, PO, quantity and Canadian address', () => {
     expect(
