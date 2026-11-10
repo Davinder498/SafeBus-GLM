@@ -314,6 +314,7 @@ attributable to SafeBus's covered conduct is eligible; allegations alone
 do not allocate ultimate fault. This is **not** a waiver of SafeBus's
 independent DPA, security, subprocessor or non-excludable legal duties.
 No reciprocal Customer indemnity is silently imposed.
+No separate reciprocal Customer liability cap is selected in this draft.
 
 ### 8.4 Claim defence, cooperation and settlement controls (proposed)
 

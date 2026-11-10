@@ -54,4 +54,4 @@ jobs:
       - name: Re-run dispatcher and release contract tests
         run: pnpm --filter @safebus/web test -- push-notification-dispatcher && node --test tests/release/notification-system-contract.test.mjs tests/release/security-config.test.mjs
       - name: Deploy only the reviewed push dispatcher
-        run: pnpm exec supabase functions deploy push-notification-dispatcher --project-ref "$SUPABASE_PROJECT_ID" --no-verify-jwt --use-api
+        run: pnpm exec supabase functions deploy push-notification-dispatcher --remote="$SUPABASE_PROJECT_ID" --no-verify-jwt --use-api --yes

@@ -129,7 +129,7 @@ export async function baseline() {
     await db.exec(`create trigger notify_tracking_location_change after insert or update on driver_trip_current_locations
       for each row execute function safebus_private.notify_tracking_location_change();
       insert into student_route_assignments(id,tenant_id,student_id,route_id,effective_from)
-        values('${id(33)}','${id(1)}','${id(30)}','${id(21)}',current_date);
+        values('${id(33)}','${id(1)}','${id(30)}','${id(21)}',(now() at time zone 'America/Edmonton')::date);
     `);
     for (const p of captured.policies) {
       await db.query(

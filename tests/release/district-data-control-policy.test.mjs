@@ -31,7 +31,7 @@ test('owner-approved district-controlled model replaces a blanket 30-day return 
   assert.match(contents.dpa, /No universal 30-day return or 60-day deletion commitment/i);
   assert.match(contents.order, /No blanket 30-day return or 60-day deletion promise/i);
   assert.match(contents.owner, /no mandatory 30-day export or 60-day purge/i);
-  assert.match(contents.returnSchedule, /A directory download is not a complete/i);
+  assert.match(contents.returnSchedule, /directory snapshots, not a complete district archive/i);
   assert.match(contents.returnSchedule, /no unverified general full-district export feature, automatic closure purge or unconditional completion date/i);
 });
 

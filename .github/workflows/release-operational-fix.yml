@@ -79,7 +79,7 @@ jobs:
         run: node scripts/release-operational-fix.mjs install
       - name: Deploy reviewed notification dispatcher
         if: inputs.mode == 'install' && inputs.milestone == 'delivery'
-        run: pnpm exec supabase functions deploy push-notification-dispatcher --project-ref "$SUPABASE_PROJECT_ID" --no-verify-jwt --use-api
+        run: pnpm exec supabase functions deploy push-notification-dispatcher --remote="$SUPABASE_PROJECT_ID" --no-verify-jwt --use-api --yes
       - name: Validate Firebase without sending notifications
         if: inputs.mode == 'install' && inputs.milestone == 'delivery'
         run: node scripts/verify-push-provider.mjs

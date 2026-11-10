@@ -6,7 +6,7 @@ import { generateFromOpenApi } from '../../scripts/lib/openapi-database-types.mj
 
 const root = process.cwd();
 const generatedPath = path.join(root, 'packages/types/src/database.generated.ts');
-const generated = fs.readFileSync(generatedPath, 'utf8');
+const generated = fs.readFileSync(generatedPath, 'utf8').replaceAll('\r', '');
 
 test('the observed route date default permits omission without making unrelated arrays optional', () => {
   const metadata = {

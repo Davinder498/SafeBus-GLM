@@ -1,0 +1,11 @@
+{
+  "schoolAuthorityAdmin": "Active authority admin, MFA and recent authentication for mutations; only their authority may request, activate or change invoice renewal. All tenant billing mutations share the existing lease, operation ledger and original-request retry path with card checkout.",
+  "platformAdmin": "Active platform super admin, MFA and recent authentication may review the exact requested price, quantity, business billing address, PO and payment window. Request and review never create an invoice or subscription. Stale review cannot approve a changed request; competing review decisions have one provider idempotency key.",
+  "schoolScopedAdmin": "No additional billing permissions; existing authority-admin ownership requirements remain.",
+  "transportationAdmin": "Denied billing mutations and financial details.",
+  "guardian": "Denied billing mutations and financial details; linked-student scope unchanged.",
+  "driver": "Denied billing mutations and financial details; own/assigned data scope unchanged.",
+  "channels": "No new notification categories or recipient subscriptions. No external notifications, invoices, subscriptions or charges as QA.",
+  "failure": "Provider uncertainty retains the original operation and blocks competing mutations. Retry uses the same operation key, and subscription projection is committed under that lease. Confirmed pre-provider validation failures release the lease without charging. Recover saved operations through the existing authenticated billing retry UI.",
+  "businessTerms": "Preserve the PR's owner-approved CAD inclusive tariff, one 14-day trial, recurring billing, approved invoice exception and term-end cancellation. Merging code does not publish contracts, attest tax or insurance evidence, or approve commercial launch."
+}

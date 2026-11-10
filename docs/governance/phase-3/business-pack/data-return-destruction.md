@@ -31,7 +31,7 @@ Deletion remains subject to the Customer's applicable public-body records schedu
 Safeguard separate copies and deletion paths, including:
 
 - Primary database records, dependent relational rows, derived reports and authorization/session state;
-- Tracking history and preservation archives, in-app notifications, eligible emails or push delivery metadata, and authorized device/offline queues;
+- Temporary live-location state and authorized device/offline delivery queues, in-app notifications, and eligible email or push delivery metadata;
 - Supabase and other backups, immutable archives, supplier logs, transactional email/push providers, storage and support copies;
 - SafeBus's own tax/invoice, contract, audit, incident and legal evidence (which need not follow the same trigger as ordinary transportation records).
 

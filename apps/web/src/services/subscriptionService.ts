@@ -113,7 +113,10 @@ function unconfirmedBillingResult() {
   );
 }
 
-export async function callBillingFunction<T>(path: string, body: Record<string, unknown>): Promise<T> {
+export async function callBillingFunction<T>(
+  path: string,
+  body: Record<string, unknown>,
+): Promise<T> {
   const c = client();
   const { data: sessionData } = await c.auth.getSession();
   const token = sessionData.session?.access_token;
@@ -237,9 +240,26 @@ export async function previewTenantChange(
 }
 
 type BillingMutation = {
-  action: 'checkout' | 'change' | 'cancel' | 'keep' | 'unschedule';
+  action:
+    | 'checkout'
+    | 'change'
+    | 'cancel'
+    | 'keep'
+    | 'unschedule'
+    | 'request'
+    | 'activate'
+    | 'cancel_renewal'
+    | 'resume_renewal';
+  endpoint?: 'invoice-billing';
   priceId?: string;
   quantity?: number;
+  [key: string]: unknown;
+};
+type BillingMutationResult = {
+  ok?: boolean;
+  url?: string;
+  pendingPayment?: boolean;
+  paymentUrl?: string;
 };
 type PendingBillingRequest = { requestId: string; body: BillingMutation };
 // Financial request payloads remain in memory or in the authenticated server ledger.
@@ -255,21 +275,30 @@ export function hasPendingTenantBilling(tenantId: string): boolean {
 
 export async function changeTenantBilling(
   tenantId: string,
-  action: BillingMutation['action'],
+  action: 'checkout' | 'change' | 'cancel' | 'keep' | 'unschedule',
   priceId?: string,
   quantity?: number,
 ): Promise<{ url?: string; pendingPayment?: boolean; paymentUrl?: string }> {
-  const key = `safebus-billing-request:${tenantId}`;
   const body = { action, ...(priceId ? { priceId, quantity } : {}) };
+  return queueBillingMutation(tenantId, body);
+}
+
+export async function queueInvoiceBilling<T extends BillingMutationResult>(
+  tenantId: string,
+  body: BillingMutation & { endpoint: 'invoice-billing' },
+): Promise<T> {
+  return queueBillingMutation<T>(tenantId, body);
+}
+
+async function queueBillingMutation<T extends BillingMutationResult = BillingMutationResult>(
+  tenantId: string,
+  body: BillingMutation,
+): Promise<T> {
+  const key = `safebus-billing-request:${tenantId}`;
   if (!pendingBillingRequests.has(tenantId) && sessionStorage.getItem(key))
     await recoverPendingTenantBilling(tenantId);
   const request = pendingBillingRequests.get(tenantId);
-  if (
-    request &&
-    (request.body.action !== action ||
-      request.body.priceId !== body.priceId ||
-      request.body.quantity !== body.quantity)
-  )
+  if (request && JSON.stringify(request.body) !== JSON.stringify(body))
     throw new Error('Retry your previous billing request before making another change.');
   let localRequestId = sessionStorage.getItem(key);
   if (!request && !localRequestId) {
@@ -280,12 +309,12 @@ export async function changeTenantBilling(
     requestId: request?.requestId ?? localRequestId!,
     body,
   });
-  return retryTenantBilling(tenantId);
+  return retryTenantBilling<T>(tenantId);
 }
 
-export async function retryTenantBilling(
+export async function retryTenantBilling<T extends BillingMutationResult = BillingMutationResult>(
   tenantId: string,
-): Promise<{ url?: string; pendingPayment?: boolean; paymentUrl?: string }> {
+): Promise<T> {
   const key = `safebus-billing-request:${tenantId}`;
   if (!pendingBillingRequests.has(tenantId)) await recoverPendingTenantBilling(tenantId);
   const saved = pendingBillingRequests.get(tenantId);
@@ -293,12 +322,11 @@ export async function retryTenantBilling(
     throw new Error('The request did not reach billing. Submit your saved selection to retry.');
   let result;
   try {
-    result = await callBillingFunction<{
-      ok?: boolean;
-      url?: string;
-      pendingPayment?: boolean;
-      paymentUrl?: string;
-    }>('tenant-subscriptions', { ...saved.body, requestId: saved.requestId });
+    const { endpoint, ...body } = saved.body;
+    result = await callBillingFunction<T>(
+      endpoint === 'invoice-billing' ? 'invoice-billing' : 'tenant-subscriptions',
+      { ...body, requestId: saved.requestId },
+    );
     const confirmed =
       saved.body.action === 'checkout'
         ? typeof result.url === 'string' && result.url.startsWith('https://')
@@ -321,6 +349,8 @@ export async function recoverPendingTenantBilling(tenantId: string): Promise<boo
     pending: { requestId: string; body: BillingMutation } | null;
   }>('tenant-subscriptions', { action: 'pending_request' });
   if (!pending?.body) return false;
+  if (pending.body.endpoint !== undefined && pending.body.endpoint !== 'invoice-billing')
+    throw new Error('The saved billing request is unavailable.');
   pendingBillingRequests.set(tenantId, pending);
   return true;
 }
