@@ -9,6 +9,7 @@ import {
   artifactManifest,
   verifyHostedArtifact,
   publishEngineeringArtifact,
+  requirePrelaunchMaintenance,
 } from '../../scripts/lib/engineering-artifact-release.mjs';
 import { digest } from '../../scripts/lib/production-credential-isolation.mjs';
 import { verifyPublicFrontendConfiguration } from '../../scripts/lib/public-build-environment.mjs';
@@ -101,6 +102,12 @@ function fixture() {
   return { data, params };
 }
 test('release requires successful exact-commit CI and rejects stale, skipped or newly failed checks', () => {
+  requirePrelaunchMaintenance({ commercialLaunchApproved: false });
+  assert.throws(
+    () => requirePrelaunchMaintenance({ commercialLaunchApproved: true }),
+    /PRELAUNCH_ONLY/,
+  );
+  assert.throws(() => requirePrelaunchMaintenance({}), /PRELAUNCH_ONLY/);
   const runs = REQUIRED_CHECKS.map((name, i) => ({
     name,
     id: i + 1,

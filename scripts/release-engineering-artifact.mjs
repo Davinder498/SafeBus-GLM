@@ -9,6 +9,7 @@ import {
   verifyChecks,
   verifyHostedArtifact,
   publishEngineeringArtifact,
+  requirePrelaunchMaintenance,
 } from './lib/engineering-artifact-release.mjs';
 import { runProductionHealth } from './lib/production-health.mjs';
 
@@ -18,6 +19,11 @@ const directory = '.safebus-release/engineering-artifact';
 let stage = 'context';
 try {
   assertReviewedCheckout(sha);
+  const closure = JSON.parse(await fs.readFile('config/commercial-launch-closure.json', 'utf8'));
+  // Owner-authorized repairs on the sole prelaunch production project. This
+  // maintenance route closes when commercial scope is approved; normal release
+  // privacy, legal, operations and pilot gates remain unchanged.
+  requirePrelaunchMaintenance(closure.scope);
   if (
     process.env.GITHUB_REF !== 'refs/heads/main' ||
     process.env.SAFEBUS_DEPLOY_ENV !== 'production' ||

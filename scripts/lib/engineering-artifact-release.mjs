@@ -5,6 +5,9 @@ import { digest, readConfiguration, isIsolated } from './production-credential-i
 const fail = (code) => {
   throw new Error('ENGINEERING_RELEASE_' + code);
 };
+export function requirePrelaunchMaintenance(scope) {
+  if (scope?.commercialLaunchApproved !== false) fail('PRELAUNCH_ONLY');
+}
 export const REQUIRED_CHECKS = [
   'Typecheck, lint, and build',
   'Unit tests',
