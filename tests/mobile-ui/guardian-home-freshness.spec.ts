@@ -13,7 +13,7 @@ async function openHome(page: import('@playwright/test').Page) {
   );
   const fixture = await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
   await page.clock.install();
-  await page.goto('/guardian');
+  await page.goto('/parent');
   await expect(page.getByTestId('guardian-home-bus-card')).toBeVisible();
   await expect(page.getByTestId('guardian-home-last-checked')).toContainText('Last checked');
   return fixture;

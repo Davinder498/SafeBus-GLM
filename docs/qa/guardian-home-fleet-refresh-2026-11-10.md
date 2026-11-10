@@ -146,3 +146,14 @@ skipped release tests. Mobile build and subsequent `cap:sync` both passed; this
 is not an installed APK/AAB or physical-device result. The workload model, bounded
 loopback simulator, explicit product-verification contracts, formatting and
 whitespace checks passed. Browser execution remains blocked as described above.
+
+## PR 431 browser CI correction
+
+The first CI run (42814326243) passed the website browser suite and 123 mobile
+journeys, including existing map refresh coordination. Both new home tests failed
+before their freshness assertions: they navigated to `/guardian`, which has no
+home route. The established home route in both mobile and web is `/parent`.
+Correct the test navigation to `/parent`; retain the trip-ending, reassignment,
+request-count, failed-verification and manual-recovery assertions. No production
+route alias, skipped check, increased timeout or application behavior change is
+needed. New CI must pass before browser verification can be claimed.
