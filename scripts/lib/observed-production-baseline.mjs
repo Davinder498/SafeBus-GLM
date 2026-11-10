@@ -264,6 +264,9 @@ export async function inspectObservedBaseline(client, manifest, binding, contrac
   const objectNames =
     await client.query(`select c.relname from pg_class c join pg_namespace n on n.oid=c.relnamespace
     where n.nspname='safebus_release' and c.relkind in ('r','p','v','m','S','f') order by c.relname`);
+  const retainedCopy = objectNames.rows.some(
+    (row) => row.relname === 'pickup_dropoff_event_copies',
+  );
   if (
     JSON.stringify(objectNames.rows.map((row) => row.relname)) !==
     JSON.stringify([
@@ -271,11 +274,62 @@ export async function inspectObservedBaseline(client, manifest, binding, contrac
       'migration_checksums',
       'migration_dispositions',
       'observed_baselines',
+      ...(retainedCopy ? ['pickup_dropoff_event_copies'] : []),
       'releases',
       'security_installations',
     ])
   )
     throw new Error('Observed release metadata inventory differs.');
+  // The reviewed unified-notification rollout retained this obsolete snapshot
+  // in the private release schema. It is recovery evidence, not a new migration
+  // execution. Permit only this known ordinary table, still isolated and inert.
+  if (retainedCopy) {
+    const retained = await client.query(`select c.relkind,c.relrowsecurity,
+      pg_get_userbyid(c.relowner) as owner,
+      exists(select 1 from aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a
+        where a.grantee=0) as public_access,
+      exists(select 1 from pg_attribute a where a.attrelid=c.oid and a.attnum>0
+        and not a.attisdropped and a.attacl is not null) as column_grants,
+      exists(select 1 from pg_policy p where p.polrelid=c.oid) as policies,
+      exists(select 1 from pg_trigger t where t.tgrelid=c.oid and not t.tgisinternal) as triggers,
+      has_table_privilege('anon',c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') as anon_access,
+      has_table_privilege('authenticated',c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') as authenticated_access,
+      has_table_privilege('service_role',c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') as service_access,
+      (select jsonb_agg(jsonb_build_array(a.attname,format_type(a.atttypid,a.atttypmod),a.attnotnull)
+        order by a.attnum) from pg_attribute a where a.attrelid=c.oid and a.attnum>0
+        and not a.attisdropped) as columns
+      from pg_class c where c.oid=to_regclass('safebus_release.pickup_dropoff_event_copies')`);
+    const row = retained.rows[0];
+    const columns = [
+      ['student_trip_event_id', 'uuid', true],
+      ['tenant_id', 'uuid', true],
+      ['student_id', 'uuid', true],
+      ['driver_trip_id', 'uuid', true],
+      ['event_type', 'text', true],
+      ['title', 'text', true],
+      ['body', 'text', true],
+    ];
+    if (
+      retained.rows.length !== 1 ||
+      row.relkind !== 'r' ||
+      row.owner !== 'postgres' ||
+      row.relrowsecurity !== true ||
+      [
+        'public_access',
+        'column_grants',
+        'policies',
+        'triggers',
+        'anon_access',
+        'authenticated_access',
+        'service_access',
+      ].some((key) => row[key] !== false) ||
+      JSON.stringify(row.columns) !== JSON.stringify(columns)
+    )
+      throw new Error(
+        'Retained notification recovery table differs from reviewed isolation or shape.',
+      );
+  }
+
   const schemaIsolation =
     await client.query(`select has_schema_privilege('anon','safebus_release','USAGE') as anon,
     has_schema_privilege('authenticated','safebus_release','USAGE') as authenticated`);
