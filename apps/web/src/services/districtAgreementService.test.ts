@@ -7,18 +7,22 @@ vi.mock('@/lib/supabase',()=>({
 
 import {
   getDistrictAgreement,getPlatformAgreement,acceptDistrictAgreement,
-  getAgreementReceipt,listMyAgreementReceipts,
+  getAgreementReceipt,listMyAgreementReceipts,serializeExecutedAgreementArchive,
   listPlatformAgreementDocuments,publishAgreementCatalog,publishAgreementDocument
 } from './districtAgreementService';
 
 describe('SafeBus direct district MSA DPA acceptance',()=>{
   beforeEach(()=>rpc.mockReset());
 
-  it('does not invent a signed or published document when the migration is absent',async()=>{
+  it('does not conceal an unavailable database migration as an unpublished agreement',async()=>{
     rpc.mockResolvedValue({data:null,error:{code:'PGRST202'}});
+    await expect(getDistrictAgreement()).rejects.toThrow('not deployed');
+    await expect(getPlatformAgreement('district-1')).rejects.toThrow('not deployed');
+    await expect(listMyAgreementReceipts()).rejects.toThrow('not deployed');
+  });
+  it('returns a genuine not-issued state when the installed RPC reports no published catalog',async()=>{
+    rpc.mockResolvedValue({data:{status:'not_issued',tenant_name:'District A',documents:[]},error:null});
     await expect(getDistrictAgreement()).resolves.toMatchObject({status:'not_issued',documents:[]});
-    await expect(getPlatformAgreement('district-1')).resolves.toMatchObject({status:'not_issued'});
-    await expect(listMyAgreementReceipts()).resolves.toEqual([]);
   });
   it('fails closed on denied agreement read',async()=>{
     rpc.mockResolvedValue({data:null,error:{code:'42501',message:'denied'}});
@@ -70,5 +74,51 @@ describe('SafeBus direct district MSA DPA acceptance',()=>{
     });
     rpc.mockResolvedValue({data:[],error:null});
     await expect(listPlatformAgreementDocuments()).resolves.toEqual([]);
+  });
+});
+
+describe('immutable UTF-8 executed agreement archive',()=>{
+  const kinds=['msa','dpa','order_form','security','sla','acceptable_use','data_return','suppliers'];
+  const archiveReceipt=()=>({
+    id:'00000000-0000-4000-8000-000000000021',
+    signed_at:'2026-11-09T00:00:00Z',
+    bundle_sha256:'b'.repeat(64),
+    receipt_sha256:'c'.repeat(64),
+    document_snapshot:{
+      customer:'École de la Rivière — ਸੇਫ਼ ਬੱਸ',
+      provider:'Sachman Gold Inc. (SafeBus)',
+      package_id:'00000000-0000-4000-8000-000000000020',
+      revision:1,
+      accepted_at:'2026-11-09T00:00:00Z',
+      signer:{user_id:'synthetic-user',email:'test@example.invalid',name:'Élodie',title:'Transportation Director'},
+      documents:kinds.map((kind,i)=>({
+        id:String(i),kind,title:kind,version:'2026.1',
+        sha256:'a'.repeat(64),
+        body:`Contract text ${kind}: élève — ਪੰਜਾਬੀ ✓\nKeep punctuation, accents and blank lines.\n`
+      }))
+    }
+  });
+
+  it('preserves exact original Unicode agreement strings in a printable machine-readable archive',()=>{
+    const receipt=archiveReceipt();
+    const serialized=serializeExecutedAgreementArchive(receipt);
+    const parsed=JSON.parse(serialized);
+    expect(parsed.format).toBe('safebus-executed-agreement-utf8-v1');
+    expect(parsed.document_snapshot.customer).toBe(receipt.document_snapshot.customer);
+    expect(parsed.document_snapshot.documents).toEqual(receipt.document_snapshot.documents);
+    expect(parsed.receipt_sha256).toBe(receipt.receipt_sha256);
+    expect(serialized).toContain('ਪੰਜਾਬੀ');
+    expect(serialized).toContain('Élodie');
+  });
+  it('refuses missing, duplicated or modified document inventory rather than exporting an incomplete record',()=>{
+    const receipt=archiveReceipt();
+    receipt.document_snapshot.documents[1].kind='msa';
+    expect(()=>serializeExecutedAgreementArchive(receipt)).toThrow('incomplete');
+    const fewer=archiveReceipt();
+    fewer.document_snapshot.documents.pop();
+    expect(()=>serializeExecutedAgreementArchive(fewer)).toThrow('incomplete');
+    const missingBody=archiveReceipt();
+    missingBody.document_snapshot.documents[0].body=' ';
+    expect(()=>serializeExecutedAgreementArchive(missingBody)).toThrow('incomplete');
   });
 });

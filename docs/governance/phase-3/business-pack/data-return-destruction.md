@@ -1,66 +1,52 @@
-# Data Return and Destruction Schedule — Draft
+# SafeBus Data Management, Return and Destruction Schedule — Draft
 
-**Status:** Proposed exit obligations; periods and execution capability unapproved
+**Status:** Owner-approved district-controlled model (November 9, 2026); final customer acceptance, workflow verification and supplier/backup evidence pending. **Not executed or published.**
 
-## Trigger and authority
+This Schedule forms part of the Customer's accepted SafeBus MSA/DPA when duly published and electronically accepted. Its purpose is simple: the **school authority manages its own transportation records** through the authorized SafeBus controls, while SafeBus handles records and provider copies the Customer cannot directly manage. **No universal mandatory 30-day export or 60-day deletion period applies** under the owner's approved standard proposal. Mandatory law, the authority's records schedule and any accepted customer-specific terms remain controlling.
 
-This schedule applies to termination, an approved customer return/deletion request
-or expiry of the applicable retention purpose. Verify the requester and its
-authority, identify affected tenant/data classes, assess holds and protect other
-customers. Account disablement is not a certificate of data destruction.
+## 1. District control during service
 
-## Return
+An active, authorized **school-authority tenant administrator** may access the supported self-service controls for the authority's own records:
 
-Proposed return window: the Customer may request a return within 30 calendar days
-of termination. Agree the format, scope, timing, transfer mechanism and any
-approved extraordinary work charges before activation. A draft commitment does
-not establish that a general export feature exists.
+- **Download CSV** from the student, guardian, driver and bus directories, using their authorized filters and documented field sets. These downloads are directory snapshots, **not a complete district archive or all trip history**.
+- Review or update operational records and use **record-level delete, deactivate or archive actions** where the relevant screen and backend currently support them. Deleting one student or guardian record is not a command to erase all associated independent trip, notification, audit, financial or provider records.
+- Use **Records disposal** for the supported retention, preservation, available record-level export and review operations, subject to verified role, session and records restrictions. **Scheduled destructive disposal remains disabled until separately authorized and verified.**
 
-Use a documented, secure, tenant-scoped operator process whose authorization and
-output were tested. Proposed output: agreed interoperable UTF-8 tabular/JSON
-records and an explanatory schema for the Customer's permitted operational
-data, without credentials, another tenant's information or excluded vendor data.
-Do not expose a bulk export to guardians or grant broad platform browsing access
-to implement this schedule. Verify recipient, integrity and transfer receipt.
+Do not expose cross-tenant data, unrestricted platform browsing, a bulk delete-all endpoint, raw credentials or guardian/driver exports to unauthorized roles. Admin authority and applicable legal permission must be independently checked for sensitive actions. The Customer must not deliberately delete data subject to a known legal/records hold, investigation, request or mandatory minimum retention. SafeBus's safeguards may block otherwise requested deletion where a legal dependency is identified.
 
-## Primary deletion and anonymization
+## 2. Account closure and remaining records
 
-Proposed primary-data completion: within 60 calendar days of termination or
-completion of the agreed return, using the accepted trigger. Before signing,
-define exactly which event starts that window and demonstrate feasible disposal
-of each data class. A valid legal/records hold or mandatory retention exception
-must be scoped, documented and explained to the Customer; no indefinite generic
-hold is permitted by this draft.
+Subscription cancellation follows the MSA: end of the current trial or paid period unless another binding provision applies. **Canceling billing is not identical to deleting records, and closing access is not a destruction certificate.**
 
-Revoke access and sessions/device registrations through the approved workflow.
-Separately dispose of database records, permitted derived data, active caches,
-device/offline data where controllable, email/provider records, support copies
-and files. Track exceptions and supplier-dependent actions. Device deletion and
-revocation while offline require disclosed, tested limits; do not promise an
-instant remote wipe of a personally owned phone.
+The authorized tenant administrator may request closure or additional return/deletion assistance through the existing SafeBus support channel (info@safebus.kids). Before executing district-wide closure, SafeBus verifies the requester's authority, tenant identity, contract status, outstanding holds and statutory or customer-specific retention duties. Where a requested category is already available through self-service download/deletion, SafeBus should point the administrator to it first instead of requiring a separate paperwork process.
 
-## Backups and restoration
+If the school authority needs records outside supported directory exports (for example, approved operational histories or preserved trip records), SafeBus and the authority agree the **lawful scope, secure transfer format and recipient** before any operator-assisted export. No unverified general full-district export feature, automatic closure purge or unconditional completion date is promised. Any customer-specific turnaround obligation must be expressly accepted **only after** SafeBus has tested the applicable process and has the operational capacity to meet it.
 
-The parties approve `[BACKUP_RETENTION_WINDOW]` and each supplier's deletion/log
-window. Primary deletion does not selectively erase an immutable backup. Restrict
-backup access, expire copies under the agreed schedule and identify those copies
-in the disposal evidence. A separate evidence/financial record may be retained
-only for a documented purpose and period.
+For records requiring server/provider operations, SafeBus processes an approved scoped request through tested, tenant-isolated workflows. Normal retention schedules may remove eligible records over time; the owner has **not authorized enabling destructive automatic disposal** merely by approving this contract model. Pending authorized and supported activation, SafeBus must not represent a delete-all feature as available or mark retained records destroyed.
 
-Before restoring deleted personal information into normal service, reapply
-verified deletion/revocation/hold instructions and validate them. Perform
-recovery tests only under the approved database workflow; do not restore or reset
-the sole production database as a drafting or QA step.
+## 3. Legally retained records, dependencies and copies
 
-## Confirmation
+Deletion remains subject to the Customer's applicable public-body records schedule, decision-use minimums, valid preservation/incident/litigation holds and SafeBus's independently required security, contract, billing and tax records. Preserve the **minimum necessary scope** and review holds rather than retaining all district data indefinitely. Explain relevant categories and expected review or supplier-expiry status to the authority where permitted.
 
-Provide a scoped completion record: instruction/authority reference, data classes,
-methods and dates, transfer receipt, system/supplier coverage, verification,
-remaining backup/hold exceptions and expiry/review dates, and responsible reviewer.
-Do not claim complete destruction if only account access was removed. Store
-customer evidence confidentially; the repository keeps only non-secret references.
+Safeguard separate copies and deletion paths, including:
 
-The Customer's own exported records become its responsibility under its privacy
-program. SafeBus continues necessary confidentiality and lawful exception duties
-after exit. Final periods, export capability, deletion tests and supplier evidence
-are acceptance dependencies, not activated by this document.
+- Primary database records, dependent relational rows, derived reports and authorization/session state;
+- Temporary live-location state and authorized device/offline delivery queues, in-app notifications, and eligible email or push delivery metadata;
+- Supabase and other backups, immutable archives, supplier logs, transactional email/push providers, storage and support copies;
+- SafeBus's own tax/invoice, contract, audit, incident and legal evidence (which need not follow the same trigger as ordinary transportation records).
+
+The application cannot selectively erase every immutable backup or remotely erase an offline personal device immediately. Provider copies expire or are removed under **verified applicable vendor terms**, not a made-up universal backup window. Do not restore removed records back into active service before reapplying verified deletion, revocation and hold instructions. Any deletion exception must specify its legal/contractual purpose, responsible reviewer and review/expiry trigger; it is not perpetual permission to process the information for a new purpose.
+
+## 4. Export and deletion verification
+
+Supported directory CSV downloads use existing authenticated, tenant-scoped list RPCs and do not include secrets. They are not evidence that **every** district data class has been returned. A requested operator-assisted export requires documented tenant authorization, scoped data classes, secure format, verified recipient and transfer receipt.
+
+SafeBus records the outcome of each assisted closure or deletion operation, including request authority, data classes, action dates, verification, supplier dependencies and lawful retained exceptions. The authority may receive a practical summary of verified results when appropriate, **not a blanket certificate of complete destruction** if provider backups, statutory holds or other copies remain.
+
+The Customer remains responsible for copies it independently downloads or manages. SafeBus retains the obligations required by the accepted DPA, MSA and applicable law. No new automatic deletion worker, signed agreement, customer activation, production migration or readiness approval is created by this draft.
+
+## 5. Final acceptance safeguards
+
+Before presenting an account-wide deletion or guaranteed exit workflow to a real school authority, verify tenant isolation, authorized administrator actions, retention/hold precedence, dependent records, safe export completeness, revocation/session effects, suppliers/backups, and operational completion evidence. Test with **synthetic authorized data**, never by deleting a live authority's records for convenience.
+
+The parties may negotiate a specific return/deletion window or additional assisted export in an accepted customer-specific Order Form. Absent that, this Schedule is **not** a guaranteed 30-day export, 60-day purge, same-day delete-all, instant backup erasure, or waiver of an applicable mandatory retention obligation.

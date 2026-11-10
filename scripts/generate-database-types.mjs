@@ -65,12 +65,12 @@ function generateWithCli() {
   const require = createRequire(import.meta.url);
   const supabasePackage = require.resolve('supabase/package.json');
   const supabaseCli = path.join(path.dirname(supabasePackage), 'dist', 'supabase.js');
-  const targetArguments = databaseUrl ? ['--db-url', databaseUrl] : ['--project-id', projectId];
+  const targetArguments = ['--remote=' + (databaseUrl || projectId)];
 
   return new Promise((resolve, reject) => {
     const child = spawn(
       process.execPath,
-      [supabaseCli, 'gen', 'types', 'typescript', ...targetArguments, '--schema', 'public'],
+      [supabaseCli, 'gen', 'types', '--lang=typescript', ...targetArguments, '--schema', 'public'],
       { cwd: process.cwd(), env: process.env, stdio: ['ignore', 'pipe', 'inherit'] },
     );
     let output = '';

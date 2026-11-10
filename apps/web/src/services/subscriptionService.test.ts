@@ -4,6 +4,8 @@ import {
   fetchTenantPrices,
   hasPendingTenantBilling,
   retryTenantBilling,
+  queueInvoiceBilling,
+  recoverPendingTenantBilling,
 } from './subscriptionService';
 
 vi.mock('@/lib/supabase', () => ({
@@ -29,6 +31,49 @@ const monthly = {
   unitAmount: 199,
   interval: 'month',
 };
+
+it('fences invoice requests with card changes and retries the same invoice operation without browser-stored financial details', async () => {
+  const tenant = 'authority-invoice-retry';
+  const body = {
+    endpoint: 'invoice-billing' as const,
+    action: 'activate' as const,
+    arrangementId: 'original-arrangement',
+  };
+  request.mockRejectedValueOnce(new TypeError('unconfirmed'));
+  await expect(queueInvoiceBilling(tenant, body)).rejects.toThrow('was not confirmed');
+  expect(request.mock.calls[0][0]).toBe('/.netlify/functions/invoice-billing');
+  const original = JSON.parse(request.mock.calls[0][1].body);
+  expect(original.arrangementId).toBe('original-arrangement');
+  expect(original).not.toHaveProperty('endpoint');
+  expect(sessionStorage.getItem('safebus-billing-request:' + tenant)).toBe(original.requestId);
+  await expect(changeTenantBilling(tenant, 'checkout', 'price_month', 10)).rejects.toThrow(
+    'previous billing request',
+  );
+  request.mockResolvedValueOnce(Response.json({ ok: true, status: 'activated' }));
+  await retryTenantBilling(tenant);
+  expect(JSON.parse(request.mock.calls[1][1].body)).toEqual(original);
+  expect(hasPendingTenantBilling(tenant)).toBe(false);
+});
+
+it('recovers the original invoice endpoint and payload from the authenticated ledger after reload', async () => {
+  const tenant = 'authority-invoice-recover';
+  request.mockResolvedValueOnce(
+    Response.json({
+      pending: {
+        requestId: 'saved-operation',
+        body: { endpoint: 'invoice-billing', action: 'cancel_renewal' },
+      },
+    }),
+  );
+  expect(await recoverPendingTenantBilling(tenant)).toBe(true);
+  request.mockResolvedValueOnce(Response.json({ ok: true }));
+  await retryTenantBilling(tenant);
+  expect(request.mock.calls[1][0]).toBe('/.netlify/functions/invoice-billing');
+  expect(JSON.parse(request.mock.calls[1][1].body)).toEqual({
+    action: 'cancel_renewal',
+    requestId: 'saved-operation',
+  });
+});
 it.each([
   null,
   {},

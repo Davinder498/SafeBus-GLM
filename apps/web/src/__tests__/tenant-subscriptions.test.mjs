@@ -231,7 +231,8 @@ describe('tenant subscription input and ownership', () => {
     const price = {
       id: 'price_month',
       currency: 'cad',
-      unit_amount: 1000,
+      unit_amount: 199,
+      tax_behavior: 'inclusive',
       recurring: { interval: 'month', usage_type: 'licensed' },
       product: { name: 'SafeBus' },
     };
@@ -239,7 +240,9 @@ describe('tenant subscription input and ownership', () => {
       list: vi.fn(async () => ({
         data: [
           price,
-          { ...price, id: 'price_year', recurring: { ...price.recurring, interval: 'year' } },
+          { ...price, id: 'price_year', unit_amount: 2029, recurring: { ...price.recurring, interval: 'year' } },
+          { ...price, id: 'price_unapproved_amount', unit_amount: 2500 },
+          { ...price, id: 'price_tax_unspecified', tax_behavior: 'unspecified' },
           { ...price, currency: 'usd' },
           { ...price, recurring: { ...price.recurring, interval_count: 3 } },
           { ...price, recurring: { ...price.recurring, usage_type: 'metered' } },
@@ -401,9 +404,25 @@ describe('subscription changes', () => {
   });
   it('cancels only at period end and supports resuming renewal', async () => {
     await handler(event('cancel'));
-    expect(stripe.subscriptions.update.mock.calls[0][1].cancel_at_period_end).toBe(true);
+    expect(stripe.subscriptions.update.mock.calls[0][1]).toMatchObject({
+      cancel_at_period_end: true, proration_behavior: 'none',
+    });
     await handler(event('keep'));
-    expect(stripe.subscriptions.update.mock.calls[1][1].cancel_at_period_end).toBe(false);
+    expect(stripe.subscriptions.update.mock.calls[1][1]).toMatchObject({
+      cancel_at_period_end: false, proration_behavior: 'none',
+    });
+  });
+  it('cancels a first-time trial at its existing end date without issuing a charge or refund', async () => {
+    sub.status = 'trialing';
+    sub.trial_end = 2000000000;
+    const response = await handler(event('cancel'));
+    expect(response.statusCode).toBe(200);
+    const params = stripe.subscriptions.update.mock.calls[0][1];
+    expect(params).toMatchObject({ cancel_at_period_end: true, proration_behavior: 'none' });
+    expect(params).not.toHaveProperty('trial_end');
+    expect(params).not.toHaveProperty('cancel_at');
+    expect(stripe.subscriptions).not.toHaveProperty('cancel');
+    expect(stripe).not.toHaveProperty('refunds');
   });
   it('permits cancellation while overdue without unlocking bus expansion', async () => {
     sub.status = 'past_due';

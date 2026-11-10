@@ -56,3 +56,14 @@ that exact SHA before installation.
 6. Verify from Netlify and Supabase that the existing three school authorities remain unaffected and that the agreement RPCs resolve, with no published catalog. Do **not** publish Work 2 draft contracts to production. The application deployment must remain behind the verified schema checkpoint; use the protected application release process once its own gates pass.
 
 The protected workflow deliberately does not alter commercial pilot, privacy, maps or operations approval files. This release installs the agreement database only; it is not itself a commercial launch approval or a customer contract.
+
+
+## Current production addendum — November 9, 2026
+
+**This supersedes the document's original “not yet installed” status.** A fresh read-only inspection of the existing BusSafe production catalog confirms the protected district agreement migration **has been installed**: all five private agreement/requirement tables exist with RLS enabled and **no direct `anon`/`authenticated` SELECT grants**, the public read and acceptance RPCs exist, `district_agreement_billing_allowed(uuid)` is **service-role only**, and **all 35 transportation-write triggers** are present.
+
+Aggregate snapshot at the observation: **3 existing school authority tenants**, **0 post-install agreement-required tenants**, **1 approved document-version row**, **0 published catalogs**, **0 issued packages**, **0 executed receipts**. The document-version row is not a published contract; its content or creator was not inspected. No user identifiers, contract text, signer evidence or personal data were queried.
+
+**Do not run the protected schema install again solely because this historical runbook says “prepared.”** Rehearsal/install backup steps above are historical references and remain subject to exact source/evidence requirements if any new schema release is genuinely needed. Work 2 final commercial text and platform publication remain outstanding. User-approved digital acceptance remains blocked until an **actual final eight-document catalog** is published after price, insurance, supplier/privacy, liability, term and other owner decisions are resolved.
+
+The UI now treats a missing agreement RPC as a **deployment/configuration failure**, not a nonexistent published catalog. The executed archive provides an authenticated exact UTF-8 JSON snapshot in addition to a simplified printable PDF, preserving non-ASCII legal text. No production schema, document, tenant, billing, Auth or agreement status was changed by this code work.

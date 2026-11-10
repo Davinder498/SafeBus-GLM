@@ -33,6 +33,8 @@ test('PDF archive export is multipage and includes exact contract sections and a
   assert.match(bytes,/Test School Authority/);
   assert.match(bytes,/Transportation Director/);
   assert.match(bytes,/receipt SHA-256/i);
+  assert.match(bytes,/non-ASCII characters may be approximated/);
+  assert.match(bytes,/UTF-8 agreement archive/);
   assert.match(bytes,/Data Processing Agreement|dpa/);
   assert.match(bytes,/\/Count [2-9]/);
   assert.match(bytes,/%%EOF/);

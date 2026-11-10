@@ -1,3 +1,4 @@
+import { isApprovedBusAmount, isApprovedInclusiveBusPrice } from './approved-bus-pricing.mjs';
 import {
   UUID_PATTERN,
   clean,
@@ -35,7 +36,7 @@ export function validateCatalogInput(body) {
       !name ||
       name.length > 80 ||
       !whole(body.unitAmount, 100000000) ||
-      !['month', 'year'].includes(body.interval)
+      !isApprovedBusAmount(body.interval, body.unitAmount)
     )
       return null;
     return { ...common, name, unitAmount: body.unitAmount, interval: body.interval };
@@ -176,6 +177,14 @@ async function mutateCatalog(stripe, productId, input) {
       limit: 2,
     });
     if (existing.data.length) return { id: existing.data[0].id };
+    const existingApproved = await stripe.prices.list({
+      product: productId, active: true, type: 'recurring', limit: 100,
+    });
+    if (existingApproved.has_more) throw new Error('billing_catalog_review_required');
+    const match = existingApproved.data.find((p) =>
+      isApprovedInclusiveBusPrice(p) && p.recurring.interval === input.interval
+    );
+    if (match) return { id: match.id };
     const price = await stripe.prices.create(
       {
         product: productId,
@@ -196,6 +205,16 @@ async function mutateCatalog(stripe, productId, input) {
   if (input.action === 'set_price_active') {
     const price = await stripe.prices.retrieve(input.id);
     if (!ownsPrice(price, productId)) throw new Error('billing_catalog_resource_forbidden');
+    // Never archive the last active, owner-approved price for an interval.
+    if (!input.active && price.active && isApprovedInclusiveBusPrice(price)) {
+      const activePrices = await stripe.prices.list({
+        product: productId, active: true, type: 'recurring', limit: 100,
+      });
+      if (activePrices.has_more || !activePrices.data.some((p) =>
+        p.id !== price.id && isApprovedInclusiveBusPrice(p) &&
+        p.recurring.interval === price.recurring.interval
+      )) throw new Error('billing_last_approved_price');
+    }
     await stripe.prices.update(input.id, { active: input.active }, opts('price-active'));
     return { id: input.id };
   }
@@ -307,12 +326,16 @@ export async function handler(event) {
       error.type === 'StripeInvalidRequestError' ||
       [
         'billing_catalog_resource_forbidden',
+        'billing_last_approved_price',
+        'billing_catalog_review_required',
         'billing_discount_expired',
         'billing_request_conflict',
       ].includes(error.message);
     const response = {
       error: definitive
-        ? 'Stripe rejected this catalog change. Check the amount, code, expiry, and redemption limits.'
+        ? error.message === 'billing_last_approved_price'
+          ? 'Cannot archive the only approved monthly or annual SafeBus price.'
+          : 'Stripe rejected this catalog change. Check the amount, code, expiry, and redemption limits.'
         : 'The catalog change is awaiting confirmation. Retry the original request shortly.',
       retryable: !definitive,
     };
