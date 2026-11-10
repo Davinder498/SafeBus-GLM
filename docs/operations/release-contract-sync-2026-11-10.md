@@ -23,3 +23,10 @@ No database changes, baseline rewrites or audit bypasses are part of this change
 The complete protected authorization audit and canonical types check must pass
 before deployment. Local focused authorization tests and typecheck are recorded
 in the PR; CI supplies full validation. Human merge and environment review remain.
+
+PR CI also exposed a historical-reconciliation test that compared the current
+agreement APIs with an older frozen migration. Exclude the fourteen separately
+observed agreement signatures when reconstructing that historical surface, just
+as the test already does for subsequent tracking, offline and retention APIs.
+The migration stays immutable and the current authorization test still requires
+all observed agreement functions. Both affected suites pass: 26 tests total.
