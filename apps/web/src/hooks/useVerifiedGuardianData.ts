@@ -6,11 +6,25 @@ type LoadState<T> = { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; d
 const REFRESH_INTERVAL_MS = 15_000;
 const REQUEST_TIMEOUT_MS = 10_000;
 
+export interface GuardianRefreshPolicy {
+  intervalMs?: number;
+  jitterMs?: number;
+  liveMinIntervalMs?: number;
+  maxRetryMs?: number;
+}
+
 /** Server authorization remains authoritative; cached data is never an offline fallback. */
 export function useVerifiedGuardianData<T>(
   fetchData: (signal: AbortSignal) => Promise<T>,
   scope = '',
+  policy: GuardianRefreshPolicy = {},
 ) {
+  const {
+    intervalMs = REFRESH_INTERVAL_MS,
+    jitterMs = 0,
+    liveMinIntervalMs = 0,
+    maxRetryMs = intervalMs,
+  } = policy;
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const [snapshot, setSnapshot] = useState<{
@@ -34,6 +48,10 @@ export function useVerifiedGuardianData<T>(
   useEffect(() => {
     let disposed = false;
     let queued = false;
+    let liveTimer: ReturnType<typeof setTimeout> | null = null;
+    let liveEligibleAt = 0;
+    let failures = 0;
+    const jitter = () => Math.floor(Math.random() * jitterMs);
     let pollTimer: ReturnType<typeof setTimeout> | null = null;
     let request: { controller: AbortController; timeout: ReturnType<typeof setTimeout> } | null =
       null;
@@ -48,6 +66,8 @@ export function useVerifiedGuardianData<T>(
     const cancel = () => {
       if (pollTimer !== null) clearTimeout(pollTimer);
       pollTimer = null;
+      if (liveTimer !== null) clearTimeout(liveTimer);
+      liveTimer = null;
       const previous = request;
       request = null;
       queued = false;
@@ -64,15 +84,28 @@ export function useVerifiedGuardianData<T>(
     const schedulePoll = () => {
       if (disposed) return;
       if (pollTimer !== null) clearTimeout(pollTimer);
-      pollTimer = setTimeout(() => {
-        pollTimer = null;
-        load('poll');
-      }, REFRESH_INTERVAL_MS);
+      pollTimer = setTimeout(
+        () => {
+          pollTimer = null;
+          load('poll');
+        },
+        Math.min(maxRetryMs, intervalMs * 2 ** Math.min(failures, 8)) + jitter(),
+      );
     };
     const load = (source?: 'live' | 'poll') => {
       if (disposed || !userId) return;
       if (!navigator.onLine || document.visibilityState !== 'visible') {
         clearData();
+        return;
+      }
+      // Bound invalidation-driven home traffic even during continuous GPS input.
+      // Keep one trailing check; later hints cannot push its deadline back.
+      if (source === 'live' && Date.now() < liveEligibleAt) {
+        if (liveTimer === null)
+          liveTimer = setTimeout(() => {
+            liveTimer = null;
+            load('live');
+          }, liveEligibleAt - Date.now());
         return;
       }
       if (request) {
@@ -84,6 +117,9 @@ export function useVerifiedGuardianData<T>(
       if (pollTimer !== null) clearTimeout(pollTimer);
       pollTimer = null;
 
+      if (liveTimer !== null) clearTimeout(liveTimer);
+      liveTimer = null;
+      liveEligibleAt = Date.now() + liveMinIntervalMs + (liveMinIntervalMs ? jitter() : 0);
       const controller = new AbortController();
       const current = {
         controller,
@@ -101,6 +137,7 @@ export function useVerifiedGuardianData<T>(
         clearTimeout(current.timeout);
         request = null;
         if (state.kind === 'error') controller.abort();
+        failures = state.kind === 'error' ? failures + 1 : 0;
         setSnapshot((previous) => ({
           userId,
           scope,
@@ -111,7 +148,7 @@ export function useVerifiedGuardianData<T>(
         }));
         if (queued) {
           queued = false;
-          queueMicrotask(load);
+          queueMicrotask(() => load('live'));
         } else schedulePoll();
       }
       void Promise.resolve()
@@ -143,7 +180,7 @@ export function useVerifiedGuardianData<T>(
       window.removeEventListener('offline', clearData);
       window.removeEventListener('online', online);
     };
-  }, [fetchData, scope, userId]);
+  }, [fetchData, scope, userId, intervalMs, jitterMs, liveMinIntervalMs, maxRetryMs]);
 
   // Hide the previous principal/scope before effect cleanup runs.
   const current = snapshot.userId === userId && snapshot.scope === scope;

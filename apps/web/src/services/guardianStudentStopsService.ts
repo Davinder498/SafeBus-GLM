@@ -20,9 +20,12 @@ interface GuardianStudentStopRow {
   dropoff_stop_name: string | null;
 }
 
-export async function fetchGuardianStudentStops(): Promise<GuardianStudentStopAssignment[]> {
+export async function fetchGuardianStudentStops(
+  signal?: AbortSignal,
+): Promise<GuardianStudentStopAssignment[]> {
   if (!supabase) throw new Error(supabaseConfigError ?? 'Supabase is not configured.');
-  const { data, error } = await supabase.rpc('get_guardian_student_stops_v2');
+  const request = supabase.rpc('get_guardian_student_stops_v2');
+  const { data, error } = await (signal ? request.abortSignal(signal) : request);
   if (error) throw new Error('We could not load your stop information.');
   return ((data ?? []) as GuardianStudentStopRow[]).map((row) => ({
     seatNumber: row.seat_number ?? null,

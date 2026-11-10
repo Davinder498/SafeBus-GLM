@@ -18,7 +18,8 @@ begin
     if has_table_privilege(v_role,'safebus_private.tracking_invalidation_queue','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
        or has_function_privilege(v_role,'safebus_private.dispatch_tracking_invalidations(integer,integer)','EXECUTE')
        or has_function_privilege(v_role,'safebus_private.send_queued_tracking_invalidation(text)','EXECUTE')
-       or has_function_privilege(v_role,'safebus_private.notify_tracking_location_change()','EXECUTE') then
+       or has_function_privilege(v_role,'safebus_private.notify_tracking_location_change()','EXECUTE')
+       or has_function_privilege(v_role,'safebus_private.prune_tracking_worker_history()','EXECUTE') then
       raise exception 'Unexpected client access to internal tracking worker.';
     end if;
   end loop;
@@ -38,6 +39,14 @@ begin
     and username = (select pg_get_userbyid(proowner) from pg_proc
       where oid = 'safebus_private.dispatch_tracking_invalidations(integer,integer)'::regprocedure)) then
     raise exception 'Tracking worker job/owner/bounds differ from reviewed configuration.';
+  end if;
+  if not exists(select 1 from cron.job where jobname = 'safebus-tracking-invalidation-history'
+    and active and schedule = '* * * * *'
+    and btrim(regexp_replace(command, '[[:space:]]+', ' ', 'g')) =
+      'set local statement_timeout = ''750ms''; set local lock_timeout = ''100ms''; select safebus_private.prune_tracking_worker_history();'
+    and username = (select pg_get_userbyid(proowner) from pg_proc
+      where oid = 'safebus_private.prune_tracking_worker_history()'::regprocedure)) then
+    raise exception 'Tracking diagnostic retention job/owner/bounds changed.';
   end if;
 end;
 $$;

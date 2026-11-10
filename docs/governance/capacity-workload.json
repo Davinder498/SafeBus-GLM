@@ -37,6 +37,14 @@
       "loginsPerMinute": 3000,
       "notificationDeliveriesPerSecond": 667
     },
+    "fleet5000": {
+      "buses": 5000,
+      "tenants": 500,
+      "concurrentUsers": 50000,
+      "admins": 500,
+      "loginsPerMinute": 5000,
+      "notificationDeliveriesPerSecond": 3334
+    },
     "normal": {
       "buses": 10000,
       "tenants": 2000,

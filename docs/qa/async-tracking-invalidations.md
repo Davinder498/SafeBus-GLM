@@ -1,3 +1,10 @@
+> 2026-11-10 update: a protected operational release manifest now exists, bound to
+> the observed hosted producer, with ACL recovery and bounded cron diagnostics
+> cleanup. Use `tracking_invalidations` in the existing operational release after
+> human review; do not promote/replay the immutable active chain. This supersedes
+> the older promotion-only directions below. No installation or full-fleet
+> qualification is claimed. See [current release preparation](guardian-home-fleet-refresh-2026-11-10.md).
+
 # C1: asynchronous GPS tracking invalidations
 
 Prepared on 2026-10-14. Engineering is ready for review; this migration is **not

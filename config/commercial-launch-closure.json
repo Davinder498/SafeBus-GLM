@@ -2,10 +2,11 @@
   "format": 1,
   "scope": {
     "schoolAuthorities": 500,
-    "buses": 25000,
+    "buses": 10000,
     "registeredGuardians": 500000,
     "peakConcurrentGuardians": null,
-    "commercialLaunchApproved": false
+    "commercialLaunchApproved": false,
+    "minimumTargetBuses": 5000
   },
   "ownerDirection": {
     "netlify": "Owner chose Free with protected external builds on 2026-11-10. No paid upgrade or charge is authorized. Disable Netlify cloud builds and require protected GitHub artifact releases; do not claim unavailable per-feature variable scopes.",
@@ -23,22 +24,34 @@
       "customerPublicationVerified": false
     },
     "ios": "Deferred by owner on 2026-11-10; no implementation or supported iPhone availability is claimed.",
-    "physicalTesting": "Deferred by owner on 2026-11-10; physical-device and field acceptance remain unverified."
+    "physicalTesting": "Deferred by owner on 2026-11-10; physical-device and field acceptance remain unverified.",
+    "fleetTarget": "Owner confirmed 2026-11-10: target 5,000\u201310,000 buses. Bus count does not specify concurrent guardians; qualify actual concurrency before capacity claims."
   },
   "milestones": [
     {
       "id": "tracking-ingestion-and-guardian-fanout",
       "status": "open",
-      "note": "GPS history removal does not qualify synchronous guardian invalidation fan-out or ingestion throughput at 25000 buses; review and repair that path before measured capacity qualification."
+      "note": "Target 5,000\u201310,000 buses. Production still performs synchronous guardian invalidation fan-out. Prepared bounded async queue requires reviewed release and measured qualification; no capacity claim."
     },
-    { "id": "gps-history-removal", "status": "live_verified", "productionRun": "42769562303" },
+    {
+      "id": "gps-history-removal",
+      "status": "live_verified",
+      "productionRun": "42769562303"
+    },
     {
       "id": "production-credential-isolation",
       "status": "in_progress",
       "acceptance": "config/pending/production-credential-isolation.json"
     },
-    { "id": "reviewed-release-controls", "status": "open" },
-    { "id": "guardian-home-freshness", "status": "open" },
+    {
+      "id": "reviewed-release-controls",
+      "status": "open"
+    },
+    {
+      "id": "guardian-home-freshness",
+      "status": "prepared",
+      "note": "Home refresh implementation prepared for review: 30\u201335 second checks, bounded live hints, foreground/reconnect verification, request cancellation, failure backoff. Not deployed."
+    },
     {
       "id": "billing-risk-events",
       "status": "open",
@@ -49,9 +62,18 @@
       "status": "open",
       "businessDecision": "Primary and backup operations contacts, response hours and escalation targets."
     },
-    { "id": "large-authority-reference-selectors", "status": "open" },
-    { "id": "hosted-password-protection", "status": "open" },
-    { "id": "legacy-notification-default-repair", "status": "open" },
+    {
+      "id": "large-authority-reference-selectors",
+      "status": "open"
+    },
+    {
+      "id": "hosted-password-protection",
+      "status": "open"
+    },
+    {
+      "id": "legacy-notification-default-repair",
+      "status": "open"
+    },
     {
       "id": "operational-retention-activation",
       "status": "open",
@@ -62,8 +84,14 @@
       "status": "unverified",
       "note": "Owned workload-generator tests do not measure application capacity. No production load test is authorized by this record."
     },
-    { "id": "android-production-distribution", "status": "unverified" },
-    { "id": "guardian-fullscreen-branding", "status": "open" },
+    {
+      "id": "android-production-distribution",
+      "status": "unverified"
+    },
+    {
+      "id": "guardian-fullscreen-branding",
+      "status": "open"
+    },
     {
       "id": "end-to-end-source-event-acceptance",
       "status": "unverified",

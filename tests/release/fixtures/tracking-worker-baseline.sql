@@ -75,9 +75,10 @@ exception when others then
 end;
 $$;
 create function public.is_current_user_session_active() returns boolean language sql as $$ select false $$;
-create table cron.test_jobs(name text primary key, schedule text, command text);
+create table cron.test_jobs(name text primary key, schedule text, command text, jobid bigint generated always as identity);
+create table cron.job_run_details(runid bigint primary key, jobid bigint, end_time timestamptz);
 create view cron.job as select name as jobname, schedule, command, true as active,
-  current_user::text as username from cron.test_jobs;
+  current_user::text as username, jobid from cron.test_jobs;
 create function cron.schedule(job_name text, job_schedule text, job_command text)
 returns bigint language sql as $$
   insert into cron.test_jobs values(job_name,job_schedule,job_command);

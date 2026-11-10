@@ -61,6 +61,10 @@ test('Point 10 is a named, blocking browser verification gate', async () => {
     packageJson.scripts['test:product-verification'],
     /guardian-refresh-coordination\.spec\.ts/,
   );
+  assert.match(
+    packageJson.scripts['test:product-verification'],
+    /guardian-home-freshness\.spec\.ts/,
+  );
   assert.match(workflow, /name: Browser smoke tests/);
   assert.match(workflow, /pnpm exec playwright test --workers=4/);
   assert.match(workflow, /pnpm test:mobile-ui/);
@@ -107,6 +111,7 @@ test('critical commercial browser journeys cannot silently become skipped eviden
     'tests/mobile-ui/commercial-product.spec.ts',
     'tests/mobile-ui/guardian-verification-recovery.spec.ts',
     'tests/mobile-ui/guardian-refresh-coordination.spec.ts',
+    'tests/mobile-ui/guardian-home-freshness.spec.ts',
     'tests/mobile-ui/assigned-bus-journeys.spec.ts',
     'tests/smoke/guardian-route-visibility.spec.ts',
     'tests/smoke/transportation-domain-model.spec.ts',
