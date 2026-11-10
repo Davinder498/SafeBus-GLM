@@ -3483,6 +3483,27 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
+      accept_my_district_agreement: {
+        Args: {
+          p_authority_attested: boolean
+          p_bundle_sha256: string
+          p_electronic_consent: boolean
+          p_package_id: string
+          p_signature_intent: boolean
+          p_signer_name: string
+          p_signer_title: string
+        }
+        Returns: unknown
+      }
+      accept_my_participant_agreement: {
+        Args: {
+          p_document_id: string
+          p_notice_acknowledged: boolean
+          p_terms_accepted: boolean
+          p_terms_sha256: string
+        }
+        Returns: unknown
+      }
       admin_create_bus: {
         Args: {
           p_bus_number: string
@@ -3705,6 +3726,15 @@ export interface Database {
           p_license_plate: string | null
           p_school_id: string | null
           p_status: string
+        }
+        Returns: unknown
+      }
+      apply_driver_trip_stop_action: {
+        Args: {
+          p_action: string
+          p_expected_updated_at: string
+          p_reason?: string | null
+          p_trip_id: string
         }
         Returns: unknown
       }
@@ -4046,6 +4076,19 @@ export interface Database {
         }
         Returns: unknown
       }
+      disposal_account_work: {
+        Args: {
+          p_action: string
+          p_id?: string | null
+        }
+        Returns: unknown
+      }
+      district_agreement_billing_allowed: {
+        Args: {
+          p_tenant_id: string
+        }
+        Returns: unknown
+      }
       end_driver_trip: {
         Args: {
           p_trip_id: string
@@ -4363,6 +4406,22 @@ export interface Database {
         }
         Returns: unknown
       }
+      get_my_district_agreement: {
+        Args: {
+        }
+        Returns: unknown
+      }
+      get_my_district_agreement_receipt: {
+        Args: {
+          p_receipt_id: string
+        }
+        Returns: unknown
+      }
+      get_my_participant_agreement: {
+        Args: {
+        }
+        Returns: unknown
+      }
       get_notification_delivery_health_v2: {
         Args: {
         }
@@ -4370,6 +4429,12 @@ export interface Database {
       }
       get_notification_preferences: {
         Args: {
+        }
+        Returns: unknown
+      }
+      get_platform_district_agreement: {
+        Args: {
+          p_tenant_id: string
         }
         Returns: unknown
       }
@@ -4469,6 +4534,11 @@ export interface Database {
         }
         Returns: unknown
       }
+      list_my_district_agreement_receipts: {
+        Args: {
+        }
+        Returns: unknown
+      }
       list_own_push_devices: {
         Args: {
         }
@@ -4478,6 +4548,20 @@ export interface Database {
         Args: {
           p_action: string
           p_bus_id: string
+        }
+        Returns: unknown
+      }
+      manage_disposal: {
+        Args: {
+          p_action: string
+          p_data?: Json | null
+        }
+        Returns: unknown
+      }
+      manage_retention_case: {
+        Args: {
+          p_action: string
+          p_data?: Json | null
         }
         Returns: unknown
       }
@@ -4576,15 +4660,51 @@ export interface Database {
         }
         Returns: unknown
       }
+      platform_get_agreement_catalog: {
+        Args: {
+        }
+        Returns: unknown
+      }
+      platform_get_participant_terms: {
+        Args: {
+        }
+        Returns: unknown
+      }
       platform_is_first_admin_invitation: {
         Args: {
           p_invitation_id: string
         }
         Returns: unknown
       }
+      platform_list_agreement_documents: {
+        Args: {
+        }
+        Returns: unknown
+      }
       platform_prepare_first_admin_reissue: {
         Args: {
           p_invitation_id: string
+        }
+        Returns: unknown
+      }
+      platform_publish_agreement_catalog: {
+        Args: {
+          p_document_ids: Array<string>
+        }
+        Returns: unknown
+      }
+      platform_publish_agreement_document: {
+        Args: {
+          p_body: string
+          p_kind: string
+          p_title: string
+          p_version: string
+        }
+        Returns: unknown
+      }
+      platform_publish_participant_terms: {
+        Args: {
+          p_document_id: string
         }
         Returns: unknown
       }
@@ -4789,6 +4909,13 @@ export interface Database {
       run_all_retention_deletions: {
         Args: {
           p_dry_run?: boolean | null
+        }
+        Returns: unknown
+      }
+      run_retention_lifecycle: {
+        Args: {
+          p_dry_run?: boolean | null
+          p_limit?: number | null
         }
         Returns: unknown
       }
