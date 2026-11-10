@@ -5,7 +5,6 @@ import {
   assertSite,
   isIsolated,
   credentialVariables,
-  credentialMutation,
   variableDigest,
   previewCandidates,
   inventoryDeploys,
@@ -14,9 +13,9 @@ import {
   retirePreviews,
   verifyPreviewRetirement,
   netlifyApi,
-  verifyValueReferenceUpdate,
+  stopCloudBuilds,
 } from '../../scripts/lib/production-credential-isolation.mjs';
-
+import { publicBuildEnvironment } from '../../scripts/lib/public-build-environment.mjs';
 const policy = JSON.parse(
   await fs.readFile('config/pending/production-credential-isolation.json', 'utf8'),
 );
@@ -25,7 +24,11 @@ const site = {
   id: policy.siteId,
   account_id: policy.accountId,
   name: policy.siteName,
-  build_settings: { repo_url: 'https://github.com/' + policy.repository, repo_branch: 'main' },
+  build_settings: {
+    repo_url: 'https://github.com/' + policy.repository,
+    repo_branch: 'main',
+    stop_builds: true,
+  },
   published_deploy: { id: id(9999), state: 'ready', context: 'production' },
 };
 const variables = () => [
@@ -63,21 +66,33 @@ function fixture() {
     deployments: new Map(),
   };
   const api = async (path, options = {}) => {
-    if (path === '/sites/' + policy.siteId) return structuredClone(data.site);
-    if (path === '/accounts/' + policy.accountId + '/env') return structuredClone(data.shared);
-    if (path === `/sites/${policy.siteId}/dev_servers?per_page=100&page=1`) return [];
-    if (options.method === 'PUT') {
-      data.writes.push(structuredClone(options.body));
-      const v = structuredClone(options.body);
-      const previous = data.variables.find((x) => x.key === v.key);
-      if (v.values[0].id && !Object.hasOwn(v.values[0], 'value'))
-        v.values[0].value = previous.values.find((x) => x.id === v.values[0].id).value;
-      v.values[0].id ??= 'new-production';
-      data.variables[data.variables.findIndex((x) => x.key === v.key)] = v;
-      return v;
+    if (path === '/sites/' + policy.siteId) {
+      if (options.method === 'PATCH') {
+        data.writes.push({ path, method: 'PATCH', body: structuredClone(options.body) });
+        Object.assign(data.site.build_settings, options.body.build_settings);
+      }
+      return structuredClone(data.site);
     }
-    if (path === `/accounts/${policy.accountId}/env?site_id=${policy.siteId}`)
+    if (path === '/accounts/' + policy.accountId + '/env') return structuredClone(data.shared);
+    if (path === '/sites/' + policy.siteId + '/dev_servers?per_page=100&page=1') return [];
+    if (path === '/accounts/' + policy.accountId + '/env?site_id=' + policy.siteId)
       return structuredClone(data.variables);
+    if (path.startsWith('/accounts/' + policy.accountId + '/env/')) {
+      const parts = new URL(path, 'https://synthetic.invalid').pathname.split('/').filter(Boolean),
+        key = decodeURIComponent(parts[3]);
+      const v = data.variables.find((x) => x.key === key);
+      if (options.method === 'PATCH') {
+        data.writes.push({ path, key, method: 'PATCH', body: structuredClone(options.body) });
+        v.values.push({ id: 'created-production-' + data.variables.indexOf(v), ...options.body });
+      }
+      if (options.method === 'DELETE') {
+        const valueId = decodeURIComponent(parts[5]);
+        data.writes.push({ path, key, method: 'DELETE', valueId });
+        v.values = v.values.filter((x) => x.id !== valueId);
+        return null;
+      }
+      return structuredClone(v);
+    }
     if (path.startsWith('/deploys/'))
       return structuredClone(data.deployments.get(path.split('/').at(-1)) ?? null);
     if (options.method === 'DELETE') {
@@ -85,11 +100,11 @@ function fixture() {
       data.deployments.delete(path.split('/').at(-1));
       return null;
     }
-    throw new Error('Unexpected synthetic API request');
+    throw Error('Unexpected synthetic API request');
   };
   return { data, api };
 }
-test('all roles have acceptance and server credentials preserve production bytes without exposing them to builds or previews', async () => {
+test('all roles have acceptance; Free isolation preserves production records, flags and scopes with cloud builds stopped', async () => {
   for (const role of [
     'schoolAuthorityAdmin',
     'schoolScopedAdmin',
@@ -100,29 +115,43 @@ test('all roles have acceptance and server credentials preserve production bytes
   ])
     assert.ok(policy.acceptance[role]);
   const { data, api } = fixture(),
-    original = await readConfiguration(api, policy);
+    before = await readConfiguration(api, policy);
   const publicVariable = structuredClone(data.variables.at(-1));
-  const result = await isolateCredentials(api, policy, original);
-  assert.equal(data.writes.length, policy.requiredKeys.length);
+  const result = await isolateCredentials(api, policy, before);
   for (const v of result.credentials) {
-    assert.equal(isIsolated(v), true);
+    const original = before.variables.find((x) => x.key === v.key);
+    assert.ok(isIsolated(v));
     assert.equal(v.values[0].value, v.key + '-synthetic-production');
+    assert.equal(v.values[0].id, original.values[1].id);
+    assert.equal(v.is_secret, original.is_secret);
+    assert.deepEqual(v.scopes, original.scopes);
   }
   assert.deepEqual(data.variables.at(-1), publicVariable);
+  assert.ok(
+    data.writes.every((w) => w.method === 'DELETE' && !w.valueId.startsWith('production-')),
+  );
+  const count = data.writes.length;
   await isolateCredentials(api, policy, result);
-  assert.equal(data.writes.length, policy.requiredKeys.length, 'Converged isolation is idempotent');
+  assert.equal(data.writes.length, count);
 });
-test('all-context fallback is promoted to production without changing its value', () => {
-  const v = variables()[0];
-  v.values = [v.values[0]];
-  assert.equal(credentialMutation(v).values[0].value, v.key + '-synthetic-fallback');
+test('a readable all-context fallback is verified in production before the fallback is removed', async () => {
+  const { data, api } = fixture();
+  data.variables[0].values = data.variables[0].values.filter((v) => v.context !== 'production');
+  await isolateCredentials(api, policy, await readConfiguration(api, policy));
+  const v = data.variables[0];
+  assert.equal(v.values[0].value, v.key + '-synthetic-fallback');
+  assert.ok(isIsolated(v));
+  const create = data.writes.findIndex((w) => w.key === v.key && w.method === 'PATCH'),
+    remove = data.writes.findIndex((w) => w.key === v.key && w.valueId === 'all-0');
+  assert.ok(create >= 0 && remove > create);
 });
-test('every required value is validated before any write, including masked or absent production values', async () => {
+test('every required value is validated before any context write', async () => {
   for (const value of [null, '', '[secret hidden]', '********']) {
     const { data, api } = fixture();
     data.variables[5].values[1].value = value;
     await assert.rejects(
-      async () => isolateCredentials(api, policy, { variables: data.variables, shared: [] }),
+      async () =>
+        isolateCredentials(api, policy, { site: data.site, variables: data.variables, shared: [] }),
       /PRODUCTION_VALUE_UNREADABLE/,
     );
     assert.equal(data.writes.length, 0);
@@ -131,14 +160,32 @@ test('every required value is validated before any write, including masked or ab
   data.variables[0].values.push({ context: 'production', value: 'synthetic' });
   assert.throws(() => credentialVariables(data.variables, [], policy), /AMBIGUOUS/);
 });
-test('masked production credentials are retained by record ID and never sent back as redacted values', () => {
-  const v = variables()[0];
-  v.is_secret = true;
-  v.values[1].value = '[REDACTED]';
-  assert.doesNotThrow(() => credentialVariables([v, ...variables().slice(1)], [], policy));
-  assert.deepEqual(credentialMutation(v).values, [{ id: v.values[1].id, context: 'production' }]);
-  v.values = [{ id: 'fallback', context: 'all', value: '[REDACTED]' }];
-  assert.throws(() => credentialMutation(v), /PRODUCTION_VALUE_UNREADABLE/);
+test('opaque production credentials are never copied, replaced, or deleted', async () => {
+  const { data, api } = fixture();
+  for (const v of data.variables.slice(0, -1)) v.is_secret = true;
+  const masked = async (path, options) => {
+    const result = await api(path, options);
+    const redact = (v) => {
+      if (v?.is_secret) for (const x of v.values) x.value = '[REDACTED]';
+    };
+    if (Array.isArray(result)) result.forEach(redact);
+    else redact(result);
+    return result;
+  };
+  const progress = [];
+  await isolateCredentials(masked, policy, await readConfiguration(masked, policy), async (r) =>
+    progress.push(r),
+  );
+  assert.ok(
+    data.writes.every((w) => w.method === 'DELETE' && !w.valueId.startsWith('production-')),
+  );
+  assert.ok(
+    progress
+      .filter((x) => x.isolated)
+      .every((x) => x.productionValueReadBack === 'provider_masked'),
+  );
+  for (const v of data.variables.slice(0, -1))
+    assert.equal(v.values[0].value, v.key + '-synthetic-production');
 });
 test('unknown, inherited, missing and duplicate credentials cannot be silently left exposed', () => {
   assert.throws(
@@ -155,12 +202,18 @@ test('unknown, inherited, missing and duplicate credentials cannot be silently l
     /DUPLICATE/,
   );
 });
-test('production mutation or scope drift after provider acknowledgement fails verification', async () => {
+test('unexpected production drift stops further context removals', async () => {
   const { data, api } = fixture();
   const tampered = async (path, options) => {
     const result = await api(path, options);
-    if (options?.method === 'PUT')
-      data.variables.find((v) => v.key === options.body.key).values[0].value = 'unexpected-value';
+    if (options?.method === 'DELETE' && path.includes('/value/')) {
+      const key = decodeURIComponent(
+        new URL(path, 'https://synthetic.invalid').pathname.split('/')[4],
+      );
+      data.variables
+        .find((v) => v.key === key)
+        .values.find((v) => v.context === 'production').value = 'changed';
+    }
     return result;
   };
   await assert.rejects(
@@ -169,56 +222,37 @@ test('production mutation or scope drift after provider acknowledgement fails ve
   );
   assert.equal(data.writes.length, 1);
 });
-test('provider masking after a successful write is disclosed and does not cause masked values to be copied', async () => {
-  const { data, api } = fixture(),
-    progress = [];
-  const masked = async (path, options) => {
-    const result = await api(path, options);
-    if (Array.isArray(result)) for (const v of result) if (v.is_secret) v.values[0].value = null;
-    return result;
-  };
-  await isolateCredentials(masked, policy, await readConfiguration(api, policy), async (r) =>
-    progress.push(r),
+test('Netlify cloud builds must be stopped before credentials are isolated; stopping preserves current deployment and repository', async () => {
+  const { data, api } = fixture();
+  data.site.build_settings.stop_builds = false;
+  await assert.rejects(
+    isolateCredentials(api, policy, await readConfiguration(api, policy)),
+    /CLOUD_BUILDS_NOT_STOPPED/,
   );
-  assert.ok(progress.every((r) => r.productionValueReadBack === 'provider_masked'));
-  assert.ok(data.writes.every((r) => !Object.hasOwn(r.values[0], 'value')));
+  assert.equal(data.writes.length, 0);
+  const result = await stopCloudBuilds(api, policy, structuredClone(data.site));
+  assert.ok(result.build_settings.stop_builds);
+  assert.equal(result.published_deploy.id, site.published_deploy.id);
+  assert.equal(result.build_settings.repo_url, site.build_settings.repo_url);
 });
-test('a live-provider semantics probe must preserve the non-sensitive value by ID and always clean up', async () => {
-  for (const preservesValue of [true, false]) {
-    let variable = null,
-      deleted = false;
-    const api = async (_path, options = {}) => {
-      if (options.method === 'POST') {
-        variable = structuredClone(options.body[0]);
-        variable.values[0].id = 'provider-production-id';
-        return [variable];
-      }
-      if (options.method === 'PUT') {
-        const before = variable;
-        variable = structuredClone(options.body);
-        variable.values[0].value = preservesValue ? before.values[0].value : '';
-        return variable;
-      }
-      if (options.method === 'DELETE') {
-        variable = null;
-        deleted = true;
-        return null;
-      }
-      return structuredClone(variable);
-    };
-    if (preservesValue)
-      assert.equal(
-        (await verifyValueReferenceUpdate(api, policy, '12345')).providerValueReferenceVerified,
-        true,
-      );
-    else
-      await assert.rejects(
-        verifyValueReferenceUpdate(api, policy, '12345'),
-        /VALUE_REFERENCE_UNSUPPORTED/,
-      );
-    assert.equal(deleted, true);
-    assert.equal(variable, null);
-  }
+test('public builds receive only the two allowed VITE values and necessary system configuration', () => {
+  const result = publicBuildEnvironment({
+    PATH: 'synthetic-path',
+    CI: 'true',
+    VITE_SUPABASE_URL: 'https://example.invalid',
+    VITE_SUPABASE_ANON_KEY: 'synthetic-public',
+    SUPABASE_SECRET_KEY: 'synthetic-secret',
+    NETLIFY_AUTH_TOKEN: 'synthetic-token',
+    STRIPE_SECRET_KEY: 'synthetic-stripe',
+    SAFEBUS_DATABASE_URL: 'synthetic-db',
+    VITE_MAP_TILE_URL: 'unsupported',
+  });
+  assert.deepEqual(Object.keys(result).sort(), [
+    'CI',
+    'PATH',
+    'VITE_SUPABASE_ANON_KEY',
+    'VITE_SUPABASE_URL',
+  ]);
 });
 test('snapshot binding detects changed production bytes, contexts and scope while ignoring API property order', () => {
   const a = variables(),

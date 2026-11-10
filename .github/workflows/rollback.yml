@@ -31,22 +31,26 @@ jobs:
       CI: true
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-      NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
     steps:
       - name: Validate explicit rollback confirmation
         env:
           ACTUAL_CONFIRMATION: ${{ inputs.confirmation }}
           TARGET_ENVIRONMENT: ${{ inputs.environment }}
+          KNOWN_GOOD_SHA: ${{ inputs.known_good_ref }}
         run: |
           expected="ROLLBACK_$(printf '%s' "$TARGET_ENVIRONMENT" | tr '[:lower:]' '[:upper:]')"
           test "$ACTUAL_CONFIRMATION" = "$expected"
+          [[ "$KNOWN_GOOD_SHA" =~ ^[0-9a-f]{40}$ ]]
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.known_good_ref }}
+          fetch-depth: 0
       - name: Require immutable commit reference
+        env:
+          KNOWN_GOOD_SHA: ${{ inputs.known_good_ref }}
         run: |
-          test "$(git rev-parse HEAD)" = "$(git rev-parse '${{ inputs.known_good_ref }}^{commit}')"
+          test "$(git rev-parse HEAD)" = "$KNOWN_GOOD_SHA"
+          git merge-base --is-ancestor "$KNOWN_GOOD_SHA" origin/main
           git rev-parse HEAD
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
@@ -59,4 +63,7 @@ jobs:
       - name: Reject public source maps
         run: test -z "$(find apps -path '*/dist/*' -name '*.map' -print -quit)"
       - name: Restore known-good application artifact
-        run: pnpm exec netlify deploy --prod --filter @safebus/web --dir apps/web/dist --message "rollback-to-$(git rev-parse HEAD)"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
+        run: pnpm exec netlify deploy --prod --no-build --context production --filter @safebus/web --dir apps/web/dist --message "rollback-to-$(git rev-parse HEAD)"

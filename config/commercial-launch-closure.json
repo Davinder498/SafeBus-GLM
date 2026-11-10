@@ -8,6 +8,7 @@
     "commercialLaunchApproved": false
   },
   "ownerDirection": {
+    "netlify": "Owner chose Free with protected external builds on 2026-11-10. No paid upgrade or charge is authorized. Disable Netlify cloud builds and require protected GitHub artifact releases; do not claim unavailable per-feature variable scopes.",
     "billingRisk": "Approved 2026-11-10: keep bus service active; refunds, disputes and fraud warnings require manual billing review. No automatic suspension.",
     "operations": {
       "approvedAt": "2026-11-10",
@@ -25,6 +26,11 @@
     "physicalTesting": "Deferred by owner on 2026-11-10; physical-device and field acceptance remain unverified."
   },
   "milestones": [
+    {
+      "id": "tracking-ingestion-and-guardian-fanout",
+      "status": "open",
+      "note": "GPS history removal does not qualify synchronous guardian invalidation fan-out or ingestion throughput at 25000 buses; review and repair that path before measured capacity qualification."
+    },
     { "id": "gps-history-removal", "status": "live_verified", "productionRun": "42769562303" },
     {
       "id": "production-credential-isolation",

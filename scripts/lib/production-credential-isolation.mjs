@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash } from 'node:crypto';
 
 export const digest = (value) => createHash('sha256').update(value).digest('hex');
 const fail = (code) => {
@@ -28,8 +28,6 @@ export function assertSite(site, policy) {
 }
 export function isIsolated(variable) {
   return (
-    variable.is_secret === true &&
-    JSON.stringify(sorted(variable.scopes)) === '["functions"]' &&
     variable.values.length === 1 &&
     variable.values[0].context === 'production' &&
     !variable.values[0].context_parameter
@@ -59,77 +57,6 @@ export function credentialVariables(variables, shared, policy) {
     .sort((a, b) => a.key.localeCompare(b.key));
   for (const variable of selected) if (!isIsolated(variable)) productionEntry(variable);
   return selected;
-}
-export function credentialMutation(variable) {
-  const entry = productionEntry(variable);
-  // Existing production records stay in Netlify. Never write a redaction marker
-  // back as a credential. The protected installer first proves this provider API
-  // value-reference behavior using a temporary, non-sensitive configuration probe.
-  const value =
-    entry.context === 'production' && entry.id
-      ? { id: entry.id, context: 'production' }
-      : { context: 'production', value: entry.value };
-  return {
-    key: variable.key,
-    scopes: ['functions'],
-    is_secret: true,
-    values: [value],
-  };
-}
-export async function verifyValueReferenceUpdate(api, policy, runId) {
-  if (!/^[1-9][0-9]*$/.test(runId ?? '')) fail('PROBE_CONTEXT');
-  const key = 'SAFEBUS_CREDENTIAL_SCOPE_PROBE_' + runId;
-  const path = `/accounts/${policy.accountId}/env/${key}?site_id=${policy.siteId}`;
-  if ((await api(path, { missing: true })) !== null) fail('PROBE_EXISTS');
-  const value = randomBytes(24).toString('hex');
-  let created = false;
-  try {
-    await api(`/accounts/${policy.accountId}/env?site_id=${policy.siteId}`, {
-      method: 'POST',
-      body: [
-        {
-          key,
-          scopes: ['builds', 'functions'],
-          is_secret: false,
-          values: [{ context: 'production', value }],
-        },
-      ],
-    });
-    created = true;
-    const before = await api(path);
-    const entry = before.values[0];
-    if (
-      before.values.length !== 1 ||
-      entry.context !== 'production' ||
-      entry.value !== value ||
-      !entry.id
-    )
-      fail('PROBE_CREATION');
-    await api(path, {
-      method: 'PUT',
-      body: {
-        key,
-        scopes: ['functions'],
-        is_secret: false,
-        values: [{ id: entry.id, context: 'production' }],
-      },
-    });
-    const after = await api(path);
-    if (
-      JSON.stringify(sorted(after.scopes)) !== '["functions"]' ||
-      after.values.length !== 1 ||
-      after.values[0].id !== entry.id ||
-      after.values[0].value !== value ||
-      after.values[0].context !== 'production'
-    )
-      fail('VALUE_REFERENCE_UNSUPPORTED');
-    return { providerValueReferenceVerified: true, nonSensitiveProbeRemoved: true };
-  } finally {
-    if (created) {
-      await api(path, { method: 'DELETE' });
-      if ((await api(path, { missing: true })) !== null) fail('PROBE_CLEANUP');
-    }
-  }
 }
 export function variableDigest(variables) {
   return digest(
@@ -220,38 +147,92 @@ export function configurationSummary(state) {
   }));
 }
 export async function isolateCredentials(api, policy, original, progress = async () => {}) {
-  // Validate every required value and inherited-variable boundary before the first write.
+  if (original.site.build_settings.stop_builds !== true) fail('CLOUD_BUILDS_NOT_STOPPED');
   const selected = credentialVariables(original.variables, original.shared, policy);
   for (const variable of selected) {
     if (isIsolated(variable)) continue;
-    const body = credentialMutation(variable);
-    const originalEntry = productionEntry(variable);
-    await api(
-      `/accounts/${policy.accountId}/env/${encodeURIComponent(variable.key)}?site_id=${policy.siteId}`,
-      { method: 'PUT', body },
-    );
-    const observed = (await api(`/accounts/${policy.accountId}/env?site_id=${policy.siteId}`)).find(
-      (v) => v.key === variable.key,
-    );
-    if (
-      !observed ||
-      !isIsolated(observed) ||
-      (body.values[0].id && observed.values[0].id !== body.values[0].id) ||
-      (readable(observed?.values[0]?.value) &&
-        readable(originalEntry.value) &&
-        observed.values[0].value !== originalEntry.value)
-    )
-      fail('VALUE_OR_SCOPE_DRIFT');
+    const base = '/accounts/' + policy.accountId + '/env/' + encodeURIComponent(variable.key);
+    const query = '?site_id=' + policy.siteId;
+    const fresh = await api(base + query);
+    if (variableDigest([fresh]) !== variableDigest([variable])) fail('PLAN_DRIFT');
+    const before = productionEntry(variable);
+    // The Free-compatible context API leaves existing production records, scopes
+    // and secret flags untouched. Only readable all-context fallbacks are copied.
+    if (before.context === 'all') {
+      await api(base + query, {
+        method: 'PATCH',
+        body: { context: 'production', value: before.value },
+      });
+    }
+    let current = await api(base + query);
+    let production = productionEntry(current);
+    const expectedId = before.context === 'production' ? before.id : production.id;
+    const checkProduction = (value) => {
+      const entry = productionEntry(value);
+      if (
+        entry.context !== 'production' ||
+        !entry.id ||
+        entry.id !== expectedId ||
+        value.is_secret !== variable.is_secret ||
+        JSON.stringify(sorted(value.scopes)) !== JSON.stringify(sorted(variable.scopes)) ||
+        (readable(before.value) && readable(entry.value) && entry.value !== before.value)
+      )
+        fail('VALUE_OR_SCOPE_DRIFT');
+      return entry;
+    };
+    checkProduction(current);
+    for (const removed of current.values.filter((v) => v.context !== 'production')) {
+      if (!/^[a-zA-Z0-9-]{1,100}$/.test(removed.id ?? '') || removed.id === expectedId)
+        fail('CONTEXT_BOUNDARY');
+      const observed = await api(base + query);
+      checkProduction(observed);
+      const stillPresent = observed.values.find((v) => v.id === removed.id);
+      if (!stillPresent) continue;
+      if (stillPresent.context === 'production') fail('CONTEXT_BOUNDARY');
+      await api(base + '/value/' + encodeURIComponent(removed.id) + query, { method: 'DELETE' });
+      await progress({
+        key: variable.key,
+        removedContext: removed.context,
+        productionRecordUntouched: true,
+      });
+    }
+    current = await api(base + query);
+    production = checkProduction(current);
+    if (!isIsolated(current)) fail('CONFIGURATION_NOT_ISOLATED');
     await progress({
       key: variable.key,
       isolated: true,
-      productionValueReadBack: readable(observed.values[0].value) ? 'matched' : 'provider_masked',
-      existingProductionRecordPreserved: Boolean(body.values[0].id),
+      productionValueReadBack: readable(production.value) ? 'matched' : 'provider_masked',
+      existingProductionRecordPreserved: before.context === 'production',
     });
   }
   const final = await readConfiguration(api, policy);
-  if (final.credentials.some((v) => !isIsolated(v))) fail('CONFIGURATION_NOT_ISOLATED');
+  if (
+    final.site.build_settings.stop_builds !== true ||
+    final.credentials.some((v) => !isIsolated(v))
+  )
+    fail('CONFIGURATION_NOT_ISOLATED');
   return final;
+}
+export async function stopCloudBuilds(api, policy, original) {
+  assertSite(original, policy);
+  const before = { ...original.build_settings };
+  await api('/sites/' + policy.siteId, {
+    method: 'PATCH',
+    body: { build_settings: { stop_builds: true } },
+  });
+  const observed = await api('/sites/' + policy.siteId);
+  assertSite(observed, policy);
+  if (
+    observed.build_settings.stop_builds !== true ||
+    observed.published_deploy.id !== original.published_deploy.id
+  )
+    fail('CLOUD_BUILD_CONTROL_DRIFT');
+  for (const key of ['provider', 'repo_url', 'repo_branch', 'cmd', 'dir', 'functions_dir']) {
+    if ((observed.build_settings[key] ?? null) !== (before[key] ?? null))
+      fail('CLOUD_BUILD_CONTROL_DRIFT');
+  }
+  return observed;
 }
 async function mapLimited(candidates, operation) {
   let index = 0,

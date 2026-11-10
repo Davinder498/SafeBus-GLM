@@ -15,7 +15,7 @@ import {
   retirePreviews,
   verifyPreviewRetirement,
   isIsolated,
-  verifyValueReferenceUpdate,
+  stopCloudBuilds,
 } from './lib/production-credential-isolation.mjs';
 
 const action = process.argv[2],
@@ -90,6 +90,8 @@ try {
       productionDeployId: state.site.published_deploy?.id,
       productionCredentialsWillBeRotated: false,
       productionDeploymentsWillBeDeleted: false,
+      cloudBuildsWillBeStopped: true,
+      cloudBuildsPreviouslyStopped: state.site.build_settings.stop_builds === true,
       recoveryScope:
         'Preserve production values. Never reinstate administrative credentials in non-production contexts.',
     };
@@ -101,6 +103,7 @@ try {
           preparedAt,
           variables: state.variables,
           shared: state.shared,
+          siteConfiguration: state.site,
         }),
       ]),
       directory + '/configuration.enc',
@@ -131,8 +134,9 @@ try {
       state.site.published_deploy?.id !== plan.productionDeployId
     )
       throw new Error('CREDENTIAL_ISOLATION_PLAN_DRIFT');
-    stage = 'verify-provider-value-references';
-    await journal(await verifyValueReferenceUpdate(api, policy, identity.runId));
+    stage = 'stop-cloud-builds';
+    state.site = await stopCloudBuilds(api, policy, state.site);
+    await journal({ cloudBuildsStopped: true, existingProductionDeployPreserved: true });
     stage = 'isolate';
     await isolateCredentials(api, policy, state, journal);
     const isolatedAt = new Date().toISOString();
@@ -160,7 +164,10 @@ try {
   } else {
     stage = 'verify-isolation';
     const state = await readConfiguration(api, policy);
-    if (state.credentials.some((v) => !isIsolated(v)))
+    if (
+      state.site.build_settings.stop_builds !== true ||
+      state.credentials.some((v) => !isIsolated(v))
+    )
       throw new Error('CREDENTIAL_ISOLATION_CONFIGURATION_NOT_ISOLATED');
     const retirements = await json('retirements');
     if (Object.entries(identity).some(([k, v]) => retirements[k] !== v))
@@ -194,13 +201,23 @@ try {
       productionDeployId: published.id,
       productionSourceSha: published.commit_ref,
       productionApplicationRebuilt: false,
+      cloudBuildsDisabledVerified: true,
+      providerScopesPreserved: true,
+      functionOnlyScopesClaimed: false,
       sourceEventDeliveryVerified: false,
       commercialLaunchApproved: false,
       databaseWritesPerformed: false,
       notificationSent: false,
     });
   }
-  console.log(JSON.stringify({ result: 'passed', action, productionCredentialIsolation: true }));
+  console.log(
+    JSON.stringify({
+      result: 'passed',
+      action,
+      productionCredentialIsolationVerified: action === 'verify',
+      commercialLaunchApproved: false,
+    }),
+  );
 } catch (error) {
   console.error(
     JSON.stringify({
