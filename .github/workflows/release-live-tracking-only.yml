@@ -7,11 +7,14 @@ on:
         required: true
       mode:
         type: choice
-        options: [rehearse, install]
+        options: [rehearse, install, finalize]
         required: true
       confirmation:
-        description: REHEARSE_GPS_HISTORY_REMOVAL or REMOVE_GPS_HISTORY
+        description: REHEARSE_GPS_HISTORY_REMOVAL, REMOVE_GPS_HISTORY or FINALIZE_GPS_HISTORY_REMOVAL
         required: true
+      installed_release_sha:
+        description: Exact previously installed ancestor SHA (finalize only; no SQL installation)
+        required: false
       recovery_run_id:
         description: Successful platform recovery export for this SHA within 24 hours (install)
         required: false
@@ -26,7 +29,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   validate:
-    if: github.ref == 'refs/heads/main' && ((inputs.mode == 'rehearse' && inputs.confirmation == 'REHEARSE_GPS_HISTORY_REMOVAL') || (inputs.mode == 'install' && inputs.confirmation == 'REMOVE_GPS_HISTORY'))
+    if: github.ref == 'refs/heads/main' && ((inputs.mode == 'rehearse' && inputs.confirmation == 'REHEARSE_GPS_HISTORY_REMOVAL') || (inputs.mode == 'install' && inputs.confirmation == 'REMOVE_GPS_HISTORY') || (inputs.mode == 'finalize' && inputs.confirmation == 'FINALIZE_GPS_HISTORY_REMOVAL'))
     uses: ./.github/workflows/validate-security-install.yml
     with:
       git_ref: ${{ inputs.git_ref }}
@@ -42,6 +45,7 @@ jobs:
       SAFEBUS_DEPLOY_ENV: production
       SAFEBUS_TRACKING_REMOVAL_MODE: ${{ inputs.mode }}
       SAFEBUS_TRACKING_REMOVAL_CONFIRM: ${{ inputs.confirmation }}
+      SAFEBUS_TRACKING_INSTALLED_SHA: ${{ inputs.installed_release_sha }}
       SAFEBUS_RECOVERY_RUN_ID: ${{ inputs.recovery_run_id }}
       SAFEBUS_RECOVERY_CONFIRM: ${{ inputs.recovery_confirmation }}
       SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
@@ -70,7 +74,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install --no-install-recommends -y postgresql-client-17
           echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
-      - name: Reconcile and rehearse; capture encrypted recovery for installation
+      - name: Reconcile installed state or rehearse and capture recovery
         id: prepare
         run: node scripts/release-live-tracking-only.mjs prepare
       - name: Retain exact recovery before dropping history
@@ -85,10 +89,10 @@ jobs:
         if: inputs.mode == 'install' && steps.prepare.outputs.state == 'pending'
         run: node scripts/release-live-tracking-only.mjs install
       - name: Verify live schema and expiry job
-        if: inputs.mode == 'install'
+        if: inputs.mode == 'install' || inputs.mode == 'finalize'
         run: node scripts/release-live-tracking-only.mjs verify
       - name: Retire the empty GPS archive bucket through the Storage API
-        if: inputs.mode == 'install'
+        if: inputs.mode == 'install' || inputs.mode == 'finalize'
         run: node scripts/release-live-tracking-only.mjs cleanup
       - name: Retain sanitized outcome
         if: always()

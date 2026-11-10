@@ -8,6 +8,40 @@ export const HISTORY_TABLES = [
   'safebus_private.retention_archive_coverage',
 ];
 export const STATE_TABLE = 'safebus_private.driver_tracking_state';
+export function trackingInstallationSha({
+  sha,
+  installedSha,
+  releaseMode,
+  confirmation,
+  action,
+  isAncestor,
+}) {
+  if (releaseMode !== 'finalize') {
+    if (installedSha) throw new Error('TRACKING_REMOVAL_FINALIZE_CONTEXT');
+    return sha;
+  }
+  if (
+    confirmation !== 'FINALIZE_GPS_HISTORY_REMOVAL' ||
+    !['prepare', 'verify', 'cleanup'].includes(action) ||
+    !/^[a-f0-9]{40}$/.test(installedSha ?? '') ||
+    !isAncestor(installedSha, sha)
+  )
+    throw new Error('TRACKING_REMOVAL_FINALIZE_CONTEXT');
+  return installedSha;
+}
+export async function trackingExpiryHealth(client) {
+  // Before the first execution there is no matching job row. Bound the indexed
+  // run-id range so checking that absence cannot walk the entire provider log.
+  return (
+    await client.query(`select j.active,r.status,
+    r.end_time>now()-interval '5 minutes' as recent
+    from cron.job j left join lateral
+      (select status,end_time from cron.job_run_details
+       where runid>coalesce((select max(runid) from cron.job_run_details),0)-1000
+         and jobid=j.jobid order by runid desc limit 1) r on true
+    where j.jobname='safebus-expire-tracking-positions'`)
+  ).rows[0];
+}
 // A server-canonical pre-image can be reviewed through the read-only connector
 // without fetching catalog contents or relying on client bigint/array parsers.
 export async function reviewedCatalogDigestSql() {

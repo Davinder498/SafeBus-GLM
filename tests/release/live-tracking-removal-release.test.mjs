@@ -13,11 +13,78 @@ import {
   requireReviewedCatalog,
   registerTrackingSchemaRelease,
   verifyTrackingSchemaRelease,
+  trackingExpiryHealth,
+  trackingInstallationSha,
 } from '../../scripts/lib/live-tracking-removal.mjs';
 import { operationalDataDigest } from '../../scripts/lib/operational-rollout.mjs';
 const clientFor = (db) => ({
   query: async (sql, args) =>
     args ? db.query(sql, args) : ((await db.exec(sql)).at(-1) ?? { rows: [] }),
+});
+test('finalization binds an installed ancestor and cannot enter SQL installation', () => {
+  const sha = 'b'.repeat(40),
+    installedSha = 'a'.repeat(40);
+  const context = {
+    sha,
+    installedSha,
+    releaseMode: 'finalize',
+    confirmation: 'FINALIZE_GPS_HISTORY_REMOVAL',
+    action: 'prepare',
+    isAncestor: (a, b) => a === installedSha && b === sha,
+  };
+  for (const action of ['prepare', 'verify', 'cleanup'])
+    assert.equal(trackingInstallationSha({ ...context, action }), installedSha);
+  for (const change of [
+    { action: 'install' },
+    { confirmation: 'REMOVE_GPS_HISTORY' },
+    { installedSha: '' },
+    { installedSha: 'main' },
+    { isAncestor: () => false },
+    { releaseMode: 'install' },
+    { releaseMode: 'rehearse' },
+  ])
+    assert.throws(() => trackingInstallationSha({ ...context, ...change }), /FINALIZE_CONTEXT/);
+  assert.equal(
+    trackingInstallationSha({ ...context, releaseMode: 'install', installedSha: undefined }),
+    sha,
+  );
+});
+test('expiry health handles no first run, old log entries, running, succeeded and failed runs in a bounded range', async (t) => {
+  const db = await baseline();
+  t.after(() => db.close());
+  const client = clientFor(db);
+  await db.exec(`alter table cron.job add column active boolean default true;
+    create table cron.job_run_details(runid bigint primary key,jobid bigint,status text,end_time timestamptz);
+    insert into cron.job(jobname,schedule,command) values('safebus-expire-tracking-positions','* * * * *','select 1');
+    insert into cron.job_run_details select n,999,'succeeded',now()-interval '1 day' from generate_series(1,10000) n;
+    insert into cron.job_run_details values(0,1,'succeeded',now()-interval '1 day')`);
+  assert.deepEqual(await trackingExpiryHealth(client), {
+    active: true,
+    status: null,
+    recent: null,
+  });
+  await db.exec("insert into cron.job_run_details values(10001,1,'running',null)");
+  assert.deepEqual(await trackingExpiryHealth(client), {
+    active: true,
+    status: 'running',
+    recent: null,
+  });
+  await db.exec(
+    "update cron.job_run_details set status='succeeded',end_time=now() where runid=10001",
+  );
+  assert.deepEqual(await trackingExpiryHealth(client), {
+    active: true,
+    status: 'succeeded',
+    recent: true,
+  });
+  await db.exec("insert into cron.job_run_details values(10002,1,'failed',now())");
+  assert.deepEqual(await trackingExpiryHealth(client), {
+    active: true,
+    status: 'failed',
+    recent: true,
+  });
+  await db.exec('update cron.job set active=false');
+  assert.equal((await trackingExpiryHealth(client)).active, false);
 });
 test('prepared release matches the reviewed function baseline, rehearses real SQL and rolls back every removal', async (t) => {
   const db = await baseline();
