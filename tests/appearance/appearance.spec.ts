@@ -280,6 +280,10 @@ for (const role of ['tenant_admin', 'transportation_admin', 'guardian', 'driver'
         'background-color',
         'rgb(24, 35, 47)',
       );
+      await expect(page.getByRole('heading', { name: 'Standalone service announcements', exact: true })).toHaveCSS(
+        'color',
+        'rgb(232, 238, 245)',
+      );
     }
     await expectNoWcagAaViolations(page, `${role} dark settings`);
     await page.screenshot({ path: info.outputPath(role + '-dark-settings.png'), fullPage: true });

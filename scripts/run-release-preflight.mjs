@@ -6,6 +6,10 @@ import path from 'node:path';
 import process from 'node:process';
 import { createEnvironmentBinding } from './lib/environment-identity.mjs';
 import { DEFAULT_ATTESTATION_PATH, createReleaseAttestation } from './lib/release-attestation.mjs';
+import {
+  publicBuildEnvironment,
+  verifyPublicFrontendConfiguration,
+} from './lib/public-build-environment.mjs';
 
 const environment = process.env.SAFEBUS_DEPLOY_ENV;
 const releaseSha = process.env.SAFEBUS_RELEASE_SHA;
@@ -45,10 +49,16 @@ function assertTrackedWorktreeClean() {
 assertTrackedWorktreeClean();
 
 function run(script, environmentOverrides = {}) {
+  const allEnvironment = { ...process.env, ...environmentOverrides };
+  const childEnvironment = ['migrations:preflight', 'types:check', 'authorization:audit'].includes(
+    script,
+  )
+    ? allEnvironment
+    : publicBuildEnvironment(allEnvironment);
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [pnpmCli, script], {
       cwd: process.cwd(),
-      env: { ...process.env, ...environmentOverrides },
+      env: childEnvironment,
       stdio: 'inherit',
     });
     child.on('error', reject);
@@ -70,6 +80,7 @@ async function rejectSourceMaps(directory) {
   }
 }
 
+await verifyPublicFrontendConfiguration(process.env);
 await run('migrations:verify');
 await run('migrations:preflight');
 await run('types:check');

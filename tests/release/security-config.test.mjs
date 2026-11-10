@@ -62,7 +62,14 @@ test('Netlify deployment workflows select the web app in the monorepo', async ()
   ]);
 
   for (const workflow of workflows) {
-    assert.match(workflow, /netlify deploy --prod --filter @safebus\/web --dir apps\/web\/dist/);
+    const deploy = workflow
+      .split('\n')
+      .find((line) => line.includes('run: pnpm exec netlify deploy'));
+    assert.ok(deploy, 'Workflow must deploy the preflighted web artifact');
+    assert.match(deploy, /--prod(?:\s|$)/);
+    assert.match(deploy, /--no-build(?:\s|$)/);
+    assert.match(deploy, /--filter @safebus\/web(?:\s|$)/);
+    assert.match(deploy, /--dir apps\/web\/dist(?:\s|$)/);
   }
 });
 
@@ -565,18 +572,17 @@ test('guardian linking only offers active guardians and keeps audit fields table
 });
 
 test('only school-district administrative roles can be invited or access the admin web app', async () => {
-  const [auth, roles, routes, layout, settings, admins, api, scope, migration] =
-    await Promise.all([
-      read('apps/web/src/contexts/AuthContext.tsx'),
-      read('packages/types/src/roles.ts'),
-      read('apps/web/src/routes/router.tsx'),
-      read('apps/web/src/components/layout/DashboardLayout.tsx'),
-      read('apps/web/src/components/settings/AdminSettingsNav.tsx'),
-      read('apps/web/src/pages/AdminAdministratorsPage.tsx'),
-      read('apps/web/netlify/functions/safebus-onboarding.mjs'),
-      read('docs/governance/product-scope.md'),
-      read('supabase/migrations/pending/20261101174500_retire_individual_school_admin.sql'),
-    ]);
+  const [auth, roles, routes, layout, settings, admins, api, scope, migration] = await Promise.all([
+    read('apps/web/src/contexts/AuthContext.tsx'),
+    read('packages/types/src/roles.ts'),
+    read('apps/web/src/routes/router.tsx'),
+    read('apps/web/src/components/layout/DashboardLayout.tsx'),
+    read('apps/web/src/components/settings/AdminSettingsNav.tsx'),
+    read('apps/web/src/pages/AdminAdministratorsPage.tsx'),
+    read('apps/web/netlify/functions/safebus-onboarding.mjs'),
+    read('docs/governance/product-scope.md'),
+    read('supabase/migrations/pending/20261101174500_retire_individual_school_admin.sql'),
+  ]);
   // The historical type remains for generated DB compatibility, but it must
   // not appear in the active role arrays or create/assign choices.
   const activeRoles = auth.match(/export const adminRoles = \[([\s\S]*?)\] as const;/)?.[1];
@@ -603,16 +609,28 @@ test('only school-district administrative roles can be invited or access the adm
 });
 
 test('privileged bus and announcement RPC corrections derive district-only authority', async () => {
-  const sql = await read('supabase/migrations/pending/20261101180000_definer_district_auth_hardening.sql');
+  const sql = await read(
+    'supabase/migrations/pending/20261101180000_definer_district_auth_hardening.sql',
+  );
   assert.match(sql, /District-only authorization baseline required/);
   const snippets = [
     ['admin_create_bus', 'admin_update_bus'],
     ['admin_update_bus', 'require_announcement_admin'],
     ['require_announcement_admin', null],
   ].map(([start, end]) => {
-    const first = sql.indexOf('-- Audited live definition: ' + (start === 'require_announcement_admin' ? 'safebus_private.' : 'public.') + start);
+    const first = sql.indexOf(
+      '-- Audited live definition: ' +
+        (start === 'require_announcement_admin' ? 'safebus_private.' : 'public.') +
+        start,
+    );
     assert.ok(first > 0, 'Missing forward function definition: ' + start);
-    const next = end ? sql.indexOf('-- Audited live definition: ' + (end === 'require_announcement_admin' ? 'safebus_private.' : 'public.') + end) : sql.length;
+    const next = end
+      ? sql.indexOf(
+          '-- Audited live definition: ' +
+            (end === 'require_announcement_admin' ? 'safebus_private.' : 'public.') +
+            end,
+        )
+      : sql.length;
     assert.ok(next > first, 'Definition order changed: ' + start);
     return sql.slice(first, next);
   });
@@ -621,10 +639,16 @@ test('privileged bus and announcement RPC corrections derive district-only autho
     assert.match(snippet, /SET search_path TO/i);
     assert.doesNotMatch(snippet, /v_caller\.role\s*=\s*'school_admin'/);
     assert.doesNotMatch(snippet, /v_profile\.role\s*=\s*'school_admin'/);
-    assert.doesNotMatch(snippet, /'tenant_admin'\s*,\s*'transportation_admin'\s*,\s*'school_admin'/);
+    assert.doesNotMatch(
+      snippet,
+      /'tenant_admin'\s*,\s*'transportation_admin'\s*,\s*'school_admin'/,
+    );
   }
   for (const snippet of snippets.slice(0, 2)) {
-    assert.match(snippet, /not coalesce\(safebus_private\.current_user_role\(\) in \('tenant_admin', 'transportation_admin'\), false\)/);
+    assert.match(
+      snippet,
+      /not coalesce\(safebus_private\.current_user_role\(\) in \('tenant_admin', 'transportation_admin'\), false\)/,
+    );
     assert.match(snippet, /v_caller\.tenant_id/);
     assert.match(snippet, /where id = auth\.uid\(\) and status = 'active'/);
     assert.match(snippet, /safebus_private\.write_audit_event\(/);
@@ -718,20 +742,34 @@ test('upgrade inspection retains protected reviewed execution without an upgrade
 });
 
 test('upgrade authentication failure stops after one request without reading provider content', async () => {
-  const { inspectPostgresUpgrade } = await import('../../scripts/lib/postgres-upgrade-preflight.mjs');
+  const { inspectPostgresUpgrade } =
+    await import('../../scripts/lib/postgres-upgrade-preflight.mjs');
   for (const status of [401, 403]) {
     let requests = 0;
-    await assert.rejects(inspectPostgresUpgrade({
-      projectId: 'ckrkfylsyihwouvesypm', token: 'synthetic-secret',
-      fetchImpl: async () => {
-        requests++;
-        return { ok: false, status, json() { throw new Error('must not read provider content'); } };
-      },
-    }), { message: `UPGRADE_PREFLIGHT_HTTP_${status}` });
+    await assert.rejects(
+      inspectPostgresUpgrade({
+        projectId: 'ckrkfylsyihwouvesypm',
+        token: 'synthetic-secret',
+        fetchImpl: async () => {
+          requests++;
+          return {
+            ok: false,
+            status,
+            json() {
+              throw new Error('must not read provider content');
+            },
+          };
+        },
+      }),
+      { message: `UPGRADE_PREFLIGHT_HTTP_${status}` },
+    );
     assert.equal(requests, 1);
   }
   const workflow = await read('.github/workflows/inspect-postgres-upgrade.yml');
-  assert.match(workflow, /SUPABASE_UPGRADE_READ_TOKEN: \$\{\{ secrets\.SUPABASE_UPGRADE_READ_TOKEN \}\}/);
+  assert.match(
+    workflow,
+    /SUPABASE_UPGRADE_READ_TOKEN: \$\{\{ secrets\.SUPABASE_UPGRADE_READ_TOKEN \}\}/,
+  );
   assert.doesNotMatch(workflow, /secrets\.SUPABASE_ACCESS_TOKEN/);
   const script = await read('scripts/inspect-postgres-upgrade.mjs');
   assert.match(script, /UPGRADE_PREFLIGHT_READ_TOKEN_MISSING/);
@@ -739,58 +777,134 @@ test('upgrade authentication failure stops after one request without reading pro
 });
 
 test('upgrade version metadata follows the provider string contract with value-free diagnostics', async () => {
-  const { summarizeUpgradeEligibility, eligibilityResponseDiagnostics } = await import('../../scripts/lib/postgres-upgrade-preflight.mjs');
+  const { summarizeUpgradeEligibility, eligibilityResponseDiagnostics } =
+    await import('../../scripts/lib/postgres-upgrade-preflight.mjs');
   const value = {
-    eligible: true, current_app_version: '17.6', duration_estimate_hours: 1,
-    target_upgrade_versions: [{ postgres_version: '17', release_channel: 'ga', app_version: '17.11.0.011' }],
-    legacy_auth_custom_roles: [], objects_to_be_dropped: [], unsupported_extensions: [],
-    user_defined_objects_in_internal_schemas: [], validation_errors: [], warnings: [],
+    eligible: true,
+    current_app_version: '17.6',
+    duration_estimate_hours: 1,
+    target_upgrade_versions: [
+      { postgres_version: '17', release_channel: 'ga', app_version: '17.11.0.011' },
+    ],
+    legacy_auth_custom_roles: [],
+    objects_to_be_dropped: [],
+    unsupported_extensions: [],
+    user_defined_objects_in_internal_schemas: [],
+    validation_errors: [],
+    warnings: [],
   };
-  for (const version of ['17.6', '17.6.1.155', 'supabase-postgres-17.6.1.155', 'supabase/postgres:17.6.1.155']) {
-    assert.equal(summarizeUpgradeEligibility({ ...value, current_app_version: version }).currentVersion, version);
+  for (const version of [
+    '17.6',
+    '17.6.1.155',
+    'supabase-postgres-17.6.1.155',
+    'supabase/postgres:17.6.1.155',
+  ]) {
+    assert.equal(
+      summarizeUpgradeEligibility({ ...value, current_app_version: version }).currentVersion,
+      version,
+    );
   }
-  assert.equal(summarizeUpgradeEligibility({ ...value, current_app_version: '15.8.1.010' }).providerChecksClear, false);
-  assert.equal(summarizeUpgradeEligibility({ ...value, current_app_version: 'unknown' }).currentMajorVerified, false);
-  for (const field of ['eligible', 'current_app_version', 'target_upgrade_versions', 'duration_estimate_hours', 'warnings']) {
+  assert.equal(
+    summarizeUpgradeEligibility({ ...value, current_app_version: '15.8.1.010' })
+      .providerChecksClear,
+    false,
+  );
+  assert.equal(
+    summarizeUpgradeEligibility({ ...value, current_app_version: 'unknown' }).currentMajorVerified,
+    false,
+  );
+  for (const field of [
+    'eligible',
+    'current_app_version',
+    'target_upgrade_versions',
+    'duration_estimate_hours',
+    'warnings',
+  ]) {
     const changed = { ...value, [field]: null, private_field: 'sensitive-value' };
     const diagnostic = eligibilityResponseDiagnostics(changed);
     assert.ok(diagnostic.failedFields.includes(field));
     assert.equal(diagnostic.fieldTypes[field], 'null');
     assert.equal(JSON.stringify(diagnostic).includes('sensitive-value'), false);
     assert.equal(JSON.stringify(diagnostic).includes('private_field'), false);
-    assert.throws(() => summarizeUpgradeEligibility(changed), (error) =>
-      error.message === 'UPGRADE_PREFLIGHT_RESPONSE' && error.diagnostics.failedFields.includes(field));
+    assert.throws(
+      () => summarizeUpgradeEligibility(changed),
+      (error) =>
+        error.message === 'UPGRADE_PREFLIGHT_RESPONSE' &&
+        error.diagnostics.failedFields.includes(field),
+    );
   }
-  assert.ok(eligibilityResponseDiagnostics({ ...value, warnings: undefined }).failedFields.includes('warnings'));
-  assert.equal(summarizeUpgradeEligibility({ ...value, warnings: [{ type: 'unknown', secret: 'sensitive-value' }] }).providerChecksClear, false);
+  assert.ok(
+    eligibilityResponseDiagnostics({ ...value, warnings: undefined }).failedFields.includes(
+      'warnings',
+    ),
+  );
+  assert.equal(
+    summarizeUpgradeEligibility({
+      ...value,
+      warnings: [{ type: 'unknown', secret: 'sensitive-value' }],
+    }).providerChecksClear,
+    false,
+  );
 });
 
 test('upgrade JSON decoding failures are distinct and never expose the provider body', async () => {
-  const { inspectPostgresUpgrade } = await import('../../scripts/lib/postgres-upgrade-preflight.mjs');
-  await assert.rejects(inspectPostgresUpgrade({
-    projectId: 'ckrkfylsyihwouvesypm', token: 'synthetic',
-    fetchImpl: async () => ({ ok: true, json: async () => { throw new Error('sensitive-provider-body'); } }),
-  }), { message: 'UPGRADE_PREFLIGHT_JSON' });
+  const { inspectPostgresUpgrade } =
+    await import('../../scripts/lib/postgres-upgrade-preflight.mjs');
+  await assert.rejects(
+    inspectPostgresUpgrade({
+      projectId: 'ckrkfylsyihwouvesypm',
+      token: 'synthetic',
+      fetchImpl: async () => ({
+        ok: true,
+        json: async () => {
+          throw new Error('sensitive-provider-body');
+        },
+      }),
+    }),
+    { message: 'UPGRADE_PREFLIGHT_JSON' },
+  );
 });
 
-
 test('Supabase Studio platform version labels retain reviewed GA PostgreSQL 17 selection', async () => {
-  const { summarizeUpgradeEligibility } = await import('../../scripts/lib/postgres-upgrade-preflight.mjs');
+  const { summarizeUpgradeEligibility } =
+    await import('../../scripts/lib/postgres-upgrade-preflight.mjs');
   const value = {
-    eligible: true, current_app_version: 'supabase-postgres-17.6.1.155', duration_estimate_hours: 1,
+    eligible: true,
+    current_app_version: 'supabase-postgres-17.6.1.155',
+    duration_estimate_hours: 1,
     target_upgrade_versions: [
-      { postgres_version: '17', release_channel: 'ga', app_version: 'supabase-postgres-17.11.0.011' },
-      { postgres_version: '17', release_channel: 'beta', app_version: 'supabase-postgres-17.12.0.001' },
+      {
+        postgres_version: '17',
+        release_channel: 'ga',
+        app_version: 'supabase-postgres-17.11.0.011',
+      },
+      {
+        postgres_version: '17',
+        release_channel: 'beta',
+        app_version: 'supabase-postgres-17.12.0.001',
+      },
       { postgres_version: '17', release_channel: 'ga', app_version: 'unrecognized-17.11.0.011' },
-      { postgres_version: '15', release_channel: 'ga', app_version: 'supabase-postgres-15.19.0.001' },
+      {
+        postgres_version: '15',
+        release_channel: 'ga',
+        app_version: 'supabase-postgres-15.19.0.001',
+      },
     ],
-    legacy_auth_custom_roles: [], objects_to_be_dropped: [], unsupported_extensions: [],
-    user_defined_objects_in_internal_schemas: [], validation_errors: [], warnings: [],
+    legacy_auth_custom_roles: [],
+    objects_to_be_dropped: [],
+    unsupported_extensions: [],
+    user_defined_objects_in_internal_schemas: [],
+    validation_errors: [],
+    warnings: [],
   };
   const result = summarizeUpgradeEligibility(value);
   assert.equal(result.currentMajorVerified, true);
   assert.equal(result.providerChecksClear, true);
   assert.deepEqual(result.targetVersions, ['17.11.0.011']);
   assert.deepEqual(result.targetPlatformVersions, ['supabase-postgres-17.11.0.011']);
-  assert.equal(summarizeUpgradeEligibility({ ...value, current_app_version: 'supabase-postgres-15.8.1.010' }).providerChecksClear, false);
+  assert.equal(
+    summarizeUpgradeEligibility({ ...value, current_app_version: 'supabase-postgres-15.8.1.010' })
+      .providerChecksClear,
+    false,
+  );
 });

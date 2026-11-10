@@ -1,0 +1,91 @@
+name: Release reviewed engineering fixes
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: Exact reviewed current main SHA
+        required: true
+      confirmation:
+        description: RELEASE_REVIEWED_ENGINEERING_FIX (prelaunch maintenance, not commercial signoff)
+        required: true
+permissions:
+  contents: read
+  checks: read
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+jobs:
+  validate:
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'RELEASE_REVIEWED_ENGINEERING_FIX'
+    uses: ./.github/workflows/validate-security-install.yml
+    with:
+      git_ref: ${{ inputs.git_ref }}
+  release:
+    needs: validate
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: true
+      SAFEBUS_RELEASE_SHA: ${{ inputs.git_ref }}
+      SAFEBUS_DEPLOY_ENV: production
+      SAFEBUS_ENGINEERING_CONFIRM: ${{ inputs.confirmation }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.git_ref }}
+          fetch-depth: 0
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Require successful CI for this exact main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release-engineering-artifact.mjs checks
+      - name: Read-only hosted schema, types and authorization preflight
+        env:
+          SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
+          SAFEBUS_DATABASE_CA_CERT: ${{ vars.SAFEBUS_DATABASE_CA_CERT }}
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: |
+          pnpm migrations:verify
+          pnpm migrations:drift
+          pnpm migrations:preflight
+          pnpm types:check
+          pnpm authorization:audit
+      - name: Build artifact with public frontend configuration only
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          node --input-type=module -e "import { verifyPublicFrontendConfiguration } from './scripts/lib/public-build-environment.mjs'; await verifyPublicFrontendConfiguration(process.env); console.log('Public project and client key verified without signing in.');"
+          pnpm build
+      - name: Prepare exact artifact and rollback reference
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: node scripts/release-engineering-artifact.mjs prepare
+      - name: Retain artifact evidence and rollback before publishing
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: engineering-artifact-${{ inputs.git_ref }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            apps/web/dist/
+            .safebus-release/engineering-artifact/plan.json
+          retention-days: 30
+          if-no-files-found: error
+      - name: Publish prebuilt production artifact without rebuilding
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: node scripts/release-engineering-artifact.mjs publish
+      - name: Retain deployment and rollback outcome
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: engineering-release-outcome-${{ inputs.git_ref }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .safebus-release/engineering-artifact/
+          retention-days: 90
+          if-no-files-found: ignore

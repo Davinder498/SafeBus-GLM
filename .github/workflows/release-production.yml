@@ -28,15 +28,11 @@ jobs:
     environment: production
     env:
       CI: true
-      SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
-      SAFEBUS_DATABASE_CA_CERT: ${{ vars.SAFEBUS_DATABASE_CA_CERT }}
       SAFEBUS_DEPLOY_ENV: production
       SAFEBUS_DEPLOY_CONFIRM: DEPLOY_PRODUCTION
       SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -58,6 +54,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Verify unified notification database support before releasing clients and email
         env:
+          SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
+          SAFEBUS_DATABASE_CA_CERT: ${{ vars.SAFEBUS_DATABASE_CA_CERT }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SAFEBUS_OPERATIONAL_MILESTONE: delivery
         run: node scripts/release-operational-fix.mjs verify
       - name: Verify active Point 6 privacy and legal approval
@@ -70,11 +69,20 @@ jobs:
         run: pnpm pilot:verify
       - run: pnpm exec playwright install --with-deps chromium
       - name: Preflight exact commit without changing the database
+        env:
+          SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
+          SAFEBUS_DATABASE_CA_CERT: ${{ vars.SAFEBUS_DATABASE_CA_CERT }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: pnpm release:preflight
       - name: Verify no schema change is pending and record the release
+        env:
+          SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
+          SAFEBUS_DATABASE_CA_CERT: ${{ vars.SAFEBUS_DATABASE_CA_CERT }}
         run: pnpm migrations:deploy
       - name: Deploy the preflighted production artifact
-        run: pnpm exec netlify deploy --prod --filter @safebus/web --dir apps/web/dist --message "$SAFEBUS_RELEASE_SHA"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: pnpm exec netlify deploy --prod --no-build --context production --filter @safebus/web --dir apps/web/dist --message "$SAFEBUS_RELEASE_SHA"
       - name: Store release evidence
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:

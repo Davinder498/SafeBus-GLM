@@ -1,0 +1,73 @@
+{
+  "format": 1,
+  "scope": {
+    "schoolAuthorities": 500,
+    "buses": 25000,
+    "registeredGuardians": 500000,
+    "peakConcurrentGuardians": null,
+    "commercialLaunchApproved": false
+  },
+  "ownerDirection": {
+    "netlify": "Owner chose Free with protected external builds on 2026-11-10. No paid upgrade or charge is authorized. Disable Netlify cloud builds and require protected GitHub artifact releases; do not claim unavailable per-feature variable scopes.",
+    "billingRisk": "Approved 2026-11-10: keep bus service active; refunds, disputes and fraud warnings require manual billing review. No automatic suspension.",
+    "operations": {
+      "approvedAt": "2026-11-10",
+      "mailbox": "info@safebus.kids",
+      "primaryResponder": "owner",
+      "backupResponder": null,
+      "timezone": "America/Edmonton",
+      "schoolDayStart": "06:00",
+      "schoolDayEnd": "18:00",
+      "tripCoverageExtensionMinutes": 30,
+      "urgentAcknowledgementMinutes": 15,
+      "customerPublicationVerified": false
+    },
+    "ios": "Deferred by owner on 2026-11-10; no implementation or supported iPhone availability is claimed.",
+    "physicalTesting": "Deferred by owner on 2026-11-10; physical-device and field acceptance remain unverified."
+  },
+  "milestones": [
+    {
+      "id": "tracking-ingestion-and-guardian-fanout",
+      "status": "open",
+      "note": "GPS history removal does not qualify synchronous guardian invalidation fan-out or ingestion throughput at 25000 buses; review and repair that path before measured capacity qualification."
+    },
+    { "id": "gps-history-removal", "status": "live_verified", "productionRun": "42769562303" },
+    {
+      "id": "production-credential-isolation",
+      "status": "in_progress",
+      "acceptance": "config/pending/production-credential-isolation.json"
+    },
+    { "id": "reviewed-release-controls", "status": "open" },
+    { "id": "guardian-home-freshness", "status": "open" },
+    {
+      "id": "billing-risk-events",
+      "status": "open",
+      "businessDecision": "Refund entitlement and service-continuity policy; no automatic suspension is authorized by this record."
+    },
+    {
+      "id": "application-alerting-and-operations",
+      "status": "open",
+      "businessDecision": "Primary and backup operations contacts, response hours and escalation targets."
+    },
+    { "id": "large-authority-reference-selectors", "status": "open" },
+    { "id": "hosted-password-protection", "status": "open" },
+    { "id": "legacy-notification-default-repair", "status": "open" },
+    {
+      "id": "operational-retention-activation",
+      "status": "open",
+      "note": "GPS history removal does not activate retention of other operational records."
+    },
+    {
+      "id": "capacity-qualification",
+      "status": "unverified",
+      "note": "Owned workload-generator tests do not measure application capacity. No production load test is authorized by this record."
+    },
+    { "id": "android-production-distribution", "status": "unverified" },
+    { "id": "guardian-fullscreen-branding", "status": "open" },
+    {
+      "id": "end-to-end-source-event-acceptance",
+      "status": "unverified",
+      "note": "Mocked UI success and provider acceptance do not prove device or mailbox receipt."
+    }
+  ]
+}

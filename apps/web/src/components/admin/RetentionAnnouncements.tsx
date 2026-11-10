@@ -61,9 +61,9 @@ export function RetentionAnnouncements() {
     }
   }
   return (
-    <section className="space-y-3 border-t border-gray-200 pt-4">
-      <h3 className="font-bold">Standalone service announcements</h3>
-      <p className="text-sm">
+    <section className="space-y-3 border-t border-gray-200 pt-4 text-[var(--color-text)]">
+      <h3 className="font-bold text-[var(--color-heading)]">Standalone service announcements</h3>
+      <p className="text-sm text-[var(--color-text-muted)]">
         Unresolved records stay available. Confirm resolution only after the service issue and any
         preservation obligations are resolved; the 395-day retention period then begins.
       </p>
