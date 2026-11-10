@@ -1,0 +1,131 @@
+{
+  "observedAt": "2026-11-10",
+  "readOnly": true,
+  "functions": [
+    {
+      "signature": "accept_my_district_agreement(uuid,text,text,text,boolean,boolean,boolean)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ]
+    },
+    {
+      "signature": "accept_my_participant_agreement(uuid,text,boolean,boolean)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ]
+    },
+    {
+      "signature": "district_agreement_billing_allowed(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_my_district_agreement_receipt(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_my_district_agreement()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_my_participant_agreement()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ]
+    },
+    {
+      "signature": "get_platform_district_agreement(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ]
+    },
+    {
+      "signature": "list_my_district_agreement_receipts()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ]
+    },
+    {
+      "signature": "platform_get_agreement_catalog()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ]
+    },
+    {
+      "signature": "platform_get_participant_terms()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ]
+    },
+    {
+      "signature": "platform_list_agreement_documents()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ]
+    },
+    {
+      "signature": "platform_publish_agreement_catalog(uuid[])",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ]
+    },
+    {
+      "signature": "platform_publish_agreement_document(text,text,text,text)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ]
+    },
+    {
+      "signature": "platform_publish_participant_terms(uuid)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ]
+    }
+  ]
+}
