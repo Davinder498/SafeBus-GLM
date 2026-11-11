@@ -78,39 +78,114 @@ export async function artifactManifest(directory, prefix = '') {
   if (Object.keys(files).length > 500) fail('ARTIFACT_BOUND');
   return Object.fromEntries(Object.entries(files).sort(([a], [b]) => a.localeCompare(b)));
 }
-export async function verifyHostedArtifact(deployId, policy, manifest, request = fetch) {
+export async function verifyHostedArtifact(
+  deployId,
+  policy,
+  manifest,
+  request = fetch,
+  { pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms)), now = Date.now } = {},
+) {
   if (!/^[a-f0-9]{24}$/.test(deployId)) fail('DEPLOY_ID');
   const entries = Object.entries(manifest).filter(([name]) => !name.startsWith('_'));
+  const deadline = now() + 120000;
+  const retryDelays = [2000, 5000, 10000, 15000, 20000];
+  const failures = [];
   let index = 0;
-  const results = await Promise.allSettled(
+  let verifiedCount = 0;
+  let retries = 0;
+  await Promise.all(
     Array.from({ length: 4 }, async () => {
-      while (index < entries.length) {
+      while (index < entries.length && failures.length === 0) {
         const [name, expected] = entries[index++];
         const url =
           `https://${deployId}--${policy.siteName}.netlify.app/` +
           name.split('/').map(encodeURIComponent).join('/');
         let verified = false;
-        for (let attempt = 0; attempt < 3; attempt++) {
+        let failure;
+        let attempts = 0;
+        for (let attempt = 0; attempt <= retryDelays.length; attempt++) {
+          const remaining = deadline - now();
+          if (remaining <= 0) {
+            failure = { reason: 'verification_deadline' };
+            break;
+          }
+          attempts++;
+          let retryable = true;
           try {
             const response = await request(url, {
-              redirect: 'error',
-              signal: AbortSignal.timeout(10000),
+              // Inspect the status without following a redirect off this deploy.
+              redirect: 'manual',
+              signal: AbortSignal.timeout(Math.min(10000, remaining)),
             });
-            if (response.ok && digest(Buffer.from(await response.arrayBuffer())) === expected) {
-              verified = true;
-              break;
+            if (response.ok) {
+              if (digest(Buffer.from(await response.arrayBuffer())) === expected) {
+                verified = true;
+                verifiedCount++;
+                break;
+              }
+              failure = { reason: 'digest_mismatch', status: response.status };
+              // Preserve a short recheck for bytes, but allow more time for
+              // temporary CDN/network failures. Neither can pass without a match.
+              retryable = attempt < 2;
+            } else {
+              const status = response.status;
+              failure = {
+                reason: status >= 300 && status < 400 ? 'redirect' : 'http_error',
+                status,
+              };
+              retryable = [404, 408, 425, 429].includes(status) || status >= 500;
+              await response.body?.cancel();
             }
-          } catch {
-            /* Retry bounded CDN propagation; never print URLs or response bodies. */
+          } catch (error) {
+            failure = {
+              reason: ['TimeoutError', 'AbortError'].includes(error?.name)
+                ? 'timeout'
+                : 'network_error',
+            };
+            // Never retain arbitrary messages, response bodies or redirect URLs.
+            const code = error?.cause?.code ?? error?.code;
+            if (
+              [
+                'ENOTFOUND',
+                'EAI_AGAIN',
+                'ECONNRESET',
+                'ECONNREFUSED',
+                'ETIMEDOUT',
+                'UND_ERR_CONNECT_TIMEOUT',
+                'UND_ERR_SOCKET',
+              ].includes(code)
+            )
+              failure.networkCode = code;
           }
-          if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 1000));
+          if (!retryable || attempt === retryDelays.length) break;
+          const delay = Math.min(retryDelays[attempt], Math.max(0, deadline - now()));
+          if (delay > 0) await pause(delay);
+          retries++;
         }
-        if (!verified) fail('HOSTED_ARTIFACT_MISMATCH');
+        if (!verified) {
+          failures.push({
+            path: name.replace(/[^a-zA-Z0-9_./-]/g, '?').slice(0, 240),
+            attempts,
+            ...failure,
+          });
+        }
       }
     }),
   );
-  if (results.some((r) => r.status === 'rejected')) fail('HOSTED_ARTIFACT_MISMATCH');
-  return { publicFilesVerified: entries.length };
+  if (failures.length) {
+    const mismatch = failures.some((failure) => failure.reason === 'digest_mismatch');
+    const error = new Error(
+      'ENGINEERING_RELEASE_HOSTED_ARTIFACT_' + (mismatch ? 'MISMATCH' : 'UNAVAILABLE'),
+    );
+    error.hostedArtifact = {
+      publicFilesExpected: entries.length,
+      publicFilesVerified: verifiedCount,
+      retries,
+      failures: failures.sort((a, b) => a.path.localeCompare(b.path)),
+    };
+    throw error;
+  }
+  return { publicFilesVerified: verifiedCount, hostedRetries: retries };
 }
 export async function deliveryState(api, policy) {
   const state = await readConfiguration(api, policy);
@@ -165,7 +240,23 @@ export async function publishEngineeringArtifact({
       fail('PUBLISHED_DEPLOY');
     if (JSON.stringify(await localManifest()) !== JSON.stringify(manifest))
       fail('LOCAL_ARTIFACT_CHANGED');
-    const files = await verifyHosted(candidate, manifest);
+    let files;
+    try {
+      files = await verifyHosted(candidate, manifest);
+    } catch (error) {
+      if (error?.hostedArtifact) {
+        // An evidence-write failure must never prevent restoration of production.
+        try {
+          await record('hosted-verification-failed', {
+            deployId: candidate,
+            ...error.hostedArtifact,
+          });
+        } catch {
+          error.evidenceWriteFailed = true;
+        }
+      }
+      throw error;
+    }
     await health();
     await record('verified', {
       sourceSha: sha,

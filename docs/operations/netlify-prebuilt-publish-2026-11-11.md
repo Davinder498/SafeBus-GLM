@@ -28,3 +28,8 @@ hash. Production publication still requires the protected run after merge.
 
 Local validation passed all 1,825 tests, including 54 focused publisher/security
 checks, plus typecheck, lint, production builds, mobile build and Android sync.
+
+The next release uploaded successfully, then stopped at hosted verification and
+restored the previous deployment. The [hosted verification investigation](hosted-artifact-verification-2026-11-11.md)
+records the complete byte comparison, the limits of the original diagnostics and
+the follow-up correction. Successful CLI upload alone does not complete release.

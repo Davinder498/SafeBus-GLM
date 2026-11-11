@@ -163,8 +163,10 @@ try {
             // Process output can contain environment values. Report fixed fields only.
             uploadDiagnostic = {
               phase: error instanceof SyntaxError ? 'response_json' : 'cli_execution',
-              exitStatus: Number.isInteger(error?.status) && error.status >= 0 && error.status <= 255
-                ? error.status : null,
+              exitStatus:
+                Number.isInteger(error?.status) && error.status >= 0 && error.status <= 255
+                  ? error.status
+                  : null,
               timedOut: error?.code === 'ETIMEDOUT',
             };
             throw Error('ENGINEERING_RELEASE_UPLOAD_REQUIRES_INSPECTION');
@@ -183,6 +185,8 @@ try {
         ? error.message
         : 'ENGINEERING_RELEASE_FAILED',
       ...(uploadDiagnostic ? { upload: uploadDiagnostic } : {}),
+      ...(error?.hostedArtifact ? { hostedArtifact: error.hostedArtifact } : {}),
+      ...(error?.evidenceWriteFailed ? { evidenceWriteFailed: true } : {}),
       ...(error?.message === 'ENGINEERING_RELEASE_CI_NOT_SUCCESSFUL'
         ? { checks: error.checks }
         : {}),
