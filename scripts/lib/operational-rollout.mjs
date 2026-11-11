@@ -428,7 +428,7 @@ export async function operationalDataDigest(client) {
   return row.digest;
 }
 
-export async function rehearseOperational(client, sql, config) {
+export async function rehearseOperational(client, sql, config, checks = {}) {
   const capture = () => operationalReadOnly(client, () => operationalSnapshot(client, config));
   const before = await capture();
   verifyOperationalSnapshot(before, config, 'before');
@@ -439,8 +439,10 @@ export async function rehearseOperational(client, sql, config) {
       "set local statement_timeout='5s';set local lock_timeout='1s';set local check_function_bodies=on",
     );
     const data = await operationalDataDigest(client);
+    await checks.before?.();
     await client.query(sql);
     result = verifyOperationalSnapshot(await operationalSnapshot(client, config), config, 'after');
+    await checks.after?.();
     if (data !== (await operationalDataDigest(client)))
       throw new Error('OPERATIONAL_RECIPIENT_DATA_CHANGED');
     if (config.rehearseRestore) {

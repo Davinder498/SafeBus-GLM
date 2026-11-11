@@ -23,8 +23,8 @@
       "urgentAcknowledgementMinutes": 15,
       "customerPublicationVerified": false
     },
-    "ios": "Deferred by owner on 2026-11-10; no implementation or supported iPhone availability is claimed.",
-    "physicalTesting": "Deferred by owner on 2026-11-10; physical-device and field acceptance remain unverified.",
+    "ios": "Resumed by owner on 2026-11-11 and now the main product priority. Owner has Windows and no MacBook. Close tracking housekeeping and release-ledger repair, then build the iOS cloud-build foundation. Real-iPhone acceptance remains required before launch claims; no paid service purchase is implied.",
+    "physicalTesting": "No physical-device or field acceptance has been completed. iOS work is resumed; plan real-iPhone testing through TestFlight with cloud Mac builds.",
     "fleetTarget": "Owner confirmed 2026-11-10: target 5,000\u201310,000 buses. Bus count does not specify concurrent guardians; qualify actual concurrency before capacity claims."
   },
   "milestones": [
@@ -101,6 +101,11 @@
       "id": "end-to-end-source-event-acceptance",
       "status": "unverified",
       "note": "Mocked UI success and provider acceptance do not prove device or mailbox receipt."
+    },
+    {
+      "id": "district-contract-publication",
+      "status": "open",
+      "note": "Read-only production check 2026-11-11: no MSA or DPA versions, no published district catalog, no district packages or executed receipts. Only participant terms 2026.1 are stored. Contract templates remain drafts with placeholders and supplier evidence pending."
     }
   ]
 }

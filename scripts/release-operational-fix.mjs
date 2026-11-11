@@ -8,6 +8,12 @@ import {
 import { createEnvironmentBinding } from './lib/environment-identity.mjs';
 import { encryptBackupStream, fileDigest } from './lib/security-backup.mjs';
 import {
+  verifyTrackingLineage,
+  requireTrackingLedger,
+  registerTrackingHistoryRelease,
+  trackingHistoryRecoverySql,
+} from './lib/tracking-release-lineage.mjs';
+import {
   verifyRetentionDryRuns,
   verifyCompleteDisposalDryRun,
 } from './lib/retention-verification.mjs';
@@ -54,6 +60,12 @@ try {
   )
     throw new Error('OPERATIONAL_PROTECTED_CONTEXT');
   const config = JSON.parse(await fs.readFile(manifests[milestone], 'utf8'));
+  const lineage =
+    milestone === 'tracking_history'
+      ? JSON.parse(
+          await fs.readFile('config/observed/tracking-release-lineage-20261111.json', 'utf8'),
+        )
+      : null;
   const binding = createEnvironmentBinding({
     environment: 'production',
     databaseUrl: process.env.SAFEBUS_DATABASE_URL,
@@ -94,7 +106,21 @@ try {
     binding,
     milestone,
     migrationSha256: config.migrationSha256,
+    ...(lineage ? { lineageSha256: operationalDigest(JSON.stringify(lineage)) } : {}),
   };
+  let rehearsedFingerprint;
+  const restore = (snapshot, fingerprint) =>
+    lineage
+      ? trackingHistoryRecoverySql(operationalRestoreSql(snapshot, config), releaseSha, fingerprint)
+      : operationalRestoreSql(snapshot, config);
+  const lineageChecks = lineage
+    ? {
+        before: () => requireTrackingLedger(client, lineage, 'initial'),
+        after: async () => {
+          rehearsedFingerprint = await verifyTrackingLineage(client, lineage, 'cleanup');
+        },
+      }
+    : {};
   if (mode === 'prepare') {
     stage = 'reconcile';
     const snapshot = await capture();
@@ -106,6 +132,8 @@ try {
       /* A pending baseline must match in full below. */
     }
     if (installed) {
+      if (lineage)
+        await operationalReadOnly(client, () => requireTrackingLedger(client, lineage, 'cleanup'));
       await write('existing', {
         ...identity,
         acceptance: verifyOperationalSnapshot(snapshot, config, 'after'),
@@ -117,11 +145,11 @@ try {
     } else {
       verifyOperationalSnapshot(snapshot, config, 'before');
       stage = 'rehearse';
-      const acceptance = await rehearseOperational(client, sql, config);
+      const acceptance = await rehearseOperational(client, sql, config, lineageChecks);
       if (JSON.stringify(snapshot) !== JSON.stringify(await capture()))
         throw new Error('OPERATIONAL_BASELINE_CHANGED');
       stage = 'recovery';
-      const recovery = { snapshot, restoreSql: operationalRestoreSql(snapshot, config) };
+      const recovery = { snapshot, restoreSql: restore(snapshot, rehearsedFingerprint) };
       const envelope = await encryptBackupStream(
         Readable.from([JSON.stringify(recovery)]),
         `${directory}/recovery.enc`,
@@ -135,6 +163,7 @@ try {
         acceptance,
         boundedRecoveryOnly: true,
         notificationSent: false,
+        ...(lineage ? { schemaFingerprint: rehearsedFingerprint } : {}),
       });
       await fs.appendFile(process.env.GITHUB_OUTPUT, 'state=pending\n');
     }
@@ -158,11 +187,11 @@ try {
       evidence.snapshotSha256 !== operationalDigest(JSON.stringify(snapshot)) ||
       evidence.envelope.plaintextSha256 !==
         operationalDigest(
-          JSON.stringify({ snapshot, restoreSql: operationalRestoreSql(snapshot, config) }),
+          JSON.stringify({ snapshot, restoreSql: restore(snapshot, evidence.schemaFingerprint) }),
         )
     )
       throw new Error('OPERATIONAL_BASELINE_CHANGED');
-    await rehearseOperational(client, sql, config);
+    await rehearseOperational(client, sql, config, lineageChecks);
     stage = 'install';
     await client.query('begin isolation level repeatable read');
     try {
@@ -175,6 +204,7 @@ try {
       )
         throw new Error('OPERATIONAL_BASELINE_CHANGED');
       const data = await operationalDataDigest(client);
+      if (lineage) await requireTrackingLedger(client, lineage, 'initial');
       await client.query(sql);
       const acceptance = verifyOperationalSnapshot(
         await operationalSnapshot(client, config),
@@ -183,6 +213,11 @@ try {
       );
       if (data !== (await operationalDataDigest(client)))
         throw new Error('OPERATIONAL_RECIPIENT_DATA_CHANGED');
+      const schemaFingerprint = lineage
+        ? await registerTrackingHistoryRelease(client, lineage, releaseSha)
+        : undefined;
+      if (lineage && schemaFingerprint !== evidence.schemaFingerprint)
+        throw new Error('OPERATIONAL_LINEAGE_REHEARSAL_CHANGED');
       commitAttempted = true;
       await client.query('commit');
       await write('installation', {
@@ -191,6 +226,7 @@ try {
         installedAt: new Date().toISOString(),
         sqlApplied: true,
         notificationSent: false,
+        ...(lineage ? { schemaFingerprint, precedingReleaseSha: lineage.precedingReleaseSha } : {}),
       });
     } catch (error) {
       await client.query('rollback');
@@ -199,6 +235,8 @@ try {
   } else {
     stage = 'verify';
     const acceptance = verifyOperationalSnapshot(await capture(), config, 'after');
+    if (lineage)
+      await operationalReadOnly(client, () => requireTrackingLedger(client, lineage, 'cleanup'));
     if (['tracking_invalidations', 'tracking_history'].includes(milestone))
       await client.query(
         await fs.readFile('tests/rls/async-tracking-existing-database-readonly.sql', 'utf8'),

@@ -1,0 +1,985 @@
+{
+  "precedingReleaseSha": "ba80cbe5671d41dc09671828cf6a0b132d526b88",
+  "precedingFingerprint": "17933029e03585ebec3918cd1c7ac7d53ecfdc994dfbc2db254c57f4a8951592",
+  "installationRunId": "43081399229",
+  "initial": {
+    "columns": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "driver_trip_id",
+          "ordinal_position": 1,
+          "data_type": "uuid",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": null,
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "tenant_id",
+          "ordinal_position": 2,
+          "data_type": "uuid",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": null,
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "generation",
+          "ordinal_position": 3,
+          "data_type": "bigint",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": "1",
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "pass_generation",
+          "ordinal_position": 4,
+          "data_type": "bigint",
+          "attnotnull": false,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": null,
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "guardian_cursor",
+          "ordinal_position": 5,
+          "data_type": "uuid",
+          "attnotnull": false,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": null,
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "admin_sent",
+          "ordinal_position": 6,
+          "data_type": "boolean",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": "false",
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "first_pending_at",
+          "ordinal_position": 7,
+          "data_type": "timestamp with time zone",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": "clock_timestamp()",
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "available_at",
+          "ordinal_position": 8,
+          "data_type": "timestamp with time zone",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": "clock_timestamp()",
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "latest_at",
+          "ordinal_position": 9,
+          "data_type": "timestamp with time zone",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": "clock_timestamp()",
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "failures",
+          "ordinal_position": 10,
+          "data_type": "integer",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": "0",
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "last_error_code",
+          "ordinal_position": 11,
+          "data_type": "text",
+          "attnotnull": false,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": null,
+          "collation": "pg_catalog.default"
+        }
+      ]
+    },
+    "relations": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "relkind": "r",
+          "owner": "postgres",
+          "relrowsecurity": true,
+          "relforcerowsecurity": false,
+          "relpersistence": "p",
+          "relreplident": "d",
+          "reloptions": null,
+          "view_definition": null,
+          "partition_key": null,
+          "partition_bound": null,
+          "parents": null
+        }
+      ]
+    },
+    "constraints": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "conname": "tracking_invalidation_queue_check",
+          "definition": "CHECK (((pass_generation IS NULL) OR (pass_generation <= generation)))",
+          "convalidated": true
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "conname": "tracking_invalidation_queue_driver_trip_id_fkey",
+          "definition": "FOREIGN KEY (driver_trip_id) REFERENCES driver_trips(id) ON DELETE CASCADE",
+          "convalidated": true
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "conname": "tracking_invalidation_queue_generation_check",
+          "definition": "CHECK ((generation > 0))",
+          "convalidated": true
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "conname": "tracking_invalidation_queue_pkey",
+          "definition": "PRIMARY KEY (driver_trip_id)",
+          "convalidated": true
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "conname": "tracking_invalidation_queue_tenant_id_fkey",
+          "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE",
+          "convalidated": true
+        }
+      ]
+    },
+    "indexes": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "public",
+          "relation_name": "bus_route_assignments",
+          "index_name": "tracking_bus_service_active_idx",
+          "definition": "CREATE INDEX tracking_bus_service_active_idx ON public.bus_route_assignments USING btree (tenant_id, bus_id, route_id, route_trip_pattern_id, id) WHERE (status = 'active'::text)",
+          "indisvalid": true,
+          "indisready": true,
+          "indisclustered": false,
+          "indisreplident": false,
+          "reloptions": null
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "index_name": "tracking_invalidation_queue_pkey",
+          "definition": "CREATE UNIQUE INDEX tracking_invalidation_queue_pkey ON safebus_private.tracking_invalidation_queue USING btree (driver_trip_id)",
+          "indisvalid": true,
+          "indisready": true,
+          "indisclustered": false,
+          "indisreplident": false,
+          "reloptions": null
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "index_name": "tracking_invalidation_queue_ready_idx",
+          "definition": "CREATE INDEX tracking_invalidation_queue_ready_idx ON safebus_private.tracking_invalidation_queue USING btree (available_at, driver_trip_id)",
+          "indisvalid": true,
+          "indisready": true,
+          "indisclustered": false,
+          "indisreplident": false,
+          "reloptions": null
+        }
+      ]
+    },
+    "routines": {
+      "removed": [
+        {
+          "schema_name": "safebus_private",
+          "proname": "notify_tracking_location_change",
+          "prokind": "f",
+          "arguments": "",
+          "owner": "postgres",
+          "prosecdef": true,
+          "proleakproof": false,
+          "provolatile": "v",
+          "proparallel": "u",
+          "proisstrict": false,
+          "proconfig": [
+            "search_path=pg_catalog, public, safebus_private, auth, extensions, realtime, pg_temp"
+          ],
+          "definition": "CREATE OR REPLACE FUNCTION safebus_private.notify_tracking_location_change()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\r\nbegin\r\n  perform safebus_private.broadcast_route_tracking_invalidation(\r\n    new.tenant_id,\r\n    new.route_id,\r\n    'location'\r\n  );\r\n  return null;\r\nend;\r\n$function$\n",
+          "aggregate_definition": null
+        }
+      ],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "proname": "dispatch_tracking_invalidations",
+          "prokind": "f",
+          "arguments": "p_scope_limit integer, p_message_limit integer",
+          "owner": "postgres",
+          "prosecdef": true,
+          "proleakproof": false,
+          "provolatile": "v",
+          "proparallel": "u",
+          "proisstrict": false,
+          "proconfig": ["search_path=\"\""],
+          "definition": "CREATE OR REPLACE FUNCTION safebus_private.dispatch_tracking_invalidations(p_scope_limit integer DEFAULT 10, p_message_limit integer DEFAULT 250)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_candidate record;\n  v_queue safebus_private.tracking_invalidation_queue%rowtype;\n  v_trip public.driver_trips%rowtype;\n  v_profile_id uuid;\n  v_cursor uuid;\n  v_pass_generation bigint;\n  v_page_limit integer;\n  v_page_count integer;\n  v_scope_messages integer;\n  v_messages integer := 0;\n  v_scopes integer := 0;\n  v_failed integer := 0;\n  v_deleted integer;\n  v_ready_at timestamptz := pg_catalog.clock_timestamp();\nbegin\n  if p_scope_limit is null or p_scope_limit not between 1 and 50\n     or p_message_limit is null or p_message_limit not between 1 and 1000 then\n    raise exception 'Invalid tracking worker bounds.' using errcode = '22023';\n  end if;\n\n  for v_candidate in\n    select q.driver_trip_id from safebus_private.tracking_invalidation_queue q\n    where q.available_at <= v_ready_at\n    order by q.available_at, q.driver_trip_id limit p_scope_limit\n  loop\n    exit when v_messages >= p_message_limit;\n    -- Only workers take this advisory lock. Producers can still briefly contend\n    -- on final queue progress writes, bounded by the outer job timeout.\n    -- Hash collisions merely defer a scope; transaction rollback releases locks.\n    if not pg_catalog.pg_try_advisory_xact_lock(pg_catalog.hashtextextended(\n      'safebus:tracking-worker:' || v_candidate.driver_trip_id::text, 0)) then\n      continue;\n    end if;\n    select * into v_queue from safebus_private.tracking_invalidation_queue q\n      where q.driver_trip_id = v_candidate.driver_trip_id;\n    if not found then continue; end if;\n    v_scopes := v_scopes + 1;\n    v_scope_messages := 0;\n    begin\n      select dt.* into v_trip from public.driver_trips dt\n      join public.tenants t on t.id = dt.tenant_id and t.status = 'active'\n      join public.drivers d on d.id = dt.driver_id and d.tenant_id = dt.tenant_id and d.status = 'active'\n      join public.buses b on b.id = dt.bus_id and b.tenant_id = dt.tenant_id and b.status = 'active'\n      join public.routes r on r.id = dt.route_id and r.tenant_id = dt.tenant_id and r.status = 'active'\n      join public.route_trip_patterns rtp on rtp.id = dt.route_trip_pattern_id\n        and rtp.tenant_id = dt.tenant_id and rtp.route_id = dt.route_id and rtp.status = 'active'\n      where dt.id = v_queue.driver_trip_id and dt.tenant_id = v_queue.tenant_id\n        and dt.status in ('active', 'paused');\n      if not found then\n        delete from safebus_private.tracking_invalidation_queue\n          where driver_trip_id = v_queue.driver_trip_id and generation = v_queue.generation;\n        continue;\n      end if;\n      v_pass_generation := coalesce(v_queue.pass_generation, v_queue.generation);\n      v_cursor := v_queue.guardian_cursor;\n      if not v_queue.admin_sent then\n        perform safebus_private.send_queued_tracking_invalidation(\n          'safebus:tenant:' || v_queue.tenant_id::text);\n        v_scope_messages := 1;\n      end if;\n      v_page_limit := least(25, p_message_limit - v_messages - v_scope_messages);\n      v_page_count := 0;\n      -- Deduplicate sibling/service links and resolve eligibility on EVERY page.\n      -- Never snapshot a recipient list at enqueue time. This is a refresh hint,\n      -- not coordinate authorization; the data RPCs still validate the session.\n      for v_profile_id in\n        select distinct g.profile_id\n        from public.bus_route_assignments bra\n        join public.student_bus_assignments sba on sba.bus_route_assignment_id = bra.id\n          and sba.tenant_id = bra.tenant_id and sba.route_trip_pattern_id = bra.route_trip_pattern_id\n          and sba.status = 'active' and sba.effective_from <= current_date\n          and (sba.effective_to is null or sba.effective_to >= current_date)\n        join public.students s on s.id = sba.student_id and s.tenant_id = sba.tenant_id and s.status = 'active'\n        join public.student_guardians sg on sg.student_id = s.id and sg.tenant_id = s.tenant_id\n          and sg.status = 'active' and (sg.access_expires_at is null or sg.access_expires_at > pg_catalog.clock_timestamp())\n        join public.guardians g on g.id = sg.guardian_id and g.tenant_id = sg.tenant_id and g.status = 'active'\n        join public.profiles p on p.id = g.profile_id and p.tenant_id = g.tenant_id\n          and p.status = 'active' and p.role = 'guardian'\n        where bra.tenant_id = v_trip.tenant_id and bra.bus_id = v_trip.bus_id\n          and bra.route_id = v_trip.route_id and bra.route_trip_pattern_id = v_trip.route_trip_pattern_id\n          and bra.status = 'active' and (bra.effective_from is null or bra.effective_from <= current_date)\n          and (bra.effective_to is null or bra.effective_to >= current_date)\n          and (v_queue.guardian_cursor is null or g.profile_id > v_queue.guardian_cursor)\n        order by g.profile_id limit v_page_limit\n      loop\n        perform safebus_private.send_queued_tracking_invalidation('safebus:guardian:' || v_profile_id::text);\n        v_cursor := v_profile_id;\n        v_page_count := v_page_count + 1;\n        v_scope_messages := v_scope_messages + 1;\n      end loop;\n\n      -- Full pages continue at the next cursor. A zero-size page is budget\n      -- exhaustion, NOT end-of-audience. A short page completes the pass.\n      if v_page_limit > 0 and v_page_count < v_page_limit then\n        delete from safebus_private.tracking_invalidation_queue q\n          where q.driver_trip_id = v_queue.driver_trip_id and q.generation = v_pass_generation;\n        get diagnostics v_deleted = row_count;\n        if v_deleted = 0 then\n          -- GPS arrived during this pass: retain another pass for earlier readers.\n          update safebus_private.tracking_invalidation_queue set\n            pass_generation = null, guardian_cursor = null, admin_sent = false,\n            available_at = pg_catalog.clock_timestamp(), failures = 0, last_error_code = null\n          where driver_trip_id = v_queue.driver_trip_id;\n        end if;\n      else\n        update safebus_private.tracking_invalidation_queue set\n          pass_generation = v_pass_generation, guardian_cursor = v_cursor, admin_sent = true,\n          available_at = pg_catalog.clock_timestamp(), failures = 0, last_error_code = null\n        where driver_trip_id = v_queue.driver_trip_id;\n      end if;\n      v_messages := v_messages + v_scope_messages;\n    exception when others then\n      -- A scope's messages/progress roll back together; other scopes can proceed.\n      -- Store only the SQLSTATE, never an exception message or payload.\n      update safebus_private.tracking_invalidation_queue set\n        failures = least(failures + 1, 1000000), last_error_code = sqlstate,\n        available_at = pg_catalog.clock_timestamp() + interval '1 second'\n      where driver_trip_id = v_queue.driver_trip_id;\n      v_failed := v_failed + 1;\n    end;\n  end loop;\n  return pg_catalog.jsonb_build_object('scopes', v_scopes, 'messages', v_messages, 'failed_scopes', v_failed);\nend;\n$function$\n",
+          "aggregate_definition": null
+        },
+        {
+          "schema_name": "safebus_private",
+          "proname": "notify_tracking_location_change",
+          "prokind": "f",
+          "arguments": "",
+          "owner": "postgres",
+          "prosecdef": true,
+          "proleakproof": false,
+          "provolatile": "v",
+          "proparallel": "u",
+          "proisstrict": false,
+          "proconfig": ["search_path=\"\""],
+          "definition": "CREATE OR REPLACE FUNCTION safebus_private.notify_tracking_location_change()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  insert into safebus_private.tracking_invalidation_queue as q\n    (driver_trip_id, tenant_id)\n  values (new.driver_trip_id, new.tenant_id)\n  on conflict (driver_trip_id) do update\n    set generation = q.generation + 1, latest_at = pg_catalog.clock_timestamp();\n  return null;\nend;\n$function$\n",
+          "aggregate_definition": null
+        },
+        {
+          "schema_name": "safebus_private",
+          "proname": "prune_tracking_worker_history",
+          "prokind": "f",
+          "arguments": "",
+          "owner": "postgres",
+          "prosecdef": true,
+          "proleakproof": false,
+          "provolatile": "v",
+          "proparallel": "u",
+          "proisstrict": false,
+          "proconfig": ["search_path=\"\""],
+          "definition": "CREATE OR REPLACE FUNCTION safebus_private.prune_tracking_worker_history()\n RETURNS integer\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_deleted integer;\nbegin\n  delete from cron.job_run_details d where d.runid in (\n    select r.runid from cron.job_run_details r\n    join cron.job j on j.jobid = r.jobid\n    where j.jobname in ('safebus-tracking-invalidation-dispatcher', 'safebus-tracking-invalidation-history')\n      and r.end_time < pg_catalog.clock_timestamp() - interval '48 hours'\n    order by r.runid limit 1000\n  );\n  get diagnostics v_deleted = row_count;\n  return v_deleted;\nend;\n$function$\n",
+          "aggregate_definition": null
+        },
+        {
+          "schema_name": "safebus_private",
+          "proname": "send_queued_tracking_invalidation",
+          "prokind": "f",
+          "arguments": "p_topic text",
+          "owner": "postgres",
+          "prosecdef": true,
+          "proleakproof": false,
+          "provolatile": "v",
+          "proparallel": "u",
+          "proisstrict": false,
+          "proconfig": ["search_path=\"\""],
+          "definition": "CREATE OR REPLACE FUNCTION safebus_private.send_queued_tracking_invalidation(p_topic text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_message_id uuid := pg_catalog.gen_random_uuid();\nbegin\n  if p_topic is null or p_topic !~ '^safebus:(guardian|tenant):[0-9a-f-]{36}$' then\n    raise exception 'Invalid private tracking topic.' using errcode = '22023';\n  end if;\n  perform pg_catalog.set_config('realtime.topic', p_topic, true);\n  insert into realtime.messages(id, payload, event, topic, private, extension)\n    values (v_message_id, pg_catalog.jsonb_build_object(\n      'id', v_message_id, 'reason', 'location', 'occurred_at', pg_catalog.statement_timestamp()),\n      'tracking_changed', p_topic, true, 'broadcast');\nend;\n$function$\n",
+          "aggregate_definition": null
+        }
+      ]
+    },
+    "routineGrants": {
+      "removed": [
+        {
+          "schema_name": "safebus_private",
+          "proname": "notify_tracking_location_change",
+          "arguments": "",
+          "grantor": "postgres",
+          "grantee": "authenticated",
+          "privilege_type": "EXECUTE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "proname": "notify_tracking_location_change",
+          "arguments": "",
+          "grantor": "postgres",
+          "grantee": "service_role",
+          "privilege_type": "EXECUTE",
+          "is_grantable": false
+        }
+      ],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "proname": "dispatch_tracking_invalidations",
+          "arguments": "p_scope_limit integer, p_message_limit integer",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "EXECUTE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "proname": "prune_tracking_worker_history",
+          "arguments": "",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "EXECUTE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "proname": "send_queued_tracking_invalidation",
+          "arguments": "p_topic text",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "EXECUTE",
+          "is_grantable": false
+        }
+      ]
+    },
+    "relationGrants": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "DELETE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "INSERT",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "MAINTAIN",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "REFERENCES",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "SELECT",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "TRIGGER",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "TRUNCATE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "UPDATE",
+          "is_grantable": false
+        }
+      ]
+    },
+    "types": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "typname": "tracking_invalidation_queue",
+          "typtype": "c",
+          "owner": "postgres",
+          "base_type": null,
+          "typnotnull": false,
+          "typdefault": null,
+          "enum_labels": null,
+          "domain_constraints": null,
+          "composite_fields": [
+            "driver_trip_id:uuid",
+            "tenant_id:uuid",
+            "generation:bigint",
+            "pass_generation:bigint",
+            "guardian_cursor:uuid",
+            "admin_sent:boolean",
+            "first_pending_at:timestamp with time zone",
+            "available_at:timestamp with time zone",
+            "latest_at:timestamp with time zone",
+            "failures:integer",
+            "last_error_code:text"
+          ]
+        }
+      ]
+    },
+    "typeGrants": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "typname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "PUBLIC",
+          "privilege_type": "USAGE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "typname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "USAGE",
+          "is_grantable": false
+        }
+      ]
+    }
+  },
+  "cleanup": {
+    "columns": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "driver_trip_id",
+          "ordinal_position": 1,
+          "data_type": "uuid",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": null,
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "tenant_id",
+          "ordinal_position": 2,
+          "data_type": "uuid",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": null,
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "generation",
+          "ordinal_position": 3,
+          "data_type": "bigint",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": "1",
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "pass_generation",
+          "ordinal_position": 4,
+          "data_type": "bigint",
+          "attnotnull": false,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": null,
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "guardian_cursor",
+          "ordinal_position": 5,
+          "data_type": "uuid",
+          "attnotnull": false,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": null,
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "admin_sent",
+          "ordinal_position": 6,
+          "data_type": "boolean",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": "false",
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "first_pending_at",
+          "ordinal_position": 7,
+          "data_type": "timestamp with time zone",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": "clock_timestamp()",
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "available_at",
+          "ordinal_position": 8,
+          "data_type": "timestamp with time zone",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": "clock_timestamp()",
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "latest_at",
+          "ordinal_position": 9,
+          "data_type": "timestamp with time zone",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": "clock_timestamp()",
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "failures",
+          "ordinal_position": 10,
+          "data_type": "integer",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": "0",
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "column_name": "last_error_code",
+          "ordinal_position": 11,
+          "data_type": "text",
+          "attnotnull": false,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": null,
+          "collation": "pg_catalog.default"
+        }
+      ]
+    },
+    "relations": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "relkind": "r",
+          "owner": "postgres",
+          "relrowsecurity": true,
+          "relforcerowsecurity": false,
+          "relpersistence": "p",
+          "relreplident": "d",
+          "reloptions": null,
+          "view_definition": null,
+          "partition_key": null,
+          "partition_bound": null,
+          "parents": null
+        }
+      ]
+    },
+    "constraints": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "conname": "tracking_invalidation_queue_check",
+          "definition": "CHECK (((pass_generation IS NULL) OR (pass_generation <= generation)))",
+          "convalidated": true
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "conname": "tracking_invalidation_queue_driver_trip_id_fkey",
+          "definition": "FOREIGN KEY (driver_trip_id) REFERENCES driver_trips(id) ON DELETE CASCADE",
+          "convalidated": true
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "conname": "tracking_invalidation_queue_generation_check",
+          "definition": "CHECK ((generation > 0))",
+          "convalidated": true
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "conname": "tracking_invalidation_queue_pkey",
+          "definition": "PRIMARY KEY (driver_trip_id)",
+          "convalidated": true
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "conname": "tracking_invalidation_queue_tenant_id_fkey",
+          "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE",
+          "convalidated": true
+        }
+      ]
+    },
+    "indexes": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "public",
+          "relation_name": "bus_route_assignments",
+          "index_name": "tracking_bus_service_active_idx",
+          "definition": "CREATE INDEX tracking_bus_service_active_idx ON public.bus_route_assignments USING btree (tenant_id, bus_id, route_id, route_trip_pattern_id, id) WHERE (status = 'active'::text)",
+          "indisvalid": true,
+          "indisready": true,
+          "indisclustered": false,
+          "indisreplident": false,
+          "reloptions": null
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "index_name": "tracking_invalidation_queue_pkey",
+          "definition": "CREATE UNIQUE INDEX tracking_invalidation_queue_pkey ON safebus_private.tracking_invalidation_queue USING btree (driver_trip_id)",
+          "indisvalid": true,
+          "indisready": true,
+          "indisclustered": false,
+          "indisreplident": false,
+          "reloptions": null
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_invalidation_queue",
+          "index_name": "tracking_invalidation_queue_ready_idx",
+          "definition": "CREATE INDEX tracking_invalidation_queue_ready_idx ON safebus_private.tracking_invalidation_queue USING btree (available_at, driver_trip_id)",
+          "indisvalid": true,
+          "indisready": true,
+          "indisclustered": false,
+          "indisreplident": false,
+          "reloptions": null
+        }
+      ]
+    },
+    "routines": {
+      "removed": [
+        {
+          "schema_name": "safebus_private",
+          "proname": "notify_tracking_location_change",
+          "prokind": "f",
+          "arguments": "",
+          "owner": "postgres",
+          "prosecdef": true,
+          "proleakproof": false,
+          "provolatile": "v",
+          "proparallel": "u",
+          "proisstrict": false,
+          "proconfig": [
+            "search_path=pg_catalog, public, safebus_private, auth, extensions, realtime, pg_temp"
+          ],
+          "definition": "CREATE OR REPLACE FUNCTION safebus_private.notify_tracking_location_change()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\r\nbegin\r\n  perform safebus_private.broadcast_route_tracking_invalidation(\r\n    new.tenant_id,\r\n    new.route_id,\r\n    'location'\r\n  );\r\n  return null;\r\nend;\r\n$function$\n",
+          "aggregate_definition": null
+        }
+      ],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "proname": "dispatch_tracking_invalidations",
+          "prokind": "f",
+          "arguments": "p_scope_limit integer, p_message_limit integer",
+          "owner": "postgres",
+          "prosecdef": true,
+          "proleakproof": false,
+          "provolatile": "v",
+          "proparallel": "u",
+          "proisstrict": false,
+          "proconfig": ["search_path=\"\""],
+          "definition": "CREATE OR REPLACE FUNCTION safebus_private.dispatch_tracking_invalidations(p_scope_limit integer DEFAULT 10, p_message_limit integer DEFAULT 250)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_candidate record;\n  v_queue safebus_private.tracking_invalidation_queue%rowtype;\n  v_trip public.driver_trips%rowtype;\n  v_profile_id uuid;\n  v_cursor uuid;\n  v_pass_generation bigint;\n  v_page_limit integer;\n  v_page_count integer;\n  v_scope_messages integer;\n  v_messages integer := 0;\n  v_scopes integer := 0;\n  v_failed integer := 0;\n  v_deleted integer;\n  v_ready_at timestamptz := pg_catalog.clock_timestamp();\nbegin\n  if p_scope_limit is null or p_scope_limit not between 1 and 50\n     or p_message_limit is null or p_message_limit not between 1 and 1000 then\n    raise exception 'Invalid tracking worker bounds.' using errcode = '22023';\n  end if;\n\n  for v_candidate in\n    select q.driver_trip_id from safebus_private.tracking_invalidation_queue q\n    where q.available_at <= v_ready_at\n    order by q.available_at, q.driver_trip_id limit p_scope_limit\n  loop\n    exit when v_messages >= p_message_limit;\n    -- Only workers take this advisory lock. Producers can still briefly contend\n    -- on final queue progress writes, bounded by the outer job timeout.\n    -- Hash collisions merely defer a scope; transaction rollback releases locks.\n    if not pg_catalog.pg_try_advisory_xact_lock(pg_catalog.hashtextextended(\n      'safebus:tracking-worker:' || v_candidate.driver_trip_id::text, 0)) then\n      continue;\n    end if;\n    select * into v_queue from safebus_private.tracking_invalidation_queue q\n      where q.driver_trip_id = v_candidate.driver_trip_id;\n    if not found then continue; end if;\n    v_scopes := v_scopes + 1;\n    v_scope_messages := 0;\n    begin\n      select dt.* into v_trip from public.driver_trips dt\n      join public.tenants t on t.id = dt.tenant_id and t.status = 'active'\n      join public.drivers d on d.id = dt.driver_id and d.tenant_id = dt.tenant_id and d.status = 'active'\n      join public.buses b on b.id = dt.bus_id and b.tenant_id = dt.tenant_id and b.status = 'active'\n      join public.routes r on r.id = dt.route_id and r.tenant_id = dt.tenant_id and r.status = 'active'\n      join public.route_trip_patterns rtp on rtp.id = dt.route_trip_pattern_id\n        and rtp.tenant_id = dt.tenant_id and rtp.route_id = dt.route_id and rtp.status = 'active'\n      where dt.id = v_queue.driver_trip_id and dt.tenant_id = v_queue.tenant_id\n        and dt.status in ('active', 'paused');\n      if not found then\n        delete from safebus_private.tracking_invalidation_queue\n          where driver_trip_id = v_queue.driver_trip_id and generation = v_queue.generation;\n        continue;\n      end if;\n      v_pass_generation := coalesce(v_queue.pass_generation, v_queue.generation);\n      v_cursor := v_queue.guardian_cursor;\n      if not v_queue.admin_sent then\n        perform safebus_private.send_queued_tracking_invalidation(\n          'safebus:tenant:' || v_queue.tenant_id::text);\n        v_scope_messages := 1;\n      end if;\n      v_page_limit := least(25, p_message_limit - v_messages - v_scope_messages);\n      v_page_count := 0;\n      -- Deduplicate sibling/service links and resolve eligibility on EVERY page.\n      -- Never snapshot a recipient list at enqueue time. This is a refresh hint,\n      -- not coordinate authorization; the data RPCs still validate the session.\n      for v_profile_id in\n        select distinct g.profile_id\n        from public.bus_route_assignments bra\n        join public.student_bus_assignments sba on sba.bus_route_assignment_id = bra.id\n          and sba.tenant_id = bra.tenant_id and sba.route_trip_pattern_id = bra.route_trip_pattern_id\n          and sba.status = 'active' and sba.effective_from <= current_date\n          and (sba.effective_to is null or sba.effective_to >= current_date)\n        join public.students s on s.id = sba.student_id and s.tenant_id = sba.tenant_id and s.status = 'active'\n        join public.student_guardians sg on sg.student_id = s.id and sg.tenant_id = s.tenant_id\n          and sg.status = 'active' and (sg.access_expires_at is null or sg.access_expires_at > pg_catalog.clock_timestamp())\n        join public.guardians g on g.id = sg.guardian_id and g.tenant_id = sg.tenant_id and g.status = 'active'\n        join public.profiles p on p.id = g.profile_id and p.tenant_id = g.tenant_id\n          and p.status = 'active' and p.role = 'guardian'\n        where bra.tenant_id = v_trip.tenant_id and bra.bus_id = v_trip.bus_id\n          and bra.route_id = v_trip.route_id and bra.route_trip_pattern_id = v_trip.route_trip_pattern_id\n          and bra.status = 'active' and (bra.effective_from is null or bra.effective_from <= current_date)\n          and (bra.effective_to is null or bra.effective_to >= current_date)\n          and (v_queue.guardian_cursor is null or g.profile_id > v_queue.guardian_cursor)\n        order by g.profile_id limit v_page_limit\n      loop\n        perform safebus_private.send_queued_tracking_invalidation('safebus:guardian:' || v_profile_id::text);\n        v_cursor := v_profile_id;\n        v_page_count := v_page_count + 1;\n        v_scope_messages := v_scope_messages + 1;\n      end loop;\n\n      -- Full pages continue at the next cursor. A zero-size page is budget\n      -- exhaustion, NOT end-of-audience. A short page completes the pass.\n      if v_page_limit > 0 and v_page_count < v_page_limit then\n        delete from safebus_private.tracking_invalidation_queue q\n          where q.driver_trip_id = v_queue.driver_trip_id and q.generation = v_pass_generation;\n        get diagnostics v_deleted = row_count;\n        if v_deleted = 0 then\n          -- GPS arrived during this pass: retain another pass for earlier readers.\n          update safebus_private.tracking_invalidation_queue set\n            pass_generation = null, guardian_cursor = null, admin_sent = false,\n            available_at = pg_catalog.clock_timestamp(), failures = 0, last_error_code = null\n          where driver_trip_id = v_queue.driver_trip_id;\n        end if;\n      else\n        update safebus_private.tracking_invalidation_queue set\n          pass_generation = v_pass_generation, guardian_cursor = v_cursor, admin_sent = true,\n          available_at = pg_catalog.clock_timestamp(), failures = 0, last_error_code = null\n        where driver_trip_id = v_queue.driver_trip_id;\n      end if;\n      v_messages := v_messages + v_scope_messages;\n    exception when others then\n      -- A scope's messages/progress roll back together; other scopes can proceed.\n      -- Store only the SQLSTATE, never an exception message or payload.\n      update safebus_private.tracking_invalidation_queue set\n        failures = least(failures + 1, 1000000), last_error_code = sqlstate,\n        available_at = pg_catalog.clock_timestamp() + interval '1 second'\n      where driver_trip_id = v_queue.driver_trip_id;\n      v_failed := v_failed + 1;\n    end;\n  end loop;\n  return pg_catalog.jsonb_build_object('scopes', v_scopes, 'messages', v_messages, 'failed_scopes', v_failed);\nend;\n$function$\n",
+          "aggregate_definition": null
+        },
+        {
+          "schema_name": "safebus_private",
+          "proname": "notify_tracking_location_change",
+          "prokind": "f",
+          "arguments": "",
+          "owner": "postgres",
+          "prosecdef": true,
+          "proleakproof": false,
+          "provolatile": "v",
+          "proparallel": "u",
+          "proisstrict": false,
+          "proconfig": ["search_path=\"\""],
+          "definition": "CREATE OR REPLACE FUNCTION safebus_private.notify_tracking_location_change()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  insert into safebus_private.tracking_invalidation_queue as q\n    (driver_trip_id, tenant_id)\n  values (new.driver_trip_id, new.tenant_id)\n  on conflict (driver_trip_id) do update\n    set generation = q.generation + 1, latest_at = pg_catalog.clock_timestamp();\n  return null;\nend;\n$function$\n",
+          "aggregate_definition": null
+        },
+        {
+          "schema_name": "safebus_private",
+          "proname": "prune_tracking_worker_history",
+          "prokind": "f",
+          "arguments": "",
+          "owner": "postgres",
+          "prosecdef": true,
+          "proleakproof": false,
+          "provolatile": "v",
+          "proparallel": "u",
+          "proisstrict": false,
+          "proconfig": ["search_path=\"\""],
+          "definition": "CREATE OR REPLACE FUNCTION safebus_private.prune_tracking_worker_history()\n RETURNS integer\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_deleted integer;\n  v_cutoff timestamptz := pg_catalog.statement_timestamp() - interval '48 hours';\nbegin\n  -- Each indexed lookup is bounded even when no rows qualify. Limit the combined\n  -- deletion to 1000, and never select unfinished runs or another job's history.\n  with candidates as materialized (\n    select r.runid, r.end_time\n    from cron.job j\n    cross join lateral (\n      select d.runid, d.end_time from cron.job_run_details d\n      where d.jobid = j.jobid and d.end_time < v_cutoff\n      order by d.end_time, d.runid limit 1000\n    ) r\n    where j.jobname in ('safebus-tracking-invalidation-dispatcher', 'safebus-tracking-invalidation-history')\n  )\n  delete from cron.job_run_details d where d.runid in (\n    select c.runid from candidates c order by c.end_time, c.runid limit 1000\n  );\n  get diagnostics v_deleted = row_count;\n  return v_deleted;\nend;\n$function$\n",
+          "aggregate_definition": null
+        },
+        {
+          "schema_name": "safebus_private",
+          "proname": "send_queued_tracking_invalidation",
+          "prokind": "f",
+          "arguments": "p_topic text",
+          "owner": "postgres",
+          "prosecdef": true,
+          "proleakproof": false,
+          "provolatile": "v",
+          "proparallel": "u",
+          "proisstrict": false,
+          "proconfig": ["search_path=\"\""],
+          "definition": "CREATE OR REPLACE FUNCTION safebus_private.send_queued_tracking_invalidation(p_topic text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_message_id uuid := pg_catalog.gen_random_uuid();\nbegin\n  if p_topic is null or p_topic !~ '^safebus:(guardian|tenant):[0-9a-f-]{36}$' then\n    raise exception 'Invalid private tracking topic.' using errcode = '22023';\n  end if;\n  perform pg_catalog.set_config('realtime.topic', p_topic, true);\n  insert into realtime.messages(id, payload, event, topic, private, extension)\n    values (v_message_id, pg_catalog.jsonb_build_object(\n      'id', v_message_id, 'reason', 'location', 'occurred_at', pg_catalog.statement_timestamp()),\n      'tracking_changed', p_topic, true, 'broadcast');\nend;\n$function$\n",
+          "aggregate_definition": null
+        }
+      ]
+    },
+    "routineGrants": {
+      "removed": [
+        {
+          "schema_name": "safebus_private",
+          "proname": "notify_tracking_location_change",
+          "arguments": "",
+          "grantor": "postgres",
+          "grantee": "authenticated",
+          "privilege_type": "EXECUTE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "proname": "notify_tracking_location_change",
+          "arguments": "",
+          "grantor": "postgres",
+          "grantee": "service_role",
+          "privilege_type": "EXECUTE",
+          "is_grantable": false
+        }
+      ],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "proname": "dispatch_tracking_invalidations",
+          "arguments": "p_scope_limit integer, p_message_limit integer",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "EXECUTE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "proname": "prune_tracking_worker_history",
+          "arguments": "",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "EXECUTE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "proname": "send_queued_tracking_invalidation",
+          "arguments": "p_topic text",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "EXECUTE",
+          "is_grantable": false
+        }
+      ]
+    },
+    "relationGrants": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "DELETE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "INSERT",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "MAINTAIN",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "REFERENCES",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "SELECT",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "TRIGGER",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "TRUNCATE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "UPDATE",
+          "is_grantable": false
+        }
+      ]
+    },
+    "types": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "typname": "tracking_invalidation_queue",
+          "typtype": "c",
+          "owner": "postgres",
+          "base_type": null,
+          "typnotnull": false,
+          "typdefault": null,
+          "enum_labels": null,
+          "domain_constraints": null,
+          "composite_fields": [
+            "driver_trip_id:uuid",
+            "tenant_id:uuid",
+            "generation:bigint",
+            "pass_generation:bigint",
+            "guardian_cursor:uuid",
+            "admin_sent:boolean",
+            "first_pending_at:timestamp with time zone",
+            "available_at:timestamp with time zone",
+            "latest_at:timestamp with time zone",
+            "failures:integer",
+            "last_error_code:text"
+          ]
+        }
+      ]
+    },
+    "typeGrants": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "typname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "PUBLIC",
+          "privilege_type": "USAGE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "typname": "tracking_invalidation_queue",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "USAGE",
+          "is_grantable": false
+        }
+      ]
+    }
+  }
+}
