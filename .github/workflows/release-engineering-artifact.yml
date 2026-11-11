@@ -63,7 +63,9 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
           node --input-type=module -e "import { verifyPublicFrontendConfiguration } from './scripts/lib/public-build-environment.mjs'; await verifyPublicFrontendConfiguration(process.env); console.log('Public project and client key verified without signing in.');"
-          pnpm build
+          pnpm --filter @safebus/web build
+          git diff --exit-code
+          git diff --cached --exit-code
       - name: Prepare exact artifact and rollback reference
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}

@@ -19,7 +19,12 @@ const action = process.argv[2],
 const directory = '.safebus-release/engineering-artifact';
 let stage = 'context';
 try {
-  assertReviewedCheckout(sha);
+  stage = 'reviewed-checkout';
+  try {
+    assertReviewedCheckout(sha);
+  } catch {
+    throw Error('ENGINEERING_RELEASE_CHECKOUT_NOT_REVIEWED');
+  }
   const closure = JSON.parse(await fs.readFile('config/commercial-launch-closure.json', 'utf8'));
   // Owner-authorized repairs on the sole prelaunch production project. This
   // maintenance route closes when commercial scope is approved; normal release
@@ -35,6 +40,7 @@ try {
     !['checks', 'prepare', 'publish'].includes(action)
   )
     throw Error('ENGINEERING_RELEASE_CONTEXT');
+  stage = 'main-binding';
   const main = execFileSync('git', ['ls-remote', 'origin', 'refs/heads/main'], {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -72,6 +78,7 @@ try {
       attempt: process.env.GITHUB_RUN_ATTEMPT,
       siteId: policy.siteId,
     };
+    stage = 'artifact-inputs';
     const api = netlifyApi(process.env.NETLIFY_AUTH_TOKEN);
     const manifest = await artifactManifest('apps/web/dist');
     if (!manifest['index.html']) throw Error('ENGINEERING_RELEASE_NO_ARTIFACT');
