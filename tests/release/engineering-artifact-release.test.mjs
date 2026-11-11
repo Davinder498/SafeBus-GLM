@@ -354,3 +354,16 @@ test('check collection follows later pages before verifying CI, with fixed evide
   );
   assert.equal(attempts, 10);
 });
+
+test('frontend publisher builds only the web artifact and enforces clean tracked inputs', async () => {
+  const workflow = await fs.readFile('.github/workflows/release-engineering-artifact.yml', 'utf8');
+  const build = workflow.slice(workflow.indexOf('      - name: Build artifact'),
+    workflow.indexOf('      - name: Prepare exact artifact'));
+  assert.match(build, /pnpm --filter @safebus\/web build/);
+  assert.doesNotMatch(build, /pnpm build|@safebus\/mobile|cap:sync/);
+  assert.match(build, /git diff --exit-code/);
+  assert.match(build, /git diff --cached --exit-code/);
+  const publisher = await fs.readFile('scripts/release-engineering-artifact.mjs', 'utf8');
+  assert.match(publisher, /ENGINEERING_RELEASE_CHECKOUT_NOT_REVIEWED/);
+  assert.ok(publisher.indexOf('assertReviewedCheckout(sha)') < publisher.indexOf('netlifyApi(process.env'));
+});
