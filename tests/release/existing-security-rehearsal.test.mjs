@@ -247,15 +247,24 @@ test('snapshot-specific reconciliation retains the exact existing API signatures
   );
   assert.equal(disposal.observationOnly, true);
   assert.equal(disposal.databaseChanges, false);
+  // Agreement APIs were installed after this pinned historical snapshot.
+  const agreements = JSON.parse(await fs.readFile(
+    'config/observed/agreement-authorization-20261110.json', 'utf8',
+  ));
+  assert.equal(agreements.readOnly, true);
+  const agreementSignatures = new Set(agreements.functions.map((entry) => entry.signature));
+  assert.equal(agreementSignatures.size, 14);
   const historicalAuthenticated = [
     ...surface.authenticated.filter((signature) =>
       !added.includes(signature) && !launch.addedAuthenticated.includes(signature)
         && !offline.addedAuthenticated.includes(signature)
-        && !disposal.addedAuthenticated.includes(signature)), ...retired,
+        && !disposal.addedAuthenticated.includes(signature)
+        && !agreementSignatures.has(signature)), ...retired,
   ];
   const historicalServiceRole = surface.serviceRole.filter((signature) =>
     !launch.addedServiceRole.includes(signature)
-      && !disposal.addedServiceRole.includes(signature));
+      && !disposal.addedServiceRole.includes(signature)
+      && !agreementSignatures.has(signature));
   const migration = await fs.readFile(RECONCILIATION_FILE, 'utf8');
   const entries = [
     ...migration.matchAll(/\('([a-z0-9_]+\([^']*\))', '(authenticated|service_role)'\)/g),

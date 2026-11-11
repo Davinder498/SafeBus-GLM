@@ -428,7 +428,12 @@ test('migration chain audiences match the reviewed authorization manifest', asyn
   assert.match(removalSql, /DROP FUNCTION public\.retention_archive_work\(text,jsonb\);/);
   assert.equal(actual.get('retention_archive_work'), 'service_role');
   actual.delete('retention_archive_work');
-  const observedFunctions = [...launch.functions, ...offlineFunctions, ...installedRetention.functions]
+  const agreements = await readJson('config/observed/agreement-authorization-20261110.json');
+  for (const entry of agreements.functions) {
+    actual.set(entry.signature.slice(0, entry.signature.indexOf('(')),
+      entry.signature === 'district_agreement_billing_allowed(uuid)' ? 'service_role' : 'authenticated');
+  }
+  const observedFunctions = [...launch.functions, ...offlineFunctions, ...installedRetention.functions, ...agreements.functions]
     .filter(f => f.signature !== 'retention_archive_work(text,jsonb)');
   assert.deepEqual(
     observedFunctions.map((f) => f.signature).sort(),
