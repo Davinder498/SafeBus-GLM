@@ -16,7 +16,7 @@ jobs:
   monitor:
     name: Public production health
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     env:
       SAFEBUS_MONITOR_ORIGIN: https://safebus.kids
     steps:

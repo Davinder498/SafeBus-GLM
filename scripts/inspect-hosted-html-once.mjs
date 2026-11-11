@@ -47,3 +47,32 @@ for (const host of hosts) {
   }
 }
 await fs.writeFile(`${directory}/results.json`, JSON.stringify(results, null, 2) + '\n', { mode: 0o600 });
+
+// Observe only the public homepage while an independently approved release runs.
+// Keep this on the investigation branch; it performs no deployments or writes.
+const deadline = Date.now() + 10 * 60 * 1000;
+const observations = [];
+const seen = new Set();
+while (Date.now() < deadline) {
+  for (const pathname of ['/index.html', '/']) {
+    try {
+      const response = await fetch('https://safebus.kids' + pathname, {
+        redirect: 'manual', signal: AbortSignal.timeout(5000),
+      });
+      const body = Buffer.from(await response.arrayBuffer());
+      const sha256 = createHash('sha256').update(body).digest('hex');
+      const observation = { time: new Date().toISOString(), pathname, status: response.status,
+        bytes: body.length, sha256, matches: sha256 === expected };
+      observations.push(observation);
+      if (!seen.has(sha256)) {
+        seen.add(sha256);
+        if (body.length <= 65536) await fs.writeFile(`${directory}/live-${sha256}.html`, body, { mode: 0o600 });
+        console.log(JSON.stringify(observation));
+      }
+    } catch (error) {
+      observations.push({ time: new Date().toISOString(), pathname, error: error.name });
+    }
+  }
+  await fs.writeFile(`${directory}/publication-window.json`, JSON.stringify(observations, null, 2) + '\n', { mode: 0o600 });
+  await new Promise(resolve => setTimeout(resolve, 2000));
+}
