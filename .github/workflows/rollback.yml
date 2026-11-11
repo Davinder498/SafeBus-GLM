@@ -66,4 +66,4 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
-        run: pnpm exec netlify deploy --prod --no-build --context production --filter @safebus/web --dir apps/web/dist --message "rollback-to-$(git rev-parse HEAD)"
+        run: pnpm exec netlify deploy --prod --no-build --filter @safebus/web --dir apps/web/dist --message "rollback-to-$(git rev-parse HEAD)"

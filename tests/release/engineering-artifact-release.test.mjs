@@ -365,5 +365,7 @@ test('frontend publisher builds only the web artifact and enforces clean tracked
   assert.match(build, /git diff --cached --exit-code/);
   const publisher = await fs.readFile('scripts/release-engineering-artifact.mjs', 'utf8');
   assert.match(publisher, /ENGINEERING_RELEASE_CHECKOUT_NOT_REVIEWED/);
+  assert.match(publisher, /'--prod',\s*'--no-build'/);
+  assert.doesNotMatch(publisher, /'--context'/);
   assert.ok(publisher.indexOf('assertReviewedCheckout(sha)') < publisher.indexOf('netlifyApi(process.env'));
 });
