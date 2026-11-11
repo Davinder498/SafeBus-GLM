@@ -15,8 +15,8 @@ const notificationMigrationPath = 'supabase/migrations/0092_end_to_end_notificat
 
 
 test('private retention no-policy exceptions are exact and reject any access-control drift', () => {
-  assert.equal(REVIEWED_PRIVATE_RETENTION_TABLES.length, 7);
-  assert.equal(new Set(REVIEWED_PRIVATE_RETENTION_TABLES).size, 7);
+  assert.equal(REVIEWED_PRIVATE_RETENTION_TABLES.length, 15);
+  assert.equal(new Set(REVIEWED_PRIVATE_RETENTION_TABLES).size, 15);
   const safeRow = (name) => ({
     object_name: name,
     schema_name: 'safebus_private',
@@ -29,7 +29,7 @@ test('private retention no-policy exceptions are exact and reject any access-con
   });
   assert.deepEqual(
     assertMissingSessionPolicies(REVIEWED_PRIVATE_RETENTION_TABLES.map(safeRow)),
-    { reviewedPrivateNoPolicyTables: 7 },
+    { reviewedPrivateNoPolicyTables: 15 },
   );
   assert.throws(
     () => assertMissingSessionPolicies([safeRow('public.students')]),
@@ -39,7 +39,7 @@ test('private retention no-policy exceptions are exact and reject any access-con
     () => assertMissingSessionPolicies([safeRow('safebus_private.unreviewed_table')]),
     /Restrictive session policies are missing/,
   );
-  for (const changed of [
+  for (const table of REVIEWED_PRIVATE_RETENTION_TABLES) for (const changed of [
     { schema_name: 'public' },
     { owner_name: 'authenticated' },
     { rls_enabled: false },
@@ -49,7 +49,7 @@ test('private retention no-policy exceptions are exact and reject any access-con
     { service_has_privileges: true },
   ]) {
     assert.throws(
-      () => assertMissingSessionPolicies([{ ...safeRow(REVIEWED_PRIVATE_RETENTION_TABLES[0]), ...changed }]),
+      () => assertMissingSessionPolicies([{ ...safeRow(table), ...changed }]),
       /Restrictive session policies are missing/,
     );
   }
@@ -698,4 +698,24 @@ test('authorization audit is read-only and is a protected release gate', async (
   assert.match(workflow, /environment: production/);
   assert.match(workflow, /pnpm authorization:audit/);
   assert.match(preflight, /await run\('authorization:audit'\)/);
+});
+
+test('complete hosted private-table capture satisfies isolation and agreement DDL provenance', async () => {
+  const evidence = await readJson('config/observed/private-agreement-isolation-20261111.json');
+  assert.equal(evidence.databaseWritesPerformed, false);
+  assert.deepEqual(assertMissingSessionPolicies(evidence.privateTables), {
+    reviewedPrivateNoPolicyTables: 15,
+  });
+  const agreementSql = (await Promise.all([
+    'supabase/migrations/pending/20261107121500_district_agreement_workflow.sql',
+    'supabase/migrations/pending/20261108130000_participant_terms_onboarding.sql',
+  ].map((file) => fs.readFile(file, 'utf8')))).join('\n').toLowerCase();
+  const tables = [...agreementSql.matchAll(/create table (safebus_private\.[a-z_]+)/g)]
+    .map((match) => match[1]);
+  assert.equal(tables.length, 8);
+  for (const table of tables) {
+    assert.ok(REVIEWED_PRIVATE_RETENTION_TABLES.includes(table));
+    assert.ok(agreementSql.includes(`alter table ${table} enable row level security`));
+    assert.ok(agreementSql.includes(`revoke all on ${table} from public`));
+  }
 });
