@@ -11,6 +11,7 @@ import {
   verifyHostedArtifact,
   publishEngineeringArtifact,
   requirePrelaunchMaintenance,
+  PRODUCTION_ARTIFACT_ORIGIN,
 } from '../../scripts/lib/engineering-artifact-release.mjs';
 import { digest } from '../../scripts/lib/production-credential-isolation.mjs';
 import { verifyPublicFrontendConfiguration } from '../../scripts/lib/public-build-environment.mjs';
@@ -304,9 +305,79 @@ test('a lost upload receipt or concurrent operator publish is not overwritten by
   await assert.rejects(publishEngineeringArtifact(concurrent.params));
   assert.equal(concurrent.data.restores.length, 0);
 });
-test('hosted file verification compares immutable deployment bytes and rejects a mismatching artifact', async () => {
+test('successful public byte and health checks cannot bless a concurrent publication or freeze', async () => {
+  for (const change of ['publish', 'freeze']) {
+    const { data, params } = fixture();
+    params.health = async () => {
+      if (change === 'publish') data.site.published_deploy.id = 'd'.repeat(24);
+      else data.site.published_deploy.locked = true;
+      return { result: 'healthy' };
+    };
+    await assert.rejects(
+      publishEngineeringArtifact(params),
+      change === 'publish' ? /PUBLISHED_DEPLOY_CHANGED/ : /OPERATOR_PUBLISH_FREEZE/,
+    );
+    assert.equal(data.restores.length, 0);
+    assert.equal(
+      data.records.some((record) => record.name === 'verified'),
+      false,
+    );
+  }
+});
+test('publication verifies every production file even when the separate permalink would differ', async () => {
+  const { data, params } = fixture();
+  const files = {
+    'index.html': digest('new html'),
+    'assets/new.js': digest('new script'),
+    _headers: digest('rules'),
+  };
+  const requested = [];
+  params.manifest = files;
+  params.localManifest = async () => files;
+  params.verifyHosted = (id, manifest) =>
+    verifyHostedArtifact(id, policy, manifest, async (url) => {
+      requested.push(url);
+      // Observed publication: production HTML matched while permalink checking failed.
+      if (new URL(url).origin !== PRODUCTION_ARTIFACT_ORIGIN)
+        return new Response('different permalink html');
+      return new Response(new URL(url).pathname === '/' ? 'new html' : 'new script');
+    });
+  await publishEngineeringArtifact(params);
+  assert.deepEqual(requested.sort(), [
+    'https://safebus.kids/',
+    'https://safebus.kids/assets/new.js',
+  ]);
+  const verified = data.records.at(-1);
+  assert.equal(verified.name, 'verified');
+  assert.equal(verified.deployId, candidate);
+  assert.equal(verified.verifiedOrigin, PRODUCTION_ARTIFACT_ORIGIN);
+  assert.equal(verified.publicFilesVerified, 2);
+});
+test('production verification refuses a different site and fails on an incorrect asset as well as HTML', async () => {
+  await assert.rejects(
+    verifyHostedArtifact(candidate, { ...policy, siteName: 'another' }, manifest),
+    /TARGET/,
+  );
+  const files = { 'index.html': digest('new html'), 'assets/new.js': digest('new script') };
+  await assert.rejects(
+    verifyHostedArtifact(
+      candidate,
+      policy,
+      files,
+      async (url) => new Response(new URL(url).pathname === '/' ? 'new html' : 'wrong script'),
+      { pause: async () => {} },
+    ),
+    (error) => {
+      assert.equal(error.message, 'ENGINEERING_RELEASE_HOSTED_ARTIFACT_MISMATCH');
+      assert.equal(error.hostedArtifact.publicFilesVerified, 1);
+      assert.equal(error.hostedArtifact.failures[0].path, 'assets/new.js');
+      return true;
+    },
+  );
+});
+test('hosted file verification compares production bytes and rejects a mismatching artifact', async () => {
   const ok = await verifyHostedArtifact(candidate, policy, manifest, async (url) => {
-    assert.equal(new URL(url).hostname, candidate + '--bussafe.netlify.app');
+    assert.equal(url, 'https://safebus.kids/');
     return new Response('synthetic-html');
   });
   assert.equal(ok.publicFilesVerified, 1);
@@ -325,8 +396,9 @@ test('temporary hosting failures can recover after the former three-attempt limi
     policy,
     manifest,
     async (url, options) => {
-      assert.equal(new URL(url).hostname, candidate + '--bussafe.netlify.app');
+      assert.equal(new URL(url).origin, PRODUCTION_ARTIFACT_ORIGIN);
       assert.equal(options.redirect, 'manual');
+      assert.equal(options.headers['cache-control'], 'no-cache');
       calls++;
       if (calls === 1)
         throw Object.assign(new TypeError('private diagnostic'), { cause: { code: 'EAI_AGAIN' } });
@@ -340,7 +412,7 @@ test('temporary hosting failures can recover after the former three-attempt limi
   assert.deepEqual(delays, [2000, 5000, 10000]);
   assert.equal(calls, 4);
 });
-test('permanent byte mismatch stays blocked and identifies only the local file and fixed reason', async () => {
+test('permanent byte mismatch stays blocked and retains fingerprints without response content', async () => {
   let calls = 0;
   await assert.rejects(
     verifyHostedArtifact(
@@ -359,7 +431,17 @@ test('permanent byte mismatch stays blocked and identifies only the local file a
         publicFilesExpected: 1,
         publicFilesVerified: 0,
         retries: 2,
-        failures: [{ path: 'index.html', attempts: 3, reason: 'digest_mismatch', status: 200 }],
+        failures: [
+          {
+            path: 'index.html',
+            attempts: 3,
+            reason: 'digest_mismatch',
+            status: 200,
+            expectedSha256: manifest['index.html'],
+            receivedSha256: digest('private incorrect bytes'),
+            receivedBytes: Buffer.byteLength('private incorrect bytes'),
+          },
+        ],
       });
       assert.doesNotMatch(JSON.stringify(error), /private incorrect bytes/);
       return true;
