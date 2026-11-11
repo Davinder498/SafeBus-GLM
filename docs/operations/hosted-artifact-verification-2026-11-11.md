@@ -1,5 +1,11 @@
 # Hosted artifact verification failure
 
+**Follow-up:** the diagnostics in this report exposed a repeated HTML mismatch
+during publication. The [production-origin correction](production-origin-artifact-verification-2026-11-11.md)
+records the subsequent evidence and replaces permalink byte checks with exact
+comparison at the actual SafeBus origin, bound to the published deployment.
+The historical retry repair below was not sufficient to resolve the failure.
+
 ## Observed release and recovery
 
 Protected engineering release [42944582957](https://github.com/Davinder498/SafeBus-GLM/actions/runs/42944582957)

@@ -33,3 +33,8 @@ The next release uploaded successfully, then stopped at hosted verification and
 restored the previous deployment. The [hosted verification investigation](hosted-artifact-verification-2026-11-11.md)
 records the complete byte comparison, the limits of the original diagnostics and
 the follow-up correction. Successful CLI upload alone does not complete release.
+
+The subsequent [production-origin verification repair](production-origin-artifact-verification-2026-11-11.md)
+checks every public file where customers receive it and verifies the candidate
+deployment identity before and after those checks. Publication still requires
+the protected workflow; a passing local test is not evidence of a live release.

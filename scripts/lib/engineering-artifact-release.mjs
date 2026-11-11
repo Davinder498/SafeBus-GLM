@@ -5,6 +5,10 @@ import { digest, readConfiguration, isIsolated } from './production-credential-i
 const fail = (code) => {
   throw new Error('ENGINEERING_RELEASE_' + code);
 };
+// Verify what customers receive, with the provider deployment ID checked on
+// both sides of verification by publishEngineeringArtifact. A deploy permalink
+// is a separate serving path and did not match during observed publications.
+export const PRODUCTION_ARTIFACT_ORIGIN = 'https://safebus.kids';
 export function requirePrelaunchMaintenance(scope) {
   if (scope?.commercialLaunchApproved !== false) fail('PRELAUNCH_ONLY');
 }
@@ -86,6 +90,8 @@ export async function verifyHostedArtifact(
   { pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms)), now = Date.now } = {},
 ) {
   if (!/^[a-f0-9]{24}$/.test(deployId)) fail('DEPLOY_ID');
+  if (policy.siteId !== 'cfb88c3a-8cde-4c2a-ba1b-be4d0e0fc373' || policy.siteName !== 'bussafe')
+    fail('TARGET');
   const entries = Object.entries(manifest).filter(([name]) => !name.startsWith('_'));
   const deadline = now() + 120000;
   const retryDelays = [2000, 5000, 10000, 15000, 20000];
@@ -97,9 +103,9 @@ export async function verifyHostedArtifact(
     Array.from({ length: 4 }, async () => {
       while (index < entries.length && failures.length === 0) {
         const [name, expected] = entries[index++];
-        const url =
-          `https://${deployId}--${policy.siteName}.netlify.app/` +
-          name.split('/').map(encodeURIComponent).join('/');
+        const pathname =
+          name === 'index.html' ? '' : name.split('/').map(encodeURIComponent).join('/');
+        const url = `${PRODUCTION_ARTIFACT_ORIGIN}/${pathname}`;
         let verified = false;
         let failure;
         let attempts = 0;
@@ -113,17 +119,26 @@ export async function verifyHostedArtifact(
           let retryable = true;
           try {
             const response = await request(url, {
-              // Inspect the status without following a redirect off this deploy.
+              // Never follow a redirect away from the reviewed production origin.
               redirect: 'manual',
+              headers: { 'cache-control': 'no-cache' },
               signal: AbortSignal.timeout(Math.min(10000, remaining)),
             });
             if (response.ok) {
-              if (digest(Buffer.from(await response.arrayBuffer())) === expected) {
+              const bytes = Buffer.from(await response.arrayBuffer());
+              const received = digest(bytes);
+              if (received === expected) {
                 verified = true;
                 verifiedCount++;
                 break;
               }
-              failure = { reason: 'digest_mismatch', status: response.status };
+              failure = {
+                reason: 'digest_mismatch',
+                status: response.status,
+                expectedSha256: expected,
+                receivedSha256: received,
+                receivedBytes: bytes.length,
+              };
               // Preserve a short recheck for bytes, but allow more time for
               // temporary CDN/network failures. Neither can pass without a match.
               retryable = attempt < 2;
@@ -258,13 +273,18 @@ export async function publishEngineeringArtifact({
       throw error;
     }
     await health();
+    // Byte checks use the public origin. Bind their outcome to the same provider
+    // deployment, and never overwrite a concurrent operator publication/freeze.
+    const after = await deliveryState(api, policy);
+    if (after.site.published_deploy.id !== candidate) fail('PUBLISHED_DEPLOY_CHANGED');
     await record('verified', {
       sourceSha: sha,
       deployId: candidate,
       previousDeployId: previous,
       ...files,
+      verifiedOrigin: PRODUCTION_ARTIFACT_ORIGIN,
       sourceBinding:
-        'Protected exact-main workflow upload, immutable artifact manifest and hosted file byte comparison; not inferred from deploy title.',
+        'Protected exact-main upload and immutable artifact manifest; every public file matched at the production origin, with the candidate deployment ID verified before and after byte and health checks.',
       cloudBuildsStopped: true,
       productionContextCredentials: true,
       commercialLaunchApproved: false,
