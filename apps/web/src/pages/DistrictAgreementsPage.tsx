@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Download, FileCheck2, ShieldCheck } from 'lucide-react';
 import { DashboardLayout, adminNavGroups } from '@/components/layout/DashboardLayout';
+import { AgreementArchive } from '@/components/agreements/AgreementArchive';
 import { AdminSettingsNav } from '@/components/settings/AdminSettingsNav';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -11,8 +12,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/contexts/useAuth';
 import {
   acceptDistrictAgreement,
-  downloadExecutedAgreementPdf,
-  downloadExecutedAgreementArchive,
   getDistrictAgreement,
   listMyAgreementReceipts,
   isCompleteDistrictAgreement,
@@ -50,6 +49,7 @@ export function DistrictAgreementsPage() {
       actor_email: string;
     }>
   >([]);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,12 +78,17 @@ export function DistrictAgreementsPage() {
     setIntent(false);
     setTab(0);
     try {
-      const [next, receipts] = await Promise.all([
+      const [current, receipts] = await Promise.allSettled([
         getDistrictAgreement(),
         listMyAgreementReceipts(),
       ]);
+      setArchive(receipts.status === 'fulfilled' ? receipts.value : []);
+      setArchiveError(
+        receipts.status === 'rejected' ? 'Unable to load accepted agreements. Please retry.' : null,
+      );
+      if (current.status === 'rejected') throw current.reason;
+      const next = current.value;
       setAgreement(next);
-      setArchive(receipts);
       if (next.order_details)
         setOrder({
           interval: next.order_details.interval,
@@ -177,18 +182,6 @@ export function DistrictAgreementsPage() {
       setBusy(false);
     }
   }
-  async function download(id: string, format: 'pdf' | 'exact' = 'pdf') {
-    setBusy(true);
-    setError(null);
-    try {
-      if (format === 'exact') await downloadExecutedAgreementArchive(id);
-      else await downloadExecutedAgreementPdf(id);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Agreement download failed.');
-    } finally {
-      setBusy(false);
-    }
-  }
 
   return (
     <DashboardLayout
@@ -227,6 +220,12 @@ export function DistrictAgreementsPage() {
             {notice}
           </p>
         )}
+        <AgreementArchive
+          receipts={archive}
+          loading={loading}
+          error={archiveError}
+          onRetry={() => void refresh()}
+        />
         {loading ? (
           <Card className="p-6">
             <p role="status">Loading your agreement securely…</p>
@@ -582,55 +581,6 @@ export function DistrictAgreementsPage() {
                   )}
                 </Card>
               )}
-              <Card className="space-y-4 p-5">
-                <h2 className="font-bold text-[var(--color-heading)]">
-                  Executed agreement archive
-                </h2>
-                {archive.length === 0 ? (
-                  <p className="text-sm text-[var(--color-text-muted)]">
-                    No executed agreements are archived yet.
-                  </p>
-                ) : (
-                  archive.map((r) => (
-                    <div
-                      key={r.id}
-                      className="space-y-2 border-t border-[var(--color-border)] pt-3"
-                    >
-                      <p className="text-sm font-semibold">
-                        Signed {new Date(r.signed_at).toLocaleString('en-CA')}
-                      </p>
-                      <p className="break-all text-xs text-[var(--color-text-muted)]">
-                        Receipt SHA-256: {r.receipt_sha256}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          disabled={busy}
-                          onClick={() => void download(r.id)}
-                          leftIcon={<Download className="h-4 w-4" />}
-                        >
-                          Download executed PDF
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          disabled={busy}
-                          onClick={() => void download(r.id, 'exact')}
-                          leftIcon={<Download className="h-4 w-4" />}
-                        >
-                          Download exact UTF-8 archive
-                        </Button>
-                      </div>
-                      <p className="text-xs text-[var(--color-text-muted)]">
-                        The UTF-8 archive preserves the original signed contract text, including
-                        accents and non-Latin characters. The PDF is a simplified printable
-                        rendering.
-                      </p>
-                    </div>
-                  ))
-                )}
-              </Card>
             </div>
           </div>
         )}

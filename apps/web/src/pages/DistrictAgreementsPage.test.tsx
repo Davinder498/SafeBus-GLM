@@ -5,6 +5,9 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { DistrictAgreementsPage } from './DistrictAgreementsPage';
 import {
   getDistrictAgreement,
+  listMyAgreementReceipts,
+  downloadExecutedAgreementPdf,
+  downloadExecutedAgreementArchive,
   acceptDistrictAgreement,
   prepareDistrictAgreementOrder,
   type DistrictAgreement,
@@ -24,6 +27,8 @@ vi.mock('@/contexts/useAuth', () => ({
 vi.mock('@/services/districtAgreementService', async (importOriginal) => ({
   ...(await importOriginal<typeof AgreementService>()),
   getDistrictAgreement: vi.fn(),
+  downloadExecutedAgreementPdf: vi.fn(async () => {}),
+  downloadExecutedAgreementArchive: vi.fn(async () => {}),
   listMyAgreementReceipts: vi.fn(async () => []),
   acceptDistrictAgreement: vi.fn(),
   prepareDistrictAgreementOrder: vi.fn(async () => {}),
@@ -61,6 +66,7 @@ function agreement(revision = 1): DistrictAgreement {
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(listMyAgreementReceipts).mockResolvedValue([]);
   vi.mocked(getDistrictAgreement).mockResolvedValue(agreement());
   container = document.createElement('div');
   document.body.append(container);
@@ -175,3 +181,33 @@ it.each(['unknown-kind', 'empty-body', 'invalid-digest', 'duplicate-id'])(
     expect(container.querySelector('form')).toBeNull();
   },
 );
+
+it('keeps accepted downloads available from Settings when the current package cannot load', async () => {
+  vi.mocked(getDistrictAgreement).mockRejectedValue(new Error('Current package unavailable'));
+  vi.mocked(listMyAgreementReceipts).mockResolvedValue([
+    {
+      id: 'old-receipt',
+      signed_at: '2026-11-01T12:00:00Z',
+      receipt_sha256: 'a'.repeat(64),
+      bundle_sha256: 'b'.repeat(64),
+      actor_email: 'admin@example.test',
+    },
+  ]);
+  await render();
+  const pdf = Array.from(container.querySelectorAll('button')).find(
+    (b) => b.textContent === 'Download executed PDF',
+  )!;
+  const exact = Array.from(container.querySelectorAll('button')).find(
+    (b) => b.textContent === 'Download exact UTF-8 archive',
+  )!;
+  expect(pdf).toBeTruthy();
+  expect(exact).toBeTruthy();
+  await act(async () => {
+    pdf.click();
+  });
+  expect(downloadExecutedAgreementPdf).toHaveBeenCalledWith('old-receipt');
+  await act(async () => {
+    exact.click();
+  });
+  expect(downloadExecutedAgreementArchive).toHaveBeenCalledWith('old-receipt');
+});

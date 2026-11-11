@@ -231,3 +231,46 @@ revoke all on function public.district_agreement_order_matches(uuid,text,integer
 grant execute on function public.district_agreement_order_matches(uuid,text,integer,text) to service_role;
 
 notify pgrst,'reload schema';
+
+-- The provider can retrieve accepted copies for the selected authority. Customer
+-- administrators retain access only to their own authority, including old versions.
+create or replace function public.get_platform_district_agreement(p_tenant_id uuid)
+returns jsonb language plpgsql stable security definer
+set search_path=pg_catalog,public,auth,safebus_private,pg_temp as $$
+declare v_actor public.profiles;v_package safebus_private.agreement_packages;v_receipts jsonb;
+begin
+  v_actor:=safebus_private.agreement_actor('platform_super_admin');
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'id',r.id,'package_id',r.package_id,'signed_at',r.signed_at,
+    'receipt_sha256',r.receipt_sha256,'bundle_sha256',r.bundle_sha256,
+    'actor_email',r.actor_email) order by r.signed_at desc,r.id),'[]'::jsonb)
+    into v_receipts from safebus_private.agreement_executed_artifacts r where r.tenant_id=p_tenant_id;
+  select * into v_package from safebus_private.agreement_packages
+    where tenant_id=p_tenant_id order by revision desc,order_revision desc limit 1;
+  if not found then return jsonb_build_object('status','not_issued','receipts',v_receipts); end if;
+  return jsonb_build_object('id',v_package.id,'status',v_package.status,
+    'version',v_package.revision::text || '.' || v_package.order_revision::text,
+    'issued_at',v_package.issued_at,'customer_signed_at',v_package.accepted_at,
+    'signer_profile_id',v_package.accepted_by,'receipts',v_receipts);
+end;
+$$;
+
+create or replace function public.get_my_district_agreement_receipt(p_receipt_id uuid)
+returns jsonb language plpgsql stable security definer
+set search_path=pg_catalog,public,auth,safebus_private,pg_temp as $$
+declare v_actor public.profiles;v_receipt safebus_private.agreement_executed_artifacts;
+begin
+  -- Role comes from the protected profile, never client arguments or user metadata.
+  if exists(select 1 from public.profiles where id=auth.uid() and role='platform_super_admin') then
+    v_actor:=safebus_private.agreement_actor('platform_super_admin');
+  else
+    v_actor:=safebus_private.agreement_actor('tenant_admin');
+  end if;
+  select * into v_receipt from safebus_private.agreement_executed_artifacts
+    where id=p_receipt_id and (v_actor.role='platform_super_admin' or tenant_id=v_actor.tenant_id);
+  if not found then raise exception 'Executed agreement not found.' using errcode='42501'; end if;
+  return jsonb_build_object('id',v_receipt.id,'signed_at',v_receipt.signed_at,
+    'receipt_sha256',v_receipt.receipt_sha256,'bundle_sha256',v_receipt.bundle_sha256,
+    'document_snapshot',v_receipt.document_snapshot);
+end;
+$$;

@@ -79,6 +79,8 @@ test('district admin accepts complete MSA DPA online and retrieves immutable rec
     p_bundle_sha256:'d'.repeat(64),
     p_electronic_consent:true,p_authority_attested:true,p_signature_intent:true
   });
+  await page.goto('/admin/settings/agreements');
+  await expect(page.getByRole('heading',{name:'Accepted agreements'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Download executed PDF'})).toBeVisible();
   await page.getByRole('button',{name:'Continue to billing'}).click();
   await expect(page).toHaveURL('/admin/settings/billing');

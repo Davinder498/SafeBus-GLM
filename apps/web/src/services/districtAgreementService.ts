@@ -29,7 +29,15 @@ export interface DistrictOrder {
   privacy_contact: string;
   urgent_contact: string;
 }
+export interface AgreementReceiptSummary {
+  id: string;
+  signed_at: string;
+  receipt_sha256: string;
+  bundle_sha256: string;
+  actor_email: string;
+}
 export interface PlatformAgreementSummary {
+  receipts?: AgreementReceiptSummary[];
   id?: string;
   status: string;
   version?: string;
@@ -151,6 +159,9 @@ export async function getPlatformAgreement(tenantId: string): Promise<PlatformAg
     customer_signed_at:
       typeof value.customer_signed_at === 'string' ? value.customer_signed_at : null,
     signer_profile_id: typeof value.signer_profile_id === 'string' ? value.signer_profile_id : null,
+    receipts: Array.isArray(value.receipts)
+      ? (value.receipts as unknown as AgreementReceiptSummary[])
+      : undefined,
   };
 }
 export async function acceptDistrictAgreement(input: {

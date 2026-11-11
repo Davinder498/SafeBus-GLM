@@ -316,3 +316,45 @@ rerunning with bounded concurrency passed. A missing pending authorization entry
 was caught and corrected before this successful complete test run. The new
 browser journey still requires CI on the new commit; the previous PR head's full
 browser check passed but does not validate these additional changes.
+
+## Agreement availability — owner direction and implementation
+
+Seven documents are common, versioned SafeBus terms. Each authority has its own
+Order Form; acceptance preserves that form and the exact seven common versions.
+The owner requires accepted copies to remain accessible from school authority
+Settings → Agreements and platform School authorities → selected authority.
+
+Both locations now use an accepted-agreement archive with PDF and exact UTF-8
+source downloads. The school authority archive loads independently of the
+current offered package, so a new unsigned revision or failed current-package
+request does not hide an already accepted copy. The platform authority page lists
+only that authority's receipts and can still show downloads when billing details
+fail. Empty and unavailable archives are distinguished, with an explicit retry.
+A change of administrator does not transfer the contract away from the authority:
+a currently authorized replacement tenant administrator can retrieve its existing
+receipts. Prior copies are not overwritten by new orders or common terms.
+
+The staged database change extends the existing receipt-read function to the
+active platform-super-admin role with MFA, using the protected profile rather
+than caller-supplied role data. Other authorities and non-signing operational,
+driver or guardian roles remain denied. PDF and exact-source downloads use that
+same authorized snapshot, without public links, cached contract responses or
+service credentials in the browser. Subscription payment is not a download gate;
+normal authentication, MFA, active-account and authority authorization remain.
+This is continuing access for authorized accounts, not public access or an
+unlimited uptime/retention promise.
+
+Isolated database coverage verifies provider-selected lists, exact historical
+copies, cross-authority/role/MFA denial and replacement-admin access. Component
+coverage verifies downloads despite current-package or billing failures. Browser
+journeys cover the Settings destination and a platform PDF download from the
+selected authority page. Publication and protected schema deployment remain
+separate; these changes do not publish a contract or modify live permissions.
+
+Availability validation: typecheck, lint, web/mobile build, separate mobile build
+and Android sync passed. The complete test run passed 1,228 web, 32 mobile and
+602 release tests; the additional platform-page billing-failure test also passed
+in its focused run alongside all eight district agreement page tests. The
+protected install/restore test includes both changed archive-read definitions,
+and all 125 historical migration checksums remain unchanged. New browser journeys
+are included for CI; no live download is claimed before installation/publication.

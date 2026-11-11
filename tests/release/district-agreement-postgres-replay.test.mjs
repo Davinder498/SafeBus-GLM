@@ -299,6 +299,33 @@ test('district MSA/DPA migration: isolated Postgres replay, clickwrap, scoped re
     assert.equal(await matches('year',25,'send_invoice'),false);
     const preserved=(await one('select public.get_my_district_agreement_receipt($1::uuid) x',[signed.receipt_id])).x;
     assert.deepEqual(preserved,firstReceipt);
+    // The provider gets only the selected authority's receipt list; the download
+    // endpoint authorizes the active platform actor or the owning authority admin.
+    await asUser(IDS.platform);
+    const provider=(await one('select public.get_platform_district_agreement($1::uuid) x',[IDS.tenant2])).x;
+    assert.equal(provider.version,'2.2');
+    assert.equal(provider.receipts.length,2);
+    assert.ok(provider.receipts.some(r=>r.id===signed.receipt_id));
+    assert.ok(!provider.receipts.some(r=>r.id===result.receipt_id));
+    assert.deepEqual((await one('select public.get_my_district_agreement_receipt($1::uuid) x',[signed.receipt_id])).x,firstReceipt);
+    await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({sub:IDS.platform,aal:'aal1'})]);
+    await assert.rejects(one('select public.get_my_district_agreement_receipt($1::uuid) x',[signed.receipt_id]),/MFA/);
+    await asUser(IDS.first);
+    await assert.rejects(one('select public.get_my_district_agreement_receipt($1::uuid) x',[signed.receipt_id]),/not found/);
+    await assert.rejects(one('select public.get_platform_district_agreement($1::uuid) x',[IDS.tenant2]),/role cannot/);
+    for(const role of ['guardian','driver','transportation_admin','school_admin']){
+      await db.query('update public.profiles set role=$1 where id=$2',[role,IDS.guardian]);
+      await asUser(IDS.guardian);
+      await assert.rejects(one('select public.get_my_district_agreement_receipt($1::uuid) x',[signed.receipt_id]),/role cannot/);
+    }
+    await db.query("update public.profiles set role='guardian' where id=$1",[IDS.guardian]);
+    const replacement='00000000-0000-4000-8000-000000009999';
+    await db.query('insert into auth.users(id) values($1)',[replacement]);
+    await db.query("insert into public.profiles(id,tenant_id,role,full_name,email) values($1,$2,'tenant_admin','Replacement Admin','replacement@example.test')",[replacement,IDS.tenant2]);
+    await asUser(replacement);
+    assert.deepEqual((await one('select public.get_my_district_agreement_receipt($1::uuid) x',[signed.receipt_id])).x,firstReceipt);
+    assert.equal((await one('select public.list_my_district_agreement_receipts() x')).x.length,2);
+
     assert.equal((await one("select has_function_privilege('anon','public.prepare_my_district_agreement_order(uuid,jsonb)','EXECUTE') x")).x,false);
     assert.equal((await one("select has_function_privilege('authenticated','public.district_agreement_order_matches(uuid,text,integer,text)','EXECUTE') x")).x,false);
   });
