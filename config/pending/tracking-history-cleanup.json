@@ -1,0 +1,62 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261111190123_tracking_history_indexed_cleanup.sql",
+  "migrationSha256": "f2a48fefbf736db12764e31de93f774ab1c17d670b4dddabb52fb3c2c250e337",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "safebus_private.prune_tracking_worker_history()",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": "d91023956642f6abb190de7d8454d143"
+      },
+      "after": {
+        "md5": "075590a4a8844b613ad394b8cb8512ca"
+      }
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": [],
+  "jobs": [
+    {
+      "name": "safebus-tracking-invalidation-dispatcher",
+      "before": {
+        "name": "safebus-tracking-invalidation-dispatcher",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "b12e56fbe4fcb12833769e371a155ce2"
+      },
+      "after": {
+        "name": "safebus-tracking-invalidation-dispatcher",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "b12e56fbe4fcb12833769e371a155ce2"
+      }
+    },
+    {
+      "name": "safebus-tracking-invalidation-history",
+      "before": {
+        "name": "safebus-tracking-invalidation-history",
+        "schedule": "* * * * *",
+        "active": true,
+        "command_md5": "0f85bbf8fef55dfcc525636c5a6634fc"
+      },
+      "after": {
+        "name": "safebus-tracking-invalidation-history",
+        "schedule": "* * * * *",
+        "active": true,
+        "command_md5": "0f85bbf8fef55dfcc525636c5a6634fc"
+      }
+    }
+  ],
+  "indexes": [
+    {
+      "schema": "cron",
+      "name": "safebus_tracking_history_job_end_idx",
+      "before": null,
+      "after": "CREATE INDEX safebus_tracking_history_job_end_idx ON cron.job_run_details USING btree (jobid, end_time, runid)"
+    }
+  ]
+}

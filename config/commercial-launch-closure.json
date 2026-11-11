@@ -31,7 +31,8 @@
     {
       "id": "tracking-ingestion-and-guardian-fanout",
       "status": "open",
-      "note": "Target 5,000\u201310,000 buses. Production still performs synchronous guardian invalidation fan-out. Prepared bounded async queue requires reviewed release and measured qualification; no capacity claim."
+      "note": "Async tracking queue installed and private access verified. Dispatcher runs succeeded; housekeeping times out on shared cron history. Forward indexed cleanup repair is pending protected rollout. Capacity and end-to-end delivery remain unqualified.",
+      "productionRun": "43081399229"
     },
     {
       "id": "gps-history-removal",
