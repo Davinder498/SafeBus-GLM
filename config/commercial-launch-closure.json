@@ -40,27 +40,31 @@
     },
     {
       "id": "production-credential-isolation",
-      "status": "in_progress",
+      "status": "live_verified",
+      "productionRun": "42957090161",
       "acceptance": "config/pending/production-credential-isolation.json"
     },
     {
       "id": "reviewed-release-controls",
-      "status": "open"
+      "status": "live_verified",
+      "productionRun": "42957090161",
+      "note": "Protected production reviewer approval, exact-main checks, artifact verification and stopped Netlify cloud builds verified. Owner authorizes agent-managed passing PR merges; production protection remains."
     },
     {
       "id": "guardian-home-freshness",
-      "status": "prepared",
-      "note": "Home refresh implementation prepared for review: 30\u201335 second checks, bounded live hints, foreground/reconnect verification, request cancellation, failure backoff. Not deployed."
+      "status": "released",
+      "productionRun": "42957090161",
+      "note": "Home refresh released with PR 440: 30\u201335 second checks, bounded live hints, foreground/reconnect verification, cancellation and failure backoff. Automated regression passed; controlled signed-in and physical acceptance remain open."
     },
     {
       "id": "billing-risk-events",
       "status": "open",
-      "businessDecision": "Refund entitlement and service-continuity policy; no automatic suspension is authorized by this record."
+      "businessDecision": "Approved manual billing review for refunds, disputes and fraud warnings; keep bus service active. Implement the approved policy without automatic suspension."
     },
     {
       "id": "application-alerting-and-operations",
       "status": "open",
-      "businessDecision": "Primary and backup operations contacts, response hours and escalation targets."
+      "businessDecision": "Primary owner, mailbox, school-day response hours and acknowledgement target are approved in ownerDirection.operations. Backup coverage and verified customer publication remain outstanding."
     },
     {
       "id": "large-authority-reference-selectors",
