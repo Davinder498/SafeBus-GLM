@@ -177,4 +177,58 @@ test('district MSA/DPA migration: isolated Postgres replay, clickwrap, scoped re
   await asUser(IDS.first);
   await assert.rejects(one('select public.get_my_participant_agreement() x'),/active driver or guardian/i);
 
+  await t.test('supplier revisions require fresh acceptance and preserve historical receipts', async () => {
+    const oldSupplier = receipt.document_snapshot.documents.find(d => d.kind === 'suppliers');
+    await asUser(IDS.platform);
+    for (const body of ['DRAFT '.repeat(30), '[CUSTOMER_LEGAL_NAME] '.repeat(12)]) {
+      await assert.rejects(one('select public.platform_publish_agreement_document($1,$2,$3,$4) x', [
+        'suppliers', 'Unfinished supplier appendix', 'unfinished', body,
+      ]), /Only final, complete, reviewed/i);
+    }
+    const changedBody = 'Synthetic supplier revision with a newly disclosed processing country. '.repeat(4);
+    const replacement = (await one('select public.platform_publish_agreement_document($1,$2,$3,$4) x', [
+      'suppliers', 'Synthetic supplier appendix', '2026.2', changedBody,
+    ])).x;
+    const revisedIds = ids.filter(id => id !== oldSupplier.id).concat(replacement.id);
+    const revised = (await one('select public.platform_publish_agreement_catalog($1::uuid[]) x', [
+      '{' + revisedIds.join(',') + '}',
+    ])).x;
+    assert.equal(revised.revision, 2);
+
+    await asUser(IDS.first);
+    const pending = (await one('select public.get_my_district_agreement() x')).x;
+    assert.equal(pending.status, 'issued');
+    assert.notEqual(pending.bundle_sha256, pkg.bundle_sha256);
+    assert.equal(pending.documents.find(d => d.kind === 'suppliers').body, changedBody);
+    assert.equal((await one('select count(*)::int n from safebus_private.agreement_executed_artifacts')).n, 1);
+    const historical = (await one('select public.get_my_district_agreement_receipt($1::uuid) x', [result.receipt_id])).x;
+    assert.deepEqual(historical.document_snapshot, receipt.document_snapshot);
+    // Retrying the old submission returns only the old receipt; it does not accept revision 2.
+    assert.equal((await accept(true)).result.receipt_id, result.receipt_id);
+    assert.equal((await one('select public.get_my_district_agreement() x')).x.status, 'issued');
+
+    await asUser(IDS.second);
+    await assert.rejects(one('select public.accept_my_district_agreement($1::uuid,$2,$3,$4,true,true,true) x', [
+      other.id, other.bundle_sha256, 'Second Admin', 'Transportation Director',
+    ]), /updated|current version/i);
+    // Neither a wrong authority nor a guardian can approve the first authority's revision.
+    await assert.rejects(one('select public.accept_my_district_agreement($1::uuid,$2,$3,$4,true,true,true) x', [
+      pending.id, pending.bundle_sha256, 'Second Admin', 'Transportation Director',
+    ]), /changed|reload/i);
+    await asUser(IDS.guardian);
+    await assert.rejects(one('select public.accept_my_district_agreement($1::uuid,$2,$3,$4,true,true,true) x', [
+      pending.id, pending.bundle_sha256, 'Guardian', 'Guardian',
+    ]), /role cannot|cannot manage/i);
+
+    await asUser(IDS.first);
+    const signedRevision = (await one('select public.accept_my_district_agreement($1::uuid,$2,$3,$4,true,true,true) x', [
+      pending.id, pending.bundle_sha256, 'First Admin', 'Transportation Director',
+    ])).x;
+    assert.notEqual(signedRevision.receipt_id, result.receipt_id);
+    const latest = (await one('select public.get_my_district_agreement_receipt($1::uuid) x', [signedRevision.receipt_id])).x;
+    assert.equal(latest.document_snapshot.documents.find(d => d.kind === 'suppliers').body, changedBody);
+    assert.equal(latest.document_snapshot.revision, 2);
+    assert.equal((await one('select count(*)::int n from safebus_private.agreement_executed_artifacts')).n, 2);
+  });
+
 });

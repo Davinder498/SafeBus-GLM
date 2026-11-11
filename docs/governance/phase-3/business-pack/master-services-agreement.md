@@ -416,6 +416,22 @@ and affirmative Customer authorization process; silence is not approval.
 These approved terms do not establish actual staffing, supplier acceptance,
 complete export/deletion capability or contract publication.
 
+### Continuity, privacy breach and surviving duties
+
+Noncompliance with agreed handling, access, disclosure or protection duties by
+SafeBus or those acting on its behalf is a contractual breach. Existing breach
+remedies and mandatory law remain; ordinary convenience cancellation does not
+remove those remedies. SafeBus gives advance notice of a proposed ownership
+change affecting the service and immediate notice of insolvency proceedings or
+creditor enforcement that threatens performance or Customer records. It protects
+records and cooperates with an orderly transfer/exit under the agreed schedule.
+A business transfer does not itself authorize a new supplier or new data use.
+
+Confidentiality duties for Customer personal information continue indefinitely
+after termination, subject to lawful disclosure obligations. End of service does
+not extinguish agreed data-return, preservation or verified disposal duties.
+
+
 ## 10. General terms
 
 Proposed governing law: Alberta and applicable federal Canadian law; proposed

@@ -22,6 +22,25 @@ SafeBus alerts the Customer if an instruction appears unlawful or outside the
 approved scope, pauses the disputed processing where appropriate and seeks
 resolution. Compelled disclosures are limited and notified where law permits.
 
+### 1.1 Alberta records and service-provider responsibilities
+
+For this DPA, personal information has the meaning assigned by POPA. Information
+SafeBus receives, creates or derives while providing the Customer's transport
+service remains under the Customer's control even when SafeBus holds it. POPA
+and ATIA continue to apply to those records as applicable. SafeBus complies with
+its statutory service-provider/employee responsibilities for these activities;
+this does not make its personnel employees of the Customer for labour purposes.
+The Customer retains access-decision authority; SafeBus provides assistance and
+does not acquire an independent right to use transportation records.
+
+If SafeBus receives a demand outside the agreed disclosure instructions, including
+from an authority outside Alberta, it immediately informs the Customer's privacy
+contact unless prohibited by law, preserves relevant records and assesses the
+request's validity and scope. It seeks written Customer direction before any
+voluntary disclosure. A binding legal obligation is not defeated by a consent
+requirement: SafeBus discloses only what the law requires, documents its basis,
+seeks available protective measures and gives delayed notice when permitted.
+
 ## 2. Processing appendix for CR1
 
 | Topic                    | Proposed permitted processing                                                                                                                                      |
@@ -43,6 +62,26 @@ privacy decisions before activation. Recipient-opt-in Android FCM is covered by
 the current notification scope and must appear in supplier review; the standard
 setup does not supply recipient consent. No sale, advertising, unrelated profiling or AI
 training using transportation personal information is permitted.
+
+### 2.1 Customer-specific instructions and notices
+
+Before activation, the processing appendix identifies actual collected and
+created record categories, permitted uses/disclosures and each activity's lawful
+authority, direct or indirect source, recipients and required notices/consents.
+SafeBus collects only necessary approved fields and displays the applicable
+Customer-approved collection notice identifying its service-provider role and
+privacy contact. New uses, derived information and additional recipients need
+review before introduction. No generic permission to use every available field
+is granted. The Customer remains responsible for establishing its lawful basis.
+
+The parties assess any automated output against applicable notice requirements;
+ordinary scheduling or ETA labels do not establish an exemption. No unreviewed
+AI feature is authorized. SafeBus takes reasonable steps within its service to
+maintain accurate, complete records used for decisions affecting individuals and
+cooperates with corrections. The parties identify decision records and preserve
+them for applicable statutory minimums, including the one-year decision-use rule
+where it applies, with longer lawful holds taking precedence. This is not a
+requirement to retain every live GPS update for a year.
 
 ## 3. Authorized access and confidentiality
 
@@ -71,6 +110,28 @@ Customer accounts and linked access must be current. Guardian links are not
 automatically re-established after removal. Revocation, expired links and open
 realtime/native sessions require verified behavior, rather than relying on a
 UI role label. The Security Schedule and acceptance evidence govern safeguards.
+
+### 3.1 Personnel accountability
+
+SafeBus requires written confidentiality obligations before personnel access
+Customer information, maintains an up-to-date access roster and supplies relevant
+personnel, agent and subcontractor access details securely to the Customer on
+request. SafeBus remains responsible for the acts of those acting on its behalf
+in performing this agreement; existing monetary limits and mandatory exceptions
+remain governed by the MSA, rather than being silently replaced here.
+
+Personnel handling these records receive role-appropriate privacy/security
+instruction before access and refresh it annually. SafeBus maintains completion
+dates, participants and current materials, supplies the Customer written training
+evidence and relevant materials/updates, and verifies equivalent downstream
+arrangements for authorized subcontractors. This obligation does not assert that
+vendor training records have already been obtained or that a cloud supplier has
+accepted bespoke terms. Supplier feasibility must be resolved before publication.
+
+The owner, acting as SafeBus Privacy Lead, is accountable through info@safebus.kids.
+The accepted Order Form records the Customer privacy officer/contact and the
+verified urgent route. Personnel identities and coverage details are kept in
+restricted records rather than the public contract repository.
 
 ## 4. Suppliers and cross-border processing
 
@@ -129,6 +190,18 @@ Requests, outcomes and necessary holds are documented in restricted storage.
 Regulatory cooperation and audit access are subject to lawful scope, protection
 of other tenants, appropriate confidentiality and reasonable arrangements.
 
+### 5.1 Complaints and reviews
+
+SafeBus routes complaints about Customer-controlled records to the Customer's
+privacy officer promptly, preserves relevant evidence and provides a documented
+account of its investigation and corrective work. The Customer leads its access,
+correction and complaint decisions and OIPC interactions; SafeBus cooperates with
+reviews/investigations and complies with any duties applying directly to it.
+Assistance covers responsive service records under ATIA, not just personal
+information. SafeBus records requests, routing, searches, results and delivery
+securely and keeps the Customer informed of impediments before deadlines expire.
+No contract term limits a person's lawful complaint rights.
+
 ## 6. Incidents and assurance
 
 A breach includes loss, unauthorized access or unauthorized disclosure of personal
@@ -167,6 +240,25 @@ and damages, with no separate additive cap; it does not excuse the
 Customer's independent unlawful instructions or its own legal duties.
 This indemnity clause is **not** a substitute for the timely independent
 incident notification, safeguards and cooperation duties stated above.
+
+### 6.1 Customer oversight and assessments
+
+SafeBus provides compliance information relevant to the Customer's service and
+cooperates with Customer or authorized independent audits, including necessary
+inspection of relevant records, systems and premises. Agree secure arrangements
+that protect other customers and credentials; these arrangements must not defeat
+an urgent incident review or statutory oversight. Supplier-premises access is
+subject to verified downstream rights; SafeBus must disclose any limitation
+before contract acceptance, not promise access it cannot provide.
+
+The Security Schedule identifies accepted administrative, technical and physical
+controls and their alignment with the Customer's information classification and
+privacy management program. SafeBus supports required PIA preparation, updates
+and OIPC review. The accepted schedule must specify security threat/risk review
+intervals and the process for Customer-requested assessments. Review material
+changes before activation and keep dated findings, mitigations and audit evidence
+under the agreed retention/hold schedule. A software test or draft policy is not
+an independent audit or security certification.
 
 ## 7. Retention and exit
 

@@ -117,3 +117,60 @@ Owner approved scoped assisted exit within the standard subscription on November
 Approved pricing, trial, renewal/cancellation, liability/indemnity, support hours/holidays, insurance deferment and the existing self-service policy remain unchanged. B1–B3 and 24/7 urgent incident coverage are now owner-approved business terms, not verified operating capabilities. No contract is published, no customer is bound, no notification sent, no production data modified and no iOS work started by this review.
 
 Prepare one consolidated agreement change. Do not open repeated PRs for each decision. This step changes only review documentation; it does not need full browser smoke execution or a Netlify deployment. UI/backend changes later require the relevant agreement journey and authorization checks. Track implemented, tested, published and customer-accepted states separately.
+
+
+## November 11 implementation follow-through
+
+Added DPA §§1.1, 2.1, 3.1, 5.1 and 6.1 for statutory roles/control, lawful instructions,
+accuracy/decision records, confidentiality/training, complaint cooperation and
+oversight. Added MSA continuity/survival clauses, Security acceptance fields and
+Return §4.1 completion evidence. The original matrix is retained as the baseline,
+not silently relabeled “passed.” Annual training evidence and assessment intervals
+must be workable for the actual personnel/providers before publication.
+
+| Review group | Current wording location | Remaining evidence/input |
+| --- | --- | --- |
+| C01–C05, C08, C18–C29 | DPA §§1.1, 2, 2.1 | Customer-specific authority, fields, notices, decision records and automated-output assessment |
+| C06–C12, C37–C42 | DPA §§3.1, 4 | Actual personnel/supplier confidentiality, access roster, training evidence and downstream terms |
+| C13–C17, C33, C43–C45, C49, C52 | MSA continuity/survival; DPA §6.1; Security acceptance | Audit feasibility, named contacts, security comparison and assessment interval |
+| C30–C32, C46–C48 | DPA §§1.1, 5, 5.1, 6; incident procedures | Exercised request routing, immediate escalation and 24/7 coverage mechanics |
+| C34–C36, C50–C51 | Return §§3, 4.1, 6 | Category-specific retention, tested complete return and provider expiry/disposal evidence |
+
+Production read-only verification on November 11: Canada Central BusSafe project;
+zero published district catalogs, packages and receipts. Only participant
+acceptable-use terms exist. No customer data was returned by that aggregate check.
+The connected Netlify page exposed no usable account settings (only a reCAPTCHA
+frame); no challenge was solved and no provider facts were inferred from it.
+Supabase's public residency FAQ explicitly describes regional core storage and
+separate international support/metadata flows; Canadian primary hosting alone
+must not become a Canadian-only contract claim.
+
+Remaining engineering gate: verify supplier-change authorization at the actual
+processing/rollout boundary. Existing receipt versioning is necessary but does
+not by itself prevent deploying a provider change. No new supplier is being
+introduced by this PR. Keep any future affected change blocked until the
+required per-authority approval evidence and rollout enforcement are complete.
+
+### Supplier source refresh and verification limits
+
+Public sources checked November 11, 2026: [Supabase residency](https://supabase.com/legal/privacy-resources/data-residency-and-transfers-faq), [Netlify Trust Center](https://www.netlify.com/trust-center/), [Resend security](https://resend.com/security), [Geoapify DPA](https://www.geoapify.com/data-processing-agreement/), and [Firebase privacy/security](https://firebase.google.com/support/privacy). These corroborate available provider documentation, not the SafeBus account's particular contractual scope, processing-country inventory or deletion completion. Geoapify's published agreement identifies KEPTAGO LTD and an EU/EEA processing framework; the actual globally delivered tile flow still needs reconciliation. No vendor contract was accepted and no vendor message was sent by this review.
+
+### Acceptance verification in this change
+
+The isolated PostgreSQL test now changes only the supplier document, republishes
+the complete package, verifies a fresh pending acceptance, refuses a stale
+unsigned package and wrong-authority/guardian submissions, and checks that an old
+retry cannot accept the new revision. A new affirmative acceptance creates a
+separate receipt; the original snapshot remains unchanged. These are synthetic
+local records, not production acceptance or supplier rollout enforcement.
+
+Targeted desktop/mobile browser tests were attempted. The bundled Playwright
+browser was absent; an installed Chromium fallback then failed before test actions
+because the environment denied its process-singleton socket. No browser journey
+is marked passed in this review. Existing production settings were not weakened.
+Repository-required non-browser checks are reported in the PR after completion.
+
+This PR changes contract drafts and an isolated test, not application runtime or
+production schema. Under the existing browser-scope policy, a PR with only these
+documentation/release-test paths omits the full suite. This does not exempt future
+acceptance UI, supplier enforcement or export changes from relevant verification.

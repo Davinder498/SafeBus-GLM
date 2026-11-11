@@ -45,6 +45,24 @@ SafeBus records the outcome of each assisted closure or deletion operation, incl
 
 The Customer remains responsible for copies it independently downloads or manages. SafeBus retains the obligations required by the accepted DPA, MSA and applicable law. No new automatic deletion worker, signed agreement, customer activation, production migration or readiness approval is created by this draft.
 
+### 4.1 Required completion record
+
+For each assisted exit, enumerate primary records, derived outputs, audit history,
+attachments, temporary copies and applicable downstream copies. Record minimum
+and maximum retention or expiry triggers, secure destruction method, any hold and
+the responsible reviewer. Verify the completeness of the return manifest against
+that inventory; a directory-only download cannot close an account-wide request.
+The Customer must be able to read and reuse the agreed export without SafeBus's
+application. Restrict preserved records to their lawful purpose and access.
+
+Provide a signed or otherwise attributable disposal statement for the verified
+scope, dates and method, listing every remaining category with its legal basis,
+expiry/review trigger and supplier dependency. Confirm subsequent expiry or
+removal separately. Never assert that retained backup copies are destroyed.
+Return/disposal arrangements apply to expiry, ordinary termination and termination
+for breach, including provider cessation. No new guaranteed universal deadline
+or automatic deletion permission is created.
+
 ## 5. Final acceptance safeguards
 
 Before presenting an account-wide deletion or guaranteed exit workflow to a real school authority, verify tenant isolation, authorized administrator actions, retention/hold precedence, dependent records, safe export completeness, revocation/session effects, suppliers/backups, and operational completion evidence. Test with **synthetic authorized data**, never by deleting a live authority's records for convenience.
