@@ -62,9 +62,15 @@ conditions in the Order Form and release gates pass.
 Before activation, record the Customer's information classification, safeguards
 and privacy-program requirements against the implemented controls above. Identify
 any gap and agreed treatment explicitly; no blanket claim that every Customer's
-policy is already met is made. Record the security threat/risk assessment interval,
-responsible reviewer and Customer-requested review procedure in the accepted
-schedule. Preserve necessary audit trails under category-specific periods and
+policy is already met is made. The owner-approved security threat/risk review
+schedule is before commercial
+launch, at least annually thereafter, and after material security or processing
+changes. Assess a proposed change before activation where practicable; urgent
+containment receives a prompt follow-up review. Record the review date, scope,
+responsible reviewer, findings, actions and next due date. The accepted schedule
+also records the Customer-requested review procedure. This policy does not
+automatically purchase an external audit or represent independent certification.
+Preserve necessary audit trails under category-specific periods and
 holds sufficient for applicable Customer and regulator investigations.
 
 Provide access/training evidence and assessment findings securely under DPA

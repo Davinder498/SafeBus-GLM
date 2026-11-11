@@ -305,3 +305,13 @@ customer acceptance or live school-data processing authorization.
 ## Agreement completion review — November 11, 2026
 
 The owner has prioritized agreements before iOS. The [checklist review](agreement-completion-review-2026-11-11.md) remains the gap register. On November 11, 2026 the owner approved B1–B3: affirmative supplier authorization with 30-day planned-change notice; immediate incident notice and **24/7 urgent incident coverage**; acknowledgment of ordinary records requests within two business days and an action plan within five; and scoped assisted data return included in the subscription. Existing prices, liability terms, self-service controls and ordinary support hours remain unchanged. Coverage mechanics and technical/vendor evidence remain unverified; no Customer acceptance, publication or completed checklist compliance is asserted.
+
+
+## Approved security review frequency — November 11, 2026
+
+The owner approved a documented security assessment before commercial launch,
+at least annually afterward, and after material security or processing changes.
+This closes the frequency decision; it does not purchase an external audit,
+certify compliance or establish that an assessment has been performed. Keep
+dated findings, corrective actions, responsible reviewer and next review date.
+The DPA and Security Schedule now state this schedule.

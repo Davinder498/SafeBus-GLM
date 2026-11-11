@@ -174,3 +174,19 @@ This PR changes contract drafts and an isolated test, not application runtime or
 production schema. Under the existing browser-scope policy, a PR with only these
 documentation/release-test paths omits the full suite. This does not exempt future
 acceptance UI, supplier enforcement or export changes from relevant verification.
+
+
+## Approved review schedule and restored Netlify access
+
+The owner approved security assessments before commercial launch, at least
+annually thereafter, and after material security or processing changes. DPA §6.1
+and the Security Schedule now state the cadence; no external audit purchase or
+completed assessment is implied. This resolves the review-frequency input for
+C45, not its operating evidence.
+
+Netlify access subsequently worked after the owner opened the project. Functions
+→ Region displays **CMH (Ohio, US East)**. The supplier disclosure and DPA now
+record this configured US location. The earlier inaccessible-page note is
+historical; no country is inferred for CDN/log/support processing. The site is
+online and builds remain stopped with the Free-plan build-minute limit notice.
+No production or billing setting was changed.

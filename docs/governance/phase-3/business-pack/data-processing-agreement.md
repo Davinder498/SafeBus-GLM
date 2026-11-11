@@ -163,7 +163,7 @@ or country. Customer-specific and mandatory legal requirements remain controllin
 
 ### Current supplier-specific facts for the final processing appendix (non-binding review)
 
-The [verified supplier-processing worksheet](district-supplier-processing-appendix-review-2026-11-08.md) records the data flows to assess with a public school authority: Supabase stores core records in Canada Central but secondary countries remain under review; Netlify functions handle invitation and notification data while live execution/log countries are unverified; Resend stores outbound email content in the **United States**; verified published source now renders generic pickup/drop-off emails without student names, bus numbers or event times, while Resend still processes recipient/event/delivery data and other email types may contain details; generic Firebase notification text is deployed to the provider after the November 8, 2026 v7 update, while device tokens, opaque IDs and event categories still reach Google; Geoapify maps use the standard CDN-hosted tile endpoint, not the separately identified EU-only API host.
+The [verified supplier-processing worksheet](district-supplier-processing-appendix-review-2026-11-08.md) records the data flows to assess with a public school authority: Supabase stores core records in Canada Central but secondary countries remain under review; Netlify functions handle invitation and notification data; the project Functions → Region setting was verified on November 11, 2026 as CMH (Ohio, US East), while CDN, log and support processing locations remain unverified; Resend stores outbound email content in the **United States**; verified published source now renders generic pickup/drop-off emails without student names, bus numbers or event times, while Resend still processes recipient/event/delivery data and other email types may contain details; generic Firebase notification text is deployed to the provider after the November 8, 2026 v7 update, while device tokens, opaque IDs and event categories still reach Google; Geoapify maps use the standard CDN-hosted tile endpoint, not the separately identified EU-only API host.
 
 The authority and SafeBus must settle whether remaining email content, recipient/event/delivery metadata and other cross-border flows are lawful and necessary, plus vendor-specific contracts, countries, retention and notice requirements. Generic external pickup/drop-off text was verified in published source, not yet through a live synthetic Resend delivery test. Stripe billing and Zoho ordinary business email are separate SafeBus-purpose services, not automatically transport-data subprocessors. **Do not treat this review paragraph as an executed supplier appendix, an insurance claim, a GDPR determination or final approval.**
 
@@ -254,8 +254,11 @@ before contract acceptance, not promise access it cannot provide.
 The Security Schedule identifies accepted administrative, technical and physical
 controls and their alignment with the Customer's information classification and
 privacy management program. SafeBus supports required PIA preparation, updates
-and OIPC review. The accepted schedule must specify security threat/risk review
-intervals and the process for Customer-requested assessments. Review material
+and OIPC review. The Security Schedule requires a documented security threat/risk
+review before
+commercial launch, at least annually thereafter, and after material security or
+processing changes, together with the process for Customer-requested assessments.
+Review material
 changes before activation and keep dated findings, mitigations and audit evidence
 under the agreed retention/hold schedule. A software test or draft policy is not
 an independent audit or security certification.
