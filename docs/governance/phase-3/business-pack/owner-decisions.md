@@ -301,3 +301,7 @@ MSA/DPA/Order Form/Return Schedule makes no universal 30-day return or
 accepted time commitment. This decision closes the **business model only**,
 not the operational/security/legal acceptance gates, contract publication,
 customer acceptance or live school-data processing authorization.
+
+## Agreement completion review — November 11, 2026
+
+The owner has prioritized completing agreements before iOS. The [provision-by-provision review and proposed decision package](agreement-completion-review-2026-11-11.md) records remaining wording and evidence gaps. Prior business approvals remain unchanged. The proposed supplier approval model, incident/request commitments and assisted-exit policy are **not yet approved**; the instruction to proceed authorized review and drafting, not those commercial decisions. No agreement publication or customer acceptance is established.

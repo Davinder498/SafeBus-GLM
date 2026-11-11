@@ -191,3 +191,7 @@ The [Data Management, Return and Destruction Schedule](data-return-destruction.m
 turnaround must be technically verified and agreed in writing. Automatic
 destructive retention remains disabled; contracts remain unpublished until
 customer and operational requirements are approved.
+
+## Agreement completion review — November 11, 2026
+
+The owner has prioritized completing agreements before iOS. The [provision-by-provision review and proposed decision package](agreement-completion-review-2026-11-11.md) records remaining wording and evidence gaps. Prior business approvals remain unchanged. The proposed supplier approval model, incident/request commitments and assisted-exit policy are **not yet approved**; the instruction to proceed authorized review and drafting, not those commercial decisions. No agreement publication or customer acceptance is established.
