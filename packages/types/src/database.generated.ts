@@ -4715,6 +4715,13 @@ export interface Database {
         }
         Returns: unknown
       }
+      prepare_my_district_agreement_order: {
+        Args: {
+          p_package_id: string
+          p_order: Json
+        }
+        Returns: unknown
+      }
       reconcile_bulk_invitation_delivery: {
         Args: {
           p_error?: string | null

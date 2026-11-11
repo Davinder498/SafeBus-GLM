@@ -233,3 +233,86 @@ remain authoritative; this screen change grants no new permission.
 
 Keep final publication and commercial activation blocked until these dependencies
 are actually resolved. PR merge is not publication, execution or launch approval.
+
+## Administrator sign-in and customer Order Form follow-through
+
+The owner signed in and the live platform-super-admin agreement publisher was
+verified. It still reports **Not published**. Sign-in was an access dependency,
+not the only remaining completion dependency; the earlier implication that login
+alone would finish publication was incorrect.
+
+This revision implements the missing customer Order Form step. The school
+authority admin prepares its monthly/annual plan, licensed active bus count,
+card versus separately approved invoice collection, privacy email and urgent
+contact email. The server supplies the approved prices, currency, tax treatment,
+customer identity and supplier-document digest. Acceptance freezes these details
+and the exact eight displayed documents in the receipt. Editing an accepted
+order creates a new unsigned amendment and preserves the previous receipt.
+Initial Checkout and invoice activation must match the latest accepted order.
+Existing grandfathered authorities and already-running subscription changes
+retain their existing rules. Preparing or accepting an order does not charge a
+card, start a trial, approve an invoice exception or change a subscription.
+
+Role boundaries: only the school authority tenant admin may prepare/sign its own
+order with the existing active-session/MFA checks. Platform admins publish provider
+terms but do not sign customer orders. School-scoped admins, transportation
+admins, guardians and drivers gain no agreement-signing capability. The billing
+comparison is service-only; the preparation RPC is authenticated-only and checks
+the caller's actual role and tenant independently of client input.
+
+The new pending migration is **not installed**. The protected `Release agreement
+order snapshots` workflow binds to the reviewed current main commit and existing
+BusSafe project. It refuses publication/acceptance data, unknown function changes
+or unrelated schema drift, rehearses both installation and bounded restoration,
+retains encrypted recovery before persistent installation, and records the final
+schema fingerprint in the release ledger. Before deployment: pass PR checks,
+merge through normal review, run the protected workflow and inspect its evidence.
+Install the database change before deploying the app bundle that invokes it.
+
+The authorization audit recognizes only the complete, exact reviewed function
+transition; partial installation or modified definitions fail. Type checking
+permits only the precisely specified new billing-comparison RPC block in the
+hosted metadata during rollout. The authenticated-only preparation contract is
+explicitly typed because service-role metadata can omit it. Unknown RPCs,
+argument changes and unrelated type drift remain failures. After installation,
+regenerate from the actual hosted schema and retire the transition when the next
+reviewed release consolidates the schema contract.
+
+Isolated PostgreSQL tests exercise install/restore fingerprint equality, exact
+accepted snapshots, prior receipt preservation, stale and cross-authority denial,
+server-controlled prices and billing mismatch rejection. Component and handler
+tests cover saving changed details, resetting consent and stopping provider writes
+on an unmatched order. The browser journey now includes preparing the order before
+acceptance; local browser execution remains unavailable in this environment and
+CI must verify the changed journey. These tests create no production customers,
+contracts, messages or charges.
+
+Remaining publication dependencies still include account-specific supplier
+facts, operational 24/7 routing/absence coverage, a tested assisted-return process,
+and final customer-facing wording reflecting those facts. None is recorded as
+complete merely because the owner approved the policy. No contract was uploaded,
+published or accepted during this follow-through.
+
+The publisher also stops automatically choosing an arbitrary document of each
+kind. It retains the already-published package when one exists; otherwise the
+publisher must explicitly select the eight documents. This prevents the existing
+driver/guardian Acceptable Use document from being silently preselected for the
+first school authority package.
+
+Live UI follow-up: the platform Support screen has weekday 08:00–17:00 hours,
+an empty optional phone field and empty contact instructions. This does not prove
+an urgent monitored route or absence coverage. No support settings or recipients
+were changed and no test message was sent. Netlify still shows the Free legacy
+plan build-minute pause, projects online and Ohio functions. Its general team
+settings did not supply account-specific supplier-country or retention evidence;
+no provider agreement was accepted and no build was restarted.
+
+Validation for the customer-order revision: typecheck and lint passed; the web and
+mobile production build passed with build concurrency limited to one; all 1,227
+web tests, 32 mobile tests and 602 release tests passed. The separate mobile build
+and Android sync passed. All 125 historical migration checksums remain unchanged.
+An initial concurrent build/test attempt exhausted this workspace's resources;
+rerunning with bounded concurrency passed. A missing pending authorization entry
+was caught and corrected before this successful complete test run. The new
+browser journey still requires CI on the new commit; the previous PR head's full
+browser check passed but does not validate these additional changes.

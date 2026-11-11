@@ -48,6 +48,28 @@ test('district MSA/DPA migration: isolated Postgres replay, clickwrap, scoped re
   assert.match(sql,/create function public.accept_my_district_agreement/);
   await db.exec(sql);
 
+  await t.test('order migration recovery restores the empty pre-publication schema', async () => {
+    const { agreementOrderRecoverySql } = await import('../../scripts/lib/agreement-order-recovery.mjs');
+    const { calculateSchemaFingerprint } = await import('../../scripts/lib/schema-fingerprint.mjs');
+    const config=JSON.parse(await readFile('config/pending/agreement-order-snapshot.json','utf8'));
+    const original=[];
+    for(const f of config.functions){
+      const r=await one('select pg_get_functiondef(oid) definition from pg_proc where oid=to_regprocedure($1)',[f.signature]);
+      original.push({signature:f.signature,...r});
+    }
+    const fingerprint=await calculateSchemaFingerprint(db);
+    await db.exec('begin');
+    try {
+      await db.exec(await readFile(config.migration,'utf8'));
+      for(const f of config.functions){
+        assert.equal((await one('select md5(pg_get_functiondef(oid)) md5 from pg_proc where oid=to_regprocedure($1)',[f.signature])).md5,f.after);
+      }
+      assert.notEqual(await calculateSchemaFingerprint(db),fingerprint);
+      await db.exec(agreementOrderRecoverySql(original));
+      assert.equal(await calculateSchemaFingerprint(db),fingerprint);
+    } finally { await db.exec('rollback'); }
+  });
+
   assert.equal((await one('select count(*)::int n from safebus_private.agreement_document_versions')).n,0);
   assert.equal((await one('select count(*)::int n from safebus_private.tenant_agreement_requirement')).n,0);
   assert.equal((await one('select public.district_agreement_billing_allowed($1::uuid) allowed',[IDS.legacy])).allowed,true);
@@ -229,6 +251,56 @@ test('district MSA/DPA migration: isolated Postgres replay, clickwrap, scoped re
     assert.equal(latest.document_snapshot.documents.find(d => d.kind === 'suppliers').body, changedBody);
     assert.equal(latest.document_snapshot.revision, 2);
     assert.equal((await one('select count(*)::int n from safebus_private.agreement_executed_artifacts')).n, 2);
+  });
+
+  await t.test('customer orders are scoped, priced by the server and frozen with acceptance', async () => {
+    await db.exec(await readFile('supabase/migrations/pending/20261111230428_district_agreement_order_snapshot.sql','utf8'));
+    await asUser(IDS.second);
+    const unsigned=(await one('select public.get_my_district_agreement() x')).x;
+    assert.equal(unsigned.order_required,true);
+    const sign=async p=>(await one('select public.accept_my_district_agreement($1::uuid,$2,$3,$4,true,true,true) x',[
+      p.id,p.bundle_sha256,'Second Admin','Director',
+    ])).x;
+    await assert.rejects(sign(unsigned),/Order Form/);
+    const order={interval:'year',quantity:25,collection_method:'send_invoice',
+      privacy_contact:'privacy@example.test',urgent_contact:'urgent@example.test'};
+    const prepare=async (id,value)=>(await one('select public.prepare_my_district_agreement_order($1::uuid,$2::jsonb) x',[id,JSON.stringify(value)])).x;
+    await assert.rejects(prepare(unsigned.id,{...order,unit_amount_cents:1}),/Unsupported/);
+    await assert.rejects(prepare(unsigned.id,{...order,quantity:10001}),/10000/);
+    await assert.rejects(prepare(unsigned.id,{...order,urgent_contact:''}),/contact/);
+    await asUser(IDS.first);
+    await assert.rejects(prepare(unsigned.id,order),/current agreement/);
+    await asUser(IDS.guardian);
+    await assert.rejects(prepare(unsigned.id,order),/role cannot/);
+    await asUser(IDS.second);
+    const prepared=await prepare(unsigned.id,order);
+    assert.equal(prepared.order_details.unit_amount_cents,2029);
+    assert.equal(prepared.order_details.customer,'Synthetic District Two');
+    const form=prepared.documents.find(d=>d.kind==='order_form');
+    assert.match(form.body,/privacy@example.test/);
+    assert.equal(form.sha256,(await one("select encode(sha256(convert_to($1,'UTF8')),'hex') hash",[form.body])).hash);
+    await assert.rejects(sign(unsigned),/changed/);
+    const signed=await sign(prepared);
+    const firstReceipt=(await one('select public.get_my_district_agreement_receipt($1::uuid) x',[signed.receipt_id])).x;
+    assert.deepEqual(firstReceipt.document_snapshot.order_details,prepared.order_details);
+    assert.deepEqual(firstReceipt.document_snapshot.documents,prepared.documents);
+    const matches=async (interval,quantity,method)=>(await one('select public.district_agreement_order_matches($1::uuid,$2,$3,$4) x',[IDS.tenant2,interval,quantity,method])).x;
+    assert.equal(await matches('year',25,'send_invoice'),true);
+    assert.equal(await matches('month',25,'send_invoice'),false);
+    assert.equal(await matches('year',26,'send_invoice'),false);
+    assert.equal(await matches('year',25,'charge_automatically'),false);
+    const amendment=await prepare(prepared.id,{...order,quantity:26});
+    assert.notEqual(amendment.id,prepared.id);
+    assert.equal(amendment.status,'issued');
+    assert.equal(amendment.version,'2.2');
+    assert.equal(await matches('year',26,'send_invoice'),false);
+    await sign(amendment);
+    assert.equal(await matches('year',26,'send_invoice'),true);
+    assert.equal(await matches('year',25,'send_invoice'),false);
+    const preserved=(await one('select public.get_my_district_agreement_receipt($1::uuid) x',[signed.receipt_id])).x;
+    assert.deepEqual(preserved,firstReceipt);
+    assert.equal((await one("select has_function_privilege('anon','public.prepare_my_district_agreement_order(uuid,jsonb)','EXECUTE') x")).x,false);
+    assert.equal((await one("select has_function_privilege('authenticated','public.district_agreement_order_matches(uuid,text,integer,text)','EXECUTE') x")).x,false);
   });
 
 });

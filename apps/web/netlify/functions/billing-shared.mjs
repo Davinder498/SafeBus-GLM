@@ -160,6 +160,15 @@ export function requestHash(value) {
   return createHash('sha256').update(JSON.stringify(value)).digest('hex');
 }
 
+export async function assertDistrictOrderMatches(admin, tenantId, price, quantity, collectionMethod) {
+  const { data, error } = await admin.rpc('district_agreement_order_matches', {
+    p_tenant_id: tenantId, p_interval: price.recurring?.interval,
+    p_quantity: quantity, p_collection_method: collectionMethod,
+  });
+  if (error || typeof data !== 'boolean') throw new Error('billing_agreement_order_unavailable');
+  if (!data) throw new Error('billing_agreement_order_mismatch');
+}
+
 export function asIsoTimestamp(seconds) {
   return Number.isFinite(seconds) ? new Date(seconds * 1000).toISOString() : null;
 }

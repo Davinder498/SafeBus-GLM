@@ -14,6 +14,7 @@ import {
   json,
   requireBillingCaller,
   requireDistrictBillingAgreement,
+  assertDistrictOrderMatches,
   retrieveCanonicalSubscription,
   safeProviderErrorCode,
   syncSubscriptionProjection,
@@ -473,6 +474,7 @@ async function activateInvoice(ctx, stripe, state, input) {
   )
     throw new Error('billing_invoice_not_approved');
   const price = await validateApprovedPrice(stripe, current.priceId, ctx.config.stripeProductId);
+  await assertDistrictOrderMatches(ctx.admin, state.tenant_id, price, current.quantity, 'send_invoice');
   if (price.tax_behavior !== 'inclusive') throw new Error('billing_price_not_approved');
   if (!matches.length) {
     if (current.status !== 'approved') throw new Error('billing_invoice_review_required');
@@ -746,6 +748,8 @@ export async function handler(event) {
   } catch (error) {
     const code = safeProviderErrorCode(error);
     const denied = new Map([
+      ['billing_agreement_order_mismatch', 'Your invoice selection differs from your accepted Order Form. Update and accept your order in Agreements first.'],
+      ['billing_agreement_order_unavailable', 'Order verification is unavailable. No subscription was created.'],
       ['billing_invoice_request_missing', 'No invoice request is available.'],
       ['billing_invoice_not_approved', 'Invoice billing has not been approved for this selection.'],
       [

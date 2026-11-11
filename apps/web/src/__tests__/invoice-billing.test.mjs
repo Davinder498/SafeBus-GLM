@@ -9,6 +9,7 @@ vi.mock('../../netlify/functions/billing-shared.mjs', () => ({
   json: (statusCode, body) => ({ statusCode, body: JSON.stringify(body) }),
   requireBillingCaller: vi.fn(),
   requireDistrictBillingAgreement: vi.fn(),
+  assertDistrictOrderMatches: vi.fn(),
   retrieveCanonicalSubscription: vi.fn(),
   safeProviderErrorCode: (err) => err?.message ?? 'billing_provider_error',
   syncSubscriptionProjection: vi.fn(),
@@ -170,6 +171,14 @@ beforeEach(() => {
   shared.writeBillingAudit.mockResolvedValue(undefined);
 });
 describe('approved invoice billing request', () => {
+  it('blocks invoice activation that differs from the signed order before creating a subscription', async () => {
+    customer.metadata=metadata('approved');
+    shared.assertDistrictOrderMatches.mockRejectedValueOnce(new Error('billing_agreement_order_mismatch'));
+    const response=await handler(event('activate'));
+    expect(response.statusCode).not.toBe(200);
+    expect(JSON.parse(response.body).error).toContain('Order Form');
+    expect(stripe.subscriptions.create).not.toHaveBeenCalled();
+  });
   it('a stale review cannot disable renewal or change the due window of an activated contract', async () => {
     customer.metadata = {
       ...metadata('activated'),

@@ -2,7 +2,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@supabase/supabase-js', () => ({ createClient: vi.fn() }));
 const { createClient } = await import('@supabase/supabase-js');
-const { requireBillingCaller } = await import('../../netlify/functions/billing-shared.mjs');
+const { requireBillingCaller, assertDistrictOrderMatches } = await import('../../netlify/functions/billing-shared.mjs');
+
+describe('accepted order billing verification',()=>{
+  it.each([false,null,{},undefined])('refuses an unconfirmed match: %s',async data=>{
+    const admin={rpc:vi.fn(async()=>({data,error:null}))};
+    await expect(assertDistrictOrderMatches(admin,'tenant',{recurring:{interval:'year'}},25,'send_invoice')).rejects.toThrow(/billing_agreement_order_/);
+  });
+  it('passes the exact billing selection and requires an affirmative database answer',async()=>{
+    const admin={rpc:vi.fn(async()=>({data:true,error:null}))};
+    await assertDistrictOrderMatches(admin,'tenant',{recurring:{interval:'year'}},25,'send_invoice');
+    expect(admin.rpc).toHaveBeenCalledWith('district_agreement_order_matches',{
+      p_tenant_id:'tenant',p_interval:'year',p_quantity:25,p_collection_method:'send_invoice',
+    });
+  });
+});
 
 describe('billing caller session boundary', () => {
   beforeEach(() => {

@@ -551,6 +551,7 @@ test('production application RPC references are all reviewed', async () => {
     readJson('config/pending/complete-disposal-authorization.json'),
     readJson('config/pending/district-agreement-authorization.json'),
     readJson('config/pending/participant-agreement-authorization.json'),
+    readJson('config/pending/agreement-order-snapshot.json'),
   ]);
   const approved = new Set(
     [

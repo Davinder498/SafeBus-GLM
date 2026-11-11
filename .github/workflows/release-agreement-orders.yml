@@ -1,0 +1,87 @@
+name: Release agreement order snapshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: Exact reviewed current main SHA (40 characters)
+        required: true
+      mode:
+        type: choice
+        options: [rehearse, install]
+        required: true
+      confirmation:
+        description: REHEARSE_AGREEMENT_ORDERS or INSTALL_AGREEMENT_ORDERS
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      inputs.git_ref == github.sha &&
+      ((inputs.mode == 'rehearse' && inputs.confirmation == 'REHEARSE_AGREEMENT_ORDERS') ||
+       (inputs.mode == 'install' && inputs.confirmation == 'INSTALL_AGREEMENT_ORDERS'))
+    uses: ./.github/workflows/validate-security-install.yml
+    with:
+      git_ref: ${{ inputs.git_ref }}
+
+  release:
+    needs: validate
+    name: Protected agreement order release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      CI: true
+      SAFEBUS_RELEASE_SHA: ${{ inputs.git_ref }}
+      SAFEBUS_DEPLOY_ENV: production
+      SAFEBUS_AGREEMENT_ORDER_CONFIRM: ${{ inputs.confirmation }}
+      SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
+      SAFEBUS_DATABASE_CA_CERT: ${{ vars.SAFEBUS_DATABASE_CA_CERT }}
+      SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      SAFEBUS_BACKUP_PUBLIC_KEY: ${{ vars.SAFEBUS_BACKUP_PUBLIC_KEY }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.git_ref }}
+          fetch-depth: 0
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify agreement order implementation in isolated PostgreSQL
+        run: node --test tests/release/district-agreement-postgres-replay.test.mjs
+      - name: Reconcile, rehearse and encrypt bounded recovery
+        run: node scripts/release-agreement-orders.mjs prepare
+      - name: Retain encrypted recovery before installation
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: agreement-order-recovery-${{ inputs.git_ref }}-${{ github.run_id }}
+          path: .safebus-release/agreement-orders/
+          include-hidden-files: true
+          retention-days: 90
+          if-no-files-found: error
+      - name: Install and verify the reviewed order snapshot change
+        if: inputs.mode == 'install'
+        run: |
+          node scripts/release-agreement-orders.mjs install
+          node scripts/release-agreement-orders.mjs verify
+      - name: Retain release evidence
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: agreement-order-result-${{ inputs.git_ref }}-${{ github.run_id }}
+          path: .safebus-release/agreement-orders/
+          include-hidden-files: true
+          retention-days: 90
+          if-no-files-found: error

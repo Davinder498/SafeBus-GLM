@@ -8,6 +8,7 @@ vi.mock('../../netlify/functions/billing-shared.mjs', () => ({
   requestHash: () => 'hash',
   requireBillingCaller: vi.fn(),
   requireDistrictBillingAgreement: vi.fn(),
+  assertDistrictOrderMatches: vi.fn(),
   retrieveCanonicalSubscription: vi.fn(),
   safeProviderErrorCode: (e) => e.message,
   syncSubscriptionProjection: vi.fn(),
@@ -101,6 +102,14 @@ beforeEach(() => {
   });
 });
 describe('tenant subscription input and ownership', () => {
+  it('blocks a checkout selection that differs from the accepted order before creating Stripe records', async () => {
+    shared.assertDistrictOrderMatches.mockRejectedValueOnce(new Error('billing_agreement_order_mismatch'));
+    const response=await handler(event('checkout',{priceId:'price_month',quantity:1}));
+    expect(response.statusCode).not.toBe(200);
+    expect(JSON.parse(response.body).error).toContain('Order Form');
+    expect(stripe.customers.create).not.toHaveBeenCalled();
+    expect(stripe.checkout.sessions.create).not.toHaveBeenCalled();
+  });
   it('blocks checkout before Stripe when the new school authority has not accepted MSA/DPA', async () => {
     shared.requireDistrictBillingAgreement.mockResolvedValue({
       statusCode:409,body:JSON.stringify({agreementRequired:true}),

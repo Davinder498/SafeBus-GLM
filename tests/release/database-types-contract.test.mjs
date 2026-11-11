@@ -32,23 +32,30 @@ test('the observed route date default permits omission without making unrelated 
   assert.doesNotMatch(insert, /required_array\?:/);
   assert.equal('default' in metadata.definitions.routes.properties.service_dates, false);
   const committedRoutes = generated.match(/      routes: \{[\s\S]*?\n      \}/)?.[0];
-  assert.match(committedRoutes.slice(committedRoutes.indexOf('Insert:'), committedRoutes.indexOf('Update:')),
-    /service_dates\?: Array<string>/);
+  assert.match(
+    committedRoutes.slice(committedRoutes.indexOf('Insert:'), committedRoutes.indexOf('Update:')),
+    /service_dates\?: Array<string>/,
+  );
 });
 
 test('driver queue contract survives service-role metadata omission with both credentials required', () => {
   const metadataWithoutDriverRpc = generateFromOpenApi({ definitions: {}, paths: {} });
-  const block = metadataWithoutDriverRpc.match(/      authorize_driver_tracking_queue: \{[\s\S]*?\n      \}/)?.[0];
+  const block = metadataWithoutDriverRpc.match(
+    /      authorize_driver_tracking_queue: \{[\s\S]*?\n      \}/,
+  )?.[0];
   assert.ok(block);
   assert.match(block, /p_device_credential: string/);
   assert.match(block, /p_tracking_token: string/);
   assert.doesNotMatch(block, /p_(?:device_credential|tracking_token)\?:/);
   assert.match(block, /Returns: unknown/);
   assert.ok(generated.includes(block));
-  const evidence = JSON.parse(fs.readFileSync(
-    'docs/operations/tracking-queue-live-verification-2026-11-03.json', 'utf8',
-  ));
-  assert.deepEqual(evidence.rpc.argumentNames.slice().sort(), ['p_device_credential', 'p_tracking_token']);
+  const evidence = JSON.parse(
+    fs.readFileSync('docs/operations/tracking-queue-live-verification-2026-11-03.json', 'utf8'),
+  );
+  assert.deepEqual(evidence.rpc.argumentNames.slice().sort(), [
+    'p_device_credential',
+    'p_tracking_token',
+  ]);
   assert.equal(evidence.rpc.resultType, 'jsonb');
   assert.equal(evidence.rpc.serviceRoleExecute, false);
 });
@@ -225,4 +232,80 @@ test('the retired untyped trips helper cannot return', () => {
   assert.equal(fs.existsSync(path.join(root, 'packages/api/src/trips.ts')), false);
   const packageJson = fs.readFileSync(path.join(root, 'packages/api/package.json'), 'utf8');
   assert.doesNotMatch(packageJson, /"\.\/trips"/);
+});
+
+test('agreement rollout permits only the exact additional service RPC type block', async () => {
+  const { matchesAgreementOrderTypeTransition } =
+    await import('../../scripts/lib/agreement-order-transition.mjs');
+  const before = generateFromOpenApi({ definitions: {}, paths: {} });
+  const properties = {
+    p_tenant_id: { type: 'string', format: 'uuid' },
+    p_interval: { type: 'string' },
+    p_quantity: { type: 'integer' },
+    p_collection_method: { type: 'string' },
+  };
+  const after = generateFromOpenApi({
+    definitions: {},
+    paths: {
+      '/rpc/district_agreement_order_matches': {
+        post: {
+          parameters: [{ in: 'body', schema: { properties, required: Object.keys(properties) } }],
+        },
+      },
+    },
+  });
+  assert.equal(matchesAgreementOrderTypeTransition(after, before), true);
+  assert.equal(matchesAgreementOrderTypeTransition(before, before), false);
+  assert.equal(
+    matchesAgreementOrderTypeTransition(
+      after.replace('p_quantity: number', 'p_quantity: string'),
+      before,
+    ),
+    false,
+  );
+  assert.equal(matchesAgreementOrderTypeTransition(after + '// unrelated drift', before), false);
+  assert.equal(matchesAgreementOrderTypeTransition(after, after), false);
+  assert.match(before, /prepare_my_district_agreement_order: \{/);
+  assert.match(generated, /prepare_my_district_agreement_order: \{/);
+});
+
+test('agreement authorization transition rejects partial installation and altered definitions', async () => {
+  const { extendAgreementOrderAuthorization } =
+    await import('../../scripts/lib/agreement-order-transition.mjs');
+  const config = JSON.parse(
+    fs.readFileSync('config/pending/agreement-order-snapshot.json', 'utf8'),
+  );
+  const audiences = () =>
+    Object.fromEntries(
+      ['authenticated', 'serviceRole', 'allPublic', 'serviceExecutable'].map((k) => [k, new Set()]),
+    );
+  const client = (count, changed = false) => ({
+    query: async (q, p) => ({
+      rows: q.includes('count(*)')
+        ? [{ count }]
+        : [
+            {
+              md5: changed ? 'tampered' : config.functions.find((f) => f.signature === p[0]).after,
+              owner: 'postgres',
+            },
+          ],
+    }),
+  });
+  assert.equal(await extendAgreementOrderAuthorization(client(0), config, audiences()), false);
+  await assert.rejects(
+    extendAgreementOrderAuthorization(client(1), config, audiences()),
+    /Partial/,
+  );
+  await assert.rejects(
+    extendAgreementOrderAuthorization(client(2, true), config, audiences()),
+    /differs/,
+  );
+  const roles = audiences();
+  assert.equal(await extendAgreementOrderAuthorization(client(2), config, roles), true);
+  assert.ok(roles.authenticated.has('prepare_my_district_agreement_order(uuid,jsonb)'));
+  assert.ok(!roles.serviceExecutable.has('prepare_my_district_agreement_order(uuid,jsonb)'));
+  assert.ok(
+    roles.serviceExecutable.has('district_agreement_order_matches(uuid,text,integer,text)'),
+  );
+  assert.ok(!roles.authenticated.has('district_agreement_order_matches(uuid,text,integer,text)'));
 });
