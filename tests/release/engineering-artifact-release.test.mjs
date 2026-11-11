@@ -311,9 +311,225 @@ test('hosted file verification compares immutable deployment bytes and rejects a
   });
   assert.equal(ok.publicFilesVerified, 1);
   await assert.rejects(
-    verifyHostedArtifact(candidate, policy, manifest, async () => new Response('wrong artifact')),
+    verifyHostedArtifact(candidate, policy, manifest, async () => new Response('wrong artifact'), {
+      pause: async () => {},
+    }),
     /HOSTED_ARTIFACT_MISMATCH/,
   );
+});
+test('temporary hosting failures can recover after the former three-attempt limit', async () => {
+  const delays = [];
+  let calls = 0;
+  const result = await verifyHostedArtifact(
+    candidate,
+    policy,
+    manifest,
+    async (url, options) => {
+      assert.equal(new URL(url).hostname, candidate + '--bussafe.netlify.app');
+      assert.equal(options.redirect, 'manual');
+      calls++;
+      if (calls === 1)
+        throw Object.assign(new TypeError('private diagnostic'), { cause: { code: 'EAI_AGAIN' } });
+      if (calls === 2) return new Response('private error body', { status: 404 });
+      if (calls === 3) return new Response('private error body', { status: 503 });
+      return new Response('synthetic-html');
+    },
+    { pause: async (delay) => delays.push(delay) },
+  );
+  assert.deepEqual(result, { publicFilesVerified: 1, hostedRetries: 3 });
+  assert.deepEqual(delays, [2000, 5000, 10000]);
+  assert.equal(calls, 4);
+});
+test('permanent byte mismatch stays blocked and identifies only the local file and fixed reason', async () => {
+  let calls = 0;
+  await assert.rejects(
+    verifyHostedArtifact(
+      candidate,
+      policy,
+      manifest,
+      async () => {
+        calls++;
+        return new Response('private incorrect bytes');
+      },
+      { pause: async () => {} },
+    ),
+    (error) => {
+      assert.equal(error.message, 'ENGINEERING_RELEASE_HOSTED_ARTIFACT_MISMATCH');
+      assert.deepEqual(error.hostedArtifact, {
+        publicFilesExpected: 1,
+        publicFilesVerified: 0,
+        retries: 2,
+        failures: [{ path: 'index.html', attempts: 3, reason: 'digest_mismatch', status: 200 }],
+      });
+      assert.doesNotMatch(JSON.stringify(error), /private incorrect bytes/);
+      return true;
+    },
+  );
+  assert.equal(calls, 3);
+});
+test('redirects and access denials never follow another origin or pass as the artifact', async () => {
+  for (const status of [301, 302, 307, 308, 401, 403]) {
+    let calls = 0;
+    await assert.rejects(
+      verifyHostedArtifact(
+        candidate,
+        policy,
+        manifest,
+        async (url, options) => {
+          calls++;
+          assert.equal(options.redirect, 'manual');
+          return new Response('private provider diagnostic', {
+            status,
+            headers: { location: 'https://untrusted.invalid/secret' },
+          });
+        },
+        { pause: async () => assert.fail('Permanent failures must not sleep') },
+      ),
+      (error) => {
+        assert.equal(error.message, 'ENGINEERING_RELEASE_HOSTED_ARTIFACT_UNAVAILABLE');
+        assert.deepEqual(error.hostedArtifact.failures, [
+          {
+            path: 'index.html',
+            attempts: 1,
+            reason: status < 400 ? 'redirect' : 'http_error',
+            status,
+          },
+        ]);
+        assert.doesNotMatch(JSON.stringify(error), /untrusted|private|secret/);
+        return true;
+      },
+    );
+    assert.equal(calls, 1);
+  }
+});
+test('unavailable hosting has bounded retries and distinguishes timeout, DNS and HTTP failures', async () => {
+  for (const kind of ['timeout', 'dns', 'network', 'http']) {
+    let calls = 0;
+    const delays = [];
+    await assert.rejects(
+      verifyHostedArtifact(
+        candidate,
+        policy,
+        manifest,
+        async () => {
+          calls++;
+          if (kind === 'http') return new Response('private provider body', { status: 503 });
+          if (kind === 'timeout') throw new DOMException('private timeout', 'TimeoutError');
+          throw Object.assign(new TypeError('private network detail'), {
+            cause: { code: kind === 'dns' ? 'ENOTFOUND' : 'private credential' },
+          });
+        },
+        { pause: async (delay) => delays.push(delay) },
+      ),
+      (error) => {
+        assert.equal(error.message, 'ENGINEERING_RELEASE_HOSTED_ARTIFACT_UNAVAILABLE');
+        assert.equal(error.hostedArtifact.failures[0].attempts, 6);
+        assert.equal(
+          error.hostedArtifact.failures[0].reason,
+          kind === 'http' ? 'http_error' : kind === 'timeout' ? 'timeout' : 'network_error',
+        );
+        assert.equal(
+          error.hostedArtifact.failures[0].networkCode,
+          kind === 'dns' ? 'ENOTFOUND' : undefined,
+        );
+        assert.doesNotMatch(JSON.stringify(error), /private/);
+        return true;
+      },
+    );
+    assert.equal(calls, 6);
+    assert.deepEqual(delays, [2000, 5000, 10000, 15000, 20000]);
+  }
+});
+test('the whole hosted comparison has a two-minute deadline even across different files', async () => {
+  let clock = 0;
+  let calls = 0;
+  const files = Object.fromEntries(
+    Array.from({ length: 12 }, (_, i) => [`asset-${i}.js`, digest('match')]),
+  );
+  await assert.rejects(
+    verifyHostedArtifact(
+      candidate,
+      policy,
+      files,
+      async () => {
+        calls++;
+        clock += 31000;
+        return new Response('match');
+      },
+      { now: () => clock, pause: async () => assert.fail('No retries expected') },
+    ),
+    (error) => {
+      assert.equal(error.message, 'ENGINEERING_RELEASE_HOSTED_ARTIFACT_UNAVAILABLE');
+      assert.ok(
+        error.hostedArtifact.failures.every((entry) => entry.reason === 'verification_deadline'),
+      );
+      assert.ok(error.hostedArtifact.publicFilesVerified < Object.keys(files).length);
+      return true;
+    },
+  );
+  assert.equal(calls, 4);
+});
+test('verification limits concurrency and stops assigning files after an exhausted failure', async () => {
+  let active = 0;
+  let maximum = 0;
+  let calls = 0;
+  const files = Object.fromEntries(
+    Array.from({ length: 20 }, (_, i) => [`asset-${i}.js`, digest('match')]),
+  );
+  await assert.rejects(
+    verifyHostedArtifact(candidate, policy, files, async () => {
+      active++;
+      calls++;
+      maximum = Math.max(active, maximum);
+      await new Promise((resolve) => setImmediate(resolve));
+      active--;
+      return new Response('private failure', { status: 403 });
+    }),
+    (error) => {
+      assert.equal(error.hostedArtifact.failures.length, 4);
+      assert.equal(error.hostedArtifact.publicFilesVerified, 0);
+      return true;
+    },
+  );
+  assert.equal(maximum, 4);
+  assert.equal(calls, 4);
+});
+test('hosted failure evidence survives rollback and a recording failure cannot prevent restoration', async () => {
+  for (const failRecording of [false, true]) {
+    const { data, params } = fixture();
+    const evidence = {
+      publicFilesExpected: 1,
+      publicFilesVerified: 0,
+      retries: 0,
+      failures: [{ path: 'index.html', attempts: 1, reason: 'http_error', status: 403 }],
+    };
+    params.verifyHosted = async () => {
+      throw Object.assign(new Error('ENGINEERING_RELEASE_HOSTED_ARTIFACT_UNAVAILABLE'), {
+        hostedArtifact: evidence,
+      });
+    };
+    params.health = async () => assert.fail('Unverified bytes must never reach the health gate');
+    const record = params.record;
+    params.record = async (name, value) => {
+      if (name === 'hosted-verification-failed' && failRecording)
+        throw new Error('private filesystem error');
+      return record(name, value);
+    };
+    await assert.rejects(publishEngineeringArtifact(params), (error) => {
+      assert.deepEqual(error.hostedArtifact, evidence);
+      assert.equal(error.evidenceWriteFailed, failRecording ? true : undefined);
+      return true;
+    });
+    assert.deepEqual(data.restores, [previous]);
+    assert.equal(data.site.published_deploy.id, previous);
+    assert.equal(data.records.at(-1).name, 'rollback');
+    if (!failRecording)
+      assert.deepEqual(data.records.at(-2), {
+        name: 'hosted-verification-failed',
+        deployId: candidate,
+        ...evidence,
+      });
+  }
 });
 test('artifact manifests bind file content and reject public source maps', async (t) => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'safebus-artifact-test-'));
@@ -357,8 +573,10 @@ test('check collection follows later pages before verifying CI, with fixed evide
 
 test('frontend publisher builds only the web artifact and enforces clean tracked inputs', async () => {
   const workflow = await fs.readFile('.github/workflows/release-engineering-artifact.yml', 'utf8');
-  const build = workflow.slice(workflow.indexOf('      - name: Build artifact'),
-    workflow.indexOf('      - name: Prepare exact artifact'));
+  const build = workflow.slice(
+    workflow.indexOf('      - name: Build artifact'),
+    workflow.indexOf('      - name: Prepare exact artifact'),
+  );
   assert.match(build, /pnpm --filter @safebus\/web build/);
   assert.doesNotMatch(build, /pnpm build|@safebus\/mobile|cap:sync/);
   assert.match(build, /git diff --exit-code/);
@@ -367,5 +585,7 @@ test('frontend publisher builds only the web artifact and enforces clean tracked
   assert.match(publisher, /ENGINEERING_RELEASE_CHECKOUT_NOT_REVIEWED/);
   assert.match(publisher, /'--prod',\s*'--no-build'/);
   assert.doesNotMatch(publisher, /'--context'/);
-  assert.ok(publisher.indexOf('assertReviewedCheckout(sha)') < publisher.indexOf('netlifyApi(process.env'));
+  assert.ok(
+    publisher.indexOf('assertReviewedCheckout(sha)') < publisher.indexOf('netlifyApi(process.env'),
+  );
 });
