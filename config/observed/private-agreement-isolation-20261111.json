@@ -1,0 +1,178 @@
+{
+  "observedDate": "2026-11-11",
+  "databaseWritesPerformed": false,
+  "source": "All 18 catalog queries from scripts/audit-database-authorization.mjs executed together in a read-only transaction with timeouts and rollback",
+  "counts": {
+    "publicFunctions": 238,
+    "authenticatedFunctions": 183,
+    "serviceFunctions": 218,
+    "anonymousFunctions": 0,
+    "publicFunctionGrants": 0,
+    "rlsDisabled": 0,
+    "anonymousPolicies": 0,
+    "anonymousRelations": 0,
+    "anonymousSequences": 0,
+    "unmatchedAuthenticatedGrants": 0,
+    "unsafeViews": 0,
+    "mutableSearchPaths": 0,
+    "editableMetadataReferences": 0,
+    "schemaCreate": 0,
+    "privateGuardianColumns": 0,
+    "missingSessionPolicies": 15,
+    "missingSchoolLocationPolicies": 0,
+    "sessionHook": 1
+  },
+  "privateTables": [
+    {
+      "object_name": "safebus_private.driver_tracking_state",
+      "schema_name": "safebus_private",
+      "owner_name": "postgres",
+      "rls_enabled": true,
+      "policy_count": 0,
+      "anon_has_privileges": false,
+      "authenticated_has_privileges": false,
+      "service_has_privileges": false
+    },
+    {
+      "object_name": "safebus_private.retention_cases",
+      "schema_name": "safebus_private",
+      "owner_name": "postgres",
+      "rls_enabled": true,
+      "policy_count": 0,
+      "anon_has_privileges": false,
+      "authenticated_has_privileges": false,
+      "service_has_privileges": false
+    },
+    {
+      "object_name": "safebus_private.retention_lifecycle_totals",
+      "schema_name": "safebus_private",
+      "owner_name": "postgres",
+      "rls_enabled": true,
+      "policy_count": 0,
+      "anon_has_privileges": false,
+      "authenticated_has_privileges": false,
+      "service_has_privileges": false
+    },
+    {
+      "object_name": "safebus_private.disposal_holds",
+      "schema_name": "safebus_private",
+      "owner_name": "postgres",
+      "rls_enabled": true,
+      "policy_count": 0,
+      "anon_has_privileges": false,
+      "authenticated_has_privileges": false,
+      "service_has_privileges": false
+    },
+    {
+      "object_name": "safebus_private.disposal_extensions",
+      "schema_name": "safebus_private",
+      "owner_name": "postgres",
+      "rls_enabled": true,
+      "policy_count": 0,
+      "anon_has_privileges": false,
+      "authenticated_has_privileges": false,
+      "service_has_privileges": false
+    },
+    {
+      "object_name": "safebus_private.disposal_runs",
+      "schema_name": "safebus_private",
+      "owner_name": "postgres",
+      "rls_enabled": true,
+      "policy_count": 0,
+      "anon_has_privileges": false,
+      "authenticated_has_privileges": false,
+      "service_has_privileges": false
+    },
+    {
+      "object_name": "safebus_private.disposal_accounts",
+      "schema_name": "safebus_private",
+      "owner_name": "postgres",
+      "rls_enabled": true,
+      "policy_count": 0,
+      "anon_has_privileges": false,
+      "authenticated_has_privileges": false,
+      "service_has_privileges": false
+    },
+    {
+      "object_name": "safebus_private.agreement_document_versions",
+      "schema_name": "safebus_private",
+      "owner_name": "postgres",
+      "rls_enabled": true,
+      "policy_count": 0,
+      "anon_has_privileges": false,
+      "authenticated_has_privileges": false,
+      "service_has_privileges": false
+    },
+    {
+      "object_name": "safebus_private.agreement_catalog",
+      "schema_name": "safebus_private",
+      "owner_name": "postgres",
+      "rls_enabled": true,
+      "policy_count": 0,
+      "anon_has_privileges": false,
+      "authenticated_has_privileges": false,
+      "service_has_privileges": false
+    },
+    {
+      "object_name": "safebus_private.agreement_packages",
+      "schema_name": "safebus_private",
+      "owner_name": "postgres",
+      "rls_enabled": true,
+      "policy_count": 0,
+      "anon_has_privileges": false,
+      "authenticated_has_privileges": false,
+      "service_has_privileges": false
+    },
+    {
+      "object_name": "safebus_private.agreement_executed_artifacts",
+      "schema_name": "safebus_private",
+      "owner_name": "postgres",
+      "rls_enabled": true,
+      "policy_count": 0,
+      "anon_has_privileges": false,
+      "authenticated_has_privileges": false,
+      "service_has_privileges": false
+    },
+    {
+      "object_name": "safebus_private.tenant_agreement_requirement",
+      "schema_name": "safebus_private",
+      "owner_name": "postgres",
+      "rls_enabled": true,
+      "policy_count": 0,
+      "anon_has_privileges": false,
+      "authenticated_has_privileges": false,
+      "service_has_privileges": false
+    },
+    {
+      "object_name": "safebus_private.participant_terms_publication",
+      "schema_name": "safebus_private",
+      "owner_name": "postgres",
+      "rls_enabled": true,
+      "policy_count": 0,
+      "anon_has_privileges": false,
+      "authenticated_has_privileges": false,
+      "service_has_privileges": false
+    },
+    {
+      "object_name": "safebus_private.participant_agreement_requirements",
+      "schema_name": "safebus_private",
+      "owner_name": "postgres",
+      "rls_enabled": true,
+      "policy_count": 0,
+      "anon_has_privileges": false,
+      "authenticated_has_privileges": false,
+      "service_has_privileges": false
+    },
+    {
+      "object_name": "safebus_private.participant_agreement_acceptances",
+      "schema_name": "safebus_private",
+      "owner_name": "postgres",
+      "rls_enabled": true,
+      "policy_count": 0,
+      "anon_has_privileges": false,
+      "authenticated_has_privileges": false,
+      "service_has_privileges": false
+    }
+  ],
+  "remainingVerification": "Protected Data API discovery and hidden-schema probes must pass before publishing."
+}
