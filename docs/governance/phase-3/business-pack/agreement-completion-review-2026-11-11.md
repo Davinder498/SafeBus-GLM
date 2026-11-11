@@ -170,10 +170,11 @@ because the environment denied its process-singleton socket. No browser journey
 is marked passed in this review. Existing production settings were not weakened.
 Repository-required non-browser checks are reported in the PR after completion.
 
-This PR changes contract drafts and an isolated test, not application runtime or
-production schema. Under the existing browser-scope policy, a PR with only these
-documentation/release-test paths omits the full suite. This does not exempt future
-acceptance UI, supplier enforcement or export changes from relevant verification.
+The initial documentation-only revision omitted the full browser suite under the
+existing policy. The final follow-through changes the agreement acceptance screen
+and therefore requires the browser suite in CI. It does not change production
+schema or publish a contract. Browser execution remains unverified locally for the
+environment reason above; passing component tests is not a browser journey.
 
 
 ## Approved review schedule and restored Netlify access
@@ -190,3 +191,45 @@ record this configured US location. The earlier inaccessible-page note is
 historical; no country is inferred for CDN/log/support processing. The site is
 online and builds remain stopped with the Free-plan build-minute limit notice.
 No production or billing setting was changed.
+
+
+## Acceptance-screen follow-through
+
+Consent is now cleared whenever the agreement is refreshed, including replacement
+supplier versions. A failed verification removes stale signing controls and is
+shown as unavailable, not incorrectly as unpublished. The screen checks the exact
+eight required document kinds, unique document identities, nonempty text and
+valid digest formats before offering acceptance. The database remains responsible
+for independently checking actual digests, current versions and caller scope.
+Six component scenarios cover fresh consent, failed refresh and malformed packages.
+
+The Order Form, MSA and SLA now consistently distinguish ordinary business-hours
+support from approved 24/7 urgent privacy/security coverage. P1 availability
+outages do not acquire an unsupported fixed response promise. Urgent incident
+notification and records-request commitments are not excluded by that limitation.
+
+Role behavior is unchanged: the authenticated school authority tenant admin with
+required MFA reviews and accepts; platform admins publish versioned documents but
+do not sign as the customer. Transportation admins, school-scoped administrators,
+guardians and drivers do not gain district signing rights. Database scope checks
+remain authoritative; this screen change grants no new permission.
+
+### Remaining completion dependencies — not resolved by this PR
+
+- The actual account-specific supplier terms, country disclosures and retention
+  evidence must be completed. Netlify's verified Ohio function location resolves
+  only that deployment-region fact.
+- Customer-specific commercial selections and privacy/urgent contacts need an
+  immutable accepted Order Form snapshot. The current generic catalog and tenant
+  name in the receipt do not implement that requirement.
+- A newer supplier package can be separately accepted and archived, but a future
+  supplier rollout still needs enforcement against those exact approvals before
+  affected processing changes. Publishing a catalog alone is not that control.
+- Included assisted return requires a tenant-scoped, hold-aware inventory, secure
+  delivery and a tested completion/disposal report beyond existing directory CSVs.
+- The approved 24/7 commitment needs actual monitored routing, an absence/backup
+  arrangement and an exercise. No staffing exercise or customer notification was
+  performed or invented during these changes.
+
+Keep final publication and commercial activation blocked until these dependencies
+are actually resolved. PR merge is not publication, execution or launch approval.

@@ -154,6 +154,18 @@ const requiredDocumentKinds = new Set([
   'acceptable_use', 'data_return', 'suppliers',
 ]);
 
+/** Presentation guard only; the database independently verifies scope and hashes. */
+export function isCompleteDistrictAgreement(agreement: DistrictAgreement | null): boolean {
+  if (!agreement?.id || !/^[0-9a-f]{64}$/.test(agreement.bundle_sha256 ?? '')) return false;
+  const docs = agreement.documents;
+  return docs.length === requiredDocumentKinds.size
+    && new Set(docs.map(doc => doc.kind)).size === requiredDocumentKinds.size
+    && new Set(docs.map(doc => doc.id)).size === requiredDocumentKinds.size
+    && docs.every(doc => requiredDocumentKinds.has(doc.kind) && doc.id.trim()
+      && doc.title.trim() && doc.version.trim() && doc.body.trim()
+      && /^[0-9a-f]{64}$/.test(doc.sha256));
+}
+
 /**
  * The receipt snapshot is the canonical UTF-8 source. The complementary PDF
  * currently uses an ASCII-compatible font and may approximate Unicode text.

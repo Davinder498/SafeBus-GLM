@@ -201,8 +201,8 @@ SafeBus will perform the accepted service with reasonable care and skill.
 The initial-pilot Service-Level Agreement uses **Monday–Friday, 8:00 a.m.–5:00
 p.m. Alberta local time (America/Edmonton), excluding Alberta's nine general
 holidays**, for ordinary staffed support. The complete holiday calendar and
-request-triage rules appear in the SLA. There is **no 24/7 staffed support,
-guaranteed after-hours response, uptime percentage, fixed repair time or
+request-triage rules appear in the SLA. There is **no 24/7 ordinary staffed support,
+guaranteed ordinary after-hours response, uptime percentage, fixed repair time or
 automatic SLA credit** for the initial pilot. Automated monitoring outside
 staffed hours is not evidence of a person responding. Where supported by
 operational evidence, any later numerical guarantee or expanded staffing

@@ -16,9 +16,9 @@ SafeBus service guarantees.
 Ordinary support is provided **Monday–Friday, 8:00 a.m.–5:00 p.m. Alberta local
 time (America/Edmonton)**, **excluding Alberta's nine general holidays**.
 The support and ordinary contractual notice inbox is **info@safebus.kids**.
-Support received outside staffed hours may be queued or automatically acknowledged
+Ordinary support received outside staffed hours may be queued or automatically acknowledged
 and is ordinarily handled when staffed support next resumes; there is **no
-contractual first-response time or after-hours human-response guarantee**.
+contractual ordinary-support first-response time or ordinary after-hours human-response guarantee**.
 An automatic acknowledgement does not mean a person has reviewed the issue.
 
 For this pilot the nine excluded Alberta general holidays are:
@@ -54,14 +54,14 @@ independent backup responder exists.
 
 | Priority | Examples | Initial-pilot handling |
 | --- | --- | --- |
-| P1 — Critical | Core service unavailable; suspected cross-tenant or serious security/privacy event | Prioritize investigation when personnel are available, take proportionate protective actions, coordinate operational fallback and follow DPA/law incident duties |
+| P1 — Critical | Core service unavailable; suspected cross-tenant or serious security/privacy event | Urgent privacy/security events receive 24/7 coverage and immediate notice upon awareness under section 4. Ordinary availability outages receive priority investigation during support hours; coordinate operational fallback |
 | P2 — High | Significant bus-location, map or authorized notification degradation | Investigate with priority during staffed support hours and communicate confirmed updates as practical |
 | P3 — Standard | Account questions, configuration support or noncritical defects | Handle in the ordinary business-hours queue |
 
 SafeBus will make commercially reasonable efforts to investigate service reports
 and provide accurate information about confirmed disruptions. **No fixed
 acknowledgement, update, repair or restoration time** is promised for any
-category, including P1. Classifications are for triage, not a guaranteed
+ordinary service category, including P1 availability outages. The immediate incident-notice and records-request commitments in section 4 remain binding. Classifications are for triage, not a guaranteed
 response clock or substitute for school-authority emergency procedures.
 Emergency safety response, transport dispatch and student supervision remain
 the Customer's responsibility.
@@ -86,7 +86,7 @@ positions. Device permissions, network availability, provider outages, map tiles
 and operating conditions can affect delivery; these risks are disclosed, not
 treated as a blanket waiver of other contractual or legal responsibilities.
 
-Any future numeric target or 24/7 support commitment requires verified
+Any future numeric target or expansion to 24/7 ordinary support requires verified
 operational evidence, staffing, supplier readiness and an **expressly agreed
 written amendment**; an internal dashboard target does not amend this SLA.
 

@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/contexts/useAuth';
 import {
   acceptDistrictAgreement, downloadExecutedAgreementPdf, downloadExecutedAgreementArchive, getDistrictAgreement,
-  listMyAgreementReceipts, type AgreementDocument, type DistrictAgreement,
+  listMyAgreementReceipts, isCompleteDistrictAgreement, type AgreementDocument, type DistrictAgreement,
 } from '@/services/districtAgreementService';
 
 const sectionNames = ['MSA', 'DPA', 'Order Form', 'Security & Suppliers'];
@@ -47,22 +47,24 @@ export function DistrictAgreementsPage() {
 
   const refresh=useCallback(async()=>{
     setLoading(true);setError(null);
+    // Consent belongs to the reviewed package, never to a replacement loaded later.
+    setConsent(false);setAuthority(false);setIntent(false);setTab(0);
     try {
       const [next,receipts]=await Promise.all([getDistrictAgreement(),listMyAgreementReceipts()]);
       setAgreement(next);setArchive(receipts);
-    }catch(cause){setError(cause instanceof Error?cause.message:'Agreement unavailable.');}
+    }catch(cause){setAgreement(null);setError(cause instanceof Error?cause.message:'Agreement unavailable.');}
     finally {setLoading(false);}
   },[]);
   useEffect(()=>{void refresh();},[refresh]);
 
   const docs=agreement?.documents??[];
-  const complete=Boolean(agreement?.id && agreement?.bundle_sha256 && docs.length===8
-    && new Set(docs.map(d=>d.kind)).size===8);
+  const complete=isCompleteDistrictAgreement(agreement);
   const signed=agreement?.status==='executed';
   const eligible=complete && agreement?.status==='issued' && mfaStatus.currentLevel==='aal2';
   async function accept(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if(!eligible || !agreement?.id || !agreement.bundle_sha256 || busy) return;
+    if(!eligible || !agreement?.id || !agreement.bundle_sha256 || busy || loading
+      || !consent || !authority || !intent) return;
     setBusy(true);setError(null);setNotice(null);
     try {
       const result=await acceptDistrictAgreement({
@@ -100,10 +102,10 @@ export function DistrictAgreementsPage() {
       {loading?<Card className="p-6"><p role="status">Loading your agreement securely…</p></Card>:
         !agreement || agreement.status==='not_issued'?
         <Card className="space-y-3 p-6">
-          <h2 className="text-xl font-bold text-[var(--color-heading)]">Agreement not yet published</h2>
+          <h2 className="text-xl font-bold text-[var(--color-heading)]">{error?'Agreement unavailable':'Agreement not yet published'}</h2>
           <p className="text-[var(--color-text-muted)]">
-            SafeBus has not published the final contract package. No agreement is assumed or
-            accepted, and draft terms cannot be signed. Please contact SafeBus support if needed.
+            {error?'We could not verify your current agreement. Please refresh the page or contact SafeBus support.':
+              'SafeBus has not published the final contract package. No agreement is assumed or accepted, and draft terms cannot be signed. Please contact SafeBus support if needed.'}
           </p>
           <Link to="/admin/settings/support" className="inline-flex min-h-11 items-center font-semibold text-[var(--color-action)] underline">Contact SafeBus</Link>
         </Card>:
@@ -161,7 +163,8 @@ export function DistrictAgreementsPage() {
                 <h2 className="font-bold text-[var(--color-heading)]">Agreement status</h2>
               </div>
               <p role="status" className="font-semibold capitalize">{signed?'Accepted and archived':agreement.status}</p>
-              <p className="text-sm text-[var(--color-text-muted)]">Your active, authenticated school district administrator account is used for electronic acceptance.</p>
+              <p className="text-sm text-[var(--color-text-muted)]">Your active, authenticated school authority administrator account is used for electronic acceptance.</p>
+              {!complete && <p role="alert">This agreement package is incomplete. Refresh or contact SafeBus support before accepting.</p>}
               {signed && <Button type="button" onClick={()=>navigate('/admin/settings/billing')}>Continue to billing</Button>}
               <Button type="button" variant="outline" disabled={busy} onClick={()=>void refresh()}>Refresh status</Button>
             </Card>

@@ -97,7 +97,7 @@ test('initial-pilot SLA states owner-approved business hours, nine holidays and 
     assert.ok(s.includes(name), name);
   }
   assert.match(s, /not additional pilot closures/);
-  assert.match(s, /no\s+contractual first-response time or after-hours human-response guarantee/i);
+  assert.match(s, /no\s+contractual ordinary-support first-response time or ordinary after-hours human-response guarantee/i);
   assert.match(s, /no numerical service-level commitment/i);
   assert.match(s, /No automatic uptime-based service credits/i);
   assert.match(s, /both monthly and annual/i);
@@ -157,4 +157,13 @@ test('owner-approved trial policy is reflected in subscription contracts and ope
   assert.match(runbook,/missing_payment_method=create_invoice/);
   assert.match(runbook,/platform-super-admin/i);
   assert.match(runbook,/send_invoice/);
+});
+
+
+test('ordinary support exclusions never exclude approved urgent incident coverage', async () => {
+  for (const file of ['order-form.md', 'master-services-agreement.md', 'service-level-agreement.md']) {
+    const document = await read(file);
+    assert.match(document, /24\/7 urgent privacy\/security|privacy\/security incidents have \*\*24\/7 coverage/, file);
+    assert.doesNotMatch(document, /No staffed 24\/7\/after-hours response promise|no 24\/7 staffed support,|Any future numeric target or 24\/7 support commitment/i, file);
+  }
 });
