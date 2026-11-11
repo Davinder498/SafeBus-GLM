@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: production-health-monitor
+  group: public-html-inspection
   cancel-in-progress: true
 
 jobs:
@@ -27,6 +27,18 @@ jobs:
       - name: Check public production health
         id: public_health
         run: node scripts/check-production-health.mjs
+      - name: Inspect public HTML from the failed release without credentials or writes
+        if: github.event_name == 'workflow_dispatch'
+        run: node scripts/inspect-hosted-html-once.mjs
+      - name: Retain bounded public response evidence
+        if: always() && github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: public-html-inspection-${{ github.run_id }}
+          path: .safebus-public-html-inspection/
+          include-hidden-files: true
+          retention-days: 7
+          if-no-files-found: error
       - name: Record monitoring failure without response content
         if: failure() && steps.public_health.outcome == 'failure'
         run: |
