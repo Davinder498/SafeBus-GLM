@@ -1,6 +1,6 @@
 # Agreement completion review — November 11, 2026
 
-Status: internal drafting and decision package; NOT approved, published or executed. The owner's “go ahead” authorizes this review and drafting, not acceptance of previously proposed business deadlines. Agreements take priority over iOS.
+Status: B1–B3 business decisions approved November 11, 2026, including owner-confirmed 24/7 urgent incident coverage. Contract remains unpublished and unexecuted. The matrix below preserves the pre-change assessment; integrated wording is not operational proof. Agreements take priority over iOS.
 
 ## Source and method
 
@@ -77,7 +77,7 @@ These proposals are not an additional incorporated schedule and do not amend the
 
 **MSA §9:** Confidentiality survives termination indefinitely.
 
-## Decisions needing the owner, with proposed operating mechanics
+## B1–B3 approved decisions; operational verification remains open
 
 ### B1 — Supplier authorization
 
@@ -85,7 +85,7 @@ Recommendation: the administrator's initial explicit acceptance includes the exa
 
 Urgent containment may stop or isolate affected processing immediately. It must not become blanket permission to introduce an unapproved supplier. No global “all customers accepted” flag; approval belongs to each authority. Implementation needs version-specific acceptance and a server-side check at the affected processing path, not just an email notice. Verify actual vendor flow-down terms before offering this clause.
 
-Owner choice: approve this affirmative-approval model, or request an alternative for legal review. Previous 30-day notice-only recommendation is superseded as a proposal, not recorded as approved.
+Owner approved this affirmative-approval model on November 11, 2026. The earlier notice-only proposal is superseded.
 
 ### B2 — Incident staffing and request handling
 
@@ -93,7 +93,7 @@ Recommendation: immediate initial incident notice upon awareness; the earlier 24
 
 For ordinary authority requests, propose acknowledgment within two business days and an action plan within five business days, both from receipt during the existing Alberta support calendar. Earlier statutory/customer deadlines take precedence and need escalation. This is not a five-day completion guarantee. Requests from individuals are routed to the authority; SafeBus does not decide the authority's disclosure rights or silently become its access office.
 
-Owner input needed: confirm willingness to undertake immediate incident escalation and identify an absence/backup arrangement (identity privately), and approve or amend the ordinary request targets. Do not invent a backup contact or purchase outside coverage.
+Owner approved immediate escalation, the ordinary request targets and 24/7 urgent incident coverage on November 11, 2026. Coverage routing and absence mechanics remain to be verified; no backup identity or paid coverage is invented.
 
 ### B3 — Assisted exit
 
@@ -101,7 +101,7 @@ Keep the approved district self-service model and no automatic 30-day export/60-
 
 Proposed deliverable: a tenant-specific export with a manifest of included/omitted categories and machine-readable tables, transfer confirmation, then a deletion report distinguishing verified actions, permitted retained exceptions and provider expiry. Do not promise a complete export, selective backup erasure or a deletion certificate until corresponding operations are tested.
 
-Owner choice: approve including scoped assisted exit within the standard subscription, or identify a separate fee policy for review. No fee is introduced by this review. Engineering owns discovery of actual data categories and provider retention; the owner should not guess technical windows.
+Owner approved scoped assisted exit within the standard subscription on November 11, 2026. No new assistance fee is introduced. Engineering owns discovery of actual data categories, provider retention and operational verification.
 
 ## Engineering and evidence work, not owner guessing
 
@@ -114,6 +114,6 @@ Owner choice: approve including scoped assisted exit within the standard subscri
 
 ## Completion boundary and cost control
 
-Approved pricing, trial, renewal/cancellation, liability/indemnity, support hours/holidays, insurance deferment and the existing self-service policy remain unchanged. No new business term is marked approved here. No contract is published, no customer is bound, no notification sent, no production data modified and no iOS work started by this review.
+Approved pricing, trial, renewal/cancellation, liability/indemnity, support hours/holidays, insurance deferment and the existing self-service policy remain unchanged. B1–B3 and 24/7 urgent incident coverage are now owner-approved business terms, not verified operating capabilities. No contract is published, no customer is bound, no notification sent, no production data modified and no iOS work started by this review.
 
 Prepare one consolidated agreement change. Do not open repeated PRs for each decision. This step changes only review documentation; it does not need full browser smoke execution or a Netlify deployment. UI/backend changes later require the relevant agreement journey and authorization checks. Track implemented, tested, published and customer-accepted states separately.

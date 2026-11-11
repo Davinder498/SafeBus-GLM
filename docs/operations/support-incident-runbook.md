@@ -8,17 +8,18 @@
 
 ## Coverage boundary
 
-The owner confirmed receipt of an operational alert at the selected inbox and
-will handle support and backup escalation personally. Support hours are
-Monday–Friday, 8:00 a.m.–5:00 p.m. Alberta local time (`America/Edmonton`).
-Holiday coverage and urgent escalation mechanics remain unresolved. This is one
-owner-managed response arrangement; it provides no independent cover when the
-owner is unavailable. No separate employee or contractor is represented as
-appointed. Individual accounts and only necessary access remain required.
-A received email and selected hours do not prove a completed response exercise.
+Owner-approved November 11, 2026: urgent privacy/security incident coverage is
+**24/7**, including weekends and holidays, with immediate Customer notice upon
+awareness. Ordinary support remains Monday–Friday, 8:00 a.m.–5:00 p.m.
+America/Edmonton, excluding Alberta's nine general holidays. Ordinary records
+requests receive acknowledgment within two business days and an action plan
+within five business days under DPA section 5, not a guaranteed completion date.
 
-Do not advertise 24/7 support, a response SLA or a telephone number from this
-document. The signed order/SLA must reflect the actual staffed service.
+The owner confirmed this business commitment. No independent responder, telephone
+number or tested absence handoff is inferred. Verify who receives urgent reports,
+how alerts reach the available human, and who covers unavailability; record those
+details privately. A received email or automatic acknowledgment is not proof of
+continuous coverage. Do not advertise general 24/7 technical support.
 
 SafeBus is not emergency dispatch. Urgent transport concerns go to the school
 authority's transportation office; emergencies go to 911. For an app outage,
@@ -142,8 +143,8 @@ For authority-controlled records, promptly alert its verified responsible contac
 and assist its POPA duties. For SafeBus's own PIPA processing, assess its direct
 reporting obligation. OIPC guidance distinguishes these frameworks and requires
 PIPA reporting without unreasonable delay where a real risk of significant harm
-exists. A proposed 24-hour customer contract term is not a universal legal deadline
-or permission to wait. Do not wait for a completed forensic report to escalate.
+exists. The approved immediate Customer notice commitment is not a substitute for
+case-specific statutory reporting duties. Do not wait for a completed forensic report to escalate.
 Sources checked 2026-11-05: [OIPC breach reporting](https://oipc.ab.ca/breach-notification/)
 and [public-body service providers](https://oipc.ab.ca/resource/popa-guidance-service-providers/).
 

@@ -96,15 +96,20 @@ The ordinary support schedule and holiday exclusions **do not postpone or
 override** the MSA, DPA or applicable legal duties for containment,
 cooperation, evidence preservation, privacy incident notices, data-subject
 requests or regulator/customer escalation. In particular, the DPA's separate
-incident-notification rule (including its no-later-than-24-hours-after-awareness
-provision, subject to its exact text and applicable law) continues to apply
-based on actual awareness, including outside staffed support hours.
+immediate incident-notification rule applies upon awareness, including outside
+ordinary staffed support hours. The owner approved **24/7 urgent privacy/security
+incident coverage**, including weekends and holidays, on November 11, 2026.
+This is distinct from ordinary support and is not a guaranteed repair or detection
+time. Ordinary Customer records requests receive acknowledgment within two
+business days and an action plan within five business days under DPA section 5;
+these commitments do not create a response guarantee for every support ticket.
 
 Before authorizing live school-authority data, SafeBus must verify an operational
 route capable of meeting those independent requirements. An automated ticket,
 health check or unstaffed inbox alone is not evidence of a workable urgent
-incident response process. This SLA **does not claim that 24/7 incident
-personnel or backup coverage have been established**.
+incident response process. The **24/7 urgent incident commitment is owner-approved**;
+the staffed routing, availability/absence arrangement and exercise results still
+require operational verification. No additional employee or contractor is claimed.
 
 ## 5. Maintenance and transport fallback
 

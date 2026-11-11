@@ -402,6 +402,20 @@ dispute, subject to lawful instructions and a proportionate secure transfer.
 Mandatory DPA/records duties and verified supplier-backup expiry remain
 applicable after access ends.
 
+## Approved privacy operations — November 11, 2026
+
+The DPA provides 24/7 urgent privacy/security incident coverage and immediate
+Customer notice upon awareness. Ordinary support retains the approved business
+hours and holiday exclusions. Ordinary Customer records requests receive an
+acknowledgment within two business days and an action plan within five business
+days as defined in DPA section 5, subject to earlier applicable deadlines.
+Scoped assisted data return beyond supported directory downloads is included in
+the subscription, with an agreed secure format and tested completion date.
+Supplier additions and material country changes follow the DPA's advance notice
+and affirmative Customer authorization process; silence is not approval.
+These approved terms do not establish actual staffing, supplier acceptance,
+complete export/deletion capability or contract publication.
+
 ## 10. General terms
 
 Proposed governing law: Alberta and applicable federal Canadian law; proposed

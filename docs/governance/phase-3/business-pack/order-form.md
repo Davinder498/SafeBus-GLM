@@ -67,3 +67,25 @@ under its approved invoice/PO arrangement.
 The customer-specific accepted Order Form still records the exact interval,
 active-bus count, start/end dates, first charge, any approved procurement
 exception and actual authority; it is not executed by this draft.
+
+
+## November 11 — approved privacy operations and assisted return
+
+Record the verified Customer privacy contact and urgent escalation route, the
+exact supplier/country appendix version expressly accepted, and the authority
+of the accepting administrator. Material subsequent supplier/country changes
+require affirmative version-specific approval before affected processing.
+
+The DPA includes 24/7 urgent privacy/security incident coverage and immediate
+notice upon awareness. Ordinary records requests: acknowledgment within two
+business days; action plan within five business days under the DPA calendar.
+Ordinary technical support keeps its existing hours and exclusions.
+
+Scoped assisted return is included in the subscription where directory downloads
+are insufficient. Before service activation, specify the applicable export scope,
+formats, secure delivery and verified recipient, completion dates or agreed
+scheduling rules, disposal dates/triggers, provider expiry and lawful retained
+exceptions. Each request must receive a scoped agreed completion date. No blanket
+30-day return or 60-day deletion promise or untested full-export capability is
+created. Preserve exact terms in the accepted Order Form/receipt; this draft
+neither fills Customer values nor establishes operational verification.

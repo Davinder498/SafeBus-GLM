@@ -112,7 +112,7 @@ The owner approved **CA$1.99 per active bus monthly** and **CA$20.29 per active 
 For the initial pilot, ordinary SafeBus staffed support runs **Monday–Friday,
 8:00 a.m.–5:00 p.m. America/Edmonton**, excluding Alberta's **nine general
 holidays** (official list: https://www.alberta.ca/alberta-general-holidays).
-No 24/7 staffed or guaranteed after-hours response, numerical uptime/latency/GPS
+No 24/7 ordinary support or guaranteed ordinary after-hours response, numerical uptime/latency/GPS
 or notification promise, fixed repair time, or automatic monthly/annual SLA
 credit is offered. This owner-approved business choice is reflected in the
 [MSA](master-services-agreement.md), [Order Form](order-form.md),
@@ -194,4 +194,4 @@ customer and operational requirements are approved.
 
 ## Agreement completion review — November 11, 2026
 
-The owner has prioritized completing agreements before iOS. The [provision-by-provision review and proposed decision package](agreement-completion-review-2026-11-11.md) records remaining wording and evidence gaps. Prior business approvals remain unchanged. The proposed supplier approval model, incident/request commitments and assisted-exit policy are **not yet approved**; the instruction to proceed authorized review and drafting, not those commercial decisions. No agreement publication or customer acceptance is established.
+The owner has prioritized agreements before iOS. The [checklist review](agreement-completion-review-2026-11-11.md) remains the gap register. On November 11, 2026 the owner approved B1–B3: affirmative supplier authorization with 30-day planned-change notice; immediate incident notice and **24/7 urgent incident coverage**; acknowledgment of ordinary records requests within two business days and an action plan within five; and scoped assisted data return included in the subscription. Existing prices, liability terms, self-service controls and ordinary support hours remain unchanged. Coverage mechanics and technical/vendor evidence remain unverified; no Customer acceptance, publication or completed checklist compliance is asserted.

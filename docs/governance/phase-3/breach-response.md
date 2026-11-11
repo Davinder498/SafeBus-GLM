@@ -2,7 +2,7 @@
 
 **Status:** Direct email selected; staffed urgent routing, backup and tabletop evidence pending
 **Owner:** Business Privacy Lead / Security Lead and affected customer
-**Last updated:** 2026-11-05 (America/Regina)
+**Last updated:** 2026-11-11 (America/Edmonton)
 
 ## Intake and immediate action
 
@@ -49,13 +49,19 @@ purpose; an access log alone does not make it acceptable.
 and [Alberta PIPA breach guidance](https://www.alberta.ca/organization-responsibilities-for-protecting-personal-information)
 are review inputs; verify the actual provision and notice content for the case.
 
-Proposed business contract target: initial customer notice without undue delay
-and within 24 hours of awareness of an incident affecting its information,
-or sooner where required. This is a proposed contractual target, not a universal
-statutory deadline. Do not wait 24 hours when prompt notice is necessary. Do not
-wait for a complete investigation. Initial notice states known timing/scope,
-categories, containment, contact, uncertainties and next update. Further
-updates explain findings, harms, remedies and cooperation.
+Owner-approved November 11, 2026: **24/7 urgent privacy/security incident coverage**,
+including weekends and holidays. Immediately notify the affected Customer's
+verified privacy contact upon awareness; do not wait for ordinary support hours,
+a 24-hour deadline or a complete investigation. Preserve awareness and notice
+timestamps. Initial notice states known scope, containment, uncertainties, contact
+and the next update. Continue updates and supplier/customer coordination.
+Personnel and subcontractors escalate suspected incidents immediately.
+
+This approved business commitment does not establish actual staffing or continuous
+detection. Before publication, verify the monitored urgent route, assigned human
+availability, absence handoff, access to authorized containment procedures and a
+hypothetical incident exercise. Keep identities and delivery evidence restricted.
+Ordinary support remains on the approved business-hours calendar.
 
 ## Evidence, remediation and review
 

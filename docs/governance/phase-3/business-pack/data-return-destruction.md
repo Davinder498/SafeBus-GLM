@@ -50,3 +50,23 @@ The Customer remains responsible for copies it independently downloads or manage
 Before presenting an account-wide deletion or guaranteed exit workflow to a real school authority, verify tenant isolation, authorized administrator actions, retention/hold precedence, dependent records, safe export completeness, revocation/session effects, suppliers/backups, and operational completion evidence. Test with **synthetic authorized data**, never by deleting a live authority's records for convenience.
 
 The parties may negotiate a specific return/deletion window or additional assisted export in an accepted customer-specific Order Form. Absent that, this Schedule is **not** a guaranteed 30-day export, 60-day purge, same-day delete-all, instant backup erasure, or waiver of an applicable mandatory retention obligation.
+
+
+## 6. Approved assisted return — November 11, 2026
+
+Scoped assisted data return is included in the subscription when supported
+directory downloads are insufficient; no separate standard assistance fee is
+introduced. Follow DPA section 5: acknowledge within two business days and
+provide an action plan within five business days, subject to earlier applicable
+deadlines. Agree the scope and completion date with the Customer using a tested
+process. The accepted order must define the applicable return arrangements before
+activation, including secure formats/delivery, retained exceptions and disposal
+triggers. This does not guarantee completion within five business days.
+
+Provide a manifest identifying included and excluded record categories, readable
+machine-processable files, recipient verification and transfer confirmation.
+Then report verified deletion actions separately from retained exceptions and
+provider expiry. Test completeness and tenant isolation before offering the
+process. Do not claim this manifest workflow is already implemented or tested.
+The approved self-service model, lawful holds and prohibition on unapproved
+automatic destructive disposal remain unchanged.

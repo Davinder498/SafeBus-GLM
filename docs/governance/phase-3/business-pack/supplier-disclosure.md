@@ -93,3 +93,16 @@ all account storage/support locations or deletion windows. See the
 [2026-11-05 terms/data-flow review](../supplier-review-2026-11-05.md) for active
 provider mechanisms and specific account evidence still needed. Keep received
 mailbox copies separate from Resend sending/delivery records in disposal plans.
+
+
+## Approved supplier authorization policy — November 11, 2026
+
+Initial agreement acceptance must identify and affirmatively authorize the exact
+transport-data supplier appendix. Planned material supplier additions or country
+changes receive at least 30 calendar days' notice and require the affected
+Customer's recorded affirmative approval before its information uses the change.
+Silence and continued use do not authorize it. Urgent containment may isolate or
+stop processing but does not create a supplier-consent exception. SafeBus must
+verify corresponding downstream privacy terms and remains responsible for its
+supplier obligations. The owner approved this process, not the unresolved
+vendor facts above or acceptance on a Customer's behalf.

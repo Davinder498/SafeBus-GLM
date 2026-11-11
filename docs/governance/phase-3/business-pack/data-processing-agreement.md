@@ -81,14 +81,24 @@ customer operation by this draft. Stripe's financial processing is assessed
 separately from transport subprocessing and still disclosed in the privacy
 policy and business-purpose inventory.
 
-Proposed change process: SafeBus gives at least 30 calendar days' prior notice
-of a material new supplier or country change, except a justified urgent security
-change notified promptly. The Customer may raise a reasonable documented privacy
-objection. The parties seek a lawful alternative; if none exists, agree on
-suspending the affected processing or terminating the affected service with the
-agreed fee/data-return treatment. No change proceeds without the approvals
-required by the contract and applicable law. Confirm the notice period before
-signing. SafeBus remains responsible for its agreed supplier obligations.
+Owner-approved standard supplier policy (November 11, 2026): the Customer's
+explicit electronic acceptance includes the exact supplier appendix version.
+Only expressly authorized transport-data subcontractors may handle its information.
+SafeBus binds them to corresponding privacy obligations and remains responsible
+for their performance; actual supplier terms must support these obligations.
+
+SafeBus gives at least 30 calendar days' advance notice of a planned material
+supplier addition or processing-country change. The affected Customer must give
+recorded affirmative approval before its information uses that change. Silence,
+continued use or a generic notice is not consent. Approval identifies the exact
+supplier/country appendix version and authorized Customer representative.
+Previously approved processing may continue within its accepted scope.
+
+If approval is withheld and the change is unavoidable, the parties agree a lawful
+alternative or the affected service's exit arrangements, including fee and data
+return treatment under the agreement. Immediate protective suspension or isolation
+is permitted for urgent containment; it does not authorize an unapproved supplier
+or country. Customer-specific and mandatory legal requirements remain controlling.
 
 ### Current supplier-specific facts for the final processing appendix (non-binding review)
 
@@ -102,8 +112,15 @@ For Customer records, the Customer normally decides statutory access,
 correction and complaints; SafeBus promptly routes received requests and
 provides secure retrieval, correction and disclosure assistance within the
 agreed support window, allowing the Customer to meet legal deadlines.
-The exact assistance deadline is `[REQUEST_ASSISTANCE_DEADLINE]` and must be
-settled before operation. Identity/representation is verified proportionately;
+SafeBus acknowledges ordinary Customer records requests within two business days
+and provides an action plan within five business days of receipt. Business days
+follow the SLA's America/Edmonton calendar, excluding its specified Alberta
+holidays. Receipt outside staffed hours is treated as the next business day's
+opening; both periods run from that receipt, not from acknowledgment. The action
+plan identifies scope, responsible contact, secure handling and a completion date
+agreed with the Customer. These are response commitments, not a five-day completion
+guarantee. Earlier applicable statutory or accepted Customer deadlines take
+precedence and require escalation; incidents follow section 6 immediately. Identity/representation is verified proportionately;
 guardian bus visibility is not automatically authority for every student record.
 
 SafeBus does not delay reporting a request until the Customer's response period
@@ -114,12 +131,18 @@ of other tenants, appropriate confidentiality and reasonable arrangements.
 
 ## 6. Incidents and assurance
 
-SafeBus contains and escalates suspected incidents promptly and preserves
-proportionate evidence. Proposed initial Customer notice: without undue delay
-and no later than 24 hours after awareness of an incident affecting its data,
-or sooner where law or the accepted contract requires. Initial notice may be
-incomplete; provide updates with known scope, information involved, risks,
-containment, contact and next steps. Do not await a final forensic report.
+A breach includes loss, unauthorized access or unauthorized disclosure of personal
+information. SafeBus provides urgent privacy/security incident coverage 24 hours
+a day, seven days a week, including weekends and holidays. On learning of a breach
+affecting the Customer's information, SafeBus immediately notifies its verified
+privacy contact, takes proportionate containment action and preserves evidence.
+Personnel and subcontractors must escalate suspected incidents immediately.
+Initial notice may be incomplete; provide updates with known scope, information
+involved, risks, containment, contact and next steps. Do not await a final forensic
+report, ordinary support hours or a 24-hour deadline. This urgent coverage does
+not promise continuous detection, a fixed repair time or 24/7 ordinary support.
+The owner approved this commitment on November 11, 2026; operational routing and
+coverage verification remain prerequisites to publication, not proven facts.
 
 The parties allocate Customer/public-body and SafeBus own-business regulator
 and individual notifications according to applicable law; neither can contract
@@ -159,7 +182,12 @@ The accepted Data Management, Return and Destruction Schedule identifies
 purpose-based retention, lawful holds, customer-directed requests, export
 scope and supplier/backup handling. The Customer can request additional
 securely scoped records or account closure through the verified support
-channel, subject to authority and recipient checks. **No universal 30-day
+channel, subject to authority and recipient checks. Scoped assisted return is
+included in the subscription where supported directory downloads are insufficient.
+Before activation, the accepted order records applicable return formats, secure
+delivery, completion dates or scheduling rules, retained exceptions and disposal
+triggers. Each assisted request receives the section 5 response commitments and
+an agreed scoped completion date supported by the tested process. **No universal 30-day
 return or 60-day deletion commitment** is implied by this standard model;
 any customer-specific deadline requires a tested process and written
 agreement. Destructive automated retention remains separately gated and
@@ -173,7 +201,7 @@ DPA/security/financial retention duties remain intact.
 
 ### Publication prerequisite — supplier evidence review (2026-11-08)
 
-The [current public-source supplier DPA review](supplier-dpa-insurance-contract-review-2026-11-08.md) identifies incorporated terms for Supabase, Netlify, Resend and Stripe, separately available Geoapify processing terms and conditional Firebase terms. Zoho Mail is used for ordinary SafeBus business correspondence and is **not automatically a school-authority transport-data subprocessor**; its optional organization-admin DPA is not a blanket publication requirement. **These findings do not establish actual SafeBus-account acceptance, coverage, geographic restrictions or suitability for a public school authority.** Complete the real account-specific supplier/country appendix and customer permission decisions before signing. Do not treat the separately published driver/guardian Terms of Use as approval of the district's acceptable-use schedule, and do not publish a global contract package with the temporary Stripe prices as though the owner had approved them.
+The [current public-source supplier DPA review](supplier-dpa-insurance-contract-review-2026-11-08.md) identifies incorporated terms for Supabase, Netlify, Resend and Stripe, separately available Geoapify processing terms and conditional Firebase terms. Zoho Mail is used for ordinary SafeBus business correspondence and is **not automatically a school-authority transport-data subprocessor**; its optional organization-admin DPA is not a blanket publication requirement. **These findings do not establish actual SafeBus-account acceptance, coverage, geographic restrictions or suitability for a public school authority.** Complete the real account-specific supplier/country appendix and customer permission decisions before signing. Do not treat the separately published driver/guardian Terms of Use as approval of the district's acceptable-use schedule, and use the owner-approved CA$1.99 monthly or CA$20.29 annual per-active-bus prices, including applicable GST/HST, with the Customer's selected interval and quantity.
 
 ## 8. Completion and review
 
