@@ -68,6 +68,7 @@ test('Netlify deployment workflows select the web app in the monorepo', async ()
     assert.ok(deploy, 'Workflow must deploy the preflighted web artifact');
     assert.match(deploy, /--prod(?:\s|$)/);
     assert.match(deploy, /--no-build(?:\s|$)/);
+    assert.doesNotMatch(deploy, /--context(?:\s|=)/);
     assert.match(deploy, /--filter @safebus\/web(?:\s|$)/);
     assert.match(deploy, /--dir apps\/web\/dist(?:\s|$)/);
   }

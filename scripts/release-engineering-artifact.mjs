@@ -18,6 +18,7 @@ const action = process.argv[2],
   sha = process.env.SAFEBUS_RELEASE_SHA;
 const directory = '.safebus-release/engineering-artifact';
 let stage = 'context';
+let uploadDiagnostic;
 try {
   stage = 'reviewed-checkout';
   try {
@@ -129,7 +130,8 @@ try {
           runProductionHealth({ origin: 'https://safebus.kids', retries: 1, timeoutMs: 8000 }),
         upload: async () => {
           // Never build in this credential-bearing process or enable Netlify builds.
-          // Netlify injects production-context variables into production functions.
+          // --prod selects the deployed functions' runtime context. CLI 27 rejects
+          // --context together with --no-build because that flag applies to builds.
           try {
             return JSON.parse(
               execFileSync(
@@ -139,8 +141,6 @@ try {
                   'deploy',
                   '--prod',
                   '--no-build',
-                  '--context',
-                  'production',
                   '--site',
                   policy.siteId,
                   '--filter',
@@ -159,7 +159,14 @@ try {
                 },
               ),
             );
-          } catch {
+          } catch (error) {
+            // Process output can contain environment values. Report fixed fields only.
+            uploadDiagnostic = {
+              phase: error instanceof SyntaxError ? 'response_json' : 'cli_execution',
+              exitStatus: Number.isInteger(error?.status) && error.status >= 0 && error.status <= 255
+                ? error.status : null,
+              timedOut: error?.code === 'ETIMEDOUT',
+            };
             throw Error('ENGINEERING_RELEASE_UPLOAD_REQUIRES_INSPECTION');
           }
         },
@@ -175,6 +182,7 @@ try {
       code: /^ENGINEERING_RELEASE_[A-Z_]+$/.test(error?.message ?? '')
         ? error.message
         : 'ENGINEERING_RELEASE_FAILED',
+      ...(uploadDiagnostic ? { upload: uploadDiagnostic } : {}),
       ...(error?.message === 'ENGINEERING_RELEASE_CI_NOT_SUCCESSFUL'
         ? { checks: error.checks }
         : {}),
