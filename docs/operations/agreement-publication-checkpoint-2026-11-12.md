@@ -22,7 +22,7 @@ query above succeeded. No customer records or actual exports were read.
 
 - Customer-specific order snapshots, preserved accepted versions and both archive
   destinations, with PDF and exact UTF-8 downloads.
-- Scoped assisted-return operator tool and runbook, using the existing authorized
+- Scoped assisted-return operator tool and runbook, using files downloaded through the existing authorized
   export endpoint; checks per-file hashes, scope, tenant identity, retained
   exceptions and attributable delivery evidence. Does not create unrestricted
   platform access, a deletion operation or an automatic transfer channel.

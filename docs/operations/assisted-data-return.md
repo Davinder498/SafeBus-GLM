@@ -1,8 +1,8 @@
 # Scoped assisted data return
 
 This operator process supplements existing directory downloads and Records disposal.
-It assembles explicitly requested record IDs through the existing authenticated
-export endpoint. It is not a full-district archive, automatic email delivery,
+It assembles explicitly requested record IDs from JSON files already downloaded
+through the existing authenticated Records disposal screen. It is not a full-district archive, automatic email delivery,
 independent identity verification or deletion tool.
 
 ## Authority and scope
@@ -32,12 +32,14 @@ independent identity verification or deletion tool.
 
 ## Prepare and verify
 
-Use Node 24 and `scripts/assisted-return.mjs`. Keep the request, token and output
-outside Git and CI on an access-controlled encrypted workstation. Set
-`SAFEBUS_RETURN_ACCESS_TOKEN` through the workstation's secure session mechanism;
-do not put its value in command arguments, chat, logs or committed files. Clear
-it immediately after execution. The token is sent only to the fixed SafeBus export
-endpoint; redirects are refused. No service-role credential is used.
+Use Node 24 and `scripts/assisted-return.mjs`. Keep requests, downloaded records
+and output outside Git and CI on an access-controlled encrypted workstation.
+The tool is offline: it does not accept a token, make network requests or query
+the database. Download each agreed record through Records disposal using the
+normal authorized account, then rename its JSON file to `POLICY-RECORD_UUID.json`
+in a private input directory. Preserve the original download and its acquisition
+evidence in the restricted case record. The operator verifies origin; local file
+validation cannot independently prove that a file came from the app.
 
 Request JSON schema (all references point to retained case evidence, not names or
 sensitive incident descriptions):
@@ -60,14 +62,17 @@ sensitive incident descriptions):
 }
 ```
 
-Run `node scripts/assisted-return.mjs prepare /private/request.json /private/NEW-package`.
-The directory must not exist. Every requested record must succeed and match the
-selected authority/record ID; secret-like fields, denied access, duplicates,
-unknown policies and missing review references stop preparation. Review unexpected
-secret-field denials rather than weakening the check. Requests are paced below
-the endpoint limit; a 429 or expired session stops the operation, with no automatic
-retry or partial-success claim. A filesystem failure can leave an incomplete
-folder: do not deliver any folder without a complete manifest and checksum review.
+Run `node scripts/assisted-return.mjs prepare /private/request.json /private/input /private/NEW-package`.
+The output directory must not exist. Every requested file must be present and match
+the selected authority/record ID; secret-like fields, duplicates, unknown policies
+and missing review references stop preparation. Input files are opened without
+following final-component symlinks and validated/read through the same file handle.
+Only regular files up to 5 MiB are read. Keep parent directories under operator
+control. Output directory creation and file writes reject existing paths rather
+than checking them and then overwriting. A filesystem failure can leave an
+incomplete folder: do not deliver any folder without a complete manifest and
+checksum review. Record content must also be reviewed against the authorized
+source; an offline package does not itself authenticate source data.
 
 JSON preserves UTF-8 and can be read without SafeBus. The manifest lists each file,
 its byte length and SHA-256, exclusions and retained exceptions. The status is

@@ -136,24 +136,23 @@ test('delivery requires exact manifest, unchanged files, matching recipient and 
   assert.equal(completed.deletion.performed, false);
 });
 
-test('CLI prepares an inspectable private package and confirms only exact delivered bytes', async () => {
-  const { mkdtempSync, writeFileSync, readFileSync, statSync, rmSync } = await import('node:fs');
+test('offline CLI prepares private packages, rejects symlinks and records only exact delivery', async () => {
+  const { mkdtempSync, mkdirSync, symlinkSync, writeFileSync, readFileSync, statSync, rmSync } =
+    await import('node:fs');
   const { tmpdir } = await import('node:os');
   const { join, resolve } = await import('node:path');
   const { execFileSync } = await import('node:child_process');
   const dir = mkdtempSync(join(tmpdir(), 'safebus-return-test-'));
   try {
     const req = join(dir, 'request.json'),
-      preload = join(dir, 'mock.mjs'),
+      input = join(dir, 'input'),
       out = join(dir, 'package');
+    mkdirSync(input);
     writeFileSync(req, JSON.stringify(request()));
-    writeFileSync(
-      preload,
-      `globalThis.fetch=async(url,options)=>{if(url!=='https://safebus.kids/.netlify/functions/disposal-records'||options.redirect!=='error'||JSON.parse(options.body).action!=='export')throw new Error('invalid endpoint');return {ok:true,json:async()=>({result:${JSON.stringify(row())}})}};`,
-    );
+    const recordPath = join(input, `trip_records-${id}.json`);
+    writeFileSync(recordPath, JSON.stringify(row()));
     const cli = resolve('scripts/assisted-return.mjs');
-    const output = execFileSync(process.execPath, ['--import', preload, cli, 'prepare', req, out], {
-      env: { ...process.env, SAFEBUS_RETURN_ACCESS_TOKEN: 'synthetic-test-only' },
+    const output = execFileSync(process.execPath, [cli, 'prepare', req, input, out], {
       encoding: 'utf8',
     });
     assert.equal(JSON.parse(output).result, 'prepared_not_delivered');
@@ -173,6 +172,16 @@ test('CLI prepares an inspectable private package and confirms only exact delive
     );
     assert.throws(() =>
       execFileSync(process.execPath, [cli, 'confirm', out, receiptPath], { stdio: 'pipe' }),
+    );
+    assert.throws(() =>
+      execFileSync(process.execPath, [cli, 'prepare', req, input, out], { stdio: 'pipe' }),
+    );
+    rmSync(recordPath);
+    symlinkSync(join(out, manifest.files[0].name), recordPath);
+    assert.throws(() =>
+      execFileSync(process.execPath, [cli, 'prepare', req, input, join(dir, 'second-package')], {
+        stdio: 'pipe',
+      }),
     );
   } finally {
     rmSync(dir, { recursive: true, force: true });
