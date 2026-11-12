@@ -84,7 +84,11 @@ triggers. This does not guarantee completion within five business days.
 Provide a manifest identifying included and excluded record categories, readable
 machine-processable files, recipient verification and transfer confirmation.
 Then report verified deletion actions separately from retained exceptions and
-provider expiry. Test completeness and tenant isolation before offering the
-process. Do not claim this manifest workflow is already implemented or tested.
+provider expiry. The operator-assisted manifest process is documented in the
+[scoped return runbook](../../../operations/assisted-data-return.md). Its synthetic
+checks cover exact requested scope, tenant mismatch, incomplete files, tampering
+and delivery evidence. A customer-specific transfer channel and recipient must
+still be verified before the actual transfer; these tests are not a completed
+customer export or a full-account return guarantee.
 The approved self-service model, lawful holds and prohibition on unapproved
 automatic destructive disposal remain unchanged.

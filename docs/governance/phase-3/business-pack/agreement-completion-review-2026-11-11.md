@@ -391,3 +391,19 @@ All ten GitHub checks passed on PR head 25d3a0b9d56ee59e54b75fb1bf37cfd2db854695
 including the corrected agreement browser journey. That validates the prior code
 revision, not live contract publication. Assisted-return verification and the
 protected database/app rollout remain outstanding.
+
+## Assisted-return implementation and live checkpoint — November 12, 2026
+
+The [scoped assisted-return process](../../../operations/assisted-data-return.md)
+now has an operator tool with bounded record selection, tenant/record verification,
+UTF-8 files, exact file hashes, required authority/recipient/hold-review references,
+exclusions and retained exceptions, and a separate delivery-evidence record.
+Synthetic tests verify mismatched tenants, missing files/reviews and tampering
+fail closed. Existing production export authorization was inspected read-only;
+no customer data was exported. This does not claim a completed customer transfer,
+a full-district archive or destructive disposal.
+
+The [production checkpoint](../../../operations/agreement-publication-checkpoint-2026-11-12.md)
+confirms zero catalogs/packages/receipts and the new order-preparation function
+not yet installed. Merge, protected database/app rollout and final customer-facing
+publication remain; internal drafts must not be published unchanged.
