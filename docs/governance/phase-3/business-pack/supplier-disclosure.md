@@ -11,7 +11,7 @@ The final DPA appendix must identify the actual legal entities and roles.
 | Supplier                                   | Service and information involved                                                                                                    | Location/approval still required                                                                                                                                                              |
 | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Supabase                                   | Hosted database/Auth; identity, assignments, trips, location, notifications and audit; service sessions                             | Actual project, processing/backups, logs and support-access country evidence; intended Canadian primary region is not full-service evidence                                                   |
-| Netlify                                    | Website/CDN/function delivery; requests and any necessary function processing, technical/network metadata                           | Configured function region verified November 11: **CMH (Ohio, US East), United States**. CDN/log/support/backup countries and retention remain to be verified                                                             |
+| Netlify                                    | Website/CDN; invitations, notification payloads, billing, authorized record exports and technical/network metadata; proposed agreement PDF processing                           | Configured function region verified November 11: **CMH (Ohio, US East), United States**. CDN/log/support/backup countries and retention remain to be verified                                                             |
 | Resend | Invites/recovery, business inquiries and opt-in guardian event emails; pickup/drop-off external subject/body uses **generic event text without student names, bus numbers, stops or event times**. Recipient, event category and delivery metadata remain processed; other email types and previously delivered emails can contain additional information | The configured sender region is `us-east-1`; [Resend's public guidance](https://resend.com/security) states **US storage** regardless of sending region, standard 30-day email/log retention, and a DPA pre-signed/executed at signup. Confirm account party, actual plan, downstream processing and school-authority approval of the remaining cross-border email data. Live synthetic delivery unverified. |
 | Stripe                                     | Annual per-bus subscriptions, billing contacts, invoices, payment methods and provider metadata                                     | Financial/business-processing role, actual countries, terms, DPA where applicable and retention; transport roster/location must not be sent                                                   |
 | Geoapify                                   | Map tiles; viewport tile coordinates, device IP, origin/referrer and request metadata                                               | Actual countries, log retention, restricted key and privacy/contract evidence; viewport requests are not information-free                                                                     |
@@ -156,3 +156,18 @@ exceptional suspicious/fraud cases up to two months. Do not describe the current
 maps.geoapify.com flow as EU-only or every log as deleted within 24 hours.
 These provider terms narrow the evidence gaps; they do not establish every
 SafeBus account fact, customer approval or completed assisted return.
+
+## Netlify scope and supplied evidence — November 12, 2026
+
+The [processing and retention review](netlify-processing-retention-review-2026-11-12.md)
+records the actual function data paths, supplied June 2026 DPA and ISO certificate,
+and the limits of those documents. Supabase database residency does not eliminate
+US processing by Netlify functions. The DPA provides return/deletion obligations,
+but not a complete plan-specific expiry timetable. The Enterprise-headed log
+periods are not assumed to apply to this account. The missing retention summary
+is a targeted follow-up, not a blanket prerequisite to all agreement work.
+
+Current observed plan: Free legacy. Owner-planned upgrade: Personal, not yet
+completed or verified. No Enterprise coverage or retention terms are inferred
+from that intention. Account-party and country reconciliation remains separate
+from possession of the standard DPA; no supplier approval is fabricated.

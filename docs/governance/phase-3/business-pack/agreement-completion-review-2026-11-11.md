@@ -373,3 +373,21 @@ The agreement browser test failed on both screen sizes because its partial headi
 Live verification: following a fresh administrator sign-in, the support settings were saved successfully and reloaded. The displayed saved hours are Monday–Saturday, 6:00 a.m.–6:00 p.m. Alberta time (America/Edmonton), with instructions explicitly including critical incidents and excluding Sunday/outside-hours staffing. Existing name, email and phone were preserved; no external message was sent.
 
 Current revision validation: typecheck, lint, production build, complete tests (1,229 web, 32 mobile, 600 release), separate mobile build and Android sync passed. The release-test total decreased by two because three obsolete support-calendar tests were consolidated into one test covering all four customer contracts. All 125 immutable migration checksums are unchanged. CI must validate the corrected browser selector.
+
+## Netlify evidence correction — November 12, 2026
+
+See the [source and supplied-document review](netlify-processing-retention-review-2026-11-12.md).
+The uploaded DPA and ISO certificate are reviewed evidence, not missing documents.
+Only plan-applicable retention/deletion details remain unresolved by these files;
+company-account and location reconciliation remain separate. A locked summary
+alone does not block drafting, implementation, tests or the protected software
+rollout. Final publication must still match actual processing and customer terms;
+unknown periods cannot be presented as verified deadlines. Netlify handles real
+function payloads and authorized exports, not just static web assets. The proposed
+Personal upgrade is recorded as planned, not completed. No readiness flags or
+production controls are changed.
+
+All ten GitHub checks passed on PR head 25d3a0b9d56ee59e54b75fb1bf37cfd2db854695,
+including the corrected agreement browser journey. That validates the prior code
+revision, not live contract publication. Assisted-return verification and the
+protected database/app rollout remain outstanding.

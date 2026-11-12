@@ -288,6 +288,17 @@ any customer-specific deadline requires a tested process and written
 agreement. Destructive automated retention remains separately gated and
 is not activated by contract approval.
 
+SafeBus uses Supabase as its primary application database and Netlify for website
+and server-function processing. Depending on the requested operation, Netlify
+functions process invitation/contact information, notification payloads, billing
+information, authorized exports and agreement downloads. Hosting is therefore
+not limited to static files or anonymous metadata. The supplier appendix identifies
+applicable processing locations and purposes. Provider technical logs and backup
+copies have separate disposal mechanisms; an application deletion does not by
+itself establish their immediate erasure. SafeBus will identify relevant retained
+exceptions and verified disposal triggers in the scoped return/deletion response,
+without claiming an unverified provider expiry period.
+
 Account disablement, unlinking, primary deletion, provider deletion and
 backup expiry are distinct actions. Neither party should certify complete
 erasure without evidence of actual scope and lawful exceptions. The

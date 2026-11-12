@@ -43,19 +43,24 @@
         "hosted_notification_worker_processes_recipient_and_message_content",
         "authenticated_dashboard_access_restored_2026_11_11",
         "configured_functions_region_cmh_ohio_us_east_verified_2026_11_11",
-        "free_legacy_plan_build_minutes_paused_site_online_verified_2026_11_11"
+        "free_legacy_plan_build_minutes_paused_site_online_verified_2026_11_11",
+        "owner_supplied_dpa_2026_06_09_reviewed_2026_11_12",
+        "owner_supplied_iso27001_certificate_MMIND_25090201_reviewed",
+        "personal_plan_upgrade_owner_planned_not_completed",
+        "retention_summary_request_failed_twice_no_confirmed_submission",
+        "function_payloads_include_notification_inputs_and_authorized_record_exports"
       ],
       "status": "account-evidence-pending",
       "priority": "P0",
       "required": [
-        "legal_party_terms_dpa",
+        "account_party_and_superseding_terms",
         "functions_cdn_logs_countries",
-        "access_and_retention",
-        "security_incident_assistance",
+        "plan_applicable_log_backup_deletion_periods_and_exceptions",
         "privacy_owner_decision"
       ],
       "evidenceReferences": [
-        "docs/governance/phase-3/business-pack/supplier-disclosure.md#verified-netlify-project-setting--november-11-2026"
+        "docs/governance/phase-3/business-pack/supplier-disclosure.md#verified-netlify-project-setting--november-11-2026",
+        "docs/governance/phase-3/business-pack/netlify-processing-retention-review-2026-11-12.md"
       ],
       "decision": null
     },
