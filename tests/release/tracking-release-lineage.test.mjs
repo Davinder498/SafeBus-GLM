@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
+import { assertAgreementReleaseBaseline } from '../../scripts/lib/agreement-release-baseline.mjs';
 import { trackingReleaseFixture } from './fixtures/async-tracking-release-db.mjs';
 import {
   collectSchemaCatalog,
@@ -96,6 +97,70 @@ test('lineage rejects extra queue grants, indexes, policies, unrelated drift and
     }
   }
   await requireTrackingLedger(client, local, 'initial');
+});
+
+test('agreement release recognizes only the exact installed tracking delta without cron DDL or ledger writes', async (t) => {
+  const { db, client, local } = await fixture(t);
+  const registered = {
+    release_sha: local.precedingReleaseSha,
+    schema_fingerprint: local.precedingFingerprint,
+  };
+  const fingerprint = await calculateSchemaFingerprint(client);
+  const before = await collectSchemaCatalog(client);
+  assert.equal(
+    (await assertAgreementReleaseBaseline(client, registered, fingerprint, local)).kind,
+    'reviewed-installed-tracking-delta',
+  );
+  assert.deepEqual(await collectSchemaCatalog(client), before);
+  assert.equal(
+    (await db.query('select count(*)::int n from safebus_release.releases')).rows[0].n,
+    1,
+  );
+  assert.equal(
+    await assertAgreementReleaseBaseline(
+      client,
+      { ...registered, schema_fingerprint: fingerprint },
+      fingerprint,
+      local,
+    ),
+    null,
+  );
+  await assert.rejects(
+    assertAgreementReleaseBaseline(client, null, fingerprint, local),
+    /BASELINE_MISSING/,
+  );
+  await assert.rejects(
+    assertAgreementReleaseBaseline(
+      client,
+      { ...registered, release_sha: 'f'.repeat(40) },
+      fingerprint,
+      local,
+    ),
+    /UNRELATED_SCHEMA_DRIFT/,
+  );
+  for (const sql of [
+    'grant select on safebus_private.tracking_invalidation_queue to authenticated',
+    'alter table public.tenants add column unexpected text',
+    "insert into safebus_release.releases values('" +
+      'b'.repeat(40) +
+      "','production','deployed','different',now()+interval '1 day')",
+  ]) {
+    await db.exec('begin');
+    try {
+      await db.exec(sql);
+      await assert.rejects(
+        assertAgreementReleaseBaseline(
+          client,
+          registered,
+          await calculateSchemaFingerprint(client),
+          local,
+        ),
+        /LINEAGE_|UNRELATED_SCHEMA_DRIFT/,
+      );
+    } finally {
+      await db.exec('rollback');
+    }
+  }
 });
 
 test('repair and ledger registration roll back together; scoped recovery preserves the original ledger', async (t) => {

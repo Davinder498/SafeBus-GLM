@@ -56,3 +56,46 @@ customers. Passing PR tests or writing this checkpoint does not change that fact
 The unavailable Netlify retention summary alone does not justify stopping steps
 1–3; truthful final supplier disclosures and actual customer requirements still
 matter for steps 4–5. No readiness flag is changed by this checkpoint.
+
+## Publication attempt and diagnosed prerequisite — November 11 Alberta time
+
+PR #442 was merged as `c7aef34151ff5fe74d9818e56542203c95ac0ce1`
+after all ten PR checks passed. Main CI and security analysis also passed.
+Agreement rehearsal run `43139662408` passed validation and all four isolated
+agreement database tests, then stopped at `AGREEMENT_UNRELATED_SCHEMA_DRIFT`
+before applying agreement SQL or creating recovery evidence.
+
+A read-only catalog inspection established the outstanding tracking installation
+described in `commercial-launch-closure-2026-11-11.md`. Applying the committed
+`tracking-release-lineage-20261111.json` inverse delta **in memory only** reproduces
+the ledger fingerprint `17933029e03585ebec3918cd1c7ac7d53ecfdc994dfbc2db254c57f4a8951592`
+exactly. The installed catalog fingerprint is
+`65762d75624a2fff757e9ed2328757e62019782327c8ebb2a46b5c35757c3f1b`.
+When transporting catalog rows through JSON, preserve the node-postgres representation
+of PostgreSQL `name[]` fields (policy roles and enum labels are array-literal strings);
+otherwise a comparison can falsely report a different digest.
+
+Protected `tracking_history` rehearsal `43141731488` passed validation but failed
+with `42501` during rehearsal. A subsequent read-only ownership check confirmed
+`cron.job_run_details` belongs to `supabase_admin`; the deployment role `postgres`
+has neither CREATE on `cron` nor owner rights on that table. The proposed index
+cannot be installed by this role. No tracking repair was committed.
+
+The agreement runner now recognizes the exact already-installed tracking delta
+using the existing inverse-catalog proof and original/latest ledger checks. It
+does not install the housekeeping repair or modify any cron object. Unknown
+schema, permission or ledger changes still fail. Reconciliation provenance is
+retained in encrypted recovery and its metadata; installation rechecks the ledger
+inside its transaction and registers the combined verified schema atomically with
+the agreement change. Recovery restores the actual pre-agreement fingerprint and
+the original ledger discrepancy, rather than claiming housekeeping was fixed.
+
+The release ledger permits one row per source commit. The runner rejects reuse of
+an already-registered latest release SHA before rehearsal. The separate tracking
+repair is no longer a prerequisite for agreement publication. Its remaining
+provider-table ownership problem needs an independent, supported repair.
+
+Focused validation passed 11 tests, including exact tracking reconstruction,
+unexpected-grant/schema/later-ledger rejection, agreement order/consent isolation,
+recovery and protected-context checks. These local results do not establish a
+successful protected rehearsal, installation, app release or published catalog.

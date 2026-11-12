@@ -13,6 +13,7 @@ import {
 import { calculateSchemaFingerprint } from './lib/schema-fingerprint.mjs';
 import { encryptBackupStream, fileDigest } from './lib/security-backup.mjs';
 import { agreementOrderRecoverySql } from './lib/agreement-order-recovery.mjs';
+import { assertAgreementReleaseBaseline } from './lib/agreement-release-baseline.mjs';
 const hash = (x) => createHash('sha256').update(x).digest('hex');
 const mode = process.argv[2];
 const sha = process.env.SAFEBUS_RELEASE_SHA;
@@ -112,8 +113,16 @@ try {
     const before = await snapshot(config, 'before');
     const registered = await latest();
     const fingerprint = await calculateSchemaFingerprint(client);
-    if (!registered || registered.schema_fingerprint !== fingerprint)
-      throw Error('AGREEMENT_UNRELATED_SCHEMA_DRIFT');
+    const trackingProof = JSON.parse(
+      await fs.readFile('config/observed/tracking-release-lineage-20261111.json', 'utf8'),
+    );
+    const baselineReconciliation = await assertAgreementReleaseBaseline(
+      client,
+      registered,
+      fingerprint,
+      trackingProof,
+    );
+    if (registered.release_sha === sha) throw Error('AGREEMENT_RELEASE_SHA_ALREADY_REGISTERED');
     const recoverySql = agreementOrderRecoverySql(before);
     stage = 'rehearse';
     let afterFingerprint;
@@ -139,9 +148,10 @@ try {
       const recovery = {
         ...identity,
         precedingRelease: registered,
+        baselineReconciliation,
         functions: before,
         restoreSql: recoverySql,
-        note: 'Before publication only. Restore in one reviewed transaction, verify the preceding fingerprint, and remove only this release ledger row.',
+        note: 'Before publication only. Restore in one reviewed transaction, verify recovery.beforeFingerprint, and remove only this release ledger row. When baselineReconciliation is present, the original ledger predates the already-installed tracking delta; recovery restores that exact pre-agreement state, not completed tracking housekeeping.',
       };
       const envelope = await encryptBackupStream(
         Readable.from([JSON.stringify(recovery)]),
@@ -152,6 +162,7 @@ try {
         ...identity,
         createdAt: new Date().toISOString(),
         beforeFingerprint: fingerprint,
+        baselineReconciliation,
         afterFingerprint,
         envelope,
       });
@@ -166,6 +177,8 @@ try {
         age < 0 ||
         age > 3600000 ||
         evidence.beforeFingerprint !== fingerprint ||
+        JSON.stringify(evidence.baselineReconciliation) !==
+          JSON.stringify(baselineReconciliation) ||
         evidence.afterFingerprint !== afterFingerprint ||
         evidence.envelope.ciphertextSha256 !== (await fileDigest(`${directory}/recovery.enc`))
       )
@@ -178,6 +191,10 @@ try {
         await snapshot(config, 'before');
         if ((await calculateSchemaFingerprint(client)) !== fingerprint)
           throw Error('AGREEMENT_BASELINE_CHANGED');
+        const lockedRelease = await latest();
+        if (JSON.stringify(lockedRelease) !== JSON.stringify(registered))
+          throw Error('AGREEMENT_BASELINE_CHANGED');
+        await assertAgreementReleaseBaseline(client, lockedRelease, fingerprint, trackingProof);
         await client.query(sql);
         await snapshot(config, 'after');
         await empty();
