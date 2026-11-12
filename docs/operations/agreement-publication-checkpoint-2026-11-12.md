@@ -2,7 +2,7 @@
 
 This checkpoint distinguishes the production state from the proposed PR #442 changes.
 
-## Verified production state
+## Initial production state before PR #442 installation
 
 A bounded read-only production query (statement timeout five seconds, lock timeout
 one second, final rollback) confirmed:
@@ -99,3 +99,47 @@ Focused validation passed 11 tests, including exact tracking reconstruction,
 unexpected-grant/schema/later-ledger rejection, agreement order/consent isolation,
 recovery and protected-context checks. These local results do not establish a
 successful protected rehearsal, installation, app release or published catalog.
+
+## Installed database and blocked website release — November 11 Alberta time
+
+PR #443 merged as `c9a7d2dc7111d68d043c928489d3d6a92b5d8ac6`.
+Protected agreement rehearsal `43145976234` succeeded, followed by installation
+`43147595257`: prepare, encrypted recovery retention, install and verify all passed.
+A read-only production check confirmed the release ledger SHA and installed
+`prepare_my_district_agreement_order(uuid,jsonb)`. The catalog count remained zero.
+The initial state and rollout checklist above are historical; do not reinstall
+the agreement database change.
+
+Website release `43148497081` passed validation and the exact-main CI check.
+Migration integrity, schema drift and pending-migration preflight passed. It stopped
+at `types:check` with a stale generated-types error. Build, artifact preparation
+and Netlify upload were skipped; this attempt did not consume a Netlify build.
+
+The rollout matcher compared the additional service RPC argument lines in SQL
+declaration order. Alphabetically ordered OpenAPI properties reproduce rejection
+of the same four names/types. A regression test failed before the correction.
+The correction normalizes only argument-line ordering inside the exact reviewed
+addition. Changed names, types, optionality, nullability, extra/missing/duplicate
+arguments, changed return types and all unrelated content still fail. The existing
+tests had reused declaration ordering and missed this serialization difference.
+Actual hosted type acceptance must still be established by the protected release.
+
+Independent bounded read-only catalog queries matched all 240 public, 184
+authenticated and 219 service-executable signatures to the reviewed allowlists,
+including the installed agreement transition. All 16 private no-policy tables
+retained the reviewed owner, RLS and no-client-grant isolation. The other inspected
+catalog security checks passed. This is not a substitute for the complete
+protected authorization audit: HTTP schema discovery/isolation and provider-default
+checks still run there. The preflight now collects both type-check and authorization
+audit outcomes before failing, while requiring both to pass before any build/upload.
+
+No customer documents have been published and no customer's agreement has been
+accepted by the operator. Contract-package publication and live UI verification
+remain after a successful website release.
+
+Local correction validation: typecheck, lint, build, 1,229 web tests, 32 mobile
+tests and 607 release/contract tests passed. Mobile build and Android sync passed;
+regenerated artwork was excluded from the change. The workflow's four combinations
+of type/security success and failure were exercised: both checks always execute,
+and only two successes allow continuation. An extra `test:release` command was
+unavailable; the release suite had already passed as part of `pnpm test`.

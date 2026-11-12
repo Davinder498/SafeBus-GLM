@@ -9,6 +9,16 @@ const definitions = {
     p_collection_method: { type: 'string' },
   },
 };
+
+// OpenAPI object property order is not part of an RPC signature. Normalize only
+// this reviewed addition's argument lines; keep every name, type, optional marker,
+// duplicate, return type and all unrelated generated content strictly checked.
+function canonicalArgumentOrder(block) {
+  return block?.replace(
+    /(?<=        Args: \{\n)(?:          [^\n]+\n)+(?=        \}\n)/g,
+    (args) => args.slice(0, -1).split('\n').sort().join('\n') + '\n',
+  );
+}
 export function matchesAgreementOrderTypeTransition(generated, committed) {
   const paths = Object.fromEntries(
     Object.entries(definitions).map(([name, properties]) => [
@@ -26,7 +36,11 @@ export function matchesAgreementOrderTypeTransition(generated, committed) {
     if (committed.includes(`      ${name}: {`)) return false;
     const pattern = new RegExp(`^      ${name}: \\{[\\s\\S]*?^      \\}\\n`, 'm');
     const block = expected.match(pattern)?.[0];
-    if (!block || remainder.match(pattern)?.[0] !== block) return false;
+    if (
+      !block ||
+      canonicalArgumentOrder(remainder.match(pattern)?.[0]) !== canonicalArgumentOrder(block)
+    )
+      return false;
     remainder = remainder.replace(pattern, '');
     if (remainder.includes(`      ${name}: {`)) return false;
   }

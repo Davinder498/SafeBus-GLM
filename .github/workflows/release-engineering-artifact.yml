@@ -55,8 +55,13 @@ jobs:
           pnpm migrations:verify
           pnpm migrations:drift
           pnpm migrations:preflight
-          pnpm types:check
-          pnpm authorization:audit
+          types_status=0
+          pnpm types:check || types_status=$?
+          authorization_status=0
+          pnpm authorization:audit || authorization_status=$?
+          if (( types_status != 0 || authorization_status != 0 )); then
+            exit 1
+          fi
       - name: Build artifact with public frontend configuration only
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}

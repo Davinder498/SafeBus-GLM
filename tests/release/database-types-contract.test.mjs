@@ -255,6 +255,44 @@ test('agreement rollout permits only the exact additional service RPC type block
     },
   });
   assert.equal(matchesAgreementOrderTypeTransition(after, before), true);
+  // PostgREST serializes JSON object keys independently of SQL argument order.
+  // Use a separately ordered metadata response, not the transition's fixture order.
+  const advertised = generateFromOpenApi({
+    definitions: {},
+    paths: {
+      '/rpc/district_agreement_order_matches': {
+        post: {
+          parameters: [
+            {
+              in: 'body',
+              schema: {
+                properties: {
+                  p_collection_method: { type: 'string' },
+                  p_interval: { type: 'string' },
+                  p_quantity: { type: 'integer' },
+                  p_tenant_id: { type: 'string', format: 'uuid' },
+                },
+                required: ['p_tenant_id', 'p_interval', 'p_quantity', 'p_collection_method'],
+              },
+            },
+          ],
+        },
+      },
+    },
+  });
+  assert.equal(matchesAgreementOrderTypeTransition(advertised, before), true);
+  for (const altered of [
+    advertised.replace('p_quantity: number', 'p_quantity: string'),
+    advertised.replace('p_quantity: number', 'p_quantity?: number'),
+    advertised.replace('p_quantity: number', 'p_quantity: number | null'),
+    advertised.replace('          p_quantity: number\n', ''),
+    advertised.replace('p_quantity: number', 'p_quantity: number\n          p_quantity: number'),
+    advertised.replace('p_quantity: number', 'p_quantity: number\n          p_extra: string'),
+    advertised.replace('p_quantity: number', 'renamed_quantity: number'),
+    advertised.replace(/(district_agreement_order_matches:[\s\S]*?Returns:) unknown/, '$1 boolean'),
+    advertised + '// unrelated drift',
+  ])
+    assert.equal(matchesAgreementOrderTypeTransition(altered, before), false);
   assert.equal(matchesAgreementOrderTypeTransition(before, before), false);
   assert.equal(
     matchesAgreementOrderTypeTransition(
