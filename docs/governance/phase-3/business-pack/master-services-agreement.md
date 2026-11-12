@@ -198,15 +198,13 @@ does not predetermine a Customer's statutory disclosure decision.
 ## 7. Service assurance and remedies
 
 SafeBus will perform the accepted service with reasonable care and skill.
-The initial-pilot Service-Level Agreement uses **Monday–Friday, 8:00 a.m.–5:00
-p.m. Alberta local time (America/Edmonton), excluding Alberta's nine general
-holidays**, for ordinary staffed support. The complete holiday calendar and
-request-triage rules appear in the SLA. There is **no 24/7 ordinary staffed support,
-guaranteed ordinary after-hours response, uptime percentage, fixed repair time or
-automatic SLA credit** for the initial pilot. Automated monitoring outside
-staffed hours is not evidence of a person responding. Where supported by
-operational evidence, any later numerical guarantee or expanded staffing
-requires an express written agreement.
+The Service-Level Agreement provides **Monday–Saturday, 6:00 a.m.–6:00 p.m. Alberta local time (America/Edmonton)**
+for all staffed support, including critical outages and privacy/security incidents.
+There is **no 24/7 staffed support or guaranteed after-hours human response**.
+No separate holiday exclusion applies. There is no guaranteed uptime percentage,
+fixed repair time or automatic SLA credit. Automated monitoring outside staffed
+hours is not evidence of a person responding. Expanded staffing or numerical
+service guarantees require an expressly accepted written amendment.
 
 The Customer reports material service failures through the agreed channel;
 SafeBus investigates with commercially reasonable efforts under the accepted
@@ -404,9 +402,8 @@ applicable after access ends.
 
 ## Approved privacy operations — November 11, 2026
 
-The DPA provides 24/7 urgent privacy/security incident coverage and immediate
-Customer notice upon awareness. Ordinary support retains the approved business
-hours and holiday exclusions. Ordinary Customer records requests receive an
+All support, including critical incidents, uses Monday–Saturday, 6:00 a.m.–6:00 p.m. Alberta local time (America/Edmonton).
+The DPA preserves immediate Customer notice upon awareness independently of staffed hours. Ordinary Customer records requests receive an
 acknowledgment within two business days and an action plan within five business
 days as defined in DPA section 5, subject to earlier applicable deadlines.
 Scoped assisted data return beyond supported directory downloads is included in

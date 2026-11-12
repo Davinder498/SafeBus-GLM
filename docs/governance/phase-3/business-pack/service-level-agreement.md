@@ -1,6 +1,6 @@
 # SafeBus Service-Level Agreement — Initial Pilot Draft
 
-**Status:** Owner-approved business-hours and holiday support policy (November 9, 2026); draft contract only, not executed or published  
+**Status:** Owner-approved unified support schedule (November 11, 2026); draft contract only, not executed or published
 **Provider:** Sachman Gold Inc., operating as SafeBus  
 **Customer:** The school authority identified in the accepted Order Form
 
@@ -11,57 +11,37 @@ records to be processed or replace privacy/security release gates. Preview
 deployments, internal engineering goals and supplier statements are not contractual
 SafeBus service guarantees.
 
-## 1. Staffed support and Alberta holiday calendar
+## 1. Staffed support
 
-Ordinary support is provided **Monday–Friday, 8:00 a.m.–5:00 p.m. Alberta local
-time (America/Edmonton)**, **excluding Alberta's nine general holidays**.
-The support and ordinary contractual notice inbox is **info@safebus.kids**.
-Ordinary support received outside staffed hours may be queued or automatically acknowledged
-and is ordinarily handled when staffed support next resumes; there is **no
-contractual ordinary-support first-response time or ordinary after-hours human-response guarantee**.
-An automatic acknowledgement does not mean a person has reviewed the issue.
+All staffed support is provided **Monday–Saturday, 6:00 a.m.–6:00 p.m. Alberta local time (America/Edmonton)**.
+This single window includes critical outages and privacy/security incident support.
+Sunday and hours outside this window are unstaffed; there is no 24/7 staffing or
+guaranteed after-hours human response. No separate holiday exclusion is added:
+holidays falling Monday–Saturday follow the same support window.
 
-For this pilot the nine excluded Alberta general holidays are:
+Contact **info@safebus.kids** for support and contractual notices. Reports may be
+submitted outside staffed hours and are handled when staffed support resumes,
+subject to the independent incident-notification and legal duties in section 4.
+An automated acknowledgement does not mean a person has reviewed the report.
+No fixed first-response or resolution time is promised for a general support
+request. Critical incidents receive priority within staffed hours.
 
-1. New Year's Day
-2. Alberta Family Day
-3. Good Friday
-4. Victoria Day
-5. Canada Day
-6. Labour Day
-7. Thanksgiving Day
-8. Remembrance Day
-9. Christmas Day
+These are support hours, not application operating hours. Automated monitoring
+may run outside them without continuous human monitoring or uptime guarantees.
+The Customer retains its own emergency dispatch and safety procedures.
 
-Use the **official holiday dates for the applicable calendar year** (including
-the legally recognized date where Canada Day falls on Sunday):
-https://www.alberta.ca/alberta-general-holidays .
-If a holiday falls on an otherwise non-staffed Saturday or Sunday, this policy
-does not automatically add a separate weekday closure, except where a legal
-holiday date itself shifts. Easter Monday, Heritage Day, National Day for Truth
-and Reconciliation and Boxing Day are **not additional pilot closures** under
-this policy. Any additional closure or customer-specific support calendar
-requires a separately accepted written Order Form amendment.
-
-The support calendar does not promise that the school transportation service
-itself is available only during these hours; the application may operate outside
-them, **without a contractual uptime or continuous-monitoring guarantee**.
-Staffed coverage and a monitored contact/backup escalation procedure must be
-verified operationally before pilot activation; this contract does not claim an
-independent backup responder exists.
-
-## 2. Issue categories and ordinary response process
+## 2. Issue categories and response process
 
 | Priority | Examples | Initial-pilot handling |
 | --- | --- | --- |
-| P1 — Critical | Core service unavailable; suspected cross-tenant or serious security/privacy event | Urgent privacy/security events receive 24/7 coverage and immediate notice upon awareness under section 4. Ordinary availability outages receive priority investigation during support hours; coordinate operational fallback |
+| P1 — Critical | Core service unavailable; suspected cross-tenant or serious security/privacy event | Priority investigation during the same Monday–Saturday 06:00–18:00 support window; coordinate operational fallback. Incident-notification duties under section 4 remain independent |
 | P2 — High | Significant bus-location, map or authorized notification degradation | Investigate with priority during staffed support hours and communicate confirmed updates as practical |
-| P3 — Standard | Account questions, configuration support or noncritical defects | Handle in the ordinary business-hours queue |
+| P3 — Standard | Account questions, configuration support or noncritical defects | Handle in the staffed support queue |
 
 SafeBus will make commercially reasonable efforts to investigate service reports
 and provide accurate information about confirmed disruptions. **No fixed
 acknowledgement, update, repair or restoration time** is promised for any
-ordinary service category, including P1 availability outages. The immediate incident-notice and records-request commitments in section 4 remain binding. Classifications are for triage, not a guaranteed
+service category, including critical incidents. The immediate incident-notice and records-request commitments in section 4 remain binding. Classifications are for triage, not a guaranteed
 response clock or substitute for school-authority emergency procedures.
 Emergency safety response, transport dispatch and student supervision remain
 the Customer's responsibility.
@@ -86,30 +66,24 @@ positions. Device permissions, network availability, provider outages, map tiles
 and operating conditions can affect delivery; these risks are disclosed, not
 treated as a blanket waiver of other contractual or legal responsibilities.
 
-Any future numeric target or expansion to 24/7 ordinary support requires verified
+Any future numeric target or expansion of staffed support requires verified
 operational evidence, staffing, supplier readiness and an **expressly agreed
 written amendment**; an internal dashboard target does not amend this SLA.
 
-## 4. Privacy and security incidents — separate legal obligations
+## 4. Incident notification and legal duties
 
-The ordinary support schedule and holiday exclusions **do not postpone or
-override** the MSA, DPA or applicable legal duties for containment,
-cooperation, evidence preservation, privacy incident notices, data-subject
-requests or regulator/customer escalation. In particular, the DPA's separate
-immediate incident-notification rule applies upon awareness, including outside
-ordinary staffed support hours. The owner approved **24/7 urgent privacy/security
-incident coverage**, including weekends and holidays, on November 11, 2026.
-This is distinct from ordinary support and is not a guaranteed repair or detection
-time. Ordinary Customer records requests receive acknowledgment within two
-business days and an action plan within five business days under DPA section 5;
-these commitments do not create a response guarantee for every support ticket.
+Critical privacy/security incident support uses the same hours in section 1;
+there is no separate 24/7 support promise. Support hours **do not postpone or
+override** applicable legal duties or the DPA's separate immediate incident notice
+upon actual awareness. A known breach must not be held until the next opening,
+a completed investigation or a final forensic report. Provide available facts
+and follow-up updates, preserve evidence and cooperate with the Customer's lawful
+response. This does not promise continuous detection or after-hours staffing.
 
-Before authorizing live school-authority data, SafeBus must verify an operational
-route capable of meeting those independent requirements. An automated ticket,
-health check or unstaffed inbox alone is not evidence of a workable urgent
-incident response process. The **24/7 urgent incident commitment is owner-approved**;
-the staffed routing, availability/absence arrangement and exercise results still
-require operational verification. No additional employee or contractor is claimed.
+Ordinary Customer records requests receive acknowledgment within two business
+days and an action plan within five business days under DPA section 5, subject
+to earlier applicable deadlines. These are request-handling commitments, not
+guaranteed completion or repair times for every support ticket.
 
 ## 5. Maintenance and transport fallback
 

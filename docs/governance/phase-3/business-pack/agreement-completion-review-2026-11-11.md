@@ -1,6 +1,13 @@
 # Agreement completion review — November 11, 2026
 
-Status: B1–B3 business decisions approved November 11, 2026, including owner-confirmed 24/7 urgent incident coverage. Contract remains unpublished and unexecuted. The matrix below preserves the pre-change assessment; integrated wording is not operational proof. Agreements take priority over iOS.
+> **Current owner instruction — November 11, 2026 (supersedes earlier support decisions):**
+> All support, including critical incidents, is Monday–Saturday, 6:00 a.m.–6:00 p.m. Alberta local time (America/Edmonton).
+> No separate holiday exclusions or 24/7 staffed incident coverage. Sunday/outside
+> these hours has no guaranteed human response. DPA notice upon actual awareness
+> and applicable legal duties remain; no fixed repair/response time is promised.
+> Earlier weekday/holiday and 24/7 coverage entries below are historical, not current terms.
+
+Status: B1–B3 business decisions approved November 11, 2026; support staffing is superseded by the current owner instruction above. Contract remains unpublished and unexecuted. The matrix below preserves the pre-change assessment; integrated wording is not operational proof. Agreements take priority over iOS.
 
 ## Source and method
 
@@ -227,9 +234,7 @@ remain authoritative; this screen change grants no new permission.
   affected processing changes. Publishing a catalog alone is not that control.
 - Included assisted return requires a tenant-scoped, hold-aware inventory, secure
   delivery and a tested completion/disposal report beyond existing directory CSVs.
-- The approved 24/7 commitment needs actual monitored routing, an absence/backup
-  arrangement and an exercise. No staffing exercise or customer notification was
-  performed or invented during these changes.
+- The former 24/7 staffing commitment is superseded by the current owner instruction. It is no longer a publication dependency. Actual-awareness incident notice and lawful cooperation duties remain.
 
 Keep final publication and commercial activation blocked until these dependencies
 are actually resolved. PR merge is not publication, execution or launch approval.
@@ -288,7 +293,7 @@ CI must verify the changed journey. These tests create no production customers,
 contracts, messages or charges.
 
 Remaining publication dependencies still include account-specific supplier
-facts, operational 24/7 routing/absence coverage, a tested assisted-return process,
+facts, a tested assisted-return process,
 and final customer-facing wording reflecting those facts. None is recorded as
 complete merely because the owner approved the policy. No contract was uploaded,
 published or accepted during this follow-through.
@@ -358,3 +363,13 @@ in its focused run alongside all eight district agreement page tests. The
 protected install/restore test includes both changed archive-read definitions,
 and all 125 historical migration checksums remain unchanged. New browser journeys
 are included for CI; no live download is claimed before installation/publication.
+
+## Current support policy and CI correction — November 12, 2026 UTC
+
+The owner replaced the earlier support calendars with Monday–Saturday, 6:00 a.m.–6:00 p.m. America/Edmonton for all staffed support, including critical incidents. There is no separate holiday exclusion and no 24/7 staffing promise. MSA, DPA, Order Form and SLA are aligned; actual-awareness breach notice and applicable legal obligations remain independent of staffed hours. The former 24/7 routing/absence commitment is withdrawn, not an outstanding publication prerequisite.
+
+The agreement browser test failed on both screen sizes because its partial heading selector matched both “Agreements” and the newly added “Accepted agreements” archive. The assertion now targets the exact page heading; acceptance and archive assertions remain intact. All other checks on the preceding commit passed. This correction still requires CI verification.
+
+Live verification: following a fresh administrator sign-in, the support settings were saved successfully and reloaded. The displayed saved hours are Monday–Saturday, 6:00 a.m.–6:00 p.m. Alberta time (America/Edmonton), with instructions explicitly including critical incidents and excluding Sunday/outside-hours staffing. Existing name, email and phone were preserved; no external message was sent.
+
+Current revision validation: typecheck, lint, production build, complete tests (1,229 web, 32 mobile, 600 release), separate mobile build and Android sync passed. The release-test total decreased by two because three obsolete support-calendar tests were consolidated into one test covering all four customer contracts. All 125 immutable migration checksums are unchanged. CI must validate the corrected browser selector.

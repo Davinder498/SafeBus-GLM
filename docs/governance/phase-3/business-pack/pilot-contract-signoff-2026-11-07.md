@@ -1,5 +1,12 @@
 # SafeBus — Pilot Contract, Supplier and Insurance Sign-off Pack
 
+> **Current owner instruction — November 11, 2026 (supersedes earlier support decisions):**
+> All support, including critical incidents, is Monday–Saturday, 6:00 a.m.–6:00 p.m. Alberta local time (America/Edmonton).
+> No separate holiday exclusions or 24/7 staffed incident coverage. Sunday/outside
+> these hours has no guaranteed human response. DPA notice upon actual awareness
+> and applicable legal duties remain; no fixed repair/response time is promised.
+> Earlier weekday/holiday and 24/7 coverage entries below are historical, not current terms.
+
 **Prepared:** 2026-11-07, America/Edmonton  
 **Status:** PREPARED FOR OWNER / SCHOOL-DISTRICT REVIEW — **not signed, not approved, not permission to launch**  
 **Operator:** Sachman Gold Inc. (SafeBus product)  
@@ -27,7 +34,7 @@ Alberta's POPA applies to school boards and requires public bodies to assess the
 | Trial and cancellation | **Owner-approved November 9:** one 14-day first-time trial; cancel before trial end to avoid the first charge; monthly month-to-month or annual 12-month automatic renewal; cancellation at term end, no early fee or partial paid-term refunds except legal/expressly agreed exceptions | Business policy approved; customer-specific acceptance, notices and trial dates pending |
 | Tax | Owner reports GST/HST registration effective 2026-11-08; Stripe Canadian Tax registration start 2026-10-23 needs reconciliation; current subscription tax enabled but past paid invoice tax disabled | Confirm CRA notice privately, region-specific tax, price behaviour, invoices and configuration; do not mutate live values |
 | Payment alternatives | Card-funded Checkout is the default. Invoice/PO requires a district request, distinct platform-super-admin approval and district activation, with 14/30/45/60 invoice days selected per request | Owner policy approved; verify each public-authority approval, due date, customer order and first invoice delivery; no blanket net-30 commitment |
-| Service/support | **Owner-approved 2026-11-09:** Monday–Friday, 08:00–17:00 America/Edmonton, excluding Alberta's nine general holidays; no after-hours staffed response guarantee | Business calendar CLOSED; operational staffed coverage, backup and independent DPA/security incident escalation still require evidence |
+| Service/support | **Current owner-approved:** Monday–Saturday, 06:00–18:00 America/Edmonton for all support including critical incidents; no holiday exclusion; no after-hours staffed response guarantee | Business calendar CLOSED; DPA notice upon actual awareness remains independent of staffing. Live support settings verified after fresh sign-in on November 12 UTC. |
 | Insurance and liability | **Owner-approved Provider caps (proposed):** general greater of CA$25,000 or 12-Month Fees; privacy/security greater of CA$100,000 or twice 12-Month Fees, aggregate/non-stacking with non-excludable liabilities preserved. **Insurance quotations and purchase deferred; no coverage claimed.** | Business proposal CLOSED; procurement, indemnity carve-outs, risk/cap capacity and any required insurance remain OPEN before contract execution |
 | Third-party indemnification business decision | **Owner-approved 2026-11-09:** limited, fault-based Provider privacy/security and unmodified software-IP defence/indemnification; defence costs included within approved non-stacking aggregate caps; no broad or unlimited indemnity | Business position CLOSED; district-specific indemnity/defence/insurance procurement and customer acceptance OPEN |
 | Service performance / credits | **Owner-approved initial-pilot SLA:** no guaranteed uptime, response latency, GPS freshness, ETA, notification delivery, repair/recovery time or automatic monthly/annual credits; future promises require evidence and signed amendment | Business no-guarantee policy CLOSED; customer-specific acceptance and operating proof remain pending |

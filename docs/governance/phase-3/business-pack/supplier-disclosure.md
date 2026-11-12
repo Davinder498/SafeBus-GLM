@@ -125,3 +125,34 @@ Source: authenticated Netlify project `bussafe`, Functions → Region, inspected
 November 11, 2026 (America/Edmonton). Earlier “function region unverified” notes
 are superseded only for this configured region; other supplier evidence is not
 implicitly approved.
+
+## Standard supplier terms clarified — November 12, 2026 UTC
+
+A separately countersigned document is not automatically required for every
+supplier. Netlify's [June 9, 2026 DPA](https://www.netlify.com/pdf/netlify-dpa.pdf)
+forms part of its self-serve or enterprise agreement. The [November 4 self-serve
+terms](https://www.netlify.com/pdf/self-serve-subscription-agreement.pdf) identify
+Netlify, Inc. and acceptance through signup/use, including authorized company use.
+The account's contracting party and any superseding agreement still need recording;
+do not mislabel missing retained evidence as proof that no DPA exists. Netlify's
+retention/deletion summary is access-on-request in its Trust Center.
+
+[Resend's GDPR guidance](https://resend.com/security/gdpr/) confirms a DPA for every
+account without a second countersignature, with its executed copy under Documents.
+Standard Free/Pro/Scale email and log retention is 30 days, backups seven days, and
+remaining data after service termination is deleted within 90 days. These are
+distinct triggers, not a promise that every customer copy disappears in seven days.
+Individual sent-email deletion is not available by API; early removal requires an
+authorized account request. Its [security page](https://resend.com/security) gives
+at least 14 days' subprocessor-change notice. This cannot substantiate 30 days'
+advance notice for every downstream vendor change; SafeBus must evaluate notice
+and approval before affected processing, rather than silently assume approval.
+
+[Geoapify's DPA](https://www.geoapify.com/data-processing-agreement/) identifies
+KEPTAGO LTD in Cyprus and API servers in Germany/Finland. Its standard map host
+uses Cloudflare; the expressly EU-bound guarantee applies to api-eu.geoapify.com.
+Normal identifiable request details are kept no longer than 24 hours, with
+exceptional suspicious/fraud cases up to two months. Do not describe the current
+maps.geoapify.com flow as EU-only or every log as deleted within 24 hours.
+These provider terms narrow the evidence gaps; they do not establish every
+SafeBus account fact, customer approval or completed assisted return.

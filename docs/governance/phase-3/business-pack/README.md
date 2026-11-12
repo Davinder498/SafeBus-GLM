@@ -1,5 +1,12 @@
 # SafeBus Business Privacy and Commercial Draft Pack
 
+> **Current owner instruction — November 11, 2026 (supersedes earlier support decisions):**
+> All support, including critical incidents, is Monday–Saturday, 6:00 a.m.–6:00 p.m. Alberta local time (America/Edmonton).
+> No separate holiday exclusions or 24/7 staffed incident coverage. Sunday/outside
+> these hours has no guaranteed human response. DPA notice upon actual awareness
+> and applicable legal duties remain; no fixed repair/response time is promised.
+> Earlier weekday/holiday and 24/7 coverage entries below are historical, not current terms.
+
 **Status:** Owner review draft; not effective, executed or approved for publication
 **Prepared:** 2026-10-13 (America/Edmonton)
 **Business context:** Sachman Gold Inc., doing business as SafeBus; owner-confirmed Alberta business. Direct contact: info@safebus.kids; address, registration evidence and signing authority remain pending
@@ -28,7 +35,7 @@ while its necessary inputs or evidence are missing.
 | [Order form](order-form.md)                                        | Customer-specific scope, dates, annual per-bus CAD price and signatures            |
 | [Data Processing Agreement](data-processing-agreement.md)          | Instructions, permitted data, roles, suppliers and privacy cooperation             |
 | [Security Schedule](security-schedule.md)                          | Proposed safeguards and the evidence required before operation                     |
-| [Service-Level Agreement](service-level-agreement.md)              | Owner-approved initial-pilot staffed hours, nine holiday exclusions and no unsupported uptime/response/credit guarantees; customer execution pending |
+| [Service-Level Agreement](service-level-agreement.md)              | Monday–Saturday 06:00–18:00 Alberta time for all staffed support, including critical incidents; no holiday exclusion or unsupported uptime/response/credit guarantees; customer execution pending |
 | [Acceptable-Use Terms](acceptable-use-terms.md)                    | Rules for administrators, drivers and guardians                                    |
 | [Data Return and Destruction Schedule](data-return-destruction.md) | Exit, export, deletion, backups and legal holds                                    |
 | [Supplier disclosure draft](supplier-disclosure.md)                | Supplier purposes, information involved and location decisions still pending       |
@@ -107,7 +114,9 @@ The latest [owner decision register](owner-decisions.md) supersedes historical G
 The owner approved **CA$1.99 per active bus monthly** and **CA$20.29 per active bus annually**, **including applicable GST/HST**. These rates supersede earlier temporary-price wording; the two live existing Stripe prices were converted in place to `tax_behavior=inclusive` and independently retrieved after updating. The signed school-authority Order Form must still select the interval, quantity, collection method, trial, effective dates and any documented exemptions. The entire eight-document district contract package is still DRAFT and unpublished; rate approval alone did not approve insurance, liability caps, supplier disclosures, remaining terms or a pilot. The later November 9 owner-approved *proposed* liability limits are recorded below; no customer contract or launch is approved. See [owner decisions](owner-decisions.md).
 
 
-## November 9 — approved pilot support calendar and SLA boundary
+## Historical November 9 support decision — superseded
+
+The following calendar is retained as decision history only. The current SLA uses Monday–Saturday 06:00–18:00 Alberta time for all support, including critical incidents, with no holiday exclusion.
 
 For the initial pilot, ordinary SafeBus staffed support runs **Monday–Friday,
 8:00 a.m.–5:00 p.m. America/Edmonton**, excluding Alberta's **nine general

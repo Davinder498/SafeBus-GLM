@@ -205,17 +205,17 @@ No contract term limits a person's lawful complaint rights.
 ## 6. Incidents and assurance
 
 A breach includes loss, unauthorized access or unauthorized disclosure of personal
-information. SafeBus provides urgent privacy/security incident coverage 24 hours
-a day, seven days a week, including weekends and holidays. On learning of a breach
-affecting the Customer's information, SafeBus immediately notifies its verified
-privacy contact, takes proportionate containment action and preserves evidence.
-Personnel and subcontractors must escalate suspected incidents immediately.
-Initial notice may be incomplete; provide updates with known scope, information
-involved, risks, containment, contact and next steps. Do not await a final forensic
-report, ordinary support hours or a 24-hour deadline. This urgent coverage does
-not promise continuous detection, a fixed repair time or 24/7 ordinary support.
-The owner approved this commitment on November 11, 2026; operational routing and
-coverage verification remain prerequisites to publication, not proven facts.
+information. Staffed support for all issues, including critical privacy/security
+incidents, is **Monday–Saturday, 6:00 a.m.–6:00 p.m. Alberta local time (America/Edmonton)**.
+There is no separate 24/7 staffing promise and no holiday exclusion from that window.
+On actual awareness of a breach affecting the Customer's information, SafeBus
+immediately notifies its verified privacy contact, takes proportionate containment
+action and preserves evidence. Personnel and subcontractors escalate suspected
+incidents immediately. Initial notice may be incomplete; provide known facts
+and follow-up updates. Do not wait for the next staffed opening, a final forensic
+report or a 24-hour deadline once aware. The staffing schedule does not suspend
+applicable legal notification, cooperation or safeguarding duties, and does not
+promise continuous detection, a fixed repair time or after-hours staffing.
 
 The parties allocate Customer/public-body and SafeBus own-business regulator
 and individual notifications according to applicable law; neither can contract
