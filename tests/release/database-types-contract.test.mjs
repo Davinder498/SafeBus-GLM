@@ -281,6 +281,26 @@ test('agreement rollout permits only the exact additional service RPC type block
     },
   });
   assert.equal(matchesAgreementOrderTypeTransition(advertised, before), true);
+  const bothAdvertised = advertised.replace(
+    '          p_package_id: string\n          p_order: Json',
+    '          p_order: Json\n          p_package_id: string',
+  );
+  assert.notEqual(bothAdvertised, advertised);
+  assert.equal(matchesAgreementOrderTypeTransition(bothAdvertised, before), true);
+  assert.equal(
+    matchesAgreementOrderTypeTransition(
+      bothAdvertised.replace('p_order: Json', 'p_order?: Json'),
+      before,
+    ),
+    false,
+  );
+  assert.equal(
+    matchesAgreementOrderTypeTransition(
+      bothAdvertised.replace('p_order: Json', 'p_order: string'),
+      before,
+    ),
+    false,
+  );
   for (const altered of [
     advertised.replace('p_quantity: number', 'p_quantity: string'),
     advertised.replace('p_quantity: number', 'p_quantity?: number'),

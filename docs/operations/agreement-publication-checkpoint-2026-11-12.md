@@ -119,7 +119,8 @@ The rollout matcher compared the additional service RPC argument lines in SQL
 declaration order. Alphabetically ordered OpenAPI properties reproduce rejection
 of the same four names/types. A regression test failed before the correction.
 The correction normalizes only argument-line ordering inside the exact reviewed
-addition. Changed names, types, optionality, nullability, extra/missing/duplicate
+addition and the existing authenticated prepare-order fallback when advertised.
+Changed names, types, optionality, nullability, extra/missing/duplicate
 arguments, changed return types and all unrelated content still fail. The existing
 tests had reused declaration ordering and missed this serialization difference.
 Actual hosted type acceptance must still be established by the protected release.

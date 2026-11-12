@@ -11,7 +11,7 @@ const definitions = {
 };
 
 // OpenAPI object property order is not part of an RPC signature. Normalize only
-// this reviewed addition's argument lines; keep every name, type, optional marker,
+// the reviewed agreement RPCs' argument lines; keep every name, type, optional marker,
 // duplicate, return type and all unrelated generated content strictly checked.
 function canonicalArgumentOrder(block) {
   return block?.replace(
@@ -44,6 +44,17 @@ export function matchesAgreementOrderTypeTransition(generated, committed) {
     remainder = remainder.replace(pattern, '');
     if (remainder.includes(`      ${name}: {`)) return false;
   }
+  // The authenticated RPC already has a committed fallback before installation.
+  // If advertised after installation, its two named fields may also be reordered.
+  const preparePattern = /^      prepare_my_district_agreement_order: \{[\s\S]*?^      \}\n/m;
+  const committedPrepare = committed.match(preparePattern)?.[0];
+  if (
+    !committedPrepare ||
+    canonicalArgumentOrder(remainder.match(preparePattern)?.[0]) !==
+      canonicalArgumentOrder(committedPrepare)
+  )
+    return false;
+  remainder = remainder.replace(preparePattern, committedPrepare);
   return remainder === committed;
 }
 
