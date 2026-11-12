@@ -9,6 +9,7 @@ import {
   requestHash,
   requireBillingCaller,
   requireDistrictBillingAgreement,
+  assertDistrictOrderMatches,
   retrieveCanonicalSubscription,
   safeProviderErrorCode,
   syncSubscriptionProjection,
@@ -96,6 +97,7 @@ async function customerForCheckout(ctx, stripe, state) {
 
 async function startCheckout(ctx, stripe, state, input) {
   const selectedPrice = await validateApprovedPrice(stripe, input.priceId, ctx.config.stripeProductId);
+  await assertDistrictOrderMatches(ctx.admin, state.tenant_id, selectedPrice, input.quantity, 'charge_automatically');
   // Never infer tax-inclusive treatment from a legacy 'unspecified' price.
   // A newly approved inclusive Stripe price uses automatic tax for the
   // district's actual billing address, without changing old catalog records.
@@ -445,6 +447,8 @@ export async function handler(event) {
       });
     }
     const messages = {
+      billing_agreement_order_mismatch: 'Your billing selection differs from your accepted Order Form. Update and accept your order in Agreements first.',
+      billing_agreement_order_unavailable: 'Order verification is unavailable. No checkout was created.',
       billing_quantity_below_usage: 'Deactivate buses before choosing a smaller allowance.',
       billing_legacy_contract:
         'This existing invoice contract requires a contract review before self-service changes.',

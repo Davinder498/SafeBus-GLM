@@ -1,7 +1,7 @@
 {
   "format": 1,
   "reviewedAt": "2026-11-08",
-  "scope": "SafeBus Alberta public school authority CR1 — account-specific supplier evidence",
+  "scope": "SafeBus Alberta public school authority CR1 \u2014 account-specific supplier evidence",
   "releaseBaseline": "f2f3d367131dd0a1671b16befeda0f3c45e02bf4",
   "overallStatus": "not_approved",
   "statement": "Inventory and public terms do not authorize customer processing. Supplier account terms and restricted evidence remain pending. HISTORICAL: pre-November 8, 2026, FCM push and pickup/drop-off email payloads could expose detailed transport information. CURRENT VERIFIED SOURCE: FCM provider text was redacted by deployed v7 and generic pickup/drop-off email rendering shipped in PR #414; protected Netlify source attestation run 42543503884 passed for published commit 6ae32d43665e2fdf51ee6321dbe9a2e62db8ca03. Live synthetic Resend delivery and Android device acceptance are deferred to final testing. Resend still processes recipient/event/delivery metadata in the US; other email categories and earlier delivered emails are unchanged. No vendor, district or readiness approval inferred.",
@@ -40,21 +40,28 @@
       "serviceStatus": "enabled",
       "observedFacts": [
         "production_web_published",
-        "authenticated_dashboard_terms_unverified_extension_host_permission_blocked",
         "hosted_notification_worker_processes_recipient_and_message_content",
-        "repo_netlify_config_no_explicit_functions_region_live_region_unverified"
+        "authenticated_dashboard_access_restored_2026_11_11",
+        "configured_functions_region_cmh_ohio_us_east_verified_2026_11_11",
+        "free_legacy_plan_build_minutes_paused_site_online_verified_2026_11_11",
+        "owner_supplied_dpa_2026_06_09_reviewed_2026_11_12",
+        "owner_supplied_iso27001_certificate_MMIND_25090201_reviewed",
+        "personal_plan_upgrade_owner_planned_not_completed",
+        "retention_summary_request_failed_twice_no_confirmed_submission",
+        "function_payloads_include_notification_inputs_and_authorized_record_exports"
       ],
       "status": "account-evidence-pending",
       "priority": "P0",
       "required": [
-        "legal_party_terms_dpa",
+        "account_party_and_superseding_terms",
         "functions_cdn_logs_countries",
-        "access_and_retention",
-        "security_incident_assistance",
-        "privacy_owner_decision",
-        "verify_actual_function_execution_region_and_account_plan"
+        "plan_applicable_log_backup_deletion_periods_and_exceptions",
+        "privacy_owner_decision"
       ],
-      "evidenceReferences": [],
+      "evidenceReferences": [
+        "docs/governance/phase-3/business-pack/supplier-disclosure.md#verified-netlify-project-setting--november-11-2026",
+        "docs/governance/phase-3/business-pack/netlify-processing-retention-review-2026-11-12.md"
+      ],
       "decision": null
     },
     {

@@ -198,15 +198,13 @@ does not predetermine a Customer's statutory disclosure decision.
 ## 7. Service assurance and remedies
 
 SafeBus will perform the accepted service with reasonable care and skill.
-The initial-pilot Service-Level Agreement uses **Monday–Friday, 8:00 a.m.–5:00
-p.m. Alberta local time (America/Edmonton), excluding Alberta's nine general
-holidays**, for ordinary staffed support. The complete holiday calendar and
-request-triage rules appear in the SLA. There is **no 24/7 staffed support,
-guaranteed after-hours response, uptime percentage, fixed repair time or
-automatic SLA credit** for the initial pilot. Automated monitoring outside
-staffed hours is not evidence of a person responding. Where supported by
-operational evidence, any later numerical guarantee or expanded staffing
-requires an express written agreement.
+The Service-Level Agreement provides **Monday–Saturday, 6:00 a.m.–6:00 p.m. Alberta local time (America/Edmonton)**
+for all staffed support, including critical outages and privacy/security incidents.
+There is **no 24/7 staffed support or guaranteed after-hours human response**.
+No separate holiday exclusion applies. There is no guaranteed uptime percentage,
+fixed repair time or automatic SLA credit. Automated monitoring outside staffed
+hours is not evidence of a person responding. Expanded staffing or numerical
+service guarantees require an expressly accepted written amendment.
 
 The Customer reports material service failures through the agreed channel;
 SafeBus investigates with commercially reasonable efforts under the accepted
@@ -401,6 +399,35 @@ Customer-directed records must not be held hostage to an unrelated billing
 dispute, subject to lawful instructions and a proportionate secure transfer.
 Mandatory DPA/records duties and verified supplier-backup expiry remain
 applicable after access ends.
+
+## Approved privacy operations — November 11, 2026
+
+All support, including critical incidents, uses Monday–Saturday, 6:00 a.m.–6:00 p.m. Alberta local time (America/Edmonton).
+The DPA preserves immediate Customer notice upon awareness independently of staffed hours. Ordinary Customer records requests receive an
+acknowledgment within two business days and an action plan within five business
+days as defined in DPA section 5, subject to earlier applicable deadlines.
+Scoped assisted data return beyond supported directory downloads is included in
+the subscription, with an agreed secure format and tested completion date.
+Supplier additions and material country changes follow the DPA's advance notice
+and affirmative Customer authorization process; silence is not approval.
+These approved terms do not establish actual staffing, supplier acceptance,
+complete export/deletion capability or contract publication.
+
+### Continuity, privacy breach and surviving duties
+
+Noncompliance with agreed handling, access, disclosure or protection duties by
+SafeBus or those acting on its behalf is a contractual breach. Existing breach
+remedies and mandatory law remain; ordinary convenience cancellation does not
+remove those remedies. SafeBus gives advance notice of a proposed ownership
+change affecting the service and immediate notice of insolvency proceedings or
+creditor enforcement that threatens performance or Customer records. It protects
+records and cooperates with an orderly transfer/exit under the agreed schedule.
+A business transfer does not itself authorize a new supplier or new data use.
+
+Confidentiality duties for Customer personal information continue indefinitely
+after termination, subject to lawful disclosure obligations. End of service does
+not extinguish agreed data-return, preservation or verified disposal duties.
+
 
 ## 10. General terms
 

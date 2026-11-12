@@ -802,3 +802,21 @@ test('tenant directory filters, keyboard labels, and responsive layout are acces
     true,
   );
 });
+
+test('platform administrator downloads accepted copies from the selected school authority page', async ({page})=>{
+  await installPlatformMock(page,'resend');
+  const receiptId='00000000-0000-4000-8000-000000000099';
+  await page.route('**/rest/v1/rpc/get_platform_district_agreement',async route=>{
+    expect(route.request().postDataJSON()).toEqual({p_tenant_id:createdTenant.tenant_id});
+    await route.fulfill({json:{status:'issued',version:'2.1',receipts:[{id:receiptId,signed_at:'2026-11-01T12:00:00Z',receipt_sha256:'a'.repeat(64),bundle_sha256:'b'.repeat(64),actor_email:'admin@example.test'}]}});
+  });
+  await page.route('**/.netlify/functions/district-agreement-pdf',async route=>{
+    expect(route.request().postDataJSON()).toEqual({receiptId});
+    await route.fulfill({contentType:'application/pdf',body:'%PDF-1.4\n%%EOF'});
+  });
+  await page.goto('/admin/tenants/'+createdTenant.tenant_id);
+  await expect(page.getByRole('heading',{name:'Accepted agreements'})).toBeVisible();
+  const download=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Download executed PDF'}).click();
+  expect((await download).suggestedFilename()).toBe('SafeBus-Executed-Agreement-'+receiptId+'.pdf');
+});

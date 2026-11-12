@@ -1,5 +1,12 @@
 # SafeBus CR1 — remaining launch work and final acceptance queue
 
+> **Current owner instruction — November 11, 2026 (supersedes earlier support decisions):**
+> All support, including critical incidents, is Monday–Saturday, 6:00 a.m.–6:00 p.m. Alberta local time (America/Edmonton).
+> No separate holiday exclusions or 24/7 staffed incident coverage. Sunday/outside
+> these hours has no guaranteed human response. DPA notice upon actual awareness
+> and applicable legal duties remain; no fixed repair/response time is promised.
+> Earlier weekday/holiday and 24/7 coverage entries below are historical, not current terms.
+
 **As of:** November 8, 2026 (America/Edmonton)  
 **Disposition:** NOT APPROVED for real school-authority operation. This is an execution tracker, **not** a new release or legal sign-off.  
 **Product boundary:** School authority/district manages transportation. No individual school-admin account. Guardians see assigned bus status; drivers operate assigned trips.  

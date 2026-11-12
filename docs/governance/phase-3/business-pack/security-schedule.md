@@ -57,6 +57,27 @@ security advisors or a supplier's paid plan do not independently prove the full
 service. Do not begin real customer processing until the appropriate acceptance
 conditions in the Order Form and release gates pass.
 
+## Customer-specific security acceptance
+
+Before activation, record the Customer's information classification, safeguards
+and privacy-program requirements against the implemented controls above. Identify
+any gap and agreed treatment explicitly; no blanket claim that every Customer's
+policy is already met is made. The owner-approved security threat/risk review
+schedule is before commercial
+launch, at least annually thereafter, and after material security or processing
+changes. Assess a proposed change before activation where practicable; urgent
+containment receives a prompt follow-up review. Record the review date, scope,
+responsible reviewer, findings, actions and next due date. The accepted schedule
+also records the Customer-requested review procedure. This policy does not
+automatically purchase an external audit or represent independent certification.
+Preserve necessary audit trails under category-specific periods and
+holds sufficient for applicable Customer and regulator investigations.
+
+Provide access/training evidence and assessment findings securely under DPA
+sections 3.1 and 6.1. Keep detailed infrastructure and other-customer records
+restricted. Annual personnel privacy refreshes and corresponding supplier evidence
+are obligations to fulfill, not certifications conferred by this document.
+
 ## Operational evidence and change
 
 Maintain controlled records of access review, supported releases, material

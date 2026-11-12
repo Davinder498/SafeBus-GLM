@@ -51,7 +51,7 @@ export function SupportContactFields({
         <Input
           id="support-hours"
           maxLength={240}
-          placeholder="Monday–Friday, 8:00 AM–4:30 PM MT"
+          placeholder="Include days, hours and local time zone"
           value={form.supportHours ?? ''}
           onChange={(e) => update('supportHours', e.target.value)}
         />

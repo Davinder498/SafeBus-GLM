@@ -45,8 +45,50 @@ SafeBus records the outcome of each assisted closure or deletion operation, incl
 
 The Customer remains responsible for copies it independently downloads or manages. SafeBus retains the obligations required by the accepted DPA, MSA and applicable law. No new automatic deletion worker, signed agreement, customer activation, production migration or readiness approval is created by this draft.
 
+### 4.1 Required completion record
+
+For each assisted exit, enumerate primary records, derived outputs, audit history,
+attachments, temporary copies and applicable downstream copies. Record minimum
+and maximum retention or expiry triggers, secure destruction method, any hold and
+the responsible reviewer. Verify the completeness of the return manifest against
+that inventory; a directory-only download cannot close an account-wide request.
+The Customer must be able to read and reuse the agreed export without SafeBus's
+application. Restrict preserved records to their lawful purpose and access.
+
+Provide a signed or otherwise attributable disposal statement for the verified
+scope, dates and method, listing every remaining category with its legal basis,
+expiry/review trigger and supplier dependency. Confirm subsequent expiry or
+removal separately. Never assert that retained backup copies are destroyed.
+Return/disposal arrangements apply to expiry, ordinary termination and termination
+for breach, including provider cessation. No new guaranteed universal deadline
+or automatic deletion permission is created.
+
 ## 5. Final acceptance safeguards
 
 Before presenting an account-wide deletion or guaranteed exit workflow to a real school authority, verify tenant isolation, authorized administrator actions, retention/hold precedence, dependent records, safe export completeness, revocation/session effects, suppliers/backups, and operational completion evidence. Test with **synthetic authorized data**, never by deleting a live authority's records for convenience.
 
 The parties may negotiate a specific return/deletion window or additional assisted export in an accepted customer-specific Order Form. Absent that, this Schedule is **not** a guaranteed 30-day export, 60-day purge, same-day delete-all, instant backup erasure, or waiver of an applicable mandatory retention obligation.
+
+
+## 6. Approved assisted return — November 11, 2026
+
+Scoped assisted data return is included in the subscription when supported
+directory downloads are insufficient; no separate standard assistance fee is
+introduced. Follow DPA section 5: acknowledge within two business days and
+provide an action plan within five business days, subject to earlier applicable
+deadlines. Agree the scope and completion date with the Customer using a tested
+process. The accepted order must define the applicable return arrangements before
+activation, including secure formats/delivery, retained exceptions and disposal
+triggers. This does not guarantee completion within five business days.
+
+Provide a manifest identifying included and excluded record categories, readable
+machine-processable files, recipient verification and transfer confirmation.
+Then report verified deletion actions separately from retained exceptions and
+provider expiry. The operator-assisted manifest process is documented in the
+[scoped return runbook](../../../operations/assisted-data-return.md). Its synthetic
+checks cover exact requested scope, tenant mismatch, incomplete files, tampering
+and delivery evidence. A customer-specific transfer channel and recipient must
+still be verified before the actual transfer; these tests are not a completed
+customer export or a full-account return guarantee.
+The approved self-service model, lawful holds and prohibition on unapproved
+automatic destructive disposal remain unchanged.

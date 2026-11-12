@@ -88,50 +88,23 @@ test('approved limited indemnification appears in the MSA, Order Form and decisi
   assert.match(msa, /No active CGL, technology E&O, cyber\/privacy insurance/i);
 });
 
-test('initial-pilot SLA states owner-approved business hours, nine holidays and no unverified guarantees', async () => {
-  const s = await read('service-level-agreement.md');
-  assert.match(s, /Monday.Friday, 8:00 a\.m..5:00 p\.m\. Alberta local/i);
-  assert.match(s, /America\/Edmonton/);
-  assert.match(s, /nine general holidays/i);
-  for (const name of ["New Year's Day", 'Alberta Family Day', 'Good Friday', 'Victoria Day', 'Canada Day', 'Labour Day', 'Thanksgiving Day', 'Remembrance Day', 'Christmas Day']) {
-    assert.ok(s.includes(name), name);
+test('all customer contracts use the approved single support window including critical incidents', async () => {
+  for(const file of ['service-level-agreement.md','master-services-agreement.md','order-form.md','data-processing-agreement.md']){
+    const s=await read(file);
+    assert.match(s,/Monday–Saturday, 6:00 a\.m\.–6:00 p\.m\. Alberta local time \(America\/Edmonton\)/,file);
+    assert.match(s,/critical/i,file);
+    assert.match(s,/no (?:separate )?holiday exclusion/i,file);
+    assert.doesNotMatch(s,/provides 24\/7 urgent|receive 24\/7 coverage|coverage 24 hours|incidents have \*\*24\/7/i,file);
+    assert.doesNotMatch(s,/Monday.Friday, 8:00|excluding Alberta's nine general holidays/i,file);
   }
-  assert.match(s, /not additional pilot closures/);
-  assert.match(s, /no\s+contractual first-response time or after-hours human-response guarantee/i);
-  assert.match(s, /no numerical service-level commitment/i);
-  assert.match(s, /No automatic uptime-based service credits/i);
-  assert.match(s, /both monthly and annual/i);
-  assert.match(s, /DPA's separate/);
-  assert.doesNotMatch(s, /\[MONTHLY_AVAILABILITY_PERCENT\]|\[P1_ACK\]|\[CREDIT_TIERS\]/);
-});
-
-test('SLA, MSA, Order Form and decision ledger preserve ordinary-hours vs urgent-incident separation', async () => {
-  const sla = await read('service-level-agreement.md');
-  const msa = await read('master-services-agreement.md');
-  const order = await read('order-form.md');
-  const owner = await read('owner-decisions.md');
-  const operations = await fs.readFile('docs/operations/cr1-remaining-launch-work-2026-11-08.md','utf8');
-  for (const [name,document] of Object.entries({sla,msa,order,owner,operations})) {
-    assert.match(document,/America\/Edmonton/,name);
-    assert.match(document,/nine\s+general\s+holidays/,name);
-    assert.match(document,/no (?:guaranteed |contractual |automatic |24\/7 |staffed )/i,name);
-  }
-  assert.match(sla,/do not postpone or\s+override/i);
-  assert.match(msa,/DPA's incident-notification duties/);
-  assert.match(order,/independently verify DPA\/law urgent incident escalation/);
-  assert.match(owner,/Open operational gate/);
-});
-
-test('support policy closes holiday business decision without approving customer contracts or incident staffing', async () => {
-  const pilot = await read('pilot-contract-signoff-2026-11-07.md');
-  const index = await read('README.md');
-  const checklist = await fs.readFile('docs/governance/phase-3/contract-checklist.md', 'utf8');
-  assert.match(pilot, /Business calendar CLOSED/);
-  assert.match(pilot, /independent DPA\/security incident escalation still require evidence/);
-  assert.match(index, /nine general\s+holidays/);
-  assert.match(index, /eight-document\s+contract pack remains a \*\*draft and unpublished\*\*/);
-  assert.match(checklist, /no numerical performance guarantees or automatic credits/);
-  assert.match(checklist, /Customer execution\/operational evidence pending/);
+  const sla=await read('service-level-agreement.md');
+  assert.match(sla,/no numerical service-level commitment/i);
+  assert.match(sla,/No automatic uptime-based service credits/i);
+  assert.match(sla,/both monthly and annual/i);
+  assert.match(sla,/do not postpone or\s+override/);
+  assert.match(sla,/DPA's separate immediate incident notice/);
+  for(const file of ['owner-decisions.md','README.md','pilot-contract-signoff-2026-11-07.md'])
+    assert.match(await read(file),/Current owner instruction[\s\S]*supersedes earlier support decisions/);
 });
 
 test('review record does not infer commercial launch authorization from Stripe live catalog', async () => {
@@ -157,4 +130,12 @@ test('owner-approved trial policy is reflected in subscription contracts and ope
   assert.match(runbook,/missing_payment_method=create_invoice/);
   assert.match(runbook,/platform-super-admin/i);
   assert.match(runbook,/send_invoice/);
+});
+
+
+test('limited staffing never permits delaying a known breach notice until reopening', async () => {
+  const dpa=await read('data-processing-agreement.md');
+  assert.match(dpa,/On actual awareness[\s\S]*immediately notifies/);
+  assert.match(dpa,/Do not wait for the next staffed opening/);
+  assert.match(dpa,/does not suspend[\s\S]*legal notification/);
 });

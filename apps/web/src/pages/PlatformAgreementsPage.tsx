@@ -57,7 +57,8 @@ export function PlatformAgreementsPage() {
       setChosen(prev=>{
         const next={...prev};
         for(const item of kinds)if(!next[item.kind]){
-          const doc=docs.find(d=>d.kind===item.kind);
+          // Keep an already published package; never auto-select a participant-only or new document.
+          const doc=docs.find(d=>d.kind===item.kind && latest.document_ids?.includes(d.id));
           if(doc)next[item.kind]=doc.id;
         }
         return next;

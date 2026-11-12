@@ -24,7 +24,7 @@
 | Claims allocation | **Owner-approved proposed limited, fault-based indemnification:** SafeBus defends and indemnifies covered third-party claims **to the extent caused by its contractual privacy/security breach** (section 8.1 privacy/security aggregate cap), or allegations that its **unmodified SafeBus software as provided and used as authorized** infringes enforceable Canadian intellectual-property rights (section 8.1 general aggregate cap). **Reasonable covered defence costs, approved settlements and damages count inside—not on top of—the applicable cap**, with no cap stacking. No indemnity for the district's independent negligence, unlawful instructions, unauthorized changes/combinations or other independent wrongdoing. Notice, defence control, cooperation and mutual settlement-consent controls follow MSA §§8.3–8.4. Fraud/wilful misconduct, legally non-excludable liabilities and mandatory DPA duties remain preserved. No blanket/unlimited indemnity or separate reciprocal Customer indemnity; other injury/property-damage, IP, defence exceptions or school-authority procurement requirements require a signed rider. |
 | Insurance disclosure and procurement | **Insurance quotation and purchase deferred by owner; no active CGL, technology E&O, cyber/privacy policy, certificate or coverage amount represented.** Confirm school-authority-specific procurement/coverage requirements and any signed exception before executing this Order Form. |
 | Supported devices and service targets | Accepted supported-device and controlled-pilot scope; **no quantified uptime, GPS freshness, ETA, delivery, repair or recovery guarantee** and **no automatic SLA credits** during the initial pilot. Future metrics require evidence and written amendment. |
-| Support, privacy, incident and formal-notice contacts | **info@safebus.kids** for ordinary service and formal notices; **Monday–Friday 08:00–17:00 America/Edmonton, excluding Alberta's nine general holidays** (New Year's Day, Alberta Family Day, Good Friday, Victoria Day, Canada Day, Labour Day, Thanksgiving Day, Remembrance Day, Christmas Day). No staffed 24/7/after-hours response promise. Document the Customer's emergency dispatch fallback and independently verify DPA/law urgent incident escalation before activation. |
+| Support, privacy, incident and formal-notice contacts | **info@safebus.kids**. All staffed support, including critical incidents: **Monday–Saturday, 6:00 a.m.–6:00 p.m. Alberta local time (America/Edmonton)**. No separate holiday exclusions, Sunday staffing or guaranteed after-hours human response. The DPA notice upon awareness and applicable legal duties remain independent of staffed hours. |
 | Permitted data/instructions and supplier countries                | Completed DPA processing appendix and approved supplier disclosure                                                                                                                                                           |
 | Data management, return, deletion and closure | **Owner-approved district-controlled approach:** authorized school-authority tenant admins can download supported student/guardian/driver/bus CSV directories and use existing record-level delete/archive/preservation controls where permitted. These are **not** complete district-wide export/deletion. Additional scoped export or account closure is requested through SafeBus support with identity, tenant, lawful hold, supplier/backups and recipient verification. **No blanket 30-day return or 60-day deletion promise**; any agreed extra service period requires tested capability and written customer-specific acceptance. Mandatory records retention, DPA duties, supplier expiry and safe revocation continue. Destructive automatic disposal stays disabled unless separately authorized. |
 | Customer PIA/notice decision                                      | Authority, sign-off/submission assessment, participant notices and BYOD arrangements                                                                                                                                         |
@@ -67,3 +67,25 @@ under its approved invoice/PO arrangement.
 The customer-specific accepted Order Form still records the exact interval,
 active-bus count, start/end dates, first charge, any approved procurement
 exception and actual authority; it is not executed by this draft.
+
+
+## November 11 — approved privacy operations and assisted return
+
+Record the verified Customer privacy contact and urgent escalation route, the
+exact supplier/country appendix version expressly accepted, and the authority
+of the accepting administrator. Material subsequent supplier/country changes
+require affirmative version-specific approval before affected processing.
+
+All staffed support, including critical incidents, uses Monday–Saturday, 6:00 a.m.–6:00 p.m. Alberta local time (America/Edmonton).
+The DPA preserves immediate notice upon actual awareness. Ordinary records requests: acknowledgment within two
+business days; action plan within five business days under the DPA calendar.
+No separate critical-incident staffing window or holiday exclusion applies.
+
+Scoped assisted return is included in the subscription where directory downloads
+are insufficient. Before service activation, specify the applicable export scope,
+formats, secure delivery and verified recipient, completion dates or agreed
+scheduling rules, disposal dates/triggers, provider expiry and lawful retained
+exceptions. Each request must receive a scoped agreed completion date. No blanket
+30-day return or 60-day deletion promise or untested full-export capability is
+created. Preserve exact terms in the accepted Order Form/receipt; this draft
+neither fills Customer values nor establishes operational verification.

@@ -1,5 +1,12 @@
 # Owner Decisions Before Signing or Publication
 
+> **Current owner instruction — November 11, 2026 (supersedes earlier support decisions):**
+> All support, including critical incidents, is Monday–Saturday, 6:00 a.m.–6:00 p.m. Alberta local time (America/Edmonton).
+> No separate holiday exclusions or 24/7 staffed incident coverage. Sunday/outside
+> these hours has no guaranteed human response. DPA notice upon actual awareness
+> and applicable legal duties remain; no fixed repair/response time is promised.
+> Earlier weekday/holiday and 24/7 coverage entries below are historical, not current terms.
+
 **Status:** Decision worksheet; only expressly recorded owner choices are resolved
 **Prepared:** 2026-10-13; owner choices last reconciled 2026-11-09
 
@@ -41,10 +48,10 @@ signing authority, insurance and backup coverage require separate verification.
 | Provider liability caps | **Owner-approved proposed initial-pilot position 2026-11-09:** general aggregate greater of **CA$25,000 or 12-Month Fees**; privacy/security aggregate greater of **CA$100,000 or twice 12-Month Fees**; non-cumulative and agreement-wide, with fraud, wilful wrongdoing and legally non-excludable liabilities preserved | Customer-specific acceptance, any broader indemnity, personal injury/property damage and special IP claims, uninsured financial exposure and procurement review remain pending; no executed contract or insurance implied |
 | Third-party indemnification | **Owner-approved limited fault-based Provider policy 2026-11-09:** covered Provider-caused privacy/security breach claims under privacy cap and unmodified authorized-use SafeBus software IP infringement claims under general cap; reasonable defence costs within caps, no stacking; no indemnity for independent district wrongdoing | **Business position CLOSED;** customer procurement, defence-cost exceptions, personal injury/property damage and any district-specific rider remain subject to signed acceptance; no insurance is represented |
 | Insurance | **Owner explicitly deferred quotations and purchase**; no verified active insurance or coverage representation | Examine each authority's tender/contract terms and actual coverage needs before signing; no quote, policy, certificate or amount may be asserted |
-| Support hours, timezone and holidays | **Owner-approved 2026-11-09:** ordinary staffed support Monday–Friday 8:00 a.m.–5:00 p.m. America/Edmonton **excluding Alberta's nine general holidays**; no guaranteed after-hours human response | Verify staffed access, monitored support inbox and independently required security/privacy escalation before pilot; holiday calendar follows official Alberta list, with no additional optional holiday closures |
+| Support hours, timezone and holidays | **Owner-approved current policy:** Monday–Saturday, 6:00 a.m.–6:00 p.m. Alberta local time (America/Edmonton); all issues including critical incidents; no separate holiday exclusions or guaranteed after-hours staffing | Maintain the published contact and prioritize critical reports during staffed hours; preserve legal and DPA notice duties |
 | Availability, latency, GPS freshness and notification targets | **Owner-approved initial-pilot SLA:** no guaranteed uptime, request latency, GPS/ETA freshness, notification delivery, response/repair time or recovery objective; monitoring is not 24/7 human support | Preserve accurate outage/stale-location disclosures; future guarantees only after measured evidence, staffing and accepted amendment |
 | Credit rates/cap | **Owner-approved initial-pilot SLA:** no automatic SLA credits/penalties on monthly or annual subscriptions; no unsupported credit tiers | Preserve mandatory legal remedies, customer-specific breach remedies and DPA/security duties; do not treat this as a liability-cap decision |
-| Incident notification                                            | Proposed initial customer notice within 24 hours of awareness, sooner when required           | Operational capability and applicable legal/contract deadlines; never wait for final forensics or counsel appointment to contain/escalate |
+| Incident notification | Immediate notice upon actual awareness remains. Critical incident staffing follows the same Monday–Saturday 06:00–18:00 Alberta schedule; the previous 24/7 promise is superseded | Never defer a known breach notice until the next opening or final forensics |
 | Supplier/cross-border list                                       | Known/proposed suppliers; locations unverified                                                | Actual agreements, countries, retention/logging, security review, customer approval and required notices                                  |
 | Retention                                                        | Existing proposed periods; not activated                                                      | Purpose, legal duties/holds, approved schedule, enforcement tests and separate backup windows                                             |
 | Data return, record deletion and account closure | **Owner-approved 2026-11-09:** district-controlled self-service directory downloads and supported record-level deletion/archive/preservation; authorized district admin may request scoped additional return or account closure | **No mandatory 30-day export or 60-day purge** in the standard contract. Complete district-wide export/deletion and provider backup erasure are not verified, and legal holds/records duties remain; test any new workflow before promising it or enabling destructive retention |
@@ -199,7 +206,7 @@ Heritage Day, Easter Monday, National Day for Truth and Reconciliation and
 Boxing Day are not automatically added as closures. This is an approved
 business policy, not evidence that backup staffing exists.
 
-The owner **did not approve** 24/7 staffed response, guaranteed after-hours
+Historical November 9 ordinary-support decision, qualified by November 11's approved 24/7 urgent privacy/security incident coverage: the owner **did not approve** 24/7 ordinary staffed response, guaranteed ordinary after-hours
 acknowledgement, uptime/latency/GPS/ETA/notification targets, guaranteed
 resolution or recovery times, or automatic SLA credits for either monthly
 or annual plans. Monitoring may operate outside support hours but is not a
@@ -301,3 +308,17 @@ MSA/DPA/Order Form/Return Schedule makes no universal 30-day return or
 accepted time commitment. This decision closes the **business model only**,
 not the operational/security/legal acceptance gates, contract publication,
 customer acceptance or live school-data processing authorization.
+
+## Agreement completion review — November 11, 2026
+
+The owner has prioritized agreements before iOS. The [checklist review](agreement-completion-review-2026-11-11.md) remains the gap register. On November 11, 2026 the owner approved B1–B3: affirmative supplier authorization with 30-day planned-change notice; immediate incident notice and **24/7 urgent incident coverage**; acknowledgment of ordinary records requests within two business days and an action plan within five; and scoped assisted data return included in the subscription. Existing prices, liability terms, self-service controls and ordinary support hours remain unchanged. Coverage mechanics and technical/vendor evidence remain unverified; no Customer acceptance, publication or completed checklist compliance is asserted.
+
+
+## Approved security review frequency — November 11, 2026
+
+The owner approved a documented security assessment before commercial launch,
+at least annually afterward, and after material security or processing changes.
+This closes the frequency decision; it does not purchase an external audit,
+certify compliance or establish that an assessment has been performed. Keep
+dated findings, corrective actions, responsible reviewer and next review date.
+The DPA and Security Schedule now state this schedule.

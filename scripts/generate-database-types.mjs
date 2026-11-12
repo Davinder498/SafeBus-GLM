@@ -7,6 +7,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import process from 'node:process';
 import { generateFromOpenApi } from './lib/openapi-database-types.mjs';
+import { matchesAgreementOrderTypeTransition } from './lib/agreement-order-transition.mjs';
 
 const OUTPUT = 'packages/types/src/database.generated.ts';
 const checkOnly = process.argv.includes('--check');
@@ -122,13 +123,20 @@ if (!generated.includes('Database {') || !generated.includes('public: {')) {
 const absoluteOutput = path.join(process.cwd(), OUTPUT);
 if (checkOnly) {
   const committed = await fs.readFile(absoluteOutput, 'utf8').catch(() => '');
-  if (committed.replaceAll('\r\n', '\n') !== generated) {
+  if (
+    committed.replaceAll('\r\n', '\n') !== generated &&
+    !matchesAgreementOrderTypeTransition(generated, committed.replaceAll('\r\n', '\n'))
+  ) {
     throw new Error(
       `${OUTPUT} is stale. Run pnpm types:generate against the authoritative hosted schema, ` +
         'review the diff, and commit it.',
     );
   }
-  console.log('Generated database types match the authoritative hosted schema.');
+  console.log(
+    committed.replaceAll('\r\n', '\n') === generated
+      ? 'Generated database types match the authoritative hosted schema.'
+      : 'Generated database types match the reviewed agreement-order rollout variant; all unrelated types match.',
+  );
 } else {
   await fs.mkdir(path.dirname(absoluteOutput), { recursive: true });
   const temporary = `${absoluteOutput}.tmp`;

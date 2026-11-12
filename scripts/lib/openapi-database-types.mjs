@@ -2,6 +2,11 @@
 // migration contracts supplement functions omitted by that role's metadata and
 // nullable arguments omitted even when the function itself is advertised.
 const AUTHENTICATED_ONLY_FUNCTIONS = {
+  // Reviewed pending order snapshot contract. Not advertised to service_role.
+  prepare_my_district_agreement_order: {
+    properties: { p_package_id: { type: 'string', format: 'uuid' }, p_order: { type: 'object' } },
+    required: new Set(['p_package_id', 'p_order']),
+  },
   // Observed after reviewed tracking-queue deployment; service metadata omits it.
   authorize_driver_tracking_queue: {
     properties: {

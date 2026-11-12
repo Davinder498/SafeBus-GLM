@@ -1,0 +1,56 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261111230428_district_agreement_order_snapshot.sql",
+  "migrationSha256": "860fc3c4620cb9814f35619285edaa28a0ba7dc6fd6ea63b045a6e65668dc416",
+  "functions": [
+    {
+      "signature": "safebus_private.agreement_order_documents(safebus_private.agreement_packages)",
+      "before": null,
+      "after": "05e0af5204c6bb741af692f84441f53b"
+    },
+    {
+      "signature": "public.prepare_my_district_agreement_order(uuid,jsonb)",
+      "before": null,
+      "after": "99a0a23b59be88cdf0216ba1ca35f94a"
+    },
+    {
+      "signature": "safebus_private.ensure_district_agreement(uuid,uuid)",
+      "before": "e380d383c3c7064c78ee86422bfa8815",
+      "after": "de48fd31cae54f3ca2ecdd83c919fe2e"
+    },
+    {
+      "signature": "public.get_my_district_agreement()",
+      "before": "d6ae7ac02f52cdfe9fe5d9ffc1da0abc",
+      "after": "70bcb1d3b8b5da222d7fb07e7b040634"
+    },
+    {
+      "signature": "public.accept_my_district_agreement(uuid,text,text,text,boolean,boolean,boolean)",
+      "before": "5085c45a7bb87faebb4539e8c4c09c03",
+      "after": "6af1f87c713dd0a9b084b1c06bb73267"
+    },
+    {
+      "signature": "public.district_agreement_order_matches(uuid,text,integer,text)",
+      "before": null,
+      "after": "3df96096652adf3033bcecede075dc4b"
+    },
+    {
+      "signature": "public.get_platform_district_agreement(uuid)",
+      "before": "913b035430569d2a5da61cfe618cbe82",
+      "after": "a74120cc859f167d895bd3d6c435fd35"
+    },
+    {
+      "signature": "public.get_my_district_agreement_receipt(uuid)",
+      "before": "511ba5a6601001ea07cfa4b710c1e373",
+      "after": "7885651fd2cb0433697f7bf8b2aa9582"
+    }
+  ],
+  "authenticated": [
+    "prepare_my_district_agreement_order(uuid,jsonb)"
+  ],
+  "serviceRole": [
+    "district_agreement_order_matches(uuid,text,integer,text)"
+  ],
+  "serviceRoleDenied": [
+    "prepare_my_district_agreement_order(uuid,jsonb)"
+  ]
+}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Link, useParams } from 'react-router';
 import { ArrowLeft, Building2, CheckCircle2, CircleDashed, RefreshCw } from 'lucide-react';
 import { DashboardLayout, platformNavItems } from '@/components/layout/DashboardLayout';
@@ -23,7 +23,11 @@ import {
   mutatePlatformSubscription,
 } from '@/services/subscriptionService';
 import type { TenantSubscription } from '@/types/subscription';
-import { getPlatformAgreement, type PlatformAgreementSummary } from '@/services/districtAgreementService';
+import {
+  getPlatformAgreement,
+  type PlatformAgreementSummary,
+} from '@/services/districtAgreementService';
+import { AgreementArchive } from '@/components/agreements/AgreementArchive';
 import { schoolAuthorityTypeLabel } from '@/utils/schoolAuthority';
 
 function readiness(summary: PlatformTenantSummary) {
@@ -46,27 +50,50 @@ export function PlatformTenantDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
+  const loadSequence = useRef(0);
   const load = useCallback(async () => {
+    const sequence = ++loadSequence.current;
+    setSummary(null);
+    setAgreement(null);
     setLoading(true);
     setError(null);
     try {
-      const [summaries, billing, invitationRows, contract] = await Promise.all([
+      const [summaries, billing, invitationRows, contract] = await Promise.allSettled([
         fetchPlatformTenantSummaries(),
         fetchPlatformTenantBillingDetail(tenantId),
         fetchPlatformFirstAdminInvitations(),
         // Contract status is optional until its staged migration is deployed.
         // Failure must not block existing tenant lifecycle or invitation controls.
-        getPlatformAgreement(tenantId).catch(() => null),
+        getPlatformAgreement(tenantId),
       ]);
-      const tenantSummary = summaries.find((item) => item.tenant_id === tenantId) ?? null;
-      setSummary(tenantSummary);
-      setSubscription(billing);
-      setAgreement(contract);
-      setInvitations(invitationRows.filter((item) => item.tenant_id === tenantId));
+      if (sequence !== loadSequence.current) return;
+      setSummary(
+        summaries.status === 'fulfilled'
+          ? (summaries.value.find((item) => item.tenant_id === tenantId) ?? null)
+          : null,
+      );
+      setSubscription(billing.status === 'fulfilled' ? billing.value : null);
+      setAgreement(contract.status === 'fulfilled' ? contract.value : null);
+      setInvitations(
+        invitationRows.status === 'fulfilled'
+          ? invitationRows.value.filter((item) => item.tenant_id === tenantId)
+          : [],
+      );
+      if (
+        summaries.status === 'rejected' ||
+        billing.status === 'rejected' ||
+        invitationRows.status === 'rejected'
+      )
+        setError(
+          'Some school authority details could not be loaded. Accepted agreements are checked separately.',
+        );
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to load school authority details.');
+      if (sequence === loadSequence.current)
+        setError(
+          cause instanceof Error ? cause.message : 'Unable to load school authority details.',
+        );
     } finally {
-      setLoading(false);
+      if (sequence === loadSequence.current) setLoading(false);
     }
   }, [tenantId]);
 
@@ -113,6 +140,17 @@ export function PlatformTenantDetailPage() {
           title="School authority unavailable"
           message={error ?? 'The school authority could not be found.'}
         />
+        <AgreementArchive
+          key={tenantId}
+          receipts={agreement?.receipts ?? []}
+          error={
+            agreement?.receipts
+              ? null
+              : 'Accepted agreements are unavailable. Please refresh or try again later.'
+          }
+          loading={loading}
+          onRetry={() => void load()}
+        />
       </DashboardLayout>
     );
   }
@@ -152,25 +190,61 @@ export function PlatformTenantDetailPage() {
         <Card className="p-5" data-ui="district-contract-status">
           <h2 className="text-lg font-bold text-[var(--color-heading)]">Digital MSA & DPA</h2>
           <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-            Contract status is separate from invitation activation, billing, and permission to process real student data.
+            Contract status is separate from invitation activation, billing, and permission to
+            process real student data.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <p><span className="text-sm text-[var(--color-text-muted)]">Agreement status</span><br />
-              <strong className="capitalize">{agreement?.status?.replaceAll('_', ' ') ?? 'Unavailable'}</strong></p>
-            <p><span className="text-sm text-[var(--color-text-muted)]">Version</span><br />
-              <strong>{agreement?.version ?? 'Not issued'}</strong></p>
-            <p><span className="text-sm text-[var(--color-text-muted)]">District acceptance</span><br />
-              <strong>{agreement?.customer_signed_at ? new Date(agreement.customer_signed_at).toLocaleDateString('en-CA') : 'Not accepted'}</strong></p>
-            <p><span className="text-sm text-[var(--color-text-muted)]">Accepted by</span><br />
-              <strong>{agreement?.signer_profile_id ? 'District administrator' : 'Pending'}</strong></p>
+            <p>
+              <span className="text-sm text-[var(--color-text-muted)]">Agreement status</span>
+              <br />
+              <strong className="capitalize">
+                {agreement?.status?.replaceAll('_', ' ') ?? 'Unavailable'}
+              </strong>
+            </p>
+            <p>
+              <span className="text-sm text-[var(--color-text-muted)]">Version</span>
+              <br />
+              <strong>{agreement?.version ?? 'Not issued'}</strong>
+            </p>
+            <p>
+              <span className="text-sm text-[var(--color-text-muted)]">District acceptance</span>
+              <br />
+              <strong>
+                {agreement?.customer_signed_at
+                  ? new Date(agreement.customer_signed_at).toLocaleDateString('en-CA')
+                  : 'Not accepted'}
+              </strong>
+            </p>
+            <p>
+              <span className="text-sm text-[var(--color-text-muted)]">Accepted by</span>
+              <br />
+              <strong>{agreement?.signer_profile_id ? 'District administrator' : 'Pending'}</strong>
+            </p>
           </div>
           <p className="mt-4 text-sm text-[var(--color-text-muted)]">
-            The district tenant administrator reviews and directly accepts the complete
-            approved MSA/DPA package. Accepted copies are archived with an immutable receipt.
-            Final document publication is managed in <Link to="/admin/agreements"
-              className="font-semibold text-[var(--color-action)] underline">Agreements</Link>.
+            The district tenant administrator reviews and directly accepts the complete approved
+            MSA/DPA package. Accepted copies are archived with an immutable receipt. Final document
+            publication is managed in{' '}
+            <Link
+              to="/admin/agreements"
+              className="font-semibold text-[var(--color-action)] underline"
+            >
+              Agreements
+            </Link>
+            .
           </p>
         </Card>
+        <AgreementArchive
+          key={tenantId}
+          receipts={agreement?.receipts ?? []}
+          error={
+            agreement?.receipts
+              ? null
+              : 'Accepted agreements are unavailable. Please refresh or try again later.'
+          }
+          loading={loading}
+          onRetry={() => void load()}
+        />
         <Card className="p-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
@@ -234,15 +308,27 @@ export function PlatformTenantDetailPage() {
               </Button>
             </div>
           </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="School authority setup readiness">
+          <div
+            className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+            aria-label="School authority setup readiness"
+          >
             {readiness(summary).map(([label, ready]) => (
-              <div key={label} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-4">
+              <div
+                key={label}
+                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-4"
+              >
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-[var(--color-text)]">{label}</p>
                   {ready ? (
-                    <CheckCircle2 className="h-5 w-5 shrink-0 text-[var(--color-success-text)]" aria-hidden />
+                    <CheckCircle2
+                      className="h-5 w-5 shrink-0 text-[var(--color-success-text)]"
+                      aria-hidden
+                    />
                   ) : (
-                    <CircleDashed className="h-5 w-5 shrink-0 text-[var(--color-text-muted)]" aria-hidden />
+                    <CircleDashed
+                      className="h-5 w-5 shrink-0 text-[var(--color-text-muted)]"
+                      aria-hidden
+                    />
                   )}
                 </div>
                 <p className="mt-2 text-xs font-medium text-[var(--color-text-muted)]">
@@ -389,8 +475,9 @@ export function PlatformTenantDetailPage() {
               ) : null
             }
           />
-          {summary.tenant_status === 'active' && !subscription.subscriptionExempt &&
-            <InvoiceBillingPlatformCard tenantId={tenantId}/>}
+          {summary.tenant_status === 'active' && !subscription.subscriptionExempt && (
+            <InvoiceBillingPlatformCard tenantId={tenantId} />
+          )}
         </div>
       </div>
     </DashboardLayout>

@@ -11,6 +11,7 @@ import { UNSAFE_PUBLIC_DEFAULT_PRIVILEGES_SQL } from './lib/default-privilege-au
 import { auditReservedProviderDefaults } from './lib/reserved-provider-defaults.mjs';
 import { assertPrivateApiSchemaHidden } from './lib/existing-security-rehearsal.mjs';
 import { assertMissingSessionPolicies } from './lib/private-retention-policy-audit.mjs';
+import { extendAgreementOrderAuthorization } from './lib/agreement-order-transition.mjs';
 import {
   assertEnvironmentIdentity,
   createEnvironmentBinding,
@@ -81,6 +82,11 @@ try {
   await client.query("set local statement_timeout = '15s'");
   await client.query("set local lock_timeout = '3s'");
   await assertEnvironmentIdentity(client, binding);
+  await extendAgreementOrderAuthorization(
+    client,
+    JSON.parse(await fs.readFile('config/pending/agreement-order-snapshot.json', 'utf8')),
+    { authenticated, serviceRole, allPublic, serviceExecutable },
+  );
 
   const publicFunctions = await client.query(`
     select regexp_replace(p.oid::regprocedure::text, '^public\\.', '') as signature
@@ -352,10 +358,12 @@ try {
   `);
   // RLS with no policies and no client grants on these exact protected tables
   // is deny-by-default. No public/other missing session policy is exempt.
-  console.log(JSON.stringify({
-    check: 'private-retention-session-policy',
-    ...assertMissingSessionPolicies(missingSessionPolicies.rows),
-  }));
+  console.log(
+    JSON.stringify({
+      check: 'private-retention-session-policy',
+      ...assertMissingSessionPolicies(missingSessionPolicies.rows),
+    }),
+  );
 
   const missingSchoolLocationPolicies = await client.query(`
     select table_name as object_name
