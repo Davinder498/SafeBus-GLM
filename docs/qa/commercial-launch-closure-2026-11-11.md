@@ -116,3 +116,26 @@ wired into the root command. The explicit mobile build and Android `cap:sync`
 also passed. Generated artwork was restored to avoid unrelated binary changes.
 CI, protected rehearsal, installation and live housekeeping acceptance remain
 separate requirements; no live repair or iPhone build is claimed by these results.
+
+
+## November 13 reconciliation — supersedes historical agreement/support statements
+
+The exact eight-document package 2026.11.13.1 was published as Revision 1 after
+owner business/legal approval. Its verified catalog digest is
+`507fad95a0155796e1497bec0158e11c82c2bc5e98df546b3a0d4a83a4af54e0`.
+Earlier zero-catalog statements describe the pre-publication state, not the
+current blocker list. Publication does not accept an agreement for a customer.
+Support is Monday–Saturday 06:00–18:00 America/Edmonton for all issues, including
+critical incidents. Earlier extended-trip/15-minute/24-hour promises are superseded.
+Operational receipt and response drills remain unverified.
+
+PR 445 Android UX is merged and passed all PR checks. It is not Play publication
+or physical-device acceptance. Fresh November 13 Supabase security advisories
+still include leaked-password protection. Private no-policy tables are not
+permission to grant customer access to protected agreement or release records.
+
+Driver/guardian list completion is in implementation with focused regression
+coverage. Billing-risk ingestion/review, tracking housekeeping, operational
+alerting and retention qualification, supplier exceptions, live source-event
+acceptance, device distribution and measured fleet capacity remain open. No
+commercial/pilot approval flag is changed by this reconciliation.
