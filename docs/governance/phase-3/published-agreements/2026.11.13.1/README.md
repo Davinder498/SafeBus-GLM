@@ -1,8 +1,11 @@
 # Agreement package 2026.11.13.1 — publication prepared
 
-Status on November 13, 2026: **prepared, not published**. The live publisher still
-shows no school-authority catalog. No customer signature, payment, invoice or
-acceptance was created. Participant Terms of Use 2026.1 remain separate.
+Status on November 13, 2026: **published, catalog Revision 1**. The live publisher
+confirmed availability in the school-authority portal. Its catalog SHA-256 is
+507fad95a0155796e1497bec0158e11c82c2bc5e98df546b3a0d4a83a4af54e0,
+which matches the fingerprint computed from all eight approved files. No Customer
+signature, payment, invoice or acceptance was created by this publication.
+Participant Terms of Use 2026.1 remain separately published and unchanged.
 
 The software and database release succeeded before this content preparation:
 - Website release: https://github.com/Davinder498/SafeBus-GLM/actions/runs/43155310867
@@ -46,15 +49,17 @@ links and whitespace errors. Retained exact SHA-256 fingerprints in manifest.jso
 No application code, schema or CI configuration changed; no new deployment or
 website build was started for this content operation.
 
-The MSA file was loaded into the authenticated live publisher with a visible
-26,976-character preview. Automatic approval review rejected the checkbox/submission
-because it attests to necessary business/legal approval, while the transcript
-established business approval only. No submission was made after that rejection.
-Obtain explicit confirmation of that attestation for this exact package before
-retrying publication. Do not bypass the checkbox through SQL or a different API.
-Owner approval is not proof of lawyer review, regulatory approval or certification.
+The owner explicitly confirmed this exact package has necessary business/legal
+approval on November 13, 2026. Following that confirmation, all eight immutable
+versions were published through the authenticated live admin UI and selected as
+one complete package. The UI confirmed: "Agreement package published for the
+district administrator portal." Current published package: Revision 1.
 
-After authorization: publish each immutable version through the live admin UI,
-select exactly these eight versions, publish the catalog once, verify catalog
-revision and stored hashes, and update this status with the observed outcome.
-Do not accept a Customer agreement on its behalf or send/charge live test users.
+This resolves the earlier automatic-review rejection of the approval declaration.
+No approval check was bypassed, no Customer contract was accepted on its behalf,
+and no test email or charge was created. Publication verifies availability of the
+offer; it is not evidence of a new real Customer acceptance/download exercise or
+commercial readiness of unrelated features. Existing acceptance/receipt/download
+code tests and release checks remain the earlier software-validation evidence.
+
+Publication URL: https://safebus.kids/admin/agreements

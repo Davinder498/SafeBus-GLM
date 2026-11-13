@@ -1,6 +1,6 @@
 {
   "version": "2026.11.13.1",
-  "status": "prepared_not_published",
+  "status": "published",
   "documents": [
     {
       "file": "acceptable-use-terms.md",
@@ -42,5 +42,9 @@
       "sha256": "3b1d4b53186d2ba2252a49b33032ba699fe52fc40f4a1a5aa0bc8a96c1df7214",
       "bytes": 9017
     }
-  ]
+  ],
+  "catalog_revision": 1,
+  "catalog_sha256": "507fad95a0155796e1497bec0158e11c82c2bc5e98df546b3a0d4a83a4af54e0",
+  "verified_date": "2026-11-13",
+  "verification": "Live publisher success and catalog fingerprint matching all eight approved source files."
 }
