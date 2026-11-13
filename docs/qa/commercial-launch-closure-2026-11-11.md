@@ -139,3 +139,52 @@ coverage. Billing-risk ingestion/review, tracking housekeeping, operational
 alerting and retention qualification, supplier exceptions, live source-event
 acceptance, device distribution and measured fleet capacity remain open. No
 commercial/pilot approval flag is changed by this reconciliation.
+
+
+### Latest closure checkpoint
+
+- Owner explicitly leaves leaked-password protection pending a possible Pro
+  upgrade. All other work remains authorized; this is not a waiver of security
+  or commercial acceptance.
+- Selector validation: 1,236 web tests, 36 mobile tests and 607 release tests
+  passed. Typecheck, lint, production builds, explicit mobile build and Android
+  sync passed. No production deployment is implied.
+- Fresh read-only hosted ownership check confirms `cron.job_run_details` is
+  owned by `supabase_admin`; the current role has DELETE but no CREATE privilege
+  in `cron`. Do not retry the existing index-based repair or broaden privileges.
+  A supported bounded cleanup design still needs implementation and rehearsal.
+- Billing-risk handling, live alert-receipt proof, retention qualification,
+  capacity measurement and actual-device/customer acceptance remain open.
+
+### Bounded tracking cleanup repair — November 13
+
+The pending repair no longer creates an index on the Supabase-owned cron table.
+It scans at most 1,000 primary-key rows per call, advances through unrelated
+history, deletes only completed tracking-job records older than 48 hours, and
+revisits recent/unfinished records on subsequent sweeps. A private, RLS-enabled
+cursor has no client grants or policies. Recovery restores the old function and
+drops the cursor; no migration has been applied by this change.
+
+The cleanup uses a separate release-lineage proof anchored to the latest recorded
+agreement database release c9a7d2dc7111d68d043c928489d3d6a92b5d8ac6. The original
+November 11 agreement compatibility proof remains unchanged. The protected
+workflow must verify the full live schema fingerprint against that recorded
+baseline before applying anything. The new delta is derived from the embedded
+PostgreSQL fixture (with PG17 catalog normalization), not claimed as a hosted
+execution. Local tests cover exact recovery, deny-by-default cursor access,
+bounded progress through unrelated logs and later completion.
+
+Native guardian fullscreen maps now include the existing text wordmark and a
+wrapping bus title. This runtime/UI change requires the existing browser suite.
+Password protection remains explicitly deferred; these changes do not close
+billing risk, operational receipt, retention, real-device or capacity evidence.
+
+A hosted read-only `EXPLAIN ANALYZE` on November 13 confirmed the bounded scan
+uses `cron.job_run_details_pkey` (1,000 rows, 3.389 ms execution). This validates
+the lookup, not production deletion or fleet capacity. The pending legacy
+notification policy belongs to an active account created August 5; no matching
+privacy/notification/tenant audit events were found in the scoped query. Its
+before-state needs a protected repair; no recipient settings were changed.
+Stripe's live endpoint is enabled and matches the currently implemented events;
+risk-event routing remains open. Stripe Dashboard notification preferences are
+not exposed by the connected API and its browser session requires sign-in.

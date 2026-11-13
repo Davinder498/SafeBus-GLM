@@ -1,0 +1,246 @@
+{
+  "precedingReleaseSha": "c9a7d2dc7111d68d043c928489d3d6a92b5d8ac6",
+  "precedingFingerprint": "c108c5d1a4dcb9df130389159a718ff411b48f27d3a2696bf6681c61d6ebbe23",
+  "initial": {},
+  "cleanup": {
+    "columns": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_history_cursor",
+          "column_name": "singleton",
+          "ordinal_position": 1,
+          "data_type": "boolean",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": "true",
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_history_cursor",
+          "column_name": "last_runid",
+          "ordinal_position": 2,
+          "data_type": "bigint",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": "0",
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_history_cursor",
+          "column_name": "sweep_end",
+          "ordinal_position": 3,
+          "data_type": "bigint",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": "0",
+          "collation": ""
+        }
+      ]
+    },
+    "relations": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_history_cursor",
+          "relkind": "r",
+          "owner": "postgres",
+          "relrowsecurity": true,
+          "relforcerowsecurity": false,
+          "relpersistence": "p",
+          "relreplident": "d",
+          "reloptions": null,
+          "view_definition": null,
+          "partition_key": null,
+          "partition_bound": null,
+          "parents": null
+        }
+      ]
+    },
+    "constraints": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_history_cursor",
+          "conname": "tracking_history_cursor_pkey",
+          "definition": "PRIMARY KEY (singleton)",
+          "convalidated": true
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_history_cursor",
+          "conname": "tracking_history_cursor_singleton_check",
+          "definition": "CHECK (singleton)",
+          "convalidated": true
+        }
+      ]
+    },
+    "indexes": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "tracking_history_cursor",
+          "index_name": "tracking_history_cursor_pkey",
+          "definition": "CREATE UNIQUE INDEX tracking_history_cursor_pkey ON safebus_private.tracking_history_cursor USING btree (singleton)",
+          "indisvalid": true,
+          "indisready": true,
+          "indisclustered": false,
+          "indisreplident": false,
+          "reloptions": null
+        }
+      ]
+    },
+    "routines": {
+      "removed": [
+        {
+          "schema_name": "safebus_private",
+          "proname": "prune_tracking_worker_history",
+          "prokind": "f",
+          "arguments": "",
+          "owner": "postgres",
+          "prosecdef": true,
+          "proleakproof": false,
+          "provolatile": "v",
+          "proparallel": "u",
+          "proisstrict": false,
+          "proconfig": ["search_path=\"\""],
+          "definition": "CREATE OR REPLACE FUNCTION safebus_private.prune_tracking_worker_history()\n RETURNS integer\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_deleted integer;\nbegin\n  delete from cron.job_run_details d where d.runid in (\n    select r.runid from cron.job_run_details r\n    join cron.job j on j.jobid = r.jobid\n    where j.jobname in ('safebus-tracking-invalidation-dispatcher', 'safebus-tracking-invalidation-history')\n      and r.end_time < pg_catalog.clock_timestamp() - interval '48 hours'\n    order by r.runid limit 1000\n  );\n  get diagnostics v_deleted = row_count;\n  return v_deleted;\nend;\n$function$\n",
+          "aggregate_definition": null
+        }
+      ],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "proname": "prune_tracking_worker_history",
+          "prokind": "f",
+          "arguments": "",
+          "owner": "postgres",
+          "prosecdef": true,
+          "proleakproof": false,
+          "provolatile": "v",
+          "proparallel": "u",
+          "proisstrict": false,
+          "proconfig": ["search_path=\"\""],
+          "definition": "CREATE OR REPLACE FUNCTION safebus_private.prune_tracking_worker_history()\n RETURNS integer\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_deleted integer;\n  v_last bigint;\n  v_end bigint;\n  v_next bigint;\n  v_cutoff timestamptz := pg_catalog.statement_timestamp() - interval '48 hours';\nbegin\n  select last_runid, sweep_end into strict v_last, v_end\n  from safebus_private.tracking_history_cursor where singleton for update;\n  if v_last >= v_end then\n    v_last := 0;\n    select coalesce(max(runid), 0) into v_end from cron.job_run_details;\n  end if;\n  -- Materialize at most 1000 indexed rows BEFORE filtering job or age. Advance\n  -- over unrelated history too, otherwise another job's old rows stall cleanup.\n  with batch as materialized (\n    select d.runid, d.jobid, d.end_time from cron.job_run_details d\n    where d.runid > v_last and d.runid <= v_end\n    order by d.runid limit 1000\n  ), removed as (\n    delete from cron.job_run_details d using batch b\n    where d.runid = b.runid and d.jobid = b.jobid\n      and d.end_time < v_cutoff and b.end_time < v_cutoff\n      and b.jobid in (select jobid from cron.job where jobname in\n        ('safebus-tracking-invalidation-dispatcher', 'safebus-tracking-invalidation-history'))\n    returning d.runid\n  )\n  select (select count(*)::integer from removed), coalesce(max(runid), v_end)\n  into v_deleted, v_next from batch;\n  update safebus_private.tracking_history_cursor\n    set last_runid = v_next, sweep_end = v_end where singleton;\n  return v_deleted;\nend;\n$function$\n",
+          "aggregate_definition": null
+        }
+      ]
+    },
+    "relationGrants": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_history_cursor",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "DELETE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_history_cursor",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "INSERT",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_history_cursor",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "MAINTAIN",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_history_cursor",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "REFERENCES",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_history_cursor",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "SELECT",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_history_cursor",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "TRIGGER",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_history_cursor",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "TRUNCATE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "tracking_history_cursor",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "UPDATE",
+          "is_grantable": false
+        }
+      ]
+    },
+    "types": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "typname": "tracking_history_cursor",
+          "typtype": "c",
+          "owner": "postgres",
+          "base_type": null,
+          "typnotnull": false,
+          "typdefault": null,
+          "enum_labels": null,
+          "domain_constraints": null,
+          "composite_fields": ["singleton:boolean", "last_runid:bigint", "sweep_end:bigint"]
+        }
+      ]
+    },
+    "typeGrants": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "typname": "tracking_history_cursor",
+          "grantor": "postgres",
+          "grantee": "PUBLIC",
+          "privilege_type": "USAGE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "typname": "tracking_history_cursor",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "USAGE",
+          "is_grantable": false
+        }
+      ]
+    }
+  }
+}

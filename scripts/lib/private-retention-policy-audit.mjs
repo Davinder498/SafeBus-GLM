@@ -19,6 +19,7 @@ export const REVIEWED_PRIVATE_RETENTION_TABLES = Object.freeze([
   'safebus_private.retention_lifecycle_totals',
   'safebus_private.tenant_agreement_requirement',
   'safebus_private.tracking_invalidation_queue',
+  'safebus_private.tracking_history_cursor',
 ]);
 
 export function assertMissingSessionPolicies(rows) {

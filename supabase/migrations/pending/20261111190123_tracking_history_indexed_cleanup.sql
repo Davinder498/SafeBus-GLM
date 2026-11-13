@@ -1,32 +1,48 @@
--- Forward repair for the installed tracking worker. Do not edit 0125.
--- The protected workflow retains its 5s statement/1s lock limits; abort safely
--- if this index cannot be built within those bounds on the hosted database.
-create index safebus_tracking_history_job_end_idx
-  on cron.job_run_details (jobid, end_time, runid);
+-- Forward repair; never alter Supabase-owned cron tables or their indexes.
+-- One private cursor bounds each sweep and revisits recent/unfinished rows later.
+create table safebus_private.tracking_history_cursor (
+  singleton boolean primary key default true check (singleton),
+  last_runid bigint not null default 0,
+  sweep_end bigint not null default 0
+);
+alter table safebus_private.tracking_history_cursor enable row level security;
+revoke all on safebus_private.tracking_history_cursor from public, anon, authenticated, service_role;
+insert into safebus_private.tracking_history_cursor(singleton) values (true);
 
 create or replace function safebus_private.prune_tracking_worker_history()
 returns integer language plpgsql security definer set search_path = ''
 as $$
 declare
   v_deleted integer;
+  v_last bigint;
+  v_end bigint;
+  v_next bigint;
   v_cutoff timestamptz := pg_catalog.statement_timestamp() - interval '48 hours';
 begin
-  -- Each indexed lookup is bounded even when no rows qualify. Limit the combined
-  -- deletion to 1000, and never select unfinished runs or another job's history.
-  with candidates as materialized (
-    select r.runid, r.end_time
-    from cron.job j
-    cross join lateral (
-      select d.runid, d.end_time from cron.job_run_details d
-      where d.jobid = j.jobid and d.end_time < v_cutoff
-      order by d.end_time, d.runid limit 1000
-    ) r
-    where j.jobname in ('safebus-tracking-invalidation-dispatcher', 'safebus-tracking-invalidation-history')
+  select last_runid, sweep_end into strict v_last, v_end
+  from safebus_private.tracking_history_cursor where singleton for update;
+  if v_last >= v_end then
+    v_last := 0;
+    select coalesce(max(runid), 0) into v_end from cron.job_run_details;
+  end if;
+  -- Materialize at most 1000 indexed rows BEFORE filtering job or age. Advance
+  -- over unrelated history too, otherwise another job's old rows stall cleanup.
+  with batch as materialized (
+    select d.runid, d.jobid, d.end_time from cron.job_run_details d
+    where d.runid > v_last and d.runid <= v_end
+    order by d.runid limit 1000
+  ), removed as (
+    delete from cron.job_run_details d using batch b
+    where d.runid = b.runid and d.jobid = b.jobid
+      and d.end_time < v_cutoff and b.end_time < v_cutoff
+      and b.jobid in (select jobid from cron.job where jobname in
+        ('safebus-tracking-invalidation-dispatcher', 'safebus-tracking-invalidation-history'))
+    returning d.runid
   )
-  delete from cron.job_run_details d where d.runid in (
-    select c.runid from candidates c order by c.end_time, c.runid limit 1000
-  );
-  get diagnostics v_deleted = row_count;
+  select (select count(*)::integer from removed), coalesce(max(runid), v_end)
+  into v_deleted, v_next from batch;
+  update safebus_private.tracking_history_cursor
+    set last_runid = v_next, sweep_end = v_end where singleton;
   return v_deleted;
 end;
 $$;

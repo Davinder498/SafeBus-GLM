@@ -23,6 +23,9 @@ import {
 const proof = JSON.parse(
   await fs.readFile('config/observed/tracking-release-lineage-20261111.json', 'utf8'),
 );
+const cleanupProof = JSON.parse(
+  await fs.readFile('config/observed/tracking-cleanup-lineage-20261113.json', 'utf8'),
+);
 const config = JSON.parse(
   await fs.readFile('config/pending/tracking-history-cleanup.json', 'utf8'),
 );
@@ -56,6 +59,13 @@ async function fixture(t) {
     [proof.precedingReleaseSha, local.precedingFingerprint],
   );
   await db.exec(initialSql);
+  const installed = await collectSchemaCatalog(client);
+  await db.exec('begin');
+  await db.exec(cleanupSql);
+  const repaired = await collectSchemaCatalog(client);
+  assert.deepEqual(trackingCatalogDelta(installed, repaired), cleanupProof.cleanup);
+  local.cleanup = trackingCatalogDelta(before, repaired);
+  await db.exec('rollback');
   return { db, client, before, local };
 }
 
@@ -68,7 +78,7 @@ test('reviewed PG17 deltas reproduce the exact original catalog including CRLF w
   assert.deepEqual(await collectSchemaCatalog(client), installed);
   await db.exec(cleanupSql);
   const repaired = await collectSchemaCatalog(client);
-  assert.deepEqual(trackingCatalogDelta(before, repaired), proof.cleanup);
+  assert.deepEqual(trackingCatalogDelta(before, repaired), local.cleanup);
   await verifyTrackingLineage(client, local, 'cleanup');
   const wrongLineEndings = structuredClone(local);
   wrongLineEndings.cleanup.routines.removed[0].definition =
@@ -198,4 +208,28 @@ test('repair and ledger registration roll back together; scoped recovery preserv
     (await db.query('select count(*)::int n from safebus_release.releases')).rows[0].n,
     3,
   );
+});
+
+test('cleanup anchors to the registered agreement-era schema and rejects unrelated drift', async (t) => {
+  const { db, client } = await fixture(t);
+  const baseline = await calculateSchemaFingerprint(client);
+  const currentProof = { ...cleanupProof, precedingFingerprint: baseline };
+  await db.query('delete from safebus_release.releases');
+  await db.query(
+    "insert into safebus_release.releases values($1,'production','deployed',$2,now()-interval '1 day')",
+    [currentProof.precedingReleaseSha, baseline],
+  );
+  assert.equal(await requireTrackingLedger(client, currentProof, 'initial'), baseline);
+  await db.exec('begin');
+  await db.exec('create table public.unreviewed_change(id integer)');
+  await assert.rejects(requireTrackingLedger(client, currentProof, 'initial'), /UNRELATED_DRIFT/);
+  await db.exec('rollback');
+  const before = await operationalSnapshot(client, config);
+  await db.exec(cleanupSql);
+  const fingerprint = await registerTrackingHistoryRelease(client, currentProof, sha);
+  assert.equal(await requireTrackingLedger(client, currentProof, 'cleanup'), fingerprint);
+  await db.exec(
+    trackingHistoryRecoverySql(operationalRestoreSql(before, config), sha, fingerprint),
+  );
+  assert.equal(await requireTrackingLedger(client, currentProof, 'initial'), baseline);
 });

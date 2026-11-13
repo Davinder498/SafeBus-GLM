@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { ArrowLeft, BusFront } from 'lucide-react';
 import { useAppSurface } from '@/contexts/AppSurfaceContext';
 import { GuardianLiveBusMap } from '@/components/guardian/GuardianLiveBusMap';
+import { BrandMark } from '@/components/ui/BrandMark';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
@@ -95,7 +96,7 @@ export function GuardianLiveMapPage() {
         data-testid="guardian-fullscreen-map"
       >
         <header
-          className="z-10 flex min-h-16 items-center gap-3 border-b px-4"
+          className="z-10 flex min-h-16 items-center gap-2 border-b px-3 py-2"
           data-ui="guardian-map-app-bar"
           style={{ paddingTop: 'env(safe-area-inset-top)' }}
         >
@@ -106,9 +107,12 @@ export function GuardianLiveMapPage() {
           >
             <ArrowLeft className="h-6 w-6" aria-hidden />
           </Link>
-          <h1 className="min-w-0 flex-1 truncate text-lg font-bold text-navy-900">
-            {selectedBusNumber ? `Bus ${selectedBusNumber} live map` : 'Live bus map'}
-          </h1>
+          <div className="min-w-0 flex-1">
+            <BrandMark className="text-base" />
+            <h1 className="break-words text-sm font-semibold text-navy-900">
+              {selectedBusNumber ? `Bus ${selectedBusNumber} live map` : 'Live bus map'}
+            </h1>
+          </div>
           <Button
             type="button"
             size="sm"

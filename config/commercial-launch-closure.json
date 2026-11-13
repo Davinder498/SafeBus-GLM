@@ -33,7 +33,7 @@
     {
       "id": "tracking-ingestion-and-guardian-fanout",
       "status": "open",
-      "note": "Async tracking queue installed and private access verified. Dispatcher runs succeeded; housekeeping times out on shared cron history. Forward indexed cleanup repair is pending protected rollout. Capacity and end-to-end delivery remain unqualified.",
+      "note": "Async tracking dispatcher active. A bounded primary-key cursor cleanup replaces the provider-owned-table index attempt; local behavior/recovery tests pass. Pending protected rollout; capacity and end-to-end delivery remain unqualified.",
       "productionRun": "43081399229"
     },
     {
@@ -67,7 +67,7 @@
     {
       "id": "application-alerting-and-operations",
       "status": "open",
-      "businessDecision": "Primary owner, mailbox, school-day response hours and acknowledgement target are approved in ownerDirection.operations. Backup coverage and verified customer publication remain outstanding."
+      "businessDecision": "Owner mailbox and Monday\u2013Saturday 06:00\u201318:00 America/Edmonton support approved and published, including critical issues. Alert receipt and operational response evidence remain unverified. No additional acknowledgement or after-hours promise."
     },
     {
       "id": "large-authority-reference-selectors",
@@ -76,8 +76,8 @@
     },
     {
       "id": "hosted-password-protection",
-      "status": "open",
-      "note": "Fresh security advisor check November 13 still reports auth_leaked_password_protection. Not closed."
+      "status": "pending_owner_upgrade",
+      "note": "Owner explicitly deferred this item on November 13 while other closure work continues. Supabase organization verified Free; protection requires Pro or above. Do not disable or weaken any existing Auth control."
     },
     {
       "id": "legacy-notification-default-repair",
@@ -99,7 +99,8 @@
     },
     {
       "id": "guardian-fullscreen-branding",
-      "status": "open"
+      "status": "implementation_in_progress",
+      "note": "Existing SafeBus wordmark added to native fullscreen map header with wrapping bus title; pending release and device verification."
     },
     {
       "id": "end-to-end-source-event-acceptance",
