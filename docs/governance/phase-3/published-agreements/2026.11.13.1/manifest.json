@@ -1,0 +1,46 @@
+{
+  "version": "2026.11.13.1",
+  "status": "prepared_not_published",
+  "documents": [
+    {
+      "file": "acceptable-use-terms.md",
+      "sha256": "9b1babc7d41d64db0ed971c6a812d0d879e915124974fac51f10eee24050af14",
+      "bytes": 2902
+    },
+    {
+      "file": "data-processing-agreement.md",
+      "sha256": "0c9393d0a96c22afe60f7cf5368de2952eb128ef70b544e1285cc715038a8c63",
+      "bytes": 21875
+    },
+    {
+      "file": "data-return-destruction.md",
+      "sha256": "61f818ad6570a73410b4c04ca858a2ed374372fe9bb564f6ee6fb1a859a57315",
+      "bytes": 10246
+    },
+    {
+      "file": "master-services-agreement.md",
+      "sha256": "4a8e195a14bdfa7bb5f5c9c40c68c1e6e24e70cf6ce59366cb7c10a1e7c16ac3",
+      "bytes": 26986
+    },
+    {
+      "file": "order-form.md",
+      "sha256": "799437110177345f9c57cd307026db824ac5e7cde2e8e790d4951cc0dd15089e",
+      "bytes": 8140
+    },
+    {
+      "file": "security-schedule.md",
+      "sha256": "ea243bfddb640b543ab2c508cbe52a75f1d05128a33f2c6ab70d8ad1654af7b0",
+      "bytes": 5435
+    },
+    {
+      "file": "service-level-agreement.md",
+      "sha256": "2fd7e33656213af2073b9a1344c9562fa377b59448b217192b38b2f9fcd288ff",
+      "bytes": 7985
+    },
+    {
+      "file": "supplier-disclosure.md",
+      "sha256": "3b1d4b53186d2ba2252a49b33032ba699fe52fc40f4a1a5aa0bc8a96c1df7214",
+      "bytes": 9017
+    }
+  ]
+}
