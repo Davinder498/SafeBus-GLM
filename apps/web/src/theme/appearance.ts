@@ -1,4 +1,4 @@
-export type ThemePreference = 'light' | 'dark';
+export type ThemePreference = 'system' | 'light' | 'dark';
 export type ResolvedTheme = 'light' | 'dark';
 export interface Appearance {
   preference: ThemePreference;
@@ -11,12 +11,18 @@ let initialized = false;
 let snapshot: Appearance = { preference: 'light', resolved: 'light' };
 
 export function normalizeThemePreference(value: unknown): ThemePreference {
-  return value === 'dark' ? 'dark' : 'light';
+  if (value === 'dark' || value === 'light' || value === 'system') return value;
+  return document.documentElement.dataset.appSurface === 'native-mobile' ? 'system' : 'light';
 }
 
 function apply(preference: ThemePreference) {
   const resolved =
-    document.documentElement.dataset.appearanceScope === 'public' ? 'light' : preference;
+    document.documentElement.dataset.appearanceScope === 'public' &&
+    document.documentElement.dataset.appSurface !== 'native-mobile'
+      ? 'light'
+      : preference === 'system'
+        ? window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        : preference;
   const root = document.documentElement;
   root.dataset.theme = resolved;
   root.style.colorScheme = resolved;
@@ -35,13 +41,14 @@ function apply(preference: ThemePreference) {
 export function initializeAppearance() {
   if (initialized) return;
   initialized = true;
-  let preference: ThemePreference = 'light';
+  let preference: ThemePreference = normalizeThemePreference(null);
   try {
     preference = normalizeThemePreference(localStorage.getItem(storageKey));
   } catch {
     /* Optional storage. */
   }
   apply(preference);
+  window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change', refreshAppearance);
   window.addEventListener('storage', (event) => {
     if (event.key === storageKey || event.key === null) {
       apply(normalizeThemePreference(event.newValue));

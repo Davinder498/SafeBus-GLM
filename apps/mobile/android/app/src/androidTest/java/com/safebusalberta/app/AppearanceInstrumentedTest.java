@@ -90,8 +90,14 @@ public class AppearanceInstrumentedTest {
             select("light");
             awaitJavascript("document.documentElement.dataset.theme === 'light'");
             InstrumentationRegistry.getInstrumentation().runOnMainSync(() ->
-                assertTrue(WindowCompat.getInsetsController(activity.getWindow(), activity.getWindow().getDecorView())
+                assertFalse(WindowCompat.getInsetsController(activity.getWindow(), activity.getWindow().getDecorView())
                     .isAppearanceLightStatusBars())
+            );
+            select("system");
+            awaitJavascript("document.documentElement.dataset.theme === (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')");
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(() ->
+                assertEquals(Math.round(activity.getResources().getConfiguration().fontScale * 100),
+                    activity.getBridge().getWebView().getSettings().getTextZoom())
             );
 
         } finally {

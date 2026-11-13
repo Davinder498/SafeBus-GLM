@@ -122,7 +122,7 @@ describe('DashboardLayout navigation presentation', () => {
     const tabs = Array.from(navigation?.querySelectorAll('a') ?? []);
 
     expect(navigation).not.toBeNull();
-    expect(tabs.map((tab) => tab.textContent)).toEqual(['Scan', 'Riders', 'History', 'Settings', 'Account']);
+    expect(tabs.map((tab) => tab.textContent)).toEqual(['Trip', 'Riders', 'History', 'Account']);
     expect(tabs.find((tab) => tab.getAttribute('aria-current') === 'page')?.textContent).toBe(
       'History',
     );
@@ -136,7 +136,7 @@ describe('DashboardLayout navigation presentation', () => {
   it('does not put notification badges on the driver Settings destination', async () => {
     const container = await renderDriverLayout('native-mobile', 7);
     const settingsTab = Array.from(container.querySelectorAll('a')).find((tab) =>
-      tab.textContent?.includes('Settings'),
+      tab.textContent?.includes('Account'),
     );
 
     expect(settingsTab?.textContent).not.toContain('7');

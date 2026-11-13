@@ -7,8 +7,8 @@ const source = readFileSync(
   new URL('../../../../packages/config/theme-bootstrap.js', import.meta.url),
   'utf8',
 );
-function boot(saved, dark, blocked = false, appearanceScope) {
-  const root = { dataset: { appearanceScope }, style: {} };
+function boot(saved, dark, blocked = false, appearanceScope, appSurface) {
+  const root = { dataset: { appearanceScope, appSurface }, style: {} };
   runInNewContext(source, {
     localStorage: {
       getItem: () => {
@@ -32,10 +32,10 @@ describe('pre-paint appearance bootstrap', () => {
     expect(boot(null, true).dataset.theme).toBe('light');
     expect(boot(null, false).dataset.theme).toBe('light');
   });
-  it('honors both choices and migrates removed System and invalid values to Light', () => {
+  it('honors explicit choices, System and safe invalid-value fallback', () => {
     expect(boot('light', true).dataset.theme).toBe('light');
     expect(boot('dark', false).dataset.theme).toBe('dark');
-    expect(boot('system', true).dataset.theme).toBe('light');
+    expect(boot('system', true).dataset.theme).toBe('dark');
     expect(boot('invalid', true).dataset.theme).toBe('light');
   });
   it('can paint the correct background even with blocked storage and no metadata', () => {
@@ -43,4 +43,10 @@ describe('pre-paint appearance bootstrap', () => {
     expect(root.style.colorScheme).toBe('light');
     expect(root.style.backgroundColor).toBe('#F5F7FA');
   });
+});
+
+it('uses the device appearance for new native installs even before React paints', () => {
+  expect(boot(null, true, false, undefined, 'native-mobile').dataset.theme).toBe('dark');
+  expect(boot(null, false, false, undefined, 'native-mobile').dataset.theme).toBe('light');
+  expect(boot(null, true, true, undefined, 'native-mobile').dataset.theme).toBe('dark');
 });

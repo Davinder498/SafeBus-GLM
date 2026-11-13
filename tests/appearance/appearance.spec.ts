@@ -69,10 +69,29 @@ test('the pre-paint theme works under script-src self without React or inline sc
   await expect(page.locator('script[src*="appearance-bootstrap"]')).toHaveCount(1);
 });
 
-test('the settings toggle has only Light and Dark, persists, and ignores device changes', async ({
+test('appearance follows System on mobile and preserves explicit choices', async ({
   page,
 }, info) => {
   const mobile = info.project.name === 'android-webview';
+  if (mobile) {
+    await installGuardianVisibilityMock(page);
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto('/account');
+    await expect(page.getByRole('radio', { name: 'Follow phone settings' })).toBeChecked();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await page.emulateMedia({ colorScheme: 'light' });
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    await page.getByRole('radio', { name: 'Dark', exact: true }).check();
+    await page.reload();
+    await expect(page.getByRole('radio', { name: 'Dark', exact: true })).toBeChecked();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expectNoWcagAaViolations(page, 'native account dark');
+    await page.getByRole('radio', { name: 'Light', exact: true }).check();
+    await page.setViewportSize({ width: 320, height: 700 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: info.outputPath('native-account.png'), fullPage: true });
+    return;
+  }
   if (mobile) await installGuardianVisibilityMock(page);
   else await installAdminWorkflowMock(page);
   await page.emulateMedia({ colorScheme: 'dark' });
@@ -130,12 +149,13 @@ test('unavailable preference storage keeps the settings toggle usable', async ({
     };
   });
   await page.goto(
-    info.project.name === 'android-webview' ? '/account/security' : '/admin/settings',
+    info.project.name === 'android-webview' ? '/account' : '/admin/settings',
   );
-  await page
-    .locator('[data-ui=appearance-settings]')
-    .getByRole('switch', { name: 'Dark mode' })
-    .click();
+  if (info.project.name === 'android-webview') {
+    await page.getByRole('radio', { name: 'Dark', exact: true }).check();
+  } else {
+    await page.locator('[data-ui=appearance-settings]').getByRole('switch', { name: 'Dark mode' }).click();
+  }
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
 
@@ -146,16 +166,17 @@ test('cross-tab changes preserve fixed public web appearance and the saved dashb
   if (info.project.name === 'android-webview') await installGuardianVisibilityMock(page);
   else await installAdminWorkflowMock(page);
   await page.goto(
-    info.project.name === 'android-webview' ? '/account/security' : '/admin/settings',
+    info.project.name === 'android-webview' ? '/account' : '/admin/settings',
   );
   const other = await context.newPage();
   await installLocalOnlyBoundary(other);
   await other.goto(info.project.name === 'web' ? '/' : '/login');
   await expect(other.getByRole('switch', { name: 'Dark mode' })).toHaveCount(0);
-  await page
-    .locator('[data-ui=appearance-settings]')
-    .getByRole('switch', { name: 'Dark mode' })
-    .click();
+  if (info.project.name === 'android-webview') {
+    await page.getByRole('radio', { name: 'Dark', exact: true }).check();
+  } else {
+    await page.locator('[data-ui=appearance-settings]').getByRole('switch', { name: 'Dark mode' }).click();
+  }
   await expect(other.locator('html')).toHaveAttribute(
     'data-theme',
     info.project.name === 'web' ? 'light' : 'dark',
@@ -297,10 +318,8 @@ for (const role of ['tenant_admin', 'transportation_admin', 'guardian', 'driver'
       await page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }).click();
       await expect(page.locator('[data-ui=appearance-settings]')).toBeVisible();
     }
-    await page
-      .locator('[data-ui=appearance-settings]')
-      .getByRole('switch', { name: 'Dark mode' })
-      .click();
+    if (mobile) await page.getByRole('radio', { name: 'Light', exact: true }).check();
+    else await page.locator('[data-ui=appearance-settings]').getByRole('switch', { name: 'Dark mode' }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
     await expect(page.locator('[data-ui=appearance-settings]')).toHaveCSS(
       'background-color',

@@ -6,9 +6,11 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { MfaSettingsCard } from '@/components/settings/MfaSettingsCard';
 import { AppearanceSettingsCard } from '@/components/settings/AppearanceToggle';
 import { useAuth } from '@/contexts/useAuth';
+import { useAppSurface } from '@/contexts/AppSurfaceContext';
 
 export function AccountSecurityPage() {
   const { profile } = useAuth();
+  const surface = useAppSurface();
   const role = profile?.role;
   const portal = role === 'driver' ? 'driver' : role === 'guardian' ? 'parent' : 'admin';
   const groups = role === 'driver' ? driverNavGroups : role === 'guardian'
@@ -18,7 +20,7 @@ export function AccountSecurityPage() {
     <DashboardLayout title="Account security" portal={portal} navItems={[]} navGroups={groups}>
       <div className="mx-auto max-w-2xl space-y-5" data-ui="account-security-page">
         <PageHeader eyebrow="Settings" title="Account security" description="Manage your password and sign-in security." />
-        {(role === 'driver' || role === 'guardian' || role === 'platform_super_admin') && (
+        {surface !== 'native-mobile' && (role === 'driver' || role === 'guardian' || role === 'platform_super_admin') && (
           <AppearanceSettingsCard />
         )}
         <Card className="p-5">
