@@ -917,6 +917,9 @@ test('driver support page shows one resolved support contact', async ({ page }) 
   await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
 
   await page.goto('/account');
+  await expect(page).toHaveURL('/account');
+  await expect(page.locator('[data-ui="appearance-settings"]')).toHaveCount(1);
+  await page.getByRole('link', { name: 'Notification preferences', exact: true }).click();
   await expect(page).toHaveURL('/driver/settings');
   await expect(page.locator('[data-ui="account-security-card"]')).toHaveCount(0);
   await expect(page.locator('[data-ui="appearance-settings"]')).toHaveCount(0);

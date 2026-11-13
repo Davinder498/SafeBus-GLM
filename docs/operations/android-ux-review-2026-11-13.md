@@ -48,3 +48,13 @@ install an APK, publish an AAB, or update users' Play Store installations. Refre
 and visually review Play screenshots from this version before its store rollout;
 existing screenshot files are not evidence for the new navigation. Keep the
 current API 36 target; this work does not claim Android 17 device certification.
+
+## Local validation result
+
+Type checking, linting, both production builds, the mobile build and Android
+sync passed. The full web suite passed 1,232 tests and release checks passed
+607 tests. The mobile suite passed 36 tests including Back ownership changes
+and avoiding redundant native bridge calls. An initial worker-exit failure was
+resolved by rerunning; the Android publication check exposed ordering-sensitive
+configuration validation, corrected without removing any required setting.
+GitHub CI results, rather than this local record, govern merge eligibility.

@@ -43,3 +43,15 @@ it('respects a busy dialog veto instead of leaving the trip screen', async () =>
   expect(navigate).not.toHaveBeenCalled();
   await controller.dispose();
 });
+
+
+it('does not repeatedly cross the native bridge for unchanged status updates', async () => {
+  const controller = await installBackNavigation(
+    () => ({ pathname: '/driver', home: '/driver', historyIndex: 0 }), vi.fn(),
+  );
+  await vi.waitFor(() => expect(native.toggleBackButtonHandler).toHaveBeenCalledTimes(1));
+  controller.refresh(); controller.refresh(); controller.refresh();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(native.toggleBackButtonHandler).toHaveBeenCalledTimes(1);
+  await controller.dispose();
+});

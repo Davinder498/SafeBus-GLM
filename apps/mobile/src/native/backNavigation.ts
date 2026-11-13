@@ -23,11 +23,16 @@ export async function installBackNavigation(
 ) {
   let disposed = false;
   let queue = Promise.resolve();
+  let enabled: boolean | undefined;
   const refresh = () => {
     queue = queue.catch(() => undefined).then(async () => {
-      if (!disposed) await App.toggleBackButtonHandler({
-        enabled: !!overlay() || backDestination(state()) !== 'system',
-      });
+      if (disposed) return;
+      const nextEnabled = !!overlay() || backDestination(state()) !== 'system';
+      // Map/status updates also mutate the DOM; cross the native bridge only
+      // when ownership of Back actually changes.
+      if (nextEnabled === enabled) return;
+      await App.toggleBackButtonHandler({ enabled: nextEnabled });
+      enabled = nextEnabled;
     });
     void queue.catch(() => undefined);
   };
@@ -39,7 +44,8 @@ export async function installBackNavigation(
         const allowed = activeOverlay.dispatchEvent(new Event('cancel', { cancelable: true }));
         if (allowed) activeOverlay.close();
       } else {
-        (document.activeElement ?? document).dispatchEvent(
+        const target = activeOverlay.contains(document.activeElement) ? document.activeElement! : activeOverlay;
+        target.dispatchEvent(
           new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
         );
       }
