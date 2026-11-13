@@ -131,6 +131,7 @@ for (const role of ['guardian', 'driver'] as const) {
     await expect(page.getByRole('menuitem', { name: 'Account security', exact: true })).toHaveCount(0);
     await page.keyboard.press('Escape');
     await page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }).click();
+    await page.getByRole('link', { name: 'Password & sign-in security', exact: true }).click();
     await page.getByRole('link', { name: 'Enable multi-factor authentication' }).click();
     await expect(page.locator('[data-ui="app-bar"]')).toBeVisible();
     await expect(page.getByTestId('native-bottom-navigation')).toBeVisible();
@@ -186,7 +187,7 @@ for (const role of ['guardian', 'driver'] as const) {
     await page.locator('#mfa-code').fill('123456');
     await page.getByRole('button', { name: 'Verify and continue', exact: true }).click();
     await expect(page).toHaveURL(
-      role === 'driver' ? '/driver/settings' : '/notifications/settings',
+      '/account?from=profile',
     );
     await expect(
       page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }),
@@ -201,9 +202,11 @@ for (const role of ['guardian', 'driver'] as const) {
       route.fulfill({ status: 503, json: { message: 'Settings unavailable' } }),
     );
     await page.goto('/account');
+    await page.getByRole('link', { name: 'Notification preferences', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Try again', exact: true })).toBeVisible();
     await expect(page.locator('[data-ui="account-security-card"]')).toHaveCount(0);
     await page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }).click();
+    await page.getByRole('link', { name: 'Password & sign-in security', exact: true }).click();
     await page.getByRole('link', { name: 'Enable multi-factor authentication' }).click();
     await expect(page.getByRole('button', { name: 'Set up authenticator app' })).toBeVisible();
     await page.getByRole('link', { name: 'Back to settings', exact: true }).click();
@@ -224,6 +227,10 @@ for (const role of ['guardian', 'driver'] as const) {
       const settingsPath = role === 'driver' ? '/driver/settings' : '/notifications/settings';
       const appBar = page.locator('[data-ui="app-bar"]');
       const appearance = page.locator('[data-ui="appearance-settings"]');
+      await expect(appearance).toHaveCount(1);
+      await expect(page.getByRole('radio', { name: 'Dark', exact: true })).toBeChecked();
+      await page.getByRole('link', { name: 'Notification preferences', exact: true }).click();
+      await expect(page).toHaveURL(settingsPath);
       await expect(appBar.getByRole('switch', { name: 'Dark mode' })).toHaveCount(0);
       await expect(appBar).toHaveCSS('background-color', 'rgb(23, 43, 58)');
       await expect(appBar.getByTestId('safebus-wordmark')).toHaveCSS('color', 'rgb(255, 255, 255)');
@@ -249,7 +256,7 @@ for (const role of ['guardian', 'driver'] as const) {
         await expect(appBar.locator('[data-ui="top-notifications"]')).toHaveCount(0);
         await page
           .getByTestId('native-bottom-navigation')
-          .getByRole('link', { name: /^Notification/ })
+          .getByRole('link', { name: /^Alerts/ })
           .click();
       } else {
         await appBar.getByRole('link', { name: /^Notifications/ }).click();
@@ -259,6 +266,7 @@ for (const role of ['guardian', 'driver'] as const) {
       await page.getByRole('link', { name: 'Notification settings', exact: true }).click();
       await expect(page).toHaveURL(settingsPath);
       await page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }).click();
+      await page.getByRole('link', { name: 'Password & sign-in security', exact: true }).click();
       await expect(page).toHaveURL('/account/security');
       await page.getByRole('link', { name: 'Enable multi-factor authentication' }).click();
       await expect(page).toHaveURL('/account/security/mfa');

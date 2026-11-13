@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Bell, Bus, History, LayoutDashboard, List, Settings, UserCircle } from 'lucide-react';
+import { Bell, Bus, History, LayoutDashboard, List, UserCircle } from 'lucide-react';
 import type { ReactElement } from 'react';
 import {
   adminNavItems,
@@ -102,11 +102,10 @@ describe('driver shell navigation model', () => {
 
   it('keeps daily workflows and Account in the native navigation', () => {
     const expected = [
-      { label: 'Scan', to: '/driver', icon: Bus },
+      { label: 'Trip', to: '/driver', icon: Bus },
       { label: 'Riders', to: '/driver/pickup-drop-off', icon: List },
       { label: 'History', to: '/driver/history', icon: History },
-      { label: 'Settings', to: '/driver/settings', icon: Settings },
-      { label: 'Account', to: '/account/security', icon: UserCircle },
+      { label: 'Account', to: '/account', icon: UserCircle },
     ];
 
     expect(driverNativeNavItems).toHaveLength(expected.length);
@@ -134,9 +133,8 @@ describe('guardian shell navigation model', () => {
     const expected = [
       { label: 'Home', to: '/parent', icon: LayoutDashboard },
       { label: 'Buses', to: '/guardian/routes', icon: Bus },
-      { label: 'Notification', to: '/notifications', icon: Bell },
-      { label: 'Settings', to: '/notifications/settings', icon: Settings },
-      { label: 'Account', to: '/account/security', icon: UserCircle },
+      { label: 'Alerts', to: '/notifications', icon: Bell },
+      { label: 'Account', to: '/account', icon: UserCircle },
     ];
 
     expect(guardianNativeNavItems).toHaveLength(expected.length);

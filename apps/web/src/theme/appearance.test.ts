@@ -59,8 +59,8 @@ describe('device appearance preference', () => {
     expect(document.documentElement.dataset.theme).toBe('dark');
     leaveAgain();
   });
-  it('migrates removed System and invalid choices to Light', () => {
-    expect(normalizeThemePreference('system')).toBe('light');
+  it('preserves System and keeps invalid web choices light', () => {
+    expect(normalizeThemePreference('system')).toBe('system');
     expect(normalizeThemePreference(null)).toBe('light');
     expect(normalizeThemePreference('invalid')).toBe('light');
     expect(normalizeThemePreference('dark')).toBe('dark');
@@ -121,4 +121,21 @@ describe('device appearance preference', () => {
     setThemePreference('light');
     expect(listener).toHaveBeenCalledTimes(1);
   });
+});
+
+it('follows device changes only when System is selected', () => {
+  setThemePreference('system');
+  systemDark(true);
+  expect(getAppearance()).toEqual({ preference: 'system', resolved: 'dark' });
+  systemDark(false);
+  expect(getAppearance().resolved).toBe('light');
+  setThemePreference('dark');
+  systemDark(false);
+  expect(getAppearance().resolved).toBe('dark');
+});
+it('defaults new native installs to System while preserving explicit choices', () => {
+  document.documentElement.dataset.appSurface = 'native-mobile';
+  expect(normalizeThemePreference(null)).toBe('system');
+  expect(normalizeThemePreference('light')).toBe('light');
+  delete document.documentElement.dataset.appSurface;
 });

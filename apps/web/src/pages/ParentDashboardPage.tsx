@@ -36,7 +36,7 @@ export function ParentDashboardPage() {
       <div className="mx-auto max-w-3xl space-y-5">
         <PageHeader
           eyebrow="Guardian home"
-          title="My Buses"
+          title={appSurface === 'native-mobile' ? 'Home' : 'My Buses'}
           description={
             appSurface === 'web'
               ? 'Track the assigned bus during an active school run. Route and operational details stay with the transportation team.'

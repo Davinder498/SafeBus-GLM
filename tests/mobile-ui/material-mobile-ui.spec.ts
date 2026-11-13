@@ -154,7 +154,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   });
   await page.goto('/parent');
 
-  await expect(page.getByRole('heading', { name: 'My Buses', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Home', level: 1 })).toBeVisible();
   await expect(page.locator('[data-ui="dashboard-shell"]')).toHaveCSS(
     'background-color',
     'rgb(245, 247, 250)',
@@ -203,12 +203,12 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(studentCard).toContainText('Riverside School');
 
   const tabs = page.getByTestId('native-bottom-navigation').getByRole('link');
-  await expect(tabs).toHaveCount(5);
+  await expect(tabs).toHaveCount(4);
   await expect(tabs.filter({ hasText: 'Home' })).toHaveAttribute('aria-current', 'page');
-  await expect(tabs.filter({ hasText: 'Notification' })).toHaveAttribute('href', '/notifications');
-  await expect(tabs.filter({ hasText: 'Settings' })).toHaveAttribute(
+  await expect(tabs.filter({ hasText: 'Alerts' })).toHaveAttribute('href', '/notifications');
+  await expect(tabs.filter({ hasText: 'Account' })).toHaveAttribute(
     'href',
-    '/notifications/settings',
+    '/account',
   );
 
   await expectTouchTargets(tabs);
@@ -641,10 +641,10 @@ test('mobile notification settings autosave independent channel sections with sw
   await expect(page.getByText('Saved', { exact: true })).toBeVisible();
   const settingsTab = page
     .getByTestId('native-bottom-navigation')
-    .getByRole('link', { name: 'Settings' });
+    .getByRole('link', { name: 'Account' });
   await expect(settingsTab).toHaveAttribute('aria-current', 'page');
   await expect(
-    page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Notification' }),
+    page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Alerts' }),
   ).not.toHaveAttribute('aria-current', 'page');
 
   await expect(page.getByText('Registered Android devices', { exact: true })).toHaveCount(0);
@@ -871,8 +871,8 @@ test('driver active-trip shell keeps daily actions touch friendly', async ({ pag
   await expectMaterialBrand(page);
 
   const tabs = page.getByTestId('native-bottom-navigation').getByRole('link');
-  await expect(tabs).toHaveCount(5);
-  await expect(tabs.filter({ hasText: 'Scan' })).toHaveAttribute('aria-current', 'page');
+  await expect(tabs).toHaveCount(4);
+  await expect(tabs.filter({ hasText: 'Trip' })).toHaveAttribute('aria-current', 'page');
 
   const actionableButtons = page.locator(
     '[data-testid="driver-active-trip-only"] [data-ui="button"]',
@@ -917,12 +917,15 @@ test('driver support page shows one resolved support contact', async ({ page }) 
   await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
 
   await page.goto('/account');
+  await expect(page).toHaveURL('/account');
+  await expect(page.locator('[data-ui="appearance-settings"]')).toHaveCount(1);
+  await page.getByRole('link', { name: 'Notification preferences', exact: true }).click();
   await expect(page).toHaveURL('/driver/settings');
   await expect(page.locator('[data-ui="account-security-card"]')).toHaveCount(0);
   await expect(page.locator('[data-ui="appearance-settings"]')).toHaveCount(0);
   await expect(
     page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }),
-  ).toHaveAttribute('href', '/account/security');
+  ).toHaveAttribute('href', '/account');
 });
 
 test('driver support page avoids a configuration dead end when no contact is returned', async ({
@@ -975,9 +978,9 @@ test('driver settings keeps notification controls separate from Account', async 
   await expect(page.getByRole('link', { name: 'View notifications' })).toHaveCount(0);
 
   const tabs = page.getByTestId('native-bottom-navigation').getByRole('link');
-  await expect(tabs).toHaveCount(5);
+  await expect(tabs).toHaveCount(4);
   await expect(tabs.last()).toContainText('Account');
-  await expect(tabs.filter({ hasText: 'Settings' })).toHaveAttribute('aria-current', 'page');
+  await expect(tabs.filter({ hasText: 'Account' })).toHaveAttribute('aria-current', 'page');
   await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
   await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('color', 'rgb(255, 255, 255)');
   await expectTouchTargets(page.locator('[data-ui="notification-channel-control"]'));
@@ -1063,7 +1066,7 @@ for (const role of ['guardian', 'driver'] as const) {
       await expect(page.getByTestId('native-bottom-navigation')).toBeVisible();
       await page
         .getByTestId('native-bottom-navigation')
-        .getByRole('link', { name: role === 'guardian' ? 'Home' : 'Scan', exact: true })
+        .getByRole('link', { name: role === 'guardian' ? 'Home' : 'Trip', exact: true })
         .click();
       await expect(page).toHaveURL(role === 'guardian' ? '/parent' : '/driver');
     });

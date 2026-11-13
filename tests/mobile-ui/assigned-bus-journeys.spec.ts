@@ -160,6 +160,7 @@ test('guardian navigation opens assigned buses in the mobile app', async ({ page
   await buses.click();
   await expect(page).toHaveURL('/guardian/routes');
   await expect(page.getByRole('heading', { name: 'My Buses', level: 1 })).toBeVisible();
+  await expect(page.getByTestId('guardian-student-bus-card')).toHaveCount(1);
   await expect(buses).toHaveAttribute('aria-current', 'page');
 });
 

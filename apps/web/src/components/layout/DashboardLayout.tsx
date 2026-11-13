@@ -1,5 +1,5 @@
 import { useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { Link, NavLink, useNavigate, type NavLinkRenderProps } from 'react-router';
+import { Link, NavLink, useLocation, useNavigate, type NavLinkRenderProps } from 'react-router';
 import {
   LayoutDashboard,
   Users,
@@ -232,27 +232,21 @@ export const guardianNavGroups: DashboardNavGroup[] = [
 ];
 
 export const driverNativeNavItems: DashboardNavItem[] = [
-  { label: 'Scan', to: '/driver', icon: <Bus className="h-5 w-5" /> },
+  { label: 'Trip', to: '/driver', icon: <Bus className="h-5 w-5" /> },
   {
     label: 'Riders',
     to: '/driver/pickup-drop-off',
     icon: <List className="h-5 w-5" />,
   },
   { label: 'History', to: '/driver/history', icon: <History className="h-5 w-5" /> },
-  { label: 'Settings', to: '/driver/settings', icon: <Settings className="h-5 w-5" /> },
-  { label: 'Account', to: '/account/security', icon: <UserCircle className="h-5 w-5" /> },
+  { label: 'Account', to: '/account', icon: <UserCircle className="h-5 w-5" /> },
 ];
 
 export const guardianNativeNavItems: DashboardNavItem[] = [
   { label: 'Home', to: '/parent', icon: <LayoutDashboard className="h-5 w-5" /> },
   { label: 'Buses', to: '/guardian/routes', icon: <Bus className="h-5 w-5" /> },
-  { label: 'Notification', to: '/notifications', icon: <Bell className="h-5 w-5" /> },
-  {
-    label: 'Settings',
-    to: '/notifications/settings',
-    icon: <Settings className="h-5 w-5" />,
-  },
-  { label: 'Account', to: '/account/security', icon: <UserCircle className="h-5 w-5" /> },
+  { label: 'Alerts', to: '/notifications', icon: <Bell className="h-5 w-5" /> },
+  { label: 'Account', to: '/account', icon: <UserCircle className="h-5 w-5" /> },
 ];
 
 /* -------------------------------- helpers --------------------------------- */
@@ -669,8 +663,27 @@ function BottomTabNav({
   portal: DashboardLayoutProps['portal'];
   unreadCount: number;
 }) {
+  const { pathname } = useLocation();
+  const navigationRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const node = navigationRef.current;
+    if (!node || typeof ResizeObserver === 'undefined') return;
+    const update = () => document.documentElement.style.setProperty(
+      '--native-navigation-height', `${node.getBoundingClientRect().height}px`,
+    );
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    update();
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty('--native-navigation-height');
+    };
+  }, []);
+  const accountSection = pathname.startsWith('/account') || pathname === '/driver/settings' ||
+    pathname === '/driver/profile' || pathname.startsWith('/notifications/settings') || pathname === '/support';
   return (
     <nav
+      ref={navigationRef}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-navy-700 bg-navy-700 text-white shadow-[0_-4px_16px_rgba(15,23,42,0.08)] backdrop-blur-md"
       aria-label="Primary navigation"
       data-testid="native-bottom-navigation"
@@ -685,18 +698,21 @@ function BottomTabNav({
         {items.map((item) => {
           const to = item.to ?? `/${portal}`;
           const isNotificationInbox = to === '/notifications';
+          const selectedAccount = to === '/account' && accountSection;
+          const isActive = selectedAccount || pathname === to ||
+            (to !== `/${portal}` && !isNotificationInbox && pathname.startsWith(`${to}/`));
           return (
-            <NavLink
+            <Link
               key={item.label}
               to={to}
-              end={to === `/${portal}` || isNotificationInbox}
+              replace
+              aria-current={isActive ? 'page' : undefined}
               aria-label={
                 isNotificationInbox && unreadCount > 0
                   ? `${item.label}, ${unreadCount} unread`
                   : item.label
               }
-              className={({ isActive }: NavLinkRenderProps) =>
-                cn(
+              className={cn(
                   'sb-bottom-tab flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-500',
                   isActive
                     ? 'sb-bottom-tab-active bg-navy-50 font-bold text-navy-700'
@@ -714,8 +730,8 @@ function BottomTabNav({
                   ) : null}
                 </span>
               )}
-              <span className="max-w-full truncate">{item.label}</span>
-            </NavLink>
+              <span className="max-w-full whitespace-normal break-words text-center">{item.label}</span>
+            </Link>
           );
         })}
       </div>
