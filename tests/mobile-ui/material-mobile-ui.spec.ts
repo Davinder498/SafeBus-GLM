@@ -206,10 +206,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(tabs).toHaveCount(4);
   await expect(tabs.filter({ hasText: 'Home' })).toHaveAttribute('aria-current', 'page');
   await expect(tabs.filter({ hasText: 'Alerts' })).toHaveAttribute('href', '/notifications');
-  await expect(tabs.filter({ hasText: 'Account' })).toHaveAttribute(
-    'href',
-    '/account',
-  );
+  await expect(tabs.filter({ hasText: 'Account' })).toHaveAttribute('href', '/account');
 
   await expectTouchTargets(tabs);
 
@@ -222,6 +219,9 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(page.getByText('TEST-42')).toBeVisible();
   await page.getByRole('link', { name: 'See live map' }).click();
   await expect(page.getByTestId('guardian-fullscreen-map')).toBeVisible();
+  await expect(
+    page.getByTestId('guardian-fullscreen-map').getByTestId('safebus-wordmark'),
+  ).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Bus 42 live map' })).toBeVisible();
   await expect(page.getByTestId('guardian-fullscreen-map')).toHaveCSS(
     'background-color',
@@ -512,8 +512,14 @@ test('guardian buses group students and open a clean bus detail view', async ({
     'href',
     '/guardian/live-map?bus=42',
   );
-  await expect(page.getByRole('link', { name: 'See live map' })).toHaveCSS('background-color', 'rgb(29, 78, 216)');
-  await expect(page.getByRole('link', { name: 'See live map' })).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await expect(page.getByRole('link', { name: 'See live map' })).toHaveCSS(
+    'background-color',
+    'rgb(29, 78, 216)',
+  );
+  await expect(page.getByRole('link', { name: 'See live map' })).toHaveCSS(
+    'color',
+    'rgb(255, 255, 255)',
+  );
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('guardian-bus-details.png'), fullPage: true });
 
@@ -522,10 +528,7 @@ test('guardian buses group students and open a clean bus detail view', async ({
     .locator('[data-ui="guardian-bus-detail-hero"]')
     .getByText('Inactive', { exact: true });
   await expect(inactiveStatus).toHaveCSS('color', 'rgb(82, 97, 116)');
-  await expect(inactiveStatus.locator('> span')).toHaveCSS(
-    'background-color',
-    'rgb(82, 97, 116)',
-  );
+  await expect(inactiveStatus.locator('> span')).toHaveCSS('background-color', 'rgb(82, 97, 116)');
 
   guardianMock.setServiceLines([
     guardianBusServiceLine({
@@ -924,7 +927,9 @@ test('driver support page shows one resolved support contact', async ({ page }) 
   await expect(page.locator('[data-ui="account-security-card"]')).toHaveCount(0);
   await expect(page.locator('[data-ui="appearance-settings"]')).toHaveCount(0);
   await expect(
-    page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }),
+    page
+      .getByTestId('native-bottom-navigation')
+      .getByRole('link', { name: 'Account', exact: true }),
   ).toHaveAttribute('href', '/account');
 });
 
@@ -959,9 +964,7 @@ test('driver account menu exposes existing secondary destinations', async ({ pag
   await expect(page.getByRole('menuitem', { name: 'Sign out' })).toBeVisible();
 });
 
-test('driver settings keeps notification controls separate from Account', async ({
-  page,
-}) => {
+test('driver settings keeps notification controls separate from Account', async ({ page }) => {
   await installSupabaseMock(page);
   await page.goto('/driver/settings');
 

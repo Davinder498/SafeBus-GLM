@@ -1,3 +1,4 @@
+import { collectVisibleRows } from './visibleRows';
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 import type { Guardian, Student, StudentGuardian } from '@/types/studentGuardian';
 
@@ -25,17 +26,14 @@ export async function getVisibleStudents(): Promise<Student[]> {
 
 export async function getVisibleGuardians(): Promise<Guardian[]> {
   const client = requireSupabase();
-  const { data, error } = await client
+  return collectVisibleRows<Guardian>((from, to) => client
     .from('guardians')
-    .select(
-      'id, tenant_id, profile_id, first_name, last_name, full_name, email, phone, status, created_at, updated_at',
-    )
+    .select('id, tenant_id, profile_id, first_name, last_name, full_name, email, phone, status, created_at, updated_at')
     .eq('status', 'active')
     .order('last_name', { ascending: true })
-    .order('first_name', { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return (data ?? []) as Guardian[];
+    .order('first_name', { ascending: true })
+    .order('id', { ascending: true })
+    .range(from, to));
 }
 
 export async function getVisibleStudentGuardianLinks(): Promise<StudentGuardian[]> {

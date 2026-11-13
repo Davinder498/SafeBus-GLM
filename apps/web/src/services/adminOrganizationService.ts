@@ -103,16 +103,13 @@ export async function getVisibleProfiles(ids?: string[]): Promise<OrganizationPr
 
 export async function getVisibleDriverProfiles(): Promise<OrganizationProfile[]> {
   const client = requireSupabase();
-  const { data, error } = await client
+  return collectVisibleRows<OrganizationProfile>((from, to) => client
     .from('profiles')
-    .select(
-      'id, tenant_id, school_id, first_name, last_name, full_name, email, role, status, created_at, updated_at',
-    )
+    .select('id, tenant_id, school_id, first_name, last_name, full_name, email, role, status, created_at, updated_at')
     .eq('role', 'driver')
     .order('full_name', { ascending: true })
-    .limit(250);
-  if (error) throw new Error(error.message);
-  return (data ?? []) as OrganizationProfile[];
+    .order('id', { ascending: true })
+    .range(from, to));
 }
 
 export async function getCurrentTenant(tenantId: string | null): Promise<Tenant | null> {

@@ -12,16 +12,18 @@
     "netlify": "Owner chose Free with protected external builds on 2026-11-10. No paid upgrade or charge is authorized. Disable Netlify cloud builds and require protected GitHub artifact releases; do not claim unavailable per-feature variable scopes.",
     "billingRisk": "Approved 2026-11-10: keep bus service active; refunds, disputes and fraud warnings require manual billing review. No automatic suspension.",
     "operations": {
-      "approvedAt": "2026-11-10",
+      "approvedAt": "2026-11-12",
       "mailbox": "info@safebus.kids",
       "primaryResponder": "owner",
       "backupResponder": null,
       "timezone": "America/Edmonton",
       "schoolDayStart": "06:00",
       "schoolDayEnd": "18:00",
-      "tripCoverageExtensionMinutes": 30,
-      "urgentAcknowledgementMinutes": 15,
-      "customerPublicationVerified": false
+      "tripCoverageExtensionMinutes": 0,
+      "urgentAcknowledgementMinutes": null,
+      "customerPublicationVerified": true,
+      "supportedDays": "Monday\u2013Saturday",
+      "note": "Latest owner direction: 06:00\u201318:00 America/Edmonton Monday\u2013Saturday for every issue, including critical incidents. No additional after-hours or numerical response promise."
     },
     "ios": "Resumed by owner on 2026-11-11 and now the main product priority. Owner has Windows and no MacBook. Close tracking housekeeping and release-ledger repair, then build the iOS cloud-build foundation. Real-iPhone acceptance remains required before launch claims; no paid service purchase is implied.",
     "physicalTesting": "No physical-device or field acceptance has been completed. iOS work is resumed; plan real-iPhone testing through TestFlight with cloud Mac builds.",
@@ -31,7 +33,7 @@
     {
       "id": "tracking-ingestion-and-guardian-fanout",
       "status": "open",
-      "note": "Async tracking queue installed and private access verified. Dispatcher runs succeeded; housekeeping times out on shared cron history. Forward indexed cleanup repair is pending protected rollout. Capacity and end-to-end delivery remain unqualified.",
+      "note": "Async tracking dispatcher active. A bounded primary-key cursor cleanup replaces the provider-owned-table index attempt; local behavior/recovery tests pass. Pending protected rollout; capacity and end-to-end delivery remain unqualified.",
       "productionRun": "43081399229"
     },
     {
@@ -65,15 +67,17 @@
     {
       "id": "application-alerting-and-operations",
       "status": "open",
-      "businessDecision": "Primary owner, mailbox, school-day response hours and acknowledgement target are approved in ownerDirection.operations. Backup coverage and verified customer publication remain outstanding."
+      "businessDecision": "Owner mailbox and Monday\u2013Saturday 06:00\u201318:00 America/Edmonton support approved and published, including critical issues. Alert receipt and operational response evidence remain unverified. No additional acknowledgement or after-hours promise."
     },
     {
       "id": "large-authority-reference-selectors",
-      "status": "open"
+      "status": "implementation_in_progress",
+      "note": "Driver and active-guardian lists now use bounded pages with stable ID ordering; focused low-cap and partial-failure regression added. Not released."
     },
     {
       "id": "hosted-password-protection",
-      "status": "open"
+      "status": "pending_owner_upgrade",
+      "note": "Owner explicitly deferred this item on November 13 while other closure work continues. Supabase organization verified Free; protection requires Pro or above. Do not disable or weaken any existing Auth control."
     },
     {
       "id": "legacy-notification-default-repair",
@@ -95,7 +99,8 @@
     },
     {
       "id": "guardian-fullscreen-branding",
-      "status": "open"
+      "status": "implementation_in_progress",
+      "note": "Existing SafeBus wordmark added to native fullscreen map header with wrapping bus title; pending release and device verification."
     },
     {
       "id": "end-to-end-source-event-acceptance",
@@ -104,8 +109,9 @@
     },
     {
       "id": "district-contract-publication",
-      "status": "open",
-      "note": "Read-only production check 2026-11-11: no MSA or DPA versions, no published district catalog, no district packages or executed receipts. Only participant terms 2026.1 are stored. Contract templates remain drafts with placeholders and supplier evidence pending."
+      "status": "live_verified",
+      "note": "Exact eight-document package 2026.11.13.1 published as catalog Revision 1 after explicit business/legal approval. Seven common documents and customer-specific Order Form workflow available. Publication is not customer acceptance.",
+      "catalogDigest": "507fad95a0155796e1497bec0158e11c82c2bc5e98df546b3a0d4a83a4af54e0"
     }
   ]
 }

@@ -15,8 +15,8 @@ const notificationMigrationPath = 'supabase/migrations/0092_end_to_end_notificat
 
 
 test('private retention no-policy exceptions are exact and reject any access-control drift', () => {
-  assert.equal(REVIEWED_PRIVATE_RETENTION_TABLES.length, 16);
-  assert.equal(new Set(REVIEWED_PRIVATE_RETENTION_TABLES).size, 16);
+  assert.equal(REVIEWED_PRIVATE_RETENTION_TABLES.length, 17);
+  assert.equal(new Set(REVIEWED_PRIVATE_RETENTION_TABLES).size, 17);
   const safeRow = (name) => ({
     object_name: name,
     schema_name: 'safebus_private',
@@ -29,7 +29,7 @@ test('private retention no-policy exceptions are exact and reject any access-con
   });
   assert.deepEqual(
     assertMissingSessionPolicies(REVIEWED_PRIVATE_RETENTION_TABLES.map(safeRow)),
-    { reviewedPrivateNoPolicyTables: 16 },
+    { reviewedPrivateNoPolicyTables: 17 },
   );
   assert.throws(
     () => assertMissingSessionPolicies([safeRow('public.students')]),

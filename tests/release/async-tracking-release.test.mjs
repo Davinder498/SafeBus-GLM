@@ -96,36 +96,45 @@ test('forward cleanup repair preserves worker jobs, private ACL and exact recove
   await db.exec('rollback');
 });
 
-test('indexed cleanup handles unrelated history, empty matches and a shared 1000-row cap', async (t) => {
+test('cursor cleanup progresses across unrelated history, revisits late completion and bounds every batch', async (t) => {
   const db = await fixture(t);
   await db.exec(sql);
   await db.exec(cleanupSql);
   await db.exec(`insert into cron.test_jobs(name,schedule,command) values('unrelated','* * * * *','select 1');
-    insert into cron.job_run_details select g,(select jobid from cron.job where jobname='unrelated'),now()-interval '4 days' from generate_series(1,30000) g;
+    insert into cron.job_run_details select g,(select jobid from cron.job where jobname='unrelated'),now()-interval '4 days' from generate_series(1,3000) g;
+    insert into cron.job_run_details select g,(select jobid from cron.job where jobname='safebus-tracking-invalidation-dispatcher'),now()-interval '3 days' from generate_series(4001,5200) g;
     insert into cron.job_run_details values
-      (40001,(select jobid from cron.job where jobname='safebus-tracking-invalidation-history'),null),
-      (40002,(select jobid from cron.job where jobname='safebus-tracking-invalidation-dispatcher'),now());`);
-  assert.equal(
-    (await db.query('select safebus_private.prune_tracking_worker_history() as n')).rows[0].n,
-    0,
-  );
-  await db.exec(`insert into cron.job_run_details select g,(select jobid from cron.job where jobname='safebus-tracking-invalidation-dispatcher'),now()-interval '3 days' from generate_series(50001,50600) g;
-    insert into cron.job_run_details select g,(select jobid from cron.job where jobname='safebus-tracking-invalidation-history'),now()-interval '3 days' from generate_series(60001,60600) g;
-    analyze cron.job_run_details;`);
-  assert.equal(
-    (await db.query('select safebus_private.prune_tracking_worker_history() as n')).rows[0].n,
-    1000,
-  );
-  assert.equal(
-    (await db.query('select safebus_private.prune_tracking_worker_history() as n')).rows[0].n,
-    200,
-  );
+      (6001,(select jobid from cron.job where jobname='safebus-tracking-invalidation-history'),null),
+      (6002,(select jobid from cron.job where jobname='safebus-tracking-invalidation-dispatcher'),now());`);
+  const prune = async () =>
+    (await db.query('select safebus_private.prune_tracking_worker_history() as n')).rows[0].n;
+  const deleted = [];
+  for (let i = 0; i < 5; i++) deleted.push(await prune());
+  assert.deepEqual(deleted, [0, 0, 0, 1000, 200]);
   assert.equal(
     (await db.query('select count(*)::int as n from cron.job_run_details')).rows[0].n,
-    30002,
+    3002,
   );
+  // A run passed while unfinished becomes eligible in the next full sweep.
+  await db.exec(
+    "update cron.job_run_details set end_time=now()-interval '3 days' where runid=6001",
+  );
+  assert.equal(await prune(), 0);
+  assert.equal(await prune(), 0);
+  assert.equal(await prune(), 0);
+  assert.equal(await prune(), 1);
   const plan = await db.query(`explain (format json) select runid from cron.job_run_details
-    where jobid=(select jobid from cron.job where jobname='safebus-tracking-invalidation-dispatcher')
-      and end_time < statement_timestamp()-interval '48 hours' order by end_time,runid limit 1000`);
-  assert.match(JSON.stringify(plan.rows), /safebus_tracking_history_job_end_idx/);
+    where runid > 3000 and runid <= 6002 order by runid limit 1000`);
+  assert.match(JSON.stringify(plan.rows), /job_run_details_pkey/);
+  for (const role of ['anon', 'authenticated', 'service_role']) {
+    assert.equal(
+      (
+        await db.query(
+          "select has_table_privilege($1,'safebus_private.tracking_history_cursor','SELECT,INSERT,UPDATE,DELETE') as allowed",
+          [role],
+        )
+      ).rows[0].allowed,
+      false,
+    );
+  }
 });

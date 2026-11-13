@@ -63,7 +63,7 @@ try {
   const lineage =
     milestone === 'tracking_history'
       ? JSON.parse(
-          await fs.readFile('config/observed/tracking-release-lineage-20261111.json', 'utf8'),
+          await fs.readFile('config/observed/tracking-cleanup-lineage-20261113.json', 'utf8'),
         )
       : null;
   const binding = createEnvironmentBinding({
