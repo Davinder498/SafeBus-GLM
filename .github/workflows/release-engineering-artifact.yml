@@ -8,6 +8,13 @@ on:
       confirmation:
         description: RELEASE_REVIEWED_ENGINEERING_FIX (prelaunch maintenance, not commercial signoff)
         required: true
+      activate_operations:
+        description: Enable reviewed retention and application alerts after encrypted recovery
+        type: boolean
+        default: false
+      operations_confirmation:
+        description: ACTIVATE_REVIEWED_RETENTION_AND_ALERTS when enabling operations
+        required: false
 permissions:
   contents: read
   checks: read
@@ -16,7 +23,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   validate:
-    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'RELEASE_REVIEWED_ENGINEERING_FIX'
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'RELEASE_REVIEWED_ENGINEERING_FIX' && (!inputs.activate_operations || inputs.operations_confirmation == 'ACTIVATE_REVIEWED_RETENTION_AND_ALERTS')
     uses: ./.github/workflows/validate-security-install.yml
     with:
       git_ref: ${{ inputs.git_ref }}
@@ -24,12 +31,13 @@ jobs:
     needs: validate
     environment: production
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       CI: true
       SAFEBUS_RELEASE_SHA: ${{ inputs.git_ref }}
       SAFEBUS_DEPLOY_ENV: production
       SAFEBUS_ENGINEERING_CONFIRM: ${{ inputs.confirmation }}
+      SAFEBUS_OPERATIONS_CONFIRM: ${{ inputs.operations_confirmation }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -84,10 +92,81 @@ jobs:
             .safebus-release/engineering-artifact/plan.json
           retention-days: 30
           if-no-files-found: error
+      - name: Prepare reviewed operational controls
+        if: inputs.activate_operations
+        env:
+          SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
+          SAFEBUS_DATABASE_CA_CERT: ${{ vars.SAFEBUS_DATABASE_CA_CERT }}
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: node scripts/release-launch-operations.mjs prepare
+      - name: Install native PostgreSQL 17 tools without Docker
+        if: inputs.activate_operations
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl --silent --show-error --fail --output /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          source /etc/os-release
+          printf 'Types: deb\nURIs: https://apt.postgresql.org/pub/repos/apt\nSuites: %s-pgdg\nArchitectures: amd64\nComponents: main\nSigned-By: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc\n' "$VERSION_CODENAME" | sudo tee /etc/apt/sources.list.d/pgdg.sources > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Capture fresh encrypted recovery before activation
+        if: inputs.activate_operations
+        env:
+          SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
+          SAFEBUS_DATABASE_CA_CERT: ${{ vars.SAFEBUS_DATABASE_CA_CERT }}
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SAFEBUS_REHEARSAL_API_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          SAFEBUS_BACKUP_PUBLIC_KEY: ${{ vars.SAFEBUS_BACKUP_PUBLIC_KEY }}
+          SAFEBUS_BACKUP_CONFIRM: BACKUP_PLATFORM_RECOVERY_ENCRYPTED
+        run: node scripts/backup-existing-security.mjs
+      - name: Retain encrypted operational recovery before activation
+        if: inputs.activate_operations
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: launch-operations-recovery-${{ inputs.git_ref }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .safebus-release/platform-recovery/
+            .safebus-release/launch-operations/plan.json
+          retention-days: 7
+          if-no-files-found: error
+      - name: Activate reviewed operational controls
+        id: operations
+        if: inputs.activate_operations
+        env:
+          SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
+          SAFEBUS_DATABASE_CA_CERT: ${{ vars.SAFEBUS_DATABASE_CA_CERT }}
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: node scripts/release-launch-operations.mjs activate
       - name: Publish prebuilt production artifact without rebuilding
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         run: node scripts/release-engineering-artifact.mjs publish
+      - name: Verify first scheduled retention execution
+        if: inputs.activate_operations
+        env:
+          SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
+          SAFEBUS_DATABASE_CA_CERT: ${{ vars.SAFEBUS_DATABASE_CA_CERT }}
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: node scripts/release-launch-operations.mjs verify
+      - name: Pause further disposal after activation or publication failure
+        if: failure() && inputs.activate_operations && steps.operations.outcome != 'skipped'
+        env:
+          SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
+          SAFEBUS_DATABASE_CA_CERT: ${{ vars.SAFEBUS_DATABASE_CA_CERT }}
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: node scripts/release-launch-operations.mjs pause
+      - name: Retain operational activation outcome
+        if: always() && inputs.activate_operations
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: launch-operations-outcome-${{ inputs.git_ref }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .safebus-release/launch-operations/
+          retention-days: 90
+          if-no-files-found: ignore
       - name: Retain deployment and rollback outcome
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
