@@ -85,13 +85,14 @@
     },
     {
       "id": "legacy-notification-default-repair",
-      "status": "prepared",
-      "note": "Exact single-authority data repair prepared with protected rehearsal, encrypted recovery and fail-closed baseline checks. Not yet installed."
+      "status": "live_verified",
+      "note": "Protected installation completed; hosted reread confirmed the exact legacy authority approved with original quotas preserved. Recipient consent unchanged.",
+      "productionRun": "43580282455"
     },
     {
       "id": "operational-retention-activation",
       "status": "open",
-      "note": "Read-only dry-run on 2026-11-14: 2 invitations, 11 tracking sessions and 138 rate-limit buckets eligible; all other classes zero. Database destructive control remains disabled. Activation and scheduled completion evidence remain pending. Netlify scheduler verified running every minute in dry-run mode; execution flag absent. No pending Auth account disposal requests."
+      "note": "Read-only dry-run on 2026-11-14: 2 invitations, 11 tracking sessions and 138 rate-limit buckets eligible; all other classes zero. Database destructive control remains disabled. Activation and scheduled completion evidence remain pending. Netlify scheduler verified running every minute in dry-run mode; execution flag absent. No pending Auth account disposal requests. Protected activation prepared: fresh encrypted recovery, initial-class guard, production-only settings, first scheduled execution verification and failure pause. Not yet activated."
     },
     {
       "id": "capacity-qualification",
