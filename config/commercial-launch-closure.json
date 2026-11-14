@@ -26,7 +26,7 @@
       "note": "Latest owner direction: 06:00\u201318:00 America/Edmonton Monday\u2013Saturday for every issue, including critical incidents. No additional after-hours or numerical response promise."
     },
     "ios": "Owner paused iOS until remaining commercial launch work is completed. Windows-only; no MacBook. Password protection remains deferred.",
-    "physicalTesting": "No physical-device or field acceptance has been completed. iOS work is resumed; plan real-iPhone testing through TestFlight with cloud Mac builds.",
+    "physicalTesting": "No physical-device or field acceptance has been completed. iOS remains paused until the remaining launch work is completed.",
     "fleetTarget": "Owner confirmed 2026-11-10: target 5,000\u201310,000 buses. Bus count does not specify concurrent guardians; qualify actual concurrency before capacity claims."
   },
   "milestones": [
@@ -61,14 +61,16 @@
     },
     {
       "id": "billing-risk-events",
-      "status": "implementation_in_progress",
+      "status": "released",
       "businessDecision": "Approved manual billing review for refunds, disputes and fraud warnings; keep bus service active. Implement the approved policy without automatic suspension.",
-      "note": "Signed events use existing private receipts and minimal operations alerts. Manual review remains in restricted Stripe Dashboard; no automatic service suspension. Publication, provider event subscriptions, sandbox replay and mailbox verification remain open."
+      "note": "Published and all 26 Stripe webhook subscriptions verified, including eight billing risk events. Owner deferred sandbox replay and mailbox acceptance on 2026-11-14. No end-to-end delivery claim.",
+      "productionRun": "43570971707"
     },
     {
       "id": "application-alerting-and-operations",
       "status": "open",
-      "businessDecision": "Owner mailbox and Monday\u2013Saturday 06:00\u201318:00 America/Edmonton support approved and published, including critical issues. Alert receipt and operational response evidence remain unverified. No additional acknowledgement or after-hours promise."
+      "businessDecision": "Owner mailbox and Monday\u2013Saturday 06:00\u201318:00 America/Edmonton support approved and published, including critical issues. Alert receipt and operational response evidence remain unverified. No additional acknowledgement or after-hours promise.",
+      "note": "Netlify production setting observed on 2026-11-14: SAFEBUS_APPLICATION_MONITOR_MODE=observe. Application alerts require activation and actual mailbox receipt verification."
     },
     {
       "id": "large-authority-reference-selectors",
@@ -83,12 +85,13 @@
     },
     {
       "id": "legacy-notification-default-repair",
-      "status": "open"
+      "status": "prepared",
+      "note": "Exact single-authority data repair prepared with protected rehearsal, encrypted recovery and fail-closed baseline checks. Not yet installed."
     },
     {
       "id": "operational-retention-activation",
       "status": "open",
-      "note": "GPS history removal does not activate retention of other operational records."
+      "note": "Read-only dry-run on 2026-11-14: 2 invitations, 11 tracking sessions and 138 rate-limit buckets eligible; all other classes zero. Database destructive control remains disabled. Activation and scheduled completion evidence remain pending. Netlify scheduler verified running every minute in dry-run mode; execution flag absent. No pending Auth account disposal requests."
     },
     {
       "id": "capacity-qualification",

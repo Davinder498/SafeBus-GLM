@@ -1,0 +1,80 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "scripts/sql/repair-legacy-notification-defaults.sql",
+  "migrationSha256": "7dbda1c7a4c2d4f8b92a40ea57061b2c7a73f4ac5a17afde897f699efccabbb6",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "safebus_private.set_updated_at()",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres", "authenticated=X/postgres", "service_role=X/postgres"],
+      "before": {
+        "md5": "f472c4eb44ef17df11be83e69a0d6ffc"
+      },
+      "after": {
+        "md5": "f472c4eb44ef17df11be83e69a0d6ffc"
+      }
+    },
+    {
+      "signature": "safebus_private.disposal_account_guard()",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": "ada97f8f42baaa585497bac85f43df90"
+      },
+      "after": {
+        "md5": "ada97f8f42baaa585497bac85f43df90"
+      }
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": [],
+  "triggers": [
+    {
+      "table": "public.guardian_notification_delivery_policies",
+      "name": "disposal_account_guard",
+      "before": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.guardian_notification_delivery_policies FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('privacy_approved_by')",
+      "after": "CREATE TRIGGER disposal_account_guard BEFORE INSERT OR UPDATE ON public.guardian_notification_delivery_policies FOR EACH ROW EXECUTE FUNCTION safebus_private.disposal_account_guard('privacy_approved_by')"
+    },
+    {
+      "table": "public.guardian_notification_delivery_policies",
+      "name": "set_updated_at_guardian_notification_delivery_policies",
+      "before": "CREATE TRIGGER set_updated_at_guardian_notification_delivery_policies BEFORE UPDATE ON public.guardian_notification_delivery_policies FOR EACH ROW EXECUTE FUNCTION safebus_private.set_updated_at()",
+      "after": "CREATE TRIGGER set_updated_at_guardian_notification_delivery_policies BEFORE UPDATE ON public.guardian_notification_delivery_policies FOR EACH ROW EXECUTE FUNCTION safebus_private.set_updated_at()"
+    }
+  ],
+  "notificationRepairs": [
+    {
+      "tenant_id": "49410f95-38da-4eed-aaef-c6b6b98e9a7c",
+      "before": {
+        "policy": {
+          "tenant_id": "49410f95-38da-4eed-aaef-c6b6b98e9a7c",
+          "tenant_daily_limit": 10000000,
+          "privacy_approved_at": null,
+          "privacy_approved_by": null,
+          "privacy_review_status": "pending",
+          "push_tenant_daily_limit": 10000000,
+          "tenant_per_minute_limit": 200000,
+          "push_tenant_per_minute_limit": 200000
+        },
+        "tenant_status": "active",
+        "tenant_created_at": "2026-08-05T19:09:07.505273+00:00"
+      },
+      "after": {
+        "policy": {
+          "tenant_id": "49410f95-38da-4eed-aaef-c6b6b98e9a7c",
+          "tenant_daily_limit": 10000000,
+          "privacy_approved_at": "2026-11-14T08:42:34+00:00",
+          "privacy_approved_by": null,
+          "privacy_review_status": "approved",
+          "push_tenant_daily_limit": 10000000,
+          "tenant_per_minute_limit": 200000,
+          "push_tenant_per_minute_limit": 200000
+        },
+        "tenant_status": "active",
+        "tenant_created_at": "2026-08-05T19:09:07.505273+00:00"
+      }
+    }
+  ]
+}
