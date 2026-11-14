@@ -25,7 +25,7 @@
       "supportedDays": "Monday\u2013Saturday",
       "note": "Latest owner direction: 06:00\u201318:00 America/Edmonton Monday\u2013Saturday for every issue, including critical incidents. No additional after-hours or numerical response promise."
     },
-    "ios": "Resumed by owner on 2026-11-11 and now the main product priority. Owner has Windows and no MacBook. Close tracking housekeeping and release-ledger repair, then build the iOS cloud-build foundation. Real-iPhone acceptance remains required before launch claims; no paid service purchase is implied.",
+    "ios": "Owner paused iOS until remaining commercial launch work is completed. Windows-only; no MacBook. Password protection remains deferred.",
     "physicalTesting": "No physical-device or field acceptance has been completed. iOS work is resumed; plan real-iPhone testing through TestFlight with cloud Mac builds.",
     "fleetTarget": "Owner confirmed 2026-11-10: target 5,000\u201310,000 buses. Bus count does not specify concurrent guardians; qualify actual concurrency before capacity claims."
   },
@@ -33,7 +33,7 @@
     {
       "id": "tracking-ingestion-and-guardian-fanout",
       "status": "open",
-      "note": "Async tracking dispatcher active. A bounded primary-key cursor cleanup replaces the provider-owned-table index attempt; local behavior/recovery tests pass. Pending protected rollout; capacity and end-to-end delivery remain unqualified.",
+      "note": "Tracking-history cleanup installed and verified in run 43531463761; live cursor advances. Capacity and end-to-end delivery remain unqualified.",
       "productionRun": "43081399229"
     },
     {
@@ -61,8 +61,9 @@
     },
     {
       "id": "billing-risk-events",
-      "status": "open",
-      "businessDecision": "Approved manual billing review for refunds, disputes and fraud warnings; keep bus service active. Implement the approved policy without automatic suspension."
+      "status": "implementation_in_progress",
+      "businessDecision": "Approved manual billing review for refunds, disputes and fraud warnings; keep bus service active. Implement the approved policy without automatic suspension.",
+      "note": "Signed events use existing private receipts and minimal operations alerts. Manual review remains in restricted Stripe Dashboard; no automatic service suspension. Publication, provider event subscriptions, sandbox replay and mailbox verification remain open."
     },
     {
       "id": "application-alerting-and-operations",
@@ -71,8 +72,9 @@
     },
     {
       "id": "large-authority-reference-selectors",
-      "status": "implementation_in_progress",
-      "note": "Driver and active-guardian lists now use bounded pages with stable ID ordering; focused low-cap and partial-failure regression added. Not released."
+      "status": "released",
+      "note": "PR 446 published and hosted artifact verified. Stable paging and partial-failure regression passed; large live-authority acceptance remains distinct.",
+      "productionRun": "43561440713"
     },
     {
       "id": "hosted-password-protection",

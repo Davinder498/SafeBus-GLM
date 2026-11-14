@@ -1,3 +1,4 @@
+import { BILLING_RISK_EVENTS, sendBillingRiskAlert } from './billing-risk-alert.mjs';
 import {
   clean,
   createServerClients,
@@ -10,6 +11,7 @@ import {
 } from './billing-shared.mjs';
 
 const SUPPORTED_EVENTS = new Set([
+  ...BILLING_RISK_EVENTS,
   'customer.subscription.created',
   'customer.subscription.updated',
   'customer.subscription.deleted',
@@ -108,6 +110,17 @@ export async function handler(event) {
     );
     if (receiptError) throw new Error('billing_webhook_receipt_failed');
     if (!shouldProcess) return json(200, { received: true, duplicate: true });
+
+    if (BILLING_RISK_EVENTS.has(stripeEvent.type)) {
+      await sendBillingRiskAlert(stripeEvent);
+      const completion = await admin.rpc('billing_complete_webhook_event', {
+        p_event_id: stripeEvent.id,
+        p_status: 'completed',
+        p_error_code: null,
+      });
+      if (completion.error) throw new Error('billing_webhook_completion_failed');
+      return json(200, { received: true, manualReviewRequired: true });
+    }
 
     const subscription = await subscriptionForEvent(stripe, stripeEvent);
     if (!subscription) {
