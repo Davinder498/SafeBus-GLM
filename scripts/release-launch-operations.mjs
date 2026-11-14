@@ -15,6 +15,8 @@ import { verifyCompleteDisposalDryRun } from './lib/retention-verification.mjs';
 import {
   CONTROL_KEYS,
   activateDatabaseControl,
+  isReviewedPause,
+  restorePausedMonitor,
   readControls,
   assertInactive,
   assertInitialCounts,
@@ -82,9 +84,14 @@ try {
   const control = async () =>
     (
       await client.query(
-        'select destructive_enabled,approval_reference,approved_at from public.retention_execution_control where id=1',
+        'select destructive_enabled,approval_reference,approved_at::text from public.retention_execution_control where id=1',
       )
     ).rows[0];
+  const executionCount = async () =>
+    Number(
+      (await client.query('select count(*) as n from safebus_private.retention_lifecycle_totals'))
+        .rows[0].n,
+    );
   const candidates = async () =>
     Number(
       (
@@ -97,7 +104,7 @@ try {
     stage = 'read-only-preflight';
     const hosting = await readControls(api),
       database = await control();
-    assertInactive(hosting, database);
+    assertInactive(hosting, database, await executionCount());
     const dryRun = await verifyCompleteDisposalDryRun(client);
     assertInitialCounts(dryRun.eligibleCounts, await candidates());
     await write('plan', {
@@ -132,14 +139,18 @@ try {
       fail('RECOVERY');
     let hosting = await readControls(api);
     const database = await control();
-    assertInactive(hosting, database);
+    assertInactive(hosting, database, await executionCount());
     if (!isDeepStrictEqual(hosting, plan.hosting) || !isDeepStrictEqual(database, plan.database))
       fail('PLAN_DRIFT');
     const dryRun = await verifyCompleteDisposalDryRun(client);
     assertInitialCounts(dryRun.eligibleCounts, await candidates());
+    if (isReviewedPause(database)) {
+      stage = 'repair-paused-hosting';
+      hosting = await restorePausedMonitor(api, hosting);
+    }
     await write('mutation-started', { sha, runId, reference, startedAt: new Date().toISOString() });
     stage = 'activate-database';
-    await activateDatabaseControl(client, reference);
+    await activateDatabaseControl(client, reference, isReviewedPause(database) ? database : null);
     stage = 'activate-hosting';
     hosting = await setProductionControl(api, CONTROL_KEYS[1], 'alert', hosting);
     await setProductionControl(api, CONTROL_KEYS[0], 'true', hosting);
@@ -150,6 +161,7 @@ try {
       activatedAt: new Date().toISOString(),
       initialCounts: dryRun.eligibleCounts,
       fullRestoreVerified: false,
+      previousApprovalReference: database.approval_reference,
     });
   } else if (mode === 'pause') {
     // Never imply that a pause restores records already deleted.
@@ -161,7 +173,11 @@ try {
     }
     stage = 'pause-database';
     const state = await control();
-    if (state.approval_reference !== null && state.approval_reference !== reference)
+    if (
+      state.approval_reference !== null &&
+      state.approval_reference !== reference &&
+      !isReviewedPause(state)
+    )
       fail('PAUSE_OWNER');
     await client.query("set statement_timeout='12s';set lock_timeout='1s'");
     await client.query(

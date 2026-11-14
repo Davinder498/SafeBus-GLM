@@ -4,6 +4,8 @@ import fs from 'node:fs/promises';
 import {
   CONTROL_KEYS,
   CONTROL_TARGET,
+  PAUSED_ACTIVATION,
+  restorePausedMonitor,
   productionValue,
   readControls,
   assertInactive,
@@ -41,6 +43,12 @@ function fixture() {
       if (options.method === 'POST') variables.push(...structuredClone(options.body));
       else {
         const v = variables.find((v) => path.includes('/' + v.key + '?'));
+        if (options.method === 'PUT') {
+          v.values = structuredClone(options.body.values)
+            .reverse()
+            .map((value, i) => ({ ...value, id: `new-${i}`, role: '' }));
+          return {};
+        }
         v.values = v.values.filter((v) => v.context !== 'production');
         v.values.push(structuredClone(options.body));
       }
@@ -92,18 +100,100 @@ test('inactive baseline refuses a previous activation or live execution', async 
   hosting.controls[retention] = variable(retention, 'true');
   assert.throws(() => assertInactive(hosting, db));
 });
-test('production writes preserve all-context and preview settings', async () => {
+test('all-context writes explicitly preserve all five contexts despite regenerated metadata', async () => {
   const f = fixture(),
-    before = await readControls(f.api),
-    original = structuredClone(f.variables[0]);
+    before = await readControls(f.api);
   const after = await setProductionControl(f.api, monitor, 'alert', before);
   assert.equal(productionValue(after.controls[monitor]), 'alert');
   assert.deepEqual(
-    after.controls[monitor].values.filter((v) => v.context !== 'production'),
-    original.values,
+    Object.fromEntries(after.controls[monitor].values.map((v) => [v.context, v.value])),
+    {
+      'dev-server': 'observe',
+      dev: 'observe',
+      'branch-deploy': 'observe',
+      'deploy-preview': 'observe',
+      production: 'alert',
+    },
   );
-  assert.equal(f.writes[0].method, 'PATCH');
-  assert.deepEqual(f.writes[0].body, { context: 'production', value: 'alert' });
+  assert.equal(f.writes[0].method, 'PUT');
+  assert.equal('scopes' in f.writes[0].body, false);
+});
+test('explicit custom branches and preview overrides survive production changes', async () => {
+  const f = fixture();
+  f.variables[0].values.push({ context: 'branch', context_parameter: 'special', value: 'off' });
+  f.variables[0].values.find((v) => v.context === 'deploy-preview').value = 'off';
+  const after = await setProductionControl(f.api, monitor, 'alert', await readControls(f.api));
+  assert.equal(after.controls[monitor].values.find((v) => v.context === 'branch').value, 'off');
+  assert.equal(
+    after.controls[monitor].values.find((v) => v.context === 'deploy-preview').value,
+    'off',
+  );
+});
+test('provider context loss, scope changes and value changes still fail closed', async () => {
+  for (const change of [
+    (v) => {
+      v.values = v.values.filter((x) => x.context !== 'dev-server');
+    },
+    (v) => {
+      v.scopes = ['builds'];
+    },
+    (v) => {
+      v.values.find((x) => x.context === 'dev').value = 'alert';
+    },
+  ]) {
+    const f = fixture(),
+      before = await readControls(f.api);
+    const api = async (path, options) => {
+      const result = await f.api(path, options);
+      if (options?.method) change(f.variables[0]);
+      return result;
+    };
+    await assert.rejects(setProductionControl(api, monitor, 'alert', before), /CONTEXT_CHANGED/);
+  }
+});
+function pausedFixture() {
+  const f = fixture();
+  f.variables[0].values = [
+    { context: 'production', value: 'alert' },
+    { context: 'dev', value: 'observe' },
+    { context: 'branch-deploy', value: 'observe' },
+    { context: 'deploy-preview', value: 'observe' },
+  ];
+  f.variables.push({
+    ...variable(retention, 'false'),
+    values: [{ context: 'production', value: 'false' }],
+  });
+  return f;
+}
+const pausedControl = {
+  destructive_enabled: false,
+  approval_reference: PAUSED_ACTIVATION.reference,
+  approved_at: PAUSED_ACTIVATION.approvedAt,
+};
+test('only the inspected paused run with no executions can resume and repair its missing context', async () => {
+  const f = pausedFixture(),
+    before = await readControls(f.api);
+  assertInactive(before, pausedControl, 0);
+  assert.throws(() => assertInactive(before, pausedControl, 1), /PAUSED_DATABASE_BASELINE/);
+  for (const changed of [
+    { destructive_enabled: true },
+    { approval_reference: 'other' },
+    { approved_at: '2026-11-13' },
+  ])
+    assert.throws(() => assertInactive(before, { ...pausedControl, ...changed }, 0));
+  const after = await restorePausedMonitor(f.api, before);
+  assertInactive(after, pausedControl, 0);
+  assert.equal(
+    after.controls[monitor].values.find((v) => v.context === 'dev-server').value,
+    'observe',
+  );
+  await restorePausedMonitor(f.api, after);
+  assert.equal(f.writes.length, 1);
+  f.variables[0].values.find((v) => v.context === 'dev').value = 'alert';
+  await assert.rejects(
+    restorePausedMonitor(f.api, await readControls(f.api)),
+    /PAUSED_HOSTING_BASELINE/,
+  );
 });
 test('missing retention control is created only for production without paid scope options', async () => {
   const f = fixture(),
@@ -233,4 +323,49 @@ test('database activation commits once and rejects repeat activation without cha
   const rolledBack = (await db.query('select * from retention_execution_control')).rows[0];
   assert.equal(rolledBack.destructive_enabled, false);
   assert.equal(rolledBack.approval_reference, null);
+});
+
+test('paused database approval is replaced atomically only with exact prior timestamp and no executions', async (t) => {
+  const { PGlite } = await import('@electric-sql/pglite');
+  const { activateDatabaseControl } =
+    await import('../../scripts/lib/launch-operations-controls.mjs');
+  const db = new PGlite();
+  t.after(() => db.close());
+  await db.exec(
+    'create schema safebus_private; create table safebus_private.retention_lifecycle_totals(id int); create table retention_execution_control(id int primary key,destructive_enabled boolean,approval_reference text,approved_at timestamptz)',
+  );
+  await db.query('insert into retention_execution_control values(1,false,$1,$2)', [
+    pausedControl.approval_reference,
+    pausedControl.approved_at,
+  ]);
+  const client = {
+    query: async (sql, params) => {
+      if (sql.startsWith('set local')) {
+        await db.exec(sql);
+        return {};
+      }
+      const r = await db.query(sql, params);
+      return { ...r, rowCount: r.affectedRows };
+    },
+  };
+  await db.exec('insert into safebus_private.retention_lifecycle_totals values(1)');
+  await assert.rejects(
+    activateDatabaseControl(client, 'new', pausedControl),
+    /PAUSED_DATABASE_BASELINE/,
+  );
+  await db.exec('delete from safebus_private.retention_lifecycle_totals');
+  await assert.rejects(
+    activateDatabaseControl(client, 'new', {
+      ...pausedControl,
+      approved_at: '2026-11-14T11:29:37.160449+00:00',
+    }),
+    /PAUSED_DATABASE_BASELINE/,
+  );
+  await activateDatabaseControl(client, 'new', pausedControl);
+  assert.equal(
+    (await db.query('select approval_reference from retention_execution_control')).rows[0]
+      .approval_reference,
+    'new',
+  );
+  await assert.rejects(activateDatabaseControl(client, 'again', pausedControl), /DATABASE_DRIFT/);
 });
