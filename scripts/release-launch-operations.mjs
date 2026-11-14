@@ -22,6 +22,7 @@ import {
   assertInitialCounts,
   setProductionControl,
   fail,
+  launchFailureCode,
 } from './lib/launch-operations-controls.mjs';
 const mode = process.argv[2],
   sha = process.env.SAFEBUS_RELEASE_SHA,
@@ -242,9 +243,7 @@ try {
     JSON.stringify({
       result: 'failed',
       stage,
-      code: /^LAUNCH_OPERATIONS_[A-Z_]+$/.test(error.message)
-        ? error.message
-        : 'LAUNCH_OPERATIONS_FAILED',
+      code: launchFailureCode(error),
     }),
   );
   process.exitCode = 1;
