@@ -69,6 +69,21 @@ export async function operationalSnapshot(client, config) {
     if (row) repairs.push(row);
   }
   const snapshot = { functions, policies, defaults, repairs };
+  if (config.notificationRepairs) {
+    snapshot.notificationRepairs = [];
+    for (const repair of config.notificationRepairs) {
+      const {
+        rows: [row],
+      } = await client.query(
+        `select jsonb_build_object('policy',to_jsonb(p)-'updated_at',
+          'tenant_status',t.status,'tenant_created_at',to_jsonb(t)->'created_at') as state
+         from public.guardian_notification_delivery_policies p
+         join public.tenants t on t.id=p.tenant_id where p.tenant_id=$1`,
+        [repair.tenant_id],
+      );
+      snapshot.notificationRepairs.push(row?.state ?? null);
+    }
+  }
   if (config.columns) {
     snapshot.columns = [];
     for (const column of config.columns) {
@@ -198,6 +213,7 @@ export function verifyOperationalSnapshot(snapshot, config, state) {
     'relations',
     'jobs',
     'quotaRepairs',
+    'notificationRepairs',
     'constraints',
     'indexes',
     'columns',
@@ -301,6 +317,25 @@ export function operationalRestoreSql(snapshot, config) {
           : f.definition.trim().replace(/;$/, '') + ';',
       ),
   ];
+  for (const [index, repair] of (config.notificationRepairs ?? []).entries()) {
+    const before = snapshot.notificationRepairs[index];
+    if (
+      !isDeepStrictEqual(before, repair.before) ||
+      before?.policy?.privacy_review_status !== 'pending' ||
+      before.policy.privacy_approved_at !== null ||
+      before.policy.privacy_approved_by !== null
+    )
+      throw new Error('OPERATIONAL_RECOVERY_SCOPE');
+    // Restore only the approved availability repair; never overwrite later choices or quotas.
+    statements.push(`DO $restore$ DECLARE changed integer; BEGIN
+      UPDATE public.guardian_notification_delivery_policies p
+      SET privacy_review_status='pending',privacy_approved_at=NULL
+      WHERE p.tenant_id=${literal(repair.tenant_id)}::uuid
+        AND (to_jsonb(p)-'updated_at')=${literal(JSON.stringify(repair.after.policy))}::jsonb;
+      GET DIAGNOSTICS changed=ROW_COUNT;
+      IF changed<>1 THEN RAISE EXCEPTION 'Notification recovery state changed'; END IF;
+    END $restore$;`);
+  }
   for (const [index, policy] of (config.quotaRepairs ?? []).entries()) {
     statements.push(
       `UPDATE public.guardian_notification_delivery_policies SET ${Object.entries(

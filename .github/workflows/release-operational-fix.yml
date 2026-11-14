@@ -10,6 +10,7 @@ on:
         type: choice
         options:
           [
+            notification_defaults,
             overview,
             notifications,
             trips,
