@@ -6,6 +6,7 @@ import {
   CONTROL_TARGET,
   PAUSED_ACTIVATION,
   restorePausedMonitor,
+  launchFailureCode,
   productionValue,
   readControls,
   assertInactive,
@@ -49,7 +50,7 @@ function fixture() {
             .map((value, i) => ({ ...value, id: `new-${i}`, role: '' }));
           return {};
         }
-        v.values = v.values.filter((v) => v.context !== 'production');
+        v.values = v.values.filter((v) => v.context !== options.body.context);
         v.values.push(structuredClone(options.body));
       }
       return {};
@@ -182,6 +183,8 @@ test('only the inspected paused run with no executions can resume and repair its
   ])
     assert.throws(() => assertInactive(before, { ...pausedControl, ...changed }, 0));
   const after = await restorePausedMonitor(f.api, before);
+  assert.equal(f.writes[0].method, 'PATCH');
+  assert.deepEqual(f.writes[0].body, { context: 'dev-server', value: 'observe' });
   assertInactive(after, pausedControl, 0);
   assert.equal(
     after.controls[monitor].values.find((v) => v.context === 'dev-server').value,
@@ -194,6 +197,27 @@ test('only the inspected paused run with no executions can resume and repair its
     restorePausedMonitor(f.api, await readControls(f.api)),
     /PAUSED_HOSTING_BASELINE/,
   );
+});
+test('safe Netlify failure codes retain status without leaking arbitrary error content', () => {
+  for (const code of [
+    'HTTP_400',
+    'HTTP_403',
+    'HTTP_422',
+    'HTTP_429',
+    'HTTP_500',
+    'API_UNAVAILABLE',
+    'API_RESPONSE',
+  ])
+    assert.equal(
+      launchFailureCode(new Error(`CREDENTIAL_ISOLATION_${code}`)),
+      `LAUNCH_OPERATIONS_NETLIFY_${code}`,
+    );
+  assert.equal(
+    launchFailureCode(new Error('LAUNCH_OPERATIONS_CONTEXT_CHANGED')),
+    'LAUNCH_OPERATIONS_CONTEXT_CHANGED',
+  );
+  for (const message of ['Bearer secret', 'CREDENTIAL_ISOLATION_HTTP_403 secret', 'unknown'])
+    assert.equal(launchFailureCode(new Error(message)), 'LAUNCH_OPERATIONS_FAILED');
 });
 test('missing retention control is created only for production without paid scope options', async () => {
   const f = fixture(),
@@ -368,4 +392,23 @@ test('paused database approval is replaced atomically only with exact prior time
     'new',
   );
   await assert.rejects(activateDatabaseControl(client, 'again', pausedControl), /DATABASE_DRIFT/);
+});
+
+test('single-context repair rejects a lost value or rejected provider request', async () => {
+  const f = pausedFixture(),
+    before = await readControls(f.api);
+  const noWrite = (path, options) => (options?.method ? Promise.resolve({}) : f.api(path));
+  await assert.rejects(restorePausedMonitor(noWrite, before), /CONTEXT_REPAIR_UNVERIFIED/);
+  const rejected = (path, options) =>
+    options?.method ? Promise.reject(new Error('CREDENTIAL_ISOLATION_HTTP_403')) : f.api(path);
+  await assert.rejects(
+    restorePausedMonitor(rejected, before),
+    (e) => launchFailureCode(e) === 'LAUNCH_OPERATIONS_NETLIFY_HTTP_403',
+  );
+  const corrupt = async (path, options) => {
+    const result = await f.api(path, options);
+    if (options?.method) f.variables[0].values.find((v) => v.context === 'dev').value = 'alert';
+    return result;
+  };
+  await assert.rejects(restorePausedMonitor(corrupt, before), /CONTEXT_REPAIR_UNVERIFIED/);
 });

@@ -65,6 +65,16 @@ function assertPausedHosting(state) {
 export const fail = (code) => {
   throw new Error('LAUNCH_OPERATIONS_' + code);
 };
+// Preserve only known, value-free transport codes. Never log provider bodies,
+// request headers, credentials or arbitrary exception messages.
+export function launchFailureCode(error) {
+  if (/^LAUNCH_OPERATIONS_[A-Z_]+$/.test(error?.message)) return error.message;
+  const transport =
+    /^CREDENTIAL_ISOLATION_(HTTP_[0-9]{3}|API_UNAVAILABLE|API_RESPONSE|API_PATH|CREDENTIAL_REQUIRED)$/.exec(
+      error?.message,
+    );
+  return transport ? `LAUNCH_OPERATIONS_NETLIFY_${transport[1]}` : 'LAUNCH_OPERATIONS_FAILED';
+}
 export function productionValue(variable) {
   if (!variable) return null;
   if (variable.is_secret || !Array.isArray(variable.values)) fail('UNREADABLE_CONTROL');
@@ -200,8 +210,10 @@ export async function restorePausedMonitor(api, before) {
     values: [...values(original), { context: 'dev-server', value: 'observe' }],
   };
   await api(`/accounts/${CONTROL_TARGET.accountId}/env/${key}?site_id=${CONTROL_TARGET.siteId}`, {
-    method: 'PUT',
-    body: { values: expected.values },
+    // This variable already has explicit contexts. Add just the missing value;
+    // replacing the variable and every value is unnecessary for this repair.
+    method: 'PATCH',
+    body: { context: 'dev-server', value: 'observe' },
   });
   const after = await readControls(api);
   if (!sameSettings(expected, after.controls[key])) fail('CONTEXT_REPAIR_UNVERIFIED');

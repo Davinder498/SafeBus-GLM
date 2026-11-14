@@ -57,3 +57,20 @@ activation evidence. An unrelated approval, active cleanup, new execution, chang
 context or changed timestamp fails closed. The already-repaired monitor state is
 also accepted if recovery stops before database activation. This is not a general
 resume mechanism for other failures.
+
+### Second attempt: hosting repair did not complete
+
+Run 43593081440 passed validation, preflight and encrypted recovery capture, then
+stopped at `repair-paused-hosting`. Publication was skipped. Its pause step was a
+no-op (`no_mutation_started`): database activation had not started. A subsequent
+read-only query confirmed the original disabled approval and zero execution
+totals. The generic error masked the underlying transport error, so its precise
+HTTP status and cause cannot be established from retained logs.
+
+The bounded repair now uses Netlify's single-value PATCH to add only
+`dev-server=observe`, preserving and verifying all existing settings. It does not
+replace the entire variable. Safe transport error codes (HTTP status, unavailable
+API or malformed response) are retained without response bodies or credentials.
+The original approval identity, fresh backup, zero-execution checks, reviewer gate
+and post-write verification remain required. This correction is not proof of a
+successful live activation; record that only after a protected release succeeds.
