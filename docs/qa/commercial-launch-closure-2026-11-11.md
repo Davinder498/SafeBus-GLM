@@ -188,3 +188,18 @@ before-state needs a protected repair; no recipient settings were changed.
 Stripe's live endpoint is enabled and matches the currently implemented events;
 risk-event routing remains open. Stripe Dashboard notification preferences are
 not exposed by the connected API and its browser session requires sign-in.
+
+
+## November 15 monitoring handover checkpoint
+
+Protected release 43595418551 activated scoped retention and application alerts.
+Read-only evidence subsequently confirmed scheduled retention completion. The
+owner received the Netlify cadence alert and separately confirmed UptimeRobot
+activation, a five-minute public HTTPS monitor, and test-email delivery.
+
+The [monitoring handover](../operations/external-monitoring-handover-2026-11-15.md)
+retires the GitHub cron dependency while preserving manual diagnostics and all
+Netlify public/application probes. Source preparation is not production rollout:
+the second external completion-status monitor, hosted checks and stale/recovery
+verification remain pending. Capacity, field/device acceptance, deferred billing
+tests and deferred password protection remain unchanged.

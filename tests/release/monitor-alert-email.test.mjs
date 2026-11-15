@@ -6,7 +6,7 @@ import { evaluateGeoapifyQuota, quotaAlertChecks } from '../../scripts/lib/geoap
 
 const now = Date.parse('2026-11-05T09:45:00Z');
 const env = { SAFEBUS_EMAIL_PROVIDER_API_KEY: 'test-secret', SAFEBUS_EMAIL_FROM: 'alerts@example.com' };
-const checks = [{ check: 'github_cadence', result: 'fail', code: 'MONITOR_CADENCE_STALE', detail: 'secret-response' }];
+const checks = [{ check: 'monitor_heartbeat', result: 'fail', code: 'MONITOR_HEARTBEAT_WRITE_FAILED', detail: 'secret-response' }];
 
 test('operational alerts use fixed destinations and stable per-check six-hour idempotency', async () => {
   const requests = [];
@@ -24,7 +24,7 @@ test('operational alerts use fixed destinations and stable per-check six-hour id
   assert.ok(first.options.signal);
   assert.deepEqual(first.body.to, ['info@safebus.kids']);
   assert.equal(first.body.from, 'SafeBus operations <alerts@example.com>');
-  assert.equal(first.body.subject, 'SafeBus alert: scheduled monitoring needs attention');
+  assert.equal(first.body.subject, 'SafeBus alert: monitoring completion could not be recorded');
   assert.equal(first.options.headers['Idempotency-Key'], retry.options.headers['Idempotency-Key']);
   assert.equal(first.options.body, retry.options.body);
   assert.notEqual(first.options.headers['Idempotency-Key'], next.options.headers['Idempotency-Key']);
@@ -67,11 +67,11 @@ test('missing configuration, invalid input and provider failures stay closed and
 
 test('preview and healthy runs never send mail; alert failure cannot mask observation failure', async () => {
   let alerts=0; const logs=[];
-  const options={health:async()=>({result:'healthy'}),cadence:async()=>({result:'healthy'}),notify:async()=>{alerts++;throw new Error('provider-secret');},log:line=>logs.push(line)};
+  const options={health:async()=>({result:'healthy'}),heartbeat:async()=>({result:'healthy'}),notify:async()=>{alerts++;throw new Error('provider-secret');},log:line=>logs.push(line)};
   await runScheduledHealth({...options,deploy:{context:'deploy-preview',published:true}});
   await runScheduledHealth({...options,deploy:{context:'production',published:true}});
   assert.equal(alerts,0);
-  await assert.rejects(runScheduledHealth({...options,deploy:{context:'production',published:true},cadence:async()=>{throw new Error('MONITOR_CADENCE_STALE');}}),{message:'PRODUCTION_HEALTH_OBSERVATION_FAILED'});
+  await assert.rejects(runScheduledHealth({...options,deploy:{context:'production',published:true},heartbeat:async()=>{throw new Error('MONITOR_HEARTBEAT_WRITE_FAILED');}}),{message:'PRODUCTION_HEALTH_OBSERVATION_FAILED'});
   assert.equal(alerts,1);
   assert.equal(logs.some(line=>line.includes('provider-secret')),false);
   assert.deepEqual(JSON.parse(logs.at(-1)),{event:'production_health_alert',result:'failed',code:'MONITOR_ALERT_DELIVERY_FAILED'});
@@ -89,7 +89,7 @@ test('live retention saturation sends fixed minimal content to the existing oper
   assert.equal(requests.length, 1);
   assert.deepEqual(requests[0].body.to, ['info@safebus.kids']);
   assert.equal(requests[0].body.subject, 'SafeBus alert: retention disposal backlog needs attention');
-  assert.match(requests[0].headers['Idempotency-Key'], /^safebus-monitor-v1\/retention_backlog\/[0-9]+$/);
+  assert.match(requests[0].headers['Idempotency-Key'], /^safebus-monitor-v2\/retention_backlog\/[0-9]+$/);
   assert.equal(JSON.stringify(requests).includes('secret GPS payload'), false);
   assert.equal(JSON.stringify(requests).includes('test-secret'), true); // Authorization header only, never message body.
   assert.equal(requests[0].body.text.includes('test-secret'), false);

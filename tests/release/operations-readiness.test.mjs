@@ -4,18 +4,16 @@ import test from 'node:test';
 
 const read = (file) => fs.readFile(file, 'utf8');
 
-test('production health monitoring is scheduled, least-privileged, and production-bound', async () => {
+test('GitHub diagnostics are manual while Netlify preserves scheduled production monitoring', async () => {
   const workflow = await read('.github/workflows/production-health.yml');
 
   assert.match(workflow, /name: Production health monitor/);
-  const cron = workflow.match(/cron: '([^']+)'/)?.[1];
-  assert.ok(cron);
-  const [minuteField, ...calendar] = cron.split(' ');
-  assert.deepEqual(calendar, ['*', '*', '*', '*']);
-  const minutes = minuteField.split(',').map(Number);
-  assert.equal(minutes.length, 4);
-  assert.ok(minutes.every((minute, i) => Number.isInteger(minute) && minute > 0 && minute < 60 &&
-    (minutes[(i + 1) % minutes.length] - minute + 60) % 60 === 15));
+  assert.doesNotMatch(workflow, /schedule:|cron:/);
+  const netlify = await read('netlify.toml');
+  assert.match(netlify, /\[functions\."production-health-scheduled"\]\s+schedule = "11,26,41,56 \* \* \* \*"/);
+  const scheduled = await read('apps/web/netlify/functions/production-health-scheduled.mjs');
+  assert.doesNotMatch(scheduled, /checkMonitorCadence|github_cadence/);
+  assert.match(scheduled, /recordMonitorHeartbeat/);
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /permissions:\s+contents: read/);
   assert.match(workflow, /SAFEBUS_MONITOR_ORIGIN: https:\/\/safebus\.kids/);

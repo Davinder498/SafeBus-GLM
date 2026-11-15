@@ -1,5 +1,5 @@
 import { runProductionHealth } from '../../../../scripts/lib/production-health.mjs';
-import { checkMonitorCadence } from '../../../../scripts/lib/monitor-cadence.mjs';
+import { recordMonitorHeartbeat } from '../lib/monitor-heartbeat.mjs';
 import { sendMonitorAlerts } from '../../../../scripts/lib/monitor-alert-email.mjs';
 import {
   runApplicationSignals,
@@ -9,12 +9,12 @@ import {
 export async function runScheduledHealth({
   deploy,
   health = runProductionHealth,
-  cadence = checkMonitorCadence,
+  heartbeat = recordMonitorHeartbeat,
   notify = sendMonitorAlerts,
   applicationSignals = runApplicationSignals,
   applicationEnabled = process.env.SAFEBUS_APPLICATION_MONITOR_ENABLED === 'true',
   // Observe mode records a redacted aggregate result but cannot send new
-  // application alerts or change existing public/GitHub health outcomes.
+  // application alerts or change existing public health outcomes.
   // Legacy applicationEnabled=true preserves the original alert behaviour.
   applicationMode = process.env.SAFEBUS_APPLICATION_MONITOR_MODE ?? (applicationEnabled ? 'alert' : 'off'),
   log = console.log,
@@ -27,42 +27,20 @@ export async function runScheduledHealth({
   if (!['off', 'observe', 'alert'].includes(applicationMode))
     throw new Error('APP_MONITOR_MODE_INVALID');
   const runApplication = applicationMode !== 'off';
-  // 18s health budget; GitHub's 5s check runs in parallel. Failed checks send
-  // fixed operational emails in parallel with a further 5s deadline: 23s total.
+  // Public checks and application probes remain independent. GitHub scheduling
+  // is no longer an availability dependency; UptimeRobot checks externally.
   const observations = await Promise.allSettled([
     health({ origin: 'https://safebus.kids', retries: 0, timeoutMs: 6_000 }),
-    cadence(),
     ...(runApplication ? [applicationSignals()] : []),
   ]);
-  const codes = observations.slice(0, 2).map((observation, i) => {
-    if (observation.status === 'fulfilled' && observation.value?.result === 'healthy')
-      return { check: i === 0 ? 'public_health' : 'github_cadence', result: 'pass' };
-    // A fulfilled but malformed/unhealthy return must not be counted as healthy.
-    // Never trust or log provider-returned text to choose a public code.
-    const message = observation.status === 'rejected' ? observation.reason?.message : null;
-    const knownCadenceErrors = new Set([
-      'MONITOR_CADENCE_UNAVAILABLE',
-      'MONITOR_CADENCE_INVALID_RESPONSE',
-      'MONITOR_CADENCE_NO_SCHEDULED_RUN',
-      'MONITOR_CADENCE_STALE',
-      'MONITOR_CADENCE_NOT_SUCCESSFUL',
-      'MONITOR_CADENCE_INSUFFICIENT_HISTORY',
-      'MONITOR_CADENCE_GAP',
-      'MONITOR_CADENCE_HISTORY_NOT_SUCCESSFUL',
-    ]);
-    const code =
-      i === 1
-        ? observation.status === 'fulfilled'
-          ? 'MONITOR_CADENCE_INVALID_RESPONSE'
-          : knownCadenceErrors.has(message)
-            ? message
-            : 'MONITOR_CADENCE_UNAVAILABLE'
-        : 'PUBLIC_HEALTH_FAILED';
-    return { check: i === 0 ? 'public_health' : 'github_cadence', result: 'fail', code };
-  });
+  const publicHealthy = observations[0].status === 'fulfilled' &&
+    observations[0].value?.result === 'healthy';
+  const codes = [publicHealthy
+    ? { check: 'public_health', result: 'pass' }
+    : { check: 'public_health', result: 'fail', code: 'PUBLIC_HEALTH_FAILED' }];
   let applicationObservation;
   if (runApplication) {
-    const result = observations[2];
+    const result = observations[1];
     const applicationChecks =
       result?.status === 'fulfilled' && validApplicationChecks(result.value)
         ? result.value
@@ -79,7 +57,7 @@ export async function runScheduledHealth({
       : 'healthy';
     if (applicationMode === 'observe') {
       // Preserve visibility into app failures without changing or emailing
-      // established public-health and GitHub cadence checks.
+      // established public-health checks.
       log(JSON.stringify({
         event: 'production_application_signals_observation',
         mode: 'observe',
@@ -90,7 +68,15 @@ export async function runScheduledHealth({
       codes.push(...applicationChecks);
     }
   }
-  const failed = codes.some((check) => check.result === 'fail');
+  let failed = codes.some((check) => check.result === 'fail');
+  // Only the published production runner writes this minimal completion record.
+  // Off/observe modes cannot make the independent monitor appear healthy.
+  try {
+    await heartbeat({ deploy, healthy: !failed, applicationMode });
+  } catch {
+    codes.push({ check: 'monitor_heartbeat', result: 'fail', code: 'MONITOR_HEARTBEAT_WRITE_FAILED' });
+    failed = true;
+  }
   // Do not log arbitrary exceptions: fetch errors or map URLs may contain keys.
   log(
     JSON.stringify({

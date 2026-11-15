@@ -61,6 +61,7 @@ const requiredFiles = {
   'scripts/lib/monitor-cadence.mjs': 'export const cadence = true;\n',
   'scripts/lib/monitor-seven-day-history.mjs': 'export const history = true;\n',
   'scripts/audit-seven-day-monitor.mjs': 'export const audit = true;\n',
+  'apps/web/netlify/lib/monitor-heartbeat.mjs': 'export const heartbeat = true;\n',
   'scripts/lib/monitor-alert-email.mjs': 'export const alerts = true;\n',
   'scripts/lib/production-application-signals.mjs': 'export const applicationSignals = true;\n',
   'scripts/print-operations-release-digest.mjs': 'export const digest = true;\n',
