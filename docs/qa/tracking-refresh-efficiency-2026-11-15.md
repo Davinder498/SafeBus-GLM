@@ -1,7 +1,10 @@
 # Tracking refresh efficiency and fleet design
 
-Status: implemented on the feature branch; local checks and CI recorded below. No production rollout,
-load test, service purchase or 5,000–10,000-bus capacity qualification is implied.
+Status: PR #453 merged and website publication verified by successful release
+43703897891 on November 15. The live monitoring endpoint returned HTTP 200
+`available`. All 10 PR checks passed, including full browser CI; Android bundle
+build/sync passed. Already-installed Android apps need their own update.
+No load test, service purchase or 5,000–10,000-bus qualification is implied.
 
 ## Acceptance by role
 
@@ -117,3 +120,5 @@ https://supabase.com/docs/guides/realtime/authorization
   browser CI must pass before merge.
 - Full repository checks and mobile build/sync are required before publication;
   consult the PR checks for final results. No live database schema was changed.
+
+Compatible server batching is prepared separately; see [scope and rollout](tracking-worker-batch-2026-11-15.md). It retains per-parent private messages and does not implement the shared bus-service protocol.

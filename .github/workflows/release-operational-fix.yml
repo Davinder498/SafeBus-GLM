@@ -20,6 +20,7 @@ on:
             tracking,
             tracking_invalidations,
             tracking_history,
+            tracking_batch,
             retention,
             offline_actions,
             recent_auth,
