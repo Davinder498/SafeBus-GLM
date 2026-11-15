@@ -21,6 +21,7 @@ on:
             tracking_invalidations,
             tracking_history,
             tracking_batch,
+            shared_bus_feed,
             retention,
             offline_actions,
             recent_auth,

@@ -309,6 +309,18 @@ export function operationalRestoreSql(snapshot, config) {
         (trigger) =>
           `DROP TRIGGER ${identifier(trigger.name)} ON ${trigger.table.split('.').map(identifier).join('.')};`,
       ),
+  ];
+  for (const [index, p] of snapshot.policies.entries()) {
+    if (p === null) {
+      const target = config.policies[index].after;
+      statements.push(
+        `DROP POLICY ${'"' + target.policyname.replaceAll('"', '""') + '"'} ON ${identifier(target.schemaname)}.${identifier(target.tablename)};`,
+      );
+      continue;
+    }
+  }
+
+  statements.push(
     ...[...snapshot.functions]
       .reverse()
       .map((f) =>
@@ -316,7 +328,7 @@ export function operationalRestoreSql(snapshot, config) {
           ? `DROP FUNCTION IF EXISTS ${f.signature};`
           : f.definition.trim().replace(/;$/, '') + ';',
       ),
-  ];
+  );
   for (const [index, repair] of (config.notificationRepairs ?? []).entries()) {
     const before = snapshot.notificationRepairs[index];
     if (
@@ -392,14 +404,8 @@ export function operationalRestoreSql(snapshot, config) {
     statements.push(
       `ALTER TABLE ${identifier(column.schema)}.${identifier(column.table)} DROP COLUMN ${identifier(column.name)};`,
     );
-  for (const [index, p] of snapshot.policies.entries()) {
-    if (p === null) {
-      const target = config.policies[index].after;
-      statements.push(
-        `DROP POLICY ${identifier(target.policyname)} ON ${identifier(target.schemaname)}.${identifier(target.tablename)};`,
-      );
-      continue;
-    }
+  for (const p of snapshot.policies) {
+    if (p === null) continue;
     // These reviewed migrations alter expressions only, preserving policy audience/type.
     if (!config.policies.some((entry) => entry.before?.policyname === p.policyname))
       throw new Error('OPERATIONAL_RECOVERY_SCOPE');

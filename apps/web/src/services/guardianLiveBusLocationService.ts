@@ -1,3 +1,4 @@
+import { validBusTrackingTopic } from '@/lib/sharedBusTracking';
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 import type {
   GuardianBusAssignmentState,
@@ -94,6 +95,7 @@ interface GuardianBusServiceStopRpcRow {
 }
 
 interface GuardianBusServiceLineRpcRow {
+  trackingTopic?: unknown;
   busNumber: string;
   licensePlate: string | null;
   routeName: string;
@@ -145,6 +147,7 @@ export function mapGuardianBusServiceLine(
 ): GuardianBusServiceLine {
   return {
     busNumber: row.busNumber,
+    trackingTopic: validBusTrackingTopic(row.trackingTopic) ? row.trackingTopic : null,
     licensePlate: row.licensePlate,
     routeName: row.routeName,
     tripName: row.tripName,

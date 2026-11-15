@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSharedBusTracking } from '@/hooks/useSharedBusTracking';
 import { useAuth } from '@/contexts/useAuth';
 import type { TrackingInvalidationKind } from '@/lib/trackingInvalidations';
 import { useTrackingInvalidations } from '@/hooks/useTrackingInvalidations';
@@ -13,6 +14,7 @@ export interface GuardianRefreshPolicy {
   liveMinIntervalMs?: number;
   maxRetryMs?: number;
   throttleLocationOnly?: boolean;
+  sharedTopics?: readonly string[];
 }
 
 /** Server authorization remains authoritative; cached data is never an offline fallback. */
@@ -20,6 +22,7 @@ export function useVerifiedGuardianData<T>(
   fetchData: (signal: AbortSignal) => Promise<T>,
   scope = '',
   policy: GuardianRefreshPolicy = {},
+  selectTrackingTopics?: (data: T) => readonly string[],
 ) {
   const {
     intervalMs = REFRESH_INTERVAL_MS,
@@ -47,9 +50,30 @@ export function useVerifiedGuardianData<T>(
     },
     [throttleLocationOnly],
   );
+  const current = snapshot.userId === userId && snapshot.scope === scope;
+  const topics =
+    current && snapshot.state.kind === 'ready'
+      ? (selectTrackingTopics?.(snapshot.state.data) ?? policy.sharedTopics ?? [])
+      : [];
+  const sharedDisconnected = useCallback(() => {
+    clear();
+    // Losing the shared channel must not cancel the periodic verification loop.
+    // Revalidate immediately; hidden/offline guards still prevent network work.
+    loadRef.current('control');
+  }, [clear]);
+  const sharedReady = useSharedBusTracking(userId, topics, invalidate, sharedDisconnected);
+  const legacyInvalidate = useCallback(
+    (kind?: TrackingInvalidationKind) => {
+      // Keep personal control/authorization events; ignore duplicate legacy GPS
+      // only after every selected shared channel has actually joined.
+      if (kind === 'location' && sharedReady) return;
+      invalidate(kind);
+    },
+    [sharedReady, invalidate],
+  );
   const connectionState = useTrackingInvalidations({
     topic: userId ? `safebus:guardian:${userId}` : null,
-    onInvalidate: invalidate,
+    onInvalidate: legacyInvalidate,
     onDisconnected: clear,
   });
 
@@ -204,7 +228,6 @@ export function useVerifiedGuardianData<T>(
   ]);
 
   // Hide the previous principal/scope before effect cleanup runs.
-  const current = snapshot.userId === userId && snapshot.scope === scope;
   return {
     state: current ? snapshot.state : { kind: 'loading' as const },
     refreshing: current && snapshot.refreshing,

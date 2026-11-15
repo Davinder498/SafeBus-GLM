@@ -17,8 +17,10 @@ export interface UseGuardianLiveBusLocationsResult {
 }
 
 /** Poll the scoped RPC and revalidate on private tracking invalidations. */
-export function useGuardianLiveBusLocations(): UseGuardianLiveBusLocationsResult {
-  const result = useVerifiedGuardianData(fetchGuardianLiveBusLocations);
+export function useGuardianLiveBusLocations(
+  sharedTopics: readonly string[] = [],
+): UseGuardianLiveBusLocationsResult {
+  const result = useVerifiedGuardianData(fetchGuardianLiveBusLocations, '', { sharedTopics });
   return {
     ...result,
     state:

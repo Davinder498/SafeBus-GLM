@@ -64,21 +64,6 @@ export function GuardianLiveMapPage() {
   const appSurface = useAppSurface();
   const [searchParams] = useSearchParams();
   const selectedBusNumber = searchParams.get('bus')?.trim() ?? '';
-  const {
-    state,
-    refreshing,
-    lastRefreshedAt,
-    connectionState,
-    refresh: refreshLocation,
-  } = useGuardianLiveBusLocations();
-  const mapTileConfig = useMapTileConfig();
-  const busGroups = state.kind === 'ready' ? groupGuardianBuses(state.locations) : [];
-  const visibleGroups = selectedBusNumber
-    ? busGroups.filter(
-        (group) => group.busNumber?.toLocaleLowerCase() === selectedBusNumber.toLocaleLowerCase(),
-      )
-    : [];
-  const visibleLocations = visibleGroups.map((group) => group.visibility);
   const fetchSelectedServiceLines = useCallback(
     (signal: AbortSignal) =>
       selectedBusNumber
@@ -90,7 +75,27 @@ export function GuardianLiveMapPage() {
     fetchSelectedServiceLines,
     `live-map:${selectedBusNumber}`,
     { liveMinIntervalMs: 15_000, throttleLocationOnly: true },
+    (lines) => lines.flatMap((line) => (line.trackingTopic ? [line.trackingTopic] : [])),
   );
+  const {
+    state,
+    refreshing,
+    lastRefreshedAt,
+    connectionState,
+    refresh: refreshLocation,
+  } = useGuardianLiveBusLocations(
+    serviceLineState.kind === 'ready'
+      ? serviceLineState.data.flatMap((line) => (line.trackingTopic ? [line.trackingTopic] : []))
+      : [],
+  );
+  const mapTileConfig = useMapTileConfig();
+  const busGroups = state.kind === 'ready' ? groupGuardianBuses(state.locations) : [];
+  const visibleGroups = selectedBusNumber
+    ? busGroups.filter(
+        (group) => group.busNumber?.toLocaleLowerCase() === selectedBusNumber.toLocaleLowerCase(),
+      )
+    : [];
+  const visibleLocations = visibleGroups.map((group) => group.visibility);
   const refresh = useCallback(() => {
     refreshLocation();
     refreshServiceLines();

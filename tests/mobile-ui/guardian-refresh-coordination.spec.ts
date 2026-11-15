@@ -7,6 +7,7 @@ import {
 import { installLocalOnlyBoundary } from '../smoke/fixtures/local-only';
 import { installMapProviderAvailable } from '../smoke/fixtures/map-provider';
 
+const sharedTopic = 'realtime:safebus:bus:' + 'a'.repeat(64);
 const guardianTopic = 'realtime:safebus:guardian:11111111-1111-1111-1111-111111111111';
 
 /** Owned synthetic Phoenix endpoint: no connection is forwarded to Supabase. */
@@ -48,15 +49,16 @@ async function installTrackingSocket(page: Page) {
   });
   return {
     joins: () => joins,
-    active: () => [...joined.values()].filter((topics) => topics.has(guardianTopic)).length,
-    emit(reason = 'location') {
+    active: (target = guardianTopic) =>
+      [...joined.values()].filter((topics) => topics.has(target)).length,
+    emit(reason = 'location', target = guardianTopic) {
       for (const [socket, topics] of joined) {
-        if (topics.has(guardianTopic))
+        if (topics.has(target))
           socket.send(
             JSON.stringify([
-              topics.get(guardianTopic),
+              topics.get(target),
               null,
-              guardianTopic,
+              target,
               'broadcast',
               // Coordinates in an event are deliberately irrelevant: the RPC is authoritative.
               {
@@ -71,11 +73,16 @@ async function installTrackingSocket(page: Page) {
   };
 }
 
-async function openMap(page: Page) {
+async function openMap(page: Page, shared = false) {
   await installLocalOnlyBoundary(page);
   // Keep the synthetic bus between the stop icons so the popup is pointer-accessible.
   const fixture = await installGuardianVisibilityMock(page, {
     rows: [guardianVisibilityRow({ latitude: 51.05 })],
+    serviceLines: [
+      guardianBusServiceLine(
+        shared ? { trackingTopic: sharedTopic.slice('realtime:'.length) } : {},
+      ),
+    ],
   });
   await installMapProviderAvailable(page);
   const socket = await installTrackingSocket(page);
@@ -208,4 +215,27 @@ test('hidden map releases its subscription and rechecks current assignments on r
   await expect.poll(socket.active).toBe(1);
   await expect(page.getByTestId('guardian-live-map-empty')).toBeVisible();
   await expect(page.getByTestId('guardian-live-bus-map-marker')).toHaveCount(0);
+});
+
+test('shared bus channel owns GPS refresh while personal control hints remain authoritative', async ({
+  page,
+}) => {
+  const { fixture, socket } = await openMap(page, true);
+  await expect.poll(() => socket.active(sharedTopic)).toBe(1);
+  await page.clock.runFor(1_200);
+  const before = fixture.getCallCount();
+  socket.emit('location');
+  await page.clock.runFor(300);
+  expect(fixture.getCallCount()).toBe(before);
+  socket.emit('location', sharedTopic);
+  await page.clock.runFor(300);
+  await expect.poll(() => fixture.getCallCount()).toBe(before + 1);
+  fixture.setFail(true);
+  fixture.setServiceLines([]);
+  socket.emit('authorization');
+  await page.clock.runFor(300);
+  await expect(page.getByTestId('guardian-live-map-error')).toBeVisible();
+  await expect(page.getByTestId('guardian-live-bus-map-marker')).toHaveCount(0);
+  await expect.poll(() => socket.active(sharedTopic)).toBe(0);
+  expect(socket.active()).toBe(1);
 });

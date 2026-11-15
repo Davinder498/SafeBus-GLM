@@ -1,0 +1,69 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261115121343_shared_bus_tracking_feed.sql",
+  "migrationSha256": "7c1f338a1679e7b07c52b441081138f4ebc6eeb2562b07c746e5e2fffcb9a4de",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "safebus_private.can_receive_bus_tracking(text)",
+      "before": {
+        "md5": null
+      },
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres"
+      ],
+      "after": {
+        "md5": "c57d1dbf4db244776385e9589bed6ace"
+      }
+    },
+    {
+      "signature": "public.get_guardian_bus_service_lines(text)",
+      "owner": "postgres",
+      "acl": [
+        "authenticated=X/postgres",
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "before": {
+        "md5": "4248a75aba016b879dd7ba6f5c6566c5"
+      },
+      "after": {
+        "md5": "641546ed5ea6a520424b9ea720806802"
+      }
+    },
+    {
+      "signature": "safebus_private.dispatch_tracking_invalidations(integer,integer)",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": "8ed3e1ba30cd5e8db0a8d7d07b1970eb"
+      },
+      "after": {
+        "md5": "ad519123e38b2b447b65d34616bdd2c0"
+      }
+    }
+  ],
+  "policies": [
+    {
+      "before": null,
+      "after": {
+        "schemaname": "realtime",
+        "tablename": "messages",
+        "policyname": "safebus shared bus tracking receive",
+        "permissive": "PERMISSIVE",
+        "roles": [
+          "authenticated"
+        ],
+        "cmd": "SELECT",
+        "qual": "((extension = 'broadcast'::text) AND safebus_private.can_receive_bus_tracking(realtime.topic()))",
+        "with_check": null
+      }
+    }
+  ],
+  "defaults": [],
+  "repairs": []
+}
