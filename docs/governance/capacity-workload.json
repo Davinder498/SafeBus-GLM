@@ -11,7 +11,7 @@
     "gpsSeconds": 3,
     "guardianPollSeconds": 15,
     "guardianRpcsPerRefresh": 2,
-    "adminPollSeconds": 30,
+    "adminPollSeconds": 15,
     "adminRpcsPerRefresh": 2,
     "activeHoursPerDay": 8,
     "linkedBusesPerGuardian": 1,

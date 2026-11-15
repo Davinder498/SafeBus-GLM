@@ -123,6 +123,51 @@ describe('tracking hook ownership and scope', () => {
     expect(b).toHaveBeenCalledTimes(1);
   });
 
+  it('releases both hidden consumers, ignores old signals and rejoins once on return', async () => {
+    const a = vi.fn(),
+      b = vi.fn();
+    await act(async () =>
+      root.render(
+        <>
+          <Probe topic="safebus:guardian:a" onInvalidate={a} />
+          <Probe topic="safebus:guardian:a" onInvalidate={b} />
+        </>,
+      ),
+    );
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    await act(async () => document.dispatchEvent(new Event('visibilitychange')));
+    expect(mocks.client.removeChannel).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      channels[0].broadcast();
+      channels[0].status('SUBSCRIBED');
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+    expect(a).not.toHaveBeenCalled();
+    expect(b).not.toHaveBeenCalled();
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    await act(async () => document.dispatchEvent(new Event('visibilitychange')));
+    expect(mocks.client.channel).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      channels[1].status('SUBSCRIBED');
+      await vi.advanceTimersByTimeAsync(150);
+    });
+    expect(a).toHaveBeenCalledTimes(1);
+    expect(b).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not join while initially hidden or offline and waits until both recover', async () => {
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    await act(async () => root.render(<Probe topic="safebus:guardian:a" onInvalidate={vi.fn()} />));
+    expect(mocks.client.channel).not.toHaveBeenCalled();
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    await act(async () => document.dispatchEvent(new Event('visibilitychange')));
+    expect(mocks.client.channel).not.toHaveBeenCalled();
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
+    await act(async () => window.dispatchEvent(new Event('online')));
+    expect(mocks.client.channel).toHaveBeenCalledTimes(1);
+  });
+
   it('does not create a channel without an authorized topic', async () => {
     await act(async () => root.render(<Probe topic={null} onInvalidate={vi.fn()} />));
     expect(mocks.client.channel).not.toHaveBeenCalled();

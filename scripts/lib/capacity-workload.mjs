@@ -125,6 +125,9 @@ export function estimateScenario(workload, name) {
     realtimeInvalidationsPerSecondUncoalesced: invalidations,
     guardianReadsPerSecondWithUncoalescedInvalidations:
       rates.guardianRead + invalidations * a.guardianRpcsPerRefresh,
+    // Alternative selected-map mix: frequent position verification plus bounded
+    // stop details. Control/manual events add traffic; this is not a hard cap.
+    guardianMapReadsPerSecondWithLocationHints: guardians / a.gpsSeconds + guardians / 15,
     // Home fetches two secured datasets at a minimum 30-second cadence.
     // Ignore jitter/backoff here for a conservative steady-state upper bound.
     guardianHomeReadsPerSecondIfAllGuardiansOnHome: (guardians * 2) / 30,

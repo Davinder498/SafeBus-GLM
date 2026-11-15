@@ -50,8 +50,10 @@ test('calculations include current GPS cadence, polling, invalidations and tenan
   near(peak.workItemsPerSecond.guardianRead, (88000 * 2) / 15);
   near(peak.realtimeInvalidationsPerSecondUncoalesced, 88000 / 3);
   near(peak.guardianReadsPerSecondWithUncoalescedInvalidations, 70400);
+  near(peak.guardianMapReadsPerSecondWithLocationHints, 35200);
+  near(peak.workItemsPerSecond.adminRead, (2000 * 2) / 15);
   near(peak.hottestTenantGpsEventsPerSecond, 2000 / 3);
-  near(peak.baselineWorkItemsPerSecond, 22033.6666666667);
+  near(peak.baselineWorkItemsPerSecond, 22167);
   near(estimateScenario(small(), 'pilot').hottestTenantGpsEventsPerSecond, 1);
 });
 
@@ -59,7 +61,7 @@ test('reconnect estimates account for captured offline fixes and extra recovery 
   const result = estimateScenario(workload, 'reconnect');
   assert.equal(result.reconnectBacklogEvents, 1500000);
   assert.equal(result.workItemsPerSecond.catchUp, 5000);
-  near(result.baselineWorkItemsPerSecond, 27033.6666666667);
+  near(result.baselineWorkItemsPerSecond, 27167);
   near(result.reconnectJoinsPerSecondIfAllUsersRejoin, 100000 / 300);
 });
 
