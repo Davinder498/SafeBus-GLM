@@ -138,3 +138,20 @@ test('cursor cleanup progresses across unrelated history, revisits late completi
     );
   }
 });
+
+const batchConfig = JSON.parse(await fs.readFile('config/pending/tracking-batch.json', 'utf8'));
+const batchSql = await fs.readFile(batchConfig.migration, 'utf8');
+test('batch rollout restores the exact predecessor without changing tables, jobs or client access', async (t) => {
+  const db = await fixture(t);
+  await db.exec(sql);
+  assert.equal(operationalDigest(batchSql), batchConfig.migrationSha256);
+  const before = await operationalSnapshot(db, batchConfig);
+  verifyOperationalSnapshot(before, batchConfig, 'before');
+  await db.exec('begin');
+  await db.exec(batchSql);
+  verifyOperationalSnapshot(await operationalSnapshot(db, batchConfig), batchConfig, 'after');
+  await db.exec(operationalRestoreSql(before, batchConfig));
+  assert.deepEqual(await operationalSnapshot(db, batchConfig), before);
+  await db.exec('rollback');
+  assert.doesNotMatch(batchSql, /create table|create policy|cron.schedule|function public\./i);
+});

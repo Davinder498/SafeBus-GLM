@@ -233,3 +233,59 @@ test('cleanup anchors to the registered agreement-era schema and rejects unrelat
   );
   assert.equal(await requireTrackingLedger(client, currentProof, 'initial'), baseline);
 });
+
+const batchProof = JSON.parse(
+  await fs.readFile('config/observed/tracking-batch-lineage-20261115.json', 'utf8'),
+);
+const batchConfig = JSON.parse(await fs.readFile('config/pending/tracking-batch.json', 'utf8'));
+const batchSql = await fs.readFile(batchConfig.migration, 'utf8');
+test('batch worker lineage registers only the exact one-function change and restores its ledger atomically', async (t) => {
+  const db = await trackingReleaseFixture(t);
+  await db.exec(initialSql);
+  const before = await collectSchemaCatalog(db);
+  const local = { ...batchProof, precedingFingerprint: await calculateSchemaFingerprint(db) };
+  await db.exec(`create schema safebus_release; create table safebus_release.releases(
+    release_sha text primary key, environment text, status text, schema_fingerprint text,
+    deployed_at timestamptz default clock_timestamp());`);
+  await db.query(
+    "insert into safebus_release.releases values($1,'production','deployed',$2,now()-interval '1 day')",
+    [local.precedingReleaseSha, local.precedingFingerprint],
+  );
+  const snapshot = await operationalSnapshot(db, batchConfig);
+  await requireTrackingLedger(db, local, 'initial');
+  await db.exec('begin');
+  await db.exec(batchSql);
+  assert.deepEqual(
+    trackingCatalogDelta(before, await collectSchemaCatalog(db)),
+    batchProof.cleanup,
+  );
+  const fingerprint = await registerTrackingHistoryRelease(db, local, sha);
+  await requireTrackingLedger(db, local, 'cleanup');
+  const recovery = trackingHistoryRecoverySql(
+    operationalRestoreSql(snapshot, batchConfig),
+    sha,
+    fingerprint,
+  );
+  await db.exec(recovery);
+  await requireTrackingLedger(db, local, 'initial');
+  assert.deepEqual(await collectSchemaCatalog(db), before);
+  await db.exec('rollback');
+  await db.exec('begin');
+  await db.exec(batchSql);
+  await db.exec(
+    'grant execute on function safebus_private.dispatch_tracking_invalidations(integer,integer) to authenticated',
+  );
+  await assert.rejects(verifyTrackingLineage(db, local, 'cleanup'), /UNRELATED_DRIFT/);
+  await db.exec('rollback');
+});
+
+test('batch milestone uses protected rollback rehearsal and lineage registration', async () => {
+  const script = await fs.readFile('scripts/release-operational-fix.mjs', 'utf8');
+  const workflow = await fs.readFile('.github/workflows/release-operational-fix.yml', 'utf8');
+  assert.match(script, /tracking_batch: 'config\/pending\/tracking-batch.json'/);
+  assert.match(script, /\['tracking_history', 'tracking_batch'\]\.includes\(milestone\)/);
+  assert.match(script, /config\/observed\/tracking-batch-lineage-20261115.json/);
+  assert.match(workflow, /tracking_batch,/);
+  assert.match(workflow, /environment: production/);
+  assert.match(workflow, /Retain encrypted recovery before persistent changes/);
+});

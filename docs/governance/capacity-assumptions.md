@@ -20,8 +20,11 @@ Read-only production inspection on November 15 verified the async queue is activ
 its dispatcher runs every second with 10 trip visits and a 250-message budget.
 Those conservative defaults are not 10,000-bus qualification. GPS history is removed;
 updates replace the latest position. See the [tracking efficiency design and acceptance](../qa/tracking-refresh-efficiency-2026-11-15.md).
-This branch separates selected-map stop reads from ordinary position hints and
-releases tracking channels while hidden/offline; it is not yet live-release evidence.
+PR #453 is merged and website release 43703897891 succeeded. It separates
+selected-map stop reads from ordinary position hints and releases tracking channels
+while hidden/offline. Existing Android installations need a separate update.
+A [compatible batch worker](../qa/tracking-worker-batch-2026-11-15.md) is prepared;
+it reduces insert statements, not recipient messages or provider quota demand.
 
 ## Target and meaning
 

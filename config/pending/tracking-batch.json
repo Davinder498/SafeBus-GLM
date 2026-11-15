@@ -1,0 +1,22 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261115104653_batch_tracking_refresh_messages.sql",
+  "migrationSha256": "4bd070df466cd9e8d5b1fbcb04286cd1e6853a8da429de273f211d04af855f42",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "safebus_private.dispatch_tracking_invalidations(integer,integer)",
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"],
+      "before": {
+        "md5": "7a4393dd4a954df15e24bf378e733b32"
+      },
+      "after": {
+        "md5": "8ed3e1ba30cd5e8db0a8d7d07b1970eb"
+      }
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": []
+}

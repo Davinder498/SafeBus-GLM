@@ -39,6 +39,7 @@ const manifests = {
   tracking: 'config/pending/tracking-queue-recovery.json',
   tracking_invalidations: 'config/pending/async-tracking-invalidations.json',
   tracking_history: 'config/pending/tracking-history-cleanup.json',
+  tracking_batch: 'config/pending/tracking-batch.json',
   calendar: 'config/pending/route-service-calendar.json',
   reporting: 'config/pending/privileged-admin-mfa.json',
   delivery: 'config/pending/unified-notification-delivery.json',
@@ -61,12 +62,16 @@ try {
   )
     throw new Error('OPERATIONAL_PROTECTED_CONTEXT');
   const config = JSON.parse(await fs.readFile(manifests[milestone], 'utf8'));
-  const lineage =
-    milestone === 'tracking_history'
-      ? JSON.parse(
-          await fs.readFile('config/observed/tracking-cleanup-lineage-20261113.json', 'utf8'),
-        )
-      : null;
+  const lineage = ['tracking_history', 'tracking_batch'].includes(milestone)
+    ? JSON.parse(
+        await fs.readFile(
+          milestone === 'tracking_batch'
+            ? 'config/observed/tracking-batch-lineage-20261115.json'
+            : 'config/observed/tracking-cleanup-lineage-20261113.json',
+          'utf8',
+        ),
+      )
+    : null;
   const binding = createEnvironmentBinding({
     environment: 'production',
     databaseUrl: process.env.SAFEBUS_DATABASE_URL,
@@ -238,7 +243,7 @@ try {
     const acceptance = verifyOperationalSnapshot(await capture(), config, 'after');
     if (lineage)
       await operationalReadOnly(client, () => requireTrackingLedger(client, lineage, 'cleanup'));
-    if (['tracking_invalidations', 'tracking_history'].includes(milestone))
+    if (['tracking_invalidations', 'tracking_history', 'tracking_batch'].includes(milestone))
       await client.query(
         await fs.readFile('tests/rls/async-tracking-existing-database-readonly.sql', 'utf8'),
       );
