@@ -1,4 +1,4 @@
-import { getDeployStore } from '@netlify/blobs';
+import { getStore as getBlobStore } from '@netlify/blobs';
 
 export const MAX_HEARTBEAT_AGE_MS = 45 * 60_000;
 const STORE = 'production-monitor';
@@ -8,10 +8,12 @@ function production(deploy) {
   return deploy?.context === 'production' && deploy?.published === true;
 }
 
-// Deploy-scoped storage prevents an old release or preview from keeping a new
-// production release green. Store only time and a boolean, never probe details.
+// Keep the last published-production observation across deployments so a normal
+// release does not manufacture an outage while waiting for the next scheduled run.
+// The timestamp still expires; previews/unpublished runners cannot refresh it.
+// Store only time and a boolean, never probe details.
 function store() {
-  return getDeployStore({ name: STORE, consistency: 'strong',
+  return getBlobStore({ name: STORE, consistency: 'strong',
     fetch: (url, options) => fetch(url, { ...options, signal: AbortSignal.timeout(2_000) }),
   });
 }

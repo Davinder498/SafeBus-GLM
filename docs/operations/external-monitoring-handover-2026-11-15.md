@@ -20,7 +20,7 @@ receipt, not seven-day history, authenticated journeys or every alert category.
   login shell, map configuration and all six existing application probes. It
   no longer fetches GitHub schedule metadata or emits github_cadence alerts.
 - A completed published-production invocation writes just a timestamp and
-  healthy boolean in a deploy-scoped Netlify Blobs store. Healthy requires all
+  healthy boolean in one site-wide Netlify Blobs record. Healthy requires all
   checks passing and application mode alert. Observe/off cannot certify health.
   A failed probe writes false before sending its existing operational alert.
 - GET/HEAD /.netlify/functions/monitoring-status reads that single record and
@@ -30,8 +30,9 @@ receipt, not seven-day history, authenticated journeys or every alert category.
   caching and reveal no customer, GPS, account, credential or provider details.
 - Storage calls have a three-second overall deadline, with two-second per-request
   network timeouts. Heartbeat write failures generate a fixed operations alert.
-  Deploy isolation means a new deployment starts unavailable until its own first
-  healthy scheduled observation. Old deployments cannot keep it green.
+  The last completed observation survives deployments and still expires after
+  45 minutes. Normal releases do not manufacture an outage while awaiting their
+  next scheduled run. Only currently published production runners may refresh it.
 - A second UptimeRobot HTTPS monitor must check that status URL every five minutes.
   A website-only monitor does not detect a stopped application scheduler. The
   45-minute grace is an internal threshold, not a customer SLA.
@@ -59,7 +60,8 @@ America/Edmonton, including critical incidents.
 2. Confirm the Netlify schedule still reads 11,26,41,56 and application mode alert.
    Inspect the first real published invocation: public and application checks must
    pass, with no github_cadence category. Verify the public status URL returns 200
-   after that invocation. Immediately after deployment it may return 503.
+   after that invocation. On first installation it returns 503 until the first
+   successful observation; later releases retain the recent completion signal.
 3. In the owner's existing UptimeRobot account, add an HTTP(S) monitor named
    SafeBus application monitoring for
    https://safebus.kids/.netlify/functions/monitoring-status, interval five minutes,
