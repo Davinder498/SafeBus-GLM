@@ -64,8 +64,13 @@ export function GuardianLiveMapPage() {
   const appSurface = useAppSurface();
   const [searchParams] = useSearchParams();
   const selectedBusNumber = searchParams.get('bus')?.trim() ?? '';
-  const { state, refreshing, lastRefreshedAt, connectionState, refresh } =
-    useGuardianLiveBusLocations();
+  const {
+    state,
+    refreshing,
+    lastRefreshedAt,
+    connectionState,
+    refresh: refreshLocation,
+  } = useGuardianLiveBusLocations();
   const mapTileConfig = useMapTileConfig();
   const busGroups = state.kind === 'ready' ? groupGuardianBuses(state.locations) : [];
   const visibleGroups = selectedBusNumber
@@ -81,10 +86,15 @@ export function GuardianLiveMapPage() {
         : Promise.resolve([]),
     [selectedBusNumber],
   );
-  const { state: serviceLineState } = useVerifiedGuardianData(
+  const { state: serviceLineState, refresh: refreshServiceLines } = useVerifiedGuardianData(
     fetchSelectedServiceLines,
     `live-map:${selectedBusNumber}`,
+    { liveMinIntervalMs: 15_000, throttleLocationOnly: true },
   );
+  const refresh = useCallback(() => {
+    refreshLocation();
+    refreshServiceLines();
+  }, [refreshLocation, refreshServiceLines]);
   const serviceLines = serviceLineState.kind === 'ready' ? serviceLineState.data : [];
 
   if (appSurface === 'native-mobile') {

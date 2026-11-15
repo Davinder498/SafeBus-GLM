@@ -11,16 +11,16 @@ function fixture() {
     on: ReturnType<typeof vi.fn>;
     subscribe: ReturnType<typeof vi.fn>;
     teardown: ReturnType<typeof vi.fn>;
-    broadcast: () => void;
+    broadcast: (reason?: string) => void;
     status: (value: string) => void;
   }> = [];
   const fake = {
     channel: vi.fn((topic: string) => {
-      let broadcast = () => {};
+      let broadcast = (_event: unknown) => {};
       let status = (_value: string) => {};
       const channel = {
         topic,
-        on: vi.fn((_kind, _filter, callback: () => void) => {
+        on: vi.fn((_kind, _filter, callback: (event: unknown) => void) => {
           broadcast = callback;
           return channel;
         }),
@@ -29,7 +29,7 @@ function fixture() {
           return channel;
         }),
         teardown: vi.fn(),
-        broadcast: () => broadcast(),
+        broadcast: (reason?: string) => broadcast({ payload: { reason } }),
         status: (value: string) => status(value),
       };
       channels.push(channel);
@@ -79,8 +79,24 @@ describe('shared private tracking subscription', () => {
     await vi.advanceTimersByTimeAsync(149);
     expect(a.onInvalidate).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
-    expect(a.onInvalidate.mock.calls).toEqual([[]]);
-    expect(b.onInvalidate.mock.calls).toEqual([[]]);
+    expect(a.onInvalidate.mock.calls).toEqual([['change']]);
+    expect(b.onInvalidate.mock.calls).toEqual([['change']]);
+  });
+
+  it('preserves control hints in mixed bursts and treats unknown hints as control', async () => {
+    const { client, channels } = fixture();
+    const a = listen(client);
+    channels[0].broadcast('location');
+    await vi.advanceTimersByTimeAsync(150);
+    expect(a.onInvalidate).toHaveBeenLastCalledWith('location');
+    channels[0].broadcast('location');
+    channels[0].broadcast('authorization');
+    channels[0].broadcast('location');
+    await vi.advanceTimersByTimeAsync(150);
+    expect(a.onInvalidate).toHaveBeenLastCalledWith('change');
+    channels[0].broadcast();
+    await vi.advanceTimersByTimeAsync(150);
+    expect(a.onInvalidate).toHaveBeenLastCalledWith('change');
   });
 
   it('does not slow normal three-second signals to the polling interval', async () => {

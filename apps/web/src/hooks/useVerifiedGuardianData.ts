@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/useAuth';
+import type { TrackingInvalidationKind } from '@/lib/trackingInvalidations';
 import { useTrackingInvalidations } from '@/hooks/useTrackingInvalidations';
 
 type LoadState<T> = { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; data: T };
@@ -11,6 +12,7 @@ export interface GuardianRefreshPolicy {
   jitterMs?: number;
   liveMinIntervalMs?: number;
   maxRetryMs?: number;
+  throttleLocationOnly?: boolean;
 }
 
 /** Server authorization remains authoritative; cached data is never an offline fallback. */
@@ -24,6 +26,7 @@ export function useVerifiedGuardianData<T>(
     jitterMs = 0,
     liveMinIntervalMs = 0,
     maxRetryMs = intervalMs,
+    throttleLocationOnly = false,
   } = policy;
   const { user } = useAuth();
   const userId = user?.id ?? null;
@@ -34,11 +37,16 @@ export function useVerifiedGuardianData<T>(
     refreshing: boolean;
     lastRefreshedAt: string | null;
   }>({ userId, scope, state: { kind: 'loading' }, refreshing: false, lastRefreshedAt: null });
-  const loadRef = useRef<(source?: 'live' | 'poll') => void>(() => {});
+  const loadRef = useRef<(source?: 'live' | 'poll' | 'control') => void>(() => {});
   const clearRef = useRef<() => void>(() => {});
   const refresh = useCallback(() => loadRef.current(), []);
   const clear = useCallback(() => clearRef.current(), []);
-  const invalidate = useCallback(() => loadRef.current('live'), []);
+  const invalidate = useCallback(
+    (kind?: TrackingInvalidationKind) => {
+      loadRef.current(throttleLocationOnly && kind !== 'location' ? 'control' : 'live');
+    },
+    [throttleLocationOnly],
+  );
   const connectionState = useTrackingInvalidations({
     topic: userId ? `safebus:guardian:${userId}` : null,
     onInvalidate: invalidate,
@@ -47,7 +55,7 @@ export function useVerifiedGuardianData<T>(
 
   useEffect(() => {
     let disposed = false;
-    let queued = false;
+    let queued: 'live' | 'control' | null = null;
     let liveTimer: ReturnType<typeof setTimeout> | null = null;
     let liveEligibleAt = 0;
     let failures = 0;
@@ -70,7 +78,7 @@ export function useVerifiedGuardianData<T>(
       liveTimer = null;
       const previous = request;
       request = null;
-      queued = false;
+      queued = null;
       if (previous) {
         clearTimeout(previous.timeout);
         previous.controller.abort();
@@ -92,7 +100,7 @@ export function useVerifiedGuardianData<T>(
         Math.min(maxRetryMs, intervalMs * 2 ** Math.min(failures, 8)) + jitter(),
       );
     };
-    const load = (source?: 'live' | 'poll') => {
+    const load = (source?: 'live' | 'poll' | 'control') => {
       if (disposed || !userId) return;
       if (!navigator.onLine || document.visibilityState !== 'visible') {
         clearData();
@@ -111,7 +119,10 @@ export function useVerifiedGuardianData<T>(
       if (request) {
         // A periodic check cannot make an active verification obsolete. A live
         // event/manual request can, so retain exactly one follow-up for those.
-        if (source !== 'poll') queued = true;
+        if (source !== 'poll') {
+          const followUp = source === 'live' ? 'live' : 'control';
+          if (queued !== 'control') queued = followUp;
+        }
         return;
       }
       if (pollTimer !== null) clearTimeout(pollTimer);
@@ -147,8 +158,9 @@ export function useVerifiedGuardianData<T>(
             state.kind === 'ready' ? new Date().toISOString() : previous.lastRefreshedAt,
         }));
         if (queued) {
-          queued = false;
-          queueMicrotask(() => load('live'));
+          const followUp = queued;
+          queued = null;
+          queueMicrotask(() => load(followUp));
         } else schedulePoll();
       }
       void Promise.resolve()
@@ -180,7 +192,16 @@ export function useVerifiedGuardianData<T>(
       window.removeEventListener('offline', clearData);
       window.removeEventListener('online', online);
     };
-  }, [fetchData, scope, userId, intervalMs, jitterMs, liveMinIntervalMs, maxRetryMs]);
+  }, [
+    fetchData,
+    scope,
+    userId,
+    intervalMs,
+    jitterMs,
+    liveMinIntervalMs,
+    maxRetryMs,
+    throttleLocationOnly,
+  ]);
 
   // Hide the previous principal/scope before effect cleanup runs.
   const current = snapshot.userId === userId && snapshot.scope === scope;

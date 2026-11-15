@@ -3,13 +3,14 @@ import { supabase } from '@/lib/supabase';
 import {
   subscribeToTrackingInvalidations,
   type TrackingConnectionState,
+  type TrackingInvalidationKind,
 } from '@/lib/trackingInvalidations';
 
 export type { TrackingConnectionState } from '@/lib/trackingInvalidations';
 
 interface UseTrackingInvalidationsOptions {
   topic: string | null;
-  onInvalidate: () => void;
+  onInvalidate: (kind?: TrackingInvalidationKind) => void;
   onDisconnected?: () => void;
 }
 
@@ -36,11 +37,32 @@ export function useTrackingInvalidations({
       setSnapshot({ topic, state: 'unavailable' });
       return;
     }
-    return subscribeToTrackingInvalidations(client, topic, {
-      onState: (state) => setSnapshot({ topic, state }),
-      onInvalidate: () => invalidateRef.current(),
-      onDisconnected: () => disconnectedRef.current?.(),
-    });
+    let release: (() => void) | null = null;
+    const reconcile = () => {
+      const active = navigator.onLine && document.visibilityState === 'visible';
+      if (!active) {
+        release?.();
+        release = null;
+        setSnapshot({ topic, state: navigator.onLine ? 'unavailable' : 'offline' });
+        disconnectedRef.current?.();
+      } else if (!release) {
+        release = subscribeToTrackingInvalidations(client, topic, {
+          onState: (state) => setSnapshot({ topic, state }),
+          onInvalidate: (kind) => invalidateRef.current(kind),
+          onDisconnected: () => disconnectedRef.current?.(),
+        });
+      }
+    };
+    reconcile();
+    document.addEventListener('visibilitychange', reconcile);
+    window.addEventListener('offline', reconcile);
+    window.addEventListener('online', reconcile);
+    return () => {
+      document.removeEventListener('visibilitychange', reconcile);
+      window.removeEventListener('offline', reconcile);
+      window.removeEventListener('online', reconcile);
+      release?.();
+    };
   }, [topic]);
 
   return snapshot.topic === topic ? snapshot.state : initialState;

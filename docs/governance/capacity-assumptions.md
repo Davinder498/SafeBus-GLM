@@ -2,7 +2,7 @@
 
 Status: customer-selected planning target; remaining assumptions and service
 objectives proposed. No demonstrated application capacity or launch approval.
-Updated: 2026-11-10. Owner confirmed the fleet target as 5,000–10,000 buses. Decision: [DL-020](decision-log.md#dl-020--capacity-planning-and-local-workload-simulation).
+Updated: 2026-11-15. Owner confirmed the fleet target as 5,000–10,000 buses. Decision: [DL-020](decision-log.md#dl-020--capacity-planning-and-local-workload-simulation).
 
 ## Current owner direction — 2026-11-10
 
@@ -16,8 +16,12 @@ Guardian home now has a prepared 30–35 second check policy with rate-limited l
 hints, hidden/offline cancellation and failure backoff. Live maps retain frequent
 updates. The model reports home traffic separately; map/fallback traffic is an
 alternative page mix. See [implementation, release and limits](../qa/guardian-home-fleet-refresh-2026-11-10.md).
-The prepared async queue has a protected release manifest, but production is still
-synchronous and the queue's conservative defaults are not 10,000-bus qualification.
+Read-only production inspection on November 15 verified the async queue is active:
+its dispatcher runs every second with 10 trip visits and a 250-message budget.
+Those conservative defaults are not 10,000-bus qualification. GPS history is removed;
+updates replace the latest position. See the [tracking efficiency design and acceptance](../qa/tracking-refresh-efficiency-2026-11-15.md).
+This branch separates selected-map stop reads from ordinary position hints and
+releases tracking channels while hidden/offline; it is not yet live-release evidence.
 
 ## Target and meaning
 
@@ -50,7 +54,7 @@ The machine-readable input is [capacity-workload.json](capacity-workload.json).
 | Active GPS interval          |                           3 seconds | Current Android `TrackingCadence.ACTIVE_TRIP_INTERVAL_MS`; web fallback minimum is also 3 seconds |
 | Guardian polling             |                          15 seconds | Fallback after verification; continuous successful live refreshes postpone this check             |
 | Guardian calls per refresh   |                                   2 | Proposed map/detail workload; actual page mix and additional calls must be measured               |
-| Admin refresh                |                2 calls / 30 seconds | Proposed workload assumption                                                                      |
+| Admin refresh                |                2 calls / 15 seconds | Current admin fallback interval; call count remains a workload assumption                         |
 | Operating time               |                         8 hours/day | All buses active for all eight hours; conservative volume projection                              |
 | Linked buses per guardian    |                                   1 | Proposed fan-out assumption; test additional linked buses before commitment                       |
 | Largest tenant share         |                                 20% | Proposed skew in bus traffic; never less than the average share in small scenarios                |
@@ -72,10 +76,10 @@ input; it does not change device cadence or implement pacing/downsampling.
 | GPS update volume per operating day                     | 10,000 × 8 × 3,600 / 3 = **96 million events**                                                |
 | Historical 30-day volume sensitivity (not stored)       | **2.88 billion update events**; production GPS history was removed; this is not retained rows |
 | Guardian polling calls                                  | 88,000 × 2 / 15 = **11,733.33 calls/second**                                                  |
-| Admin calls                                             | 2,000 × 2 / 30 = **133.33 calls/second**                                                      |
+| Admin calls                                             | 2,000 × 2 / 15 = **266.67 calls/second**                                                      |
 | Login burst                                             | 10,000 / 60 = **166.67 requests/second**                                                      |
 | Notification deliveries                                 | **6,667/second** across inbox, push and email; provider demand is channel-specific            |
-| Baseline mixed request/delivery work                    | **22,033.67/second** during the combined stress window                                        |
+| Baseline mixed request/delivery work                    | **22,167/second** during the combined stress window                                           |
 | Uncoalesced per-guardian GPS invalidations              | 88,000 / 3 = **29,333.33 delivered messages/second**                                          |
 | Guardian calls if every invalidation triggers two calls | Polling + refetch = **70,400/second** upper-bound model                                       |
 | Hottest tenant GPS share                                | **666.67 new events/second** at 20%                                                           |
@@ -91,7 +95,7 @@ events/second and 50,000 combined deliveries/second with that recipient/channel
 mix. Shortening the dispatch interval cannot establish either capacity.
 
 Events are not SQL-operation counts. Ingestion also updates current location,
-history, authorization, progress and notifications; write amplification must be
+device/session state, authorization and the dirty-trip queue; write amplification must be
 measured. The refetch calculation is an uncoalesced upper-bound model: client
 coalescing and latency affect actual rates. Neither bound is a benchmark result.
 
@@ -100,9 +104,14 @@ fallback polling after successful live verification and shares one subscription
 owner across consumers of a private topic. The model's polling rate represents
 a fallback/poll-only case. Its sum with every live invalidation remains a
 conservative legacy bound, not the steady healthy behavior of this implementation.
-Two calls per three-second live signal would still be approximately 58,667
-calls/second for the proposed 88,000-guardian population; this is arithmetic,
-not demonstrated traffic or capacity. Server per-guardian broadcasts remain.
+The prior selected-map implementation made two calls per three-second live signal,
+about 58,667 calls/second for the proposed 88,000-guardian population. This branch
+keeps position checks at that cadence but bounds ordinary location-driven stop
+checks to once per 15 seconds: about 35,200 calls/second, a 40% arithmetic reduction
+in this specific steady-state scenario. Control/manual refreshes add requests;
+initial joins, latency, page mix and failures change actual rates. Fallback-only
+traffic remains two calls per 15 seconds. This is not a measured fleet benchmark.
+Server per-guardian broadcasts remain and are still a capacity bottleneck.
 
 The Android service now uses bounded, randomized per-device upload scheduling
 ([implementation and limits](../qa/android-upload-recovery.md)). Evenly spreading
@@ -152,8 +161,8 @@ that the offered target was reached. A generator-limited run is inconclusive.
 
 1. An approved isolated Canadian environment with production-equivalent schema,
    Auth, RLS, functions, indexes, extensions, provider limits and network path.
-   Keep security controls enabled. Migrations 0122–0124 and their security
-   acceptance remain deferred and must be resolved for final capacity evidence.
+   Keep security controls enabled and reconcile the current observed production
+   baseline; do not assume historical pending filenames imply unapplied changes.
 2. Synthetic volume equivalent to one million accounts and 2,000 tenants, plus
    representative aged history, skew and indexes. Accounts/auth setup requires a
    reviewed fixture plan; no signup flood, customer data or external notifications.

@@ -89,7 +89,7 @@ async function openMap(page: Page) {
   return { fixture, socket };
 }
 
-test('one guardian live subscription refreshes both map datasets every three seconds without extra polling', async ({
+test('one guardian live subscription refreshes locations every three seconds while bounding stop-detail reads', async ({
   page,
 }) => {
   const { fixture, socket } = await openMap(page);
@@ -112,13 +112,14 @@ test('one guardian live subscription refreshes both map datasets every three sec
         return fixture.getCallCount();
       })
       .toBe(visibilityBefore + step);
-    await expect.poll(() => fixture.getServiceLineCallCount()).toBe(linesBefore + step);
+    expect(fixture.getServiceLineCallCount() - linesBefore).toBeLessThanOrEqual(1);
     await expect(page.getByTestId('guardian-live-bus-map-marker')).toHaveCount(1);
     await page.getByRole('button', { name: 'Bus 42', exact: true }).click();
     const displayedTime = await page.evaluate((iso) => new Date(iso).toLocaleString(), recordedAt);
     await expect(page.locator('.leaflet-popup-content')).toContainText(`Updated ${displayedTime}`);
     await page.locator('.leaflet-popup-close-button').click();
   }
+  await expect.poll(() => fixture.getServiceLineCallCount()).toBe(linesBefore + 1);
   expect(socket.joins()).toBe(joinsBefore);
   expect(socket.active()).toBe(1);
   await page.clock.runFor(14_000);
@@ -170,4 +171,41 @@ test('a trip-end signal promptly removes the live bus position', async ({ page }
   await expect(
     page.getByText('No current bus location to show right now.', { exact: true }),
   ).toBeVisible();
+});
+
+test('control hints and manual refresh promptly recheck stop details within the position throttle window', async ({
+  page,
+}) => {
+  const { fixture, socket } = await openMap(page);
+  const before = fixture.getServiceLineCallCount();
+  socket.emit('authorization');
+  await page.clock.runFor(300);
+  await expect.poll(() => fixture.getServiceLineCallCount()).toBe(before + 1);
+  await page.getByTestId('guardian-live-map-refresh-button').click();
+  await expect.poll(() => fixture.getServiceLineCallCount()).toBe(before + 2);
+});
+
+test('hidden map releases its subscription and rechecks current assignments on return', async ({
+  page,
+}) => {
+  const { fixture, socket } = await openMap(page);
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect.poll(socket.active).toBe(0);
+  const before = fixture.getCallCount();
+  await page.clock.runFor(60_000);
+  expect(fixture.getCallCount()).toBe(before);
+  fixture.setRows([]);
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'visible',
+    });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect.poll(socket.active).toBe(1);
+  await expect(page.getByTestId('guardian-live-map-empty')).toBeVisible();
+  await expect(page.getByTestId('guardian-live-bus-map-marker')).toHaveCount(0);
 });

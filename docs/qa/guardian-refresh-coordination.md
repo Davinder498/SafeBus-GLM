@@ -4,7 +4,17 @@ Status: repository implementation for human review. Customer authorized this
 frontend milestone on 2026-10-12. No database migration, hosted load, deployment
 or commercial capacity certification is included.
 
-## 2026-11-10 home policy and queue release update
+## 2026-11-15 efficiency update
+
+The selected map now bounds stop-detail refreshes from ordinary location hints to
+15 seconds while keeping position checks frequent. Control/unknown hints and
+manual requests still recheck immediately. Hidden/offline consumers now release
+the shared subscription, not merely ignore incoming signals. See the
+[current design, acceptance and limits](tracking-refresh-efficiency-2026-11-15.md).
+The November 15 read-only production review verified the async queue is installed;
+its conservative worker limits are not fleet capacity qualification.
+
+## Historical 2026-11-10 home policy and queue release update
 
 Home now reuses this lifecycle with a slower, jittered policy; map defaults remain
 unchanged. The queue SQL also has a reviewed operational release manifest and
@@ -69,7 +79,7 @@ poll fallback, active-request follow-up and fail-closed authorization errors.
 The new browser tests use the actual Supabase client against an owned synthetic
 Phoenix/WebSocket endpoint and synthetic REST responses. No socket is forwarded
 to Supabase; unexpected external traffic is blocked. They verify a single active
-guardian topic, both map RPCs refreshing for each three-second change signal,
+guardian topic, frequent positions with bounded stop-detail checks,
 updated timestamps visible in the bus popup, absence of an extra fixed-interval
 poll, fallback after signals stop, denied-access removal and trip-end removal.
 The existing failure-recovery/browser/privacy checks remain required. The new
@@ -78,10 +88,10 @@ guard.
 
 These results verify client coordination, not hosted Auth/RLS, provider delivery,
 physical Android behavior or end-to-end three-second visibility. The server
-still performs per-guardian broadcast work from its GPS transaction; database
+still performs per-guardian broadcast work through its async queue; database
 fan-out, message quotas, query/storage growth and full-fleet capacity remain
-separate work. A continuously active map can still make approximately two
-secured calls per accepted location signal. This milestone makes no claim to
+separate work. The selected map now makes one position check per accepted location signal,
+plus stop-detail checks bounded to 15 seconds for ordinary location hints. This milestone makes no claim to
 support 100,000 concurrent users.
 
 The capacity model retains conservative workload scenarios. Its polling demand

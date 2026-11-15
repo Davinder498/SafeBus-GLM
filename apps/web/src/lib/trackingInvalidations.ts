@@ -4,9 +4,11 @@ import type { SafeBusSupabaseClient } from '@/lib/supabase';
 export type TrackingConnectionState =
   'connecting' | 'connected' | 'reconnecting' | 'offline' | 'unavailable';
 
+export type TrackingInvalidationKind = 'location' | 'change';
+
 interface Listener {
   onState: (state: TrackingConnectionState) => void;
-  onInvalidate: () => void;
+  onInvalidate: (kind?: TrackingInvalidationKind) => void;
   onDisconnected: () => void;
 }
 
@@ -31,6 +33,7 @@ function createEntry(client: SafeBusSupabaseClient, topic: string): Entry {
   let hasJoined = false;
   let channel: RealtimeChannel | null = null;
   let invalidateTimer: ReturnType<typeof setTimeout> | null = null;
+  let pendingKind: TrackingInvalidationKind = 'location';
   let stableTimer: ReturnType<typeof setTimeout> | null = null;
   const entry: Entry = {
     listeners: new Set(),
@@ -50,7 +53,8 @@ function createEntry(client: SafeBusSupabaseClient, topic: string): Entry {
     stableTimer = null;
   }
 
-  function invalidate() {
+  function invalidate(kind: TrackingInvalidationKind = 'change') {
+    if (kind === 'change') pendingKind = 'change';
     if (
       disposed ||
       invalidateTimer !== null ||
@@ -61,7 +65,9 @@ function createEntry(client: SafeBusSupabaseClient, topic: string): Entry {
     invalidateTimer = setTimeout(() => {
       invalidateTimer = null;
       if (disposed || !navigator.onLine || document.visibilityState !== 'visible') return;
-      for (const listener of entry.listeners) listener.onInvalidate();
+      const kind = pendingKind;
+      pendingKind = 'location';
+      for (const listener of entry.listeners) listener.onInvalidate(kind);
     }, INVALIDATION_COALESCE_MS);
   }
 
@@ -86,23 +92,29 @@ function createEntry(client: SafeBusSupabaseClient, topic: string): Entry {
     window.addEventListener('online', online);
     try {
       channel = client.channel(topic, { config: { private: true } });
-      channel.on('broadcast', { event: 'tracking_changed' }, invalidate).subscribe((status) => {
-        if (disposed) return;
-        if (status === 'SUBSCRIBED') {
-          hasJoined = true;
-          cancelStableTimer();
-          invalidate();
-          stableTimer = setTimeout(() => {
-            stableTimer = null;
-            if (disposed || !navigator.onLine) return;
-            setState('connected');
-          }, 1_000);
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          cancelStableTimer();
-          if (hasJoined) disconnect(navigator.onLine ? 'reconnecting' : 'offline');
-          else setState(navigator.onLine ? 'unavailable' : 'offline');
-        }
-      });
+      channel
+        .on('broadcast', { event: 'tracking_changed' }, (event) => {
+          // Only explicit position hints may be throttled. Unknown/control events
+          // force verification; payload coordinates are never consumed.
+          invalidate(event?.payload?.reason === 'location' ? 'location' : 'change');
+        })
+        .subscribe((status) => {
+          if (disposed) return;
+          if (status === 'SUBSCRIBED') {
+            hasJoined = true;
+            cancelStableTimer();
+            invalidate();
+            stableTimer = setTimeout(() => {
+              stableTimer = null;
+              if (disposed || !navigator.onLine) return;
+              setState('connected');
+            }, 1_000);
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            cancelStableTimer();
+            if (hasJoined) disconnect(navigator.onLine ? 'reconnecting' : 'offline');
+            else setState(navigator.onLine ? 'unavailable' : 'offline');
+          }
+        });
     } catch {
       setState(navigator.onLine ? 'unavailable' : 'offline');
     }
