@@ -111,6 +111,7 @@ describe('guardian bus-first visibility mapping', () => {
       ],
     });
 
+    expect(line.trackingTopic).toBeNull(); // old hosted schema remains compatible
     expect(line.stops.map((stop) => stop.name)).toEqual(['North Terminal', 'Riverside School']);
     expect(line).toMatchObject({
       progressPercent: 25,

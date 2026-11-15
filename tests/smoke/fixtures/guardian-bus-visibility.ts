@@ -25,6 +25,7 @@ export type GuardianVisibilityRow = {
 };
 
 export type GuardianBusServiceLineRow = {
+  trackingTopic?: string | null;
   busNumber: string;
   licensePlate: string | null;
   routeName: string;

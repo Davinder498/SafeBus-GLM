@@ -40,6 +40,7 @@ const manifests = {
   tracking_invalidations: 'config/pending/async-tracking-invalidations.json',
   tracking_history: 'config/pending/tracking-history-cleanup.json',
   tracking_batch: 'config/pending/tracking-batch.json',
+  shared_bus_feed: 'config/pending/shared-bus-feed.json',
   calendar: 'config/pending/route-service-calendar.json',
   reporting: 'config/pending/privileged-admin-mfa.json',
   delivery: 'config/pending/unified-notification-delivery.json',
@@ -62,12 +63,14 @@ try {
   )
     throw new Error('OPERATIONAL_PROTECTED_CONTEXT');
   const config = JSON.parse(await fs.readFile(manifests[milestone], 'utf8'));
-  const lineage = ['tracking_history', 'tracking_batch'].includes(milestone)
+  const lineage = ['tracking_history', 'tracking_batch', 'shared_bus_feed'].includes(milestone)
     ? JSON.parse(
         await fs.readFile(
-          milestone === 'tracking_batch'
-            ? 'config/observed/tracking-batch-lineage-20261115.json'
-            : 'config/observed/tracking-cleanup-lineage-20261113.json',
+          milestone === 'shared_bus_feed'
+            ? 'config/observed/shared-bus-feed-lineage-20261115.json'
+            : milestone === 'tracking_batch'
+              ? 'config/observed/tracking-batch-lineage-20261115.json'
+              : 'config/observed/tracking-cleanup-lineage-20261113.json',
           'utf8',
         ),
       )
@@ -243,9 +246,17 @@ try {
     const acceptance = verifyOperationalSnapshot(await capture(), config, 'after');
     if (lineage)
       await operationalReadOnly(client, () => requireTrackingLedger(client, lineage, 'cleanup'));
-    if (['tracking_invalidations', 'tracking_history', 'tracking_batch'].includes(milestone))
+    if (
+      ['tracking_invalidations', 'tracking_history', 'tracking_batch', 'shared_bus_feed'].includes(
+        milestone,
+      )
+    )
       await client.query(
         await fs.readFile('tests/rls/async-tracking-existing-database-readonly.sql', 'utf8'),
+      );
+    if (milestone === 'shared_bus_feed')
+      await client.query(
+        await fs.readFile('tests/rls/shared-bus-feed-existing-database-readonly.sql', 'utf8'),
       );
     const retention =
       milestone === 'retention'

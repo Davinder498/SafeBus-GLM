@@ -1,6 +1,10 @@
 # Compatible tracking worker batching
 
-Status: prepared forward database change. Not installed or capacity-qualified.
+Status: installed in production on 2026-11-15 through protected run
+[43707610659](https://github.com/Davinder498/SafeBus-GLM/actions/runs/43707610659),
+PR #454 / main `91b9ad3370ef281ba0f511c430fe9b229d7a6ebc`.
+Read-only verification matched the installed definition, postgres-only execution,
+active one-second job and recorded schema fingerprint. Not fleet-capacity-qualified.
 
 ## What changes
 

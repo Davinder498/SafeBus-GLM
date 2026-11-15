@@ -77,7 +77,9 @@ export function GuardianBusDetailPage() {
     },
     [busNumber],
   );
-  const { state: verified } = useVerifiedGuardianData(fetchDetails, busNumber);
+  const { state: verified } = useVerifiedGuardianData(fetchDetails, busNumber, {}, (data) =>
+    (data.serviceLines ?? []).flatMap((line) => (line.trackingTopic ? [line.trackingTopic] : [])),
+  );
   const state =
     verified.kind === 'ready'
       ? verified.data.group
@@ -151,7 +153,10 @@ function BusDetails({
 
   return (
     <>
-      <Card className="overflow-hidden rounded-2xl border-[var(--color-border)] shadow-sm" data-ui="guardian-bus-detail-hero">
+      <Card
+        className="overflow-hidden rounded-2xl border-[var(--color-border)] shadow-sm"
+        data-ui="guardian-bus-detail-hero"
+      >
         <div className="p-5 text-[var(--color-text)] sm:p-6" data-ui="guardian-bus-detail-summary">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
@@ -341,7 +346,10 @@ function ServiceLineCard({ line }: { line: GuardianBusServiceLine }) {
       : '';
 
   return (
-    <Card className="rounded-2xl border-[var(--color-border)] p-5 shadow-sm sm:p-6" data-ui="guardian-service-line-card">
+    <Card
+      className="rounded-2xl border-[var(--color-border)] p-5 shadow-sm sm:p-6"
+      data-ui="guardian-service-line-card"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-navy-700">

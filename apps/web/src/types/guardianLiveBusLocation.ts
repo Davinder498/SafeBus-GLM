@@ -57,6 +57,7 @@ export interface GuardianBusServiceStop {
  * pattern, trip, bus, driver, tenant, and student identifiers are excluded.
  */
 export interface GuardianBusServiceLine {
+  trackingTopic?: string | null;
   busNumber: string;
   licensePlate: string | null;
   routeName: string;

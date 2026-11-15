@@ -6,6 +6,9 @@ import type { TrackingInvalidationKind } from '@/lib/trackingInvalidations';
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(),
+  sharedReady: false,
+  sharedInvalidate: (_kind?: TrackingInvalidationKind) => {},
+  sharedDisconnected: () => {},
   invalidate: (_kind?: TrackingInvalidationKind) => {},
 }));
 vi.mock('@/contexts/useAuth', () => ({ useAuth: () => ({ user: { id: 'guardian-a' } }) }));
@@ -13,6 +16,18 @@ vi.mock('@/hooks/useTrackingInvalidations', () => ({
   useTrackingInvalidations: (options: { onInvalidate: typeof mocks.invalidate }) => {
     mocks.invalidate = options.onInvalidate;
     return 'connected';
+  },
+}));
+vi.mock('@/hooks/useSharedBusTracking', () => ({
+  useSharedBusTracking: (
+    _user: unknown,
+    _topics: unknown,
+    invalidate: typeof mocks.invalidate,
+    disconnected: () => void,
+  ) => {
+    mocks.sharedInvalidate = invalidate;
+    mocks.sharedDisconnected = disconnected;
+    return mocks.sharedReady;
   },
 }));
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -31,6 +46,7 @@ beforeEach(async () => {
   vi.useFakeTimers();
   vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
   vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
+  mocks.sharedReady = false;
   mocks.fetch.mockReset().mockResolvedValue(['stop']);
   root = createRoot(document.createElement('div'));
   await act(async () => root.render(<Probe />));
@@ -88,4 +104,27 @@ it('cancels a pending stop refresh while hidden and verifies immediately on retu
   vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
   await act(async () => document.dispatchEvent(new Event('visibilitychange')));
   expect(result.state).toEqual({ kind: 'ready', data: [] });
+});
+
+it('uses shared GPS hints after joining, retains personal control hints, and resumes legacy hints on failure', async () => {
+  mocks.sharedReady = true;
+  await act(async () => root.render(<Probe />));
+  await advance(3_000);
+  await act(async () => mocks.invalidate('location'));
+  await advance(12_000);
+  expect(mocks.fetch).toHaveBeenCalledTimes(2); // periodic server verification
+  await act(async () => mocks.invalidate('change'));
+  expect(mocks.fetch).toHaveBeenCalledTimes(3);
+  await act(async () => mocks.sharedInvalidate('location'));
+  expect(mocks.fetch).toHaveBeenCalledTimes(3); // stop-detail throttle retained
+  mocks.sharedReady = false;
+  await act(async () => {
+    mocks.sharedDisconnected();
+  });
+  expect(mocks.fetch).toHaveBeenCalledTimes(4);
+  await advance(15_000);
+  expect(mocks.fetch).toHaveBeenCalledTimes(5); // fallback loop survived disconnect
+  await act(async () => mocks.invalidate('location'));
+  await advance(15_000);
+  expect(mocks.fetch).toHaveBeenCalledTimes(6);
 });

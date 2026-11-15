@@ -10,6 +10,7 @@ const order = {
   relations: ['schema_name', 'relname'],
   constraints: ['schema_name', 'relname', 'conname'],
   indexes: ['schema_name', 'relation_name', 'index_name'],
+  policies: ['schemaname', 'tablename', 'policyname'],
   routines: ['schema_name', 'proname', 'arguments'],
   routineGrants: ['schema_name', 'proname', 'arguments', 'grantor', 'grantee', 'privilege_type'],
   relationGrants: ['schema_name', 'relname', 'grantor', 'grantee', 'privilege_type'],

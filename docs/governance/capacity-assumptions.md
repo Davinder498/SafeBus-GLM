@@ -188,3 +188,20 @@ that the offered target was reached. A generator-limited run is inconclusive.
 Changes to rate, role mix, retention or service objectives require an updated
 decision entry and re-testing. [Local tooling and evidence checklist](../qa/capacity-workload-harness.md)
 describes the current preparation milestone and its limitations.
+
+
+## Shared bus-feed transition — 2026-11-15
+
+The next prepared change introduces a receive-only, opaque per-trip bus topic for
+guardian map/detail screens. It broadcasts only a refresh hint; the existing
+secured RPCs still supply coordinates after current authorization. The server
+retains legacy per-guardian location hints during Android compatibility rollout.
+Consequently this dual phase adds one produced message per trip pass, and does
+not reduce recipient billing or establish fleet capacity. New screens suppress
+duplicate legacy location refreshes only once their shared channels have joined.
+Personal control events and periodic checks remain.
+
+Retiring legacy fan-out is a separate controlled cutover after compatible web and
+Android versions and locked-phone operation are verified. The unchanged 10-trip
+worker budget and provider quotas still require measurement and sizing. See
+[release and acceptance details](../qa/shared-bus-feed-2026-11-15.md).
