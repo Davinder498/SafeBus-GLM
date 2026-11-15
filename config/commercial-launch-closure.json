@@ -69,8 +69,8 @@
     {
       "id": "application-alerting-and-operations",
       "status": "open",
-      "businessDecision": "Owner mailbox and Monday\u2013Saturday 06:00\u201318:00 America/Edmonton support approved and published, including critical issues. Alert receipt and operational response evidence remain unverified. No additional acknowledgement or after-hours promise.",
-      "note": "Netlify production setting observed on 2026-11-14: SAFEBUS_APPLICATION_MONITOR_MODE=observe. Application alerts require activation and actual mailbox receipt verification."
+      "businessDecision": "Owner mailbox and Monday\u2013Saturday 06:00\u201318:00 America/Edmonton support approved and published for every issue, including critical incidents. Automated monitoring does not extend staffed support hours. Operational response-drill evidence remains open.",
+      "note": "Alert mode activated by protected run 43595418551. Owner received the Netlify GitHub-cadence alert. On 2026-11-15 UTC owner screenshot confirmed UptimeRobot HTTPS monitoring of safebus.kids every five minutes and owner confirmed test-email receipt. GitHub cron retirement and Netlify completion-status endpoint prepared; release, second external monitor configuration and stale/recovery verification remain pending. No seven-day continuity or application-category delivery-drill claim."
     },
     {
       "id": "large-authority-reference-selectors",
@@ -91,8 +91,9 @@
     },
     {
       "id": "operational-retention-activation",
-      "status": "open",
-      "note": "Read-only dry-run on 2026-11-14: 2 invitations, 11 tracking sessions and 138 rate-limit buckets eligible; all other classes zero. Database destructive control remains disabled. Activation and scheduled completion evidence remain pending. Netlify scheduler verified running every minute in dry-run mode; execution flag absent. No pending Auth account disposal requests. Protected activation prepared: fresh encrypted recovery, initial-class guard, production-only settings, first scheduled execution verification and failure pause. Not yet activated."
+      "status": "live_verified",
+      "note": "Protected activation succeeded at dda6291228515e16646a23dc0824963a9f922e28. Subsequent read-only observation on 2026-11-15 confirmed destructive_enabled=true and scheduled completion at 05:10:05Z. Approved operational classes only; this is not full customer-data disposal or recovery-drill qualification.",
+      "productionRun": "43595418551"
     },
     {
       "id": "capacity-qualification",

@@ -27,7 +27,7 @@
 [functions."safebus-invitation-expiry-scheduled"]
   schedule = "@hourly"
 
-# A separate scheduler checks public health and detects missing GitHub runs.
+# Checks public/application health and records a minimal completion heartbeat.
 # Only published production deploys execute this schedule.
 [functions."production-health-scheduled"]
   schedule = "11,26,41,56 * * * *"

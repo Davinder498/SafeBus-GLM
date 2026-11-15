@@ -47,9 +47,9 @@ const DETAILS = {
     subject: 'SafeBus alert: public health needs attention',
     text: 'A SafeBus public health observation failed. Review the landing page, security headers, login shell and map configuration checks. This observation alone does not establish the cause or extent of an outage.',
   },
-  github_cadence: {
-    subject: 'SafeBus alert: scheduled monitoring needs attention',
-    text: 'The GitHub scheduled-monitor observation failed. The latest scheduled main-branch run may be missing, stale, incomplete or unsuccessful, or its public metadata could not be verified. This does not by itself mean the app is down.',
+  monitor_heartbeat: {
+    subject: 'SafeBus alert: monitoring completion could not be recorded',
+    text: 'The production monitor could not save its completion signal. Inspect production-health-scheduled logs and Netlify Blobs. The independent monitoring-status check may report unavailable until a fresh successful observation is recorded.',
   },
 };
 
@@ -93,13 +93,13 @@ export async function sendMonitorAlerts({
           headers: {
             authorization: `Bearer ${apiKey}`,
             'content-type': 'application/json',
-            'Idempotency-Key': `safebus-monitor-v1/${check}/${bucket}`,
+            'Idempotency-Key': `safebus-monitor-v2/${check}/${bucket}`,
           },
           body: JSON.stringify({
             from: `SafeBus operations <${from}>`,
             to: [RECIPIENT],
             subject,
-            text: `${text}\n\nObservation window starts: ${windowStart}\nMonitor logs: https://app.netlify.com/projects/bussafe/functions/production-health-scheduled\nGitHub monitor: https://github.com/Davinder498/SafeBus-GLM/actions/workflows/production-health.yml\n\nRepeated failures of this check share one email per six-hour UTC window. Check the current logs before taking action. No automatic recovery email is sent.`,
+            text: `${text}\n\nObservation window starts: ${windowStart}\nMonitor logs: https://app.netlify.com/projects/bussafe/functions/production-health-scheduled\nManual diagnostics: https://github.com/Davinder498/SafeBus-GLM/actions/workflows/production-health.yml\n\nRepeated failures of this check share one email per six-hour UTC window. Check the current logs before taking action. No automatic recovery email is sent.`,
           }),
         });
         if (!response.ok) throw new Error('provider_error');

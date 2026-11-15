@@ -53,6 +53,7 @@ const EVIDENCE_FILES = [
   'scripts/lib/monitor-seven-day-history.mjs',
   'scripts/audit-seven-day-monitor.mjs',
   'scripts/lib/monitor-alert-email.mjs',
+  'apps/web/netlify/lib/monitor-heartbeat.mjs',
   'scripts/lib/production-application-signals.mjs',
   'scripts/print-operations-release-digest.mjs',
   'tests/release/operations-authorization.test.mjs',

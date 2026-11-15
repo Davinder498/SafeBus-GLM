@@ -139,21 +139,21 @@ test('cadence errors with bad HTTP or JSON remain sanitized', async () => {
   }
 });
 
-test('scheduled production monitoring skips previews and checks health and cadence independently', async () => {
+test('scheduled production monitoring skips previews and checks health and heartbeat independently', async () => {
   const { runScheduledHealth } = await import('../../apps/web/netlify/functions/production-health-scheduled.mjs');
-  let healthCalls = 0; let cadenceCalls = 0; const logs = [];
+  let healthCalls = 0; let heartbeatCalls = 0; const logs = [];
   const options = {
     health: async (input) => { healthCalls++; assert.deepEqual(input, {origin:'https://safebus.kids',retries:0,timeoutMs:6000}); return {result:'healthy'}; },
-    cadence: async () => { cadenceCalls++; return {result:'healthy'}; },
+    heartbeat: async () => { heartbeatCalls++; return {result:'healthy'}; },
     log: (value) => logs.push(JSON.parse(value)),
   };
   await assert.rejects(runScheduledHealth(options), /MONITOR_DEPLOY_CONTEXT_MISSING/);
   for (const deploy of [{context:'deploy-preview',published:true}, {context:'production',published:false}]) {
     assert.equal((await runScheduledHealth({...options,deploy})).result, 'skipped');
   }
-  assert.equal(healthCalls,0); assert.equal(cadenceCalls,0);
+  assert.equal(healthCalls,0); assert.equal(heartbeatCalls,0);
   assert.equal((await runScheduledHealth({...options,deploy:{context:'production',published:true}})).result,'healthy');
-  assert.equal(healthCalls,1); assert.equal(cadenceCalls,1); assert.equal(logs[0].result,'healthy');
+  assert.equal(healthCalls,1); assert.equal(heartbeatCalls,1); assert.equal(logs[0].result,'healthy');
 });
 
 test('scheduled failures expose only fixed codes while preserving both independent observations', async () => {
@@ -162,12 +162,12 @@ test('scheduled failures expose only fixed codes while preserving both independe
   await assert.rejects(runScheduledHealth({
     deploy:{context:'production',published:true},
     health:async()=>{healthChecked=true;throw new Error('secret-map-key');},
-    cadence:async()=>{throw new Error('MONITOR_CADENCE_PRIVATE_VALUE');},
+    heartbeat:async()=>{throw new Error('MONITOR_HEARTBEAT_PRIVATE_VALUE');},
     notify:async({checks})=>{alertChecks=checks;return {result:'accepted'};},
     log:(line)=>logs.push(line),
   }), {message:'PRODUCTION_HEALTH_OBSERVATION_FAILED'});
   assert.equal(healthChecked,true);
-  assert.deepEqual(alertChecks.map(check=>check.check),['public_health','github_cadence']);
+  assert.deepEqual(alertChecks.map(check=>check.check),['public_health','monitor_heartbeat']);
   assert.equal(JSON.parse(logs[1]).result,'provider_accepted');
   assert.equal(logs[0].includes('secret-map-key'),false);assert.equal(logs[0].includes('PRIVATE_VALUE'),false);
   assert.equal(JSON.parse(logs[0]).checks.length,2);
@@ -176,12 +176,12 @@ test('scheduled failures expose only fixed codes while preserving both independe
 test('fulfilled but malformed health results fail closed without logging provider content', async () => {
   const { runScheduledHealth } = await import('../../apps/web/netlify/functions/production-health-scheduled.mjs');
   const deploy = { context: 'production', published: true };
-  for (const which of ['health', 'cadence']) {
+  for (const which of ['health']) {
     const logs = []; let notified;
     const opts = {
       deploy,
       health: async () => ({ result: 'healthy' }),
-      cadence: async () => ({ result: 'healthy' }),
+      heartbeat: async () => ({ result: 'healthy' }),
       notify: async ({ checks }) => { notified = checks; return { result: 'accepted' }; },
       log: line => logs.push(line),
     };
@@ -190,8 +190,8 @@ test('fulfilled but malformed health results fail closed without logging provide
     const event = JSON.parse(logs[0]);
     const failed = event.checks.filter(item => item.result === 'fail');
     assert.equal(failed.length, 1);
-    assert.equal(failed[0].check, which === 'health' ? 'public_health' : 'github_cadence');
-    assert.equal(failed[0].code, which === 'health' ? 'PUBLIC_HEALTH_FAILED' : 'MONITOR_CADENCE_INVALID_RESPONSE');
+    assert.equal(failed[0].check, 'public_health');
+    assert.equal(failed[0].code, 'PUBLIC_HEALTH_FAILED');
     assert.ok(notified);
     assert.doesNotMatch(logs.join(' '), /private-provider-token/);
   }
@@ -203,14 +203,14 @@ test('operational monitor requires explicit provider acceptance before logging a
   await assert.rejects(runScheduledHealth({
     deploy: { context: 'production', published: true },
     health: async () => ({ result: 'healthy' }),
-    cadence: async () => { throw new Error('MONITOR_CADENCE_GAP'); },
+    heartbeat: async () => { throw new Error('MONITOR_HEARTBEAT_WRITE_FAILED'); },
     notify: async () => ({ result: 'not_needed', detail: 'private-provider-message' }),
     log: line => logs.push(line),
   }), { message: 'PRODUCTION_HEALTH_OBSERVATION_FAILED' });
   const event = JSON.parse(logs[0]);
   assert.deepEqual(event.checks, [
     { check: 'public_health', result: 'pass' },
-    { check: 'github_cadence', result: 'fail', code: 'MONITOR_CADENCE_GAP' },
+    { check: 'monitor_heartbeat', result: 'fail', code: 'MONITOR_HEARTBEAT_WRITE_FAILED' },
   ]);
   assert.deepEqual(JSON.parse(logs[1]), {
     event: 'production_health_alert', result: 'failed', code: 'MONITOR_ALERT_DELIVERY_FAILED',
@@ -227,12 +227,12 @@ test('staged application signals do not run before explicit production activatio
     applicationEnabled: false,
     applicationSignals: async () => { calls++; return []; },
     health: async () => ({ result: 'healthy' }),
-    cadence: async () => ({ result: 'healthy' }),
+    heartbeat: async () => ({ result: 'healthy' }),
     log: (line) => log.push(JSON.parse(line)),
   });
   assert.equal(result.result, 'healthy');
   assert.equal(calls, 0);
-  assert.equal(log[0].checks.length, 2);
+  assert.equal(log[0].checks.length, 1);
 });
 
 test('activated application monitoring distinguishes idle trips from failure and alerts on fixed categories', async () => {
@@ -244,7 +244,7 @@ test('activated application monitoring distinguishes idle trips from failure and
       deploy: { context: 'production', published: true },
       applicationEnabled: true,
       health: async () => ({ result: 'healthy' }),
-      cadence: async () => ({ result: 'healthy' }),
+      heartbeat: async () => ({ result: 'healthy' }),
       applicationSignals: async () => [
         { check: 'app_database', result: 'pass' },
         { check: 'app_gps_freshness', result: 'pass', mode: 'idle' },
@@ -258,12 +258,12 @@ test('activated application monitoring distinguishes idle trips from failure and
     }),
     { message: 'PRODUCTION_HEALTH_OBSERVATION_FAILED' },
   );
-  assert.equal(sent.length, 8);
+  assert.equal(sent.length, 7);
   assert.deepEqual(sent.filter((x) => x.result === 'fail'), [
     { check: 'app_push_backlog', result: 'fail', code: 'PUSH_QUEUE_OLD' },
   ]);
-  assert.equal(events[0].checks.length, 8);
-  assert.equal(events[0].checks[3].mode, 'idle');
+  assert.equal(events[0].checks.length, 7);
+  assert.equal(events[0].checks[2].mode, 'idle');
   assert.equal(events[1].result, 'provider_accepted');
 });
 
@@ -279,12 +279,12 @@ test('application monitor returns fixed failures for unexpected or rejected prov
       deploy: { context: 'production', published: true },
       applicationEnabled: true,
       health: async () => ({ result: 'healthy' }),
-      cadence: async () => ({ result: 'healthy' }),
+      heartbeat: async () => ({ result: 'healthy' }),
       applicationSignals,
       notify: async ({ checks: observed }) => { checks = observed; return { result: 'accepted' }; },
       log: line => log.push(line),
     }), { message: 'PRODUCTION_HEALTH_OBSERVATION_FAILED' });
-    assert.equal(checks.length, 8);
+    assert.equal(checks.length, 7);
     assert.equal(checks.filter(x => x.result === 'fail').length, 6);
     assert.doesNotMatch(log.join(' '), /private-identity|secret database response|token/);
   }
@@ -298,7 +298,7 @@ test('observation-only mode records real backend failures but sends no applicati
     deploy: { context: 'production', published: true },
     applicationMode: 'observe',
     health: async () => ({ result: 'healthy' }),
-    cadence: async () => ({ result: 'healthy' }),
+    heartbeat: async () => ({ result: 'healthy' }),
     applicationSignals: async () => [
       { check: 'app_database', result: 'fail', code: 'DATABASE_CHECK_UNAVAILABLE' },
       { check: 'app_gps_freshness', result: 'pass', mode: 'idle' },
@@ -321,7 +321,6 @@ test('observation-only mode records real backend failures but sends no applicati
   assert.equal(logs[0].mode, 'observe');
   assert.deepEqual(logs[1].checks, [
     { check: 'public_health', result: 'pass' },
-    { check: 'github_cadence', result: 'pass' },
   ]);
 });
 
@@ -333,14 +332,13 @@ test('observation-only mode does not hide real public-health failures or their a
     deploy: { context: 'production', published: true },
     applicationMode: 'observe',
     health: async () => { throw new Error('provider-secret-content'); },
-    cadence: async () => ({ result: 'healthy' }),
+    heartbeat: async () => ({ result: 'healthy' }),
     applicationSignals: async () => { throw new Error('private-student-GPS-and-token'); },
     notify: async ({ checks }) => { notified = checks; return { result: 'accepted' }; },
     log: line => logs.push(line),
   }), { message: 'PRODUCTION_HEALTH_OBSERVATION_FAILED' });
   assert.deepEqual(notified, [
     { check: 'public_health', result: 'fail', code: 'PUBLIC_HEALTH_FAILED' },
-    { check: 'github_cadence', result: 'pass' },
   ]);
   const app = JSON.parse(logs[0]);
   assert.equal(app.result, 'degraded');
@@ -363,4 +361,69 @@ test('application mode must be explicit and only recognized values are accepted'
     applicationSignals: async () => { checksCalled++; },
   })).result, 'skipped');
   assert.equal(checksCalled, 0);
+});
+
+test('completion signal records no details and requires alert mode for healthy status', async () => {
+  const { recordMonitorHeartbeat, monitorStatus, MAX_HEARTBEAT_AGE_MS } =
+    await import('../../apps/web/netlify/lib/monitor-heartbeat.mjs');
+  const deploy = { context: 'production', published: true };
+  const now = 2_000_000_000_000;
+  let record;
+  const getStore = () => ({
+    setJSON: async (key, value) => { assert.equal(key, 'completion'); record = value; },
+    get: async (key, options) => { assert.equal(key, 'completion'); assert.equal(options.type, 'json'); return record; },
+  });
+  const request = new Request('https://safebus.kids/.netlify/functions/monitoring-status');
+  for (const applicationMode of ['off', 'observe', 'alert']) {
+    await recordMonitorHeartbeat({ deploy, healthy: true, applicationMode, now, getStore });
+    assert.deepEqual(record, { completedAt: now, healthy: applicationMode === 'alert' });
+    assert.equal((await monitorStatus(request, { deploy, now, getStore })).status, applicationMode === 'alert' ? 200 : 503);
+  }
+  for (const age of [0, MAX_HEARTBEAT_AGE_MS]) {
+    const response = await monitorStatus(request, { deploy, now: now + age, getStore });
+    assert.equal(response.status, 200);
+    assert.equal(await response.text(), 'available');
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    assert.equal(response.headers.get('netlify-cdn-cache-control'), 'no-store');
+  }
+  assert.equal((await monitorStatus(request, { deploy, now: now + MAX_HEARTBEAT_AGE_MS + 1, getStore })).status, 503);
+  const valid = record;
+  for (const bad of [null, {}, {...valid, healthy: false}, {...valid, healthy: 'true'},
+    {...valid, completedAt: now + 1}, {...valid, completedAt: '2000000000000'},
+    {...valid, completedAt: -1}, {...valid, detail: 'private'}]) {
+    record = bad;
+    const response = await monitorStatus(request, { deploy, now, getStore });
+    assert.equal(response.status, 503);
+    assert.equal(await response.text(), 'unavailable');
+  }
+  record = valid;
+  let touched = false;
+  const forbidden = () => { touched = true; throw new Error('private-storage-key'); };
+  for (const invalidDeploy of [undefined, {context:'deploy-preview',published:true}, {context:'production',published:false}]) {
+    assert.equal((await monitorStatus(request, { deploy: invalidDeploy, now, getStore: forbidden })).status, 503);
+    await assert.rejects(recordMonitorHeartbeat({ deploy: invalidDeploy, healthy:true, applicationMode:'alert', now, getStore:forbidden }), /MONITOR_HEARTBEAT_INVALID_INPUT/);
+  }
+  assert.equal(touched, false);
+  const post = await monitorStatus(new Request(request.url, { method:'POST' }), { deploy, now, getStore:forbidden });
+  assert.equal(post.status, 405); assert.equal(touched, false);
+  const head = await monitorStatus(new Request(request.url, { method:'HEAD' }), { deploy, now, getStore });
+  assert.equal(head.status, 200); assert.equal(await head.text(), '');
+  assert.equal((await monitorStatus(request, { deploy, now, getStore: forbidden })).status, 503);
+  await assert.rejects(recordMonitorHeartbeat({ deploy, healthy:true, applicationMode:'alert', now, getStore:forbidden }), { message:'MONITOR_HEARTBEAT_WRITE_FAILED' });
+});
+
+test('monitor completion follows all probes and reports failure independently of email delivery', async () => {
+  const { runScheduledHealth } = await import('../../apps/web/netlify/functions/production-health-scheduled.mjs');
+  const order = [];
+  let completion;
+  await assert.rejects(runScheduledHealth({
+    deploy: { context:'production', published:true }, applicationMode:'alert',
+    health: async () => { order.push('health'); throw new Error('private'); },
+    applicationSignals: async () => { order.push('application'); throw new Error('private'); },
+    heartbeat: async value => { order.push('completion'); completion = value; },
+    notify: async () => { order.push('email'); throw new Error('private'); }, log: () => {},
+  }), /PRODUCTION_HEALTH_OBSERVATION_FAILED/);
+  assert.deepEqual(order, ['health','application','completion','email']);
+  assert.equal(completion.healthy, false);
+  assert.equal(completion.applicationMode, 'alert');
 });

@@ -1,5 +1,9 @@
 # Authorization audit, monitoring and workspace corrections
 
+> Historical record. The replacement design and rollout status are in
+> [External monitoring handover](external-monitoring-handover-2026-11-15.md).
+> Do not use the GitHub cadence criteria below to assess the replacement.
+
 ## Acceptance and role boundaries
 
 School authority admins, transportation admins and platform admins retain their
