@@ -111,3 +111,21 @@ The first concurrent build was terminated by the local resource limit (137);
 the isolated rerun passed. Generated launcher artwork was restored to avoid
 unrelated asset churn. Browser execution remains for GitHub CI because this
 managed local environment cannot launch Chromium; no sandbox control was bypassed.
+
+
+## Hosted rehearsal correction
+
+Run 43715261301 stopped before installation with
+`OPERATIONAL_LINEAGE_CHANGED_OBJECT`. The policy catalog's `roles` column is
+PostgreSQL `name[]` (OID 1003). PGlite decoded it as an array, while the production
+node-postgres driver returns the wire text `{authenticated}`. The operational
+manifest intentionally casts to `text[]` and remains unchanged; only the full
+catalog delta needed the production representation.
+
+Read-only inspection after failure confirmed both predecessor function hashes,
+absence of the new helper/policy, and the unchanged preceding release/fingerprint.
+The correction changes no SQL, permissions, app bundle or fingerprint collector.
+The regression test reproduces the old proof's failure through the production
+parser, verifies the corrected delta and exact rollback, and continues to reject
+changed policy audiences, commands and predicates. Retry only from the corrected,
+reviewed main commit; rerunning the old commit will reproduce the failure.
