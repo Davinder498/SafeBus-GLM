@@ -280,6 +280,38 @@ export function verifyOperationalSnapshot(snapshot, config, state) {
 }
 
 export function operationalRestoreSql(snapshot, config) {
+  // This queue contains only disposable refresh hints, but preserve every pending
+  // scope by moving it back to the legacy lane before restoring its dispatcher.
+  // Lock the producer table first, then queues in producer order. No GPS write
+  // can slip between the copy and trigger restoration in the recovery transaction.
+  const trackingRecovery = [];
+  if (config.trackingSharedQueueRecovery) {
+    if (
+      config.trackingSharedQueueRecovery !== true ||
+      !config.newTables?.includes('safebus_private.shared_tracking_queue') ||
+      !snapshot.functions.some(
+        (f) => f.signature === 'safebus_private.notify_tracking_location_change()' && f.definition,
+      ) ||
+      !snapshot.functions.some(
+        (f) =>
+          f.signature === 'safebus_private.dispatch_tracking_invalidations(integer,integer)' &&
+          f.definition,
+      )
+    )
+      throw new Error('OPERATIONAL_RECOVERY_SCOPE');
+    trackingRecovery.push(`LOCK TABLE public.driver_trip_current_locations IN SHARE ROW EXCLUSIVE MODE;
+      LOCK TABLE safebus_private.tracking_invalidation_queue IN SHARE ROW EXCLUSIVE MODE;
+      LOCK TABLE safebus_private.shared_tracking_queue IN SHARE ROW EXCLUSIVE MODE;
+      INSERT INTO safebus_private.tracking_invalidation_queue AS q
+        (driver_trip_id,tenant_id,first_pending_at,latest_at)
+      SELECT driver_trip_id,tenant_id,first_pending_at,latest_at
+        FROM safebus_private.shared_tracking_queue
+      ON CONFLICT(driver_trip_id) DO UPDATE SET generation=q.generation+1,
+        pass_generation=NULL,guardian_cursor=NULL,admin_sent=false,
+        first_pending_at=least(q.first_pending_at,excluded.first_pending_at),
+        latest_at=greatest(q.latest_at,excluded.latest_at),available_at=clock_timestamp(),
+        failures=0,last_error_code=NULL;`);
+  }
   const pendingGuards = (config.mustBeEmptyBeforeRestore ?? []).map((table) => {
     const [schema, name] = table.split('.');
     return `DO $restore$ BEGIN IF EXISTS(SELECT 1 FROM ${identifier(schema)}.${identifier(name)} LIMIT 1) THEN RAISE EXCEPTION 'Retained feature data must drain before rollback.'; END IF; END $restore$;`;
@@ -301,6 +333,7 @@ export function operationalRestoreSql(snapshot, config) {
       `ALTER TABLE ${identifier(move.after.schema)}.${identifier(move.after.table)} SET SCHEMA ${identifier(move.before.schema)};`,
   );
   const statements = [
+    ...trackingRecovery,
     ...pendingGuards,
     ...moves,
     ...(config.triggers ?? [])

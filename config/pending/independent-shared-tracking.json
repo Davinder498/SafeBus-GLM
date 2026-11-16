@@ -1,0 +1,343 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261116220000_independent_shared_tracking_workers.sql",
+  "migrationSha256": "13399df629ec4fd23e34a1e1ecb2e685edb711e3dcef864c4c73faead83630d1",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "safebus_private.notify_tracking_location_change()",
+      "before": {
+        "md5": "8384974b83d4db3dbf40272ae63ed3fe"
+      },
+      "after": {
+        "md5": "bb37dbd071510cdc21a677dec90f88cb"
+      },
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"]
+    },
+    {
+      "signature": "safebus_private.dispatch_tracking_invalidations(integer,integer)",
+      "before": {
+        "md5": "ad519123e38b2b447b65d34616bdd2c0"
+      },
+      "after": {
+        "md5": "3ca9a89eec2a5d607f4b44e9b946057e"
+      },
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"]
+    },
+    {
+      "signature": "safebus_private.prune_tracking_worker_history()",
+      "before": {
+        "md5": "00eec73e000a895b6da0ed8ea9948fba"
+      },
+      "after": {
+        "md5": "dffed8d740e2bf343bc5cf9d716851db"
+      },
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"]
+    },
+    {
+      "signature": "safebus_private.dispatch_shared_tracking(integer,integer)",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "8b5bd2b13509c5d4218a0af6a1f56dce"
+      },
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"]
+    },
+    {
+      "signature": "safebus_private.shared_tracking_queue_health()",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "497363232360c7099e6e28b417e0dadb"
+      },
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"]
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": [],
+  "relations": [
+    {
+      "name": "safebus_private.shared_tracking_queue",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": ["postgres=arwdDxtm/postgres"],
+        "columns": [
+          {
+            "name": "driver_trip_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "tenant_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "shard",
+            "type": "integer",
+            "default": "(strpos('0123456789abcdef'::text, \"left\"((driver_trip_id)::text, 1)) - 1)",
+            "required": false
+          },
+          {
+            "name": "generation",
+            "type": "bigint",
+            "default": "1",
+            "required": true
+          },
+          {
+            "name": "first_pending_at",
+            "type": "timestamp with time zone",
+            "default": "clock_timestamp()",
+            "required": true
+          },
+          {
+            "name": "available_at",
+            "type": "timestamp with time zone",
+            "default": "clock_timestamp()",
+            "required": true
+          },
+          {
+            "name": "latest_at",
+            "type": "timestamp with time zone",
+            "default": "clock_timestamp()",
+            "required": true
+          },
+          {
+            "name": "failures",
+            "type": "integer",
+            "default": "0",
+            "required": true
+          },
+          {
+            "name": "last_error_code",
+            "type": "text",
+            "default": null,
+            "required": false
+          }
+        ],
+        "constraints": [
+          "FOREIGN KEY (driver_trip_id) REFERENCES driver_trips(id) ON DELETE CASCADE",
+          "CHECK ((generation > 0))",
+          "PRIMARY KEY (driver_trip_id)",
+          "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE"
+        ],
+        "policies": 0
+      }
+    }
+  ],
+  "indexes": [
+    {
+      "schema": "safebus_private",
+      "name": "shared_tracking_queue_ready_idx",
+      "before": null,
+      "after": "CREATE INDEX shared_tracking_queue_ready_idx ON safebus_private.shared_tracking_queue USING btree (shard, available_at, driver_trip_id)"
+    }
+  ],
+  "jobs": [
+    {
+      "name": "safebus-tracking-invalidation-dispatcher",
+      "before": {
+        "name": "safebus-tracking-invalidation-dispatcher",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "b12e56fbe4fcb12833769e371a155ce2"
+      },
+      "after": {
+        "name": "safebus-tracking-invalidation-dispatcher",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "b12e56fbe4fcb12833769e371a155ce2"
+      }
+    },
+    {
+      "name": "safebus-tracking-invalidation-history",
+      "before": {
+        "name": "safebus-tracking-invalidation-history",
+        "schedule": "* * * * *",
+        "active": true,
+        "command_md5": "0f85bbf8fef55dfcc525636c5a6634fc"
+      },
+      "after": {
+        "name": "safebus-tracking-invalidation-history",
+        "schedule": "* * * * *",
+        "active": true,
+        "command_md5": "0f85bbf8fef55dfcc525636c5a6634fc"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-00",
+      "before": null,
+      "after": {
+        "name": "safebus-shared-tracking-00",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "ad1d35cdccb29b3b8040a26e8a0527c4"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-01",
+      "before": null,
+      "after": {
+        "name": "safebus-shared-tracking-01",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "54c296de4f769940f80d7fd78faddd3e"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-02",
+      "before": null,
+      "after": {
+        "name": "safebus-shared-tracking-02",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "17a3d97e349cc402b9608cb14d05f1ea"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-03",
+      "before": null,
+      "after": {
+        "name": "safebus-shared-tracking-03",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "c4839eb042490a4cece5033c185b767c"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-04",
+      "before": null,
+      "after": {
+        "name": "safebus-shared-tracking-04",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "062aacca95bc705d071ab76aa4e24647"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-05",
+      "before": null,
+      "after": {
+        "name": "safebus-shared-tracking-05",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "e9847550c34139b1f7a8f048bbd317ba"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-06",
+      "before": null,
+      "after": {
+        "name": "safebus-shared-tracking-06",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "a3921253d77d0bac13c539c108042cd5"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-07",
+      "before": null,
+      "after": {
+        "name": "safebus-shared-tracking-07",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "364f1f6a6f12c4f9ecb506ab856f51d9"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-08",
+      "before": null,
+      "after": {
+        "name": "safebus-shared-tracking-08",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "a4cd4028c05e3364a11f61cc3df734d4"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-09",
+      "before": null,
+      "after": {
+        "name": "safebus-shared-tracking-09",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "46685815c3013fd03efa62e1e6646bde"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-10",
+      "before": null,
+      "after": {
+        "name": "safebus-shared-tracking-10",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "b318ade2059967d1f4ff044575845646"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-11",
+      "before": null,
+      "after": {
+        "name": "safebus-shared-tracking-11",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "e4eefe5b91b4aed3ab240f7173aa36d8"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-12",
+      "before": null,
+      "after": {
+        "name": "safebus-shared-tracking-12",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "be1edcefbc441d456bc7844643956aef"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-13",
+      "before": null,
+      "after": {
+        "name": "safebus-shared-tracking-13",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "4b75a15c304aee25cc21c3a6e7e6011c"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-14",
+      "before": null,
+      "after": {
+        "name": "safebus-shared-tracking-14",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "22c90ff38d85bf5dbdad237afb467990"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-15",
+      "before": null,
+      "after": {
+        "name": "safebus-shared-tracking-15",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "ab0748bb77afbda440bf7d033e740d07"
+      }
+    }
+  ],
+  "newTables": ["safebus_private.shared_tracking_queue"],
+  "trackingSharedQueueRecovery": true
+}

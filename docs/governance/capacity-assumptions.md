@@ -2,7 +2,7 @@
 
 Status: customer-selected planning target; remaining assumptions and service
 objectives proposed. No demonstrated application capacity or launch approval.
-Updated: 2026-11-15. Owner confirmed the fleet target as 5,000–10,000 buses. Decision: [DL-020](decision-log.md#dl-020--capacity-planning-and-local-workload-simulation).
+Updated: 2026-11-16. Owner confirmed the fleet target as 5,000–10,000 buses. Decision: [DL-020](decision-log.md#dl-020--capacity-planning-and-local-workload-simulation).
 
 ## Current owner direction — 2026-11-10
 
@@ -25,6 +25,20 @@ selected-map stop reads from ordinary position hints and releases tracking chann
 while hidden/offline. Existing Android installations need a separate update.
 A [compatible batch worker](../qa/tracking-worker-batch-2026-11-15.md) is prepared;
 it reduces insert statements, not recipient messages or provider quota demand.
+
+A [prepared independent shared worker](../qa/independent-shared-tracking-2026-11-16.md)
+separates bus/tenant hints from legacy guardian pagination. Its sixteen bounded
+partitions permit up to 4,096 trip visits/second by configuration; this is not an
+observed throughput result. It adds one dirty-marker write per GPS update and up
+to sixteen worker connections. Production remains on the prior worker until the
+reviewed protected installation. Per-viewer reads, legacy fan-out, provider limits
+and physical delivery remain unqualified.
+
+For launch qualification, vary map viewers independently from eligible
+notification recipients. Include zero map viewers with full notification demand,
+then 10%, 50% and 100% viewer sensitivity cases. Viewer presence must never gate
+notification generation. These are test cases, not owner-confirmed concurrency
+forecasts or a change to personal notification consent.
 
 ## Target and meaning
 
@@ -188,7 +202,6 @@ that the offered target was reached. A generator-limited run is inconclusive.
 Changes to rate, role mix, retention or service objectives require an updated
 decision entry and re-testing. [Local tooling and evidence checklist](../qa/capacity-workload-harness.md)
 describes the current preparation milestone and its limitations.
-
 
 ## Shared bus-feed transition — 2026-11-15
 

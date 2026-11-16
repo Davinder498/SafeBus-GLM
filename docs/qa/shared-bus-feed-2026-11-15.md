@@ -1,7 +1,11 @@
 # Shared bus feed: compatible rollout
 
-Status: prepared locally; not installed or published. This is the first protocol
-transition, not 5,000–10,000-bus capacity qualification.
+Status update November 16: the shared helper and dispatcher were independently
+verified installed against main `a7ddd62a54c13aac0aea27d67f7ccd0f73592b61`.
+The original preparation/rehearsal record below is historical. Android installation
+and physical acceptance remain separate; this is not fleet capacity qualification.
+The [next worker change](independent-shared-tracking-2026-11-16.md) is prepared,
+not installed.
 
 ## Behavior and boundaries
 
@@ -103,7 +107,6 @@ locked-phone GPS/network recovery and a controlled, budgeted capacity test with
 agreed guardian concurrency and provider quotas. This change alone is not
 commercial launch or capacity certification.
 
-
 Local verification completed: `pnpm typecheck`, `pnpm lint`, `pnpm build`,
 `pnpm test` (1,261 web, 36 mobile, 682 release/database tests), immutable migration
 verification (125 files), mobile production build and Android sync all passed.
@@ -111,7 +114,6 @@ The first concurrent build was terminated by the local resource limit (137);
 the isolated rerun passed. Generated launcher artwork was restored to avoid
 unrelated asset churn. Browser execution remains for GitHub CI because this
 managed local environment cannot launch Chromium; no sandbox control was bypassed.
-
 
 ## Hosted rehearsal correction
 
