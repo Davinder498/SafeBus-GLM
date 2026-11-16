@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
+import pg from 'pg';
 import { createHash } from 'node:crypto';
 import { sharedFeedFixture, sharedMigration } from './fixtures/shared-bus-feed-db.mjs';
 import {
@@ -57,20 +58,58 @@ const allowed = async (db) =>
   (await db.query('select safebus_private.can_receive_bus_tracking($1) allowed', [topic])).rows[0]
     .allowed;
 
+// PGlite decodes name[] as an array, but node-postgres deliberately leaves
+// this unregistered array OID as PostgreSQL text. Keep production fingerprints
+// unchanged and reproduce the production transport in catalog tests.
+function productionCatalogClient(db) {
+  return {
+    query: async (query, params) => {
+      if (query.includes('from pg_policies where schemaname')) {
+        const result = await db.query(
+          query.replace('permissive,roles,cmd', 'permissive,roles::text as roles,cmd'),
+          params,
+        );
+        result.rows = result.rows.map((row) => ({
+          ...row,
+          roles: pg.types.getTypeParser(1003)(row.roles),
+        }));
+        return result;
+      }
+      return db.query(query, params);
+    },
+  };
+}
+
 test('shared feed has exact reviewed catalog, ACLs and rollback including policy dependency', async (t) => {
   const db = await sharedFeedFixture(t);
   const before = await operationalSnapshot(db, config);
   verifyOperationalSnapshot(before, config, 'before');
-  const catalog = await collectSchemaCatalog(db);
-  const fingerprint = await calculateSchemaFingerprint(db);
+  const client = productionCatalogClient(db);
+  const catalog = await collectSchemaCatalog(client);
+  const fingerprint = await calculateSchemaFingerprint(client);
   assert.equal(operationalDigest(sql), config.migrationSha256);
   await db.exec(sql);
   verifyOperationalSnapshot(await operationalSnapshot(db, config), config, 'after');
-  const after = await collectSchemaCatalog(db);
+  const after = await collectSchemaCatalog(client);
   assert.deepEqual(trackingCatalogDelta(catalog, after), proof.cleanup);
   assert.deepEqual(precedingTrackingCatalog(after, proof.cleanup), catalog);
+  // Reproduce the failed hosted rehearsal rather than accepting both formats.
+  const defectiveProof = structuredClone(proof.cleanup);
+  defectiveProof.policies.added[0].roles = ['authenticated'];
+  assert.throws(() => precedingTrackingCatalog(after, defectiveProof), /LINEAGE_CHANGED_OBJECT/);
+  for (const change of [{ roles: '{anon,authenticated}' }, { cmd: 'ALL' }, { qual: 'true' }]) {
+    const drift = structuredClone(after);
+    Object.assign(
+      drift.catalog.policies.find(
+        (row) => row.policyname === 'safebus shared bus tracking receive',
+      ),
+      change,
+    );
+    assert.throws(() => precedingTrackingCatalog(drift, proof.cleanup), /LINEAGE_CHANGED_OBJECT/);
+  }
+
   await db.exec(operationalRestoreSql(before, config));
-  assert.equal(await calculateSchemaFingerprint(db), fingerprint);
+  assert.equal(await calculateSchemaFingerprint(client), fingerprint);
 });
 
 test('only current assigned guardians may receive; every account, service, session and MFA boundary fails closed', async (t) => {

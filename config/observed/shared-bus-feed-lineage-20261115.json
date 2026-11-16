@@ -11,9 +11,7 @@
           "tablename": "messages",
           "policyname": "safebus shared bus tracking receive",
           "permissive": "PERMISSIVE",
-          "roles": [
-            "authenticated"
-          ],
+          "roles": "{authenticated}",
           "cmd": "SELECT",
           "qual": "((extension = 'broadcast'::text) AND safebus_private.can_receive_bus_tracking(realtime.topic()))",
           "with_check": null
