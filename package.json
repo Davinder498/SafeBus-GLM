@@ -67,15 +67,15 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
-    "@electric-sql/pglite": "0.5.15",
+    "@electric-sql/pglite": "0.5.16",
     "@playwright/test": "^1.65.0",
-    "netlify-cli": "^27.16.2",
+    "netlify-cli": "^27.18.0",
     "pg": "^8.23.1",
-    "prettier": "^3.9.10",
-    "read-excel-file": "9.3.14",
+    "prettier": "^3.10.1",
+    "read-excel-file": "9.3.15",
     "rimraf": "^6.1.4",
-    "supabase": "3.0.0",
-    "turbo": "^2.11.10",
+    "supabase": "3.1.0",
+    "turbo": "^2.11.11",
     "typescript": "^5.6.3"
   },
   "engines": {
