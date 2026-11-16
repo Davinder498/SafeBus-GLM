@@ -41,6 +41,7 @@ const manifests = {
   tracking_history: 'config/pending/tracking-history-cleanup.json',
   tracking_batch: 'config/pending/tracking-batch.json',
   shared_bus_feed: 'config/pending/shared-bus-feed.json',
+  independent_shared_tracking: 'config/pending/independent-shared-tracking.json',
   calendar: 'config/pending/route-service-calendar.json',
   reporting: 'config/pending/privileged-admin-mfa.json',
   delivery: 'config/pending/unified-notification-delivery.json',
@@ -63,14 +64,21 @@ try {
   )
     throw new Error('OPERATIONAL_PROTECTED_CONTEXT');
   const config = JSON.parse(await fs.readFile(manifests[milestone], 'utf8'));
-  const lineage = ['tracking_history', 'tracking_batch', 'shared_bus_feed'].includes(milestone)
+  const lineage = [
+    'tracking_history',
+    'tracking_batch',
+    'shared_bus_feed',
+    'independent_shared_tracking',
+  ].includes(milestone)
     ? JSON.parse(
         await fs.readFile(
-          milestone === 'shared_bus_feed'
-            ? 'config/observed/shared-bus-feed-lineage-20261115.json'
-            : milestone === 'tracking_batch'
-              ? 'config/observed/tracking-batch-lineage-20261115.json'
-              : 'config/observed/tracking-cleanup-lineage-20261113.json',
+          milestone === 'independent_shared_tracking'
+            ? 'config/observed/independent-shared-tracking-lineage-20261116.json'
+            : milestone === 'shared_bus_feed'
+              ? 'config/observed/shared-bus-feed-lineage-20261115.json'
+              : milestone === 'tracking_batch'
+                ? 'config/observed/tracking-batch-lineage-20261115.json'
+                : 'config/observed/tracking-cleanup-lineage-20261113.json',
           'utf8',
         ),
       )
@@ -247,16 +255,24 @@ try {
     if (lineage)
       await operationalReadOnly(client, () => requireTrackingLedger(client, lineage, 'cleanup'));
     if (
-      ['tracking_invalidations', 'tracking_history', 'tracking_batch', 'shared_bus_feed'].includes(
-        milestone,
-      )
+      [
+        'tracking_invalidations',
+        'tracking_history',
+        'tracking_batch',
+        'shared_bus_feed',
+        'independent_shared_tracking',
+      ].includes(milestone)
     )
       await client.query(
         await fs.readFile('tests/rls/async-tracking-existing-database-readonly.sql', 'utf8'),
       );
-    if (milestone === 'shared_bus_feed')
+    if (['shared_bus_feed', 'independent_shared_tracking'].includes(milestone))
       await client.query(
         await fs.readFile('tests/rls/shared-bus-feed-existing-database-readonly.sql', 'utf8'),
+      );
+    if (milestone === 'independent_shared_tracking')
+      await client.query(
+        await fs.readFile('tests/rls/independent-shared-tracking-readonly.sql', 'utf8'),
       );
     const retention =
       milestone === 'retention'

@@ -283,7 +283,10 @@ test('batch milestone uses protected rollback rehearsal and lineage registration
   const script = await fs.readFile('scripts/release-operational-fix.mjs', 'utf8');
   const workflow = await fs.readFile('.github/workflows/release-operational-fix.yml', 'utf8');
   assert.match(script, /tracking_batch: 'config\/pending\/tracking-batch.json'/);
-  assert.match(script, /\['tracking_history', 'tracking_batch', 'shared_bus_feed'\]\.includes\(milestone\)/);
+  assert.match(
+    script,
+    /'tracking_history'[\s\S]*'tracking_batch'[\s\S]*'shared_bus_feed'[\s\S]*'independent_shared_tracking'[\s\S]*\.includes\(milestone\)/,
+  );
   assert.match(script, /config\/observed\/tracking-batch-lineage-20261115.json/);
   assert.match(workflow, /tracking_batch,/);
   assert.match(workflow, /environment: production/);
