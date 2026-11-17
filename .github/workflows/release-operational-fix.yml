@@ -23,6 +23,7 @@ on:
             tracking_batch,
             shared_bus_feed,
             independent_shared_tracking,
+            shared_route_geometry,
             retention,
             offline_actions,
             recent_auth,
