@@ -24,6 +24,7 @@ on:
             shared_bus_feed,
             independent_shared_tracking,
             shared_route_geometry,
+            shared_live_progress,
             retention,
             offline_actions,
             recent_auth,

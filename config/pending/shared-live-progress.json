@@ -1,0 +1,102 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261117064801_shared_live_bus_progress.sql",
+  "migrationSha256": "1d9d701beb9baf505d50fe9399983115ae8a778df24c3bb31cf7aa6ec4b61172",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "safebus_private.invalidate_live_bus_progress()",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "ad362b172af6b26d728349c1248490b6"
+      },
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"]
+    },
+    {
+      "signature": "safebus_private.shared_live_bus_progress(uuid,jsonb,jsonb,text)",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "2c553bc8ccd824de92a91000e60153d6"
+      },
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"]
+    },
+    {
+      "signature": "public.get_guardian_bus_service_lines(text)",
+      "before": {
+        "md5": "5d37de59da09190f73dbf39d8c8163c7"
+      },
+      "after": {
+        "md5": "c5eb732f01cd6aad69a581046643a138"
+      },
+      "owner": "postgres",
+      "acl": ["authenticated=X/postgres", "postgres=X/postgres", "service_role=X/postgres"]
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": [],
+  "relations": [
+    {
+      "name": "safebus_private.live_bus_progress_cache",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": ["postgres=arwdDxtm/postgres"],
+        "columns": [
+          {
+            "name": "driver_trip_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "tenant_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "input_digest",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "progress_data",
+            "type": "jsonb",
+            "default": null,
+            "required": true
+          }
+        ],
+        "constraints": [
+          "FOREIGN KEY (driver_trip_id) REFERENCES driver_trip_current_locations(driver_trip_id) ON DELETE CASCADE",
+          "PRIMARY KEY (driver_trip_id)"
+        ],
+        "policies": 0
+      }
+    }
+  ],
+  "newTables": ["safebus_private.live_bus_progress_cache"],
+  "triggers": [
+    {
+      "table": "public.driver_trip_current_locations",
+      "name": "invalidate_live_bus_progress_location",
+      "before": null,
+      "after": "CREATE TRIGGER invalidate_live_bus_progress_location AFTER UPDATE OF latitude, longitude, accuracy_m, speed_mps, recorded_at, tenant_id, driver_id, bus_id, route_id ON public.driver_trip_current_locations FOR EACH ROW EXECUTE FUNCTION safebus_private.invalidate_live_bus_progress()"
+    },
+    {
+      "table": "public.driver_trips",
+      "name": "invalidate_live_bus_progress_trip",
+      "before": null,
+      "after": "CREATE TRIGGER invalidate_live_bus_progress_trip AFTER UPDATE OF status, route_shape_id, tenant_id, driver_id, bus_id, route_id, route_trip_pattern_id ON public.driver_trips FOR EACH ROW EXECUTE FUNCTION safebus_private.invalidate_live_bus_progress()"
+    }
+  ]
+}

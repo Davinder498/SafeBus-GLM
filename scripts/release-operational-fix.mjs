@@ -43,6 +43,7 @@ const manifests = {
   shared_bus_feed: 'config/pending/shared-bus-feed.json',
   independent_shared_tracking: 'config/pending/independent-shared-tracking.json',
   shared_route_geometry: 'config/pending/shared-route-geometry.json',
+  shared_live_progress: 'config/pending/shared-live-progress.json',
   calendar: 'config/pending/route-service-calendar.json',
   reporting: 'config/pending/privileged-admin-mfa.json',
   delivery: 'config/pending/unified-notification-delivery.json',
@@ -71,18 +72,21 @@ try {
     'shared_bus_feed',
     'independent_shared_tracking',
     'shared_route_geometry',
+    'shared_live_progress',
   ].includes(milestone)
     ? JSON.parse(
         await fs.readFile(
-          milestone === 'shared_route_geometry'
-            ? 'config/observed/shared-route-geometry-lineage-20261117.json'
-            : milestone === 'independent_shared_tracking'
-              ? 'config/observed/independent-shared-tracking-lineage-20261116.json'
-              : milestone === 'shared_bus_feed'
-                ? 'config/observed/shared-bus-feed-lineage-20261115.json'
-                : milestone === 'tracking_batch'
-                  ? 'config/observed/tracking-batch-lineage-20261115.json'
-                  : 'config/observed/tracking-cleanup-lineage-20261113.json',
+          milestone === 'shared_live_progress'
+            ? 'config/observed/shared-live-progress-lineage-20261117.json'
+            : milestone === 'shared_route_geometry'
+              ? 'config/observed/shared-route-geometry-lineage-20261117.json'
+              : milestone === 'independent_shared_tracking'
+                ? 'config/observed/independent-shared-tracking-lineage-20261116.json'
+                : milestone === 'shared_bus_feed'
+                  ? 'config/observed/shared-bus-feed-lineage-20261115.json'
+                  : milestone === 'tracking_batch'
+                    ? 'config/observed/tracking-batch-lineage-20261115.json'
+                    : 'config/observed/tracking-cleanup-lineage-20261113.json',
           'utf8',
         ),
       )
@@ -280,6 +284,8 @@ try {
       );
     if (milestone === 'shared_route_geometry')
       await client.query(await fs.readFile('tests/rls/shared-route-geometry-readonly.sql', 'utf8'));
+    if (milestone === 'shared_live_progress')
+      await client.query(await fs.readFile('tests/rls/shared-live-progress-readonly.sql', 'utf8'));
     const retention =
       milestone === 'retention'
         ? await verifyRetentionDryRuns(client, config.functions[0].after.md5)
