@@ -6,6 +6,8 @@ set local statement_timeout = '30s';
 set local lock_timeout = '2s';
 set local idle_in_transaction_session_timeout = '60s';
 set local request.jwt.claims = '{}';
+set local request.path = '/tenants';
+set local request.method = 'GET';
 
 do $guard$
 begin
@@ -72,6 +74,7 @@ begin
   perform set_config('request.jwt.claims',jsonb_build_object('sub',uid,'session_id',sid,
     'role','authenticated','aal','aal2','user_metadata',jsonb_build_object('role','platform_super_admin'))::text,true);
   execute 'set local role authenticated';
+  perform safebus_private.enforce_active_api_session();
   if not public.is_current_user_session_active() then raise exception 'Valid fixture session denied'; end if;
   actual_role:=safebus_private.current_user_role()::text;
   if actual_role is distinct from roles[i] then raise exception 'Role lookup or metadata isolation failed'; end if;
@@ -90,12 +93,24 @@ begin
   execute 'set local role authenticated';
   select count(*) into n from public.tenants;
   if n <> (case when roles[i] in ('driver','guardian') then 1 else 0 end) then raise exception 'MFA policy mismatch'; end if;
+  if roles[i] in ('driver','guardian') then
+    perform safebus_private.enforce_active_api_session();
+  else
+    begin
+      perform safebus_private.enforce_active_api_session();
+      raise exception 'API hook accepted privileged aal1 session';
+    exception when insufficient_privilege then null; end;
+  end if;
   execute 'reset role';
 
   -- A missing session must not grant access.
   perform set_config('request.jwt.claims',jsonb_build_object('sub',uid,'session_id',
     'ca200000-0000-4000-8000-000000000099','role','authenticated','aal','aal2')::text,true);
   execute 'set local role authenticated';
+  begin
+    perform safebus_private.enforce_active_api_session();
+    raise exception 'API hook accepted invalid session';
+  exception when insufficient_privilege then null; end;
   if public.is_current_user_session_active() or exists(select 1 from public.tenants)
     or exists(select 1 from public.profiles) then raise exception 'Missing session accepted'; end if;
   execute 'reset role';
@@ -103,6 +118,10 @@ begin
     case when i=1 then 'ca200000-0000-4000-8000-000000000002' else 'ca200000-0000-4000-8000-000000000001' end,
     'role','authenticated','aal','aal2')::text,true);
   execute 'set local role authenticated';
+  begin
+    perform safebus_private.enforce_active_api_session();
+    raise exception 'API hook accepted invalid session';
+  exception when insufficient_privilege then null; end;
   if public.is_current_user_session_active() or exists(select 1 from public.tenants)
     or exists(select 1 from public.profiles) then raise exception 'Other user session accepted'; end if;
   execute 'reset role';
@@ -110,6 +129,10 @@ begin
   update auth.sessions set not_after=now()-interval '1 minute' where id=sid;
   perform set_config('request.jwt.claims',jsonb_build_object('sub',uid,'session_id',sid,'role','authenticated','aal','aal2')::text,true);
   execute 'set local role authenticated';
+  begin
+    perform safebus_private.enforce_active_api_session();
+    raise exception 'API hook accepted invalid session';
+  exception when insufficient_privilege then null; end;
   if public.is_current_user_session_active() or exists(select 1 from public.tenants)
     or exists(select 1 from public.profiles) then raise exception 'Expired session accepted'; end if;
   execute 'reset role';

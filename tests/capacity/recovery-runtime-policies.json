@@ -1,0 +1,42 @@
+[
+  {
+    "policyname": "safebus notification broadcast receive",
+    "permissive": "PERMISSIVE",
+    "roles": ["authenticated"],
+    "cmd": "SELECT",
+    "qual": "((extension = 'broadcast'::text) AND (realtime.topic() = ('safebus:notifications:'::text || (( SELECT auth.uid() AS uid))::text)) AND (EXISTS ( SELECT 1\n   FROM public.profiles p\n  WHERE ((p.id = ( SELECT auth.uid() AS uid)) AND (p.status = 'active'::public.profile_status)))))",
+    "with_check": null
+  },
+  {
+    "policyname": "safebus shared bus tracking receive",
+    "permissive": "PERMISSIVE",
+    "roles": ["authenticated"],
+    "cmd": "SELECT",
+    "qual": "((extension = 'broadcast'::text) AND safebus_private.can_receive_bus_tracking(realtime.topic()))",
+    "with_check": null
+  },
+  {
+    "policyname": "safebus tracking broadcast receive",
+    "permissive": "PERMISSIVE",
+    "roles": ["authenticated"],
+    "cmd": "SELECT",
+    "qual": "((extension = 'broadcast'::text) AND (((realtime.topic() = ('safebus:guardian:'::text || (auth.uid())::text)) AND (safebus_private.current_user_role() = 'guardian'::public.user_role) AND (EXISTS ( SELECT 1\n   FROM public.guardians g\n  WHERE ((g.profile_id = auth.uid()) AND (g.tenant_id = safebus_private.current_tenant_id()) AND (g.status = 'active'::text))))) OR ((safebus_private.current_tenant_id() IS NOT NULL) AND (realtime.topic() = ('safebus:tenant:'::text || (safebus_private.current_tenant_id())::text)) AND (safebus_private.current_user_role() = ANY (ARRAY['tenant_admin'::public.user_role, 'school_admin'::public.user_role, 'transportation_admin'::public.user_role])))))",
+    "with_check": null
+  },
+  {
+    "policyname": "safebus_active_session",
+    "permissive": "RESTRICTIVE",
+    "roles": ["authenticated"],
+    "cmd": "ALL",
+    "qual": "( SELECT public.is_current_user_session_active() AS is_current_user_session_active)",
+    "with_check": "( SELECT public.is_current_user_session_active() AS is_current_user_session_active)"
+  },
+  {
+    "policyname": "safebus_optional_mfa",
+    "permissive": "RESTRICTIVE",
+    "roles": ["authenticated"],
+    "cmd": "ALL",
+    "qual": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)",
+    "with_check": "( SELECT safebus_private.has_completed_optional_mfa() AS has_completed_optional_mfa)"
+  }
+]

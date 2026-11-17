@@ -43,6 +43,12 @@ that was corrected, and the final expanded script passed on the hosted target.
 The final result was `recovery_role_rehearsal=passed`, `synthetic_identities=7`,
 `persisted_accounts=false`, `login_verified=false`, `capacity_verified=false`.
 
+The expanded rehearsal also passed direct calls to
+`safebus_private.enforce_active_api_session()` for a simulated GET `/tenants`.
+Valid aal2 sessions pass; unenrolled guardians/drivers also pass at aal1.
+Privileged aal1, missing, wrong-user and expired sessions raise permission errors.
+This exercises the hook function, not its registration or invocation by HTTP.
+
 ## Limits and next step
 
 This test simulates claims inside a privileged test connection and then executes

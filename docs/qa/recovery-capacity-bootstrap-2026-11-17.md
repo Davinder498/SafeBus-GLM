@@ -92,6 +92,10 @@ Do not rerun the bootstrap against the now-populated schema.
 
 ## Remaining capacity preparation
 
+The provider hook and Realtime policy installation is prepared in the
+[recovery runtime security rollout](recovery-runtime-security-2026-11-17.md).
+Its hosted installation must be verified separately from schema bootstrap.
+
 Review provider policies/pre-request session hooks, synthetic reference data,
 Auth configuration, notification isolation and worker schedules before exposing
 the target API. Prove role/tenant denials and simultaneous ingest/cache behavior
