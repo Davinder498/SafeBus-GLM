@@ -19,6 +19,8 @@ import {
   normalizeDump,
   assertAppCatalog,
   assertEmptyTarget,
+  assertManagedDefaults,
+  RESET_TARGET_DEFAULTS_SQL,
   EMPTY_TARGET_SQL,
   EXTENSIONS,
   SOURCE_REF,
@@ -126,6 +128,8 @@ try {
   }
   if (Number((await target.query('select count(*) as count from cron.job')).rows[0].count) !== 0)
     throw new Error('Target has scheduled jobs.');
+  assertManagedDefaults(sourceCatalog, (await collectSchemaCatalog(target)).catalog);
+  await target.query(RESET_TARGET_DEFAULTS_SQL);
   stage = 'target-schema';
   await target.query(sql);
   stage = 'catalog-verification';
@@ -195,9 +199,10 @@ try {
       applicationReady: false,
     }),
   );
-} catch {
-  // Driver/native errors may contain SQL or connection details; emit stage only.
-  console.error('Capacity schema preparation stopped at stage=' + stage);
+} catch (error) {
+  // SQLSTATE is safe diagnostic metadata; never emit raw SQL, messages or URLs.
+  const code = /^[0-9A-Z]{5}$/.test(error?.code ?? '') ? error.code : 'UNKNOWN';
+  console.error('Capacity schema preparation stopped at stage=' + stage + '; code=' + code);
   process.exitCode = 1;
 } finally {
   for (const [client, connected] of [
