@@ -64,3 +64,21 @@ provider isolation, reference data and the controlled API enablement still need
 their own verified preparation before end-to-end tests or capacity load. No paid
 compute change or production load test is included. Fifty eligible notification
 recipients must not be modeled as fifty concurrent map viewers.
+
+## First installation attempt and correction
+
+[Run 44182462798](https://github.com/Davinder498/SafeBus-GLM/actions/runs/44182462798)
+passed credential-free validation and the migration rehearsal SQL, then failed at
+`rehearse-catalog`. The native `pg` driver returns PostgreSQL `name[]` as a string,
+while PGlite returns an array. The exact comparison therefore rejected the policy
+roles even though the SQL had succeeded. The verifier now casts roles to `text[]`
+and shares that query with the regression test, which checks the query's wire type
+and the production driver's parser. All policy expressions, roles and other fields
+remain compared exactly. Catalog failures now include a fixed, credential-free
+reason code. A read-only query using the corrected projection on the source
+project matched all five reviewed policies exactly.
+
+A read-only hosted check after the failure confirmed zero Realtime policies, zero
+registered API hooks, zero Auth users and zero API roles with application schema
+access. The rehearsal rolled back; installation did not commit. Run the corrected
+workflow using the new reviewed main revision after merge, not the failed revision.
