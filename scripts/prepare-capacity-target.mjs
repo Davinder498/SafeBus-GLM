@@ -30,6 +30,8 @@ let source,
   target,
   directory,
   stage = 'preflight';
+let sourceConnected = false,
+  targetConnected = false;
 try {
   assertReviewedCheckout(process.env.SAFEBUS_RELEASE_SHA);
   if (
@@ -55,7 +57,9 @@ try {
     'safebus-capacity-schema-target',
   );
   await source.connect();
+  sourceConnected = true;
   await target.connect();
+  targetConnected = true;
   for (const client of [source, target]) {
     if (
       !(
@@ -196,8 +200,11 @@ try {
   console.error('Capacity schema preparation stopped at stage=' + stage);
   process.exitCode = 1;
 } finally {
-  for (const client of [target, source]) {
-    if (client) {
+  for (const [client, connected] of [
+    [target, targetConnected],
+    [source, sourceConnected],
+  ]) {
+    if (client && connected) {
       await client.query('rollback').catch(() => {});
       await client.end().catch(() => {});
     }
