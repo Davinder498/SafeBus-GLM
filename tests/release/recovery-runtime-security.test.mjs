@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import pg from 'pg';
+import { recoveryPolicyQuery } from '../../scripts/lib/recovery-runtime-catalog.mjs';
 import { PGlite } from '@electric-sql/pglite';
 const path = 'supabase/migrations/pending/20261117210433_recovery_runtime_security.sql';
 test('recovery migration fails closed before DDL for a production identity', async (t) => {
@@ -39,11 +41,14 @@ test('reviewed policy SQL parses exactly and enforces restrictive gates and priv
   const sql = await fs.readFile(path, 'utf8');
   await db.exec(sql.slice(sql.indexOf('create policy'), sql.indexOf('alter role authenticator')));
   await db.exec('set search_path=pg_catalog');
-  const actual = (
-    await db.query(
-      "select policyname,permissive,roles,cmd,qual,with_check from pg_policies where schemaname='realtime' and tablename='messages' order by policyname",
-    )
-  ).rows;
+  const result = await db.query(recoveryPolicyQuery);
+  const actual = result.rows;
+  // Exercise the production driver's parser for the query's actual wire type.
+  // PGlite alone also decodes name[], hiding the original release failure.
+  const rolesType = result.fields.find((field) => field.name === 'roles').dataTypeID;
+  assert.equal(rolesType, 1009);
+  assert.equal(pg.types.getTypeParser(1003)('{authenticated}'), '{authenticated}');
+  assert.deepEqual(pg.types.getTypeParser(rolesType)('{authenticated}'), ['authenticated']);
   assert.deepEqual(
     actual,
     JSON.parse(await fs.readFile('tests/capacity/recovery-runtime-policies.json', 'utf8')),

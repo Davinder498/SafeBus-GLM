@@ -9,10 +9,9 @@ import {
 } from './lib/environment-identity.mjs';
 import { TARGET_REF } from './lib/capacity-bootstrap.mjs';
 import { sha256 } from './lib/migrations.mjs';
+import { recoveryPolicyQuery as policyQuery } from './lib/recovery-runtime-catalog.mjs';
 
 const sqlPath = 'supabase/migrations/pending/20261117210433_recovery_runtime_security.sql';
-const policyQuery =
-  "select policyname,permissive,roles,cmd,qual,with_check from pg_policies where schemaname='realtime' and tablename='messages' order by policyname";
 const hookQuery =
   "select setting from pg_db_role_setting s join pg_roles r on r.oid=s.setrole cross join lateral unnest(s.setconfig) setting where r.rolname='authenticator' and setting like 'pgrst.db_pre_request=%'";
 let client,
@@ -135,7 +134,16 @@ try {
   console.log('Recovery runtime security installed and verified; API access remains quarantined.');
 } catch (error) {
   const code = /^[0-9A-Z]{5}$/.test(error?.code ?? '') ? error.code : 'UNKNOWN';
-  console.error(`Recovery runtime security stopped at stage=${stage}; code=${code}`);
+  const reasons = new Map([
+    ['Policy catalog mismatch', 'POLICY_CATALOG_MISMATCH'],
+    ['API hook mismatch', 'API_HOOK_MISMATCH'],
+    ['Quarantine changed', 'QUARANTINE_CHANGED'],
+    ['Rehearsal rollback incomplete', 'ROLLBACK_INCOMPLETE'],
+  ]);
+  const reason = reasons.get(error?.message) ?? 'UNCLASSIFIED';
+  console.error(
+    `Recovery runtime security stopped at stage=${stage}; code=${code}; reason=${reason}`,
+  );
   process.exitCode = 1;
 } finally {
   if (connected) {
