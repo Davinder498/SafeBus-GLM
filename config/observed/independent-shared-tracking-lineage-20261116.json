@@ -142,13 +142,6 @@
         {
           "schema_name": "safebus_private",
           "relname": "shared_tracking_queue",
-          "conname": "shared_tracking_queue_available_at_not_null",
-          "definition": "NOT NULL available_at",
-          "convalidated": true
-        },
-        {
-          "schema_name": "safebus_private",
-          "relname": "shared_tracking_queue",
           "conname": "shared_tracking_queue_driver_trip_id_fkey",
           "definition": "FOREIGN KEY (driver_trip_id) REFERENCES driver_trips(id) ON DELETE CASCADE",
           "convalidated": true
@@ -156,43 +149,8 @@
         {
           "schema_name": "safebus_private",
           "relname": "shared_tracking_queue",
-          "conname": "shared_tracking_queue_driver_trip_id_not_null",
-          "definition": "NOT NULL driver_trip_id",
-          "convalidated": true
-        },
-        {
-          "schema_name": "safebus_private",
-          "relname": "shared_tracking_queue",
-          "conname": "shared_tracking_queue_failures_not_null",
-          "definition": "NOT NULL failures",
-          "convalidated": true
-        },
-        {
-          "schema_name": "safebus_private",
-          "relname": "shared_tracking_queue",
-          "conname": "shared_tracking_queue_first_pending_at_not_null",
-          "definition": "NOT NULL first_pending_at",
-          "convalidated": true
-        },
-        {
-          "schema_name": "safebus_private",
-          "relname": "shared_tracking_queue",
           "conname": "shared_tracking_queue_generation_check",
           "definition": "CHECK ((generation > 0))",
-          "convalidated": true
-        },
-        {
-          "schema_name": "safebus_private",
-          "relname": "shared_tracking_queue",
-          "conname": "shared_tracking_queue_generation_not_null",
-          "definition": "NOT NULL generation",
-          "convalidated": true
-        },
-        {
-          "schema_name": "safebus_private",
-          "relname": "shared_tracking_queue",
-          "conname": "shared_tracking_queue_latest_at_not_null",
-          "definition": "NOT NULL latest_at",
           "convalidated": true
         },
         {
@@ -207,13 +165,6 @@
           "relname": "shared_tracking_queue",
           "conname": "shared_tracking_queue_tenant_id_fkey",
           "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE",
-          "convalidated": true
-        },
-        {
-          "schema_name": "safebus_private",
-          "relname": "shared_tracking_queue",
-          "conname": "shared_tracking_queue_tenant_id_not_null",
-          "definition": "NOT NULL tenant_id",
           "convalidated": true
         }
       ]

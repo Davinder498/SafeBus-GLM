@@ -51,8 +51,52 @@ test('exact manifest, bounded jobs, private ACLs, catalog lineage and recoverabl
   verifyOperationalSnapshot(await operationalSnapshot(db, config), config, 'after');
   await db.exec(await fs.readFile('tests/rls/independent-shared-tracking-readonly.sql', 'utf8'));
   const after = await collectSchemaCatalog(db);
-  assert.deepEqual(trackingCatalogDelta(catalog, after), proof.cleanup);
-  assert.deepEqual(precedingTrackingCatalog(after, proof.cleanup), catalog);
+  // Hosted PostgreSQL 17 records NOT NULL in pg_attribute.attnotnull only.
+  // PGlite's PostgreSQL 18 also creates pg_constraint rows. Keep the production
+  // proof exact; account for this known engine difference only in this test.
+  const notNullRows = after.catalog.constraints.filter(
+    (row) =>
+      row.schema_name === 'safebus_private' &&
+      row.relname === 'shared_tracking_queue' &&
+      row.definition.startsWith('NOT NULL '),
+  );
+  assert.deepEqual(notNullRows.map((row) => row.definition).sort(), [
+    'NOT NULL available_at',
+    'NOT NULL driver_trip_id',
+    'NOT NULL failures',
+    'NOT NULL first_pending_at',
+    'NOT NULL generation',
+    'NOT NULL latest_at',
+    'NOT NULL tenant_id',
+  ]);
+  const localProof = structuredClone(proof.cleanup);
+  localProof.constraints.added.push(...notNullRows);
+  localProof.constraints.added.sort((a, b) => a.conname.localeCompare(b.conname));
+  assert.deepEqual(trackingCatalogDelta(catalog, after), localProof);
+  assert.deepEqual(precedingTrackingCatalog(after, localProof), catalog);
+  const hostedShape = structuredClone(after);
+  hostedShape.catalog.constraints = hostedShape.catalog.constraints.filter(
+    (row) =>
+      !notNullRows.some(
+        (local) =>
+          local.conname === row.conname &&
+          local.schema_name === row.schema_name &&
+          local.relname === row.relname,
+      ),
+  );
+  assert.deepEqual(trackingCatalogDelta(catalog, hostedShape), proof.cleanup);
+  assert.deepEqual(precedingTrackingCatalog(hostedShape, proof.cleanup), catalog);
+  const nullableDrift = structuredClone(hostedShape);
+  nullableDrift.catalog.columns.find(
+    (row) =>
+      row.schema_name === 'safebus_private' &&
+      row.relation_name === 'shared_tracking_queue' &&
+      row.column_name === 'generation',
+  ).attnotnull = false;
+  assert.throws(
+    () => precedingTrackingCatalog(nullableDrift, proof.cleanup),
+    /LINEAGE_CHANGED_OBJECT/,
+  );
   assert.equal(
     await count(db, 'safebus_private.shared_tracking_queue'),
     1,

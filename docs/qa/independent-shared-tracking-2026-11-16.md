@@ -120,3 +120,23 @@ was rechecked after adding unchanged predecessor cron-job guards. Generated
 launcher/store artwork was restored to avoid unrelated binary changes.
 No production migration, real recipient notification or physical-device test was
 performed. GitHub CI is separate from these local results.
+
+## Release rehearsal correction
+
+PR #458 merged as `bff14e32cea6dc67d6846ee0c1066922cd7415d2`. Protected
+release [43984374484](https://github.com/Davinder498/SafeBus-GLM/actions/runs/43984374484)
+passed code validation but stopped in the rollback-only rehearsal with
+`OPERATIONAL_LINEAGE_CHANGED_OBJECT`; installation was skipped. Read-only hosted
+inspection confirmed PostgreSQL 17.11, no shared queue, and no shared worker jobs.
+
+The generated proof included seven PostgreSQL 18 `pg_constraint` NOT NULL rows
+from PGlite. PostgreSQL 17 represents those requirements in `pg_attribute`
+(`attnotnull`) without those extra constraint rows. The corrected hosted proof
+removes only the seven nonexistent rows. All column nullability, primary/foreign
+keys, CHECK constraints, grants, routines and predecessor fingerprint checks
+remain exact. The migration SQL and its checksum are unchanged.
+
+Regression coverage compares the full embedded-engine delta with the seven
+explicit extra rows, then compares the PostgreSQL 17 catalog shape to the hosted
+proof. It also rejects a nullable-column drift. This does not substitute for a
+successful protected hosted rehearsal and installation; both remain pending.
