@@ -1,0 +1,85 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261117053238_shared_route_geometry.sql",
+  "migrationSha256": "362bd2481d72abe1b2335ccb43f965153999b2815ee90d52d73a6fea9fbda4be",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "safebus_private.shared_route_stop_geometry(uuid,uuid,uuid,jsonb,text)",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "27f91959b002d2440b4f0949b2a1eafb"
+      },
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"]
+    },
+    {
+      "signature": "public.get_guardian_bus_service_lines(text)",
+      "before": {
+        "md5": "641546ed5ea6a520424b9ea720806802"
+      },
+      "after": {
+        "md5": "5d37de59da09190f73dbf39d8c8163c7"
+      },
+      "owner": "postgres",
+      "acl": ["authenticated=X/postgres", "postgres=X/postgres", "service_role=X/postgres"]
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": [],
+  "relations": [
+    {
+      "name": "safebus_private.route_stop_geometry_cache",
+      "before": null,
+      "after": {
+        "rls": true,
+        "force_rls": false,
+        "owner": "postgres",
+        "acl": ["postgres=arwdDxtm/postgres"],
+        "columns": [
+          {
+            "name": "route_trip_pattern_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "tenant_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "route_id",
+            "type": "uuid",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "input_digest",
+            "type": "text",
+            "default": null,
+            "required": true
+          },
+          {
+            "name": "geometry_data",
+            "type": "jsonb",
+            "default": null,
+            "required": true
+          }
+        ],
+        "constraints": [
+          "PRIMARY KEY (route_trip_pattern_id)",
+          "FOREIGN KEY (route_id) REFERENCES routes(id) ON DELETE CASCADE",
+          "FOREIGN KEY (route_trip_pattern_id) REFERENCES route_trip_patterns(id) ON DELETE CASCADE",
+          "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE"
+        ],
+        "policies": 0
+      }
+    }
+  ],
+  "newTables": ["safebus_private.route_stop_geometry_cache"]
+}

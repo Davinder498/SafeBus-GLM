@@ -3,8 +3,8 @@ import { trackingReleaseFixture } from './async-tracking-release-db.mjs';
 
 export const sharedMigration =
   'supabase/migrations/pending/20261115121343_shared_bus_tracking_feed.sql';
-export async function sharedFeedFixture(t) {
-  const db = await trackingReleaseFixture(t);
+export async function sharedFeedFixture(t, options = {}) {
+  const db = await trackingReleaseFixture(t, options);
   await db.exec(
     await fs.readFile('supabase/migrations/pending/0125_async_tracking_invalidations.sql', 'utf8'),
   );

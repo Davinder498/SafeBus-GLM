@@ -18,6 +18,9 @@ importers:
       '@electric-sql/pglite':
         specifier: 0.5.15
         version: 0.5.15
+      '@electric-sql/pglite-postgis':
+        specifier: 0.2.15
+        version: 0.2.15(@electric-sql/pglite@0.5.15)
       '@playwright/test':
         specifier: ^1.65.0
         version: 1.65.0
@@ -348,6 +351,11 @@ importers:
         version: 5.9.3
 
 packages:
+
+  '@electric-sql/pglite-postgis@0.2.15':
+    resolution: {integrity: sha512-SiRHnKPk6MDjbKmYPwOPGKBJteLoy4iPyfJVaBFj0EBM2IjQuoKAZh4zW1GxM2WXwCjO/JOq+C3OrJ1XDN8UlA==}
+    peerDependencies:
+      '@electric-sql/pglite': 0.5.15
 
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
@@ -6871,6 +6879,10 @@ packages:
     resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
 snapshots:
+
+  '@electric-sql/pglite-postgis@0.2.15(@electric-sql/pglite@0.5.15)':
+    dependencies:
+      '@electric-sql/pglite': 0.5.15
 
   '@alloc/quick-lru@5.2.0': {}
 

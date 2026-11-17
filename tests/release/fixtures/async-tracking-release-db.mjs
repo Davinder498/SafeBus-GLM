@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
-export async function trackingReleaseFixture(t) {
-  const db = new PGlite();
+export async function trackingReleaseFixture(t, options = {}) {
+  const db = new PGlite(options);
   t?.after(() => db.close());
   await db.exec(await fs.readFile('tests/release/fixtures/tracking-worker-baseline.sql', 'utf8'));
   await db.exec(`

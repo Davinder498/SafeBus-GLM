@@ -76,3 +76,5 @@ after disconnect, shared GPS bursts, immediate control/unknown hints, periodic
 fallback, visibility/offline cancellation, principal changes and late responses.
 Release validation and Android publishing are separate evidence; installed-app
 and physical-device acceptance remain pending.
+
+The next server-side step is documented in [shared route geometry](shared-route-geometry-2026-11-16.md). It reuses static calculations while retaining per-request authorization and current GPS. Production installation remains a separate protected release.
