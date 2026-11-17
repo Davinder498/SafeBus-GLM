@@ -104,3 +104,13 @@ The read-only hosted advisory scan retains existing warnings concerning guarded
 SECURITY DEFINER API endpoints and disabled leaked-password protection. The
 [preceding review](shared-route-geometry-2026-11-16.md) records their remediation
 references; this change does not claim a clean platform-wide advisory report.
+
+### Installed evidence — 2026-11-17
+
+PR #464 merged as `a40008fbc6c24ee16f35bb316bda3287aad67f55`.
+[Protected release 44044730031](https://github.com/Davinder498/SafeBus-GLM/actions/runs/44044730031)
+passed rehearsal, recovery retention, installation and verification. Independent
+read-only verification confirmed the cache, both enabled invalidation triggers,
+RPC/helper definitions and fingerprint
+`502e5769df192afe246c8c5d793839efd66052311a9555e5f7c904fc01d82857`.
+This is installation evidence, not fleet load qualification.

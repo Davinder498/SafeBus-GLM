@@ -4,6 +4,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import test from 'node:test';
 import {
   estimateScenario,
+  estimateViewerSensitivity,
   planningReport,
   runLocalSimulation,
   sampledRates,
@@ -258,4 +259,99 @@ test('5,000-bus stage and home traffic are modeled without claiming qualificatio
   const hook = await fs.readFile('apps/web/src/hooks/useGuardianHomeData.ts', 'utf8');
   assert.match(hook, /intervalMs: 30_000/);
   assert.match(hook, /liveMinIntervalMs: 30_000/);
+});
+
+test('viewer mixes preserve notification demand at 500, 5000 and 10000 buses', () => {
+  const rows = estimateViewerSensitivity(workload);
+  assert.equal(rows.length, 15);
+  for (const buses of [500, 5000, 10000]) {
+    const group = rows.filter((row) => row.buses === buses);
+    const none = group.find((row) => row.mix === 'notification_only');
+    assert.equal(none.notificationOnlyGuardians, buses * 50);
+    assert.equal(none.guardianRpcsPerSecond.total, 0);
+    assert.equal(none.proposedViewerReconnectsPerSecond, 0);
+    assert.ok(none.notificationChannelDeliveriesPerSecond > 0);
+    for (const row of group) {
+      assert.equal(
+        row.eligibleGuardians,
+        row.mapViewers + row.summaryViewers + row.notificationOnlyGuardians,
+      );
+      assert.equal(
+        row.notificationChannelDeliveriesPerSecond,
+        none.notificationChannelDeliveriesPerSecond,
+      );
+      near(row.gpsUpdatesPerSecond, buses / 3);
+    }
+    near(
+      group.find((row) => row.mix === 'all_on_map').guardianRpcsPerSecond.total,
+      buses * 50 * (1 / 3 + 1 / 15),
+    );
+    near(
+      group.find((row) => row.mix === 'all_on_summary').guardianRpcsPerSecond.total,
+      (buses * 50 * 2) / 30,
+    );
+  }
+  const light = rows.find((row) => row.buses === 10000 && row.mix === 'light_viewing');
+  near(light.guardianRpcsPerSecond.total, 23333.33333333333);
+  assert.equal(light.reconnectBacklogEvents, 1500000);
+  assert.equal(planningReport(workload).viewerSensitivity.length, 15);
+});
+
+test('viewer workload rejects invalid or overlapping populations and hidden target settings', () => {
+  for (const mutate of [
+    (v) => {
+      v.mixes[0].mapShare = 0.8;
+      v.mixes[0].summaryShare = 0.8;
+    },
+    (v) => {
+      v.mixes[0].mapShare = NaN;
+    },
+    (v) => {
+      v.mixes[0].name = v.mixes[1].name;
+    },
+    (v) => {
+      v.mapPositionSeconds = 0;
+    },
+    (v) => {
+      v.buses = [500, 500, 10000];
+    },
+    (v) => {
+      v.enabledChannelsPerGuardian = 4;
+    },
+    (v) => {
+      v.url = 'https://example.invalid';
+    },
+  ]) {
+    const altered = structuredClone(workload);
+    mutate(altered.viewerSensitivity);
+    assert.throws(() => estimateViewerSensitivity(altered));
+  }
+});
+
+test('current viewer cadence model follows source budgets and keeps independent notification assumptions', async () => {
+  const position = await fs.readFile('apps/web/src/hooks/useGuardianLiveBusLocations.ts', 'utf8');
+  const detail = await fs.readFile('apps/web/src/pages/GuardianLiveMapPage.tsx', 'utf8');
+  const home = await fs.readFile('apps/web/src/hooks/useGuardianHomeData.ts', 'utf8');
+  const v = workload.viewerSensitivity;
+  assert.equal(
+    v.mapPositionSeconds * 1000,
+    Number(
+      position.match(/liveMinIntervalMs: surface === 'map' \? ([\d_]+)/)[1].replaceAll('_', ''),
+    ),
+  );
+  assert.equal(
+    v.mapDetailSeconds * 1000,
+    Number(detail.match(/liveMinIntervalMs: ([\d_]+)/)[1].replaceAll('_', '')),
+  );
+  assert.equal(
+    v.summarySeconds * 1000,
+    Number(home.match(/liveMinIntervalMs: ([\d_]+)/)[1].replaceAll('_', '')),
+  );
+  assert.equal(v.summaryRpcsPerRefresh, 2);
+  const altered = structuredClone(workload);
+  altered.viewerSensitivity.eventsPerGuardianPerWave = 4;
+  assert.equal(
+    estimateViewerSensitivity(altered)[0].notificationChannelDeliveriesPerSecond,
+    estimateViewerSensitivity(workload)[0].notificationChannelDeliveriesPerSecond * 2,
+  );
 });
