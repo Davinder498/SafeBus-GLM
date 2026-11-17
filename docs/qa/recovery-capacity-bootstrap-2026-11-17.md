@@ -119,3 +119,25 @@ This avoids retaining accidental privileges on newly restored objects. Any
 catalog mismatch still rolls back. Failure logs expose SQLSTATE, never raw SQL
 or connection credentials. This correction is not evidence of a successful
 hosted import or fleet capacity until the protected workflow passes.
+
+## Catalog comparison correction after second rehearsal
+
+Run 44075368562 reached catalog verification and rolled back. Read-only inspection
+again found zero application tables. The previous error handler hid the differing
+catalog section; it now emits an allowlisted section name alongside SQLSTATE.
+
+Two comparison defects were reproduced using two isolated PGlite PostgreSQL
+instances. Native pg_dump sets the target session search_path to empty, whereas
+the source catalog was collected under its session default. PostgreSQL deparses
+user-defined types and expressions differently under those settings. Bootstrap
+catalog collection now uses the same transaction-local pg_catalog search path on
+both sides and restores the caller's setting afterward. The existing production
+fingerprint format and baseline validation remain unchanged.
+
+Production also has three dropped attribute slots in
+public.guardian_notification_delivery_policies. A dump/restore omits those slots.
+The bootstrap comparison now compares live column order while retaining column
+names, types, nullability, defaults, identity, generated and collation checks.
+The database regression covers both differences and confirms that a changed
+column constraint or added anonymous grant still fails verification. This is
+local evidence for the correction, not a claim that the hosted import passed.

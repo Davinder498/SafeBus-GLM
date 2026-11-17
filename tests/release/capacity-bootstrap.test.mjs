@@ -180,3 +180,69 @@ test('managed defaults remain verified while only redundant provider grants are 
   assert.throws(() => assertManagedDefaults(source, target));
   assert.throws(() => assertAppCatalog(source, target), /defaultGrants/);
 });
+
+test('real PostgreSQL restore comparison ignores dropped slots and session path, but detects changed columns and permissions', async (t) => {
+  const { PGlite } = await import('@electric-sql/pglite');
+  const { collectBootstrapCatalog } = await import('../../scripts/lib/capacity-bootstrap.mjs');
+  const { collectSchemaCatalog } = await import('../../scripts/lib/schema-fingerprint.mjs');
+  const source = new PGlite(),
+    target = new PGlite();
+  t.after(async () => {
+    await source.close();
+    await target.close();
+  });
+  const common = `create role anon; create role authenticated; create role service_role; create role authenticator;
+    create schema safebus_private; create schema realtime;
+    create type public.fixture_state as enum ('active','ended');`;
+  await source.exec(
+    common +
+      `create table public.fixture_rows(id integer, removed text, state public.fixture_state);
+    alter table public.fixture_rows drop column removed;`,
+  );
+  await target.exec(
+    common + `create table public.fixture_rows(id integer, state public.fixture_state);`,
+  );
+  for (const db of [source, target])
+    await db.exec(`
+    alter table public.fixture_rows enable row level security;
+    create policy scoped_read on public.fixture_rows to authenticated using (id > 0);
+    create view public.fixture_view as select id,state from public.fixture_rows;
+    create function public.fixture_fn(public.fixture_state) returns public.fixture_state language sql as 'select $1';
+    begin;`);
+  await source.exec('set local search_path = public, pg_catalog;');
+  await target.exec("select set_config('search_path', '', true);");
+  const rawSource = (await collectSchemaCatalog(source)).catalog;
+  const rawTarget = (await collectSchemaCatalog(target)).catalog;
+  assert.throws(
+    () => assertAppCatalog(rawSource, rawTarget),
+    (error) => error.catalogSection === 'columns',
+  );
+  const expected = await collectBootstrapCatalog(source);
+  assert.doesNotThrow(() => assertAppCatalog(expected, rawTarget));
+  const actual = await collectBootstrapCatalog(target);
+  assert.doesNotThrow(() => assertAppCatalog(expected, actual));
+  assert.equal(
+    (await source.query("select current_setting('search_path') as path")).rows[0].path,
+    'public, pg_catalog',
+  );
+  assert.equal(
+    (await target.query("select current_setting('search_path') as path")).rows[0].path,
+    '',
+  );
+  await target.exec('grant select on public.fixture_rows to anon;');
+  const changedGrant = await collectBootstrapCatalog(target);
+  assert.throws(
+    () => assertAppCatalog(expected, changedGrant),
+    (error) => error.catalogSection === 'relationGrants',
+  );
+  await target.exec(
+    'revoke select on public.fixture_rows from anon; alter table public.fixture_rows alter column id set not null;',
+  );
+  const changedColumn = await collectBootstrapCatalog(target);
+  assert.throws(
+    () => assertAppCatalog(expected, changedColumn),
+    (error) => error.catalogSection === 'columns',
+  );
+  await source.exec('rollback;');
+  await target.exec('rollback;');
+});

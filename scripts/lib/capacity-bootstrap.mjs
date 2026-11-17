@@ -1,5 +1,6 @@
 import { createEnvironmentBinding } from './environment-identity.mjs';
 import { sha256 } from './migrations.mjs';
+import { collectSchemaCatalog } from './schema-fingerprint.mjs';
 
 export const SOURCE_REF = 'ckrkfylsyihwouvesypm';
 export const TARGET_REF = 'deladookciebwvqojhkv';
@@ -113,7 +114,7 @@ const appSections = [
   'defaultGrants',
 ];
 export function appCatalog(catalog) {
-  return Object.fromEntries(
+  const result = Object.fromEntries(
     appSections.map((name) => {
       if (!Array.isArray(catalog[name])) throw new Error('Missing catalog section: ' + name);
       return [
@@ -126,6 +127,29 @@ export function appCatalog(catalog) {
       ];
     }),
   );
+  // pg_dump omits dropped columns. Compare the order of live columns, not the
+  // physical attribute numbers left behind by historical DROP COLUMN changes.
+  const positions = new Map();
+  result.columns = result.columns.map((row) => {
+    const key = JSON.stringify([row.schema_name, row.relation_name]);
+    const ordinal_position = (positions.get(key) ?? 0) + 1;
+    positions.set(key, ordinal_position);
+    return { ...row, ordinal_position };
+  });
+  return result;
+}
+
+export async function collectBootstrapCatalog(client) {
+  const previous = (await client.query("select current_setting('search_path') as path")).rows[0]
+    .path;
+  try {
+    // pg_dump sets the target search_path to empty. Deparse BOTH catalogs in
+    // the same context without changing the production fingerprint contract.
+    await client.query("select set_config('search_path', 'pg_catalog', true)");
+    return (await collectSchemaCatalog(client)).catalog;
+  } finally {
+    await client.query("select set_config('search_path', $1, true)", [previous]);
+  }
 }
 export function assertAppCatalog(source, target, quarantined = false) {
   const expected = appCatalog(source),
@@ -139,8 +163,11 @@ export function assertAppCatalog(source, target, quarantined = false) {
         ),
     );
   for (const section of appSections)
-    if (JSON.stringify(expected[section]) !== JSON.stringify(actual[section]))
-      throw new Error('Application catalog differs: ' + section);
+    if (JSON.stringify(expected[section]) !== JSON.stringify(actual[section])) {
+      const error = new Error('Application catalog differs: ' + section);
+      error.catalogSection = section;
+      throw error;
+    }
   return sha256(JSON.stringify(expected));
 }
 
