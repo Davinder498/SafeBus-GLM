@@ -107,3 +107,19 @@ cost report are proposed exit evidence, not completed acceptance.
 
 Backup restoration and migrations 0122–0124 remain deferred. No hosted project,
 compute size, data, retention policy, runtime cadence or release approval changes.
+
+## November 17 viewer-matrix update
+
+Input version 2 / model report format 2 adds the independent viewer matrix
+specified in [capacity assumptions](../governance/capacity-assumptions.md#current-qualification-preparation--2026-11-17).
+The original six fixed-concurrency scenarios remain explicit historical
+comparisons. The bounded loopback simulator still samples those scenarios; it
+does not run the new matrix, actual RPCs, SQL, sessions, or notification workers.
+
+All 18 local capacity tests passed, including no-viewer notification invariance,
+500/5,000/10,000 arithmetic, role-population accounting, source cadence checks,
+invalid shares, hosted-target rejection and generator failure accounting.
+A fresh five-second default pilot sample acknowledged all 116 planned requests
+with zero unsent/rejected/client errors. This only checks the generator.
+The [hosted qualification proposal](capacity-qualification-2026-11-17.md)
+records the remaining environment/budget decision and execution gates.

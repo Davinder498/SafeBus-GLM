@@ -24,8 +24,12 @@ const shape = (value, keys, name) => {
 };
 
 export function validateWorkload(workload) {
-  shape(workload, ['version', 'planningOnly', 'target', 'assumptions', 'scenarios'], 'workload');
-  if (workload.version !== 1 || workload.planningOnly !== true)
+  shape(
+    workload,
+    ['version', 'planningOnly', 'target', 'assumptions', 'scenarios', 'viewerSensitivity'],
+    'workload',
+  );
+  if (workload.version !== 2 || workload.planningOnly !== true)
     throw new Error('Only the planning workload format is supported.');
   const t = workload.target;
   shape(t, ['registeredUsers', 'tenants', 'activeBuses', 'peakConcurrentUsers'], 'target');
@@ -93,6 +97,44 @@ export function validateWorkload(workload) {
     )
       throw new Error('Peak/reconnect populations must match the planning target.');
   }
+  const v = workload.viewerSensitivity;
+  shape(
+    v,
+    [
+      'buses',
+      'eligibleGuardiansPerBus',
+      'mapPositionSeconds',
+      'mapDetailSeconds',
+      'summarySeconds',
+      'summaryRpcsPerRefresh',
+      'eventsPerGuardianPerWave',
+      'waveSeconds',
+      'enabledChannelsPerGuardian',
+      'mixes',
+    ],
+    'viewer sensitivity',
+  );
+  if (!Array.isArray(v.buses) || v.buses.length !== 3 || new Set(v.buses).size !== 3)
+    throw new Error('Invalid sensitivity fleets.');
+  for (const buses of v.buses) integer(buses, 'sensitivity buses', 1, t.activeBuses);
+  integer(v.eligibleGuardiansPerBus, 'guardians per bus', 1, 100);
+  for (const key of ['mapPositionSeconds', 'mapDetailSeconds', 'summarySeconds', 'waveSeconds'])
+    integer(v[key], key, 1, 86400);
+  integer(v.summaryRpcsPerRefresh, 'summary RPCs', 1, 20);
+  integer(v.eventsPerGuardianPerWave, 'events per guardian', 1, 100);
+  integer(v.enabledChannelsPerGuardian, 'enabled channels', 1, 3);
+  if (!Array.isArray(v.mixes) || v.mixes.length < 1 || v.mixes.length > 20)
+    throw new Error('Invalid viewer mixes.');
+  const names = new Set();
+  for (const mix of v.mixes) {
+    shape(mix, ['name', 'mapShare', 'summaryShare'], 'viewer mix');
+    if (typeof mix.name !== 'string' || !/^[a-z_]{1,40}$/.test(mix.name) || names.has(mix.name))
+      throw new Error('Invalid viewer mix name.');
+    names.add(mix.name);
+    number(mix.mapShare, 'map share', 0, 1);
+    number(mix.summaryShare, 'summary share', 0, 1);
+    if (mix.mapShare + mix.summaryShare > 1) throw new Error('Overlapping viewer populations.');
+  }
   return workload;
 }
 
@@ -139,19 +181,65 @@ export function estimateScenario(workload, name) {
   };
 }
 
+// Separate from the older fixed-concurrency scenarios: eligible recipients are
+// not simultaneous viewers. Counts assume one distinct guardian client per bus
+// relationship and one visible surface per client. Never a capacity result.
+export function estimateViewerSensitivity(workload) {
+  validateWorkload(workload);
+  const v = workload.viewerSensitivity;
+  const a = workload.assumptions;
+  return v.buses.flatMap((buses) =>
+    v.mixes.map((mix) => {
+      const eligibleGuardians = buses * v.eligibleGuardiansPerBus;
+      const mapViewers = Math.floor(eligibleGuardians * mix.mapShare);
+      const summaryViewers = Math.floor(eligibleGuardians * mix.summaryShare);
+      const mapPosition = mapViewers / Math.max(a.gpsSeconds, v.mapPositionSeconds);
+      const mapDetail = mapViewers / v.mapDetailSeconds;
+      const summary = (summaryViewers * v.summaryRpcsPerRefresh) / v.summarySeconds;
+      return {
+        buses,
+        mix: mix.name,
+        eligibleGuardians,
+        mapViewers,
+        summaryViewers,
+        notificationOnlyGuardians: eligibleGuardians - mapViewers - summaryViewers,
+        gpsUpdatesPerSecond: buses / a.gpsSeconds,
+        guardianRpcsPerSecond: {
+          mapPosition,
+          mapDetail,
+          summary,
+          total: mapPosition + mapDetail + summary,
+        },
+        notificationChannelDeliveriesPerSecond:
+          (eligibleGuardians * v.eventsPerGuardianPerWave * v.enabledChannelsPerGuardian) /
+          v.waveSeconds,
+        reconnectBacklogEvents:
+          Math.floor(buses * a.reconnectingBusShare) * Math.floor(a.offlineSeconds / a.gpsSeconds),
+        proposedViewerReconnectsPerSecond: (mapViewers + summaryViewers) / a.recoverySeconds,
+      };
+    }),
+  );
+}
+
 export function planningReport(workload, name = 'all') {
   validateWorkload(workload);
   const names = name === 'all' ? Object.keys(workload.scenarios) : [name];
   return {
-    formatVersion: 1,
+    formatVersion: 2,
     workloadSha256: createHash('sha256').update(JSON.stringify(workload)).digest('hex'),
     evidenceType: 'workload_estimate',
     applicationCapacityVerified: false,
     hostedAuthRlsVerified: false,
     target: workload.target,
     assumptions: workload.assumptions,
+    viewerSensitivityAssumptions: workload.viewerSensitivity,
+    viewerSensitivity: estimateViewerSensitivity(workload),
+    scenariosMeaning: 'Historical fixed-concurrency comparison; not the current viewer mix.',
     scenarios: names.map((scenario) => estimateScenario(workload, scenario)),
     limitations: [
+      'Viewer matrix excludes admin/login/control/manual requests, legacy clients, extra devices and provider retries; no total infrastructure rate is implied.',
+      'Viewer matrix is independent of the historical concurrent-user target and may exceed it in all-viewer stress cases.',
+      'Cache reuse reduces repeated calculation, not authorized RPC counts; simultaneous cache misses and source-lock contention remain unmeasured.',
       'Rates are estimates, not measured API throughput or SQL operation counts.',
       'Registered-user dataset, actual JWT sessions, WebSockets and provider deliveries are not created.',
       'Catch-up is spread over the proposed recovery window; actual native queue burst pacing is not tested.',

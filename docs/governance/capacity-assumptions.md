@@ -2,7 +2,48 @@
 
 Status: customer-selected planning target; remaining assumptions and service
 objectives proposed. No demonstrated application capacity or launch approval.
-Updated: 2026-11-16. Owner confirmed the fleet target as 5,000–10,000 buses. Decision: [DL-020](decision-log.md#dl-020--capacity-planning-and-local-workload-simulation).
+Updated: 2026-11-17. Owner confirmed the fleet target as 5,000–10,000 buses. Decision: [DL-020](decision-log.md#dl-020--capacity-planning-and-local-workload-simulation).
+
+## Current qualification preparation — 2026-11-17
+
+The independent shared worker and both static-geometry/live-progress caches are
+installed. See [live-progress release evidence](../qa/shared-live-progress-2026-11-17.md#installed-evidence--2026-11-17).
+Earlier prepared/pending descriptions below are historical context, superseded
+by that evidence and the independent-worker release. Legacy Android fan-out is
+still retained. No fleet capacity is certified.
+
+`pnpm capacity:model` now includes a separate `viewerSensitivity` matrix for
+500, 5,000 and 10,000 buses. It assumes 50 distinct eligible guardian clients per
+bus and mutually exclusive map, home-summary and notification-only populations.
+The five mixes are no viewers, 10% map/10% summary, 50% map/10% summary, all map,
+and all summary. These are sensitivity cases, not expected usage or attendance.
+The all-map case intentionally exceeds the older 100,000 concurrent-user input;
+the historical `scenarios` remain labelled comparisons and are still the input
+to the loopback simulator. The simulator does not execute this viewer matrix.
+
+Current-client steady-state estimates use one position RPC per three seconds,
+one map-detail RPC per fifteen seconds, and two home RPCs per thirty seconds.
+Jitter/backoff can lower rates; control/manual refreshes, legacy clients, login,
+admin traffic and additional devices are excluded and can add demand. Cached
+math does not eliminate authorization or parent-specific RPCs. Hidden/offline
+clients contribute no viewer reads in these cases.
+
+Notification load is independent: two events per eligible guardian in a
+15-minute wave, with three enabled channels (inbox/push/email), even at zero
+viewers. This is a fully opted-in stress assumption, not permission to deliver,
+a prediction, or a source-event count. Deduplication, recipient consent, multiple
+devices, retries and actual channel/provider limits need hosted measurement.
+
+|  Buses | Eligible guardians | GPS updates/s | RPCs/s at 10% map + 10% summary | Channel deliveries/s in proposed wave |
+| -----: | -----------------: | ------------: | ------------------------------: | ------------------------------------: |
+|    500 |             25,000 |        166.67 |                        1,166.67 |                                166.67 |
+|  5,000 |            250,000 |      1,666.67 |                       11,666.67 |                              1,666.67 |
+| 10,000 |            500,000 |      3,333.33 |                       23,333.33 |                              3,333.33 |
+
+At zero viewers all three RPC estimates become zero while GPS/notification
+estimates remain unchanged. At 10,000 buses, all-map traffic is 200,000 RPCs/s;
+all-summary is 33,333.33 RPCs/s. These are arithmetic, not measured throughput.
+See the [bounded execution proposal](../qa/capacity-qualification-2026-11-17.md).
 
 ## Current owner direction — 2026-11-10
 

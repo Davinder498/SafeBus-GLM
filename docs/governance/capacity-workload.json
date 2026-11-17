@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "planningOnly": true,
   "target": {
     "registeredUsers": 1000000,
@@ -69,5 +69,43 @@
       "loginsPerMinute": 10000,
       "notificationDeliveriesPerSecond": 6667
     }
+  },
+  "viewerSensitivity": {
+    "buses": [500, 5000, 10000],
+    "eligibleGuardiansPerBus": 50,
+    "mapPositionSeconds": 3,
+    "mapDetailSeconds": 15,
+    "summarySeconds": 30,
+    "summaryRpcsPerRefresh": 2,
+    "eventsPerGuardianPerWave": 2,
+    "waveSeconds": 900,
+    "enabledChannelsPerGuardian": 3,
+    "mixes": [
+      {
+        "name": "notification_only",
+        "mapShare": 0,
+        "summaryShare": 0
+      },
+      {
+        "name": "light_viewing",
+        "mapShare": 0.1,
+        "summaryShare": 0.1
+      },
+      {
+        "name": "half_on_map",
+        "mapShare": 0.5,
+        "summaryShare": 0.1
+      },
+      {
+        "name": "all_on_map",
+        "mapShare": 1,
+        "summaryShare": 0
+      },
+      {
+        "name": "all_on_summary",
+        "mapShare": 0,
+        "summaryShare": 1
+      }
+    ]
   }
 }
