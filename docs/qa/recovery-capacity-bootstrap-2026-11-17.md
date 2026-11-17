@@ -1,6 +1,7 @@
 # Recovery project capacity bootstrap
 
-Status: prepared code; hosted schema import and fleet qualification not yet run.
+Status: hosted schema import passed in run 44079054689 at revision
+`cba5dc11ea7603065e68cd1385f321640e68af62`. Fleet qualification remains pending.
 
 The owner selected the existing Canadian recovery project instead of a new paid
 branch. After the owner restarted it, read-only inspection confirmed no public
@@ -85,8 +86,9 @@ No account upgrade or new project charge is authorized by this workflow.
 Dispatch on reviewed current main with its full SHA, confirmation
 `PREPARE_RECOVERY_SCHEMA_ONLY`, and mode `install` (which includes rehearsal).
 Approve the protected environment. Inspect both rehearse/install JSON artifacts
-and verify the installed target before advancing. Hosted execution is still
-pending until those checks actually succeed.
+and verify the installed target before advancing. The initial hosted rehearsal, install and post-commit checks passed in
+[run 44079054689](https://github.com/Davinder498/SafeBus-GLM/actions/runs/44079054689).
+Do not rerun the bootstrap against the now-populated schema.
 
 ## Remaining capacity preparation
 
