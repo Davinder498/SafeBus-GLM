@@ -88,6 +88,19 @@ repeat the standard notification privacy approval already given.
 
 ## Current Development Setup
 
+### Approved isolated capacity target — owner direction, 2026-11-17
+
+The owner approved reusing existing `BusSafe-Recovery-20261011`
+(`deladookciebwvqojhkv`, Canada Central) for isolated capacity preparation.
+This supersedes the no-staging rule below for this named target only. The main
+`BusSafe` project remains production; production load tests remain excluded.
+Use a reviewed current schema-only export, never historical migration replay or
+copied customer/Auth rows, secrets, provider destinations or scheduled jobs.
+Do not reset or overwrite a nonempty target. Keep external delivery and its Data
+API disabled until separately verified isolation and role checks are complete.
+No paid compute change is approved by this target selection. Preparing the
+schema does not certify capacity or authorize arbitrary fixture/load writers.
+
 - The existing hosted `BusSafe` Supabase project is the sole database and is production.
 - No DEV or staging database is currently approved.
 - Do not run Docker commands.
