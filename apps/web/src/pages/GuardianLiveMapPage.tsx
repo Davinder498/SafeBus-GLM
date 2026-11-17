@@ -87,6 +87,7 @@ export function GuardianLiveMapPage() {
     serviceLineState.kind === 'ready'
       ? serviceLineState.data.flatMap((line) => (line.trackingTopic ? [line.trackingTopic] : []))
       : [],
+    'map',
   );
   const mapTileConfig = useMapTileConfig();
   const busGroups = state.kind === 'ready' ? groupGuardianBuses(state.locations) : [];

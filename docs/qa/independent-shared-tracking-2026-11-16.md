@@ -1,6 +1,7 @@
 # Independent shared tracking workers
 
-Status: prepared for review, not installed. Baseline: main
+Status: installed through protected run 43989753598 at
+`920f56275562e1e8fcd66c77067368573ac748a1`. Original preparation baseline: main
 `a7ddd62a54c13aac0aea27d67f7ccd0f73592b61`. No 5,000–10,000-bus capacity claim.
 
 ## Acceptance by role
@@ -140,3 +141,9 @@ Regression coverage compares the full embedded-engine delta with the seven
 explicit extra rows, then compares the PostgreSQL 17 catalog shape to the hosted
 proof. It also rejects a nullable-column drift. This does not substitute for a
 successful protected hosted rehearsal and installation; both remain pending.
+
+Post-correction protected rehearsal, encrypted recovery retention, installation and
+verification succeeded in [run 43989753598](https://github.com/Davinder498/SafeBus-GLM/actions/runs/43989753598).
+See `guardian-viewer-read-budget-2026-11-16.md` for the bounded post-install
+observation and remaining client/legacy cutover work. Earlier pending statements
+above describe the evidence available before that successful retry.

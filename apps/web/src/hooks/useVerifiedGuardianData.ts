@@ -61,15 +61,16 @@ export function useVerifiedGuardianData<T>(
     // Revalidate immediately; hidden/offline guards still prevent network work.
     loadRef.current('control');
   }, [clear]);
-  const sharedReady = useSharedBusTracking(userId, topics, invalidate, sharedDisconnected);
+  useSharedBusTracking(userId, topics, invalidate, sharedDisconnected);
   const legacyInvalidate = useCallback(
     (kind?: TrackingInvalidationKind) => {
-      // Keep personal control/authorization events; ignore duplicate legacy GPS
-      // only after every selected shared channel has actually joined.
-      if (kind === 'location' && sharedReady) return;
+      // Current clients use shared GPS hints plus secured periodic reads. The
+      // personal channel remains for control/authorization events only, even
+      // while a shared channel is unavailable. Old Android bundles are unchanged.
+      if (kind === 'location') return;
       invalidate(kind);
     },
-    [sharedReady, invalidate],
+    [invalidate],
   );
   const connectionState = useTrackingInvalidations({
     topic: userId ? `safebus:guardian:${userId}` : null,

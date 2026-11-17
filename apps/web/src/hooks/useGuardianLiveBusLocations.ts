@@ -19,8 +19,16 @@ export interface UseGuardianLiveBusLocationsResult {
 /** Poll the scoped RPC and revalidate on private tracking invalidations. */
 export function useGuardianLiveBusLocations(
   sharedTopics: readonly string[] = [],
+  surface: 'summary' | 'map' = 'summary',
 ): UseGuardianLiveBusLocationsResult {
-  const result = useVerifiedGuardianData(fetchGuardianLiveBusLocations, '', { sharedTopics });
+  const result = useVerifiedGuardianData(fetchGuardianLiveBusLocations, surface, {
+    sharedTopics: surface === 'map' ? sharedTopics : [],
+    intervalMs: surface === 'map' ? 15_000 : 30_000,
+    jitterMs: surface === 'map' ? 0 : 5_000,
+    liveMinIntervalMs: surface === 'map' ? 3_000 : 30_000,
+    maxRetryMs: surface === 'map' ? 15_000 : 120_000,
+    throttleLocationOnly: true,
+  });
   return {
     ...result,
     state:

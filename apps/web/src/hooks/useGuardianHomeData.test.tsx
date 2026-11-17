@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   user: { id: 'guardian-a' } as { id: string } | null,
   buses: vi.fn(),
   stops: vi.fn(),
-  invalidate: () => {},
+  invalidate: (_kind?: 'location' | 'change') => {},
   disconnect: () => {},
 }));
 vi.mock('@/contexts/useAuth', () => ({ useAuth: () => ({ user: mocks.user }) }));
@@ -18,7 +18,10 @@ vi.mock('@/services/guardianStudentStopsService', () => ({
   fetchGuardianStudentStops: mocks.stops,
 }));
 vi.mock('@/hooks/useTrackingInvalidations', () => ({
-  useTrackingInvalidations: (options: { onInvalidate: () => void; onDisconnected: () => void }) => {
+  useTrackingInvalidations: (options: {
+    onInvalidate: (kind?: 'location' | 'change') => void;
+    onDisconnected: () => void;
+  }) => {
     mocks.invalidate = options.onInvalidate;
     mocks.disconnect = options.onDisconnected;
     return 'connected';
@@ -71,8 +74,8 @@ it('bounds continuous GPS and burst hints to one refresh per jittered window wit
   for (let i = 0; i < 10; i++) {
     await advance(3_000);
     await act(async () => {
-      mocks.invalidate();
-      mocks.invalidate();
+      mocks.invalidate('location');
+      mocks.invalidate('location');
     });
   }
   expect(mocks.buses).toHaveBeenCalledTimes(1);
@@ -160,4 +163,12 @@ it('displays bus status with unavailable stops instead of retaining old stop ass
   mocks.stops.mockRejectedValue(new Error('denied'));
   await act(async () => result.refresh());
   expect(result.state.kind === 'ready' && result.state.data.stops).toBe(null);
+});
+
+it('does not delay personal control or unknown hints behind the home GPS budget', async () => {
+  await render();
+  await act(async () => mocks.invalidate('change'));
+  expect(mocks.buses).toHaveBeenCalledTimes(2);
+  await act(async () => mocks.invalidate());
+  expect(mocks.buses).toHaveBeenCalledTimes(3);
 });
