@@ -7,7 +7,7 @@ import {
   assertReviewedCheckout,
 } from './lib/security-workflow-evidence.mjs';
 import { pgBackupEnvironment } from './lib/security-backup.mjs';
-import { collectSchemaCatalog, calculateSchemaFingerprint } from './lib/schema-fingerprint.mjs';
+import { calculateSchemaFingerprint } from './lib/schema-fingerprint.mjs';
 import {
   assertEnvironmentIdentity,
   registerEnvironmentIdentity,
@@ -18,6 +18,7 @@ import {
   schemaDumpArgs,
   normalizeDump,
   assertAppCatalog,
+  collectBootstrapCatalog,
   assertEmptyTarget,
   assertManagedDefaults,
   RESET_TARGET_DEFAULTS_SQL,
@@ -86,7 +87,7 @@ try {
   await assertEnvironmentIdentity(source, binding.source);
   if ((await calculateSchemaFingerprint(source)) !== SOURCE_FINGERPRINT)
     throw new Error('Production schema changed; review a new baseline.');
-  const sourceCatalog = (await collectSchemaCatalog(source)).catalog;
+  const sourceCatalog = await collectBootstrapCatalog(source);
   const snapshot = (await source.query('select pg_export_snapshot() as id')).rows[0].id;
   directory = await fs.mkdtemp(path.join(os.tmpdir(), 'safebus-capacity-'));
   await fs.chmod(directory, 0o700);
@@ -128,12 +129,12 @@ try {
   }
   if (Number((await target.query('select count(*) as count from cron.job')).rows[0].count) !== 0)
     throw new Error('Target has scheduled jobs.');
-  assertManagedDefaults(sourceCatalog, (await collectSchemaCatalog(target)).catalog);
+  assertManagedDefaults(sourceCatalog, await collectBootstrapCatalog(target));
   await target.query(RESET_TARGET_DEFAULTS_SQL);
   stage = 'target-schema';
   await target.query(sql);
   stage = 'catalog-verification';
-  const appDigest = assertAppCatalog(sourceCatalog, (await collectSchemaCatalog(target)).catalog);
+  const appDigest = assertAppCatalog(sourceCatalog, await collectBootstrapCatalog(target));
   await target.query(
     'revoke usage on schema public, safebus_private from public, anon, authenticated, service_role',
   );
@@ -144,7 +145,7 @@ try {
     );
     if (access.rows[0].allowed) throw new Error('Target schema quarantine failed.');
   }
-  assertAppCatalog(sourceCatalog, (await collectSchemaCatalog(target)).catalog, true);
+  assertAppCatalog(sourceCatalog, await collectBootstrapCatalog(target), true);
   await registerEnvironmentIdentity(target, binding.target, process.env.SAFEBUS_RELEASE_SHA);
   await assertEnvironmentIdentity(target, binding.target);
   // Data API must remain disabled at the project level until its separate
@@ -153,7 +154,7 @@ try {
   await target.query(committed ? 'commit' : 'rollback');
   if (committed) {
     await target.query('begin transaction read only');
-    assertAppCatalog(sourceCatalog, (await collectSchemaCatalog(target)).catalog, true);
+    assertAppCatalog(sourceCatalog, await collectBootstrapCatalog(target), true);
     await assertEnvironmentIdentity(target, binding.target);
     await target.query('rollback');
   } else assertEmptyTarget((await target.query(EMPTY_TARGET_SQL)).rows[0]);
@@ -202,7 +203,34 @@ try {
 } catch (error) {
   // SQLSTATE is safe diagnostic metadata; never emit raw SQL, messages or URLs.
   const code = /^[0-9A-Z]{5}$/.test(error?.code ?? '') ? error.code : 'UNKNOWN';
-  console.error('Capacity schema preparation stopped at stage=' + stage + '; code=' + code);
+  const section = [
+    'columns',
+    'relations',
+    'constraints',
+    'indexes',
+    'policies',
+    'routines',
+    'routineGrants',
+    'relationGrants',
+    'columnGrants',
+    'triggers',
+    'schemas',
+    'types',
+    'typeGrants',
+    'sequences',
+    'eventTriggers',
+    'defaultGrants',
+  ].includes(error?.catalogSection)
+    ? error.catalogSection
+    : 'none';
+  console.error(
+    'Capacity schema preparation stopped at stage=' +
+      stage +
+      '; code=' +
+      code +
+      '; section=' +
+      section,
+  );
   process.exitCode = 1;
 } finally {
   for (const [client, connected] of [
