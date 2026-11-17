@@ -85,3 +85,14 @@ exposed, guarded SECURITY DEFINER RPCs and disabled leaked-password protection
 remain separate launch-review items; this is not a clean platform-wide security
 attestation. References: [function execution review](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable)
 and [leaked-password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+
+## Installed release evidence — November 17
+
+PR #462 was merged as `36a576580821fd6f8ba471f5ccd34ab468ac5469`.
+[Protected release 44032056915](https://github.com/Davinder498/SafeBus-GLM/actions/runs/44032056915)
+passed rehearsal, encrypted recovery retention, installation and verification.
+Independent read-only checks confirmed the installed cache and reviewed function
+checksums, with schema fingerprint
+`c20c7a394caf2b267c4a586d5415046e8a6ff3f2419c018d2747226d3c7ddea7`.
+The follow-on common live calculation work is documented in
+[shared live progress](shared-live-progress-2026-11-17.md).

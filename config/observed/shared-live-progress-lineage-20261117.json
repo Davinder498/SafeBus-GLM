@@ -1,0 +1,339 @@
+{
+  "precedingReleaseSha": "36a576580821fd6f8ba471f5ccd34ab468ac5469",
+  "precedingFingerprint": "c20c7a394caf2b267c4a586d5415046e8a6ff3f2419c018d2747226d3c7ddea7",
+  "initial": {},
+  "cleanup": {
+    "columns": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "live_bus_progress_cache",
+          "column_name": "driver_trip_id",
+          "ordinal_position": 1,
+          "data_type": "uuid",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": null,
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "live_bus_progress_cache",
+          "column_name": "tenant_id",
+          "ordinal_position": 2,
+          "data_type": "uuid",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": null,
+          "collation": ""
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "live_bus_progress_cache",
+          "column_name": "input_digest",
+          "ordinal_position": 3,
+          "data_type": "text",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": null,
+          "collation": "pg_catalog.default"
+        },
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "live_bus_progress_cache",
+          "column_name": "progress_data",
+          "ordinal_position": 4,
+          "data_type": "jsonb",
+          "attnotnull": true,
+          "attidentity": "",
+          "attgenerated": "",
+          "default_expression": null,
+          "collation": ""
+        }
+      ]
+    },
+    "relations": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relname": "live_bus_progress_cache",
+          "relkind": "r",
+          "owner": "postgres",
+          "relrowsecurity": true,
+          "relforcerowsecurity": false,
+          "relpersistence": "p",
+          "relreplident": "d",
+          "reloptions": null,
+          "view_definition": null,
+          "partition_key": null,
+          "partition_bound": null,
+          "parents": null
+        }
+      ]
+    },
+    "constraints": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relname": "live_bus_progress_cache",
+          "conname": "live_bus_progress_cache_driver_trip_id_fkey",
+          "definition": "FOREIGN KEY (driver_trip_id) REFERENCES driver_trip_current_locations(driver_trip_id) ON DELETE CASCADE",
+          "convalidated": true
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "live_bus_progress_cache",
+          "conname": "live_bus_progress_cache_pkey",
+          "definition": "PRIMARY KEY (driver_trip_id)",
+          "convalidated": true
+        }
+      ]
+    },
+    "indexes": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relation_name": "live_bus_progress_cache",
+          "index_name": "live_bus_progress_cache_pkey",
+          "definition": "CREATE UNIQUE INDEX live_bus_progress_cache_pkey ON safebus_private.live_bus_progress_cache USING btree (driver_trip_id)",
+          "indisvalid": true,
+          "indisready": true,
+          "indisclustered": false,
+          "indisreplident": false,
+          "reloptions": null
+        }
+      ]
+    },
+    "routines": {
+      "removed": [
+        {
+          "schema_name": "public",
+          "proname": "get_guardian_bus_service_lines",
+          "prokind": "f",
+          "arguments": "p_bus_number text",
+          "owner": "postgres",
+          "prosecdef": true,
+          "proleakproof": false,
+          "provolatile": "v",
+          "proparallel": "u",
+          "proisstrict": false,
+          "proconfig": [
+            "search_path=pg_catalog, public, safebus_private, auth, extensions, realtime, pg_temp"
+          ],
+          "definition": "CREATE OR REPLACE FUNCTION public.get_guardian_bus_service_lines(p_bus_number text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\ndeclare\n  v_guardian_id uuid;\n  v_tenant_id uuid;\n  v_bus_number text := nullif(trim(p_bus_number), '');\n  v_result jsonb := '[]'::jsonb;\n  v_service record;\n  v_line jsonb;\nbegin\n  if auth.uid() is null\n    or public.is_current_user_session_active() is not true\n    or safebus_private.has_completed_optional_mfa() is not true\n    or safebus_private.current_user_role() is distinct from 'guardian'::public.user_role then\n    raise exception 'Guardian bus service lines require an active guardian login.'\n      using errcode = '42501';\n  end if;\n\n  v_tenant_id := safebus_private.current_tenant_id();\n  v_guardian_id := safebus_private.current_guardian_id();\n  if v_tenant_id is null or v_guardian_id is null then\n    raise exception 'Guardian bus service lines require an active guardian identity.'\n      using errcode = '42501';\n  end if;\n\n  if v_bus_number is null or length(v_bus_number) > 64 then\n    raise exception 'A valid bus number is required.' using errcode = '22023';\n  end if;\n\n  for v_service in\n    with eligible_services as (\n      select distinct\n        b.id as bus_id,\n        b.bus_number,\n        b.license_plate,\n        bra.route_id,\n        bra.route_trip_pattern_id,\n        r.route_name,\n        rtp.display_name as trip_name,\n        rtp.direction\n      from public.student_guardians sg\n      join public.students s\n        on s.id = sg.student_id\n        and s.tenant_id = sg.tenant_id\n        and s.status = 'active'\n      join public.student_bus_assignments sba\n        on sba.student_id = s.id\n        and sba.tenant_id = s.tenant_id\n        and sba.status = 'active'\n        and sba.effective_from <= ((now() AT TIME ZONE 'America/Edmonton')::date)\n        and (sba.effective_to is null or sba.effective_to >= ((now() AT TIME ZONE 'America/Edmonton')::date))\n      join public.bus_route_assignments bra\n        on bra.id = sba.bus_route_assignment_id\n        and bra.tenant_id = s.tenant_id\n        and bra.route_trip_pattern_id = sba.route_trip_pattern_id\n        and bra.status = 'active'\n        and (bra.effective_from is null or bra.effective_from <= ((now() AT TIME ZONE 'America/Edmonton')::date))\n        and (bra.effective_to is null or bra.effective_to >= ((now() AT TIME ZONE 'America/Edmonton')::date))\n      join public.buses b\n        on b.id = bra.bus_id\n        and b.tenant_id = s.tenant_id\n        and b.status = 'active'\n      join public.routes r\n        on r.id = bra.route_id\n        and r.tenant_id = s.tenant_id\n        and r.status = 'active'\n      join public.route_trip_patterns rtp\n        on rtp.id = bra.route_trip_pattern_id\n        and rtp.route_id = bra.route_id\n        and rtp.tenant_id = bra.tenant_id\n        and rtp.status = 'active'\n      where sg.guardian_id = v_guardian_id\n        and sg.tenant_id = v_tenant_id\n        and sg.status = 'active'\n        and (sg.access_expires_at is null or sg.access_expires_at > now())\n        and lower(b.bus_number) = lower(v_bus_number)\n    )\n    select\n      es.*,\n      trip.id as driver_trip_id,\n      trip.driver_id,\n      trip.status as trip_status,\n      trip.route_shape_id,\n      loc.latitude as raw_latitude,\n      loc.longitude as raw_longitude,\n      loc.accuracy_m,\n      loc.speed_mps,\n      loc.recorded_at as raw_recorded_at,\n      case\n        when trip.id is null then 'inactive'\n        when loc.recorded_at is null then 'missing'\n        when loc.latitude is null\n          or loc.longitude is null\n          or loc.latitude not between -90 and 90\n          or loc.longitude not between -180 and 180\n          or loc.recorded_at > now()\n          or (loc.accuracy_m is not null and (loc.accuracy_m < 0 or loc.accuracy_m > 250))\n          then 'invalid'\n        when loc.recorded_at < now() - interval '2 minutes' then 'stale'\n        else 'fresh'\n      end as location_state\n    from eligible_services es\n    left join lateral (\n      select dt.id, dt.driver_id, dt.status, dt.route_shape_id, dt.started_at\n      from public.driver_trips dt\n      join public.drivers d\n        on d.id = dt.driver_id\n        and d.tenant_id = v_tenant_id\n        and d.status = 'active'\n      where dt.tenant_id = v_tenant_id\n        and dt.bus_id = es.bus_id\n        and dt.route_id = es.route_id\n        and dt.route_trip_pattern_id = es.route_trip_pattern_id\n        and dt.status in ('active', 'paused')\n      order by dt.started_at desc, dt.id\n      limit 1\n    ) trip on true\n    left join public.driver_trip_current_locations loc\n      on loc.driver_trip_id = trip.id\n      and loc.tenant_id = v_tenant_id\n      and loc.driver_id = trip.driver_id\n      and loc.bus_id = es.bus_id\n      and loc.route_id = es.route_id\n    order by\n      case when trip.status = 'active' then 0 when trip.status = 'paused' then 1 else 2 end,\n      es.trip_name,\n      es.route_name,\n      es.direction\n  loop\n    with ordered_stops as (\n      select\n        rs.id,\n        rs.stop_name,\n        rs.stop_order,\n        rs.latitude::double precision as latitude,\n        rs.longitude::double precision as longitude,\n        rtss.planned_arrival_time,\n        guardian_stops.pickup_student_names,\n        guardian_stops.dropoff_student_names,\n        (row_number() over (\n          order by\n            case when v_service.direction = 'forward' then rs.stop_order end asc,\n            case when v_service.direction = 'reverse' then rs.stop_order end desc,\n            rs.id\n        ) - 1)::integer as display_index,\n        count(*) over ()::integer as stop_count\n      from public.route_stops rs\n      left join public.route_trip_stop_schedules rtss\n        on rtss.route_trip_pattern_id = v_service.route_trip_pattern_id\n        and rtss.route_stop_id = rs.id\n        and rtss.tenant_id = v_tenant_id\n        and rtss.route_id = v_service.route_id\n      left join lateral (\n        select\n          coalesce(\n            jsonb_agg(linked.student_name order by linked.student_name)\n              filter (where linked.is_pickup),\n            '[]'::jsonb\n          ) as pickup_student_names,\n          coalesce(\n            jsonb_agg(linked.student_name order by linked.student_name)\n              filter (where linked.is_dropoff),\n            '[]'::jsonb\n          ) as dropoff_student_names\n        from (\n          select distinct\n            coalesce(\n              nullif(trim(linked_student.preferred_name), ''),\n              linked_student.first_name\n            ) as student_name,\n            linked_assignment.pickup_stop_id = rs.id as is_pickup,\n            linked_assignment.dropoff_stop_id = rs.id as is_dropoff\n          from public.student_guardians linked_guardian\n          join public.students linked_student\n            on linked_student.id = linked_guardian.student_id\n            and linked_student.tenant_id = linked_guardian.tenant_id\n            and linked_student.status = 'active'\n          join public.student_bus_assignments linked_assignment\n            on linked_assignment.student_id = linked_student.id\n            and linked_assignment.tenant_id = linked_student.tenant_id\n            and linked_assignment.status = 'active'\n            and linked_assignment.effective_from <= ((now() AT TIME ZONE 'America/Edmonton')::date)\n            and (\n              linked_assignment.effective_to is null\n              or linked_assignment.effective_to >= ((now() AT TIME ZONE 'America/Edmonton')::date)\n            )\n          join public.bus_route_assignments linked_bus_route\n            on linked_bus_route.id = linked_assignment.bus_route_assignment_id\n            and linked_bus_route.tenant_id = linked_assignment.tenant_id\n            and linked_bus_route.route_id = v_service.route_id\n            and linked_bus_route.route_trip_pattern_id = v_service.route_trip_pattern_id\n            and linked_bus_route.bus_id = v_service.bus_id\n            and linked_bus_route.status = 'active'\n            and (\n              linked_bus_route.effective_from is null\n              or linked_bus_route.effective_from <= ((now() AT TIME ZONE 'America/Edmonton')::date)\n            )\n            and (\n              linked_bus_route.effective_to is null\n              or linked_bus_route.effective_to >= ((now() AT TIME ZONE 'America/Edmonton')::date)\n            )\n          where linked_guardian.guardian_id = v_guardian_id\n            and linked_guardian.tenant_id = v_tenant_id\n            and linked_guardian.status = 'active'\n            and (\n              linked_guardian.access_expires_at is null\n              or linked_guardian.access_expires_at > now()\n            )\n            and (\n              linked_assignment.pickup_stop_id = rs.id\n              or linked_assignment.dropoff_stop_id = rs.id\n            )\n        ) linked\n      ) guardian_stops on true\n      where rs.tenant_id = v_tenant_id\n        and rs.route_id = v_service.route_id\n        and rs.status = 'active'\n    ), shape_context as (\n      select route_shape.path\n      from public.route_shapes route_shape\n      where route_shape.id = v_service.route_shape_id\n        and route_shape.tenant_id = v_tenant_id\n        and route_shape.route_id = v_service.route_id\n      limit 1\n    ), location_context as (\n      select\n        case\n          when v_service.location_state = 'fresh' then\n            extensions.st_setsrid(\n              extensions.st_makepoint(v_service.raw_longitude, v_service.raw_latitude),\n              4326\n            )\n          else null\n        end as bus_point,\n        greatest(75.0, least(250.0, coalesce(v_service.accuracy_m, 25.0) * 2.0)) as shape_tolerance_m,\n        greatest(100.0, least(300.0, coalesce(v_service.accuracy_m, 25.0) * 2.0)) as fallback_tolerance_m\n    ), shared_geometry as materialized (\n      -- Only static route inputs enter this cache. Names, permissions and GPS\n      -- remain in this request's statement snapshot.\n      select safebus_private.shared_route_stop_geometry(\n        v_tenant_id, v_service.route_id, v_service.route_trip_pattern_id,\n        coalesce((select jsonb_agg(jsonb_build_object(\n          'id', os.id, 'display_index', os.display_index,\n          'latitude', os.latitude, 'longitude', os.longitude,\n          'planned_arrival_time', os.planned_arrival_time\n        ) order by os.display_index) from ordered_stops os), '[]'::jsonb),\n        (select sc.path::text from shape_context sc)\n      ) as data\n    ), located_stops as (\n      select os.*,\n        case when os.latitude is not null and os.longitude is not null then\n          extensions.st_setsrid(extensions.st_makepoint(os.longitude, os.latitude), 4326)\n        end as stop_point,\n        geometry.shape_fraction, geometry.distance_m, geometry.scheduled_seconds\n      from ordered_stops os\n      cross join shared_geometry cached\n      join lateral jsonb_to_recordset(cached.data) as geometry(\n        id uuid, shape_fraction double precision, distance_m double precision,\n        scheduled_seconds integer\n      ) on geometry.id = os.id\n    ), stop_segments as (\n      select\n        ls.*,\n        lead(ls.display_index) over (order by ls.display_index) as next_display_index,\n        lead(ls.stop_point) over (order by ls.display_index) as next_stop_point,\n        lead(ls.shape_fraction) over (order by ls.display_index) as next_shape_fraction,\n        lead(ls.planned_arrival_time) over (order by ls.display_index) as next_planned_arrival_time\n      from located_stops ls\n    ), shape_bus as (\n      select\n        sc.path,\n        lc.bus_point,\n        lc.shape_tolerance_m,\n        extensions.st_linelocatepoint(sc.path, lc.bus_point) as bus_fraction,\n        extensions.st_distance(sc.path::extensions.geography, lc.bus_point::extensions.geography) as off_route_m\n      from shape_context sc\n      cross join location_context lc\n      where lc.bus_point is not null\n    ), shape_projection as (\n      select\n        ss.display_index,\n        least(1.0, greatest(0.0,\n          (sb.bus_fraction - ss.shape_fraction)\n          / nullif(ss.next_shape_fraction - ss.shape_fraction, 0)\n        )) as segment_fraction,\n        sb.off_route_m,\n        sb.shape_tolerance_m\n      from shape_bus sb\n      join stop_segments ss\n        on ss.next_shape_fraction is not null\n        and ss.shape_fraction is not null\n      order by\n        case when sb.bus_fraction between least(ss.shape_fraction, ss.next_shape_fraction)\n          and greatest(ss.shape_fraction, ss.next_shape_fraction) then 0 else 1 end,\n        least(\n          abs(sb.bus_fraction - ss.shape_fraction),\n          abs(sb.bus_fraction - ss.next_shape_fraction)\n        ),\n        ss.display_index\n      limit 1\n    ), fallback_projection as (\n      select\n        ss.display_index,\n        extensions.st_linelocatepoint(\n          extensions.st_makeline(ss.stop_point, ss.next_stop_point),\n          lc.bus_point\n        ) as segment_fraction,\n        extensions.st_distance(\n          extensions.st_makeline(ss.stop_point, ss.next_stop_point)::extensions.geography,\n          lc.bus_point::extensions.geography\n        ) as off_route_m,\n        lc.fallback_tolerance_m\n      from stop_segments ss\n      cross join location_context lc\n      where not exists (select 1 from shape_context)\n        and lc.bus_point is not null\n        and ss.stop_point is not null\n        and ss.next_stop_point is not null\n      order by\n        extensions.st_distance(\n          extensions.st_makeline(ss.stop_point, ss.next_stop_point)::extensions.geography,\n          lc.bus_point::extensions.geography\n        ),\n        ss.display_index\n      limit 1\n    ), progress_model as (\n      select\n        (sp.display_index + sp.segment_fraction)::double precision as display_position,\n        'route_shape'::text as progress_source\n      from shape_projection sp\n      where sp.off_route_m <= sp.shape_tolerance_m\n      union all\n      select\n        (fp.display_index + fp.segment_fraction)::double precision,\n        'stop_sequence'::text\n      from fallback_projection fp\n      where fp.off_route_m <= fp.fallback_tolerance_m\n      limit 1\n    ), segments as (\n      select ss.display_index, ss.distance_m, ss.scheduled_seconds\n      from stop_segments ss\n      where ss.next_display_index is not null\n    ), stop_states as (\n      select\n        ls.*,\n        pm.display_position,\n        pm.progress_source,\n        case\n          when pm.display_position is null then 'unavailable'\n          when ls.display_index < pm.display_position - 0.06 then 'passed'\n          when abs(ls.display_index - pm.display_position) <= 0.06 then 'at_stop'\n          when ls.display_index = case\n            when abs(pm.display_position - round(pm.display_position)) <= 0.06\n              then floor(pm.display_position)::integer + 1\n            else ceil(pm.display_position)::integer\n          end then 'next'\n          when ls.display_index > pm.display_position then 'upcoming'\n          else 'passed'\n        end as service_state\n      from located_stops ls\n      left join progress_model pm on true\n    ), stop_eta as (\n      select\n        state.*,\n        eta.seconds_to_stop,\n        case\n          when state.service_state = 'passed' then 'passed'\n          when v_service.trip_status = 'paused' then 'paused'\n          when v_service.trip_status is distinct from 'active'\n            or v_service.location_state <> 'fresh'\n            or state.display_position is null then 'unavailable'\n          when state.service_state = 'at_stop' then 'arriving_soon'\n          when eta.seconds_to_stop is null or eta.seconds_to_stop > 5400 then 'unavailable'\n          when eta.seconds_to_stop <= 180 then 'arriving_soon'\n          else 'available'\n        end as eta_status\n      from stop_states state\n      left join lateral (\n        select\n          case\n            when state.service_state = 'at_stop' then 0.0\n            when state.service_state not in ('next', 'upcoming') then null\n            else\n              (\n                select\n                  greatest(0.0, 1.0 - (state.display_position - floor(state.display_position)))\n                  * current_segment.distance_m\n                  / greatest(\n                    3.0,\n                    least(\n                      15.0,\n                      case\n                        when v_service.speed_mps between 3 and 15\n                          and current_segment.scheduled_seconds between 1 and 14400\n                          and current_segment.distance_m > 0 then\n                          (v_service.speed_mps * 0.6)\n                          + ((current_segment.distance_m / current_segment.scheduled_seconds) * 0.4)\n                        when v_service.speed_mps between 3 and 15 then v_service.speed_mps\n                        when current_segment.scheduled_seconds between 1 and 14400\n                          and current_segment.distance_m > 0 then\n                          current_segment.distance_m / current_segment.scheduled_seconds\n                        else 8.0\n                      end\n                    )\n                  )\n                from segments current_segment\n                where current_segment.display_index = floor(state.display_position)::integer\n                  and current_segment.distance_m is not null\n                  and current_segment.distance_m > 0\n              )\n              + coalesce((\n                select sum(\n                  case\n                    when later_segment.scheduled_seconds between 1 and 14400\n                      then later_segment.scheduled_seconds\n                    when later_segment.distance_m is not null\n                      then later_segment.distance_m / 8.0\n                    else 0.0\n                  end\n                )\n                from segments later_segment\n                where later_segment.display_index >= ceil(state.display_position)::integer\n                  and later_segment.display_index < state.display_index\n              ), 0.0)\n          end as seconds_to_stop\n      ) eta on true\n    ), stop_output as (\n      select\n        se.*,\n        case\n          when se.eta_status = 'arriving_soon' and se.service_state = 'at_stop' then 0\n          when se.eta_status in ('available', 'arriving_soon') then\n            ceil(greatest(1.0, se.seconds_to_stop / 60.0))::integer\n        end as eta_min_minutes\n      from stop_eta se\n    ), next_stop as (\n      select so.stop_name, so.stop_order\n      from stop_output so\n      where so.service_state = 'next'\n      order by so.display_index\n      limit 1\n    ), output_context as (\n      select\n        pm.display_position,\n        pm.progress_source,\n        os.stop_count\n      from (select max(stop_count) as stop_count from ordered_stops) os\n      left join progress_model pm on true\n    )\n    select jsonb_build_object(\n      'busNumber', v_service.bus_number,\n      'trackingTopic', case when v_service.driver_trip_id is not null then\n        'safebus:bus:' || pg_catalog.encode(pg_catalog.sha256(pg_catalog.convert_to(\n          v_service.driver_trip_id::text || ':safebus:bus:v1', 'UTF8')), 'hex') else null end,\n      'licensePlate', v_service.license_plate,\n      'routeName', v_service.route_name,\n      'tripName', v_service.trip_name,\n      'direction', v_service.direction,\n      'tripStatus', coalesce(v_service.trip_status, 'inactive'),\n      -- GPS validity is independent of the route-projection model.\n      -- Off-route/missing geometry still suppresses progress and ETAs.\n      'locationState', v_service.location_state,\n      'latitude', case when oc.display_position is not null then v_service.raw_latitude else null end,\n      'longitude', case when oc.display_position is not null then v_service.raw_longitude else null end,\n      'locationRecordedAt', case\n        when v_service.raw_recorded_at is not null and v_service.raw_recorded_at <= now()\n        then v_service.raw_recorded_at\n        else null\n      end,\n      'progressPosition', oc.display_position,\n      'progressPercent', case\n        when oc.display_position is not null and oc.stop_count > 1\n        then round((oc.display_position / (oc.stop_count - 1) * 100.0)::numeric, 2)\n        else null\n      end,\n      'progressSource', oc.progress_source,\n      'nextStopName', ns.stop_name,\n      'nextStopOrder', ns.stop_order,\n      'etaUpdatedAt', case\n        when v_service.trip_status = 'active'\n          and v_service.location_state = 'fresh'\n          and oc.display_position is not null\n        then v_service.raw_recorded_at\n        else null\n      end,\n      'stops', coalesce((\n        select jsonb_agg(\n          jsonb_build_object(\n            'name', so.stop_name,\n            'order', so.stop_order,\n            'latitude', so.latitude,\n            'longitude', so.longitude,\n            'pickupStudentNames', so.pickup_student_names,\n            'dropoffStudentNames', so.dropoff_student_names,\n            'plannedArrivalTime', so.planned_arrival_time,\n            'serviceState', so.service_state,\n            'etaStatus', so.eta_status,\n            'etaMinMinutes', so.eta_min_minutes,\n            'etaMaxMinutes', case\n              when so.eta_min_minutes is null then null\n              when so.eta_min_minutes = 0 then 0\n              else least(90, so.eta_min_minutes + greatest(3, ceil(so.eta_min_minutes * 0.35)::integer))\n            end,\n            'etaLabel', case\n              when so.eta_status = 'passed' then 'Passed'\n              when so.eta_status = 'paused' then 'ETA paused'\n              when so.eta_status = 'arriving_soon' and so.service_state = 'at_stop' then 'Arriving now'\n              when so.eta_status = 'arriving_soon' then 'Arriving soon'\n              when so.eta_status = 'available'\n                then so.eta_min_minutes::text || '–' || least(90, so.eta_min_minutes + greatest(3, ceil(so.eta_min_minutes * 0.35)::integer))::text || ' min'\n              else 'ETA unavailable'\n            end\n          )\n          order by so.display_index\n        )\n        from stop_output so\n      ), '[]'::jsonb)\n    )\n    into v_line\n    from output_context oc\n    left join next_stop ns on true;\n\n    v_result := v_result || jsonb_build_array(v_line);\n  end loop;\n\n  return v_result;\nend;\n$function$\n",
+          "aggregate_definition": null
+        }
+      ],
+      "added": [
+        {
+          "schema_name": "public",
+          "proname": "get_guardian_bus_service_lines",
+          "prokind": "f",
+          "arguments": "p_bus_number text",
+          "owner": "postgres",
+          "prosecdef": true,
+          "proleakproof": false,
+          "provolatile": "v",
+          "proparallel": "u",
+          "proisstrict": false,
+          "proconfig": [
+            "search_path=pg_catalog, public, safebus_private, auth, extensions, realtime, pg_temp"
+          ],
+          "definition": "CREATE OR REPLACE FUNCTION public.get_guardian_bus_service_lines(p_bus_number text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'safebus_private', 'auth', 'extensions', 'realtime', 'pg_temp'\nAS $function$\ndeclare\n  v_guardian_id uuid;\n  v_tenant_id uuid;\n  v_bus_number text := nullif(trim(p_bus_number), '');\n  v_result jsonb := '[]'::jsonb;\n  v_service record;\n  v_line jsonb;\nbegin\n  if auth.uid() is null\n    or public.is_current_user_session_active() is not true\n    or safebus_private.has_completed_optional_mfa() is not true\n    or safebus_private.current_user_role() is distinct from 'guardian'::public.user_role then\n    raise exception 'Guardian bus service lines require an active guardian login.'\n      using errcode = '42501';\n  end if;\n\n  v_tenant_id := safebus_private.current_tenant_id();\n  v_guardian_id := safebus_private.current_guardian_id();\n  if v_tenant_id is null or v_guardian_id is null then\n    raise exception 'Guardian bus service lines require an active guardian identity.'\n      using errcode = '42501';\n  end if;\n\n  if v_bus_number is null or length(v_bus_number) > 64 then\n    raise exception 'A valid bus number is required.' using errcode = '22023';\n  end if;\n\n  for v_service in\n    with eligible_services as (\n      select distinct\n        b.id as bus_id,\n        b.bus_number,\n        b.license_plate,\n        bra.route_id,\n        bra.route_trip_pattern_id,\n        r.route_name,\n        rtp.display_name as trip_name,\n        rtp.direction\n      from public.student_guardians sg\n      join public.students s\n        on s.id = sg.student_id\n        and s.tenant_id = sg.tenant_id\n        and s.status = 'active'\n      join public.student_bus_assignments sba\n        on sba.student_id = s.id\n        and sba.tenant_id = s.tenant_id\n        and sba.status = 'active'\n        and sba.effective_from <= ((now() AT TIME ZONE 'America/Edmonton')::date)\n        and (sba.effective_to is null or sba.effective_to >= ((now() AT TIME ZONE 'America/Edmonton')::date))\n      join public.bus_route_assignments bra\n        on bra.id = sba.bus_route_assignment_id\n        and bra.tenant_id = s.tenant_id\n        and bra.route_trip_pattern_id = sba.route_trip_pattern_id\n        and bra.status = 'active'\n        and (bra.effective_from is null or bra.effective_from <= ((now() AT TIME ZONE 'America/Edmonton')::date))\n        and (bra.effective_to is null or bra.effective_to >= ((now() AT TIME ZONE 'America/Edmonton')::date))\n      join public.buses b\n        on b.id = bra.bus_id\n        and b.tenant_id = s.tenant_id\n        and b.status = 'active'\n      join public.routes r\n        on r.id = bra.route_id\n        and r.tenant_id = s.tenant_id\n        and r.status = 'active'\n      join public.route_trip_patterns rtp\n        on rtp.id = bra.route_trip_pattern_id\n        and rtp.route_id = bra.route_id\n        and rtp.tenant_id = bra.tenant_id\n        and rtp.status = 'active'\n      where sg.guardian_id = v_guardian_id\n        and sg.tenant_id = v_tenant_id\n        and sg.status = 'active'\n        and (sg.access_expires_at is null or sg.access_expires_at > now())\n        and lower(b.bus_number) = lower(v_bus_number)\n    )\n    select\n      es.*,\n      trip.id as driver_trip_id,\n      trip.driver_id,\n      trip.status as trip_status,\n      trip.route_shape_id,\n      loc.latitude as raw_latitude,\n      loc.longitude as raw_longitude,\n      loc.accuracy_m,\n      loc.speed_mps,\n      loc.recorded_at as raw_recorded_at,\n      case\n        when trip.id is null then 'inactive'\n        when loc.recorded_at is null then 'missing'\n        when loc.latitude is null\n          or loc.longitude is null\n          or loc.latitude not between -90 and 90\n          or loc.longitude not between -180 and 180\n          or loc.recorded_at > now()\n          or (loc.accuracy_m is not null and (loc.accuracy_m < 0 or loc.accuracy_m > 250))\n          then 'invalid'\n        when loc.recorded_at < now() - interval '2 minutes' then 'stale'\n        else 'fresh'\n      end as location_state\n    from eligible_services es\n    left join lateral (\n      select dt.id, dt.driver_id, dt.status, dt.route_shape_id, dt.started_at\n      from public.driver_trips dt\n      join public.drivers d\n        on d.id = dt.driver_id\n        and d.tenant_id = v_tenant_id\n        and d.status = 'active'\n      where dt.tenant_id = v_tenant_id\n        and dt.bus_id = es.bus_id\n        and dt.route_id = es.route_id\n        and dt.route_trip_pattern_id = es.route_trip_pattern_id\n        and dt.status in ('active', 'paused')\n      order by dt.started_at desc, dt.id\n      limit 1\n    ) trip on true\n    left join public.driver_trip_current_locations loc\n      on loc.driver_trip_id = trip.id\n      and loc.tenant_id = v_tenant_id\n      and loc.driver_id = trip.driver_id\n      and loc.bus_id = es.bus_id\n      and loc.route_id = es.route_id\n    order by\n      case when trip.status = 'active' then 0 when trip.status = 'paused' then 1 else 2 end,\n      es.trip_name,\n      es.route_name,\n      es.direction\n  loop\n    with ordered_stops as (\n      select\n        rs.id,\n        rs.stop_name,\n        rs.stop_order,\n        rs.latitude::double precision as latitude,\n        rs.longitude::double precision as longitude,\n        rtss.planned_arrival_time,\n        guardian_stops.pickup_student_names,\n        guardian_stops.dropoff_student_names,\n        (row_number() over (\n          order by\n            case when v_service.direction = 'forward' then rs.stop_order end asc,\n            case when v_service.direction = 'reverse' then rs.stop_order end desc,\n            rs.id\n        ) - 1)::integer as display_index,\n        count(*) over ()::integer as stop_count\n      from public.route_stops rs\n      left join public.route_trip_stop_schedules rtss\n        on rtss.route_trip_pattern_id = v_service.route_trip_pattern_id\n        and rtss.route_stop_id = rs.id\n        and rtss.tenant_id = v_tenant_id\n        and rtss.route_id = v_service.route_id\n      left join lateral (\n        select\n          coalesce(\n            jsonb_agg(linked.student_name order by linked.student_name)\n              filter (where linked.is_pickup),\n            '[]'::jsonb\n          ) as pickup_student_names,\n          coalesce(\n            jsonb_agg(linked.student_name order by linked.student_name)\n              filter (where linked.is_dropoff),\n            '[]'::jsonb\n          ) as dropoff_student_names\n        from (\n          select distinct\n            coalesce(\n              nullif(trim(linked_student.preferred_name), ''),\n              linked_student.first_name\n            ) as student_name,\n            linked_assignment.pickup_stop_id = rs.id as is_pickup,\n            linked_assignment.dropoff_stop_id = rs.id as is_dropoff\n          from public.student_guardians linked_guardian\n          join public.students linked_student\n            on linked_student.id = linked_guardian.student_id\n            and linked_student.tenant_id = linked_guardian.tenant_id\n            and linked_student.status = 'active'\n          join public.student_bus_assignments linked_assignment\n            on linked_assignment.student_id = linked_student.id\n            and linked_assignment.tenant_id = linked_student.tenant_id\n            and linked_assignment.status = 'active'\n            and linked_assignment.effective_from <= ((now() AT TIME ZONE 'America/Edmonton')::date)\n            and (\n              linked_assignment.effective_to is null\n              or linked_assignment.effective_to >= ((now() AT TIME ZONE 'America/Edmonton')::date)\n            )\n          join public.bus_route_assignments linked_bus_route\n            on linked_bus_route.id = linked_assignment.bus_route_assignment_id\n            and linked_bus_route.tenant_id = linked_assignment.tenant_id\n            and linked_bus_route.route_id = v_service.route_id\n            and linked_bus_route.route_trip_pattern_id = v_service.route_trip_pattern_id\n            and linked_bus_route.bus_id = v_service.bus_id\n            and linked_bus_route.status = 'active'\n            and (\n              linked_bus_route.effective_from is null\n              or linked_bus_route.effective_from <= ((now() AT TIME ZONE 'America/Edmonton')::date)\n            )\n            and (\n              linked_bus_route.effective_to is null\n              or linked_bus_route.effective_to >= ((now() AT TIME ZONE 'America/Edmonton')::date)\n            )\n          where linked_guardian.guardian_id = v_guardian_id\n            and linked_guardian.tenant_id = v_tenant_id\n            and linked_guardian.status = 'active'\n            and (\n              linked_guardian.access_expires_at is null\n              or linked_guardian.access_expires_at > now()\n            )\n            and (\n              linked_assignment.pickup_stop_id = rs.id\n              or linked_assignment.dropoff_stop_id = rs.id\n            )\n        ) linked\n      ) guardian_stops on true\n      where rs.tenant_id = v_tenant_id\n        and rs.route_id = v_service.route_id\n        and rs.status = 'active'\n    ), shape_context as (\n      select route_shape.path\n      from public.route_shapes route_shape\n      where route_shape.id = v_service.route_shape_id\n        and route_shape.tenant_id = v_tenant_id\n        and route_shape.route_id = v_service.route_id\n      limit 1\n    ), shared_progress as materialized (\n      select safebus_private.shared_live_bus_progress(\n        v_tenant_id, to_jsonb(v_service),\n        coalesce((select jsonb_agg(jsonb_build_object(\n          'id', os.id, 'stop_name', os.stop_name, 'stop_order', os.stop_order,\n          'latitude', os.latitude, 'longitude', os.longitude,\n          'planned_arrival_time', os.planned_arrival_time,\n          'display_index', os.display_index, 'stop_count', os.stop_count\n        ) order by os.display_index) from ordered_stops os), '[]'::jsonb),\n        (select sc.path::text from shape_context sc)\n      ) as data\n    ), stop_output as (\n      select os.*, metrics.service_state, metrics.eta_status, metrics.eta_min_minutes\n      from ordered_stops os cross join shared_progress cached\n      join lateral jsonb_to_recordset(cached.data->'stops') as metrics(\n        id uuid, service_state text, eta_status text, eta_min_minutes integer\n      ) on metrics.id = os.id\n    ), next_stop as (\n      select so.stop_name, so.stop_order\n      from stop_output so\n      where so.service_state = 'next'\n      order by so.display_index\n      limit 1\n    ), output_context as (\n      select (data->>'display_position')::double precision as display_position,\n        data->>'progress_source' as progress_source,\n        (data->>'stop_count')::integer as stop_count\n      from shared_progress\n    )\n    select jsonb_build_object(\n      'busNumber', v_service.bus_number,\n      'trackingTopic', case when v_service.driver_trip_id is not null then\n        'safebus:bus:' || pg_catalog.encode(pg_catalog.sha256(pg_catalog.convert_to(\n          v_service.driver_trip_id::text || ':safebus:bus:v1', 'UTF8')), 'hex') else null end,\n      'licensePlate', v_service.license_plate,\n      'routeName', v_service.route_name,\n      'tripName', v_service.trip_name,\n      'direction', v_service.direction,\n      'tripStatus', coalesce(v_service.trip_status, 'inactive'),\n      -- GPS validity is independent of the route-projection model.\n      -- Off-route/missing geometry still suppresses progress and ETAs.\n      'locationState', v_service.location_state,\n      'latitude', case when oc.display_position is not null then v_service.raw_latitude else null end,\n      'longitude', case when oc.display_position is not null then v_service.raw_longitude else null end,\n      'locationRecordedAt', case\n        when v_service.raw_recorded_at is not null and v_service.raw_recorded_at <= now()\n        then v_service.raw_recorded_at\n        else null\n      end,\n      'progressPosition', oc.display_position,\n      'progressPercent', case\n        when oc.display_position is not null and oc.stop_count > 1\n        then round((oc.display_position / (oc.stop_count - 1) * 100.0)::numeric, 2)\n        else null\n      end,\n      'progressSource', oc.progress_source,\n      'nextStopName', ns.stop_name,\n      'nextStopOrder', ns.stop_order,\n      'etaUpdatedAt', case\n        when v_service.trip_status = 'active'\n          and v_service.location_state = 'fresh'\n          and oc.display_position is not null\n        then v_service.raw_recorded_at\n        else null\n      end,\n      'stops', coalesce((\n        select jsonb_agg(\n          jsonb_build_object(\n            'name', so.stop_name,\n            'order', so.stop_order,\n            'latitude', so.latitude,\n            'longitude', so.longitude,\n            'pickupStudentNames', so.pickup_student_names,\n            'dropoffStudentNames', so.dropoff_student_names,\n            'plannedArrivalTime', so.planned_arrival_time,\n            'serviceState', so.service_state,\n            'etaStatus', so.eta_status,\n            'etaMinMinutes', so.eta_min_minutes,\n            'etaMaxMinutes', case\n              when so.eta_min_minutes is null then null\n              when so.eta_min_minutes = 0 then 0\n              else least(90, so.eta_min_minutes + greatest(3, ceil(so.eta_min_minutes * 0.35)::integer))\n            end,\n            'etaLabel', case\n              when so.eta_status = 'passed' then 'Passed'\n              when so.eta_status = 'paused' then 'ETA paused'\n              when so.eta_status = 'arriving_soon' and so.service_state = 'at_stop' then 'Arriving now'\n              when so.eta_status = 'arriving_soon' then 'Arriving soon'\n              when so.eta_status = 'available'\n                then so.eta_min_minutes::text || '–' || least(90, so.eta_min_minutes + greatest(3, ceil(so.eta_min_minutes * 0.35)::integer))::text || ' min'\n              else 'ETA unavailable'\n            end\n          )\n          order by so.display_index\n        )\n        from stop_output so\n      ), '[]'::jsonb)\n    )\n    into v_line\n    from output_context oc\n    left join next_stop ns on true;\n\n    v_result := v_result || jsonb_build_array(v_line);\n  end loop;\n\n  return v_result;\nend;\n$function$\n",
+          "aggregate_definition": null
+        },
+        {
+          "schema_name": "safebus_private",
+          "proname": "invalidate_live_bus_progress",
+          "prokind": "f",
+          "arguments": "",
+          "owner": "postgres",
+          "prosecdef": true,
+          "proleakproof": false,
+          "provolatile": "v",
+          "proparallel": "u",
+          "proisstrict": false,
+          "proconfig": ["search_path=pg_catalog, pg_temp"],
+          "definition": "CREATE OR REPLACE FUNCTION safebus_private.invalidate_live_bus_progress()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'pg_temp'\nAS $function$\nbegin\n  if tg_table_name = 'driver_trips' then\n    delete from safebus_private.live_bus_progress_cache where driver_trip_id = old.id;\n  else\n    delete from safebus_private.live_bus_progress_cache where driver_trip_id = old.driver_trip_id;\n  end if;\n  return new;\nend;\n$function$\n",
+          "aggregate_definition": null
+        },
+        {
+          "schema_name": "safebus_private",
+          "proname": "shared_live_bus_progress",
+          "prokind": "f",
+          "arguments": "p_tenant_id uuid, p_service jsonb, p_stops jsonb, p_path text",
+          "owner": "postgres",
+          "prosecdef": false,
+          "proleakproof": false,
+          "provolatile": "v",
+          "proparallel": "u",
+          "proisstrict": false,
+          "proconfig": ["search_path=pg_catalog, extensions, pg_temp"],
+          "definition": "CREATE OR REPLACE FUNCTION safebus_private.shared_live_bus_progress(p_tenant_id uuid, p_service jsonb, p_stops jsonb, p_path text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog', 'extensions', 'pg_temp'\nAS $function$\ndeclare\n  v_tenant_id uuid := p_tenant_id;\n  v_service record;\n  v_digest text := encode(sha256(convert_to(jsonb_build_array(\n    'live-bus-progress-v1', p_tenant_id, p_service, p_stops, p_path\n  )::text, 'UTF8')), 'hex');\n  v_result jsonb;\n  v_cache_write boolean := false;\nbegin\n  select * into v_service from jsonb_to_record(p_service) as s(\n    driver_trip_id uuid, driver_id uuid, bus_id uuid, route_id uuid,\n    route_trip_pattern_id uuid, route_shape_id uuid, trip_status text,\n    location_state text, raw_latitude double precision, raw_longitude double precision,\n    raw_recorded_at timestamptz, accuracy_m double precision, speed_mps double precision\n  );\n  -- Freshness is recomputed by the caller on every authorized request. A stale,\n  -- future, missing or invalid GPS record never reuses live progress.\n  if v_service.location_state = 'fresh' and v_service.trip_status in ('active','paused') then\n    select c.progress_data into v_result from safebus_private.live_bus_progress_cache c\n    where c.driver_trip_id = v_service.driver_trip_id and c.tenant_id = p_tenant_id\n      and c.input_digest = v_digest;\n    if found then return v_result; end if;\n    if current_setting('transaction_read_only') = 'off' then\n      v_cache_write := pg_try_advisory_xact_lock(hashtextextended(\n        'safebus:live-progress:' || v_service.driver_trip_id::text, 0));\n    end if;\n    if v_cache_write then\n      select c.progress_data into v_result from safebus_private.live_bus_progress_cache c\n      where c.driver_trip_id = v_service.driver_trip_id and c.tenant_id = p_tenant_id\n        and c.input_digest = v_digest;\n      if found then return v_result; end if;\n    end if;\n  end if;\n  with ordered_stops as (\n    select * from jsonb_to_recordset(p_stops) as s(\n      id uuid, stop_name text, stop_order integer, latitude double precision,\n      longitude double precision, planned_arrival_time time,\n      display_index integer, stop_count integer\n    )\n  ), shape_context as (\n    select p_path::extensions.geometry as path where p_path is not null\n    ), location_context as (\n      select\n        case\n          when v_service.location_state = 'fresh' then\n            extensions.st_setsrid(\n              extensions.st_makepoint(v_service.raw_longitude, v_service.raw_latitude),\n              4326\n            )\n          else null\n        end as bus_point,\n        greatest(75.0, least(250.0, coalesce(v_service.accuracy_m, 25.0) * 2.0)) as shape_tolerance_m,\n        greatest(100.0, least(300.0, coalesce(v_service.accuracy_m, 25.0) * 2.0)) as fallback_tolerance_m\n    ), shared_geometry as materialized (\n      -- Only static route inputs enter this cache. Names, permissions and GPS\n      -- remain in this request's statement snapshot.\n      select safebus_private.shared_route_stop_geometry(\n        v_tenant_id, v_service.route_id, v_service.route_trip_pattern_id,\n        coalesce((select jsonb_agg(jsonb_build_object(\n          'id', os.id, 'display_index', os.display_index,\n          'latitude', os.latitude, 'longitude', os.longitude,\n          'planned_arrival_time', os.planned_arrival_time\n        ) order by os.display_index) from ordered_stops os), '[]'::jsonb),\n        (select sc.path::text from shape_context sc)\n      ) as data\n    ), located_stops as (\n      select os.*,\n        case when os.latitude is not null and os.longitude is not null then\n          extensions.st_setsrid(extensions.st_makepoint(os.longitude, os.latitude), 4326)\n        end as stop_point,\n        geometry.shape_fraction, geometry.distance_m, geometry.scheduled_seconds\n      from ordered_stops os\n      cross join shared_geometry cached\n      join lateral jsonb_to_recordset(cached.data) as geometry(\n        id uuid, shape_fraction double precision, distance_m double precision,\n        scheduled_seconds integer\n      ) on geometry.id = os.id\n    ), stop_segments as (\n      select\n        ls.*,\n        lead(ls.display_index) over (order by ls.display_index) as next_display_index,\n        lead(ls.stop_point) over (order by ls.display_index) as next_stop_point,\n        lead(ls.shape_fraction) over (order by ls.display_index) as next_shape_fraction,\n        lead(ls.planned_arrival_time) over (order by ls.display_index) as next_planned_arrival_time\n      from located_stops ls\n    ), shape_bus as (\n      select\n        sc.path,\n        lc.bus_point,\n        lc.shape_tolerance_m,\n        extensions.st_linelocatepoint(sc.path, lc.bus_point) as bus_fraction,\n        extensions.st_distance(sc.path::extensions.geography, lc.bus_point::extensions.geography) as off_route_m\n      from shape_context sc\n      cross join location_context lc\n      where lc.bus_point is not null\n    ), shape_projection as (\n      select\n        ss.display_index,\n        least(1.0, greatest(0.0,\n          (sb.bus_fraction - ss.shape_fraction)\n          / nullif(ss.next_shape_fraction - ss.shape_fraction, 0)\n        )) as segment_fraction,\n        sb.off_route_m,\n        sb.shape_tolerance_m\n      from shape_bus sb\n      join stop_segments ss\n        on ss.next_shape_fraction is not null\n        and ss.shape_fraction is not null\n      order by\n        case when sb.bus_fraction between least(ss.shape_fraction, ss.next_shape_fraction)\n          and greatest(ss.shape_fraction, ss.next_shape_fraction) then 0 else 1 end,\n        least(\n          abs(sb.bus_fraction - ss.shape_fraction),\n          abs(sb.bus_fraction - ss.next_shape_fraction)\n        ),\n        ss.display_index\n      limit 1\n    ), fallback_projection as (\n      select\n        ss.display_index,\n        extensions.st_linelocatepoint(\n          extensions.st_makeline(ss.stop_point, ss.next_stop_point),\n          lc.bus_point\n        ) as segment_fraction,\n        extensions.st_distance(\n          extensions.st_makeline(ss.stop_point, ss.next_stop_point)::extensions.geography,\n          lc.bus_point::extensions.geography\n        ) as off_route_m,\n        lc.fallback_tolerance_m\n      from stop_segments ss\n      cross join location_context lc\n      where not exists (select 1 from shape_context)\n        and lc.bus_point is not null\n        and ss.stop_point is not null\n        and ss.next_stop_point is not null\n      order by\n        extensions.st_distance(\n          extensions.st_makeline(ss.stop_point, ss.next_stop_point)::extensions.geography,\n          lc.bus_point::extensions.geography\n        ),\n        ss.display_index\n      limit 1\n    ), progress_model as (\n      select\n        (sp.display_index + sp.segment_fraction)::double precision as display_position,\n        'route_shape'::text as progress_source\n      from shape_projection sp\n      where sp.off_route_m <= sp.shape_tolerance_m\n      union all\n      select\n        (fp.display_index + fp.segment_fraction)::double precision,\n        'stop_sequence'::text\n      from fallback_projection fp\n      where fp.off_route_m <= fp.fallback_tolerance_m\n      limit 1\n    ), segments as (\n      select ss.display_index, ss.distance_m, ss.scheduled_seconds\n      from stop_segments ss\n      where ss.next_display_index is not null\n    ), stop_states as (\n      select\n        ls.*,\n        pm.display_position,\n        pm.progress_source,\n        case\n          when pm.display_position is null then 'unavailable'\n          when ls.display_index < pm.display_position - 0.06 then 'passed'\n          when abs(ls.display_index - pm.display_position) <= 0.06 then 'at_stop'\n          when ls.display_index = case\n            when abs(pm.display_position - round(pm.display_position)) <= 0.06\n              then floor(pm.display_position)::integer + 1\n            else ceil(pm.display_position)::integer\n          end then 'next'\n          when ls.display_index > pm.display_position then 'upcoming'\n          else 'passed'\n        end as service_state\n      from located_stops ls\n      left join progress_model pm on true\n    ), stop_eta as (\n      select\n        state.*,\n        eta.seconds_to_stop,\n        case\n          when state.service_state = 'passed' then 'passed'\n          when v_service.trip_status = 'paused' then 'paused'\n          when v_service.trip_status is distinct from 'active'\n            or v_service.location_state <> 'fresh'\n            or state.display_position is null then 'unavailable'\n          when state.service_state = 'at_stop' then 'arriving_soon'\n          when eta.seconds_to_stop is null or eta.seconds_to_stop > 5400 then 'unavailable'\n          when eta.seconds_to_stop <= 180 then 'arriving_soon'\n          else 'available'\n        end as eta_status\n      from stop_states state\n      left join lateral (\n        select\n          case\n            when state.service_state = 'at_stop' then 0.0\n            when state.service_state not in ('next', 'upcoming') then null\n            else\n              (\n                select\n                  greatest(0.0, 1.0 - (state.display_position - floor(state.display_position)))\n                  * current_segment.distance_m\n                  / greatest(\n                    3.0,\n                    least(\n                      15.0,\n                      case\n                        when v_service.speed_mps between 3 and 15\n                          and current_segment.scheduled_seconds between 1 and 14400\n                          and current_segment.distance_m > 0 then\n                          (v_service.speed_mps * 0.6)\n                          + ((current_segment.distance_m / current_segment.scheduled_seconds) * 0.4)\n                        when v_service.speed_mps between 3 and 15 then v_service.speed_mps\n                        when current_segment.scheduled_seconds between 1 and 14400\n                          and current_segment.distance_m > 0 then\n                          current_segment.distance_m / current_segment.scheduled_seconds\n                        else 8.0\n                      end\n                    )\n                  )\n                from segments current_segment\n                where current_segment.display_index = floor(state.display_position)::integer\n                  and current_segment.distance_m is not null\n                  and current_segment.distance_m > 0\n              )\n              + coalesce((\n                select sum(\n                  case\n                    when later_segment.scheduled_seconds between 1 and 14400\n                      then later_segment.scheduled_seconds\n                    when later_segment.distance_m is not null\n                      then later_segment.distance_m / 8.0\n                    else 0.0\n                  end\n                )\n                from segments later_segment\n                where later_segment.display_index >= ceil(state.display_position)::integer\n                  and later_segment.display_index < state.display_index\n              ), 0.0)\n          end as seconds_to_stop\n      ) eta on true\n    ), stop_output as (\n      select\n        se.*,\n        case\n          when se.eta_status = 'arriving_soon' and se.service_state = 'at_stop' then 0\n          when se.eta_status in ('available', 'arriving_soon') then\n            ceil(greatest(1.0, se.seconds_to_stop / 60.0))::integer\n        end as eta_min_minutes\n      from stop_eta se\n\n    )\n    select jsonb_build_object(\n      'display_position', (select display_position from progress_model),\n      'progress_source', (select progress_source from progress_model),\n      'stop_count', (select max(stop_count) from ordered_stops),\n      'stops', coalesce((select jsonb_agg(jsonb_build_object(\n        'id', s.id, 'service_state', s.service_state,\n        'eta_status', s.eta_status, 'eta_min_minutes', s.eta_min_minutes\n      ) order by s.display_index) from stop_output s), '[]'::jsonb)\n    ) into v_result;\n\n  if v_cache_write then\n    -- Do the expensive calculation before taking source-row locks. A brief\n    -- NOWAIT share lock makes the source check and cache insert atomic with\n    -- GPS/trip invalidation. If either row changed or is busy, return the exact\n    -- computed response without filling the cache. Never wait for an ingest.\n    begin\n      perform 1 from public.driver_trips d\n      where d.id = v_service.driver_trip_id and d.tenant_id = p_tenant_id\n        and d.driver_id = v_service.driver_id and d.bus_id = v_service.bus_id\n        and d.route_id = v_service.route_id\n        and d.route_trip_pattern_id = v_service.route_trip_pattern_id\n        and d.route_shape_id is not distinct from v_service.route_shape_id\n        and d.status = v_service.trip_status and d.status in ('active','paused')\n      for share nowait;\n      if found then\n        perform 1 from public.driver_trip_current_locations l\n        where l.driver_trip_id = v_service.driver_trip_id and l.tenant_id = p_tenant_id\n          and l.driver_id = v_service.driver_id and l.bus_id = v_service.bus_id\n          and l.route_id = v_service.route_id\n          and l.recorded_at is not distinct from v_service.raw_recorded_at\n          and l.latitude is not distinct from v_service.raw_latitude\n          and l.longitude is not distinct from v_service.raw_longitude\n          and l.accuracy_m is not distinct from v_service.accuracy_m\n          and l.speed_mps is not distinct from v_service.speed_mps\n        for share nowait;\n        if found then\n          insert into safebus_private.live_bus_progress_cache(driver_trip_id,tenant_id,input_digest,progress_data)\n          values(v_service.driver_trip_id,p_tenant_id,v_digest,v_result)\n          on conflict(driver_trip_id) do update set tenant_id=excluded.tenant_id,\n            input_digest=excluded.input_digest,progress_data=excluded.progress_data;\n        end if;\n      end if;\n    exception when lock_not_available then\n      -- The subtransaction also releases any source locks already acquired.\n      null;\n    end;\n  end if;\n  return v_result;\nend;\n$function$\n",
+          "aggregate_definition": null
+        }
+      ]
+    },
+    "routineGrants": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "proname": "invalidate_live_bus_progress",
+          "arguments": "",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "EXECUTE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "proname": "shared_live_bus_progress",
+          "arguments": "p_tenant_id uuid, p_service jsonb, p_stops jsonb, p_path text",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "EXECUTE",
+          "is_grantable": false
+        }
+      ]
+    },
+    "relationGrants": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "relname": "live_bus_progress_cache",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "DELETE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "live_bus_progress_cache",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "INSERT",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "live_bus_progress_cache",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "MAINTAIN",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "live_bus_progress_cache",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "REFERENCES",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "live_bus_progress_cache",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "SELECT",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "live_bus_progress_cache",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "TRIGGER",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "live_bus_progress_cache",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "TRUNCATE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "relname": "live_bus_progress_cache",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "UPDATE",
+          "is_grantable": false
+        }
+      ]
+    },
+    "triggers": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "public",
+          "relname": "driver_trip_current_locations",
+          "tgname": "invalidate_live_bus_progress_location",
+          "tgenabled": "O",
+          "definition": "CREATE TRIGGER invalidate_live_bus_progress_location AFTER UPDATE OF latitude, longitude, accuracy_m, speed_mps, recorded_at, tenant_id, driver_id, bus_id, route_id ON public.driver_trip_current_locations FOR EACH ROW EXECUTE FUNCTION safebus_private.invalidate_live_bus_progress()"
+        },
+        {
+          "schema_name": "public",
+          "relname": "driver_trips",
+          "tgname": "invalidate_live_bus_progress_trip",
+          "tgenabled": "O",
+          "definition": "CREATE TRIGGER invalidate_live_bus_progress_trip AFTER UPDATE OF status, route_shape_id, tenant_id, driver_id, bus_id, route_id, route_trip_pattern_id ON public.driver_trips FOR EACH ROW EXECUTE FUNCTION safebus_private.invalidate_live_bus_progress()"
+        }
+      ]
+    },
+    "types": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "typname": "live_bus_progress_cache",
+          "typtype": "c",
+          "owner": "postgres",
+          "base_type": null,
+          "typnotnull": false,
+          "typdefault": null,
+          "enum_labels": null,
+          "domain_constraints": null,
+          "composite_fields": [
+            "driver_trip_id:uuid",
+            "tenant_id:uuid",
+            "input_digest:text",
+            "progress_data:jsonb"
+          ]
+        }
+      ]
+    },
+    "typeGrants": {
+      "removed": [],
+      "added": [
+        {
+          "schema_name": "safebus_private",
+          "typname": "live_bus_progress_cache",
+          "grantor": "postgres",
+          "grantee": "PUBLIC",
+          "privilege_type": "USAGE",
+          "is_grantable": false
+        },
+        {
+          "schema_name": "safebus_private",
+          "typname": "live_bus_progress_cache",
+          "grantor": "postgres",
+          "grantee": "postgres",
+          "privilege_type": "USAGE",
+          "is_grantable": false
+        }
+      ]
+    }
+  }
+}
