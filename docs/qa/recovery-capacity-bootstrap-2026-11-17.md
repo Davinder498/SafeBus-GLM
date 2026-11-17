@@ -96,3 +96,26 @@ the target API. Prove role/tenant denials and simultaneous ingest/cache behavior
 with real connections. Then cost and stage bounded synthetic traffic, measuring
 actual quotas and generator throughput. Free/Nano resources are not certified
 for 500, 5,000 or 10,000 buses.
+
+## First hosted rehearsal and corrective handling
+
+Run 44071222092 passed validation and connected with verified TLS to both
+projects. It failed during schema import: PostgreSQL reported `permission denied
+to change default privileges`. Read-only inspection confirmed zero application
+tables afterward; installation did not run.
+
+The schema-only dump includes public-schema default grants owned by
+`supabase_admin`, which `postgres` cannot alter. The source and recovery project
+already have identical provider-owned defaults. The importer now checks that
+identity before importing and omits only the exact redundant provider GRANT
+statements. Full post-import default-privilege comparison remains mandatory.
+Function bodies are preserved during normalization.
+
+The fresh recovery project's postgres-owned defaults also grant anon and
+authenticated privileges that production has removed. Before creating objects,
+the transaction revokes these inherited role defaults (including service_role);
+the reviewed dump restores explicit object permissions and postgres defaults.
+This avoids retaining accidental privileges on newly restored objects. Any
+catalog mismatch still rolls back. Failure logs expose SQLSTATE, never raw SQL
+or connection credentials. This correction is not evidence of a successful
+hosted import or fleet capacity until the protected workflow passes.

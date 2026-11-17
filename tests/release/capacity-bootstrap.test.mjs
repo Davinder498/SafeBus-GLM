@@ -129,3 +129,54 @@ test('quarantine permits only the reviewed schema USAGE removals', () => {
   assert.doesNotThrow(() => assertAppCatalog(source, target, true));
   assert.throws(() => assertAppCatalog(source, source, true));
 });
+
+test('managed defaults remain verified while only redundant provider grants are omitted', async () => {
+  const { assertManagedDefaults, RESET_TARGET_DEFAULTS_SQL } =
+    await import('../../scripts/lib/capacity-bootstrap.mjs');
+  const sql =
+    'CREATE TABLE public.x(id int);\nCREATE FUNCTION public.x() RETURNS text LANGUAGE sql\n    AS $body$\nALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON TABLES TO anon;\n$body$;\n' +
+    '-- fixture\n'.repeat(120);
+  const grant =
+    'ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON TABLES TO anon;';
+  const own =
+    'ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO service_role;';
+  const normalized = normalizeDump(sql + grant + '\n' + own);
+  assert.equal(normalized.split(grant).length - 1, 1, 'function body must be preserved');
+  assert.ok(normalized.includes(own));
+  assert.ok(
+    normalizeDump(sql + grant.replace('public GRANT', 'safebus_private GRANT')).includes(
+      'IN SCHEMA safebus_private GRANT',
+    ),
+  );
+  assert.match(
+    RESET_TARGET_DEFAULTS_SQL,
+    /REVOKE ALL ON TABLES FROM anon, authenticated, service_role/,
+  );
+  const keys = [
+    'columns',
+    'relations',
+    'constraints',
+    'indexes',
+    'policies',
+    'routines',
+    'routineGrants',
+    'relationGrants',
+    'columnGrants',
+    'triggers',
+    'schemas',
+    'types',
+    'typeGrants',
+    'sequences',
+    'eventTriggers',
+    'defaultGrants',
+  ];
+  const source = Object.fromEntries(keys.map((key) => [key, []]));
+  source.defaultGrants = [
+    { owner: 'supabase_admin', schema_name: 'public', grantee: 'anon', privilege_type: 'SELECT' },
+  ];
+  const target = structuredClone(source);
+  assert.doesNotThrow(() => assertManagedDefaults(source, target));
+  target.defaultGrants[0].privilege_type = 'INSERT';
+  assert.throws(() => assertManagedDefaults(source, target));
+  assert.throws(() => assertAppCatalog(source, target), /defaultGrants/);
+});

@@ -57,9 +57,28 @@ export function normalizeDump(sql) {
     throw new Error('Unexpected schema archive size.');
   // Native pg_dump 17 emits only these two psql guards. Reject any other meta
   // command instead of passing it to PostgreSQL or enabling arbitrary psql input.
+  let dollarTag = null;
   const result = sql
     .split('\n')
     .filter((line) => {
+      // pg_dump function bodies are dollar quoted. Never rewrite their contents.
+      if (dollarTag) {
+        if (line.includes(dollarTag)) dollarTag = null;
+        return true;
+      }
+      const body = line.match(/^\s+AS (\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$)/);
+      if (body && !line.slice(line.indexOf(body[1]) + body[1].length).includes(body[1])) {
+        dollarTag = body[1];
+        return true;
+      }
+      // This provider-owned baseline is verified equal before import and again
+      // by the full defaultGrants catalog afterward. postgres cannot alter it.
+      if (
+        /^ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON (TABLES|SEQUENCES|FUNCTIONS) TO (postgres|anon|authenticated|service_role);$/.test(
+          line,
+        )
+      )
+        return false;
       if (/^\\(?:un)?restrict [A-Za-z0-9]+\s*$/.test(line)) return false;
       if (/^\\/.test(line)) throw new Error('Unexpected archive meta-command.');
       return (
@@ -143,3 +162,20 @@ export function assertEmptyTarget(row) {
   )
     throw new Error('Target is not empty; never reset or overwrite it.');
 }
+
+export function assertManagedDefaults(source, target) {
+  const rows = (catalog) =>
+    appCatalog(catalog).defaultGrants.filter((row) => row.owner !== 'postgres');
+  if (JSON.stringify(rows(source)) !== JSON.stringify(rows(target)))
+    throw new Error('Managed default privileges differ; provider review required.');
+}
+
+// Fresh Supabase projects grant these roles defaults that the production app
+// has narrowed. Remove inherited defaults before creating objects; the dump
+// restores postgres-owned defaults and explicit object ACLs inside the transaction.
+export const RESET_TARGET_DEFAULTS_SQL = ['TABLES', 'SEQUENCES', 'FUNCTIONS']
+  .map(
+    (kind) =>
+      `ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE ALL ON ${kind} FROM anon, authenticated, service_role;`,
+  )
+  .join('\n');
