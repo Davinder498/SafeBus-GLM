@@ -8,6 +8,7 @@ export const GUARDIAN_HOME_REFRESH_POLICY = {
   jitterMs: 5_000,
   liveMinIntervalMs: 30_000,
   maxRetryMs: 120_000,
+  throttleLocationOnly: true,
 };
 
 async function fetchHome(signal: AbortSignal) {

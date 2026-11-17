@@ -11,17 +11,32 @@ const mocks = vi.hoisted(() => ({
   user: { id: 'guardian-a' } as { id: string } | null,
   fetch: vi.fn(),
   disconnect: () => {},
-  invalidate: () => {},
+  invalidate: (_kind?: 'location' | 'change') => {},
+  sharedInvalidate: (_kind?: 'location' | 'change') => {},
 }));
 vi.mock('@/contexts/useAuth', () => ({ useAuth: () => ({ user: mocks.user }) }));
 vi.mock('@/services/guardianLiveBusLocationService', () => ({
   fetchGuardianLiveBusLocations: mocks.fetch,
 }));
 vi.mock('@/hooks/useTrackingInvalidations', () => ({
-  useTrackingInvalidations: (options: { onDisconnected: () => void; onInvalidate: () => void }) => {
+  useTrackingInvalidations: (options: {
+    onDisconnected: () => void;
+    onInvalidate: (kind?: 'location' | 'change') => void;
+  }) => {
     mocks.disconnect = options.onDisconnected;
     mocks.invalidate = options.onInvalidate;
     return 'connected';
+  },
+}));
+
+vi.mock('@/hooks/useSharedBusTracking', () => ({
+  useSharedBusTracking: (
+    _user: unknown,
+    _topics: unknown,
+    invalidate: typeof mocks.sharedInvalidate,
+  ) => {
+    mocks.sharedInvalidate = invalidate;
+    return true;
   },
 }));
 
@@ -57,10 +72,11 @@ const location: GuardianStudentLiveBusLocation = {
   lastEventTime: null,
 };
 
+let surface: 'map' | 'summary' = 'map';
 let root: Root;
 let result: UseGuardianLiveBusLocationsResult;
 function Probe() {
-  result = useGuardianLiveBusLocations();
+  result = useGuardianLiveBusLocations([], surface);
   return null;
 }
 async function render(strict = false) {
@@ -82,6 +98,8 @@ async function advance(ms: number) {
 
 beforeEach(() => {
   vi.useFakeTimers();
+  surface = 'map';
+  vi.spyOn(Math, 'random').mockReturnValue(0.5);
   mocks.user = { id: 'guardian-a' };
   mocks.fetch.mockReset().mockResolvedValue([location]);
   vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
@@ -309,4 +327,34 @@ describe('guardian location verification lifecycle', () => {
     await act(async () => window.dispatchEvent(new Event('online')));
     expect(result.state).toEqual({ kind: 'ready', locations: [] });
   });
+});
+
+it('caps map GPS bursts at one read per three seconds and ignores legacy GPS even before shared join', async () => {
+  await render();
+  for (let i = 0; i < 29; i++) {
+    await advance(100);
+    await act(async () => {
+      mocks.sharedInvalidate('location');
+      mocks.invalidate('location');
+    });
+  }
+  expect(mocks.fetch).toHaveBeenCalledTimes(1);
+  await advance(100);
+  expect(mocks.fetch).toHaveBeenCalledTimes(2);
+  await act(async () => mocks.invalidate('change'));
+  expect(mocks.fetch).toHaveBeenCalledTimes(3);
+});
+
+it('summary screens ignore legacy GPS, poll with jitter, and immediately recheck control changes', async () => {
+  surface = 'summary';
+  await render();
+  for (let i = 0; i < 10; i++) {
+    await advance(3_000);
+    await act(async () => mocks.invalidate('location'));
+  }
+  expect(mocks.fetch).toHaveBeenCalledTimes(1);
+  await advance(2_500);
+  expect(mocks.fetch).toHaveBeenCalledTimes(2);
+  await act(async () => mocks.invalidate('change'));
+  expect(mocks.fetch).toHaveBeenCalledTimes(3);
 });

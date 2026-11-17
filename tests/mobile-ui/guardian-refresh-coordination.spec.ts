@@ -96,10 +96,10 @@ async function openMap(page: Page, shared = false) {
   return { fixture, socket };
 }
 
-test('one guardian live subscription refreshes locations every three seconds while bounding stop-detail reads', async ({
+test('shared GPS refreshes locations every three seconds while bounding stop-detail reads', async ({
   page,
 }) => {
-  const { fixture, socket } = await openMap(page);
+  const { fixture, socket } = await openMap(page, true);
   const visibilityBefore = fixture.getCallCount();
   const linesBefore = fixture.getServiceLineCallCount();
   const joinsBefore = socket.joins();
@@ -112,7 +112,7 @@ test('one guardian live subscription refreshes locations every three seconds whi
         location_recorded_at: recordedAt,
       }),
     ]);
-    socket.emit();
+    socket.emit('location', sharedTopic);
     await expect
       .poll(async () => {
         await page.clock.runFor(50);
@@ -228,7 +228,7 @@ test('shared bus channel owns GPS refresh while personal control hints remain au
   await page.clock.runFor(300);
   expect(fixture.getCallCount()).toBe(before);
   socket.emit('location', sharedTopic);
-  await page.clock.runFor(300);
+  await page.clock.runFor(3_100);
   await expect.poll(() => fixture.getCallCount()).toBe(before + 1);
   fixture.setFail(true);
   fixture.setServiceLines([]);
@@ -238,4 +238,18 @@ test('shared bus channel owns GPS refresh while personal control hints remain au
   await expect(page.getByTestId('guardian-live-bus-map-marker')).toHaveCount(0);
   await expect.poll(() => socket.active(sharedTopic)).toBe(0);
   expect(socket.active()).toBe(1);
+});
+
+test('missing shared subscription uses periodic verification and never personal GPS hints', async ({
+  page,
+}) => {
+  const { fixture, socket } = await openMap(page);
+  const before = fixture.getCallCount();
+  for (let i = 0; i < 4; i++) {
+    socket.emit('location');
+    await page.clock.runFor(3_000);
+  }
+  expect(fixture.getCallCount()).toBe(before);
+  await page.clock.runFor(3_200);
+  await expect.poll(() => fixture.getCallCount()).toBe(before + 1);
 });

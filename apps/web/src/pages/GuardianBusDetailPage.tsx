@@ -77,8 +77,12 @@ export function GuardianBusDetailPage() {
     },
     [busNumber],
   );
-  const { state: verified } = useVerifiedGuardianData(fetchDetails, busNumber, {}, (data) =>
-    (data.serviceLines ?? []).flatMap((line) => (line.trackingTopic ? [line.trackingTopic] : [])),
+  const { state: verified } = useVerifiedGuardianData(
+    fetchDetails,
+    busNumber,
+    { liveMinIntervalMs: 15_000, throttleLocationOnly: true },
+    (data) =>
+      (data.serviceLines ?? []).flatMap((line) => (line.trackingTopic ? [line.trackingTopic] : [])),
   );
   const state =
     verified.kind === 'ready'

@@ -60,7 +60,7 @@ afterEach(async () => {
 it('limits repeated position hints but does not delay control or manual checks', async () => {
   for (let i = 0; i < 4; i++) {
     await advance(3_000);
-    await act(async () => mocks.invalidate('location'));
+    await act(async () => mocks.sharedInvalidate('location'));
   }
   expect(mocks.fetch).toHaveBeenCalledTimes(1);
   await advance(3_000);
@@ -84,7 +84,7 @@ it('retains an urgent authorization recheck across an in-flight response and lat
   await act(async () => result.refresh());
   await act(async () => {
     mocks.invalidate('change');
-    mocks.invalidate('location');
+    mocks.sharedInvalidate('location');
   });
   mocks.fetch.mockRejectedValueOnce(new Error('access revoked'));
   await act(async () => resolve(['old stop']));
@@ -94,7 +94,7 @@ it('retains an urgent authorization recheck across an in-flight response and lat
 });
 
 it('cancels a pending stop refresh while hidden and verifies immediately on return', async () => {
-  await act(async () => mocks.invalidate('location'));
+  await act(async () => mocks.sharedInvalidate('location'));
   vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
   await act(async () => document.dispatchEvent(new Event('visibilitychange')));
   await advance(60_000);
@@ -106,11 +106,11 @@ it('cancels a pending stop refresh while hidden and verifies immediately on retu
   expect(result.state).toEqual({ kind: 'ready', data: [] });
 });
 
-it('uses shared GPS hints after joining, retains personal control hints, and resumes legacy hints on failure', async () => {
+it('uses shared GPS hints after joining, retains personal control hints, and retains polling on failure', async () => {
   mocks.sharedReady = true;
   await act(async () => root.render(<Probe />));
   await advance(3_000);
-  await act(async () => mocks.invalidate('location'));
+  await act(async () => mocks.sharedInvalidate('location'));
   await advance(12_000);
   expect(mocks.fetch).toHaveBeenCalledTimes(2); // periodic server verification
   await act(async () => mocks.invalidate('change'));
@@ -124,7 +124,21 @@ it('uses shared GPS hints after joining, retains personal control hints, and res
   expect(mocks.fetch).toHaveBeenCalledTimes(4);
   await advance(15_000);
   expect(mocks.fetch).toHaveBeenCalledTimes(5); // fallback loop survived disconnect
-  await act(async () => mocks.invalidate('location'));
+  await act(async () => mocks.sharedInvalidate('location'));
   await advance(15_000);
   expect(mocks.fetch).toHaveBeenCalledTimes(6);
+});
+
+it('never uses personal GPS hints, even before shared join or after shared failure', async () => {
+  await act(async () => mocks.invalidate('location'));
+  await advance(14_999);
+  expect(mocks.fetch).toHaveBeenCalledTimes(1);
+  await advance(1);
+  expect(mocks.fetch).toHaveBeenCalledTimes(2);
+  await act(async () => mocks.sharedDisconnected());
+  expect(mocks.fetch).toHaveBeenCalledTimes(3);
+  await act(async () => mocks.invalidate('location'));
+  expect(mocks.fetch).toHaveBeenCalledTimes(3);
+  await act(async () => mocks.invalidate('change'));
+  expect(mocks.fetch).toHaveBeenCalledTimes(4);
 });
