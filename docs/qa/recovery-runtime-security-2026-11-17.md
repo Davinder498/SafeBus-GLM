@@ -1,6 +1,10 @@
 # Recovery runtime security
 
-Status: prepared for protected installation; hosted installation is not yet verified.
+Status: installed and independently verified on 2026-11-17 in
+[run 44187627353](https://github.com/Davinder498/SafeBus-GLM/actions/runs/44187627353)
+at revision `77897f1b08c95d85176b96f3965bc6f75d9fa99d`. All five policies match
+the reviewed catalog; the hook is registered; users, sessions, tenants and jobs
+remain empty, and application schema access remains quarantined.
 
 Schema bootstrap deliberately omitted provider-managed settings and policies.
 The recovery target therefore lacks production's API pre-request hook and five
