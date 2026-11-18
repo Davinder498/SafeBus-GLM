@@ -15,6 +15,11 @@ const { createClient } = createRequire(new URL('../apps/web/package.json', impor
 );
 import { cleanupRecoveryProfiles } from './lib/recovery-api-cleanup.mjs';
 import { recoveryPolicyQuery } from './lib/recovery-runtime-catalog.mjs';
+import {
+  channelFailureCode,
+  withRealtimeStartupRetry,
+  safeFailureCode,
+} from './lib/recovery-api-diagnostics.mjs';
 const roles = [
   'tenant_admin',
   'transportation_admin',
@@ -252,18 +257,22 @@ try {
       expectDenied(await api(a.aal1, 'tenants?select=id'));
     stage = `realtime-role-${i}`;
     await a.client.realtime.setAuth(a.token);
+    stage = `realtime-role-${i}-own-notification`;
     await probeChannel(a.client, `safebus:notifications:${a.id}`, true);
+    stage = `realtime-role-${i}-foreign-notification`;
     await probeChannel(
       a.client,
       `safebus:notifications:${accounts[(i + 1) % accounts.length].id}`,
       false,
     );
     if (a.tenant) {
+      stage = `realtime-role-${i}-own-tenant`;
       await probeChannel(
         a.client,
         `safebus:tenant:${a.tenant}`,
         ['tenant_admin', 'transportation_admin'].includes(a.role),
       );
+      stage = `realtime-role-${i}-foreign-tenant`;
       await probeChannel(
         a.client,
         `safebus:tenant:${tenantIds.find((id) => id !== a.tenant)}`,
@@ -292,9 +301,9 @@ try {
     await probeChannel(a.client, `safebus:notifications:${a.id}`, false);
   }
   passed = true;
-} catch {
+} catch (error) {
   console.error(
-    `Recovery API check failed at stage=${stage}; credentials and provider responses omitted.`,
+    `Recovery API check failed at stage=${stage}; code=${safeFailureCode(error)}; credentials and provider responses omitted.`,
   );
   process.exitCode = 1;
 } finally {
@@ -368,6 +377,9 @@ if (passed && !process.exitCode) {
 // A timeout never counts as an authorization denial. Each successful subscription
 // must receive a unique server-originated payload on this exact private topic.
 async function probeChannel(client, topic, allowed) {
+  return withRealtimeStartupRetry(() => probeChannelOnce(client, topic, allowed));
+}
+async function probeChannelOnce(client, topic, allowed) {
   const nonce = randomUUID();
   let timer, receive;
   const delivery = new Promise((resolve) => {
@@ -384,8 +396,9 @@ async function probeChannel(client, topic, allowed) {
       channel.subscribe((status, error) => {
         if (status === 'SUBSCRIBED') resolve(true);
         if (status === 'CHANNEL_ERROR') {
-          if (/permission|authoriz|not allowed/i.test(error?.message ?? '')) resolve(false);
-          else reject(Error('CHANNEL_TRANSPORT_ERROR'));
+          const code = channelFailureCode(error);
+          if (code === 'CHANNEL_AUTHORIZATION_DENIED') resolve(false);
+          else reject(Error(code));
         }
         if (status === 'TIMED_OUT') reject(Error('CHANNEL_TIMEOUT'));
       });

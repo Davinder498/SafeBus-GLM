@@ -73,3 +73,26 @@ rehearsal/cleanup, production identity rejection, exposed-schema rejection, fore
 profile/tenant rejection, disabled guard rejection, and transactional rollback
 when deletion fails after profiles have been removed. These do not prove hosted
 API/Realtime behavior; only the protected run can supply that evidence.
+
+## Hosted failures and corrective verification
+
+Run 44207149234 attempt 1 stopped at the first HTTP role check because the managed
+Recovery Data API was disabled (HTTP 503). With owner approval, the Data API was
+enabled with only `public` exposed; schema USAGE remains revoked outside this
+protected runner. No private schema was exposed through PostgREST.
+
+Attempt 2 passed the first administrator's HTTP scope and MFA checks, then failed
+at Realtime. Provider logs recorded `MissingPartition` while the first connection
+initialized managed `realtime.messages` partitions and replication. Read-only
+inspection subsequently confirmed the current-day partition and surrounding days.
+Auth users, profiles and tenants were empty and application schema access was
+revoked after cleanup. This is not a completed seven-role verification.
+
+The runner now reports allowlisted local failure codes and individual channel
+substeps without logging provider responses, topics, tokens or credentials. Only
+an explicit missing-partition channel error gets up to two bounded retries (1.5
+and 3 seconds), with channel removal after each attempt. Authorization mismatches,
+unknown transport errors, subscription timeouts and delivery timeouts still fail
+immediately. Managed partitions are never manually created or modified by the
+runner. Tests cover recovery, exhausted retries, secret redaction, and the failures
+that must never retry. Hosted verification remains pending the corrected run.
