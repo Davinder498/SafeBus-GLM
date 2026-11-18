@@ -9,6 +9,55 @@ import {
 } from '../../scripts/lib/recovery-capacity-cleanup.mjs';
 import { runArrivals, percentiles } from '../../scripts/lib/recovery-capacity-scheduler.mjs';
 import {
+  capacityGpsLatitude,
+  assertCapacityGpsAck,
+} from '../../scripts/lib/recovery-capacity-gps.mjs';
+
+test('all synthetic GPS coordinates round-trip exactly through hosted PostgreSQL float output', async (t) => {
+  const db = new PGlite();
+  t.after(() => db.close());
+  await db.exec('set extra_float_digits=0');
+  const oldLatitude = 52.26 + 0.000001;
+  const old = await db.query(
+    'select row_to_json(r)::text payload from (select $1::double precision latitude) r',
+    [oldLatitude],
+  );
+  assert.notEqual(JSON.parse(old.rows[0].payload).latitude, oldLatitude);
+  const positions = Array.from({ length: 1000 }, (_, i) => capacityGpsLatitude(i));
+  const rows = (
+    await db.query(
+      `select row_to_json(r)::text payload from (
+    select value::double precision latitude, -113.81::double precision longitude, 'trip'::text driver_trip_id
+    from json_array_elements_text($1::json) with ordinality as p(value,ord) order by ord
+  ) r`,
+      [JSON.stringify(positions)],
+    )
+  ).rows;
+  assert.equal(rows.length, 1000);
+  rows.forEach((row, i) => assertCapacityGpsAck(JSON.parse(row.payload), 'trip', positions[i]));
+  assert.equal(capacityGpsLatitude(1000), capacityGpsLatitude(0));
+  for (const invalid of [-1, 1.5, NaN, Infinity, '1'])
+    assert.throws(() => capacityGpsLatitude(invalid), /CAPACITY_GPS_SEQUENCE/);
+});
+
+test('GPS acknowledgement still rejects wrong trips, stale positions and malformed coordinates', () => {
+  const latitude = capacityGpsLatitude(1);
+  const valid = { driver_trip_id: 'trip', latitude, longitude: -113.81 };
+  assertCapacityGpsAck(valid, 'trip', latitude);
+  for (const row of [
+    null,
+    [],
+    {},
+    { ...valid, driver_trip_id: 'foreign' },
+    { ...valid, latitude: capacityGpsLatitude(0) },
+    { ...valid, latitude: latitude + 1e-10 },
+    { ...valid, latitude: String(latitude) },
+    { ...valid, latitude: NaN },
+    { ...valid, longitude: -113.8 },
+  ])
+    assert.throws(() => assertCapacityGpsAck(row, 'trip', latitude), /CAPACITY_GPS_ACK_MISMATCH/);
+});
+import {
   capacityWorkerPlan,
   dispatchCapacityRound,
 } from '../../scripts/lib/recovery-capacity-workers.mjs';

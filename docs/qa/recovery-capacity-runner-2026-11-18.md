@@ -135,3 +135,17 @@ The new independent schedules correct that runner coupling and batch transport;
 they do not establish larger-fleet notification throughput. Cleanup again left
 zero Auth users/sessions, tenants/profiles and application-schema access. A fresh
 hosted run is still required; no successful capacity result is claimed.
+
+Run [44265077855](https://github.com/Davinder498/SafeBus-GLM/actions/runs/44265077855)
+then stopped at `CAPACITY_GPS_ACK_MISMATCH` in notification-only load. A read-only
+hosted reproduction confirmed `extra_float_digits=0`: the former JavaScript
+calculation produces `52.260000999999995` for sequence 1, while PostgreSQL's
+row JSON returns `52.260001`. Both latitude and longitude columns are double
+precision. Generate fixture latitude from integer microdegrees before division,
+so all 1,000 positions round-trip exactly with the hosted output setting. Do not
+weaken comparisons with an arbitrary tolerance: require exact trip, latitude and
+longitude in each acknowledgement and retain final stored-position reconciliation.
+Regression tests reproduce the old mismatch using PostgreSQL and validate every
+new position, including rejection of stale/wrong/malformed acknowledgements.
+Post-failure inspection again confirmed zero users/sessions/profiles/tenants and
+no application-schema access. The hosted capacity result remains pending.
