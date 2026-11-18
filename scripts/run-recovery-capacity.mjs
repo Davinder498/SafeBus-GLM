@@ -24,6 +24,7 @@ import {
   seedCapacityGuardian,
 } from './lib/recovery-capacity-fixtures.mjs';
 import { runArrivals } from './lib/recovery-capacity-scheduler.mjs';
+import { capacityGpsLatitude, assertCapacityGpsAck } from './lib/recovery-capacity-gps.mjs';
 import { capacityWorkerPlan, dispatchCapacityRound } from './lib/recovery-capacity-workers.mjs';
 import { checkedCapacityAuth, createCapacityLogin } from './lib/recovery-capacity-auth.mjs';
 import { sendRecoveryProbe } from './lib/recovery-broadcast-readiness.mjs';
@@ -432,7 +433,7 @@ try {
 }
 async function gps(i, sequence) {
   assertRunning();
-  const latitude = 52.26 + (sequence % 1000) * 0.000001;
+  const latitude = capacityGpsLatitude(sequence);
   const r = await accounts[i].client.rpc('update_bus_tracking_location', {
     p_tracking_token: fleet[i].token,
     p_latitude: latitude,
@@ -441,8 +442,7 @@ async function gps(i, sequence) {
     p_speed_mps: 5,
   });
   if (r.error) throw Error('CAPACITY_GPS_REJECTED');
-  if (r.data?.driver_trip_id !== fleet[i].trip || r.data?.latitude !== latitude)
-    throw Error('CAPACITY_GPS_ACK_MISMATCH');
+  assertCapacityGpsAck(r.data, fleet[i].trip, latitude);
   fleet[i].lastLatitude = latitude;
 }
 async function readMap(a, sequence) {
