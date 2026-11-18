@@ -185,6 +185,45 @@ fingerprint. It never runs load, resets the project or accepts foreign/partially
 cleaned state. Such state requires another inspection. Run with `failed_run` =
 `44270874052-1`, buses = `10`, and confirmation `CLEANUP_RECOVERY_CAPACITY`.
 
-Hosted cleanup is pending the protected workflow. The map-viewer performance
-failure remains unresolved. Do not rerun load or claim a passing baseline until
-cleanup is verified and the expensive guardian map/ETA query path is addressed.
+Cleanup completed in protected run `44291234575` at
+2026-11-18T11:12:44Z. Independent read-only inspection confirmed zero Auth users,
+sessions, profiles and tenants, no application schema access, and all deletion
+guards enabled. The map-viewer capacity failure remains unresolved.
+
+## Guardian visibility request context
+
+The observed visibility wrapper evaluates tenant and guardian helpers in the
+student-link join. A scoped post-failure plan spent about 21 ms filtering 50
+links; this is a profiling lead, not proof of the entire concurrent bottleneck.
+The forward migration wraps the four row-independent identity/role helpers in
+scalar subqueries so PostgreSQL evaluates them once per statement. It retains the
+same inner visibility/ETA function, complete return shape, link status/expiry,
+owner, security-definer setting, search path and grants. No authorization result
+is retained between requests or shared between guardians.
+
+Acceptance: guardians receive exactly their own currently eligible rows; expired,
+revoked and foreign links remain excluded. Driver, school authority admin,
+school-scoped admin, transportation admin and platform admin gain no guardian
+visibility. Anonymous calls remain denied. Session/MFA checks remain in existing
+helpers and the API pre-request hook; this change does not replace either.
+
+Local PostgreSQL tests compare all output fields against the captured hosted
+wrapper and exercise changing identities, tenants, roles, expiry/status and empty
+links. With 51 candidate links the instrumented original wrapper evaluates tenant
+52 times and guardian 51 times; the new wrapper evaluates each once. Instrumented
+helpers are test-only; the inner visibility response is a controlled fixture, so
+this is wrapper equivalence/call-count evidence, not end-to-end ETA benchmarking.
+
+`Verify Recovery map query fix` requires current reviewed main, protected human
+review, `VERIFY_RECOVERY_MAP`, TLS-bound Recovery identity, empty fixtures and
+closed API access. It rehearses the exact-hash migration with rollback, compares
+the entire schema catalog to an expected single-function delta, installs and
+verifies, then runs the existing unchanged 10-bus/50-viewer runner. Both migration
+and workload evidence are uploaded. It cannot target production or select larger
+loads. A failed capacity run does not undo the schema optimization; cleanup and
+failure evidence remain governed by the existing runner. The migration rejects
+already-applied or unknown definitions; use the existing capacity-only workflow
+for subsequent tests after a successful installation.
+
+Hosted installation and the unchanged concurrent test remain pending. Neither
+this local optimization nor a passing short baseline qualifies launch capacity.
