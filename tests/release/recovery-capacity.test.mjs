@@ -8,6 +8,137 @@ import {
   assertCapacityScope,
 } from '../../scripts/lib/recovery-capacity-cleanup.mjs';
 import { runArrivals, percentiles } from '../../scripts/lib/recovery-capacity-scheduler.mjs';
+import {
+  checkedCapacityAuth,
+  createCapacityLogin,
+} from '../../scripts/lib/recovery-capacity-auth.mjs';
+
+test('capacity setup sustains 551 sign-ins without exhausting a 150/5-minute token bucket', async () => {
+  let now = 0,
+    last = 0,
+    tokens = 30,
+    rejections = 0;
+  const starts = [];
+  const login = createCapacityLogin({
+    clock: () => now,
+    wait: async (ms) => {
+      now += ms;
+    },
+  });
+  for (let i = 0; i < 551; i++) {
+    await login(async () => {
+      tokens = Math.min(30, tokens + (now - last) / 2000);
+      last = now;
+      starts.push(now);
+      if (tokens < 1) {
+        rejections++;
+        return { error: { status: 429 } };
+      }
+      tokens--;
+      return { data: { ok: true } };
+    });
+  }
+  assert.equal(rejections, 0);
+  assert.equal(starts.length, 551);
+  assert.ok(starts.slice(1).every((time, i) => time - starts[i] >= 2100));
+});
+
+test('setup retries only rejected logins and caps retries without exposing responses', async () => {
+  let now = 0,
+    calls = 0;
+  const retries = [];
+  const login = createCapacityLogin({
+    clock: () => now,
+    wait: async (ms) => {
+      now += ms;
+    },
+    onRetry: (r) => retries.push(r),
+  });
+  assert.deepEqual(
+    await login(async () =>
+      ++calls < 3 ? { error: { status: 429, message: 'secret' } } : { data: { ok: true } },
+    ),
+    { ok: true },
+  );
+  assert.deepEqual(retries, [{ backoffMs: 5000 }, { backoffMs: 10000 }]);
+  calls = 0;
+  await assert.rejects(
+    login(async () => {
+      calls++;
+      return { error: { status: 429 } };
+    }),
+    /^Error: CAPACITY_AUTH_RATE_LIMIT$/,
+  );
+  assert.equal(calls, 4);
+  calls = 0;
+  await assert.rejects(
+    login(async () => {
+      calls++;
+      return { error: { status: 401, message: 'secret' } };
+    }),
+    /^Error: CAPACITY_AUTH_HTTP_401$/,
+  );
+  assert.equal(calls, 1);
+  calls = 0;
+  await assert.rejects(
+    login(async () => {
+      calls++;
+      throw Error('network uncertain');
+    }),
+    /network uncertain/,
+  );
+  assert.equal(calls, 1);
+  assert.throws(
+    () => checkedCapacityAuth({ error: { message: 'secret' } }),
+    /^Error: CAPACITY_AUTH_FAILED$/,
+  );
+});
+
+test('setup retry wait budget is shared between accounts', async () => {
+  let now = 0,
+    waited = 0;
+  const login = createCapacityLogin({
+    clock: () => now,
+    wait: async (ms) => {
+      now += ms;
+    },
+    onRetry: ({ backoffMs }) => {
+      waited += backoffMs;
+    },
+  });
+  for (let i = 0; i < 5; i++)
+    await assert.rejects(
+      login(async () => ({ error: { status: 429 } })),
+      /CAPACITY_AUTH_RATE_LIMIT/,
+    );
+  assert.equal(waited, 120000);
+});
+
+test('aborting setup prevents another sign-in during pacing or backoff', async () => {
+  const stop = new AbortController();
+  let now = 0,
+    calls = 0;
+  const login = createCapacityLogin({
+    signal: stop.signal,
+    clock: () => now,
+    wait: async (ms) => {
+      now += ms;
+      stop.abort();
+    },
+  });
+  await login(async () => {
+    calls++;
+    return { data: {} };
+  });
+  await assert.rejects(
+    login(async () => {
+      calls++;
+      return { data: {} };
+    }),
+    /CAPACITY_STOP_REQUESTED/,
+  );
+  assert.equal(calls, 1);
+});
 const tid = 'ca000000-0000-4000-8000-000000000001',
   uid = 'ca100000-0000-4000-8000-000000000001';
 const scope = {

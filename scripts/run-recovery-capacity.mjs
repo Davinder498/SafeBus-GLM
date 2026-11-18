@@ -24,6 +24,7 @@ import {
   seedCapacityGuardian,
 } from './lib/recovery-capacity-fixtures.mjs';
 import { runArrivals } from './lib/recovery-capacity-scheduler.mjs';
+import { checkedCapacityAuth, createCapacityLogin } from './lib/recovery-capacity-auth.mjs';
 import { sendRecoveryProbe } from './lib/recovery-broadcast-readiness.mjs';
 import { channelFailureCode, withRealtimeStartupRetry } from './lib/recovery-api-diagnostics.mjs';
 import { calculateSchemaFingerprint } from './lib/schema-fingerprint.mjs';
@@ -50,6 +51,7 @@ const evidence = {
   startedAt: new Date().toISOString(),
   stages: [],
   cleanupVerified: false,
+  authSetup: { rateLimitRetries: 0, retryWaitMs: 0, minimumLoginIntervalMs: 2100 },
   capacityQualified: false,
   limitations: [
     'Exploratory browser-session GPS; native device ingestion and offline replay not exercised.',
@@ -75,11 +77,15 @@ const accounts = [],
   channels = [];
 let hintCount = 0;
 for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => stop.abort());
-const deadline = setTimeout(() => stop.abort(), 20 * 60 * 1000);
-const checked = (r) => {
-  if (r.error) throw Error('CAPACITY_AUTH_FAILED');
-  return r.data;
-};
+const deadline = setTimeout(() => stop.abort(), 35 * 60 * 1000);
+const checked = checkedCapacityAuth;
+const loginAccount = createCapacityLogin({
+  signal: stop.signal,
+  onRetry: ({ backoffMs }) => {
+    evidence.authSetup.rateLimitRetries++;
+    evidence.authSetup.retryWaitMs += backoffMs;
+  },
+});
 const safeFetch = (input, init) => {
   if (new URL(typeof input === 'string' ? input : input.url).origin !== RECOVERY_AUTH_URL)
     throw Error('CAPACITY_ORIGIN_REJECTED');
@@ -213,7 +219,7 @@ try {
   stage = 'accounts';
   for (let i = 0; i < scope.emails.length; i++) {
     assertRunning();
-    stage = `account-${i}`;
+    stage = `account-create-${i}`;
     const email = scope.emails[i],
       password = `Ca9!${randomBytes(32).toString('base64url')}`;
     const user = checked(
@@ -227,6 +233,7 @@ try {
     if (!user?.id) throw Error('CAPACITY_AUTH_FAILED');
     const role = i < buses ? 'driver' : 'guardian',
       tenant = scope.tenantIds[i === scope.emails.length - 1 ? 1 : 0];
+    stage = `account-profile-${i}`;
     await db.query(
       "insert into public.profiles(id,tenant_id,full_name,first_name,last_name,email,role,status) values($1,$2,'Capacity Synthetic','Capacity','Synthetic',$3,$4,'active')",
       [user.id, tenant, email, role],
@@ -238,11 +245,11 @@ try {
     );
     const a = { id: user.id, email, client, tenant };
     accounts.push(a);
-    const login = checked(await client.auth.signInWithPassword({ email, password }));
+    stage = `account-login-${i}`;
+    const login = await loginAccount(() => client.auth.signInWithPassword({ email, password }));
     if (login.user?.id !== user.id || !login.session?.access_token)
       throw Error('CAPACITY_LOGIN_MISMATCH');
     a.token = login.session.access_token;
-    await delay(100); // provisioning rate is not an Auth capacity claim
   }
   stage = 'fixtures';
   for (let i = 0; i < 2; i++) await seedCapacityTenant(db, scope, i, accounts[0].id);

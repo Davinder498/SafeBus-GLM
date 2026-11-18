@@ -65,8 +65,16 @@ Stop on any request error, authorization mismatch, missing acknowledgement,
 unreceived probe, worker failure, pending age over 120 seconds, database connections
 over 80% of max_connections, generator lag over one second, or in-flight limit.
 A completed load stage must have p99 at most five seconds and exact accounting.
-There are no request retries that conceal failures. A maximum 20-minute internal
-run deadline leaves time for cleanup in the 30-minute protected job.
+Measured workload requests are never retried. Fixture password sign-ins are
+spaced at least 2.1 seconds apart to respect the default Auth token endpoint
+limit (150 requests per five minutes). Only explicit HTTP 429 sign-in rejections
+are retried, at most three retries per account (5/10/20-second waits), with a
+120-second total retry-wait budget across setup. Other errors and uncertain
+network failures stop immediately; account creation is never blindly retried.
+Retry counts/waits are recorded separately from load measurements. No Auth limit
+or IP-forwarding setting is changed. A maximum 35-minute internal deadline leaves
+cleanup time in the 45-minute protected job; the additional time accommodates
+551 paced sign-ins for the 500-bus selection, not a longer measured load stage.
 Stop arrivals and allow at most 90 seconds to drain both tracking queues and the
 audience queue. Native device ingestion/offline replay, full-fleet Realtime delivery,
 provider receipt, eight-hour soak and commercial launch remain unqualified.
@@ -98,3 +106,12 @@ Recovery API verification passed in GitHub run
 at main `e68e862b2488fb2a0b3630276295fd2bf22fa31d`: seven role accounts,
 MFA, private-channel receipt, session rejection and cleanup. This prerequisite is
 not a load test. The local arithmetic simulator remains planning evidence only.
+
+The first capacity attempt, run [44253636580](https://github.com/Davinder498/SafeBus-GLM/actions/runs/44253636580),
+stopped during account 38 setup before any measured load. Recovery Auth logs for
+07:27–07:28 UTC on 2026-11-18 show HTTP 429 `over_request_rate_limit`.
+Read-only inspection afterwards verified zero Auth users/sessions, profiles and
+tenants, and zero application-schema USAGE grants for anon/authenticated/service_role.
+The corrected runner separates create/profile/login stages and reports fixed,
+redacted HTTP status categories. This failure is setup evidence, not a measured
+bus-capacity result. Reference: https://supabase.com/docs/guides/auth/rate-limits.
