@@ -659,12 +659,8 @@ test('mobile notification settings autosave independent channel sections with sw
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: testInfo.outputPath('notification-settings.png'), fullPage: true });
 
-  await page.locator('[data-ui="dropdown"] > button').click();
-  const profileMenu = page.locator('[data-ui="dropdown-panel"]');
-  await expect(profileMenu).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-  await page.screenshot({ path: testInfo.outputPath('guardian-profile-menu.png') });
-  await expect(page.getByRole('menuitem', { name: 'Privacy & account' })).toHaveCount(0);
-  await page.getByRole('menuitem', { name: 'Privacy Notice', exact: true }).click();
+  await page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }).click();
+  await page.getByRole('link', { name: 'Privacy notice', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Guardian privacy notice', exact: true }),
   ).toBeVisible();
@@ -922,7 +918,7 @@ test('driver support page shows one resolved support contact', async ({ page }) 
   await page.goto('/account');
   await expect(page).toHaveURL('/account');
   await expect(page.locator('[data-ui="appearance-settings"]')).toHaveCount(1);
-  await page.getByRole('link', { name: 'Notification preferences', exact: true }).click();
+  await page.getByRole('link', { name: 'Notification settings', exact: true }).click();
   await expect(page).toHaveURL('/driver/settings');
   await expect(page.locator('[data-ui="account-security-card"]')).toHaveCount(0);
   await expect(page.locator('[data-ui="appearance-settings"]')).toHaveCount(0);
@@ -951,17 +947,13 @@ test('driver support page avoids a configuration dead end when no contact is ret
   );
 });
 
-test('driver account menu exposes existing secondary destinations', async ({ page }) => {
+test('driver Account exposes secondary destinations without a duplicate menu', async ({ page }) => {
   await installSupabaseMock(page);
-  await page.goto('/driver');
-
-  await page.locator('button[aria-haspopup="menu"]').click();
-  await expect(page.getByRole('menuitem', { name: 'Driver settings' })).toHaveCount(0);
-  await expect(page.getByRole('menuitem', { name: 'Profile' })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: 'Support' })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: 'Privacy & account' })).toHaveCount(0);
-  await expect(page.getByRole('menuitem', { name: 'Privacy Notice', exact: true })).toHaveCount(1);
-  await expect(page.getByRole('menuitem', { name: 'Sign out' })).toBeVisible();
+  await page.goto('/account');
+  await expect(page.locator('button[aria-haspopup="menu"]')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Help & support', exact: true })).toHaveCount(1);
+  await expect(page.getByRole('link', { name: 'Privacy notice', exact: true })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
 });
 
 test('driver settings keeps notification controls separate from Account', async ({ page }) => {
