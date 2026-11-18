@@ -318,3 +318,12 @@ Run sync only after the mobile build succeeds so Android receives the current
 bundle. If subsequent edits change the bundle or native configuration, build and
 sync again. Report the result of both commands; do not describe a build or sync
 as an APK/AAB installation, Play publication, or physical-device verification.
+
+## Android UI approval workflow — owner direction, 2026-11-18
+
+Before every UI/UX proposal or implementation, consult the official Android
+website guidance and review the full driver and guardian app for consistency.
+Work on one page at a time. Present a complete mockup, including role differences
+and relevant loading/error states, and obtain owner approval before coding.
+Earlier push/merge authorization does not replace mockup approval. Distinguish
+source review, visual inspection, automated tests and physical-device evidence.
