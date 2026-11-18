@@ -257,6 +257,12 @@ try {
     Object.assign(a, await seedCapacityGuardian(db, fleet[0], a, i));
     viewers.push(a);
   }
+  stage = 'fixture-unlinked-guardian';
+  const outsider = accounts.at(-1);
+  await db.query(
+    "insert into public.guardians(tenant_id,profile_id,full_name,first_name,last_name,email) values($1,$2,'Capacity Unlinked','Capacity','Unlinked',$3)",
+    [outsider.tenant, outsider.id, outsider.email],
+  );
   stage = 'cleanup-rehearsal';
   await cleanupCapacity(db, scope, true);
   await db.query('grant usage on schema public,safebus_private to authenticated');
