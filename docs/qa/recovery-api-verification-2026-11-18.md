@@ -114,3 +114,10 @@ required within the unchanged eight-second delivery deadline. No delivery retry,
 manual slot creation, provider restart, permission changes or production mutation
 is introduced. Local regressions cover cold startup, readiness exhaustion and
 swallowed inserts; hosted end-to-end verification still requires the protected run.
+
+## Hosted verification result
+
+Run [44244387659](https://github.com/Davinder498/SafeBus-GLM/actions/runs/44244387659)
+passed at main `e68e862b2488fb2a0b3630276295fd2bf22fa31d`, including cleanup
+and re-quarantine. Shared-bus and load verification are tracked separately in
+[the capacity runner](recovery-capacity-runner-2026-11-18.md).
