@@ -23,6 +23,11 @@ import {
   seedCapacityBus,
   seedCapacityGuardian,
 } from './lib/recovery-capacity-fixtures.mjs';
+import {
+  quarantineCapacity,
+  disconnectCapacityClients,
+  capacityFetch,
+} from './lib/recovery-capacity-lifecycle.mjs';
 import { runArrivals } from './lib/recovery-capacity-scheduler.mjs';
 import { capacityGpsLatitude, assertCapacityGpsAck } from './lib/recovery-capacity-gps.mjs';
 import { capacityWorkerPlan, dispatchCapacityRound } from './lib/recovery-capacity-workers.mjs';
@@ -89,11 +94,9 @@ const loginAccount = createCapacityLogin({
     evidence.authSetup.retryWaitMs += backoffMs;
   },
 });
-const safeFetch = (input, init) => {
-  if (new URL(typeof input === 'string' ? input : input.url).origin !== RECOVERY_AUTH_URL)
-    throw Error('CAPACITY_ORIGIN_REJECTED');
-  return fetch(input, { ...init, redirect: 'error', signal: AbortSignal.timeout(10000) });
-};
+const safeFetch = (input, init) => capacityFetch(input, init, { origin: RECOVERY_AUTH_URL });
+const workloadFetch = (input, init) =>
+  capacityFetch(input, init, { origin: RECOVERY_AUTH_URL, signal: stop.signal });
 const options = {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   global: { fetch: safeFetch },
@@ -241,11 +244,10 @@ try {
       "insert into public.profiles(id,tenant_id,full_name,first_name,last_name,email,role,status) values($1,$2,'Capacity Synthetic','Capacity','Synthetic',$3,$4,'active')",
       [user.id, tenant, email, role],
     );
-    const client = createClient(
-      RECOVERY_AUTH_URL,
-      process.env.SAFEBUS_CAPACITY_PUBLISHABLE_KEY,
-      options,
-    );
+    const client = createClient(RECOVERY_AUTH_URL, process.env.SAFEBUS_CAPACITY_PUBLISHABLE_KEY, {
+      ...options,
+      global: { fetch: workloadFetch },
+    });
     const a = { id: user.id, email, client, tenant };
     accounts.push(a);
     stage = `account-login-${i}`;
@@ -388,14 +390,13 @@ try {
   );
 } finally {
   workerStop = true;
+  stop.abort();
+  await disconnectCapacityClients(accounts);
   await Promise.allSettled(workerTasks);
   for (const w of workers) await w.end().catch(() => {});
   if (connected && armed) {
     try {
-      await db.query('rollback');
-      await db.query('revoke usage on schema public,safebus_private from authenticated');
-      for (const a of accounts) await a.client.removeAllChannels();
-      await capacityQuarantine(db);
+      await quarantineCapacity(db);
       await cleanupCapacity(db, scope);
       const owned = (
         await db.query(
@@ -447,7 +448,12 @@ async function gps(i, sequence) {
 }
 async function readMap(a, sequence) {
   const r = await a.client.rpc('get_guardian_bus_visibility_v2');
-  if (r.error) throw Error('CAPACITY_MAP_REJECTED');
+  if (r.error) {
+    evidence.mapErrorCode = /^[A-Z0-9]{5}$/.test(r.error.code ?? '')
+      ? r.error.code
+      : 'UNCLASSIFIED_FAILURE';
+    throw Error('CAPACITY_MAP_REJECTED');
+  }
   if (
     !Array.isArray(r.data) ||
     r.data.length !== 1 ||
@@ -534,7 +540,7 @@ async function workerLoop(w, index) {
     }
   } catch (e) {
     metrics.failureCode = safeCode(e);
-    workerError ??= Error(safeCode(e));
+    workerError ??= e;
     console.error(
       `Capacity worker stopped: kind=${plan.kind}; index=${index}; period_ms=${plan.periodMs}; max_client_ms=${metrics.maxClientElapsedMs.toFixed(1)}; max_server_ms=${metrics.maxServerElapsedMs.toFixed(1)}; code=${metrics.failureCode}`,
     );
@@ -573,7 +579,7 @@ async function measure(count, durationMs, maps) {
         await delay(1000);
       }
     } catch (e) {
-      workerError = Error(safeCode(e));
+      workerError ??= e;
       stop.abort();
     }
   })();
@@ -587,7 +593,7 @@ async function measure(count, durationMs, maps) {
         signal: stop.signal,
         operation: gps,
         onError: (e) => {
-          workerError = Error(safeCode(e));
+          workerError ??= e;
           stop.abort();
         },
       }),
@@ -601,7 +607,7 @@ async function measure(count, durationMs, maps) {
           signal: stop.signal,
           operation: (i, s) => readMap(viewers[i], s),
           onError: (e) => {
-            workerError = Error(safeCode(e));
+            workerError ??= e;
             stop.abort();
           },
         }),

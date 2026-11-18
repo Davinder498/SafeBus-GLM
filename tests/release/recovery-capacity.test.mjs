@@ -431,3 +431,25 @@ test('operation failures and pre-aborted load cannot pass', async () => {
   assert.equal((await runArrivals(base)).passed, false);
   assert.equal((await runArrivals({ ...base, signal: AbortSignal.abort() })).passed, false);
 });
+
+test('arrivals do not issue a request when cancelled during scheduled wait', async () => {
+  const controller = new AbortController();
+  let now = 0,
+    requests = 0;
+  const result = await runArrivals({
+    count: 1,
+    periodMs: 1000,
+    durationMs: 2000,
+    signal: controller.signal,
+    clock: () => now,
+    wait: async (ms) => {
+      now += ms;
+      controller.abort();
+    },
+    operation: async () => {
+      requests++;
+    },
+  });
+  assert.equal(requests, 1);
+  assert.equal(result.passed, false);
+});

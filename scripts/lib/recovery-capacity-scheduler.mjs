@@ -40,6 +40,7 @@ export async function runArrivals({
     if (signal?.aborted) break;
     const due = start + (n * periodMs) / count;
     if (clock() < due) await wait(due - clock());
+    if (signal?.aborted) break;
     const lag = clock() - due;
     maxLagMs = Math.max(maxLagMs, lag);
     offered++;
