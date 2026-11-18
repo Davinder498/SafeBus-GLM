@@ -44,10 +44,18 @@ cleanup. Larger selections still execute the smaller load stages first. The
 notifications across every bus, tenant skew and 5,000/10,000-bus qualification
 remain subsequent work informed by this exploratory result.
 
-Four bounded Node database connections invoke all sixteen installed shared
-tracking shards, the existing legacy worker, and audience expansion. A scheduling
-round exceeding one second fails as a runner limit. This makes worker scheduling
-explicit; it does not prove production pg_cron concurrency. No production jobs,
+Six bounded Node database connections run four groups of shared tracking shards,
+one independent legacy tracking worker and one independent audience worker.
+Tracking groups retain a one-second cycle and 750 ms per-dispatch statement limit;
+each dispatch also has the production 100 ms lock limit. Audience expansion uses
+a separate 20-second cycle (the reviewed push dispatcher cadence) with the existing
+8-second statement limit. This invokes inbox expansion only, not the push provider.
+Each group sends its fixed statements in one network round trip, preserving each
+dispatch's transaction boundary. A cycle exceeding its scheduled period still
+fails; no tracking threshold is relaxed. Evidence records per-worker rounds,
+dispatch counts, maximum client/server elapsed times, overruns and failure codes,
+including failed runs. This makes worker scheduling explicit; it does not prove
+production pg_cron concurrency. No production jobs,
 provider credentials, native devices, push destinations or email delivery workers
 are copied or invoked. Managed Realtime partitions are initialized by the service.
 
@@ -115,3 +123,15 @@ tenants, and zero application-schema USAGE grants for anon/authenticated/service
 The corrected runner separates create/profile/login stages and reports fixed,
 redacted HTTP status categories. This failure is setup evidence, not a measured
 bus-capacity result. Reference: https://supabase.com/docs/guides/auth/rate-limits.
+
+The corrected Auth run [44261219288](https://github.com/Davinder498/SafeBus-GLM/actions/runs/44261219288)
+passed account setup and reached notification-only load, then hit the runner's
+combined one-second worker deadline. Read-only `pg_stat_statements` showed one
+audience expansion at 986.30 ms, one legacy dispatch at 66.25 ms, and 24 shared
+dispatches averaging 4.20 ms (maximum 36.62 ms). The former runner placed all three
+types in one cycle and issued at least 16 sequential network round trips per
+shared group. Notification work alone plus legacy work exceeded that cycle.
+The new independent schedules correct that runner coupling and batch transport;
+they do not establish larger-fleet notification throughput. Cleanup again left
+zero Auth users/sessions, tenants/profiles and application-schema access. A fresh
+hosted run is still required; no successful capacity result is claimed.

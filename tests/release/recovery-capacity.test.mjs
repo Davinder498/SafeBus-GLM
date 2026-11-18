@@ -9,6 +9,86 @@ import {
 } from '../../scripts/lib/recovery-capacity-cleanup.mjs';
 import { runArrivals, percentiles } from '../../scripts/lib/recovery-capacity-scheduler.mjs';
 import {
+  capacityWorkerPlan,
+  dispatchCapacityRound,
+} from '../../scripts/lib/recovery-capacity-workers.mjs';
+
+async function workerFixture(t) {
+  const db = new PGlite();
+  t.after(() => db.close());
+  await db.exec(`create schema safebus_private;
+    create table calls(kind text, shard integer);
+    create function safebus_private.dispatch_shared_tracking(shard integer, lim integer) returns jsonb language plpgsql as $$
+      begin insert into calls values('shared',shard); return '{"failed_scopes":0}'; end $$;
+    create function safebus_private.dispatch_tracking_invalidations(scopes integer, messages integer) returns jsonb language plpgsql as $$
+      begin insert into calls values('legacy',null); return '{"failed_scopes":0}'; end $$;
+    create function public.expand_notification_audiences(lim integer) returns integer language plpgsql as $$
+      begin
+        if current_setting('request.jwt.claim.role',true) is distinct from 'service_role' then raise exception 'role missing'; end if;
+        insert into calls values('audience',null); return 1;
+      end $$;`);
+  return db;
+}
+
+test('batched worker plans cover all shards once with independent legacy and notification schedules', async (t) => {
+  const db = await workerFixture(t);
+  let queries = 0;
+  const client = {
+    query: async (sql) => {
+      queries++;
+      return db.exec(sql);
+    },
+  };
+  for (let i = 0; i < 6; i++) {
+    const plan = capacityWorkerPlan(i);
+    assert.equal(plan.periodMs, i === 5 ? 20000 : 1000);
+    const result = await dispatchCapacityRound(client, plan);
+    assert.equal(result.dispatches, i < 4 ? 4 : 1);
+    assert.ok(result.serverElapsedMs >= 0);
+  }
+  assert.equal(queries, 6);
+  assert.deepEqual(
+    (await db.query("select shard from calls where kind='shared' order by shard")).rows.map(
+      (r) => r.shard,
+    ),
+    Array.from({ length: 16 }, (_, i) => i),
+  );
+  assert.equal((await db.query('select count(*)::int n from calls')).rows[0].n, 18);
+  assert.notEqual(
+    (await db.query("select current_setting('request.jwt.claim.role',true) role")).rows[0].role,
+    'service_role',
+  );
+  for (const invalid of [-1, 6, 1.5, '0'])
+    assert.throws(() => capacityWorkerPlan(invalid), /CAPACITY_WORKER_PLAN/);
+});
+
+test('a failed statement rolls back only its dispatch transaction and preserves its SQL error', async (t) => {
+  const db = await workerFixture(t);
+  await db.exec(`create or replace function safebus_private.dispatch_shared_tracking(shard integer, lim integer) returns jsonb language plpgsql as $$
+    begin insert into calls values('shared',shard); if shard=4 then raise exception 'bounded failure' using errcode='57014'; end if; return '{"failed_scopes":0}'; end $$;`);
+  await assert.rejects(
+    dispatchCapacityRound({ query: (sql) => db.exec(sql) }, capacityWorkerPlan(0)),
+    (e) => e.code === '57014',
+  );
+  assert.deepEqual((await db.query('select shard from calls')).rows, [{ shard: 0 }]);
+});
+
+test('batch results cannot hide reported worker failures or missing dispatches', async () => {
+  const rows = [
+    { capacity_clock_ms: '100' },
+    { capacity_worker: 'legacy', r: { failed_scopes: 1 } },
+    { capacity_clock_ms: '200' },
+  ];
+  await assert.rejects(
+    dispatchCapacityRound({ query: async () => [{ rows }] }, capacityWorkerPlan(4)),
+    /CAPACITY_LEGACY_WORKER_FAILED/,
+  );
+  await assert.rejects(
+    dispatchCapacityRound({ query: async () => [{ rows: [] }] }, capacityWorkerPlan(0)),
+    /CAPACITY_WORKER_RESULT/,
+  );
+});
+import {
   checkedCapacityAuth,
   createCapacityLogin,
 } from '../../scripts/lib/recovery-capacity-auth.mjs';

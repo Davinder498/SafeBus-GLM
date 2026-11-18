@@ -24,6 +24,7 @@ import {
   seedCapacityGuardian,
 } from './lib/recovery-capacity-fixtures.mjs';
 import { runArrivals } from './lib/recovery-capacity-scheduler.mjs';
+import { capacityWorkerPlan, dispatchCapacityRound } from './lib/recovery-capacity-workers.mjs';
 import { checkedCapacityAuth, createCapacityLogin } from './lib/recovery-capacity-auth.mjs';
 import { sendRecoveryProbe } from './lib/recovery-broadcast-readiness.mjs';
 import { channelFailureCode, withRealtimeStartupRetry } from './lib/recovery-api-diagnostics.mjs';
@@ -50,6 +51,7 @@ const evidence = {
   requestedBuses: buses,
   startedAt: new Date().toISOString(),
   stages: [],
+  workers: [],
   cleanupVerified: false,
   authSetup: { rateLimitRetries: 0, retryWaitMs: 0, minimumLoginIntervalMs: 2100 },
   capacityQualified: false,
@@ -307,13 +309,13 @@ try {
   if (!probeReceived) throw Error('CAPACITY_PROBE_DELIVERY');
   await viewers[0].client.removeChannel(probe);
   stage = 'workers';
-  for (let i = 0; i < 4; i++) workers.push(await connect('safebus-capacity-worker'));
-  workerTasks = workers.map((w, index) => workerLoop(w, index));
+  for (let i = 0; i < 6; i++) workers.push(await connect('safebus-capacity-worker'));
   // Requeue the real trip-start source after guardian assignments exist.
   await db.query(
     "select safebus_private.notify_trip_audience($1,$2,$3,'trip_started','trip_status','info','driver_trip',$2,now())",
     [fleet[0].tenant, fleet[0].trip, fleet[0].route],
   );
+  workerTasks = workers.map((w, index) => workerLoop(w, index));
   stage = 'notification-only';
   await measure(10, 30000, false);
   for (let i = 0; i < 60; i++) {
@@ -494,42 +496,48 @@ async function join(a, topic, event, onPayload) {
   });
 }
 async function workerLoop(w, index) {
+  const plan = capacityWorkerPlan(index);
+  const metrics = {
+    index,
+    kind: plan.kind,
+    periodMs: plan.periodMs,
+    rounds: 0,
+    dispatches: 0,
+    maxClientElapsedMs: 0,
+    maxServerElapsedMs: 0,
+    overruns: 0,
+  };
+  evidence.workers.push(metrics);
   try {
     while (!workerStop && !stop.signal.aborted) {
       const start = performance.now();
-      for (let shard = index; shard < 16; shard += 4) {
-        await w.query('begin');
-        try {
-          await w.query("set local statement_timeout='750ms'");
-          const r = (
-            await w.query('select safebus_private.dispatch_shared_tracking($1,256) r', [shard])
-          ).rows[0].r;
-          if (r.failed_scopes) throw Error('CAPACITY_SHARED_WORKER_FAILED');
-          await w.query('commit');
-        } catch (e) {
-          await w.query('rollback');
-          throw e;
-        }
+      let result;
+      try {
+        result = await dispatchCapacityRound(w, plan);
+      } finally {
+        metrics.maxClientElapsedMs = Math.max(
+          metrics.maxClientElapsedMs,
+          performance.now() - start,
+        );
       }
-      if (index === 0) {
-        const r = (
-          await w.query('select safebus_private.dispatch_tracking_invalidations(10,250) r')
-        ).rows[0].r;
-        if (r.failed_scopes) throw Error('CAPACITY_LEGACY_WORKER_FAILED');
-        await w.query("begin; set local request.jwt.claim.role='service_role'");
-        try {
-          await w.query('select public.expand_notification_audiences(16)');
-          await w.query('commit');
-        } catch (e) {
-          await w.query('rollback');
-          throw e;
-        }
+      const elapsed = performance.now() - start;
+      metrics.rounds++;
+      metrics.dispatches += result.dispatches;
+      metrics.maxClientElapsedMs = Math.max(metrics.maxClientElapsedMs, elapsed);
+      metrics.maxServerElapsedMs = Math.max(metrics.maxServerElapsedMs, result.serverElapsedMs);
+      if (elapsed > plan.periodMs) {
+        metrics.overruns++;
+        throw Error('CAPACITY_WORKER_SCHEDULER_LIMIT');
       }
-      if (performance.now() - start > 1000) throw Error('CAPACITY_WORKER_SCHEDULER_LIMIT');
-      await delay(Math.max(0, 1000 - (performance.now() - start)));
+      while (!workerStop && !stop.signal.aborted && performance.now() - start < plan.periodMs)
+        await delay(Math.min(250, plan.periodMs - (performance.now() - start)));
     }
   } catch (e) {
-    workerError = Error(safeCode(e));
+    metrics.failureCode = safeCode(e);
+    workerError ??= Error(safeCode(e));
+    console.error(
+      `Capacity worker stopped: kind=${plan.kind}; index=${index}; period_ms=${plan.periodMs}; max_client_ms=${metrics.maxClientElapsedMs.toFixed(1)}; max_server_ms=${metrics.maxServerElapsedMs.toFixed(1)}; code=${metrics.failureCode}`,
+    );
     stop.abort();
   }
 }
