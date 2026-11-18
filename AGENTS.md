@@ -113,6 +113,18 @@ with rollback before enabling test API access. This does not authorize disabling
 production controls, RLS, MFA, other triggers, or deleting customer data.
 See `docs/qa/recovery-api-verification-2026-11-18.md` for the bounded procedure.
 
+### Expanded Recovery capacity cleanup — owner approval, 2026-11-18
+
+The owner approved extending the Recovery-only fixture cleanup exception to
+synthetic drivers, guardians, students, links, trips, tracking sessions,
+notifications and associated audit/session records. This supersedes the earlier
+profile-only limit for this capacity test. Use the exact table/trigger allowlist
+in `scripts/lib/recovery-capacity-cleanup.mjs`; never disable all triggers.
+Verify run-owned identities and tenants, close API access, lock affected tables,
+rehearse with rollback, and restore every guard before committing cleanup.
+An ownership, schema, or restore mismatch rolls back the entire transaction.
+Production, customer records, external delivery, and paid upgrades remain excluded.
+
 - The existing hosted `BusSafe` Supabase project is the sole database and is production.
 - No DEV or staging database is currently approved.
 - Do not run Docker commands.

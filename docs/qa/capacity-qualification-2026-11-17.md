@@ -1,6 +1,10 @@
 # Capacity qualification preparation — November 17, 2026
 
-Status: model and local generator verified; hosted execution not started.
+Status: model and local generator verified; hosted capacity execution not started.
+Recovery isolation and API verification have since passed. See
+[the bounded hosted runner](recovery-capacity-runner-2026-11-18.md) for the current
+execution plan; the temporary-branch proposal below is historical and superseded
+by owner approval of the existing Recovery project. No new branch or spend is requested.
 No claim of 500-, 5,000- or 10,000-bus capacity. No runtime, role, consent,
 retention, production configuration or API behavior changes in this milestone.
 
