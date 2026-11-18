@@ -73,20 +73,23 @@ test('each request rechecks identity, role, tenant, link status and exclusive ex
     "set test.guardian='" + id(101) + "'",
     "set test.guardian='" + id(200) + "'",
     "set test.tenant='" + id(20) + "'",
-    "set test.uid=''",
     ...['driver', 'tenant_admin', 'school_admin', 'transportation_admin', 'platform_admin'].map(
       (r) => `set test.role='${r}'`,
     ),
+    "set test.role='guardian';set test.uid=''",
     "set test.uid='" + id(300) + "';set test.role='guardian'",
     "update student_guardians set access_expires_at=now() where guardian_id='" + id(200) + "'",
     "update student_guardians set access_expires_at=now()+interval '1 minute'",
     "update student_guardians set status='inactive'",
     'delete from student_guardians',
   ];
-  for (const change of changes) {
+  const expectedCounts = [1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0];
+  for (const [index, change] of changes.entries()) {
     await db.exec('begin');
     await db.exec(change);
-    assert.deepEqual(await read(db), await read(db, 'previous_visibility'), change);
+    const rows = await read(db);
+    assert.deepEqual(rows, await read(db, 'previous_visibility'), change);
+    assert.equal(rows.length, expectedCounts[index], change);
     await db.exec('commit');
   }
   await db.exec('set role anon');
