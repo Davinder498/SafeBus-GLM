@@ -556,7 +556,13 @@ async function queueHealth() {
     (select coalesce(extract(epoch from (clock_timestamp()-min(first_pending_at))),0)::float8 from safebus_private.tracking_invalidation_queue) legacyAgeSeconds,
     (select count(*)::int from safebus_private.notification_audience_queue) audience,
     (select count(*)::int from safebus_private.notification_audience_queue where failed_at is not null) failed,
-    (select count(*)::int from pg_stat_activity where datname=current_database()) connections`)
+    (select count(*)::int from pg_stat_activity where datname=current_database()) connections,
+    (select coalesce(jsonb_agg(to_jsonb(activity)), '[]'::jsonb) from (
+      select state,wait_event_type,wait_event,count(*)::int sessions,
+        max(case when state='active' then greatest(0,extract(epoch from clock_timestamp()-query_start)) end)::float8 oldest_active_seconds
+      from pg_stat_activity where datname=current_database()
+      group by state,wait_event_type,wait_event
+    ) activity) activity`)
   ).rows[0];
 }
 async function measure(count, durationMs, maps) {
@@ -616,15 +622,15 @@ async function measure(count, durationMs, maps) {
   } finally {
     monitoring = false;
     await monitor;
+    evidence.stages.push({
+      buses: count,
+      mapViewers: maps ? 50 : 0,
+      eligibleGuardians: 50,
+      durationMs,
+      requests: result ?? null,
+      queueSamples: samples,
+    });
   }
-  evidence.stages.push({
-    buses: count,
-    mapViewers: maps ? 50 : 0,
-    eligibleGuardians: 50,
-    durationMs,
-    requests: result,
-    queueSamples: samples,
-  });
   assertRunning();
   if (result.some((r) => !r.passed)) throw Error('CAPACITY_LOAD_THRESHOLD');
   const locations = (

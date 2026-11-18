@@ -16,6 +16,8 @@ import {
   expectedVisibilityCatalog,
   visibilityContextMigration,
 } from './lib/guardian-visibility-context.mjs';
+import { expectedSharedEtaCatalog, sharedEtaMigration } from './lib/shared-eta-query.mjs';
+const sharedEta = process.env.SAFEBUS_MAP_FIX === 'shared_eta';
 let db,
   connected = false,
   stage = 'preflight';
@@ -23,7 +25,9 @@ try {
   assertReviewedCheckout(process.env.SAFEBUS_RELEASE_SHA);
   if (
     process.env.GITHUB_REF !== 'refs/heads/main' ||
-    process.env.SAFEBUS_MAP_CONFIRM !== 'VERIFY_RECOVERY_MAP'
+    process.env.SAFEBUS_MAP_CONFIRM !==
+      (sharedEta ? 'VERIFY_RECOVERY_ETA' : 'VERIFY_RECOVERY_MAP') ||
+    (process.env.SAFEBUS_MAP_FIX && !sharedEta)
   )
     throw Error('PROTECTED_WORKFLOW_REQUIRED');
   const url = new URL(process.env.SAFEBUS_CAPACITY_DATABASE_URL);
@@ -73,8 +77,11 @@ try {
   };
   await verifyIsolation();
   const before = await collectSchemaCatalog(db),
-    expected = expectedVisibilityCatalog(before);
-  const sql = await fs.readFile(visibilityContextMigration, 'utf8');
+    expected = sharedEta ? expectedSharedEtaCatalog(before) : expectedVisibilityCatalog(before);
+  const sql = await fs.readFile(
+    sharedEta ? sharedEtaMigration : visibilityContextMigration,
+    'utf8',
+  );
   for (const mode of ['rehearse', 'install']) {
     stage = mode;
     await db.query('begin');
@@ -99,6 +106,7 @@ try {
     JSON.stringify(
       {
         target: TARGET_REF,
+        fix: sharedEta ? 'shared_eta' : 'visibility_context',
         releaseSha: process.env.SAFEBUS_RELEASE_SHA,
         migrationSha256: sha256(sql),
         before: sha256(JSON.stringify(before)),
@@ -113,7 +121,7 @@ try {
     ),
   );
   console.log(
-    'Recovery guardian context installed; exact catalog delta and rollback verified; API closed.',
+    'Recovery map query fix installed; exact catalog delta and rollback verified; API closed.',
   );
 } catch (error) {
   const code = /^[0-9A-Z]{5}$/.test(error?.code ?? '') ? error.code : 'UNKNOWN';
@@ -124,13 +132,14 @@ try {
     'NONEMPTY_RECOVERY',
     'CAPACITY_API_EXPOSED',
     'VISIBILITY_BASELINE_MISMATCH',
+    'SHARED_ETA_BASELINE_MISMATCH',
     'GUARDIAN_VISIBILITY_BASELINE_MISMATCH',
     'UNEXPECTED_CATALOG_CHANGE',
     'CATALOG_VERIFICATION',
   ];
   const reason = reasons.find((value) => error?.message?.includes(value)) ?? 'UNCLASSIFIED';
   console.error(
-    `Recovery guardian context stopped at stage=${stage}; code=${code}; reason=${reason}; provider details omitted.`,
+    `Recovery map query fix stopped at stage=${stage}; code=${code}; reason=${reason}; provider details omitted.`,
   );
   process.exitCode = 1;
 } finally {
