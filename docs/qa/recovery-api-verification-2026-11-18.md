@@ -96,3 +96,21 @@ unknown transport errors, subscription timeouts and delivery timeouts still fail
 immediately. Managed partitions are never manually created or modified by the
 runner. Tests cover recovery, exhausted retries, secret redaction, and the failures
 that must never retry. Hosted verification remains pending the corrected run.
+
+Run 44211279000 then joined the first notification channel, but its one probe was
+stored at 2026-11-18 05:12:39.978039 UTC before the managed replication slot reached
+its consistent point and began streaming at 05:12:40.189 UTC. The delivery timeout
+was not an authorization rejection or a failed insert. Cleanup again left zero
+Auth users, profiles and tenants and revoked application schema access.
+
+Before each allowed-channel probe, the runner now checks that the managed logical
+broadcast slot belongs to the current database, is active with non-null restart
+and confirmed-flush LSNs, and has a replication sender in `streaming` state. It
+waits at most 40 checks spaced 500 ms apart (each SQL call retains its existing
+statement timeout); no probe is sent if readiness fails. It then sends exactly
+one nonce and verifies the matching private broadcast row was stored, because
+`realtime.send` can swallow insertion errors into warnings. Actual receipt is still
+required within the unchanged eight-second delivery deadline. No delivery retry,
+manual slot creation, provider restart, permission changes or production mutation
+is introduced. Local regressions cover cold startup, readiness exhaustion and
+swallowed inserts; hosted end-to-end verification still requires the protected run.

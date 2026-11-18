@@ -15,6 +15,7 @@ const { createClient } = createRequire(new URL('../apps/web/package.json', impor
 );
 import { cleanupRecoveryProfiles } from './lib/recovery-api-cleanup.mjs';
 import { recoveryPolicyQuery } from './lib/recovery-runtime-catalog.mjs';
+import { sendRecoveryProbe } from './lib/recovery-broadcast-readiness.mjs';
 import {
   channelFailureCode,
   withRealtimeStartupRetry,
@@ -406,11 +407,7 @@ async function probeChannelOnce(client, topic, allowed) {
     clearTimeout(timer);
     if (result !== allowed) throw Error('CHANNEL_SCOPE_MISMATCH');
     if (allowed) {
-      await db.query('select realtime.send($1::jsonb,$2,$3,true)', [
-        JSON.stringify({ nonce }),
-        'capacity_probe',
-        topic,
-      ]);
+      await sendRecoveryProbe(db, { nonce, topic });
       await Promise.race([
         delivery,
         new Promise((_, reject) => {
