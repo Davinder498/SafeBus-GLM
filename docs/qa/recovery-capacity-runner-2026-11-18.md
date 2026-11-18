@@ -149,3 +149,42 @@ Regression tests reproduce the old mismatch using PostgreSQL and validate every
 new position, including rejection of stale/wrong/malformed acknowledgements.
 Post-failure inspection again confirmed zero users/sessions/profiles/tenants and
 no application-schema access. The hosted capacity result remains pending.
+
+## Map-viewer failure and incomplete cleanup (run 44270874052)
+
+Run `44270874052`, attempt 1, at reviewed SHA
+`a7c11c91a96ec57bdb7b401e9b3e460351919e98` passed the 10-bus,
+zero-map-viewer stage with GPS p99 282.8 ms. This does not qualify capacity.
+The 50-map-viewer stage failed: legacy and shared workers received PostgreSQL
+statement timeout `57014`, followed by guardian visibility/service-line and GPS
+RPC timeouts. Completed guardian visibility calls in cumulative hosted statistics
+averaged 3356.35 ms (17 calls, maximum 7916.29 ms); these statistics are not a
+stage-specific percentile. One later isolated, stale-location read took 235.838 ms;
+it does not reproduce concurrent fresh-location work or establish a remedy.
+
+Quarantine's REVOKE timed out inside `extensions.pgrst_ddl_watch`, before domain
+cleanup began. Read-only inspection found 61 run-owned Auth users/sessions/profiles,
+two matching demo tenants, authenticated schema usage still enabled, and no
+disabled cleanup guards. The process kept sockets alive until GitHub cancelled
+it at 45 minutes, although workload failure occurred after roughly three minutes.
+No production writes, provider delivery, compute upgrades or resets were performed.
+
+Runner repair preserves the first failure, aborts outstanding workload HTTP requests,
+checks cancellation after scheduler waits, and closes all Realtime sockets even if
+quarantine or channel removal fails. Cleanup HTTP requests have an independent
+budget. Only idempotent API quarantine retries statement/lock timeouts, at most
+three attempts with 20-second statement and 2-second lock budgets. Measured
+workload timeouts, cadence, viewer count and success thresholds are unchanged.
+
+The protected `Clean up failed Recovery capacity run` workflow accepts the exact
+failed run/attempt and original bus count. It verifies Recovery identity and the
+release lock, closes API usage, requires an intact exact run-owned tenant/account
+set, rehearses the existing allowlisted cleanup with rollback, removes only those
+fixtures/accounts, and checks empty Auth state, closed API and unchanged schema
+fingerprint. It never runs load, resets the project or accepts foreign/partially
+cleaned state. Such state requires another inspection. Run with `failed_run` =
+`44270874052-1`, buses = `10`, and confirmation `CLEANUP_RECOVERY_CAPACITY`.
+
+Hosted cleanup is pending the protected workflow. The map-viewer performance
+failure remains unresolved. Do not rerun load or claim a passing baseline until
+cleanup is verified and the expensive guardian map/ETA query path is addressed.
