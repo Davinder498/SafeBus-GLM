@@ -227,3 +227,44 @@ for subsequent tests after a successful installation.
 
 Hosted installation and the unchanged concurrent test remain pending. Neither
 this local optimization nor a passing short baseline qualifies launch capacity.
+
+## Follow-up after PR 481: shared ETA query expansion
+
+Protected run `44305501964` installed the request-context optimization with exact
+catalog delta and rollback verification. It still failed the unchanged map stage.
+The notification-only stage completed with GPS p99 650.1 ms; the shared worker
+received 57014 at 2026-11-18T14:27:47Z. Its 115.9 ms maximum server time describes
+completed rounds, not the timed-out statement. Subsequent PostgreSQL logs show
+timeouts inside shared live progress, guardian service lines, visibility and GPS.
+Cleanup completed: independent inspection found zero users, sessions, profiles
+and tenants, and no application-schema usage. The installed visibility wrapper
+has catalog MD5 `a907e1c04377089f5aa4f352e9bb9ea0`.
+
+Local PostGIS comparison found avoidable repeated expression expansion in the
+shared ETA computation. The forward change materializes only `stop_states` and
+`stop_eta` within the existing statement. It preserves all formulae, input digest,
+private cache storage/permissions, source comparison/locking and invalidation.
+No wait, timeout, viewer count, cadence or success threshold is changed.
+
+An exploratory local comparison warmed PostGIS, replaced the function to reset
+its plan, then changed GPS before each of 12 service-line reads. Original first
+six samples were 26/24/21/74/47/14 ms; the two-boundary variant was 11/5/4/4/5/4 ms.
+A later repeated original was 13/9/7/7/7/7 ms; after generic-plan reuse both versions
+were around 2–4 ms. These PGlite timings are noisy local evidence about planning
+cost, not native hosted concurrency measurements or proof of the whole failure's
+cause. Full response, role/tenant/session/MFA boundaries, names, freshness,
+late-GPS rejection and cache invalidation tests run against both variants.
+
+The runner now retains each attempted stage's queue/activity samples even when
+measurement throws. Activity diagnostics contain grouped state/wait type/event,
+counts and oldest active-query age only; no SQL text, account data, tokens or raw
+locations. These samples help distinguish database waits from active work on a
+subsequent failure without claiming a CPU bottleneck from timeout logs alone.
+
+`Verify Recovery shared ETA query fix` requires `VERIFY_RECOVERY_ETA` and current
+reviewed main. Its protected job rehearses and installs the exact single-function
+change using the same empty/quarantined Recovery identity and full-catalog checks,
+then runs the unchanged 10-bus/50-viewer workload. Approval is required by GitHub's
+environment rules. If installation succeeds but capacity fails, use the existing
+capacity-only workflow after inspecting cleanup; do not replay the one-time patch.
+Hosted verification remains pending; launch capacity is not qualified.
