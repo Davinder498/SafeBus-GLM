@@ -67,3 +67,11 @@ should the reviewed application fixture and bounded API/Realtime smoke stage be
 prepared, keeping recipient notifications separate from concurrent map viewers.
 
 Reference: https://supabase.com/docs/reference/javascript/auth-admin-createuser
+
+## Hosted result
+
+Run https://github.com/Davinder498/SafeBus-GLM/actions/runs/44199785857
+passed on `04ca487a4a9bafacf9d7c4c051785f1bbb3b5159`.
+Password login, TOTP, refresh, revoked-refresh rejection and cleanup succeeded.
+Both disposable users and their sessions were removed; schema quarantine remained.
+This does not establish application API, Realtime or capacity qualification.

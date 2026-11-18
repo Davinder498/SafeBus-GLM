@@ -101,6 +101,18 @@ API disabled until separately verified isolation and role checks are complete.
 No paid compute change is approved by this target selection. Preparing the
 schema does not certify capacity or authorize arbitrary fixture/load writers.
 
+### Recovery fixture cleanup exception — owner approval, 2026-11-18
+
+For the named recovery target only, the owner approved temporary disabling of
+`complete_disposal_guard` and `protect_final_tenant_admin_delete` on profiles
+inside one locked cleanup transaction. Close application schema access first;
+verify exact run-owned Auth metadata/email and synthetic tenant ID/name/type;
+delete only those fixtures; restore both guards and verify before commit.
+Failure must roll back trigger changes and deletions together. Rehearse cleanup
+with rollback before enabling test API access. This does not authorize disabling
+production controls, RLS, MFA, other triggers, or deleting customer data.
+See `docs/qa/recovery-api-verification-2026-11-18.md` for the bounded procedure.
+
 - The existing hosted `BusSafe` Supabase project is the sole database and is production.
 - No DEV or staging database is currently approved.
 - Do not run Docker commands.
