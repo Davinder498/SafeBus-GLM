@@ -3,7 +3,7 @@ import {
   installGuardianVisibilityMock,
   guardianVisibilityRow,
 } from '../smoke/fixtures/guardian-bus-visibility';
-import { installSupabaseMock } from '../smoke/fixtures/supabase-mock';
+import { installSupabaseMock, MOCK } from '../smoke/fixtures/supabase-mock';
 import { installLocalOnlyBoundary } from '../smoke/fixtures/local-only';
 import { expectUsableMobileLayout } from '../smoke/fixtures/responsive';
 
@@ -13,7 +13,9 @@ for (const role of ['guardian', 'driver'] as const) {
     if (role === 'guardian') await installGuardianVisibilityMock(page);
     else await installSupabaseMock(page);
     await page.goto('/account');
-    await expect(page.getByRole('heading', { name: 'Account', exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Account', exact: true, level: 1 }),
+    ).toBeVisible();
     await page.screenshot({ path: info.outputPath(`${role}-account.png`), fullPage: true });
     for (const [label, path] of [
       ['Notification settings', role === 'driver' ? '/driver/settings' : '/notifications/settings'],
@@ -63,7 +65,32 @@ for (const role of ['guardian', 'driver'] as const) {
     await installLocalOnlyBoundary(page);
     if (role === 'guardian')
       await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
-    else await installSupabaseMock(page, { withActiveTrip: true, withCompletedTrips: true });
+    else {
+      await installSupabaseMock(page, { withActiveTrip: true, withCompletedTrips: true });
+      await page.route('**/rest/v1/rpc/get_driver_active_trip_student_manifest_v2', (route) =>
+        route.fulfill({
+          json: [
+            {
+              active_trip_id: MOCK.tripId,
+              student_id: 'aaaaaaaa-0000-0000-0000-000000000001',
+              student_display_name: 'Avery Johnson',
+              seat_number: 12,
+              route_name: 'North Ridge',
+              trip_name: 'Outbound',
+              bus_number: '12',
+              trip_status: 'active',
+              trip_direction: 'forward',
+              pickup_stop_name: 'Elm',
+              dropoff_stop_name: 'School',
+              assignment_status: 'active',
+              pickup_event_time: null,
+              dropoff_event_time: null,
+              student_trip_status: 'not_picked_up',
+            },
+          ],
+        }),
+      );
+    }
     const paths =
       role === 'guardian'
         ? [

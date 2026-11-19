@@ -329,7 +329,7 @@ test('guardian home keeps each linked student with their own bus and stops', asy
   await expect(cards.nth(0)).not.toContainText('Oak Street');
   await expect(cards.nth(1)).toContainText('Morgan Johnson');
   await expect(
-    page.getByTestId('guardian-student-bus-card').filter({ has: cards.nth(1) }),
+    page.getByTestId('guardian-student-bus-card').filter({ hasText: 'Morgan Johnson' }),
   ).toContainText('Bus 27');
   await expect(cards.nth(1)).toContainText('Oak Street');
   await expect(cards.nth(1)).not.toContainText('Cedar Avenue');
@@ -654,10 +654,8 @@ test('mobile notification settings autosave independent channel sections with sw
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: testInfo.outputPath('notification-settings.png'), fullPage: true });
 
-  await page
-    .getByTestId('native-bottom-navigation')
-    .getByRole('link', { name: 'Account', exact: true })
-    .click();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL('/account');
   await page.getByRole('link', { name: 'Privacy notice', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Guardian privacy notice', exact: true }),
@@ -1019,7 +1017,7 @@ for (const path of ['/privacy', '/account-deletion']) {
       document.documentElement.style.setProperty('--safe-area-inset-top', '32px');
     });
     const header = page.locator('[data-ui="native-public-header"]');
-    await expect(header).toHaveCSS('position', 'sticky');
+    await expect(header).toHaveCSS('position', 'fixed');
     await expect(header).toHaveCSS('padding-top', '32px');
     await expect(page.locator('main [data-ui="card"]')).toHaveCSS(
       'border-top-color',

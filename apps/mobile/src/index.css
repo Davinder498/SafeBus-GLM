@@ -2135,10 +2135,15 @@ html[data-app-surface='native-mobile'] [data-ui='app-bar'] {
   box-shadow: none;
 }
 html[data-app-surface='native-mobile'] [data-ui='native-public-header'] {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 40;
   padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+}
+html[data-app-surface='native-mobile'] [data-ui='public-shell'] {
+  padding-top: calc(4rem + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
 }
 html[data-app-surface='native-mobile'] [data-ui='guardian-bus-card'] {
   background: var(--color-surface) !important;

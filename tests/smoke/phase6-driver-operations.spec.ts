@@ -487,7 +487,9 @@ test.describe('Phase 6 — driver operational controls', () => {
       timeout: 10000,
     });
     // The scan prompt returns.
-    await expect(page.getByRole('heading', { name: 'Scan the bus to start' })).toBeVisible({
+    await expect(
+      page.getByRole('button', { name: 'Scan bus QR to start', exact: true }),
+    ).toBeVisible({
       timeout: 10000,
     });
   });
